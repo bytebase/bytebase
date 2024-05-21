@@ -143,7 +143,7 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
+import { validateDatabaseMetadata } from "@/components/SchemaEditorLite";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
 import {
   PROJECT_V1_ROUTE_BRANCHES,
@@ -509,12 +509,11 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
   );
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: props.project.uid,
     mode: "normal",
     ghost: undefined,
     branch: branch.name,
   };
-  query.databaseList = databaseIdList.join(",");
+  query.databaseList = targetDatabaseList.map((db) => db.name).join(",");
   query.sql = result.statement;
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)

@@ -1,6 +1,7 @@
 <template>
   <Drawer
     :show="show"
+    :close-on-esc="false"
     placement="left"
     style="--n-body-padding: 4px 0"
     @update:show="$emit('update:show', $event)"

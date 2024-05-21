@@ -42,9 +42,9 @@ export interface ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
 }
 
 export enum ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type {
-  TYPE_UNSPECIFIED = 0,
-  TYPE_FEISHU = 1,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  TYPE_FEISHU = "TYPE_FEISHU",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeFromJSON(
@@ -78,11 +78,25 @@ export function activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToJS
   }
 }
 
+export function activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToNumber(
+  object: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type,
+): number {
+  switch (object) {
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_FEISHU:
+      return 1;
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action {
-  ACTION_UNSPECIFIED = 0,
-  ACTION_APPROVE = 1,
-  ACTION_REJECT = 2,
-  UNRECOGNIZED = -1,
+  ACTION_UNSPECIFIED = "ACTION_UNSPECIFIED",
+  ACTION_APPROVE = "ACTION_APPROVE",
+  ACTION_REJECT = "ACTION_REJECT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionFromJSON(
@@ -121,17 +135,33 @@ export function activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionTo
   }
 }
 
+export function activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionToNumber(
+  object: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action,
+): number {
+  switch (object) {
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED:
+      return 0;
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_APPROVE:
+      return 1;
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_REJECT:
+      return 2;
+    case ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface ActivityIssueCommentCreatePayload_ApprovalEvent {
   /** The new status. */
   status: ActivityIssueCommentCreatePayload_ApprovalEvent_Status;
 }
 
 export enum ActivityIssueCommentCreatePayload_ApprovalEvent_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  REJECTED = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function activityIssueCommentCreatePayload_ApprovalEvent_StatusFromJSON(
@@ -172,6 +202,24 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(
     case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToNumber(
+  object: ActivityIssueCommentCreatePayload_ApprovalEvent_Status,
+): number {
+  switch (object) {
+    case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.PENDING:
+      return 1;
+    case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.APPROVED:
+      return 2;
+    case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.REJECTED:
+      return 3;
+    case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -482,7 +530,11 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
 };
 
 function createBaseActivityIssueCommentCreatePayload_ExternalApprovalEvent(): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
-  return { type: 0, action: 0, stageName: "" };
+  return {
+    type: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED,
+    action: ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED,
+    stageName: "",
+  };
 }
 
 export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
@@ -490,11 +542,11 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
     message: ActivityIssueCommentCreatePayload_ExternalApprovalEvent,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
+    if (message.type !== ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToNumber(message.type));
     }
-    if (message.action !== 0) {
-      writer.uint32(16).int32(message.action);
+    if (message.action !== ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED) {
+      writer.uint32(16).int32(activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionToNumber(message.action));
     }
     if (message.stageName !== "") {
       writer.uint32(26).string(message.stageName);
@@ -514,14 +566,14 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.action = reader.int32() as any;
+          message.action = activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -541,20 +593,22 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
 
   fromJSON(object: any): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
     return {
-      type: isSet(object.type) ? activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type)
+        ? activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeFromJSON(object.type)
+        : ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED,
       action: isSet(object.action)
         ? activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionFromJSON(object.action)
-        : 0,
+        : ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED,
       stageName: isSet(object.stageName) ? globalThis.String(object.stageName) : "",
     };
   },
 
   toJSON(message: ActivityIssueCommentCreatePayload_ExternalApprovalEvent): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
+    if (message.type !== ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED) {
       obj.type = activityIssueCommentCreatePayload_ExternalApprovalEvent_TypeToJSON(message.type);
     }
-    if (message.action !== 0) {
+    if (message.action !== ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED) {
       obj.action = activityIssueCommentCreatePayload_ExternalApprovalEvent_ActionToJSON(message.action);
     }
     if (message.stageName !== "") {
@@ -572,15 +626,15 @@ export const ActivityIssueCommentCreatePayload_ExternalApprovalEvent = {
     object: DeepPartial<ActivityIssueCommentCreatePayload_ExternalApprovalEvent>,
   ): ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
     const message = createBaseActivityIssueCommentCreatePayload_ExternalApprovalEvent();
-    message.type = object.type ?? 0;
-    message.action = object.action ?? 0;
+    message.type = object.type ?? ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Type.TYPE_UNSPECIFIED;
+    message.action = object.action ?? ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action.ACTION_UNSPECIFIED;
     message.stageName = object.stageName ?? "";
     return message;
   },
 };
 
 function createBaseActivityIssueCommentCreatePayload_ApprovalEvent(): ActivityIssueCommentCreatePayload_ApprovalEvent {
-  return { status: 0 };
+  return { status: ActivityIssueCommentCreatePayload_ApprovalEvent_Status.STATUS_UNSPECIFIED };
 }
 
 export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
@@ -588,8 +642,8 @@ export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
     message: ActivityIssueCommentCreatePayload_ApprovalEvent,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== ActivityIssueCommentCreatePayload_ApprovalEvent_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(activityIssueCommentCreatePayload_ApprovalEvent_StatusToNumber(message.status));
     }
     return writer;
   },
@@ -606,7 +660,7 @@ export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = activityIssueCommentCreatePayload_ApprovalEvent_StatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -619,13 +673,15 @@ export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
 
   fromJSON(object: any): ActivityIssueCommentCreatePayload_ApprovalEvent {
     return {
-      status: isSet(object.status) ? activityIssueCommentCreatePayload_ApprovalEvent_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status)
+        ? activityIssueCommentCreatePayload_ApprovalEvent_StatusFromJSON(object.status)
+        : ActivityIssueCommentCreatePayload_ApprovalEvent_Status.STATUS_UNSPECIFIED,
     };
   },
 
   toJSON(message: ActivityIssueCommentCreatePayload_ApprovalEvent): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== ActivityIssueCommentCreatePayload_ApprovalEvent_Status.STATUS_UNSPECIFIED) {
       obj.status = activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(message.status);
     }
     return obj;
@@ -640,7 +696,7 @@ export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
     object: DeepPartial<ActivityIssueCommentCreatePayload_ApprovalEvent>,
   ): ActivityIssueCommentCreatePayload_ApprovalEvent {
     const message = createBaseActivityIssueCommentCreatePayload_ApprovalEvent();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? ActivityIssueCommentCreatePayload_ApprovalEvent_Status.STATUS_UNSPECIFIED;
     return message;
   },
 };

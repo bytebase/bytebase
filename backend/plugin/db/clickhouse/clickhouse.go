@@ -17,6 +17,7 @@ import (
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -290,8 +291,11 @@ func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRowsForClickhouse(rows, columnTypes, columnTypeNames)
-	if err != nil {
+	result := &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+	}
+	if err := readRowsForClickhouse(result, rows, columnTypes, columnTypeNames); err != nil {
 		return nil, err
 	}
 
@@ -299,16 +303,10 @@ func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		return nil, err
 	}
 
-	return &v1pb.QueryResult{
-		ColumnNames:     columnNames,
-		ColumnTypeNames: columnTypeNames,
-		Rows:            data,
-	}, nil
+	return result, nil
 }
 
-func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string) ([]*v1pb.QueryRow, error) {
-	var data []*v1pb.QueryRow
-
+func readRowsForClickhouse(result *v1pb.QueryResult, rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string) error {
 	for rows.Next() {
 		cols := make([]any, len(columnTypes))
 		for i, name := range columnTypeNames {
@@ -327,7 +325,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 		}
 
 		if err := rows.Scan(cols...); err != nil {
-			return nil, err
+			return err
 		}
 
 		var rowData v1pb.QueryRow
@@ -336,7 +334,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			if v, ok := cols[i].(*any); ok && v != nil {
 				value, err := structpb.NewValue(*v)
 				if err != nil {
-					return nil, errors.Errorf("failed to convert value to structpb.Value: %v", err)
+					return errors.Errorf("failed to convert value to structpb.Value: %v", err)
 				}
 				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_ValueValue{ValueValue: value}})
 				continue
@@ -508,8 +506,12 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
 		}
 
-		data = append(data, &rowData)
+		result.Rows = append(result.Rows, &rowData)
+		if proto.Size(result) > common.MaximumSQLResultSize {
+			result.Error = common.MaximumSQLResultSizeExceeded
+			return nil
+		}
 	}
 
-	return data, nil
+	return nil
 }

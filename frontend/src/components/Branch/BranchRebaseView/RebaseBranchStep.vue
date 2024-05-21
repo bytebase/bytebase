@@ -28,6 +28,7 @@
           :project="project"
           :readonly="true"
           :branch="validationState.branch"
+          :show-last-updater="true"
         />
       </div>
       <div

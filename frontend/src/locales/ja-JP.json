@@ -76,7 +76,6 @@
     "role": {
       "self": "役割"
     },
-    "assignee": "被指名者",
     "revert": "回復する",
     "apply": "応用",
     "reorder": "選別",
@@ -141,8 +140,7 @@
     "connecting": "接続中...",
     "creating": "作成...",
     "updating": "更新中...",
-    "Address": "住所",
-    "User": "ユーザー",
+    "address": "住所",
     "assigned": "割り当てられた",
     "subscribed": "購読しました",
     "created": "作成した",
@@ -337,7 +335,6 @@
       "warn": "警告する",
       "error": "間違い"
     },
-    "earliest-allowed-time-no-modify": "チケットのレビュー担当者ではないか、チケットが保留中ではないため、このフィールドは変更できません。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同期データ",
       "bb-task-database-schema-update-ghost-cutover": "スイッチテーブル",
@@ -357,7 +354,7 @@
     "skip": "飛び越える",
     "skip-modal-title": "タスク [{name}] をスキップしますか?",
     "task-checks": "タスクのチェック項目",
-    "prior-backup": "事前にデータをバックアップしておくこと",
+    "prior-backup": "影響を受けるデータの事前バックアップ",
     "rollback": {
       "sql-rollback": "SQLロールバック",
       "failed": "失敗",
@@ -762,6 +759,11 @@
       },
       "algorithms": {
         "self": "減感アルゴリズム",
+        "upload": "インポートアルゴリズム",
+        "upload-label": "アルゴリズム ファイルを JSON 形式でアップロードできます。",
+        "override-title": "カバーアルゴリズムデータ",
+        "override-desc": "既存のアルゴリズムは上書きされるため、セマンティック タイプに合わせてアルゴリズムを再構成する必要があります。",
+        "override-confirm": "インポートを続行する",
         "default": "デフォルト",
         "default-desc": "*** を使用してデータをマスクする",
         "table": {
@@ -789,7 +791,7 @@
         },
         "range-mask": {
           "self": "範囲マスキング",
-          "label": "範囲マスキングでは、マスクされた文字列を使用して、開始インデックスから終了インデックスまでの元の値を置き換えます (排他的)。",
+          "label": "範囲マスキングでは、マスクされた文字列を使用して、開始インデックスから終了インデックスまでの元の値を置き換えます (排他的)。インデックスは 0 から始まります。",
           "slice-start": "出発点",
           "slice-start-label": "開始位置は元の値の開始インデックスであり、0 から始まり、終了位置より小さい値になります。",
           "slice-end": "終了位置",
@@ -801,6 +803,16 @@
           "self": "MD5ハッシュ",
           "salt": "塩",
           "salt-label": "ソルトは、元の値からハッシュ値を生成するために使用されます。"
+        },
+        "inner-outer-mask": {
+          "self": "内部/外部マスク",
+          "type": "マスクタイプ",
+          "inner-label": "内部マスクは文字列の内部部分をマスクします。プレフィックスとサフィックスはデータのマスクされていない部分を表します。",
+          "inner-mask": "インナーマスク",
+          "outer-label": "外部マスクは文字列の左右の端をマスクします。プレフィックスとサフィックスはデータのマスクされた部分を表します。",
+          "outer-mask": "アウターマスク",
+          "prefix-length": "プレフィックスの長さ",
+          "suffix-length": "サフィックスの長さ"
         }
       },
       "masking-level": {
@@ -821,14 +833,14 @@
         "upload": "輸入分類と格付け",
         "upload-succeed": "インポート成功",
         "search": "検索分類の評価",
-        "label": "データを分類・分類したJSON形式ファイルをアップロードできます。",
-        "view-example": "サンプルを見る",
-        "json-format-example": "分類と格付けの JSON 形式の例",
+        "upload-label": "データを分類・分類したJSON形式ファイルをアップロードできます。",
         "copy-succeed": "サンプルをコピーしました",
         "override-title": "カバレッジの分類および等級付けされたデータ",
         "override-desc": "既存の分類およびグレーディング データは上書きされ、関連するすべてのプロジェクトが影響を受けます。",
         "override-confirm": "インポートを続行する"
-      }
+      },
+      "json-format-example": "JSON形式の例",
+      "view-example": "サンプルを見る"
     },
     "release": {
       "new-version-available": "更新する新しいバージョンがあります",
@@ -865,7 +877,7 @@
       "pipeline-stage-status-update": "作業指示書のステージステータスを更新する",
       "pipeline-task-status-update": "作業指示タスクのステータスを更新する",
       "pipeline-task-statement-update": "SQLを更新する",
-      "pipeline-task-prior-backup": "事前にデータをバックアップしておくこと",
+      "pipeline-task-prior-backup": "影響を受けるデータの事前バックアップ",
       "member-create": "メンバーの作成",
       "member-role-update": "役割を更新する",
       "member-activate": "メンバーをアクティブ化する",
@@ -882,10 +894,6 @@
     "sentence": {
       "created-issue": "作業指示書を作成する",
       "commented": "コメント",
-      "reassigned-issue": "作業指示書を {oldName} から {newName} に再割り当てします",
-      "assigned-issue": "作業指示書を {newName} に割り当てます",
-      "unassigned-issue": "{oldName} からの作業指示の割り当てを解除する",
-      "invalid-assignee-update": "無効な代入操作",
       "changed-description": "説明の変更",
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "unset-from": "{name} の値を元に戻します (「{oldValue}」から)",
@@ -1001,10 +1009,6 @@
           "title": "創設者",
           "description": "チケット作成者で検索"
         },
-        "assignee": {
-          "title": "被指名者",
-          "description": "作業指示の担当者で検索"
-        },
         "subscriber": {
           "title": "購読者",
           "description": "チケット購入者から探す"
@@ -1032,6 +1036,10 @@
             "yes": "はい",
             "no": "いいえ"
           }
+        },
+        "label": {
+          "title": "ラベル",
+          "description": "チケットタグで絞り込む"
         }
       },
       "hide": "詳細検索を非表示にする"
@@ -1048,10 +1056,10 @@
       "updated": "に更新されました",
       "approver": "承認者",
       "creator": "創設者",
-      "assignee": "被指名者"
+      "current-approver": "現在の承認者"
     },
     "stage-select": {
-      "active": "{name} (アクティブ)"
+      "current": "{name} (現在)"
     },
     "not-allowed-to-operate-unassigned-database": "未割り当てのデータベースは {operation} できません。\nまずプロジェクトに転送する必要があります。",
     "migration-mode": {
@@ -1094,19 +1102,12 @@
     },
     "will-rollback": "現在のタスクはロールバックされます {link}",
     "issue-link-with-task": "チケット {issue} - タスク {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "{im}承認リクエストは正常に送信されました",
-      "send-attention-request-successfully": "レビューアー {principal} がフォローリクエストを受け取りました",
-      "needs-attention": "注意が必要です",
-      "click-to-mark": "クリックして査読者の注意をリクエストします"
-    },
     "sdl": {
       "schema-change": "スキーマの変更",
       "generated-ddl-statements": "生成されたDDLステートメント",
       "full-schema": "完全なスキーマ",
       "left-schema-may-change": "左側のスキーマは、チケットが実行される前に変更される可能性があります。"
     },
-    "assignee-tooltip": "担当者は、問題に取り組む責任のある人であり、問題が割り当てられると、その担当者の [割り当て済み問題] リストに表示されます。",
     "approval-flow": {
       "self": "承認の流れ",
       "tooltip": "承認者は、承認フローで指定された順序で作業指示書を確認し、承認する必要があります。作業指示は、承認フローのすべてのステップが承認された後にのみ実行できます。リスクレベルごとに承認をカスタマイズできます。",
@@ -1172,14 +1173,6 @@
       "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません"
     },
     "approval-requested": "承認リクエスト",
-    "assignee": {
-      "current-assignee": "現在の譲受人",
-      "workspace-admins": "バイトベースワークスペース管理者",
-      "workspace-dbas": "DBA",
-      "project-owners": "プロジェクトオーナー",
-      "releasers-of-current-stage": "現在のステージの発行元",
-      "approvers-of-current-step": "現在のステップの承認者"
-    },
     "unfinished-resolved-issue-tips": "作業指示書は「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "preview": "作業指示のプレビュー",
@@ -1193,6 +1186,20 @@
     },
     "update-rollout-time": {
       "self": "更新のロールアウト時間"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "バッチ",
+        "affected-rows": "影響を受ける行",
+        "entry-type": {
+          "command-execute": "コマンド実行",
+          "schema-dump": "スキーマダンプ"
+        },
+        "affected-rows-n": "影響を受ける行: {n}"
+      }
+    },
+    "sql-review": {
+      "statement-type": "ステートメントタイプ"
     }
   },
   "alter-schema": {
@@ -1334,6 +1341,14 @@
           "template": "{user} という名前のサービス アカウントを作成し、IAM ユーザー {user}{'@'}project-id.iam として Google Cloud SQL に追加します。ユーザーに必要な権限を付与します。"
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "以下は、ユーザー {user}{'@'}% を作成し、そのユーザーに必要な権限を付与する例です。"
+        },
+        "postgresql": {
+          "template": "以下は、ユーザー '{user}' を作成し、そのユーザーに必要な権限を付与する例です。"
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "ユーザー {user}、パスワード {password}、ウェアハウス {warehouse} を作成し、必要な権限を付与する例は次のとおりです。"
@@ -1361,7 +1376,8 @@
     "password-type": {
       "password": "パスワード",
       "password-tip": "外部のパスワード管理サービスのエンドポイントを指定することもできます",
-      "google-iam": "Google CloudSQL IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "ボールト (KV v2)",
       "external-secret-aws": "AWS シークレットマネージャー",
       "external-secret-gcp": "GCP シークレット マネージャー"
@@ -1734,7 +1750,11 @@
     "transfer-database-to": "データベースをターゲットプロジェクトに転送します",
     "transfer-database-from-to": "データベースをソース プロジェクトからターゲット プロジェクトに転送する",
     "classification": {
-      "self": "分類と格付け"
+      "self": "分類と格付け",
+      "sync-from-comment": "コメントからカテゴリと評価を同期する",
+      "sync-from-comment-tip": "有効にすると、分類評価がテーブルまたは列のコメントから同期されます。コメントは「{format}」形式に従う必要があります。",
+      "sync-from-comment-enable-warning": "分類評価は DDL とともに変更され、元の注釈と同期されます。",
+      "sync-from-comment-disable-warning": "分類評価は DDL によって変更されません。データベースの詳細ページでいつでも変更できます。"
     },
     "recent": "最近の訪問",
     "partitioned": "パーティション",
@@ -1816,11 +1836,6 @@
       "success-prompt": "{name} が正常に作成されました。"
     },
     "overview": {
-      "view-all": "すべて見る",
-      "view-all-closed": "終了した作業指示書をすべて表示する",
-      "recent-activity": "最近の@.lower:{'common.activities'}",
-      "in-progress": "進行中",
-      "recently-closed": "最近終了しました",
       "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。",
       "no-db-prompt": "現在のプロジェクトに属しているデータベースはありません。上のメニュー バーの {newDb} または {transferInDb} をクリックすると、データベースを追加できます。"
     },
@@ -1870,7 +1885,7 @@
         },
         "issue-info-change": {
           "title": "作業指示情報の変更",
-          "label": "作業指示書の情報 (例: 担当者、タイトル、説明) が変更されたとき"
+          "label": "作業指示書の情報 (例: タイトル、説明) が変更されたとき"
         },
         "issue-comment-creation": {
           "title": "作業指示のコメント付き",
@@ -1926,6 +1941,11 @@
         "only-allow-specified-roles-to-create-branch": "指定されたロールのみにブランチの作成を許可する",
         "no-protection-rule-configured": "ブランチ保護ルールは構成されていません。",
         "only-apply-to-main-branches": "メインブランチでのみ有効です"
+      },
+      "labels": {
+        "issue-labels": "作業指示タグ",
+        "configure-labels": "タグを構成する",
+        "force-issue-labels": "すべての作業命令にラベルを付けることを要求する"
       }
     },
     "members": {
@@ -2126,7 +2146,10 @@
     "delete-read-only-data-source": "読み取り専用データソースを削除する",
     "connection-string-schema": "接続文字列モード",
     "admin": "メインライブラリ",
-    "read-only": "図書館から"
+    "read-only": "図書館から",
+    "additional-node-addresses": "追加のノードアドレス",
+    "replica-set": "レプリカセット",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2261,7 +2284,13 @@
     "sync-in-progress": "同期中",
     "create-a-worksheet": "新しいワークシートを作成する",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
-    "select-encoding": "エンコーディングの選択"
+    "select-encoding": "エンコーディングの選択",
+    "result-limit": {
+      "n-rows": "{n} 行",
+      "rows": "行"
+    },
+    "n-per-page": "{n} / ページ",
+    "customize-tree-structure": "ツリー構造をカスタマイズする"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
@@ -2284,7 +2313,10 @@
       "drop-column": "列の削除",
       "sql-preview": "SQLのプレビュー",
       "reset": "リセット",
-      "save": "保存"
+      "save": "保存",
+      "create-procedure": "プロシージャの作成",
+      "create-function": "関数の作成",
+      "drop": "落とす"
     },
     "database": {
       "name": "名前",
@@ -2337,7 +2369,11 @@
       "failed-to-fetch-database-schema": "データベース スキーマの要求に失敗しました",
       "invalid-schema": "無効なスキーマ",
       "cannot-drop-the-last-column": "最後の列は削除できません",
-      "cannot-change-config": "データベース構成はスキーマとともに変更する必要があります"
+      "cannot-change-config": "データベース構成はスキーマとともに変更する必要があります",
+      "duplicated-procedure-name": "重複したプロシージャ名",
+      "invalid-procedure-name": "無効なプロシージャ名です",
+      "duplicated-function-name": "関数名が重複しています",
+      "invalid-function-name": "無効な関数名です"
     },
     "confirm-to-close": {
       "title": "閉じることを確認しますか？",
@@ -2361,7 +2397,10 @@
       "value": "価値",
       "add-sub-partition": "サブパーティションの追加",
       "type": "タイプ"
-    }
+    },
+    "views": "ビュー",
+    "procedures": "手順",
+    "functions": "関数"
   },
   "label": {
     "empty-label-value": "ヌル",
@@ -2747,7 +2786,10 @@
       "payload": "ペイロード",
       "empty": "<空>",
       "view-details": "詳細を確認する",
-      "select-type": "タイプを選択してください"
+      "select-type": "タイプを選択してください",
+      "method": "方法",
+      "request": "リクエスト",
+      "response": "応答"
     },
     "type": {
       "workspace": {
@@ -2762,6 +2804,22 @@
       },
       "sql-editor-query": "SQLエディタのクエリ",
       "sql-export": "SQL エクスポート"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "俳優",
+          "description": "監査ログアクターによる検索"
+        },
+        "method": {
+          "title": "方法",
+          "description": "監査ログの方法での検索"
+        },
+        "level": {
+          "title": "レベル",
+          "description": "監査ログのレベルによる検索"
+        }
+      }
     }
   },
   "onboarding-guide": {
@@ -3238,6 +3296,10 @@
     "self": "輸出センター",
     "permission-denied": "この操作を実行する権限がありません"
   },
+  "review-center": {
+    "self": "レビューセンター",
+    "review-sql": "SQLを確認する"
+  },
   "schema-designer": {
     "self": "スキーマデザイナー",
     "schema-design": "スキーマ設計",
@@ -3360,7 +3422,12 @@
     },
     "confirm-remove-change": "この変更を削除しますか?",
     "delete-this-changelist": "この変更リストを削除します",
-    "confirm-delete-changelist": "変更リストを削除しますか?"
+    "confirm-delete-changelist": "変更リストを削除しますか?",
+    "import": {
+      "no-file-to-upload": "アップロードするファイルがありません",
+      "upload-sql-or-zip-file": ".sql または .zip ファイルをアップロードする",
+      "optional-upload-sql-or-zip-file": "(オプション) .sql または .zip ファイルをアップロードします"
+    }
   },
   "export-data": {
     "export-rows": "エクスポート行数",
@@ -3433,6 +3500,9 @@
     "table-partition": {
       "drop-partition-confirm": "テーブルパーティションを削除しますか?",
       "drop-partition-with-subpartitions-confirm": "すべてのサブパーティションが同時に削除されます。"
+    },
+    "last-update": {
+      "self": "最後の更新"
     }
   }
 }

@@ -26,7 +26,10 @@ import {
   ApprovalNode_Type,
   ApprovalStep_Type,
 } from "@/types/proto/v1/issue_service";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import {
+  Risk_Source,
+  risk_SourceFromJSON,
+} from "@/types/proto/v1/risk_service";
 import {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
@@ -230,8 +233,7 @@ const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
   if (!args || args.length !== 2) return Risk_Source.UNRECOGNIZED;
   const factor = args[0];
   if (factor !== "source") return Risk_Source.UNRECOGNIZED;
-  const source = args[1];
-  if (!isNumber(source)) return Risk_Source.UNRECOGNIZED;
+  const source = risk_SourceFromJSON(args[1]);
   if (!SupportedSourceList.includes(source)) return Risk_Source.UNRECOGNIZED;
   return source;
 };

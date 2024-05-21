@@ -10,6 +10,7 @@ export const protobufPackage = "bytebase.store";
 export interface IssuePayload {
   approval: IssuePayloadApproval | undefined;
   grantRequest: GrantRequest | undefined;
+  labels: string[];
 }
 
 export interface GrantRequest {
@@ -28,7 +29,7 @@ export interface GrantRequest {
 }
 
 function createBaseIssuePayload(): IssuePayload {
-  return { approval: undefined, grantRequest: undefined };
+  return { approval: undefined, grantRequest: undefined, labels: [] };
 }
 
 export const IssuePayload = {
@@ -38,6 +39,9 @@ export const IssuePayload = {
     }
     if (message.grantRequest !== undefined) {
       GrantRequest.encode(message.grantRequest, writer.uint32(18).fork()).ldelim();
+    }
+    for (const v of message.labels) {
+      writer.uint32(26).string(v!);
     }
     return writer;
   },
@@ -63,6 +67,13 @@ export const IssuePayload = {
 
           message.grantRequest = GrantRequest.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.labels.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -76,6 +87,7 @@ export const IssuePayload = {
     return {
       approval: isSet(object.approval) ? IssuePayloadApproval.fromJSON(object.approval) : undefined,
       grantRequest: isSet(object.grantRequest) ? GrantRequest.fromJSON(object.grantRequest) : undefined,
+      labels: globalThis.Array.isArray(object?.labels) ? object.labels.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -86,6 +98,9 @@ export const IssuePayload = {
     }
     if (message.grantRequest !== undefined) {
       obj.grantRequest = GrantRequest.toJSON(message.grantRequest);
+    }
+    if (message.labels?.length) {
+      obj.labels = message.labels;
     }
     return obj;
   },
@@ -101,6 +116,7 @@ export const IssuePayload = {
     message.grantRequest = (object.grantRequest !== undefined && object.grantRequest !== null)
       ? GrantRequest.fromPartial(object.grantRequest)
       : undefined;
+    message.labels = object.labels?.map((e) => e) || [];
     return message;
   },
 };

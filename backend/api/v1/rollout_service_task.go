@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -185,19 +186,15 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}
-	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert deployment config to api deployment config")
-	}
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
-	if err != nil {
+
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
 		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
 	}
 	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list databases")
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, allDatabases)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, allDatabases)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 	}
@@ -209,7 +206,7 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 		}
 
 		step := &storepb.PlanConfig_Step{
-			Title: deploySchedule.Deployments[i].Name,
+			Title: deploymentConfig.Schedule.Deployments[i].Name,
 		}
 		for _, database := range databases {
 			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
@@ -347,11 +344,15 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := s.CreateSheet(ctx, &store.SheetMessage{
+		sheet, err := sc.CreateSheet(ctx, s, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: project.UID,
 			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
+
+			Payload: &storepb.SheetPayload{
+				Engine: instance.Engine,
+			},
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create database creation sheet")

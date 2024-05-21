@@ -39,24 +39,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// GetLatestSchemaVersion gets the latest schema version for a database.
-func GetLatestSchemaVersion(ctx context.Context, stores *store.Store, instanceID int, databaseID int, databaseName string) (model.Version, error) {
-	// TODO(d): support semantic versioning.
-	limit := 1
-	history, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		InstanceID: &instanceID,
-		DatabaseID: &databaseID,
-		Limit:      &limit,
-	})
-	if err != nil {
-		return model.Version{}, errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
-	}
-	if len(history) == 0 {
-		return model.Version{}, nil
-	}
-	return history[0].Version, nil
-}
-
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
 func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceType api.DataSourceType) *store.DataSourceMessage {
 	for _, dataSource := range instance.DataSources {
@@ -69,20 +51,13 @@ func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceT
 
 // isMatchExpression checks whether a databases matches the query.
 // labels is a mapping from database label key to value.
-func isMatchExpression(labels map[string]string, expression *api.LabelSelectorRequirement) bool {
+func isMatchExpression(labels map[string]string, expression *store.LabelSelectorRequirement) bool {
 	switch expression.Operator {
-	case api.InOperatorType:
-		value, ok := labels[expression.Key]
-		if !ok {
-			return false
-		}
-		for _, exprValue := range expression.Values {
-			if exprValue == value {
-				return true
-			}
-		}
-		return false
-	case api.ExistsOperatorType:
+	case store.InOperatorType:
+		return checkLabelIn(labels, expression)
+	case store.NotInOperatorType:
+		return !checkLabelIn(labels, expression)
+	case store.ExistsOperatorType:
 		_, ok := labels[expression.Key]
 		return ok
 	default:
@@ -90,7 +65,21 @@ func isMatchExpression(labels map[string]string, expression *api.LabelSelectorRe
 	}
 }
 
-func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSelectorRequirement) bool {
+func checkLabelIn(labels map[string]string, expression *store.LabelSelectorRequirement) bool {
+	value, ok := labels[expression.Key]
+	if !ok {
+		return false
+	}
+
+	for _, exprValue := range expression.Values {
+		if exprValue == value {
+			return true
+		}
+	}
+	return false
+}
+
+func isMatchExpressions(labels map[string]string, expressionList []*store.LabelSelectorRequirement) bool {
 	// Empty expression list matches no databases.
 	if len(expressionList) == 0 {
 		return false
@@ -104,9 +93,44 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 	return true
 }
 
+// ValidateAndGetDeploymentSchedule validates and returns the deployment schedule.
+// Note: this validation only checks whether the payloads is a valid json, however, invalid field name errors are ignored.
+func ValidateDeploymentSchedule(schedule *store.Schedule) error {
+	for _, d := range schedule.Deployments {
+		if d.Name == "" {
+			return common.Errorf(common.Invalid, "Deployment name must not be empty")
+		}
+		hasEnv := false
+		for _, e := range d.Spec.Selector.MatchExpressions {
+			switch e.Operator {
+			case store.InOperatorType, store.NotInOperatorType:
+				if len(e.Values) == 0 {
+					return common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
+				}
+			case store.ExistsOperatorType:
+				if len(e.Values) > 0 {
+					return common.Errorf(common.Invalid, "expression key %q with %q operator shouldn't have values", e.Key, e.Operator)
+				}
+			default:
+				return common.Errorf(common.Invalid, "expression key %q has invalid operator %q", e.Key, e.Operator)
+			}
+			if e.Key == api.EnvironmentLabelKey {
+				hasEnv = true
+				if e.Operator != store.InOperatorType || len(e.Values) != 1 {
+					return common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", api.EnvironmentLabelKey, store.InOperatorType)
+				}
+			}
+		}
+		if !hasEnv {
+			return common.Errorf(common.Invalid, "deployment should contain %q label", api.EnvironmentLabelKey)
+		}
+	}
+	return nil
+}
+
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
-func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
+func GetDatabaseMatrixFromDeploymentSchedule(schedule *store.Schedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
 	var matrix [][]*store.DatabaseMessage
 
 	// idToLabels maps databaseID -> label key -> label value
@@ -219,18 +243,21 @@ func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 		}
 		return nil
 	}
-	return ExecuteMigrationWithFunc(ctx, driverCtx, store, stateCfg, taskRunUID, driver, mi, statement, sheetID, execFunc)
+	return ExecuteMigrationWithFunc(ctx, driverCtx, store, stateCfg, taskRunUID, driver, mi, statement, sheetID, execFunc, opts)
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+	opts.LogSchemaDumpStart()
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
 	// See https://bytebase.com/blog/what-is-database-schema-drift
 	if _, err := driver.Dump(ctx, &prevSchemaBuf, true /* schemaOnly */); err != nil {
+		opts.LogSchemaDumpEnd(err.Error())
 		return "", "", err
 	}
+	opts.LogSchemaDumpEnd("")
 
 	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement, sheetID)
 	if err != nil {
@@ -295,6 +322,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 			})
 	}
 
+	opts.LogSchemaDumpStart()
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if _, err := driver.Dump(ctx, &afterSchemaBuf, true /* schemaOnly */); err != nil {
@@ -302,8 +330,10 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		if strings.Contains(err.Error(), "not found") {
 			return insertedID, "", nil
 		}
+		opts.LogSchemaDumpEnd(err.Error())
 		return "", "", err
 	}
+	opts.LogSchemaDumpEnd("")
 
 	return insertedID, afterSchemaBuf.String(), nil
 }

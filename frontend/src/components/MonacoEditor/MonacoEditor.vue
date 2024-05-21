@@ -1,18 +1,22 @@
 <template>
   <MonacoTextModelEditor
+    ref="textModelEditorRef"
     class="bb-monaco-editor"
     :model="model"
-    @update:content="(...args) => $emit('update:content', ...args)"
+    @update:content="handleChange"
   />
 </template>
 
 <script setup lang="ts">
 import { v4 as uuidv4 } from "uuid";
 import { computed, toRef } from "vue";
+import { ref } from "vue";
 import type { Language } from "@/types";
-import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
+import type MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useMonacoTextModel } from "./text-model";
 import { extensionNameOfLanguage } from "./utils";
+
+const textModelEditorRef = ref<InstanceType<typeof MonacoTextModelEditor>>();
 
 const props = withDefaults(
   defineProps<{
@@ -44,6 +48,16 @@ const filename = computed(() => {
   return `${uuidv4()}.${extensionNameOfLanguage(props.language)}`;
 });
 const model = useMonacoTextModel(filename, content, toRef(props, "language"));
+
+const handleChange = (value: string) => {
+  emit('update:content', value)
+};
+
+defineExpose({
+  get editor() {
+    return textModelEditorRef.value;
+  },
+});
 </script>
 
 <style lang="postcss" scoped>

@@ -134,8 +134,7 @@ const gotoCreateIssue = () => {
       name: `[${db.databaseName}] ${
         isDDL.value ? "Alter schema" : "Change Data"
       }`,
-      project: db.projectEntity.uid,
-      databaseList: db.uid,
+      databaseList: db.name,
       sql: statement.value,
     },
   });

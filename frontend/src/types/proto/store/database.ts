@@ -89,10 +89,10 @@ export interface TaskMetadata {
 }
 
 export enum TaskMetadata_State {
-  STATE_UNSPECIFIED = 0,
-  STATE_STARTED = 1,
-  STATE_SUSPENDED = 2,
-  UNRECOGNIZED = -1,
+  STATE_UNSPECIFIED = "STATE_UNSPECIFIED",
+  STATE_STARTED = "STATE_STARTED",
+  STATE_SUSPENDED = "STATE_SUSPENDED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskMetadata_StateFromJSON(object: any): TaskMetadata_State {
@@ -127,6 +127,20 @@ export function taskMetadata_StateToJSON(object: TaskMetadata_State): string {
   }
 }
 
+export function taskMetadata_StateToNumber(object: TaskMetadata_State): number {
+  switch (object) {
+    case TaskMetadata_State.STATE_UNSPECIFIED:
+      return 0;
+    case TaskMetadata_State.STATE_STARTED:
+      return 1;
+    case TaskMetadata_State.STATE_SUSPENDED:
+      return 2;
+    case TaskMetadata_State.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface StreamMetadata {
   /** The name is the name of a stream. */
   name: string;
@@ -147,9 +161,9 @@ export interface StreamMetadata {
 }
 
 export enum StreamMetadata_Type {
-  TYPE_UNSPECIFIED = 0,
-  TYPE_DELTA = 1,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  TYPE_DELTA = "TYPE_DELTA",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function streamMetadata_TypeFromJSON(object: any): StreamMetadata_Type {
@@ -179,12 +193,24 @@ export function streamMetadata_TypeToJSON(object: StreamMetadata_Type): string {
   }
 }
 
+export function streamMetadata_TypeToNumber(object: StreamMetadata_Type): number {
+  switch (object) {
+    case StreamMetadata_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case StreamMetadata_Type.TYPE_DELTA:
+      return 1;
+    case StreamMetadata_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum StreamMetadata_Mode {
-  MODE_UNSPECIFIED = 0,
-  MODE_DEFAULT = 1,
-  MODE_APPEND_ONLY = 2,
-  MODE_INSERT_ONLY = 3,
-  UNRECOGNIZED = -1,
+  MODE_UNSPECIFIED = "MODE_UNSPECIFIED",
+  MODE_DEFAULT = "MODE_DEFAULT",
+  MODE_APPEND_ONLY = "MODE_APPEND_ONLY",
+  MODE_INSERT_ONLY = "MODE_INSERT_ONLY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function streamMetadata_ModeFromJSON(object: any): StreamMetadata_Mode {
@@ -224,6 +250,22 @@ export function streamMetadata_ModeToJSON(object: StreamMetadata_Mode): string {
   }
 }
 
+export function streamMetadata_ModeToNumber(object: StreamMetadata_Mode): number {
+  switch (object) {
+    case StreamMetadata_Mode.MODE_UNSPECIFIED:
+      return 0;
+    case StreamMetadata_Mode.MODE_DEFAULT:
+      return 1;
+    case StreamMetadata_Mode.MODE_APPEND_ONLY:
+      return 2;
+    case StreamMetadata_Mode.MODE_INSERT_ONLY:
+      return 3;
+    case StreamMetadata_Mode.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /** TableMetadata is the metadata for tables. */
 export interface TableMetadata {
   /** The name is the name of a table. */
@@ -251,8 +293,6 @@ export interface TableMetadata {
    * classification and user_comment is parsed from the comment.
    */
   comment: string;
-  /** The classification is the classification of a table parsed from the comment. */
-  classification: string;
   /** The user_comment is the user comment of a table parsed from the comment. */
   userComment: string;
   /** The foreign_keys is the list of foreign keys in a table. */
@@ -314,16 +354,16 @@ export interface TablePartitionMetadata {
  * PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
  */
 export enum TablePartitionMetadata_Type {
-  TYPE_UNSPECIFIED = 0,
-  RANGE = 1,
-  RANGE_COLUMNS = 2,
-  LIST = 3,
-  LIST_COLUMNS = 4,
-  HASH = 5,
-  LINEAR_HASH = 6,
-  KEY = 7,
-  LINEAR_KEY = 8,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  RANGE = "RANGE",
+  RANGE_COLUMNS = "RANGE_COLUMNS",
+  LIST = "LIST",
+  LIST_COLUMNS = "LIST_COLUMNS",
+  HASH = "HASH",
+  LINEAR_HASH = "LINEAR_HASH",
+  KEY = "KEY",
+  LINEAR_KEY = "LINEAR_KEY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function tablePartitionMetadata_TypeFromJSON(object: any): TablePartitionMetadata_Type {
@@ -388,6 +428,32 @@ export function tablePartitionMetadata_TypeToJSON(object: TablePartitionMetadata
   }
 }
 
+export function tablePartitionMetadata_TypeToNumber(object: TablePartitionMetadata_Type): number {
+  switch (object) {
+    case TablePartitionMetadata_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case TablePartitionMetadata_Type.RANGE:
+      return 1;
+    case TablePartitionMetadata_Type.RANGE_COLUMNS:
+      return 2;
+    case TablePartitionMetadata_Type.LIST:
+      return 3;
+    case TablePartitionMetadata_Type.LIST_COLUMNS:
+      return 4;
+    case TablePartitionMetadata_Type.HASH:
+      return 5;
+    case TablePartitionMetadata_Type.LINEAR_HASH:
+      return 6;
+    case TablePartitionMetadata_Type.KEY:
+      return 7;
+    case TablePartitionMetadata_Type.LINEAR_KEY:
+      return 8;
+    case TablePartitionMetadata_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /** ColumnMetadata is the metadata for columns. */
 export interface ColumnMetadata {
   /** The name is the name of a column. */
@@ -418,8 +484,6 @@ export interface ColumnMetadata {
    * classification and user_comment is parsed from the comment.
    */
   comment: string;
-  /** The classification is the classification of a table parsed from the comment. */
-  classification: string;
   /** The user_comment is the user comment of a table parsed from the comment. */
   userComment: string;
 }
@@ -567,6 +631,12 @@ export interface DatabaseConfig {
   name: string;
   /** The schema_configs is the list of configs for schemas in a database. */
   schemaConfigs: SchemaConfig[];
+  /**
+   * If true, we will only store the classification in the config.
+   * Otherwise we will get the classification from table/column comment,
+   * and write back to the schema metadata.
+   */
+  classificationFromConfig: boolean;
 }
 
 export interface SchemaConfig {
@@ -577,6 +647,9 @@ export interface SchemaConfig {
   name: string;
   /** The table_configs is the list of configs for tables in a schema. */
   tableConfigs: TableConfig[];
+  functionConfigs: FunctionConfig[];
+  procedureConfigs: ProcedureConfig[];
+  viewConfigs: ViewConfig[];
 }
 
 export interface TableConfig {
@@ -584,6 +657,50 @@ export interface TableConfig {
   name: string;
   /** The column_configs is the ordered list of configs for columns in a table. */
   columnConfigs: ColumnConfig[];
+  classificationId: string;
+  /**
+   * The last updater of the table in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the table is updated in branch. */
+  updateTime: Date | undefined;
+}
+
+export interface FunctionConfig {
+  /** The name is the name of a function. */
+  name: string;
+  /**
+   * The last updater of the function in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the function is updated in branch. */
+  updateTime: Date | undefined;
+}
+
+export interface ProcedureConfig {
+  /** The name is the name of a procedure. */
+  name: string;
+  /**
+   * The last updater of the procedure in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the procedure is updated in branch. */
+  updateTime: Date | undefined;
+}
+
+export interface ViewConfig {
+  /** The name is the name of a view. */
+  name: string;
+  /**
+   * The last updater of the view in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the view is updated in branch. */
+  updateTime: Date | undefined;
 }
 
 export interface ColumnConfig {
@@ -592,6 +709,7 @@ export interface ColumnConfig {
   semanticTypeId: string;
   /** The user labels for a column. */
   labels: { [key: string]: string };
+  classificationId: string;
 }
 
 export interface ColumnConfig_LabelsEntry {
@@ -1127,7 +1245,7 @@ function createBaseTaskMetadata(): TaskMetadata {
     warehouse: "",
     schedule: "",
     predecessors: [],
-    state: 0,
+    state: TaskMetadata_State.STATE_UNSPECIFIED,
     condition: "",
     definition: "",
   };
@@ -1156,8 +1274,8 @@ export const TaskMetadata = {
     for (const v of message.predecessors) {
       writer.uint32(58).string(v!);
     }
-    if (message.state !== 0) {
-      writer.uint32(64).int32(message.state);
+    if (message.state !== TaskMetadata_State.STATE_UNSPECIFIED) {
+      writer.uint32(64).int32(taskMetadata_StateToNumber(message.state));
     }
     if (message.condition !== "") {
       writer.uint32(74).string(message.condition);
@@ -1229,7 +1347,7 @@ export const TaskMetadata = {
             break;
           }
 
-          message.state = reader.int32() as any;
+          message.state = taskMetadata_StateFromJSON(reader.int32());
           continue;
         case 9:
           if (tag !== 74) {
@@ -1265,7 +1383,7 @@ export const TaskMetadata = {
       predecessors: globalThis.Array.isArray(object?.predecessors)
         ? object.predecessors.map((e: any) => globalThis.String(e))
         : [],
-      state: isSet(object.state) ? taskMetadata_StateFromJSON(object.state) : 0,
+      state: isSet(object.state) ? taskMetadata_StateFromJSON(object.state) : TaskMetadata_State.STATE_UNSPECIFIED,
       condition: isSet(object.condition) ? globalThis.String(object.condition) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
     };
@@ -1294,7 +1412,7 @@ export const TaskMetadata = {
     if (message.predecessors?.length) {
       obj.predecessors = message.predecessors;
     }
-    if (message.state !== 0) {
+    if (message.state !== TaskMetadata_State.STATE_UNSPECIFIED) {
       obj.state = taskMetadata_StateToJSON(message.state);
     }
     if (message.condition !== "") {
@@ -1318,7 +1436,7 @@ export const TaskMetadata = {
     message.warehouse = object.warehouse ?? "";
     message.schedule = object.schedule ?? "";
     message.predecessors = object.predecessors?.map((e) => e) || [];
-    message.state = object.state ?? 0;
+    message.state = object.state ?? TaskMetadata_State.STATE_UNSPECIFIED;
     message.condition = object.condition ?? "";
     message.definition = object.definition ?? "";
     return message;
@@ -1326,7 +1444,16 @@ export const TaskMetadata = {
 };
 
 function createBaseStreamMetadata(): StreamMetadata {
-  return { name: "", tableName: "", owner: "", comment: "", type: 0, stale: false, mode: 0, definition: "" };
+  return {
+    name: "",
+    tableName: "",
+    owner: "",
+    comment: "",
+    type: StreamMetadata_Type.TYPE_UNSPECIFIED,
+    stale: false,
+    mode: StreamMetadata_Mode.MODE_UNSPECIFIED,
+    definition: "",
+  };
 }
 
 export const StreamMetadata = {
@@ -1343,14 +1470,14 @@ export const StreamMetadata = {
     if (message.comment !== "") {
       writer.uint32(34).string(message.comment);
     }
-    if (message.type !== 0) {
-      writer.uint32(40).int32(message.type);
+    if (message.type !== StreamMetadata_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(40).int32(streamMetadata_TypeToNumber(message.type));
     }
     if (message.stale === true) {
       writer.uint32(48).bool(message.stale);
     }
-    if (message.mode !== 0) {
-      writer.uint32(56).int32(message.mode);
+    if (message.mode !== StreamMetadata_Mode.MODE_UNSPECIFIED) {
+      writer.uint32(56).int32(streamMetadata_ModeToNumber(message.mode));
     }
     if (message.definition !== "") {
       writer.uint32(66).string(message.definition);
@@ -1398,7 +1525,7 @@ export const StreamMetadata = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = streamMetadata_TypeFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
@@ -1412,7 +1539,7 @@ export const StreamMetadata = {
             break;
           }
 
-          message.mode = reader.int32() as any;
+          message.mode = streamMetadata_ModeFromJSON(reader.int32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -1436,9 +1563,9 @@ export const StreamMetadata = {
       tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      type: isSet(object.type) ? streamMetadata_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? streamMetadata_TypeFromJSON(object.type) : StreamMetadata_Type.TYPE_UNSPECIFIED,
       stale: isSet(object.stale) ? globalThis.Boolean(object.stale) : false,
-      mode: isSet(object.mode) ? streamMetadata_ModeFromJSON(object.mode) : 0,
+      mode: isSet(object.mode) ? streamMetadata_ModeFromJSON(object.mode) : StreamMetadata_Mode.MODE_UNSPECIFIED,
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
     };
   },
@@ -1457,13 +1584,13 @@ export const StreamMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.type !== 0) {
+    if (message.type !== StreamMetadata_Type.TYPE_UNSPECIFIED) {
       obj.type = streamMetadata_TypeToJSON(message.type);
     }
     if (message.stale === true) {
       obj.stale = message.stale;
     }
-    if (message.mode !== 0) {
+    if (message.mode !== StreamMetadata_Mode.MODE_UNSPECIFIED) {
       obj.mode = streamMetadata_ModeToJSON(message.mode);
     }
     if (message.definition !== "") {
@@ -1481,9 +1608,9 @@ export const StreamMetadata = {
     message.tableName = object.tableName ?? "";
     message.owner = object.owner ?? "";
     message.comment = object.comment ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? StreamMetadata_Type.TYPE_UNSPECIFIED;
     message.stale = object.stale ?? false;
-    message.mode = object.mode ?? 0;
+    message.mode = object.mode ?? StreamMetadata_Mode.MODE_UNSPECIFIED;
     message.definition = object.definition ?? "";
     return message;
   },
@@ -1502,7 +1629,6 @@ function createBaseTableMetadata(): TableMetadata {
     dataFree: Long.ZERO,
     createOptions: "",
     comment: "",
-    classification: "",
     userComment: "",
     foreignKeys: [],
     partitions: [],
@@ -1543,9 +1669,6 @@ export const TableMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
-    }
-    if (message.classification !== "") {
-      writer.uint32(106).string(message.classification);
     }
     if (message.userComment !== "") {
       writer.uint32(114).string(message.userComment);
@@ -1643,13 +1766,6 @@ export const TableMetadata = {
 
           message.comment = reader.string();
           continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.classification = reader.string();
-          continue;
         case 14:
           if (tag !== 114) {
             break;
@@ -1697,7 +1813,6 @@ export const TableMetadata = {
       dataFree: isSet(object.dataFree) ? Long.fromValue(object.dataFree) : Long.ZERO,
       createOptions: isSet(object.createOptions) ? globalThis.String(object.createOptions) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       foreignKeys: globalThis.Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
@@ -1743,9 +1858,6 @@ export const TableMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.classification !== "") {
-      obj.classification = message.classification;
-    }
     if (message.userComment !== "") {
       obj.userComment = message.userComment;
     }
@@ -1782,7 +1894,6 @@ export const TableMetadata = {
       : Long.ZERO;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
-    message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
@@ -1897,7 +2008,14 @@ export const ExternalTableMetadata = {
 };
 
 function createBaseTablePartitionMetadata(): TablePartitionMetadata {
-  return { name: "", type: 0, expression: "", value: "", useDefault: "", subpartitions: [] };
+  return {
+    name: "",
+    type: TablePartitionMetadata_Type.TYPE_UNSPECIFIED,
+    expression: "",
+    value: "",
+    useDefault: "",
+    subpartitions: [],
+  };
 }
 
 export const TablePartitionMetadata = {
@@ -1905,8 +2023,8 @@ export const TablePartitionMetadata = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.type !== 0) {
-      writer.uint32(16).int32(message.type);
+    if (message.type !== TablePartitionMetadata_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(tablePartitionMetadata_TypeToNumber(message.type));
     }
     if (message.expression !== "") {
       writer.uint32(26).string(message.expression);
@@ -1942,7 +2060,7 @@ export const TablePartitionMetadata = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = tablePartitionMetadata_TypeFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -1984,7 +2102,9 @@ export const TablePartitionMetadata = {
   fromJSON(object: any): TablePartitionMetadata {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type) ? tablePartitionMetadata_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type)
+        ? tablePartitionMetadata_TypeFromJSON(object.type)
+        : TablePartitionMetadata_Type.TYPE_UNSPECIFIED,
       expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
       useDefault: isSet(object.useDefault) ? globalThis.String(object.useDefault) : "",
@@ -1999,7 +2119,7 @@ export const TablePartitionMetadata = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.type !== 0) {
+    if (message.type !== TablePartitionMetadata_Type.TYPE_UNSPECIFIED) {
       obj.type = tablePartitionMetadata_TypeToJSON(message.type);
     }
     if (message.expression !== "") {
@@ -2023,7 +2143,7 @@ export const TablePartitionMetadata = {
   fromPartial(object: DeepPartial<TablePartitionMetadata>): TablePartitionMetadata {
     const message = createBaseTablePartitionMetadata();
     message.name = object.name ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? TablePartitionMetadata_Type.TYPE_UNSPECIFIED;
     message.expression = object.expression ?? "";
     message.value = object.value ?? "";
     message.useDefault = object.useDefault ?? "";
@@ -2045,7 +2165,6 @@ function createBaseColumnMetadata(): ColumnMetadata {
     characterSet: "",
     collation: "",
     comment: "",
-    classification: "",
     userComment: "",
   };
 }
@@ -2084,9 +2203,6 @@ export const ColumnMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(82).string(message.comment);
-    }
-    if (message.classification !== "") {
-      writer.uint32(90).string(message.classification);
     }
     if (message.userComment !== "") {
       writer.uint32(98).string(message.userComment);
@@ -2178,13 +2294,6 @@ export const ColumnMetadata = {
 
           message.comment = reader.string();
           continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.classification = reader.string();
-          continue;
         case 12:
           if (tag !== 98) {
             break;
@@ -2214,7 +2323,6 @@ export const ColumnMetadata = {
       characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
     };
   },
@@ -2254,9 +2362,6 @@ export const ColumnMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.classification !== "") {
-      obj.classification = message.classification;
-    }
     if (message.userComment !== "") {
       obj.userComment = message.userComment;
     }
@@ -2279,7 +2384,6 @@ export const ColumnMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
-    message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
     return message;
   },
@@ -3439,7 +3543,7 @@ export const SecretItem = {
 };
 
 function createBaseDatabaseConfig(): DatabaseConfig {
-  return { name: "", schemaConfigs: [] };
+  return { name: "", schemaConfigs: [], classificationFromConfig: false };
 }
 
 export const DatabaseConfig = {
@@ -3449,6 +3553,9 @@ export const DatabaseConfig = {
     }
     for (const v of message.schemaConfigs) {
       SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(24).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -3474,6 +3581,13 @@ export const DatabaseConfig = {
 
           message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3489,6 +3603,9 @@ export const DatabaseConfig = {
       schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
         ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -3500,6 +3617,9 @@ export const DatabaseConfig = {
     if (message.schemaConfigs?.length) {
       obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
     }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
+    }
     return obj;
   },
 
@@ -3510,12 +3630,13 @@ export const DatabaseConfig = {
     const message = createBaseDatabaseConfig();
     message.name = object.name ?? "";
     message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };
 
 function createBaseSchemaConfig(): SchemaConfig {
-  return { name: "", tableConfigs: [] };
+  return { name: "", tableConfigs: [], functionConfigs: [], procedureConfigs: [], viewConfigs: [] };
 }
 
 export const SchemaConfig = {
@@ -3525,6 +3646,15 @@ export const SchemaConfig = {
     }
     for (const v of message.tableConfigs) {
       TableConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    for (const v of message.functionConfigs) {
+      FunctionConfig.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    for (const v of message.procedureConfigs) {
+      ProcedureConfig.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.viewConfigs) {
+      ViewConfig.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -3550,6 +3680,27 @@ export const SchemaConfig = {
 
           message.tableConfigs.push(TableConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.functionConfigs.push(FunctionConfig.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.procedureConfigs.push(ProcedureConfig.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.viewConfigs.push(ViewConfig.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3565,6 +3716,15 @@ export const SchemaConfig = {
       tableConfigs: globalThis.Array.isArray(object?.tableConfigs)
         ? object.tableConfigs.map((e: any) => TableConfig.fromJSON(e))
         : [],
+      functionConfigs: globalThis.Array.isArray(object?.functionConfigs)
+        ? object.functionConfigs.map((e: any) => FunctionConfig.fromJSON(e))
+        : [],
+      procedureConfigs: globalThis.Array.isArray(object?.procedureConfigs)
+        ? object.procedureConfigs.map((e: any) => ProcedureConfig.fromJSON(e))
+        : [],
+      viewConfigs: globalThis.Array.isArray(object?.viewConfigs)
+        ? object.viewConfigs.map((e: any) => ViewConfig.fromJSON(e))
+        : [],
     };
   },
 
@@ -3576,6 +3736,15 @@ export const SchemaConfig = {
     if (message.tableConfigs?.length) {
       obj.tableConfigs = message.tableConfigs.map((e) => TableConfig.toJSON(e));
     }
+    if (message.functionConfigs?.length) {
+      obj.functionConfigs = message.functionConfigs.map((e) => FunctionConfig.toJSON(e));
+    }
+    if (message.procedureConfigs?.length) {
+      obj.procedureConfigs = message.procedureConfigs.map((e) => ProcedureConfig.toJSON(e));
+    }
+    if (message.viewConfigs?.length) {
+      obj.viewConfigs = message.viewConfigs.map((e) => ViewConfig.toJSON(e));
+    }
     return obj;
   },
 
@@ -3586,12 +3755,15 @@ export const SchemaConfig = {
     const message = createBaseSchemaConfig();
     message.name = object.name ?? "";
     message.tableConfigs = object.tableConfigs?.map((e) => TableConfig.fromPartial(e)) || [];
+    message.functionConfigs = object.functionConfigs?.map((e) => FunctionConfig.fromPartial(e)) || [];
+    message.procedureConfigs = object.procedureConfigs?.map((e) => ProcedureConfig.fromPartial(e)) || [];
+    message.viewConfigs = object.viewConfigs?.map((e) => ViewConfig.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseTableConfig(): TableConfig {
-  return { name: "", columnConfigs: [] };
+  return { name: "", columnConfigs: [], classificationId: "", updater: "", updateTime: undefined };
 }
 
 export const TableConfig = {
@@ -3601,6 +3773,15 @@ export const TableConfig = {
     }
     for (const v of message.columnConfigs) {
       ColumnConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.classificationId !== "") {
+      writer.uint32(26).string(message.classificationId);
+    }
+    if (message.updater !== "") {
+      writer.uint32(34).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -3626,6 +3807,27 @@ export const TableConfig = {
 
           message.columnConfigs.push(ColumnConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3641,6 +3843,9 @@ export const TableConfig = {
       columnConfigs: globalThis.Array.isArray(object?.columnConfigs)
         ? object.columnConfigs.map((e: any) => ColumnConfig.fromJSON(e))
         : [],
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
 
@@ -3652,6 +3857,15 @@ export const TableConfig = {
     if (message.columnConfigs?.length) {
       obj.columnConfigs = message.columnConfigs.map((e) => ColumnConfig.toJSON(e));
     }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
@@ -3662,12 +3876,282 @@ export const TableConfig = {
     const message = createBaseTableConfig();
     message.name = object.name ?? "";
     message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
+    message.classificationId = object.classificationId ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFunctionConfig(): FunctionConfig {
+  return { name: "", updater: "", updateTime: undefined };
+}
+
+export const FunctionConfig = {
+  encode(message: FunctionConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.updater !== "") {
+      writer.uint32(18).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FunctionConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFunctionConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FunctionConfig {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+    };
+  },
+
+  toJSON(message: FunctionConfig): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<FunctionConfig>): FunctionConfig {
+    return FunctionConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<FunctionConfig>): FunctionConfig {
+    const message = createBaseFunctionConfig();
+    message.name = object.name ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseProcedureConfig(): ProcedureConfig {
+  return { name: "", updater: "", updateTime: undefined };
+}
+
+export const ProcedureConfig = {
+  encode(message: ProcedureConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.updater !== "") {
+      writer.uint32(18).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProcedureConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProcedureConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProcedureConfig {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+    };
+  },
+
+  toJSON(message: ProcedureConfig): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProcedureConfig>): ProcedureConfig {
+    return ProcedureConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProcedureConfig>): ProcedureConfig {
+    const message = createBaseProcedureConfig();
+    message.name = object.name ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseViewConfig(): ViewConfig {
+  return { name: "", updater: "", updateTime: undefined };
+}
+
+export const ViewConfig = {
+  encode(message: ViewConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.updater !== "") {
+      writer.uint32(18).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ViewConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseViewConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ViewConfig {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+    };
+  },
+
+  toJSON(message: ViewConfig): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ViewConfig>): ViewConfig {
+    return ViewConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ViewConfig>): ViewConfig {
+    const message = createBaseViewConfig();
+    message.name = object.name ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
 
 function createBaseColumnConfig(): ColumnConfig {
-  return { name: "", semanticTypeId: "", labels: {} };
+  return { name: "", semanticTypeId: "", labels: {}, classificationId: "" };
 }
 
 export const ColumnConfig = {
@@ -3681,6 +4165,9 @@ export const ColumnConfig = {
     Object.entries(message.labels).forEach(([key, value]) => {
       ColumnConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
     });
+    if (message.classificationId !== "") {
+      writer.uint32(34).string(message.classificationId);
+    }
     return writer;
   },
 
@@ -3715,6 +4202,13 @@ export const ColumnConfig = {
             message.labels[entry3.key] = entry3.value;
           }
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3734,6 +4228,7 @@ export const ColumnConfig = {
           return acc;
         }, {})
         : {},
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
     };
   },
 
@@ -3754,6 +4249,9 @@ export const ColumnConfig = {
         });
       }
     }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
     return obj;
   },
 
@@ -3770,6 +4268,7 @@ export const ColumnConfig = {
       }
       return acc;
     }, {});
+    message.classificationId = object.classificationId ?? "";
     return message;
   },
 };

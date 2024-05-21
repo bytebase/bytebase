@@ -100,6 +100,15 @@
         }
       }
     },
+    "table-limit-size": {
+      "title": "限制对多行数表的 DDL 操作",
+      "description": "配置可以执行 DDL 的表的最大行数。推荐错误级别：警告",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
+    },
     "table-disallow-dml": {
       "title": "禁止 DML",
       "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
@@ -108,6 +117,10 @@
           "title": "表名"
         }
       }
+    },
+    "naming-fully-qualified": {
+      "title": "完全限定对象名称",
+      "description": "强制使用完全限定的对象名称。例如 “schema.table”，建议错误级别：警告"
     },
     "naming-table": {
       "title": "强制表命名格式",
@@ -266,6 +279,10 @@
       "title": "禁止修改表中的列顺序",
       "description": "修改列顺序可能导致某些依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
     },
+    "column-disallow-drop": {
+      "title": "禁止删除列",
+      "description": "禁止删除列。建议错误等级：警告"
+    },
     "column-disallow-drop-in-index": {
       "title": "禁止删除有索引的列",
       "description": "禁止删除一个已经有索引的列。建议错误等级：错误"
@@ -341,9 +358,13 @@
       "title": "禁止过滤条件使用左模糊匹配",
       "description": "当使用左模糊匹配，例如 \"LIKE '%ABC'\"，数据库优化器将无法进行快速索引扫描，而只能执行全表或全索引扫描，可能造成极为严重的性能问题。建议错误等级：错误"
     },
-    "statement-disallow-cascade": {
-      "title": "禁止使用 \"CASCADE\"",
-      "description": "CASCADE 操作可能导致意外的数据丢失，可能导致意外的结果。建议错误等级：错误"
+    "statement-disallow-on-del-cascade": {
+      "title": "禁止在ON DELETE子句中使用 CASCADE 选项",
+      "description": "'ON DELETE'中的'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
+    },
+    "statement-disallow-rm-tbl-cascade": {
+      "title": "禁止在删除表时使用 CASCADE 选项",
+      "description": "在删除表时使用'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
     },
     "statement-disallow-commit": {
       "title": "禁止显式 \"COMMIT\"",
@@ -401,7 +422,7 @@
     },
     "statement-disallow-add-not-null": {
       "title": "限制向已有列添加 \"NOT NULL\" 约束",
-      "description": "在 PostgreSQL 11 之前的版本中，向表中添加 NOT NULL 约束将对已有数据进行校验并导致全表锁定无法读写，这可能导致业务中断。在 PostgreSQL 11 及以上版本中该问题已得到优化，无需关注此规范。建议错误等级：警告"
+      "description": "在 PostgreSQL 11 之前添加带默认值的 NOT NULL 约束或在所有 PostgreSQL 版本中添加不带默认值的 NOT NULL 约束需要验证现有数据。这会阻塞读写，可能会导致业务中断。建议错误等级：警告"
     },
     "statement-select-full-table-scan": {
       "title": "检查查询是否存在全表扫描",
@@ -485,8 +506,16 @@
       "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
     },
     "statement-prior-backup-check": {
-      "title": "检查能否预前备份数据",
+      "title": "检查能否预先备份数据",
       "description": "此规则将检查是否可以在数据更改前创建备份。该规则要求备份目标数据库存在且不存在DDL语句。"
+    },
+    "statement-add-column-without-position": {
+      "title": "禁止在指定位置加列",
+      "description": "某些情况下，使用 FIRST/AFTER 在指定位置加列将引起数据重整（把原来的数据重写一遍）。建议错误级别：警告"
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "禁止离线 DDL",
+      "description": "为了防止数据库更改影响您的业务，请避免使用离线 DDL。"
     },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",

@@ -35,7 +35,6 @@
 <script lang="ts" setup>
 import { PenSquareIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import { engineHasSchema } from "@/components/SchemaEditorLite/engine-specs";
 import { MiniActionButton } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -45,6 +44,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { engineSupportsMultiSchema } from "../../../spec";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -90,7 +90,7 @@ const referencedNameForFk = (fk: ForeignKeyMetadata) => {
     (column) => column.name === fk.referencedColumns[position]
   );
 
-  if (engineHasSchema(props.db.instanceEntity.engine)) {
+  if (engineSupportsMultiSchema(props.db.instanceEntity.engine)) {
     return `${referencedSchema.name}.${referencedTable.name}(${referencedColumn?.name})`;
   } else {
     return `${referencedTable.name}(${referencedColumn?.name})`;

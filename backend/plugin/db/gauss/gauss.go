@@ -50,7 +50,7 @@ func init() {
 	db.Register(storepb.Engine_GAUSSDB, newDriver)
 }
 
-// Driver is the Postgres driver.
+// Driver is the GaussDB driver.
 type Driver struct {
 	config db.ConnectionConfig
 
@@ -66,9 +66,9 @@ func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Postgres driver.
+// Open opens a GaussDB driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
+	// Require username for GaussDB, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
 		return nil, errors.Errorf("user must be set")
@@ -119,7 +119,7 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
+// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as GaussDB
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
@@ -151,10 +151,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 
 		if isSuperuserStatement(singleSQL.Text) {
-			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
 			if strings.Contains(strings.ToUpper(singleSQL.Text), "CREATE EVENT TRIGGER") {
 				singleSQL.Text = strings.ReplaceAll(singleSQL.Text, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 			}

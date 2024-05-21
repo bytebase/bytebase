@@ -227,6 +227,15 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "type" filter`)
 			}
+			issueType, err := convertToAPIIssueType(v1pb.Issue_Type(v1pb.Issue_Type_value[spec.value]))
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue type, err: %v", err)
+			}
+			issueFind.Types = &[]api.IssueType{issueType}
+		case "task_type":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "task_type" filter`)
+			}
 			switch spec.value {
 			case "DDL":
 				issueFind.TaskTypes = &[]api.TaskType{
@@ -274,6 +283,25 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.value)
 			}
 			issueFind.DatabaseUID = &database.UID
+		case "labels":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+			}
+			for _, label := range strings.Split(spec.value, " & ") {
+				issueLabel := label
+				issueFind.LabelList = append(issueFind.LabelList, issueLabel)
+			}
+		case "has_pipeline":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+			}
+			switch spec.value {
+			case "false":
+				issueFind.NoPipeline = true
+			case "true":
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for has_pipeline", spec.value))
+			}
 		}
 	}
 
@@ -538,6 +566,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -634,6 +663,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -764,6 +794,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -1507,79 +1538,15 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			}
 			patch.Subscribers = &subscribers
 
-		case "assignee":
-			var oldAssigneeID, oldAssigneeName string
-			if issue.Assignee != nil {
-				oldAssigneeID = strconv.Itoa(issue.Assignee.ID)
-				oldAssigneeName = common.FormatUserEmail(issue.Assignee.Email)
-			}
-			if request.Issue.Assignee == "" {
-				patch.UpdateAssignee = true
-				patch.Assignee = nil
-				payload := &api.ActivityIssueFieldUpdatePayload{
-					FieldID:   api.IssueFieldAssignee,
-					OldValue:  oldAssigneeID,
-					NewValue:  "",
-					IssueName: issue.Title,
-				}
-				activityPayload, err := json.Marshal(payload)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-				}
-				activityCreates = append(activityCreates, &store.ActivityMessage{
-					CreatorUID:        user.ID,
-					ResourceContainer: issue.Project.GetName(),
-					ContainerUID:      issue.UID,
-					Type:              api.ActivityIssueFieldUpdate,
-					Level:             api.ActivityInfo,
-					Payload:           string(activityPayload),
-				})
+		case "labels":
+			if len(request.Issue.Labels) == 0 {
+				patch.RemoveLabels = true
 			} else {
-				assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
+				if patch.PayloadUpsert == nil {
+					patch.PayloadUpsert = &storepb.IssuePayload{}
 				}
-				assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
-				}
-				if assignee == nil {
-					return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
-				}
-				patch.UpdateAssignee = true
-				patch.Assignee = assignee
-
-				payload := &api.ActivityIssueFieldUpdatePayload{
-					FieldID:   api.IssueFieldAssignee,
-					OldValue:  oldAssigneeID,
-					NewValue:  strconv.Itoa(assignee.ID),
-					IssueName: issue.Title,
-				}
-				activityPayload, err := json.Marshal(payload)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-				}
-				activityCreates = append(activityCreates, &store.ActivityMessage{
-					CreatorUID:        user.ID,
-					ResourceContainer: issue.Project.GetName(),
-					ContainerUID:      issue.UID,
-					Type:              api.ActivityIssueFieldUpdate,
-					Level:             api.ActivityInfo,
-					Payload:           string(activityPayload),
-				})
+				patch.PayloadUpsert.Labels = request.Issue.Labels
 			}
-
-			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromAssignee: &oldAssigneeName,
-							ToAssignee:   &request.Issue.Assignee,
-						},
-					},
-				},
-			})
 		}
 	}
 

@@ -145,8 +145,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			})
 		}
 
+		indexes := []int32{int32(i)}
+		opts.LogCommandExecute(indexes)
+
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
+			opts.LogCommandResponse(indexes, 0, nil, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: &storepb.TaskRunResult_Position{
@@ -163,7 +167,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
+			rowsAffected = 0
 		}
+		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 		totalRowsAffected += rowsAffected
 	}
 

@@ -173,7 +173,7 @@ func (checker *indexTotalNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTab
 					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
 						continue
 					}
-					checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+					checker.checkFieldDefinitionContext(tableName, tableElement.ColumnDefinition().FieldDefinition())
 				}
 				// add constraint.
 			case item.TableConstraintDef() != nil:

@@ -13,30 +13,23 @@
       <LabelListEditor
         ref="labelListEditorRef"
         v-model:kv-list="state.kvList"
-        :readonly="state.mode === 'view'"
+        :readonly="!allowEdit"
         :show-errors="dirty"
         class="max-w-[30rem]"
       />
     </div>
-    <div class="flex flex-row justify-end items-center gap-x-3">
-      <template v-if="state.mode === 'view'">
-        <NButton :disabled="!allowEdit" @click="beginEdit">
-          {{ $t("common.edit") }}
-        </NButton>
-      </template>
-      <template v-if="state.mode === 'edit'">
-        <NButton @click="handleCancel">
-          {{ $t("common.cancel") }}
-        </NButton>
-        <NButton
-          :disabled="!allowSave || state.isUpdating"
-          :loading="state.isUpdating"
-          type="primary"
-          @click="handleSave"
-        >
-          {{ $t("common.save") }}
-        </NButton>
-      </template>
+    <div v-if="dirty" class="flex flex-row justify-end items-center gap-x-3">
+      <NButton @click="handleCancel">
+        {{ $t("common.revert") }}
+      </NButton>
+      <NButton
+        :disabled="!allowSave || state.isUpdating"
+        :loading="state.isUpdating"
+        type="primary"
+        @click="handleSave"
+      >
+        {{ $t("common.save") }}
+      </NButton>
     </div>
   </div>
 </template>
@@ -54,7 +47,6 @@ import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
 
 type LocalState = {
   kvList: { key: string; value: string }[];
-  mode: "view" | "edit";
   isUpdating: boolean;
 };
 
@@ -67,7 +59,6 @@ const { t } = useI18n();
 const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
 const state = reactive<LocalState>({
   kvList: [],
-  mode: "view",
   isUpdating: false,
 });
 
@@ -87,13 +78,8 @@ const allowSave = computed(() => {
   return errors.length === 0;
 });
 
-const beginEdit = () => {
-  state.mode = "edit";
-};
-
 const handleCancel = () => {
   state.kvList = convert();
-  state.mode = "view";
 };
 
 const handleSave = async () => {
@@ -117,19 +103,10 @@ const handleSave = async () => {
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    state.mode = "view";
   } finally {
     state.isUpdating = false;
   }
 };
-
-watch(
-  () => props.allowEdit,
-  () => {
-    state.mode = "view";
-  },
-  { immediate: true }
-);
 
 watch(
   () => props.database.labels,

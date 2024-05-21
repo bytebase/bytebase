@@ -163,14 +163,14 @@ export interface Worksheet {
 }
 
 export enum Worksheet_Visibility {
-  VISIBILITY_UNSPECIFIED = 0,
+  VISIBILITY_UNSPECIFIED = "VISIBILITY_UNSPECIFIED",
   /** VISIBILITY_PROJECT_READ - Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read. */
-  VISIBILITY_PROJECT_READ = 1,
+  VISIBILITY_PROJECT_READ = "VISIBILITY_PROJECT_READ",
   /** VISIBILITY_PROJECT_WRITE - Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. */
-  VISIBILITY_PROJECT_WRITE = 2,
+  VISIBILITY_PROJECT_WRITE = "VISIBILITY_PROJECT_WRITE",
   /** VISIBILITY_PRIVATE - Private, only worksheet OWNER can read/write. */
-  VISIBILITY_PRIVATE = 3,
-  UNRECOGNIZED = -1,
+  VISIBILITY_PRIVATE = "VISIBILITY_PRIVATE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function worksheet_VisibilityFromJSON(object: any): Worksheet_Visibility {
@@ -207,6 +207,22 @@ export function worksheet_VisibilityToJSON(object: Worksheet_Visibility): string
     case Worksheet_Visibility.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function worksheet_VisibilityToNumber(object: Worksheet_Visibility): number {
+  switch (object) {
+    case Worksheet_Visibility.VISIBILITY_UNSPECIFIED:
+      return 0;
+    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
+      return 1;
+    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
+      return 2;
+    case Worksheet_Visibility.VISIBILITY_PRIVATE:
+      return 3;
+    case Worksheet_Visibility.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -785,7 +801,7 @@ function createBaseWorksheet(): Worksheet {
     updateTime: undefined,
     content: new Uint8Array(0),
     contentSize: Long.ZERO,
-    visibility: 0,
+    visibility: Worksheet_Visibility.VISIBILITY_UNSPECIFIED,
     starred: false,
   };
 }
@@ -819,8 +835,8 @@ export const Worksheet = {
     if (!message.contentSize.isZero()) {
       writer.uint32(72).int64(message.contentSize);
     }
-    if (message.visibility !== 0) {
-      writer.uint32(80).int32(message.visibility);
+    if (message.visibility !== Worksheet_Visibility.VISIBILITY_UNSPECIFIED) {
+      writer.uint32(80).int32(worksheet_VisibilityToNumber(message.visibility));
     }
     if (message.starred === true) {
       writer.uint32(88).bool(message.starred);
@@ -903,7 +919,7 @@ export const Worksheet = {
             break;
           }
 
-          message.visibility = reader.int32() as any;
+          message.visibility = worksheet_VisibilityFromJSON(reader.int32());
           continue;
         case 11:
           if (tag !== 88) {
@@ -932,7 +948,9 @@ export const Worksheet = {
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
       contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
-      visibility: isSet(object.visibility) ? worksheet_VisibilityFromJSON(object.visibility) : 0,
+      visibility: isSet(object.visibility)
+        ? worksheet_VisibilityFromJSON(object.visibility)
+        : Worksheet_Visibility.VISIBILITY_UNSPECIFIED,
       starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
     };
   },
@@ -966,7 +984,7 @@ export const Worksheet = {
     if (!message.contentSize.isZero()) {
       obj.contentSize = (message.contentSize || Long.ZERO).toString();
     }
-    if (message.visibility !== 0) {
+    if (message.visibility !== Worksheet_Visibility.VISIBILITY_UNSPECIFIED) {
       obj.visibility = worksheet_VisibilityToJSON(message.visibility);
     }
     if (message.starred === true) {
@@ -991,7 +1009,7 @@ export const Worksheet = {
     message.contentSize = (object.contentSize !== undefined && object.contentSize !== null)
       ? Long.fromValue(object.contentSize)
       : Long.ZERO;
-    message.visibility = object.visibility ?? 0;
+    message.visibility = object.visibility ?? Worksheet_Visibility.VISIBILITY_UNSPECIFIED;
     message.starred = object.starred ?? false;
     return message;
   },

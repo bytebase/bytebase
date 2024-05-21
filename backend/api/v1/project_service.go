@@ -185,6 +185,22 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, "data classification %s not exists", request.Project.DataClassificationConfigId)
 			}
 			patch.DataClassificationConfigID = &request.Project.DataClassificationConfigId
+		case "issue_labels":
+			projectSettings := project.Setting
+			var issueLabels []*storepb.Label
+			for _, label := range request.Project.IssueLabels {
+				issueLabels = append(issueLabels, &storepb.Label{
+					Value: label.Value,
+					Color: label.Color,
+					Group: label.Group,
+				})
+			}
+			projectSettings.IssueLabels = issueLabels
+			patch.Setting = projectSettings
+		case "force_issue_labels":
+			projectSettings := project.Setting
+			projectSettings.ForceIssueLabels = request.Project.ForceIssueLabels
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1826,6 +1842,15 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		})
 	}
 
+	var issueLabels []*v1pb.Label
+	for _, label := range projectMessage.Setting.IssueLabels {
+		issueLabels = append(issueLabels, &v1pb.Label{
+			Value: label.Value,
+			Color: label.Color,
+			Group: label.Group,
+		})
+	}
+
 	return &v1pb.Project{
 		Name:                       fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
 		Uid:                        fmt.Sprintf("%d", projectMessage.UID),
@@ -1836,6 +1861,8 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		TenantMode:                 tenantMode,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
+		IssueLabels:                issueLabels,
+		ForceIssueLabels:           projectMessage.Setting.ForceIssueLabels,
 	}
 }
 
@@ -1989,6 +2016,8 @@ func convertToLabelSelectorOperator(operator store.OperatorType) v1pb.OperatorTy
 	switch operator {
 	case store.InOperatorType:
 		return v1pb.OperatorType_OPERATOR_TYPE_IN
+	case store.NotInOperatorType:
+		return v1pb.OperatorType_OPERATOR_TYPE_NOT_IN
 	case store.ExistsOperatorType:
 		return v1pb.OperatorType_OPERATOR_TYPE_EXISTS
 	}
@@ -1999,6 +2028,8 @@ func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (store.Oper
 	switch operator {
 	case v1pb.OperatorType_OPERATOR_TYPE_IN:
 		return store.InOperatorType, nil
+	case v1pb.OperatorType_OPERATOR_TYPE_NOT_IN:
+		return store.NotInOperatorType, nil
 	case v1pb.OperatorType_OPERATOR_TYPE_EXISTS:
 		return store.ExistsOperatorType, nil
 	}

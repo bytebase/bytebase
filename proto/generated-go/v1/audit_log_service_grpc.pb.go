@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	AuditLogService_SearchAuditLogs_FullMethodName = "/bytebase.v1.AuditLogService/SearchAuditLogs"
+	AuditLogService_ExportAuditLogs_FullMethodName = "/bytebase.v1.AuditLogService/ExportAuditLogs"
 )
 
 // AuditLogServiceClient is the client API for AuditLogService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuditLogServiceClient interface {
 	SearchAuditLogs(ctx context.Context, in *SearchAuditLogsRequest, opts ...grpc.CallOption) (*SearchAuditLogsResponse, error)
+	ExportAuditLogs(ctx context.Context, in *ExportAuditLogsRequest, opts ...grpc.CallOption) (*ExportAuditLogsResponse, error)
 }
 
 type auditLogServiceClient struct {
@@ -46,11 +48,21 @@ func (c *auditLogServiceClient) SearchAuditLogs(ctx context.Context, in *SearchA
 	return out, nil
 }
 
+func (c *auditLogServiceClient) ExportAuditLogs(ctx context.Context, in *ExportAuditLogsRequest, opts ...grpc.CallOption) (*ExportAuditLogsResponse, error) {
+	out := new(ExportAuditLogsResponse)
+	err := c.cc.Invoke(ctx, AuditLogService_ExportAuditLogs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuditLogServiceServer is the server API for AuditLogService service.
 // All implementations must embed UnimplementedAuditLogServiceServer
 // for forward compatibility
 type AuditLogServiceServer interface {
 	SearchAuditLogs(context.Context, *SearchAuditLogsRequest) (*SearchAuditLogsResponse, error)
+	ExportAuditLogs(context.Context, *ExportAuditLogsRequest) (*ExportAuditLogsResponse, error)
 	mustEmbedUnimplementedAuditLogServiceServer()
 }
 
@@ -60,6 +72,9 @@ type UnimplementedAuditLogServiceServer struct {
 
 func (UnimplementedAuditLogServiceServer) SearchAuditLogs(context.Context, *SearchAuditLogsRequest) (*SearchAuditLogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchAuditLogs not implemented")
+}
+func (UnimplementedAuditLogServiceServer) ExportAuditLogs(context.Context, *ExportAuditLogsRequest) (*ExportAuditLogsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExportAuditLogs not implemented")
 }
 func (UnimplementedAuditLogServiceServer) mustEmbedUnimplementedAuditLogServiceServer() {}
 
@@ -92,6 +107,24 @@ func _AuditLogService_SearchAuditLogs_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuditLogService_ExportAuditLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportAuditLogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuditLogServiceServer).ExportAuditLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuditLogService_ExportAuditLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuditLogServiceServer).ExportAuditLogs(ctx, req.(*ExportAuditLogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuditLogService_ServiceDesc is the grpc.ServiceDesc for AuditLogService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +135,10 @@ var AuditLogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchAuditLogs",
 			Handler:    _AuditLogService_SearchAuditLogs_Handler,
+		},
+		{
+			MethodName: "ExportAuditLogs",
+			Handler:    _AuditLogService_ExportAuditLogs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

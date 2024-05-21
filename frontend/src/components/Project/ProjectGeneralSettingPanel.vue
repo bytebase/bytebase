@@ -148,9 +148,6 @@ const save = () => {
       style: "SUCCESS",
       title: t("project.settings.success-updated"),
     });
-    state.title = updated.title;
-    state.key = updated.key;
-    state.tenantMode = updated.tenantMode;
   });
 };
 </script>

@@ -27,6 +27,8 @@ import { useEnvironmentV1Store } from "./environment";
 import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";
 
+export const DEFAULT_DATABASE_PAGE_SIZE = 1000000;
+
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
   const databaseMapByUID = reactive(new Map<string, ComposedDatabase>());
@@ -64,7 +66,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     }
   };
   const searchDatabases = async (args: Partial<SearchDatabasesRequest>) => {
-    const { databases } = await databaseServiceClient.searchDatabases(args);
+    const { databases } = await databaseServiceClient.searchDatabases({
+      pageSize: DEFAULT_DATABASE_PAGE_SIZE,
+      ...args,
+    });
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };

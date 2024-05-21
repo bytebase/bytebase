@@ -1,364 +1,11 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import {
-  ExportFormat,
-  exportFormatFromJSON,
-  exportFormatToJSON,
-  VCSType,
-  vCSTypeFromJSON,
-  vCSTypeToJSON,
-} from "./common";
-import { ChangedResources } from "./database_service";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber } from "./common";
+import { Plan } from "./plan_service";
 
 export const protobufPackage = "bytebase.v1";
-
-export interface GetPlanRequest {
-  /**
-   * The name of the plan to retrieve.
-   * Format: projects/{project}/plans/{plan}
-   */
-  name: string;
-}
-
-export interface ListPlansRequest {
-  /**
-   * The parent, which owns this collection of plans.
-   * Format: projects/{project}
-   * Use "projects/-" to list all plans from all projects.
-   */
-  parent: string;
-  /**
-   * The maximum number of plans to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 50 plans will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   */
-  pageSize: number;
-  /**
-   * A page token, received from a previous `ListPlans` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListPlans` must match
-   * the call that provided the page token.
-   */
-  pageToken: string;
-}
-
-export interface ListPlansResponse {
-  /** The plans from the specified request. */
-  plans: Plan[];
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   */
-  nextPageToken: string;
-}
-
-export interface CreatePlanRequest {
-  /**
-   * The parent project where this plan will be created.
-   * Format: projects/{project}
-   */
-  parent: string;
-  /** The plan to create. */
-  plan: Plan | undefined;
-}
-
-export interface UpdatePlanRequest {
-  /**
-   * The plan to update.
-   *
-   * The plan's `name` field is used to identify the plan to update.
-   * Format: projects/{project}/plans/{plan}
-   */
-  plan:
-    | Plan
-    | undefined;
-  /** The list of fields to update. */
-  updateMask: string[] | undefined;
-}
-
-export interface Plan {
-  /**
-   * The name of the plan.
-   * `plan` is a system generated ID.
-   * Format: projects/{project}/plans/{plan}
-   */
-  name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
-  /**
-   * The resource name of the issue associated with this plan.
-   * Format: projects/{project}/issues/{issue}
-   */
-  issue: string;
-  title: string;
-  description: string;
-  steps: Plan_Step[];
-  vcsSource:
-    | Plan_VCSSource
-    | undefined;
-  /** Format: users/hello@world.com */
-  creator: string;
-  createTime: Date | undefined;
-}
-
-export interface Plan_Step {
-  /** TODO: implement */
-  title: string;
-  specs: Plan_Spec[];
-}
-
-export interface Plan_Spec {
-  /** earliest_allowed_time the earliest execution time of the change. */
-  earliestAllowedTime:
-    | Date
-    | undefined;
-  /** A UUID4 string that uniquely identifies the Spec. */
-  id: string;
-  /**
-   * IDs of the specs that this spec depends on.
-   * Must be a subset of the specs in the same step.
-   */
-  dependsOnSpecs: string[];
-  createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
-  changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
-  exportDataConfig?: Plan_ExportDataConfig | undefined;
-}
-
-export interface Plan_CreateDatabaseConfig {
-  /**
-   * The resource name of the instance on which the database is created.
-   * Format: instances/{instance}
-   */
-  target: string;
-  /** The name of the database to create. */
-  database: string;
-  /**
-   * table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
-   * For example, in MongoDB, it only creates the database when we first store data in that database.
-   */
-  table: string;
-  /** character_set is the character set of the database. */
-  characterSet: string;
-  /** collation is the collation of the database. */
-  collation: string;
-  /** cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>". */
-  cluster: string;
-  /** owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>". */
-  owner: string;
-  /**
-   * The environment resource.
-   * Format: environments/prod where prod is the environment resource ID.
-   */
-  environment: string;
-  /** labels of the database. */
-  labels: { [key: string]: string };
-}
-
-export interface Plan_CreateDatabaseConfig_LabelsEntry {
-  key: string;
-  value: string;
-}
-
-export interface Plan_ChangeDatabaseConfig {
-  /**
-   * The resource name of the target.
-   * Format: instances/{instance-id}/databases/{database-name}.
-   * Format: projects/{project}/databaseGroups/{databaseGroup}.
-   * Format: projects/{project}/deploymentConfigs/default. The plan should
-   * have a single step and single spec for the deployment configuration type.
-   */
-  target: string;
-  /**
-   * The resource name of the sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   */
-  sheet: string;
-  type: Plan_ChangeDatabaseConfig_Type;
-  /**
-   * schema_version is parsed from VCS file name.
-   * It is automatically generated in the UI workflow.
-   */
-  schemaVersion: string;
-  /** If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. */
-  rollbackEnabled: boolean;
-  rollbackDetail?: Plan_ChangeDatabaseConfig_RollbackDetail | undefined;
-  ghostFlags: { [key: string]: string };
-  /** If set, a backup of the modified data will be created automatically before any changes are applied. */
-  preUpdateBackupDetail?: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail | undefined;
-}
-
-/** Type is the database change type. */
-export enum Plan_ChangeDatabaseConfig_Type {
-  TYPE_UNSPECIFIED = 0,
-  /**
-   * BASELINE - Used for establishing schema baseline, this is used when
-   * 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-   * 2. Had schema drift and need to re-establish the baseline.
-   */
-  BASELINE = 1,
-  /** MIGRATE - Used for DDL changes including CREATE DATABASE. */
-  MIGRATE = 2,
-  /** MIGRATE_SDL - Used for schema changes via state-based schema migration including CREATE DATABASE. */
-  MIGRATE_SDL = 3,
-  /** MIGRATE_GHOST - Used for DDL changes using gh-ost. */
-  MIGRATE_GHOST = 4,
-  /** DATA - Used for DML change. */
-  DATA = 6,
-  UNRECOGNIZED = -1,
-}
-
-export function plan_ChangeDatabaseConfig_TypeFromJSON(object: any): Plan_ChangeDatabaseConfig_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "BASELINE":
-      return Plan_ChangeDatabaseConfig_Type.BASELINE;
-    case 2:
-    case "MIGRATE":
-      return Plan_ChangeDatabaseConfig_Type.MIGRATE;
-    case 3:
-    case "MIGRATE_SDL":
-      return Plan_ChangeDatabaseConfig_Type.MIGRATE_SDL;
-    case 4:
-    case "MIGRATE_GHOST":
-      return Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST;
-    case 6:
-    case "DATA":
-      return Plan_ChangeDatabaseConfig_Type.DATA;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Plan_ChangeDatabaseConfig_Type.UNRECOGNIZED;
-  }
-}
-
-export function plan_ChangeDatabaseConfig_TypeToJSON(object: Plan_ChangeDatabaseConfig_Type): string {
-  switch (object) {
-    case Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case Plan_ChangeDatabaseConfig_Type.BASELINE:
-      return "BASELINE";
-    case Plan_ChangeDatabaseConfig_Type.MIGRATE:
-      return "MIGRATE";
-    case Plan_ChangeDatabaseConfig_Type.MIGRATE_SDL:
-      return "MIGRATE_SDL";
-    case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
-      return "MIGRATE_GHOST";
-    case Plan_ChangeDatabaseConfig_Type.DATA:
-      return "DATA";
-    case Plan_ChangeDatabaseConfig_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface Plan_ChangeDatabaseConfig_RollbackDetail {
-  /**
-   * rollback_from_task is the task from which the rollback SQL statement is generated for this task.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-   */
-  rollbackFromTask: string;
-  /**
-   * rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
-   * Format: projects/{project}/issues/{issue}
-   */
-  rollbackFromIssue: string;
-}
-
-export interface Plan_ChangeDatabaseConfig_GhostFlagsEntry {
-  key: string;
-  value: string;
-}
-
-export interface Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-  /**
-   * The database for keeping the backup data.
-   * Format: instances/{instance}/databases/{database}
-   */
-  database: string;
-}
-
-export interface Plan_ExportDataConfig {
-  /**
-   * The resource name of the target.
-   * Format: instances/{instance-id}/databases/{database-name}
-   */
-  target: string;
-  /**
-   * The resource name of the sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   */
-  sheet: string;
-  /** The format of the exported file. */
-  format: ExportFormat;
-  /**
-   * The zip password provide by users.
-   * Leave it empty if no needs to encrypt the zip file.
-   */
-  password?: string | undefined;
-}
-
-export interface Plan_VCSSource {
-  vcsType: VCSType;
-  /**
-   * Optional.
-   * If present, we will update the pull request for rollout status.
-   * Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-   */
-  vcsConnector: string;
-  pullRequestUrl: string;
-}
-
-export interface ListPlanCheckRunsRequest {
-  /**
-   * The parent, which owns this collection of plan check runs.
-   * Format: projects/{project}/plans/{plan}
-   */
-  parent: string;
-  /**
-   * The maximum number of plan check runs to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 50 plans will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   */
-  pageSize: number;
-  /**
-   * A page token, received from a previous `ListPlanCheckRuns` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListPlanCheckRuns` must match
-   * the call that provided the page token.
-   */
-  pageToken: string;
-}
-
-export interface ListPlanCheckRunsResponse {
-  /** The plan check runs from the specified request. */
-  planCheckRuns: PlanCheckRun[];
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   */
-  nextPageToken: string;
-}
-
-export interface RunPlanChecksRequest {
-  /**
-   * The plan to run plan checks.
-   * Format: projects/{project}/plans/{plan}
-   */
-  name: string;
-}
-
-export interface RunPlanChecksResponse {
-}
 
 export interface BatchRunTasksRequest {
   /**
@@ -410,213 +57,6 @@ export interface BatchCancelTaskRunsRequest {
 }
 
 export interface BatchCancelTaskRunsResponse {
-}
-
-export interface PlanCheckRun {
-  /** Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} */
-  name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
-  type: PlanCheckRun_Type;
-  status: PlanCheckRun_Status;
-  /** Format: instances/{instance}/databases/{database} */
-  target: string;
-  /** Format: project/{project}/sheets/{sheet} */
-  sheet: string;
-  results: PlanCheckRun_Result[];
-  /** error is set if the Status is FAILED. */
-  error: string;
-  createTime: Date | undefined;
-}
-
-export enum PlanCheckRun_Type {
-  TYPE_UNSPECIFIED = 0,
-  DATABASE_STATEMENT_FAKE_ADVISE = 1,
-  DATABASE_STATEMENT_COMPATIBILITY = 2,
-  DATABASE_STATEMENT_ADVISE = 3,
-  DATABASE_STATEMENT_TYPE = 4,
-  DATABASE_STATEMENT_SUMMARY_REPORT = 5,
-  DATABASE_CONNECT = 6,
-  DATABASE_GHOST_SYNC = 7,
-  UNRECOGNIZED = -1,
-}
-
-export function planCheckRun_TypeFromJSON(object: any): PlanCheckRun_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return PlanCheckRun_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "DATABASE_STATEMENT_FAKE_ADVISE":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE;
-    case 2:
-    case "DATABASE_STATEMENT_COMPATIBILITY":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY;
-    case 3:
-    case "DATABASE_STATEMENT_ADVISE":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE;
-    case 4:
-    case "DATABASE_STATEMENT_TYPE":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_TYPE;
-    case 5:
-    case "DATABASE_STATEMENT_SUMMARY_REPORT":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT;
-    case 6:
-    case "DATABASE_CONNECT":
-      return PlanCheckRun_Type.DATABASE_CONNECT;
-    case 7:
-    case "DATABASE_GHOST_SYNC":
-      return PlanCheckRun_Type.DATABASE_GHOST_SYNC;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return PlanCheckRun_Type.UNRECOGNIZED;
-  }
-}
-
-export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
-  switch (object) {
-    case PlanCheckRun_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE:
-      return "DATABASE_STATEMENT_FAKE_ADVISE";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY:
-      return "DATABASE_STATEMENT_COMPATIBILITY";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
-      return "DATABASE_STATEMENT_ADVISE";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE:
-      return "DATABASE_STATEMENT_TYPE";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
-      return "DATABASE_STATEMENT_SUMMARY_REPORT";
-    case PlanCheckRun_Type.DATABASE_CONNECT:
-      return "DATABASE_CONNECT";
-    case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
-      return "DATABASE_GHOST_SYNC";
-    case PlanCheckRun_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum PlanCheckRun_Status {
-  STATUS_UNSPECIFIED = 0,
-  RUNNING = 1,
-  DONE = 2,
-  FAILED = 3,
-  CANCELED = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function planCheckRun_StatusFromJSON(object: any): PlanCheckRun_Status {
-  switch (object) {
-    case 0:
-    case "STATUS_UNSPECIFIED":
-      return PlanCheckRun_Status.STATUS_UNSPECIFIED;
-    case 1:
-    case "RUNNING":
-      return PlanCheckRun_Status.RUNNING;
-    case 2:
-    case "DONE":
-      return PlanCheckRun_Status.DONE;
-    case 3:
-    case "FAILED":
-      return PlanCheckRun_Status.FAILED;
-    case 4:
-    case "CANCELED":
-      return PlanCheckRun_Status.CANCELED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return PlanCheckRun_Status.UNRECOGNIZED;
-  }
-}
-
-export function planCheckRun_StatusToJSON(object: PlanCheckRun_Status): string {
-  switch (object) {
-    case PlanCheckRun_Status.STATUS_UNSPECIFIED:
-      return "STATUS_UNSPECIFIED";
-    case PlanCheckRun_Status.RUNNING:
-      return "RUNNING";
-    case PlanCheckRun_Status.DONE:
-      return "DONE";
-    case PlanCheckRun_Status.FAILED:
-      return "FAILED";
-    case PlanCheckRun_Status.CANCELED:
-      return "CANCELED";
-    case PlanCheckRun_Status.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface PlanCheckRun_Result {
-  status: PlanCheckRun_Result_Status;
-  title: string;
-  content: string;
-  code: number;
-  sqlSummaryReport?: PlanCheckRun_Result_SqlSummaryReport | undefined;
-  sqlReviewReport?: PlanCheckRun_Result_SqlReviewReport | undefined;
-}
-
-export enum PlanCheckRun_Result_Status {
-  STATUS_UNSPECIFIED = 0,
-  ERROR = 1,
-  WARNING = 2,
-  SUCCESS = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function planCheckRun_Result_StatusFromJSON(object: any): PlanCheckRun_Result_Status {
-  switch (object) {
-    case 0:
-    case "STATUS_UNSPECIFIED":
-      return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
-    case 1:
-    case "ERROR":
-      return PlanCheckRun_Result_Status.ERROR;
-    case 2:
-    case "WARNING":
-      return PlanCheckRun_Result_Status.WARNING;
-    case 3:
-    case "SUCCESS":
-      return PlanCheckRun_Result_Status.SUCCESS;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return PlanCheckRun_Result_Status.UNRECOGNIZED;
-  }
-}
-
-export function planCheckRun_Result_StatusToJSON(object: PlanCheckRun_Result_Status): string {
-  switch (object) {
-    case PlanCheckRun_Result_Status.STATUS_UNSPECIFIED:
-      return "STATUS_UNSPECIFIED";
-    case PlanCheckRun_Result_Status.ERROR:
-      return "ERROR";
-    case PlanCheckRun_Result_Status.WARNING:
-      return "WARNING";
-    case PlanCheckRun_Result_Status.SUCCESS:
-      return "SUCCESS";
-    case PlanCheckRun_Result_Status.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface PlanCheckRun_Result_SqlSummaryReport {
-  code: number;
-  /** statement_types are the types of statements that are found in the sql. */
-  statementTypes: string[];
-  affectedRows: number;
-  changedResources: ChangedResources | undefined;
-}
-
-export interface PlanCheckRun_Result_SqlReviewReport {
-  line: number;
-  column: number;
-  detail: string;
-  /** Code from sql review. */
-  code: number;
 }
 
 export interface GetRolloutRequest {
@@ -681,6 +121,11 @@ export interface ListTaskRunsResponse {
   nextPageToken: string;
 }
 
+export interface GetTaskRunLogRequest {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
+  parent: string;
+}
+
 export interface Rollout {
   /**
    * The resource name of the rollout.
@@ -738,15 +183,15 @@ export interface Task {
 }
 
 export enum Task_Status {
-  STATUS_UNSPECIFIED = 0,
-  NOT_STARTED = 1,
-  PENDING = 2,
-  RUNNING = 3,
-  DONE = 4,
-  FAILED = 5,
-  CANCELED = 6,
-  SKIPPED = 7,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  NOT_STARTED = "NOT_STARTED",
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  CANCELED = "CANCELED",
+  SKIPPED = "SKIPPED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function task_StatusFromJSON(object: any): Task_Status {
@@ -806,26 +251,50 @@ export function task_StatusToJSON(object: Task_Status): string {
   }
 }
 
+export function task_StatusToNumber(object: Task_Status): number {
+  switch (object) {
+    case Task_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case Task_Status.NOT_STARTED:
+      return 1;
+    case Task_Status.PENDING:
+      return 2;
+    case Task_Status.RUNNING:
+      return 3;
+    case Task_Status.DONE:
+      return 4;
+    case Task_Status.FAILED:
+      return 5;
+    case Task_Status.CANCELED:
+      return 6;
+    case Task_Status.SKIPPED:
+      return 7;
+    case Task_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum Task_Type {
-  TYPE_UNSPECIFIED = 0,
-  GENERAL = 1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  GENERAL = "GENERAL",
   /** DATABASE_CREATE - use payload DatabaseCreate */
-  DATABASE_CREATE = 2,
+  DATABASE_CREATE = "DATABASE_CREATE",
   /** DATABASE_SCHEMA_BASELINE - use payload DatabaseSchemaBaseline */
-  DATABASE_SCHEMA_BASELINE = 3,
+  DATABASE_SCHEMA_BASELINE = "DATABASE_SCHEMA_BASELINE",
   /** DATABASE_SCHEMA_UPDATE - use payload DatabaseSchemaUpdate */
-  DATABASE_SCHEMA_UPDATE = 4,
+  DATABASE_SCHEMA_UPDATE = "DATABASE_SCHEMA_UPDATE",
   /** DATABASE_SCHEMA_UPDATE_SDL - use payload DatabaseSchemaUpdate */
-  DATABASE_SCHEMA_UPDATE_SDL = 5,
+  DATABASE_SCHEMA_UPDATE_SDL = "DATABASE_SCHEMA_UPDATE_SDL",
   /** DATABASE_SCHEMA_UPDATE_GHOST_SYNC - use payload DatabaseSchemaUpdate */
-  DATABASE_SCHEMA_UPDATE_GHOST_SYNC = 6,
+  DATABASE_SCHEMA_UPDATE_GHOST_SYNC = "DATABASE_SCHEMA_UPDATE_GHOST_SYNC",
   /** DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER - use payload nil */
-  DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = 7,
+  DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = "DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER",
   /** DATABASE_DATA_UPDATE - use payload DatabaseDataUpdate */
-  DATABASE_DATA_UPDATE = 8,
+  DATABASE_DATA_UPDATE = "DATABASE_DATA_UPDATE",
   /** DATABASE_DATA_EXPORT - use payload DatabaseDataExport */
-  DATABASE_DATA_EXPORT = 12,
-  UNRECOGNIZED = -1,
+  DATABASE_DATA_EXPORT = "DATABASE_DATA_EXPORT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function task_TypeFromJSON(object: any): Task_Type {
@@ -895,6 +364,34 @@ export function task_TypeToJSON(object: Task_Type): string {
   }
 }
 
+export function task_TypeToNumber(object: Task_Type): number {
+  switch (object) {
+    case Task_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Task_Type.GENERAL:
+      return 1;
+    case Task_Type.DATABASE_CREATE:
+      return 2;
+    case Task_Type.DATABASE_SCHEMA_BASELINE:
+      return 3;
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+      return 4;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+      return 5;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
+      return 6;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
+      return 7;
+    case Task_Type.DATABASE_DATA_UPDATE:
+      return 8;
+    case Task_Type.DATABASE_DATA_EXPORT:
+      return 12;
+    case Task_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface Task_DatabaseCreate {
   /**
    * The project owning the database.
@@ -958,11 +455,11 @@ export interface Task_DatabaseDataUpdate {
 }
 
 export enum Task_DatabaseDataUpdate_RollbackSqlStatus {
-  ROLLBACK_SQL_STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  DONE = 2,
-  FAILED = 3,
-  UNRECOGNIZED = -1,
+  ROLLBACK_SQL_STATUS_UNSPECIFIED = "ROLLBACK_SQL_STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(
@@ -1003,6 +500,24 @@ export function task_DatabaseDataUpdate_RollbackSqlStatusToJSON(
     case Task_DatabaseDataUpdate_RollbackSqlStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function task_DatabaseDataUpdate_RollbackSqlStatusToNumber(
+  object: Task_DatabaseDataUpdate_RollbackSqlStatus,
+): number {
+  switch (object) {
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED:
+      return 0;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.PENDING:
+      return 1;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.DONE:
+      return 2;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.FAILED:
+      return 3;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1056,13 +571,13 @@ export interface TaskRun {
 }
 
 export enum TaskRun_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  RUNNING = 2,
-  DONE = 3,
-  FAILED = 4,
-  CANCELED = 5,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  CANCELED = "CANCELED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskRun_StatusFromJSON(object: any): TaskRun_Status {
@@ -1112,12 +627,32 @@ export function taskRun_StatusToJSON(object: TaskRun_Status): string {
   }
 }
 
+export function taskRun_StatusToNumber(object: TaskRun_Status): number {
+  switch (object) {
+    case TaskRun_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case TaskRun_Status.PENDING:
+      return 1;
+    case TaskRun_Status.RUNNING:
+      return 2;
+    case TaskRun_Status.DONE:
+      return 3;
+    case TaskRun_Status.FAILED:
+      return 4;
+    case TaskRun_Status.CANCELED:
+      return 5;
+    case TaskRun_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum TaskRun_ExecutionStatus {
-  EXECUTION_STATUS_UNSPECIFIED = 0,
-  PRE_EXECUTING = 1,
-  EXECUTING = 2,
-  POST_EXECUTING = 3,
-  UNRECOGNIZED = -1,
+  EXECUTION_STATUS_UNSPECIFIED = "EXECUTION_STATUS_UNSPECIFIED",
+  PRE_EXECUTING = "PRE_EXECUTING",
+  EXECUTING = "EXECUTING",
+  POST_EXECUTING = "POST_EXECUTING",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskRun_ExecutionStatusFromJSON(object: any): TaskRun_ExecutionStatus {
@@ -1157,11 +692,27 @@ export function taskRun_ExecutionStatusToJSON(object: TaskRun_ExecutionStatus): 
   }
 }
 
+export function taskRun_ExecutionStatusToNumber(object: TaskRun_ExecutionStatus): number {
+  switch (object) {
+    case TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED:
+      return 0;
+    case TaskRun_ExecutionStatus.PRE_EXECUTING:
+      return 1;
+    case TaskRun_ExecutionStatus.EXECUTING:
+      return 2;
+    case TaskRun_ExecutionStatus.POST_EXECUTING:
+      return 3;
+    case TaskRun_ExecutionStatus.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum TaskRun_ExportArchiveStatus {
-  EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0,
-  READY = 1,
-  EXPORTED = 2,
-  UNRECOGNIZED = -1,
+  EXPORT_ARCHIVE_STATUS_UNSPECIFIED = "EXPORT_ARCHIVE_STATUS_UNSPECIFIED",
+  READY = "READY",
+  EXPORTED = "EXPORTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskRun_ExportArchiveStatusFromJSON(object: any): TaskRun_ExportArchiveStatus {
@@ -1196,6 +747,20 @@ export function taskRun_ExportArchiveStatusToJSON(object: TaskRun_ExportArchiveS
   }
 }
 
+export function taskRun_ExportArchiveStatusToNumber(object: TaskRun_ExportArchiveStatus): number {
+  switch (object) {
+    case TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED:
+      return 0;
+    case TaskRun_ExportArchiveStatus.READY:
+      return 1;
+    case TaskRun_ExportArchiveStatus.EXPORTED:
+      return 2;
+    case TaskRun_ExportArchiveStatus.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface TaskRun_ExecutionDetail {
   /** Currently, the following fields are only used for EXECUTING status. */
   commandsTotal: number;
@@ -1211,1957 +776,96 @@ export interface TaskRun_ExecutionDetail_Position {
   column: number;
 }
 
-function createBaseGetPlanRequest(): GetPlanRequest {
-  return { name: "" };
+export interface TaskRunLog {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log */
+  name: string;
+  entries: TaskRunLogEntry[];
 }
 
-export const GetPlanRequest = {
-  encode(message: GetPlanRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetPlanRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetPlanRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetPlanRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: GetPlanRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetPlanRequest>): GetPlanRequest {
-    return GetPlanRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetPlanRequest>): GetPlanRequest {
-    const message = createBaseGetPlanRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseListPlansRequest(): ListPlansRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+export interface TaskRunLogEntry {
+  type: TaskRunLogEntry_Type;
+  schemaDump: TaskRunLogEntry_SchemaDump | undefined;
+  commandExecute: TaskRunLogEntry_CommandExecute | undefined;
 }
 
-export const ListPlansRequest = {
-  encode(message: ListPlansRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListPlansRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListPlansRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListPlansRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
-  toJSON(message: ListPlansRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListPlansRequest>): ListPlansRequest {
-    return ListPlansRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListPlansRequest>): ListPlansRequest {
-    const message = createBaseListPlansRequest();
-    message.parent = object.parent ?? "";
-    message.pageSize = object.pageSize ?? 0;
-    message.pageToken = object.pageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseListPlansResponse(): ListPlansResponse {
-  return { plans: [], nextPageToken: "" };
+export enum TaskRunLogEntry_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  SCHEMA_DUMP = "SCHEMA_DUMP",
+  COMMAND_EXECUTE = "COMMAND_EXECUTE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
-export const ListPlansResponse = {
-  encode(message: ListPlansResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.plans) {
-      Plan.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.nextPageToken !== "") {
-      writer.uint32(18).string(message.nextPageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListPlansResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListPlansResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.plans.push(Plan.decode(reader, reader.uint32()));
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.nextPageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListPlansResponse {
-    return {
-      plans: globalThis.Array.isArray(object?.plans) ? object.plans.map((e: any) => Plan.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
-  toJSON(message: ListPlansResponse): unknown {
-    const obj: any = {};
-    if (message.plans?.length) {
-      obj.plans = message.plans.map((e) => Plan.toJSON(e));
-    }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListPlansResponse>): ListPlansResponse {
-    return ListPlansResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListPlansResponse>): ListPlansResponse {
-    const message = createBaseListPlansResponse();
-    message.plans = object.plans?.map((e) => Plan.fromPartial(e)) || [];
-    message.nextPageToken = object.nextPageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseCreatePlanRequest(): CreatePlanRequest {
-  return { parent: "", plan: undefined };
+export function taskRunLogEntry_TypeFromJSON(object: any): TaskRunLogEntry_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_DUMP":
+      return TaskRunLogEntry_Type.SCHEMA_DUMP;
+    case 2:
+    case "COMMAND_EXECUTE":
+      return TaskRunLogEntry_Type.COMMAND_EXECUTE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRunLogEntry_Type.UNRECOGNIZED;
+  }
 }
 
-export const CreatePlanRequest = {
-  encode(message: CreatePlanRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.plan !== undefined) {
-      Plan.encode(message.plan, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreatePlanRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreatePlanRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.plan = Plan.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CreatePlanRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
-    };
-  },
-
-  toJSON(message: CreatePlanRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<CreatePlanRequest>): CreatePlanRequest {
-    return CreatePlanRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<CreatePlanRequest>): CreatePlanRequest {
-    const message = createBaseCreatePlanRequest();
-    message.parent = object.parent ?? "";
-    message.plan = (object.plan !== undefined && object.plan !== null) ? Plan.fromPartial(object.plan) : undefined;
-    return message;
-  },
-};
-
-function createBaseUpdatePlanRequest(): UpdatePlanRequest {
-  return { plan: undefined, updateMask: undefined };
+export function taskRunLogEntry_TypeToJSON(object: TaskRunLogEntry_Type): string {
+  switch (object) {
+    case TaskRunLogEntry_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case TaskRunLogEntry_Type.SCHEMA_DUMP:
+      return "SCHEMA_DUMP";
+    case TaskRunLogEntry_Type.COMMAND_EXECUTE:
+      return "COMMAND_EXECUTE";
+    case TaskRunLogEntry_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
-export const UpdatePlanRequest = {
-  encode(message: UpdatePlanRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.plan !== undefined) {
-      Plan.encode(message.plan, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.updateMask !== undefined) {
-      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdatePlanRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdatePlanRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.plan = Plan.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdatePlanRequest {
-    return {
-      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
-  toJSON(message: UpdatePlanRequest): unknown {
-    const obj: any = {};
-    if (message.plan !== undefined) {
-      obj.plan = Plan.toJSON(message.plan);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdatePlanRequest>): UpdatePlanRequest {
-    return UpdatePlanRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdatePlanRequest>): UpdatePlanRequest {
-    const message = createBaseUpdatePlanRequest();
-    message.plan = (object.plan !== undefined && object.plan !== null) ? Plan.fromPartial(object.plan) : undefined;
-    message.updateMask = object.updateMask ?? undefined;
-    return message;
-  },
-};
-
-function createBasePlan(): Plan {
-  return {
-    name: "",
-    uid: "",
-    issue: "",
-    title: "",
-    description: "",
-    steps: [],
-    vcsSource: undefined,
-    creator: "",
-    createTime: undefined,
-  };
+export function taskRunLogEntry_TypeToNumber(object: TaskRunLogEntry_Type): number {
+  switch (object) {
+    case TaskRunLogEntry_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case TaskRunLogEntry_Type.SCHEMA_DUMP:
+      return 1;
+    case TaskRunLogEntry_Type.COMMAND_EXECUTE:
+      return 2;
+    case TaskRunLogEntry_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
-export const Plan = {
-  encode(message: Plan, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
-    }
-    if (message.issue !== "") {
-      writer.uint32(26).string(message.issue);
-    }
-    if (message.title !== "") {
-      writer.uint32(34).string(message.title);
-    }
-    if (message.description !== "") {
-      writer.uint32(42).string(message.description);
-    }
-    for (const v of message.steps) {
-      Plan_Step.encode(v!, writer.uint32(50).fork()).ldelim();
-    }
-    if (message.vcsSource !== undefined) {
-      Plan_VCSSource.encode(message.vcsSource, writer.uint32(58).fork()).ldelim();
-    }
-    if (message.creator !== "") {
-      writer.uint32(66).string(message.creator);
-    }
-    if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(74).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.issue = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.steps.push(Plan_Step.decode(reader, reader.uint32()));
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.vcsSource = Plan_VCSSource.decode(reader, reader.uint32());
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.creator = reader.string();
-          continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-      steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => Plan_Step.fromJSON(e)) : [],
-      vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-    };
-  },
-
-  toJSON(message: Plan): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.issue !== "") {
-      obj.issue = message.issue;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.steps?.length) {
-      obj.steps = message.steps.map((e) => Plan_Step.toJSON(e));
-    }
-    if (message.vcsSource !== undefined) {
-      obj.vcsSource = Plan_VCSSource.toJSON(message.vcsSource);
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan>): Plan {
-    return Plan.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan>): Plan {
-    const message = createBasePlan();
-    message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
-    message.issue = object.issue ?? "";
-    message.title = object.title ?? "";
-    message.description = object.description ?? "";
-    message.steps = object.steps?.map((e) => Plan_Step.fromPartial(e)) || [];
-    message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
-      ? Plan_VCSSource.fromPartial(object.vcsSource)
-      : undefined;
-    message.creator = object.creator ?? "";
-    message.createTime = object.createTime ?? undefined;
-    return message;
-  },
-};
-
-function createBasePlan_Step(): Plan_Step {
-  return { title: "", specs: [] };
+export interface TaskRunLogEntry_SchemaDump {
+  startTime: Date | undefined;
+  endTime: Date | undefined;
+  error: string;
 }
 
-export const Plan_Step = {
-  encode(message: Plan_Step, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(18).string(message.title);
-    }
-    for (const v of message.specs) {
-      Plan_Spec.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_Step {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_Step();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.specs.push(Plan_Spec.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_Step {
-    return {
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      specs: globalThis.Array.isArray(object?.specs) ? object.specs.map((e: any) => Plan_Spec.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: Plan_Step): unknown {
-    const obj: any = {};
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.specs?.length) {
-      obj.specs = message.specs.map((e) => Plan_Spec.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_Step>): Plan_Step {
-    return Plan_Step.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_Step>): Plan_Step {
-    const message = createBasePlan_Step();
-    message.title = object.title ?? "";
-    message.specs = object.specs?.map((e) => Plan_Spec.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBasePlan_Spec(): Plan_Spec {
-  return {
-    earliestAllowedTime: undefined,
-    id: "",
-    dependsOnSpecs: [],
-    createDatabaseConfig: undefined,
-    changeDatabaseConfig: undefined,
-    exportDataConfig: undefined,
-  };
+export interface TaskRunLogEntry_CommandExecute {
+  logTime:
+    | Date
+    | undefined;
+  /** The indexes of the executed commands. */
+  commandIndexes: number[];
+  response: TaskRunLogEntry_CommandExecute_CommandResponse | undefined;
 }
 
-export const Plan_Spec = {
-  encode(message: Plan_Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.earliestAllowedTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.earliestAllowedTime), writer.uint32(34).fork()).ldelim();
-    }
-    if (message.id !== "") {
-      writer.uint32(42).string(message.id);
-    }
-    for (const v of message.dependsOnSpecs) {
-      writer.uint32(50).string(v!);
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.changeDatabaseConfig !== undefined) {
-      Plan_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.exportDataConfig !== undefined) {
-      Plan_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_Spec {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_Spec();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.earliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.dependsOnSpecs.push(reader.string());
-          continue;
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.createDatabaseConfig = Plan_CreateDatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.changeDatabaseConfig = Plan_ChangeDatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.exportDataConfig = Plan_ExportDataConfig.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_Spec {
-    return {
-      earliestAllowedTime: isSet(object.earliestAllowedTime)
-        ? fromJsonTimestamp(object.earliestAllowedTime)
-        : undefined,
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      dependsOnSpecs: globalThis.Array.isArray(object?.dependsOnSpecs)
-        ? object.dependsOnSpecs.map((e: any) => globalThis.String(e))
-        : [],
-      createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
-        : undefined,
-      changeDatabaseConfig: isSet(object.changeDatabaseConfig)
-        ? Plan_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
-        : undefined,
-      exportDataConfig: isSet(object.exportDataConfig)
-        ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
-        : undefined,
-    };
-  },
-
-  toJSON(message: Plan_Spec): unknown {
-    const obj: any = {};
-    if (message.earliestAllowedTime !== undefined) {
-      obj.earliestAllowedTime = message.earliestAllowedTime.toISOString();
-    }
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.dependsOnSpecs?.length) {
-      obj.dependsOnSpecs = message.dependsOnSpecs;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.changeDatabaseConfig !== undefined) {
-      obj.changeDatabaseConfig = Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
-    }
-    if (message.exportDataConfig !== undefined) {
-      obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.exportDataConfig);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_Spec>): Plan_Spec {
-    return Plan_Spec.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_Spec>): Plan_Spec {
-    const message = createBasePlan_Spec();
-    message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
-    message.id = object.id ?? "";
-    message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
-    message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
-      ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
-      : undefined;
-    message.changeDatabaseConfig = (object.changeDatabaseConfig !== undefined && object.changeDatabaseConfig !== null)
-      ? Plan_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
-      : undefined;
-    message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
-      ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
-      : undefined;
-    return message;
-  },
-};
-
-function createBasePlan_CreateDatabaseConfig(): Plan_CreateDatabaseConfig {
-  return {
-    target: "",
-    database: "",
-    table: "",
-    characterSet: "",
-    collation: "",
-    cluster: "",
-    owner: "",
-    environment: "",
-    labels: {},
-  };
+export interface TaskRunLogEntry_CommandExecute_CommandResponse {
+  logTime: Date | undefined;
+  error: string;
+  affectedRows: number;
+  /**
+   * `all_affected_rows` is the affected rows of each command.
+   * `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
+   */
+  allAffectedRows: number[];
 }
-
-export const Plan_CreateDatabaseConfig = {
-  encode(message: Plan_CreateDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
-    if (message.database !== "") {
-      writer.uint32(18).string(message.database);
-    }
-    if (message.table !== "") {
-      writer.uint32(26).string(message.table);
-    }
-    if (message.characterSet !== "") {
-      writer.uint32(34).string(message.characterSet);
-    }
-    if (message.collation !== "") {
-      writer.uint32(42).string(message.collation);
-    }
-    if (message.cluster !== "") {
-      writer.uint32(50).string(message.cluster);
-    }
-    if (message.owner !== "") {
-      writer.uint32(58).string(message.owner);
-    }
-    if (message.environment !== "") {
-      writer.uint32(74).string(message.environment);
-    }
-    Object.entries(message.labels).forEach(([key, value]) => {
-      Plan_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(82).fork()).ldelim();
-    });
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_CreateDatabaseConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_CreateDatabaseConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.table = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.characterSet = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.collation = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.cluster = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.owner = reader.string();
-          continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.environment = reader.string();
-          continue;
-        case 10:
-          if (tag !== 82) {
-            break;
-          }
-
-          const entry10 = Plan_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry10.value !== undefined) {
-            message.labels[entry10.key] = entry10.value;
-          }
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_CreateDatabaseConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
-      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
-      cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
-      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-    };
-  },
-
-  toJSON(message: Plan_CreateDatabaseConfig): unknown {
-    const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.cluster !== "") {
-      obj.cluster = message.cluster;
-    }
-    if (message.owner !== "") {
-      obj.owner = message.owner;
-    }
-    if (message.environment !== "") {
-      obj.environment = message.environment;
-    }
-    if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_CreateDatabaseConfig>): Plan_CreateDatabaseConfig {
-    return Plan_CreateDatabaseConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_CreateDatabaseConfig>): Plan_CreateDatabaseConfig {
-    const message = createBasePlan_CreateDatabaseConfig();
-    message.target = object.target ?? "";
-    message.database = object.database ?? "";
-    message.table = object.table ?? "";
-    message.characterSet = object.characterSet ?? "";
-    message.collation = object.collation ?? "";
-    message.cluster = object.cluster ?? "";
-    message.owner = object.owner ?? "";
-    message.environment = object.environment ?? "";
-    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = globalThis.String(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBasePlan_CreateDatabaseConfig_LabelsEntry(): Plan_CreateDatabaseConfig_LabelsEntry {
-  return { key: "", value: "" };
-}
-
-export const Plan_CreateDatabaseConfig_LabelsEntry = {
-  encode(message: Plan_CreateDatabaseConfig_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_CreateDatabaseConfig_LabelsEntry {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_CreateDatabaseConfig_LabelsEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_CreateDatabaseConfig_LabelsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: Plan_CreateDatabaseConfig_LabelsEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_CreateDatabaseConfig_LabelsEntry>): Plan_CreateDatabaseConfig_LabelsEntry {
-    return Plan_CreateDatabaseConfig_LabelsEntry.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_CreateDatabaseConfig_LabelsEntry>): Plan_CreateDatabaseConfig_LabelsEntry {
-    const message = createBasePlan_CreateDatabaseConfig_LabelsEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
-  return {
-    target: "",
-    sheet: "",
-    type: 0,
-    schemaVersion: "",
-    rollbackEnabled: false,
-    rollbackDetail: undefined,
-    ghostFlags: {},
-    preUpdateBackupDetail: undefined,
-  };
-}
-
-export const Plan_ChangeDatabaseConfig = {
-  encode(message: Plan_ChangeDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
-    if (message.sheet !== "") {
-      writer.uint32(18).string(message.sheet);
-    }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
-    }
-    if (message.schemaVersion !== "") {
-      writer.uint32(34).string(message.schemaVersion);
-    }
-    if (message.rollbackEnabled === true) {
-      writer.uint32(40).bool(message.rollbackEnabled);
-    }
-    if (message.rollbackDetail !== undefined) {
-      Plan_ChangeDatabaseConfig_RollbackDetail.encode(message.rollbackDetail, writer.uint32(50).fork()).ldelim();
-    }
-    Object.entries(message.ghostFlags).forEach(([key, value]) => {
-      Plan_ChangeDatabaseConfig_GhostFlagsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
-    });
-    if (message.preUpdateBackupDetail !== undefined) {
-      Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(66).fork())
-        .ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_ChangeDatabaseConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_ChangeDatabaseConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.sheet = reader.string();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.schemaVersion = reader.string();
-          continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.rollbackEnabled = reader.bool();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.rollbackDetail = Plan_ChangeDatabaseConfig_RollbackDetail.decode(reader, reader.uint32());
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          const entry7 = Plan_ChangeDatabaseConfig_GhostFlagsEntry.decode(reader, reader.uint32());
-          if (entry7.value !== undefined) {
-            message.ghostFlags[entry7.key] = entry7.value;
-          }
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.preUpdateBackupDetail = Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.decode(
-            reader,
-            reader.uint32(),
-          );
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_ChangeDatabaseConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      type: isSet(object.type) ? plan_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      rollbackEnabled: isSet(object.rollbackEnabled) ? globalThis.Boolean(object.rollbackEnabled) : false,
-      rollbackDetail: isSet(object.rollbackDetail)
-        ? Plan_ChangeDatabaseConfig_RollbackDetail.fromJSON(object.rollbackDetail)
-        : undefined,
-      ghostFlags: isObject(object.ghostFlags)
-        ? Object.entries(object.ghostFlags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-      preUpdateBackupDetail: isSet(object.preUpdateBackupDetail)
-        ? Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
-        : undefined,
-    };
-  },
-
-  toJSON(message: Plan_ChangeDatabaseConfig): unknown {
-    const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.type !== 0) {
-      obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type);
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    if (message.rollbackEnabled === true) {
-      obj.rollbackEnabled = message.rollbackEnabled;
-    }
-    if (message.rollbackDetail !== undefined) {
-      obj.rollbackDetail = Plan_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail);
-    }
-    if (message.ghostFlags) {
-      const entries = Object.entries(message.ghostFlags);
-      if (entries.length > 0) {
-        obj.ghostFlags = {};
-        entries.forEach(([k, v]) => {
-          obj.ghostFlags[k] = v;
-        });
-      }
-    }
-    if (message.preUpdateBackupDetail !== undefined) {
-      obj.preUpdateBackupDetail = Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.toJSON(message.preUpdateBackupDetail);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_ChangeDatabaseConfig>): Plan_ChangeDatabaseConfig {
-    return Plan_ChangeDatabaseConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_ChangeDatabaseConfig>): Plan_ChangeDatabaseConfig {
-    const message = createBasePlan_ChangeDatabaseConfig();
-    message.target = object.target ?? "";
-    message.sheet = object.sheet ?? "";
-    message.type = object.type ?? 0;
-    message.schemaVersion = object.schemaVersion ?? "";
-    message.rollbackEnabled = object.rollbackEnabled ?? false;
-    message.rollbackDetail = (object.rollbackDetail !== undefined && object.rollbackDetail !== null)
-      ? Plan_ChangeDatabaseConfig_RollbackDetail.fromPartial(object.rollbackDetail)
-      : undefined;
-    message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
-      (acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key] = globalThis.String(value);
-        }
-        return acc;
-      },
-      {},
-    );
-    message.preUpdateBackupDetail =
-      (object.preUpdateBackupDetail !== undefined && object.preUpdateBackupDetail !== null)
-        ? Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
-        : undefined;
-    return message;
-  },
-};
-
-function createBasePlan_ChangeDatabaseConfig_RollbackDetail(): Plan_ChangeDatabaseConfig_RollbackDetail {
-  return { rollbackFromTask: "", rollbackFromIssue: "" };
-}
-
-export const Plan_ChangeDatabaseConfig_RollbackDetail = {
-  encode(message: Plan_ChangeDatabaseConfig_RollbackDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.rollbackFromTask !== "") {
-      writer.uint32(10).string(message.rollbackFromTask);
-    }
-    if (message.rollbackFromIssue !== "") {
-      writer.uint32(18).string(message.rollbackFromIssue);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_ChangeDatabaseConfig_RollbackDetail {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_ChangeDatabaseConfig_RollbackDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.rollbackFromTask = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.rollbackFromIssue = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_ChangeDatabaseConfig_RollbackDetail {
-    return {
-      rollbackFromTask: isSet(object.rollbackFromTask) ? globalThis.String(object.rollbackFromTask) : "",
-      rollbackFromIssue: isSet(object.rollbackFromIssue) ? globalThis.String(object.rollbackFromIssue) : "",
-    };
-  },
-
-  toJSON(message: Plan_ChangeDatabaseConfig_RollbackDetail): unknown {
-    const obj: any = {};
-    if (message.rollbackFromTask !== "") {
-      obj.rollbackFromTask = message.rollbackFromTask;
-    }
-    if (message.rollbackFromIssue !== "") {
-      obj.rollbackFromIssue = message.rollbackFromIssue;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_ChangeDatabaseConfig_RollbackDetail>): Plan_ChangeDatabaseConfig_RollbackDetail {
-    return Plan_ChangeDatabaseConfig_RollbackDetail.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_ChangeDatabaseConfig_RollbackDetail>): Plan_ChangeDatabaseConfig_RollbackDetail {
-    const message = createBasePlan_ChangeDatabaseConfig_RollbackDetail();
-    message.rollbackFromTask = object.rollbackFromTask ?? "";
-    message.rollbackFromIssue = object.rollbackFromIssue ?? "";
-    return message;
-  },
-};
-
-function createBasePlan_ChangeDatabaseConfig_GhostFlagsEntry(): Plan_ChangeDatabaseConfig_GhostFlagsEntry {
-  return { key: "", value: "" };
-}
-
-export const Plan_ChangeDatabaseConfig_GhostFlagsEntry = {
-  encode(message: Plan_ChangeDatabaseConfig_GhostFlagsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_ChangeDatabaseConfig_GhostFlagsEntry {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_ChangeDatabaseConfig_GhostFlagsEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_ChangeDatabaseConfig_GhostFlagsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: Plan_ChangeDatabaseConfig_GhostFlagsEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_ChangeDatabaseConfig_GhostFlagsEntry>): Plan_ChangeDatabaseConfig_GhostFlagsEntry {
-    return Plan_ChangeDatabaseConfig_GhostFlagsEntry.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<Plan_ChangeDatabaseConfig_GhostFlagsEntry>,
-  ): Plan_ChangeDatabaseConfig_GhostFlagsEntry {
-    const message = createBasePlan_ChangeDatabaseConfig_GhostFlagsEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBasePlan_ChangeDatabaseConfig_PreUpdateBackupDetail(): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-  return { database: "" };
-}
-
-export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail = {
-  encode(
-    message: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
-    if (message.database !== "") {
-      writer.uint32(10).string(message.database);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_ChangeDatabaseConfig_PreUpdateBackupDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    return { database: isSet(object.database) ? globalThis.String(object.database) : "" };
-  },
-
-  toJSON(message: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail): unknown {
-    const obj: any = {};
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    return obj;
-  },
-
-  create(
-    base?: DeepPartial<Plan_ChangeDatabaseConfig_PreUpdateBackupDetail>,
-  ): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    return Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<Plan_ChangeDatabaseConfig_PreUpdateBackupDetail>,
-  ): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    const message = createBasePlan_ChangeDatabaseConfig_PreUpdateBackupDetail();
-    message.database = object.database ?? "";
-    return message;
-  },
-};
-
-function createBasePlan_ExportDataConfig(): Plan_ExportDataConfig {
-  return { target: "", sheet: "", format: 0, password: undefined };
-}
-
-export const Plan_ExportDataConfig = {
-  encode(message: Plan_ExportDataConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
-    if (message.sheet !== "") {
-      writer.uint32(18).string(message.sheet);
-    }
-    if (message.format !== 0) {
-      writer.uint32(24).int32(message.format);
-    }
-    if (message.password !== undefined) {
-      writer.uint32(34).string(message.password);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_ExportDataConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_ExportDataConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.sheet = reader.string();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.format = reader.int32() as any;
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_ExportDataConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
-      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
-    };
-  },
-
-  toJSON(message: Plan_ExportDataConfig): unknown {
-    const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.format !== 0) {
-      obj.format = exportFormatToJSON(message.format);
-    }
-    if (message.password !== undefined) {
-      obj.password = message.password;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_ExportDataConfig>): Plan_ExportDataConfig {
-    return Plan_ExportDataConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_ExportDataConfig>): Plan_ExportDataConfig {
-    const message = createBasePlan_ExportDataConfig();
-    message.target = object.target ?? "";
-    message.sheet = object.sheet ?? "";
-    message.format = object.format ?? 0;
-    message.password = object.password ?? undefined;
-    return message;
-  },
-};
-
-function createBasePlan_VCSSource(): Plan_VCSSource {
-  return { vcsType: 0, vcsConnector: "", pullRequestUrl: "" };
-}
-
-export const Plan_VCSSource = {
-  encode(message: Plan_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.vcsType !== 0) {
-      writer.uint32(8).int32(message.vcsType);
-    }
-    if (message.vcsConnector !== "") {
-      writer.uint32(18).string(message.vcsConnector);
-    }
-    if (message.pullRequestUrl !== "") {
-      writer.uint32(26).string(message.pullRequestUrl);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_VCSSource {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_VCSSource();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.vcsType = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.vcsConnector = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pullRequestUrl = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_VCSSource {
-    return {
-      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : 0,
-      vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
-      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
-    };
-  },
-
-  toJSON(message: Plan_VCSSource): unknown {
-    const obj: any = {};
-    if (message.vcsType !== 0) {
-      obj.vcsType = vCSTypeToJSON(message.vcsType);
-    }
-    if (message.vcsConnector !== "") {
-      obj.vcsConnector = message.vcsConnector;
-    }
-    if (message.pullRequestUrl !== "") {
-      obj.pullRequestUrl = message.pullRequestUrl;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
-    return Plan_VCSSource.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
-    const message = createBasePlan_VCSSource();
-    message.vcsType = object.vcsType ?? 0;
-    message.vcsConnector = object.vcsConnector ?? "";
-    message.pullRequestUrl = object.pullRequestUrl ?? "";
-    return message;
-  },
-};
-
-function createBaseListPlanCheckRunsRequest(): ListPlanCheckRunsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
-}
-
-export const ListPlanCheckRunsRequest = {
-  encode(message: ListPlanCheckRunsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListPlanCheckRunsRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListPlanCheckRunsRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListPlanCheckRunsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
-  toJSON(message: ListPlanCheckRunsRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListPlanCheckRunsRequest>): ListPlanCheckRunsRequest {
-    return ListPlanCheckRunsRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListPlanCheckRunsRequest>): ListPlanCheckRunsRequest {
-    const message = createBaseListPlanCheckRunsRequest();
-    message.parent = object.parent ?? "";
-    message.pageSize = object.pageSize ?? 0;
-    message.pageToken = object.pageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseListPlanCheckRunsResponse(): ListPlanCheckRunsResponse {
-  return { planCheckRuns: [], nextPageToken: "" };
-}
-
-export const ListPlanCheckRunsResponse = {
-  encode(message: ListPlanCheckRunsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.planCheckRuns) {
-      PlanCheckRun.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.nextPageToken !== "") {
-      writer.uint32(18).string(message.nextPageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListPlanCheckRunsResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListPlanCheckRunsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.planCheckRuns.push(PlanCheckRun.decode(reader, reader.uint32()));
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.nextPageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListPlanCheckRunsResponse {
-    return {
-      planCheckRuns: globalThis.Array.isArray(object?.planCheckRuns)
-        ? object.planCheckRuns.map((e: any) => PlanCheckRun.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
-  toJSON(message: ListPlanCheckRunsResponse): unknown {
-    const obj: any = {};
-    if (message.planCheckRuns?.length) {
-      obj.planCheckRuns = message.planCheckRuns.map((e) => PlanCheckRun.toJSON(e));
-    }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListPlanCheckRunsResponse>): ListPlanCheckRunsResponse {
-    return ListPlanCheckRunsResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListPlanCheckRunsResponse>): ListPlanCheckRunsResponse {
-    const message = createBaseListPlanCheckRunsResponse();
-    message.planCheckRuns = object.planCheckRuns?.map((e) => PlanCheckRun.fromPartial(e)) || [];
-    message.nextPageToken = object.nextPageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseRunPlanChecksRequest(): RunPlanChecksRequest {
-  return { name: "" };
-}
-
-export const RunPlanChecksRequest = {
-  encode(message: RunPlanChecksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): RunPlanChecksRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRunPlanChecksRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RunPlanChecksRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: RunPlanChecksRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<RunPlanChecksRequest>): RunPlanChecksRequest {
-    return RunPlanChecksRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<RunPlanChecksRequest>): RunPlanChecksRequest {
-    const message = createBaseRunPlanChecksRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseRunPlanChecksResponse(): RunPlanChecksResponse {
-  return {};
-}
-
-export const RunPlanChecksResponse = {
-  encode(_: RunPlanChecksResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): RunPlanChecksResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRunPlanChecksResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): RunPlanChecksResponse {
-    return {};
-  },
-
-  toJSON(_: RunPlanChecksResponse): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create(base?: DeepPartial<RunPlanChecksResponse>): RunPlanChecksResponse {
-    return RunPlanChecksResponse.fromPartial(base ?? {});
-  },
-  fromPartial(_: DeepPartial<RunPlanChecksResponse>): RunPlanChecksResponse {
-    const message = createBaseRunPlanChecksResponse();
-    return message;
-  },
-};
 
 function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
   return { parent: "", tasks: [], reason: "" };
@@ -3559,551 +1263,6 @@ export const BatchCancelTaskRunsResponse = {
   },
 };
 
-function createBasePlanCheckRun(): PlanCheckRun {
-  return {
-    name: "",
-    uid: "",
-    type: 0,
-    status: 0,
-    target: "",
-    sheet: "",
-    results: [],
-    error: "",
-    createTime: undefined,
-  };
-}
-
-export const PlanCheckRun = {
-  encode(message: PlanCheckRun, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
-    }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
-    }
-    if (message.status !== 0) {
-      writer.uint32(32).int32(message.status);
-    }
-    if (message.target !== "") {
-      writer.uint32(42).string(message.target);
-    }
-    if (message.sheet !== "") {
-      writer.uint32(50).string(message.sheet);
-    }
-    for (const v of message.results) {
-      PlanCheckRun_Result.encode(v!, writer.uint32(58).fork()).ldelim();
-    }
-    if (message.error !== "") {
-      writer.uint32(66).string(message.error);
-    }
-    if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(74).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.status = reader.int32() as any;
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.sheet = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.results.push(PlanCheckRun_Result.decode(reader, reader.uint32()));
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.error = reader.string();
-          continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : 0,
-      status: isSet(object.status) ? planCheckRun_StatusFromJSON(object.status) : 0,
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      results: globalThis.Array.isArray(object?.results)
-        ? object.results.map((e: any) => PlanCheckRun_Result.fromJSON(e))
-        : [],
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-    };
-  },
-
-  toJSON(message: PlanCheckRun): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.type !== 0) {
-      obj.type = planCheckRun_TypeToJSON(message.type);
-    }
-    if (message.status !== 0) {
-      obj.status = planCheckRun_StatusToJSON(message.status);
-    }
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.results?.length) {
-      obj.results = message.results.map((e) => PlanCheckRun_Result.toJSON(e));
-    }
-    if (message.error !== "") {
-      obj.error = message.error;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun>): PlanCheckRun {
-    return PlanCheckRun.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<PlanCheckRun>): PlanCheckRun {
-    const message = createBasePlanCheckRun();
-    message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
-    message.type = object.type ?? 0;
-    message.status = object.status ?? 0;
-    message.target = object.target ?? "";
-    message.sheet = object.sheet ?? "";
-    message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
-    message.error = object.error ?? "";
-    message.createTime = object.createTime ?? undefined;
-    return message;
-  },
-};
-
-function createBasePlanCheckRun_Result(): PlanCheckRun_Result {
-  return { status: 0, title: "", content: "", code: 0, sqlSummaryReport: undefined, sqlReviewReport: undefined };
-}
-
-export const PlanCheckRun_Result = {
-  encode(message: PlanCheckRun_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
-    }
-    if (message.title !== "") {
-      writer.uint32(18).string(message.title);
-    }
-    if (message.content !== "") {
-      writer.uint32(26).string(message.content);
-    }
-    if (message.code !== 0) {
-      writer.uint32(32).int32(message.code);
-    }
-    if (message.sqlSummaryReport !== undefined) {
-      PlanCheckRun_Result_SqlSummaryReport.encode(message.sqlSummaryReport, writer.uint32(42).fork()).ldelim();
-    }
-    if (message.sqlReviewReport !== undefined) {
-      PlanCheckRun_Result_SqlReviewReport.encode(message.sqlReviewReport, writer.uint32(50).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.status = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.content = reader.string();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.code = reader.int32();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.sqlSummaryReport = PlanCheckRun_Result_SqlSummaryReport.decode(reader, reader.uint32());
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result {
-    return {
-      status: isSet(object.status) ? planCheckRun_Result_StatusFromJSON(object.status) : 0,
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      content: isSet(object.content) ? globalThis.String(object.content) : "",
-      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
-      sqlSummaryReport: isSet(object.sqlSummaryReport)
-        ? PlanCheckRun_Result_SqlSummaryReport.fromJSON(object.sqlSummaryReport)
-        : undefined,
-      sqlReviewReport: isSet(object.sqlReviewReport)
-        ? PlanCheckRun_Result_SqlReviewReport.fromJSON(object.sqlReviewReport)
-        : undefined,
-    };
-  },
-
-  toJSON(message: PlanCheckRun_Result): unknown {
-    const obj: any = {};
-    if (message.status !== 0) {
-      obj.status = planCheckRun_Result_StatusToJSON(message.status);
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.content !== "") {
-      obj.content = message.content;
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
-    if (message.sqlSummaryReport !== undefined) {
-      obj.sqlSummaryReport = PlanCheckRun_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport);
-    }
-    if (message.sqlReviewReport !== undefined) {
-      obj.sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.toJSON(message.sqlReviewReport);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
-    return PlanCheckRun_Result.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
-    const message = createBasePlanCheckRun_Result();
-    message.status = object.status ?? 0;
-    message.title = object.title ?? "";
-    message.content = object.content ?? "";
-    message.code = object.code ?? 0;
-    message.sqlSummaryReport = (object.sqlSummaryReport !== undefined && object.sqlSummaryReport !== null)
-      ? PlanCheckRun_Result_SqlSummaryReport.fromPartial(object.sqlSummaryReport)
-      : undefined;
-    message.sqlReviewReport = (object.sqlReviewReport !== undefined && object.sqlReviewReport !== null)
-      ? PlanCheckRun_Result_SqlReviewReport.fromPartial(object.sqlReviewReport)
-      : undefined;
-    return message;
-  },
-};
-
-function createBasePlanCheckRun_Result_SqlSummaryReport(): PlanCheckRun_Result_SqlSummaryReport {
-  return { code: 0, statementTypes: [], affectedRows: 0, changedResources: undefined };
-}
-
-export const PlanCheckRun_Result_SqlSummaryReport = {
-  encode(message: PlanCheckRun_Result_SqlSummaryReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.code !== 0) {
-      writer.uint32(8).int32(message.code);
-    }
-    for (const v of message.statementTypes) {
-      writer.uint32(18).string(v!);
-    }
-    if (message.affectedRows !== 0) {
-      writer.uint32(24).int32(message.affectedRows);
-    }
-    if (message.changedResources !== undefined) {
-      ChangedResources.encode(message.changedResources, writer.uint32(34).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_SqlSummaryReport {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_SqlSummaryReport();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.code = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.statementTypes.push(reader.string());
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.affectedRows = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.changedResources = ChangedResources.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result_SqlSummaryReport {
-    return {
-      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
-      statementTypes: globalThis.Array.isArray(object?.statementTypes)
-        ? object.statementTypes.map((e: any) => globalThis.String(e))
-        : [],
-      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
-      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
-    };
-  },
-
-  toJSON(message: PlanCheckRun_Result_SqlSummaryReport): unknown {
-    const obj: any = {};
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
-    if (message.statementTypes?.length) {
-      obj.statementTypes = message.statementTypes;
-    }
-    if (message.affectedRows !== 0) {
-      obj.affectedRows = Math.round(message.affectedRows);
-    }
-    if (message.changedResources !== undefined) {
-      obj.changedResources = ChangedResources.toJSON(message.changedResources);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun_Result_SqlSummaryReport>): PlanCheckRun_Result_SqlSummaryReport {
-    return PlanCheckRun_Result_SqlSummaryReport.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlSummaryReport>): PlanCheckRun_Result_SqlSummaryReport {
-    const message = createBasePlanCheckRun_Result_SqlSummaryReport();
-    message.code = object.code ?? 0;
-    message.statementTypes = object.statementTypes?.map((e) => e) || [];
-    message.affectedRows = object.affectedRows ?? 0;
-    message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
-      ? ChangedResources.fromPartial(object.changedResources)
-      : undefined;
-    return message;
-  },
-};
-
-function createBasePlanCheckRun_Result_SqlReviewReport(): PlanCheckRun_Result_SqlReviewReport {
-  return { line: 0, column: 0, detail: "", code: 0 };
-}
-
-export const PlanCheckRun_Result_SqlReviewReport = {
-  encode(message: PlanCheckRun_Result_SqlReviewReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.line !== 0) {
-      writer.uint32(8).int32(message.line);
-    }
-    if (message.column !== 0) {
-      writer.uint32(16).int32(message.column);
-    }
-    if (message.detail !== "") {
-      writer.uint32(26).string(message.detail);
-    }
-    if (message.code !== 0) {
-      writer.uint32(32).int32(message.code);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRun_Result_SqlReviewReport {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRun_Result_SqlReviewReport();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.line = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.column = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.detail = reader.string();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.code = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result_SqlReviewReport {
-    return {
-      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
-      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
-      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
-      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
-    };
-  },
-
-  toJSON(message: PlanCheckRun_Result_SqlReviewReport): unknown {
-    const obj: any = {};
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.column !== 0) {
-      obj.column = Math.round(message.column);
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
-    return PlanCheckRun_Result_SqlReviewReport.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
-    const message = createBasePlanCheckRun_Result_SqlReviewReport();
-    message.line = object.line ?? 0;
-    message.column = object.column ?? 0;
-    message.detail = object.detail ?? "";
-    message.code = object.code ?? 0;
-    return message;
-  },
-};
-
 function createBaseGetRolloutRequest(): GetRolloutRequest {
   return { name: "" };
 }
@@ -4474,6 +1633,63 @@ export const ListTaskRunsResponse = {
   },
 };
 
+function createBaseGetTaskRunLogRequest(): GetTaskRunLogRequest {
+  return { parent: "" };
+}
+
+export const GetTaskRunLogRequest = {
+  encode(message: GetTaskRunLogRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetTaskRunLogRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTaskRunLogRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTaskRunLogRequest {
+    return { parent: isSet(object.parent) ? globalThis.String(object.parent) : "" };
+  },
+
+  toJSON(message: GetTaskRunLogRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetTaskRunLogRequest>): GetTaskRunLogRequest {
+    return GetTaskRunLogRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetTaskRunLogRequest>): GetTaskRunLogRequest {
+    const message = createBaseGetTaskRunLogRequest();
+    message.parent = object.parent ?? "";
+    return message;
+  },
+};
+
 function createBaseRollout(): Rollout {
   return { name: "", uid: "", plan: "", title: "", stages: [] };
 }
@@ -4703,9 +1919,9 @@ function createBaseTask(): Task {
     uid: "",
     title: "",
     specId: "",
-    status: 0,
+    status: Task_Status.STATUS_UNSPECIFIED,
     skippedReason: "",
-    type: 0,
+    type: Task_Type.TYPE_UNSPECIFIED,
     dependsOnTasks: [],
     target: "",
     databaseCreate: undefined,
@@ -4730,14 +1946,14 @@ export const Task = {
     if (message.specId !== "") {
       writer.uint32(34).string(message.specId);
     }
-    if (message.status !== 0) {
-      writer.uint32(40).int32(message.status);
+    if (message.status !== Task_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(40).int32(task_StatusToNumber(message.status));
     }
     if (message.skippedReason !== "") {
       writer.uint32(122).string(message.skippedReason);
     }
-    if (message.type !== 0) {
-      writer.uint32(48).int32(message.type);
+    if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(48).int32(task_TypeToNumber(message.type));
     }
     for (const v of message.dependsOnTasks) {
       writer.uint32(58).string(v!);
@@ -4803,7 +2019,7 @@ export const Task = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = task_StatusFromJSON(reader.int32());
           continue;
         case 15:
           if (tag !== 122) {
@@ -4817,7 +2033,7 @@ export const Task = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = task_TypeFromJSON(reader.int32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -4883,9 +2099,9 @@ export const Task = {
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      status: isSet(object.status) ? task_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
-      type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? task_TypeFromJSON(object.type) : Task_Type.TYPE_UNSPECIFIED,
       dependsOnTasks: globalThis.Array.isArray(object?.dependsOnTasks)
         ? object.dependsOnTasks.map((e: any) => globalThis.String(e))
         : [],
@@ -4920,13 +2136,13 @@ export const Task = {
     if (message.specId !== "") {
       obj.specId = message.specId;
     }
-    if (message.status !== 0) {
+    if (message.status !== Task_Status.STATUS_UNSPECIFIED) {
       obj.status = task_StatusToJSON(message.status);
     }
     if (message.skippedReason !== "") {
       obj.skippedReason = message.skippedReason;
     }
-    if (message.type !== 0) {
+    if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
       obj.type = task_TypeToJSON(message.type);
     }
     if (message.dependsOnTasks?.length) {
@@ -4962,9 +2178,9 @@ export const Task = {
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
     message.specId = object.specId ?? "";
-    message.status = object.status ?? 0;
+    message.status = object.status ?? Task_Status.STATUS_UNSPECIFIED;
     message.skippedReason = object.skippedReason ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? Task_Type.TYPE_UNSPECIFIED;
     message.dependsOnTasks = object.dependsOnTasks?.map((e) => e) || [];
     message.target = object.target ?? "";
     message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
@@ -5389,7 +2605,7 @@ function createBaseTask_DatabaseDataUpdate(): Task_DatabaseDataUpdate {
     sheet: "",
     schemaVersion: "",
     rollbackEnabled: false,
-    rollbackSqlStatus: 0,
+    rollbackSqlStatus: Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED,
     rollbackError: "",
     rollbackSheet: "",
     rollbackFromIssue: "",
@@ -5408,8 +2624,8 @@ export const Task_DatabaseDataUpdate = {
     if (message.rollbackEnabled === true) {
       writer.uint32(24).bool(message.rollbackEnabled);
     }
-    if (message.rollbackSqlStatus !== 0) {
-      writer.uint32(32).int32(message.rollbackSqlStatus);
+    if (message.rollbackSqlStatus !== Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED) {
+      writer.uint32(32).int32(task_DatabaseDataUpdate_RollbackSqlStatusToNumber(message.rollbackSqlStatus));
     }
     if (message.rollbackError !== "") {
       writer.uint32(42).string(message.rollbackError);
@@ -5459,7 +2675,7 @@ export const Task_DatabaseDataUpdate = {
             break;
           }
 
-          message.rollbackSqlStatus = reader.int32() as any;
+          message.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -5505,7 +2721,7 @@ export const Task_DatabaseDataUpdate = {
       rollbackEnabled: isSet(object.rollbackEnabled) ? globalThis.Boolean(object.rollbackEnabled) : false,
       rollbackSqlStatus: isSet(object.rollbackSqlStatus)
         ? task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(object.rollbackSqlStatus)
-        : 0,
+        : Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED,
       rollbackError: isSet(object.rollbackError) ? globalThis.String(object.rollbackError) : "",
       rollbackSheet: isSet(object.rollbackSheet) ? globalThis.String(object.rollbackSheet) : "",
       rollbackFromIssue: isSet(object.rollbackFromIssue) ? globalThis.String(object.rollbackFromIssue) : "",
@@ -5524,7 +2740,7 @@ export const Task_DatabaseDataUpdate = {
     if (message.rollbackEnabled === true) {
       obj.rollbackEnabled = message.rollbackEnabled;
     }
-    if (message.rollbackSqlStatus !== 0) {
+    if (message.rollbackSqlStatus !== Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED) {
       obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus);
     }
     if (message.rollbackError !== "") {
@@ -5550,7 +2766,8 @@ export const Task_DatabaseDataUpdate = {
     message.sheet = object.sheet ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
-    message.rollbackSqlStatus = object.rollbackSqlStatus ?? 0;
+    message.rollbackSqlStatus = object.rollbackSqlStatus ??
+      Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED;
     message.rollbackError = object.rollbackError ?? "";
     message.rollbackSheet = object.rollbackSheet ?? "";
     message.rollbackFromIssue = object.rollbackFromIssue ?? "";
@@ -5560,7 +2777,7 @@ export const Task_DatabaseDataUpdate = {
 };
 
 function createBaseTask_DatabaseDataExport(): Task_DatabaseDataExport {
-  return { target: "", sheet: "", format: 0, password: undefined };
+  return { target: "", sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
 }
 
 export const Task_DatabaseDataExport = {
@@ -5571,8 +2788,8 @@ export const Task_DatabaseDataExport = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.format !== 0) {
-      writer.uint32(24).int32(message.format);
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(24).int32(exportFormatToNumber(message.format));
     }
     if (message.password !== undefined) {
       writer.uint32(34).string(message.password);
@@ -5606,7 +2823,7 @@ export const Task_DatabaseDataExport = {
             break;
           }
 
-          message.format = reader.int32() as any;
+          message.format = exportFormatFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -5628,7 +2845,7 @@ export const Task_DatabaseDataExport = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
   },
@@ -5641,7 +2858,7 @@ export const Task_DatabaseDataExport = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.format !== 0) {
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
     if (message.password !== undefined) {
@@ -5657,7 +2874,7 @@ export const Task_DatabaseDataExport = {
     const message = createBaseTask_DatabaseDataExport();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.format = object.format ?? 0;
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.password = object.password ?? undefined;
     return message;
   },
@@ -5672,15 +2889,15 @@ function createBaseTaskRun(): TaskRun {
     createTime: undefined,
     updateTime: undefined,
     title: "",
-    status: 0,
+    status: TaskRun_Status.STATUS_UNSPECIFIED,
     detail: "",
     changeHistory: "",
     schemaVersion: "",
-    executionStatus: 0,
+    executionStatus: TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED,
     executionStatusUpdateTime: undefined,
     executionDetail: undefined,
     startTime: undefined,
-    exportArchiveStatus: 0,
+    exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
   };
 }
 
@@ -5707,8 +2924,8 @@ export const TaskRun = {
     if (message.title !== "") {
       writer.uint32(58).string(message.title);
     }
-    if (message.status !== 0) {
-      writer.uint32(64).int32(message.status);
+    if (message.status !== TaskRun_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(64).int32(taskRun_StatusToNumber(message.status));
     }
     if (message.detail !== "") {
       writer.uint32(74).string(message.detail);
@@ -5719,8 +2936,8 @@ export const TaskRun = {
     if (message.schemaVersion !== "") {
       writer.uint32(90).string(message.schemaVersion);
     }
-    if (message.executionStatus !== 0) {
-      writer.uint32(96).int32(message.executionStatus);
+    if (message.executionStatus !== TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED) {
+      writer.uint32(96).int32(taskRun_ExecutionStatusToNumber(message.executionStatus));
     }
     if (message.executionStatusUpdateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.executionStatusUpdateTime), writer.uint32(106).fork()).ldelim();
@@ -5731,8 +2948,8 @@ export const TaskRun = {
     if (message.startTime !== undefined) {
       Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
     }
-    if (message.exportArchiveStatus !== 0) {
-      writer.uint32(128).int32(message.exportArchiveStatus);
+    if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
+      writer.uint32(128).int32(taskRun_ExportArchiveStatusToNumber(message.exportArchiveStatus));
     }
     return writer;
   },
@@ -5798,7 +3015,7 @@ export const TaskRun = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = taskRun_StatusFromJSON(reader.int32());
           continue;
         case 9:
           if (tag !== 74) {
@@ -5826,7 +3043,7 @@ export const TaskRun = {
             break;
           }
 
-          message.executionStatus = reader.int32() as any;
+          message.executionStatus = taskRun_ExecutionStatusFromJSON(reader.int32());
           continue;
         case 13:
           if (tag !== 106) {
@@ -5854,7 +3071,7 @@ export const TaskRun = {
             break;
           }
 
-          message.exportArchiveStatus = reader.int32() as any;
+          message.exportArchiveStatus = taskRun_ExportArchiveStatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -5874,11 +3091,13 @@ export const TaskRun = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : TaskRun_Status.STATUS_UNSPECIFIED,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      executionStatus: isSet(object.executionStatus) ? taskRun_ExecutionStatusFromJSON(object.executionStatus) : 0,
+      executionStatus: isSet(object.executionStatus)
+        ? taskRun_ExecutionStatusFromJSON(object.executionStatus)
+        : TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED,
       executionStatusUpdateTime: isSet(object.executionStatusUpdateTime)
         ? fromJsonTimestamp(object.executionStatusUpdateTime)
         : undefined,
@@ -5888,7 +3107,7 @@ export const TaskRun = {
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
       exportArchiveStatus: isSet(object.exportArchiveStatus)
         ? taskRun_ExportArchiveStatusFromJSON(object.exportArchiveStatus)
-        : 0,
+        : TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
     };
   },
 
@@ -5915,7 +3134,7 @@ export const TaskRun = {
     if (message.title !== "") {
       obj.title = message.title;
     }
-    if (message.status !== 0) {
+    if (message.status !== TaskRun_Status.STATUS_UNSPECIFIED) {
       obj.status = taskRun_StatusToJSON(message.status);
     }
     if (message.detail !== "") {
@@ -5927,7 +3146,7 @@ export const TaskRun = {
     if (message.schemaVersion !== "") {
       obj.schemaVersion = message.schemaVersion;
     }
-    if (message.executionStatus !== 0) {
+    if (message.executionStatus !== TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED) {
       obj.executionStatus = taskRun_ExecutionStatusToJSON(message.executionStatus);
     }
     if (message.executionStatusUpdateTime !== undefined) {
@@ -5939,7 +3158,7 @@ export const TaskRun = {
     if (message.startTime !== undefined) {
       obj.startTime = message.startTime.toISOString();
     }
-    if (message.exportArchiveStatus !== 0) {
+    if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
       obj.exportArchiveStatus = taskRun_ExportArchiveStatusToJSON(message.exportArchiveStatus);
     }
     return obj;
@@ -5957,17 +3176,18 @@ export const TaskRun = {
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.title = object.title ?? "";
-    message.status = object.status ?? 0;
+    message.status = object.status ?? TaskRun_Status.STATUS_UNSPECIFIED;
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
-    message.executionStatus = object.executionStatus ?? 0;
+    message.executionStatus = object.executionStatus ?? TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED;
     message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
     message.executionDetail = (object.executionDetail !== undefined && object.executionDetail !== null)
       ? TaskRun_ExecutionDetail.fromPartial(object.executionDetail)
       : undefined;
     message.startTime = object.startTime ?? undefined;
-    message.exportArchiveStatus = object.exportArchiveStatus ?? 0;
+    message.exportArchiveStatus = object.exportArchiveStatus ??
+      TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED;
     return message;
   },
 };
@@ -6158,220 +3378,503 @@ export const TaskRun_ExecutionDetail_Position = {
   },
 };
 
+function createBaseTaskRunLog(): TaskRunLog {
+  return { name: "", entries: [] };
+}
+
+export const TaskRunLog = {
+  encode(message: TaskRunLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.entries) {
+      TaskRunLogEntry.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLog {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.entries.push(TaskRunLogEntry.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLog {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => TaskRunLogEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TaskRunLog): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => TaskRunLogEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLog>): TaskRunLog {
+    return TaskRunLog.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLog>): TaskRunLog {
+    const message = createBaseTaskRunLog();
+    message.name = object.name ?? "";
+    message.entries = object.entries?.map((e) => TaskRunLogEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry(): TaskRunLogEntry {
+  return { type: TaskRunLogEntry_Type.TYPE_UNSPECIFIED, schemaDump: undefined, commandExecute: undefined };
+}
+
+export const TaskRunLogEntry = {
+  encode(message: TaskRunLogEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== TaskRunLogEntry_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(taskRunLogEntry_TypeToNumber(message.type));
+    }
+    if (message.schemaDump !== undefined) {
+      TaskRunLogEntry_SchemaDump.encode(message.schemaDump, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.commandExecute !== undefined) {
+      TaskRunLogEntry_CommandExecute.encode(message.commandExecute, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = taskRunLogEntry_TypeFromJSON(reader.int32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemaDump = TaskRunLogEntry_SchemaDump.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.commandExecute = TaskRunLogEntry_CommandExecute.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry {
+    return {
+      type: isSet(object.type) ? taskRunLogEntry_TypeFromJSON(object.type) : TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
+      schemaDump: isSet(object.schemaDump) ? TaskRunLogEntry_SchemaDump.fromJSON(object.schemaDump) : undefined,
+      commandExecute: isSet(object.commandExecute)
+        ? TaskRunLogEntry_CommandExecute.fromJSON(object.commandExecute)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry): unknown {
+    const obj: any = {};
+    if (message.type !== TaskRunLogEntry_Type.TYPE_UNSPECIFIED) {
+      obj.type = taskRunLogEntry_TypeToJSON(message.type);
+    }
+    if (message.schemaDump !== undefined) {
+      obj.schemaDump = TaskRunLogEntry_SchemaDump.toJSON(message.schemaDump);
+    }
+    if (message.commandExecute !== undefined) {
+      obj.commandExecute = TaskRunLogEntry_CommandExecute.toJSON(message.commandExecute);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLogEntry>): TaskRunLogEntry {
+    return TaskRunLogEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLogEntry>): TaskRunLogEntry {
+    const message = createBaseTaskRunLogEntry();
+    message.type = object.type ?? TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
+    message.schemaDump = (object.schemaDump !== undefined && object.schemaDump !== null)
+      ? TaskRunLogEntry_SchemaDump.fromPartial(object.schemaDump)
+      : undefined;
+    message.commandExecute = (object.commandExecute !== undefined && object.commandExecute !== null)
+      ? TaskRunLogEntry_CommandExecute.fromPartial(object.commandExecute)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry_SchemaDump(): TaskRunLogEntry_SchemaDump {
+  return { startTime: undefined, endTime: undefined, error: "" };
+}
+
+export const TaskRunLogEntry_SchemaDump = {
+  encode(message: TaskRunLogEntry_SchemaDump, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.startTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.endTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.endTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.error !== "") {
+      writer.uint32(26).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry_SchemaDump {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry_SchemaDump();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.endTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry_SchemaDump {
+    return {
+      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
+      endTime: isSet(object.endTime) ? fromJsonTimestamp(object.endTime) : undefined,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry_SchemaDump): unknown {
+    const obj: any = {};
+    if (message.startTime !== undefined) {
+      obj.startTime = message.startTime.toISOString();
+    }
+    if (message.endTime !== undefined) {
+      obj.endTime = message.endTime.toISOString();
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLogEntry_SchemaDump>): TaskRunLogEntry_SchemaDump {
+    return TaskRunLogEntry_SchemaDump.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLogEntry_SchemaDump>): TaskRunLogEntry_SchemaDump {
+    const message = createBaseTaskRunLogEntry_SchemaDump();
+    message.startTime = object.startTime ?? undefined;
+    message.endTime = object.endTime ?? undefined;
+    message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry_CommandExecute(): TaskRunLogEntry_CommandExecute {
+  return { logTime: undefined, commandIndexes: [], response: undefined };
+}
+
+export const TaskRunLogEntry_CommandExecute = {
+  encode(message: TaskRunLogEntry_CommandExecute, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.logTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(10).fork()).ldelim();
+    }
+    writer.uint32(18).fork();
+    for (const v of message.commandIndexes) {
+      writer.int32(v);
+    }
+    writer.ldelim();
+    if (message.response !== undefined) {
+      TaskRunLogEntry_CommandExecute_CommandResponse.encode(message.response, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry_CommandExecute {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry_CommandExecute();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag === 16) {
+            message.commandIndexes.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.commandIndexes.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.response = TaskRunLogEntry_CommandExecute_CommandResponse.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry_CommandExecute {
+    return {
+      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
+      commandIndexes: globalThis.Array.isArray(object?.commandIndexes)
+        ? object.commandIndexes.map((e: any) => globalThis.Number(e))
+        : [],
+      response: isSet(object.response)
+        ? TaskRunLogEntry_CommandExecute_CommandResponse.fromJSON(object.response)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry_CommandExecute): unknown {
+    const obj: any = {};
+    if (message.logTime !== undefined) {
+      obj.logTime = message.logTime.toISOString();
+    }
+    if (message.commandIndexes?.length) {
+      obj.commandIndexes = message.commandIndexes.map((e) => Math.round(e));
+    }
+    if (message.response !== undefined) {
+      obj.response = TaskRunLogEntry_CommandExecute_CommandResponse.toJSON(message.response);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLogEntry_CommandExecute>): TaskRunLogEntry_CommandExecute {
+    return TaskRunLogEntry_CommandExecute.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLogEntry_CommandExecute>): TaskRunLogEntry_CommandExecute {
+    const message = createBaseTaskRunLogEntry_CommandExecute();
+    message.logTime = object.logTime ?? undefined;
+    message.commandIndexes = object.commandIndexes?.map((e) => e) || [];
+    message.response = (object.response !== undefined && object.response !== null)
+      ? TaskRunLogEntry_CommandExecute_CommandResponse.fromPartial(object.response)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry_CommandExecute_CommandResponse(): TaskRunLogEntry_CommandExecute_CommandResponse {
+  return { logTime: undefined, error: "", affectedRows: 0, allAffectedRows: [] };
+}
+
+export const TaskRunLogEntry_CommandExecute_CommandResponse = {
+  encode(
+    message: TaskRunLogEntry_CommandExecute_CommandResponse,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.logTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.error !== "") {
+      writer.uint32(18).string(message.error);
+    }
+    if (message.affectedRows !== 0) {
+      writer.uint32(24).int32(message.affectedRows);
+    }
+    writer.uint32(34).fork();
+    for (const v of message.allAffectedRows) {
+      writer.int32(v);
+    }
+    writer.ldelim();
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry_CommandExecute_CommandResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry_CommandExecute_CommandResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.affectedRows = reader.int32();
+          continue;
+        case 4:
+          if (tag === 32) {
+            message.allAffectedRows.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 34) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.allAffectedRows.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry_CommandExecute_CommandResponse {
+    return {
+      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
+      allAffectedRows: globalThis.Array.isArray(object?.allAffectedRows)
+        ? object.allAffectedRows.map((e: any) => globalThis.Number(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry_CommandExecute_CommandResponse): unknown {
+    const obj: any = {};
+    if (message.logTime !== undefined) {
+      obj.logTime = message.logTime.toISOString();
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    if (message.affectedRows !== 0) {
+      obj.affectedRows = Math.round(message.affectedRows);
+    }
+    if (message.allAffectedRows?.length) {
+      obj.allAffectedRows = message.allAffectedRows.map((e) => Math.round(e));
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<TaskRunLogEntry_CommandExecute_CommandResponse>,
+  ): TaskRunLogEntry_CommandExecute_CommandResponse {
+    return TaskRunLogEntry_CommandExecute_CommandResponse.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<TaskRunLogEntry_CommandExecute_CommandResponse>,
+  ): TaskRunLogEntry_CommandExecute_CommandResponse {
+    const message = createBaseTaskRunLogEntry_CommandExecute_CommandResponse();
+    message.logTime = object.logTime ?? undefined;
+    message.error = object.error ?? "";
+    message.affectedRows = object.affectedRows ?? 0;
+    message.allAffectedRows = object.allAffectedRows?.map((e) => e) || [];
+    return message;
+  },
+};
+
 export type RolloutServiceDefinition = typeof RolloutServiceDefinition;
 export const RolloutServiceDefinition = {
   name: "RolloutService",
   fullName: "bytebase.v1.RolloutService",
   methods: {
-    getPlan: {
-      name: "GetPlan",
-      requestType: GetPlanRequest,
-      requestStream: false,
-      responseType: Plan,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          578365826: [
-            new Uint8Array([
-              31,
-              18,
-              29,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              112,
-              108,
-              97,
-              110,
-              115,
-              47,
-              42,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    listPlans: {
-      name: "ListPlans",
-      requestType: ListPlansRequest,
-      requestStream: false,
-      responseType: ListPlansResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
-          578365826: [
-            new Uint8Array([
-              31,
-              18,
-              29,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              112,
-              108,
-              97,
-              110,
-              115,
-            ]),
-          ],
-        },
-      },
-    },
-    createPlan: {
-      name: "CreatePlan",
-      requestType: CreatePlanRequest,
-      requestStream: false,
-      responseType: Plan,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([11, 112, 97, 114, 101, 110, 116, 44, 112, 108, 97, 110])],
-          578365826: [
-            new Uint8Array([
-              37,
-              58,
-              4,
-              112,
-              108,
-              97,
-              110,
-              34,
-              29,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              112,
-              108,
-              97,
-              110,
-              115,
-            ]),
-          ],
-        },
-      },
-    },
-    updatePlan: {
-      name: "UpdatePlan",
-      requestType: UpdatePlanRequest,
-      requestStream: false,
-      responseType: Plan,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([16, 112, 108, 97, 110, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
-          578365826: [
-            new Uint8Array([
-              42,
-              58,
-              4,
-              112,
-              108,
-              97,
-              110,
-              50,
-              34,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              108,
-              97,
-              110,
-              46,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              112,
-              108,
-              97,
-              110,
-              115,
-              47,
-              42,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
     getRollout: {
       name: "GetRollout",
       requestType: GetRolloutRequest,
@@ -6623,20 +4126,20 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    listPlanCheckRuns: {
-      name: "ListPlanCheckRuns",
-      requestType: ListPlanCheckRunsRequest,
+    getTaskRunLog: {
+      name: "GetTaskRunLog",
+      requestType: GetTaskRunLogRequest,
       requestStream: false,
-      responseType: ListPlanCheckRunsResponse,
+      responseType: TaskRunLog,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              47,
+              68,
               18,
-              45,
+              66,
               47,
               118,
               49,
@@ -6660,93 +4163,49 @@ export const RolloutServiceDefinition = {
               47,
               42,
               47,
-              112,
+              114,
+              111,
               108,
-              97,
-              110,
+              108,
+              111,
+              117,
+              116,
               115,
               47,
               42,
-              125,
               47,
-              112,
-              108,
+              115,
+              116,
               97,
-              110,
-              67,
-              104,
+              103,
               101,
-              99,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
               107,
               82,
               117,
               110,
               115,
-            ]),
-          ],
-        },
-      },
-    },
-    runPlanChecks: {
-      name: "RunPlanChecks",
-      requestType: RunPlanChecksRequest,
-      requestStream: false,
-      responseType: RunPlanChecksResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          578365826: [
-            new Uint8Array([
-              48,
-              58,
-              1,
-              42,
-              34,
-              43,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              112,
-              108,
-              97,
-              110,
-              115,
               47,
               42,
               125,
-              58,
-              114,
-              117,
-              110,
-              80,
+              47,
               108,
-              97,
-              110,
-              67,
-              104,
-              101,
-              99,
-              107,
-              115,
+              111,
+              103,
             ]),
           ],
         },

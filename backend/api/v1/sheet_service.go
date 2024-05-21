@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -110,7 +111,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
 	}
-	sheet, err := s.store.CreateSheet(ctx, storeSheetCreate)
+	sheet, err := sc.CreateSheet(ctx, s.store, storeSheetCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
 	}
@@ -342,14 +343,18 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", sheet.ProjectUID))
 	}
-	var v1SheetPayload *v1pb.SheetPayload
-	if sheet.Payload != nil {
-		payload := sheet.Payload
+	v1SheetPayload := &v1pb.SheetPayload{}
+	if len(sheet.Payload.GetCommands()) > 0 {
+		v1SheetPayload.Commands = convertToSheetCommands(sheet.Payload.GetCommands())
+	} else {
+		v1SheetPayload.Commands = []*v1pb.SheetCommand{
+			{Start: 0, End: int32(sheet.Size)},
+		}
+	}
+	if payload := sheet.Payload; payload != nil {
 		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			v1SheetPayload = &v1pb.SheetPayload{
-				DatabaseConfig:         convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */),
-				BaselineDatabaseConfig: convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */),
-			}
+			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */)
+			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */)
 		}
 	}
 
@@ -363,6 +368,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
 		Payload:     v1SheetPayload,
+		Engine:      convertToEngine(sheet.Payload.GetEngine()),
 	}, nil
 }
 
@@ -373,13 +379,25 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		CreatorID:   creatorID,
 		Title:       sheet.Title,
 		Statement:   string(sheet.Content),
+		Payload:     &storepb.SheetPayload{},
 	}
+	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 	if sheet.Payload != nil {
-		sheetMessage.Payload = &storepb.SheetPayload{
-			DatabaseConfig:         convertV1DatabaseConfig(sheet.Payload.DatabaseConfig),
-			BaselineDatabaseConfig: convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig),
-		}
+		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(sheet.Payload.DatabaseConfig)
+		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig)
 	}
 
 	return sheetMessage, nil
+}
+
+func convertToSheetCommands(commands []*storepb.SheetCommand) []*v1pb.SheetCommand {
+	var cs []*v1pb.SheetCommand
+	for _, command := range commands {
+		c := &v1pb.SheetCommand{
+			Start: command.Start,
+			End:   command.End,
+		}
+		cs = append(cs, c)
+	}
+	return cs
 }

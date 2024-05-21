@@ -100,7 +100,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 
 		var effectiveMaskers []masker.Masker
 		for column := range spanResult.SourceColumns {
-			newMasker, err := s.getMasterForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, currentPrincipal)
+			newMasker, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, currentPrincipal)
 			if err != nil {
 				return nil, err
 			}
@@ -127,7 +127,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	return maskers, nil
 }
 
-func (s *QueryResultMasker) getMasterForColumnResource(
+func (s *QueryResultMasker) getMaskerForColumnResource(
 	ctx context.Context,
 	m *maskingLevelEvaluator,
 	instance *store.InstanceMessage,
@@ -212,7 +212,7 @@ func (s *QueryResultMasker) getMasterForColumnResource(
 		}
 	}
 
-	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, meta.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, config.ClassificationId, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
@@ -261,20 +261,13 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	columnMetadata = column
 
 	var columnConfig *storepb.ColumnConfig
-	config := dbSchema.GetDatabaseConfig()
+	config := dbSchema.GetInternalConfig()
 	if config == nil {
 		return columnMetadata, nil, nil
 	}
-	schemaConfig := config.GetSchemaConfig(sourceColumn.Schema)
-	if schemaConfig == nil {
-		return columnMetadata, nil, nil
-	}
-	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
-	if tableConfig == nil {
-		return columnMetadata, nil, nil
-	}
-
-	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
+	schemaConfig := config.CreateOrGetSchemaConfig(sourceColumn.Schema)
+	tableConfig := schemaConfig.CreateOrGetTableConfig(sourceColumn.Table)
+	columnConfig = tableConfig.CreateOrGetColumnConfig(sourceColumn.Column)
 	return columnMetadata, columnConfig, nil
 }
 
@@ -297,6 +290,8 @@ func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSett
 		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices))
 	case *storepb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
 		return masker.NewMD5Masker(m.Md5Mask.Salt)
+	case *storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_:
+		return masker.NewInnerOuterMasker(m.InnerOuterMask.Type, m.InnerOuterMask.PrefixLen, m.InnerOuterMask.SuffixLen, m.InnerOuterMask.Substitution)
 	}
 	return masker.NewNoneMasker()
 }

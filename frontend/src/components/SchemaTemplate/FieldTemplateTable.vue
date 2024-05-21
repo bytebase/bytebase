@@ -16,7 +16,7 @@
       </div>
       <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
         <ClassificationLevelBadge
-          :classification="item.column?.classification"
+          :classification="item.config?.classificationId"
           :classification-config="classificationConfig"
         />
       </div>
@@ -25,9 +25,6 @@
       </div>
       <div class="bb-grid-cell">
         {{ getColumnDefaultValuePlaceholder(item.column!) }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ item.column?.onUpdate }}
       </div>
       <div class="bb-grid-cell">
         {{ item.column?.userComment }}
@@ -66,7 +63,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
-import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import { MiniActionButton } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useSettingV1Store } from "@/store";
@@ -114,11 +111,6 @@ const columnList = computed((): BBGridColumn[] => {
     },
     {
       title: t("schema-template.form.default-value"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.form.on-update"),
       width: "minmax(min-content, auto)",
       class: "capitalize",
     },

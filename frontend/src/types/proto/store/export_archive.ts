@@ -1,7 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
@@ -11,13 +11,13 @@ export interface ExportArchivePayload {
 }
 
 function createBaseExportArchivePayload(): ExportArchivePayload {
-  return { fileFormat: 0 };
+  return { fileFormat: ExportFormat.FORMAT_UNSPECIFIED };
 }
 
 export const ExportArchivePayload = {
   encode(message: ExportArchivePayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.fileFormat !== 0) {
-      writer.uint32(8).int32(message.fileFormat);
+    if (message.fileFormat !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(8).int32(exportFormatToNumber(message.fileFormat));
     }
     return writer;
   },
@@ -34,7 +34,7 @@ export const ExportArchivePayload = {
             break;
           }
 
-          message.fileFormat = reader.int32() as any;
+          message.fileFormat = exportFormatFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -46,12 +46,14 @@ export const ExportArchivePayload = {
   },
 
   fromJSON(object: any): ExportArchivePayload {
-    return { fileFormat: isSet(object.fileFormat) ? exportFormatFromJSON(object.fileFormat) : 0 };
+    return {
+      fileFormat: isSet(object.fileFormat) ? exportFormatFromJSON(object.fileFormat) : ExportFormat.FORMAT_UNSPECIFIED,
+    };
   },
 
   toJSON(message: ExportArchivePayload): unknown {
     const obj: any = {};
-    if (message.fileFormat !== 0) {
+    if (message.fileFormat !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.fileFormat = exportFormatToJSON(message.fileFormat);
     }
     return obj;
@@ -62,7 +64,7 @@ export const ExportArchivePayload = {
   },
   fromPartial(object: DeepPartial<ExportArchivePayload>): ExportArchivePayload {
     const message = createBaseExportArchivePayload();
-    message.fileFormat = object.fileFormat ?? 0;
+    message.fileFormat = object.fileFormat ?? ExportFormat.FORMAT_UNSPECIFIED;
     return message;
   },
 };

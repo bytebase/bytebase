@@ -1,7 +1,7 @@
 package ast
 
 import (
-	pgquery "github.com/pganalyze/pg_query_go/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v5"
 )
 
 // SetOperationType is the type for set operations.
@@ -39,6 +39,7 @@ type SelectStmt struct {
 	FieldList     []ExpressionNode
 	WhereClause   ExpressionNode
 	OrderByClause []*ByItemDef
+	Limit         *int32
 
 	// TODO(rebelice): support all expression and remove them.
 	// We define them because we cannot convert all expression now.

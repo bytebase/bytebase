@@ -113,7 +113,6 @@
 </template>
 
 <script lang="ts" setup>
-/* eslint-disable vue/no-mutating-props */
 import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";

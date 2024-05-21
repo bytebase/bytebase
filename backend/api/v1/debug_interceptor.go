@@ -71,7 +71,7 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod s
 	case codes.OK:
 		logLevel = slog.LevelDebug
 		logMsg = "OK"
-	case codes.Unauthenticated, codes.OutOfRange, codes.PermissionDenied, codes.NotFound:
+	case codes.Unauthenticated, codes.OutOfRange, codes.PermissionDenied, codes.NotFound, codes.InvalidArgument:
 		logLevel = slog.LevelDebug
 		logMsg = "client error"
 	case codes.Internal, codes.Unknown, codes.DataLoss, codes.Unavailable, codes.DeadlineExceeded:

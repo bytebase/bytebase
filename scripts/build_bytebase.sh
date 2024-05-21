@@ -14,9 +14,9 @@ OUTPUT_DIR=$(mkdir_output "$1")
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
-if [ "$(version ${GO_VERSION})" -lt "$(version 1.21.6)" ];
+if [ "$(version ${GO_VERSION})" -lt "$(version 1.22.3)" ];
 then
-   echo "${RED}Precheck failed.${NC} Require go version >= 1.21.6. Current version ${GO_VERSION}."; exit 1;
+   echo "${RED}Precheck failed.${NC} Require go version >= 1.22.3. Current version ${GO_VERSION}."; exit 1;
 fi
 
 NODE_VERSION=`node -v | { read v; echo ${v#v}; }`
@@ -58,8 +58,7 @@ flags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION
 -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
 -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=$(id -u -n)'"
 
-# -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
+CGO_ENABLED=1 go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
 
 echo "Completed building Bytebase backend."
 

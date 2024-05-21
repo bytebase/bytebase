@@ -3,7 +3,7 @@
     - status: WARN
       code: 602
       title: table.no-foreign-key
-      content: Foreign key is not allowed in the table "SYS"."TECH_BOOK".
+      content: Foreign key is not allowed in the table "TEST_DB"."TECH_BOOK".
       line: 1
       details: ""
 - statement: CREATE TABLE book(id INT, author_id INT, CONSTRAINT fk_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id))
@@ -11,6 +11,6 @@
     - status: WARN
       code: 602
       title: table.no-foreign-key
-      content: Foreign key is not allowed in the table "SYS"."BOOK".
+      content: Foreign key is not allowed in the table "TEST_DB"."BOOK".
       line: 1
       details: ""

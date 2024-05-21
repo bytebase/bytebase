@@ -42,6 +42,7 @@ func TestTiDBRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
 		advisor.SchemaRuleStatementDMLDryRun,
+		advisor.SchemaRuleStatementMaximumLimitValue,
 
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
 		advisor.SchemaRuleTableRequirePK,
@@ -113,6 +114,6 @@ func TestTiDBRules(t *testing.T) {
 	}
 
 	for _, rule := range tidbRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, nil, false /* record */)
 	}
 }

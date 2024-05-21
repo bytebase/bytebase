@@ -100,6 +100,15 @@
         }
       }
     },
+    "table-limit-size": {
+      "title": "Limitar operaciones DDL en tablas con gran número de filas",
+      "description": "Configurar el número máximo de filas en tablas para las cuales se puede ejecutar DDL. Nivel de error recomendado: advertencia",
+      "component": {
+        "number": {
+          "title": "Recuento máximo de filas"
+        }
+      }
+    },
     "table-disallow-dml": {
       "title": "No permitir DML",
       "description": "Configure qué tablas tienen prohibido ejecutar DML. Nivel de error de sugerencia: Advertencia",
@@ -108,6 +117,10 @@
           "title": "Nombres de tablas"
         }
       }
+    },
+    "naming-fully-qualified": {
+      "title": "Nombre de objeto completo",
+      "description": "Forzar el uso de nombres de objetos completamente calificados. Por ejemplo, “schema.table”, nivel de error sugerido: Advertencia"
     },
     "naming-table": {
       "title": "Imponer formato de nomenclatura de tabla",
@@ -266,6 +279,10 @@
       "title": "Prohibir el cambio del orden de las columnas en una tabla",
       "description": "Modificar el orden de las columnas puede hacer que algunas aplicaciones o vistas que dependen del orden predeterminado de la tabla original produzcan resultados inesperados, como \"select *\". Nivel de error sugerido: Advertencia"
     },
+    "column-disallow-drop": {
+      "title": "Prohibir eliminar columnas",
+      "description": "Se prohíbe eliminar columnas. Nivel de error sugerido: advertencia."
+    },
     "column-disallow-drop-in-index": {
       "title": "Prohibir eliminar columnas en el índice",
       "description": "Prohibir eliminar columnas en el índice. Nivel de error sugerido: Advertencia"
@@ -341,9 +358,13 @@
       "title": "Prohibir el uso de comodines principales en las condiciones de filtrado",
       "description": "Al usar comodines principales, como \"LIKE '%ABC'\", el optimizador de la base de datos no puede usar el escaneo de índice rápido y debe recurrir al escaneo completo de la tabla o del índice completo, lo que puede causar un impacto grave en el rendimiento. Nivel de sugerencia de error: Error"
     },
-    "statement-disallow-cascade": {
-      "title": "Prohibir el uso de la opción \"CASCADE\" en las declaraciones DDL",
-      "description": "La opción \"CASCADE\" puede causar cambios en cascada en las dependencias de los objetos de la base de datos, lo que puede causar un impacto grave en la aplicación. Nivel de sugerencia de error: Error"
+    "statement-disallow-on-del-cascade": {
+      "title": "Prohibir el uso de la opción CASCADE en las cláusulas ON DELETE",
+      "description": "La opción 'CASCADE' en 'ON DELETE' puede causar que se eliminen o modifiquen un gran número de objetos dependientes, lo que puede causar resultados inesperados. Nivel de error sugerido: Error"
+    },
+    "statement-disallow-rm-tbl-cascade": {
+      "title": "Prohibir el uso de CASCADE al eliminar una tabla",
+      "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
     },
     "statement-disallow-commit": {
       "title": "Prohibir la declaración explícita de \"COMMIT\"",
@@ -401,7 +422,7 @@
     },
     "statement-disallow-add-not-null": {
       "title": "Restricción de agregar restricción \"NOT NULL\" a columnas existentes",
-      "description": "Antes de PostgreSQL 11, agregar una restricción NOT NULL requería verificar los datos existentes. Esto bloquea la lectura y escritura, lo que puede causar interrupciones comerciales. En PostgreSQL 11 y superior, este problema se ha optimizado y no es necesario prestar atención a esta especificación. Nivel de error sugerido: Advertencia"
+      "description": "Agregar una restricción NOT NULL con un valor predeterminado antes de PostgreSQL 11 o agregar una restricción NOT NULL sin un valor predeterminado requiere verificar los datos existentes. Esto bloquea la lectura y la escritura, lo que puede provocar la interrupción del negocio. Nivel de error sugerido: Advertencia"
     },
     "statement-select-full-table-scan": {
       "title": "Verificar escaneo completo de tabla en consultas",
@@ -487,6 +508,14 @@
     "statement-prior-backup-check": {
       "title": "Verificar la existencia de una copia de seguridad previa antes de cambiar los datos",
       "description": "Esta regla verificará si se puede crear una copia de seguridad antes del cambio de datos. Para más detalles, contiene la existencia de la base de datos objetivo de la copia de seguridad y no permite la sentencia DDL."
+    },
+    "statement-add-column-without-position": {
+      "title": "Prohibir añadir columnas en una posición especificada",
+      "description": "En algunos casos, usar FIRST/AFTER para añadir columnas en una posición especificada puede causar una reorganización de los datos (reescribiendo los datos originales). Nivel de recomendación: advertencia."
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "Prohibir DDL sin conexión",
+      "description": "Para evitar que los cambios en la base de datos afecten su negocio, por favor evite usar DDL sin conexión."
     },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -923,6 +924,70 @@ func convertToRollbackSQLStatus(status api.RollbackSQLStatus) v1pb.Task_Database
 	default:
 		return v1pb.Task_DatabaseDataUpdate_ROLLBACK_SQL_STATUS_UNSPECIFIED
 	}
+}
+
+func convertToTaskRunLog(parent string, logs []*store.TaskRunLog) *v1pb.TaskRunLog {
+	return &v1pb.TaskRunLog{
+		Name:    fmt.Sprintf("%s/log", parent),
+		Entries: convertToTaskRunLogEntries(logs),
+	}
+}
+
+func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntry {
+	var entries []*v1pb.TaskRunLogEntry
+	for _, l := range logs {
+		switch l.Payload.Type {
+		case storepb.TaskRunLog_SCHEMA_DUMP_START:
+			e := &v1pb.TaskRunLogEntry{
+				Type: v1pb.TaskRunLogEntry_SCHEMA_DUMP,
+				SchemaDump: &v1pb.TaskRunLogEntry_SchemaDump{
+					StartTime: timestamppb.New(l.T),
+				},
+			}
+			entries = append(entries, e)
+
+		case storepb.TaskRunLog_SCHEMA_DUMP_END:
+			if len(entries) == 0 {
+				continue
+			}
+			prev := entries[len(entries)-1]
+			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_SCHEMA_DUMP {
+				continue
+			}
+			prev.SchemaDump.EndTime = timestamppb.New(l.T)
+			prev.SchemaDump.Error = l.Payload.SchemaDumpEnd.Error
+
+		case storepb.TaskRunLog_COMMAND_EXECUTE:
+			e := &v1pb.TaskRunLogEntry{
+				Type: v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
+				CommandExecute: &v1pb.TaskRunLogEntry_CommandExecute{
+					LogTime:        timestamppb.New(l.T),
+					CommandIndexes: l.Payload.CommandExecute.CommandIndexes,
+				},
+			}
+			entries = append(entries, e)
+
+		case storepb.TaskRunLog_COMMAND_RESPONSE:
+			if len(entries) == 0 {
+				continue
+			}
+			prev := entries[len(entries)-1]
+			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMMAND_EXECUTE {
+				continue
+			}
+			if !slices.Equal(prev.CommandExecute.CommandIndexes, l.Payload.CommandResponse.CommandIndexes) {
+				continue
+			}
+			prev.CommandExecute.Response = &v1pb.TaskRunLogEntry_CommandExecute_CommandResponse{
+				LogTime:         timestamppb.New(l.T),
+				Error:           l.Payload.CommandResponse.Error,
+				AffectedRows:    l.Payload.CommandResponse.AffectedRows,
+				AllAffectedRows: l.Payload.CommandResponse.AllAffectedRows,
+			}
+		}
+	}
+
+	return entries
 }
 
 func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {

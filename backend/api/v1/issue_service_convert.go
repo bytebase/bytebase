@@ -63,6 +63,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Releasers:            releasers,
 		RiskLevel:            v1pb.Issue_RISK_LEVEL_UNSPECIFIED,
 		TaskStatusCount:      issue.TaskStatusCount,
+		Labels:               issuePayload.Labels,
 	}
 
 	if issue.PlanUID != nil {
@@ -168,6 +169,19 @@ func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 		return v1pb.Issue_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToAPIIssueType(t v1pb.Issue_Type) (api.IssueType, error) {
+	switch t {
+	case v1pb.Issue_DATABASE_CHANGE:
+		return api.IssueDatabaseGeneral, nil
+	case v1pb.Issue_GRANT_REQUEST:
+		return api.IssueGrantRequest, nil
+	case v1pb.Issue_DATABASE_DATA_EXPORT:
+		return api.IssueDatabaseDataExport, nil
+	default:
+		return api.IssueType(""), errors.Errorf("invalid issue type %v", t)
 	}
 }
 
@@ -372,8 +386,6 @@ func convertToIssueCommentEventIssueUpdate(u *storepb.IssueCommentPayload_IssueU
 			ToDescription:   u.IssueUpdate.ToDescription,
 			FromStatus:      convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.FromStatus),
 			ToStatus:        convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.ToStatus),
-			FromAssignee:    u.IssueUpdate.FromAssignee,
-			ToAssignee:      u.IssueUpdate.ToAssignee,
 		},
 	}
 }

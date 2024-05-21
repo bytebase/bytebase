@@ -55,7 +55,7 @@ const openAIEndpoint = computed(
 const { connection, instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const databaseMetadata = useMetadata(
-  database.value.name,
+  computed(() => database.value.name),
   false /* !skipCache */,
   DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
 );

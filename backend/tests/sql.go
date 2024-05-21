@@ -36,7 +36,7 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 	defer ticker.Stop()
 
 	for range ticker.C {
-		resp, err := ctl.rolloutServiceClient.ListPlanCheckRuns(ctx, &v1pb.ListPlanCheckRunsRequest{
+		resp, err := ctl.planServiceClient.ListPlanCheckRuns(ctx, &v1pb.ListPlanCheckRunsRequest{
 			Parent: plan.Name,
 		})
 		if err != nil {

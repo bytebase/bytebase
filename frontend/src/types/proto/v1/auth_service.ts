@@ -3,16 +3,16 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { State, stateFromJSON, stateToJSON } from "./common";
+import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum UserType {
-  USER_TYPE_UNSPECIFIED = 0,
-  USER = 1,
-  SYSTEM_BOT = 2,
-  SERVICE_ACCOUNT = 3,
-  UNRECOGNIZED = -1,
+  USER_TYPE_UNSPECIFIED = "USER_TYPE_UNSPECIFIED",
+  USER = "USER",
+  SYSTEM_BOT = "SYSTEM_BOT",
+  SERVICE_ACCOUNT = "SERVICE_ACCOUNT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function userTypeFromJSON(object: any): UserType {
@@ -49,6 +49,22 @@ export function userTypeToJSON(object: UserType): string {
     case UserType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function userTypeToNumber(object: UserType): number {
+  switch (object) {
+    case UserType.USER_TYPE_UNSPECIFIED:
+      return 0;
+    case UserType.USER:
+      return 1;
+    case UserType.SYSTEM_BOT:
+      return 2;
+    case UserType.SERVICE_ACCOUNT:
+      return 3;
+    case UserType.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1209,10 +1225,10 @@ export const LogoutRequest = {
 function createBaseUser(): User {
   return {
     name: "",
-    state: 0,
+    state: State.STATE_UNSPECIFIED,
     email: "",
     title: "",
-    userType: 0,
+    userType: UserType.USER_TYPE_UNSPECIFIED,
     password: "",
     serviceKey: "",
     mfaEnabled: false,
@@ -1228,8 +1244,8 @@ export const User = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.state !== 0) {
-      writer.uint32(16).int32(message.state);
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(16).int32(stateToNumber(message.state));
     }
     if (message.email !== "") {
       writer.uint32(26).string(message.email);
@@ -1237,8 +1253,8 @@ export const User = {
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
     }
-    if (message.userType !== 0) {
-      writer.uint32(40).int32(message.userType);
+    if (message.userType !== UserType.USER_TYPE_UNSPECIFIED) {
+      writer.uint32(40).int32(userTypeToNumber(message.userType));
     }
     if (message.password !== "") {
       writer.uint32(58).string(message.password);
@@ -1283,7 +1299,7 @@ export const User = {
             break;
           }
 
-          message.state = reader.int32() as any;
+          message.state = stateFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -1304,7 +1320,7 @@ export const User = {
             break;
           }
 
-          message.userType = reader.int32() as any;
+          message.userType = userTypeFromJSON(reader.int32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -1367,10 +1383,10 @@ export const User = {
   fromJSON(object: any): User {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       email: isSet(object.email) ? globalThis.String(object.email) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
+      userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : UserType.USER_TYPE_UNSPECIFIED,
       password: isSet(object.password) ? globalThis.String(object.password) : "",
       serviceKey: isSet(object.serviceKey) ? globalThis.String(object.serviceKey) : "",
       mfaEnabled: isSet(object.mfaEnabled) ? globalThis.Boolean(object.mfaEnabled) : false,
@@ -1388,7 +1404,7 @@ export const User = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.state !== 0) {
+    if (message.state !== State.STATE_UNSPECIFIED) {
       obj.state = stateToJSON(message.state);
     }
     if (message.email !== "") {
@@ -1397,7 +1413,7 @@ export const User = {
     if (message.title !== "") {
       obj.title = message.title;
     }
-    if (message.userType !== 0) {
+    if (message.userType !== UserType.USER_TYPE_UNSPECIFIED) {
       obj.userType = userTypeToJSON(message.userType);
     }
     if (message.password !== "") {
@@ -1430,10 +1446,10 @@ export const User = {
   fromPartial(object: DeepPartial<User>): User {
     const message = createBaseUser();
     message.name = object.name ?? "";
-    message.state = object.state ?? 0;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.email = object.email ?? "";
     message.title = object.title ?? "";
-    message.userType = object.userType ?? 0;
+    message.userType = object.userType ?? UserType.USER_TYPE_UNSPECIFIED;
     message.password = object.password ?? "";
     message.serviceKey = object.serviceKey ?? "";
     message.mfaEnabled = object.mfaEnabled ?? false;

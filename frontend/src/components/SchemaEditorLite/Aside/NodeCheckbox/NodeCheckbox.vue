@@ -1,13 +1,30 @@
 <template>
-  <SchemaNodeCheckbox v-if="node.type === 'schema'" :node="node" />
+  <TableGroupNodeCheckbox
+    v-if="node.type === 'group' && node.group === 'table'"
+    :node="node as TreeNodeForGroup<'table'>"
+  />
+  <ProcedureGroupNodeCheckbox
+    v-if="node.type === 'group' && node.group === 'procedure'"
+    :node="node as TreeNodeForGroup<'procedure'>"
+  />
+  <FunctionGroupNodeCheckbox
+    v-if="node.type === 'group' && node.group === 'function'"
+    :node="node as TreeNodeForGroup<'function'>"
+  />
   <TableNodeCheckbox v-if="node.type === 'table'" :node="node" />
   <ColumnNodeCheckbox v-if="node.type === 'column'" :node="node" />
+  <ProcedureNodeCheckbox v-if="node.type === 'procedure'" :node="node" />
+  <FunctionNodeCheckbox v-if="node.type === 'function'" :node="node" />
 </template>
 
 <script setup lang="ts">
-import type { TreeNode } from "../common";
+import type { TreeNode, TreeNodeForGroup } from "../common";
 import ColumnNodeCheckbox from "./ColumnNodeCheckbox.vue";
-import SchemaNodeCheckbox from "./SchemaNodeCheckbox.vue";
+import FunctionGroupNodeCheckbox from "./FunctionGroupNodeCheckbox.vue";
+import FunctionNodeCheckbox from "./FunctionNodeCheckbox.vue";
+import ProcedureGroupNodeCheckbox from "./ProcedureGroupNodeCheckbox.vue";
+import ProcedureNodeCheckbox from "./ProcedureNodeCheckbox.vue";
+import TableGroupNodeCheckbox from "./TableGroupNodeCheckbox.vue";
 import TableNodeCheckbox from "./TableNodeCheckbox.vue";
 
 defineProps<{

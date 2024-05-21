@@ -12,7 +12,6 @@ const SOURCE_LANG = process.env.npm_config_source ?? "en-US";
 const TARGET_LANGS = process.env.npm_config_target?.split(".") ?? [
   "es-ES",
   "ja-JP",
-  "vi-VN",
   "zh-CN",
 ];
 

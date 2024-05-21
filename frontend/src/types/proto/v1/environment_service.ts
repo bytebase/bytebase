@@ -3,15 +3,15 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { State, stateFromJSON, stateToJSON } from "./common";
+import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum EnvironmentTier {
-  ENVIRONMENT_TIER_UNSPECIFIED = 0,
-  PROTECTED = 1,
-  UNPROTECTED = 2,
-  UNRECOGNIZED = -1,
+  ENVIRONMENT_TIER_UNSPECIFIED = "ENVIRONMENT_TIER_UNSPECIFIED",
+  PROTECTED = "PROTECTED",
+  UNPROTECTED = "UNPROTECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function environmentTierFromJSON(object: any): EnvironmentTier {
@@ -43,6 +43,20 @@ export function environmentTierToJSON(object: EnvironmentTier): string {
     case EnvironmentTier.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function environmentTierToNumber(object: EnvironmentTier): number {
+  switch (object) {
+    case EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED:
+      return 0;
+    case EnvironmentTier.PROTECTED:
+      return 1;
+    case EnvironmentTier.UNPROTECTED:
+      return 2;
+    case EnvironmentTier.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -632,7 +646,14 @@ export const UndeleteEnvironmentRequest = {
 };
 
 function createBaseEnvironment(): Environment {
-  return { name: "", uid: "", state: 0, title: "", order: 0, tier: 0 };
+  return {
+    name: "",
+    uid: "",
+    state: State.STATE_UNSPECIFIED,
+    title: "",
+    order: 0,
+    tier: EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED,
+  };
 }
 
 export const Environment = {
@@ -643,8 +664,8 @@ export const Environment = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
-    if (message.state !== 0) {
-      writer.uint32(24).int32(message.state);
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(24).int32(stateToNumber(message.state));
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -652,8 +673,8 @@ export const Environment = {
     if (message.order !== 0) {
       writer.uint32(40).int32(message.order);
     }
-    if (message.tier !== 0) {
-      writer.uint32(48).int32(message.tier);
+    if (message.tier !== EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
+      writer.uint32(48).int32(environmentTierToNumber(message.tier));
     }
     return writer;
   },
@@ -684,7 +705,7 @@ export const Environment = {
             break;
           }
 
-          message.state = reader.int32() as any;
+          message.state = stateFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -705,7 +726,7 @@ export const Environment = {
             break;
           }
 
-          message.tier = reader.int32() as any;
+          message.tier = environmentTierFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -720,10 +741,10 @@ export const Environment = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       order: isSet(object.order) ? globalThis.Number(object.order) : 0,
-      tier: isSet(object.tier) ? environmentTierFromJSON(object.tier) : 0,
+      tier: isSet(object.tier) ? environmentTierFromJSON(object.tier) : EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED,
     };
   },
 
@@ -735,7 +756,7 @@ export const Environment = {
     if (message.uid !== "") {
       obj.uid = message.uid;
     }
-    if (message.state !== 0) {
+    if (message.state !== State.STATE_UNSPECIFIED) {
       obj.state = stateToJSON(message.state);
     }
     if (message.title !== "") {
@@ -744,7 +765,7 @@ export const Environment = {
     if (message.order !== 0) {
       obj.order = Math.round(message.order);
     }
-    if (message.tier !== 0) {
+    if (message.tier !== EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
       obj.tier = environmentTierToJSON(message.tier);
     }
     return obj;
@@ -757,10 +778,10 @@ export const Environment = {
     const message = createBaseEnvironment();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.state = object.state ?? 0;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.order = object.order ?? 0;
-    message.tier = object.tier ?? 0;
+    message.tier = object.tier ?? EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
     return message;
   },
 };

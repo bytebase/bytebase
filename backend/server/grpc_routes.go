@@ -44,12 +44,13 @@ func configureGrpcRouters(
 	postCreateUser apiv1.CreateUserFunc,
 	secret string,
 	errorRecordRing *api.ErrorRecordRing,
-	tokenDuration time.Duration) (*apiv1.RolloutService, *apiv1.IssueService, error) {
+	tokenDuration time.Duration) (*apiv1.PlanService, *apiv1.RolloutService, *apiv1.IssueService, error) {
 	// Register services.
 	authService, err := apiv1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, postCreateUser)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+	v1pb.RegisterAuditLogServiceServer(grpcServer, apiv1.NewAuditLogService(stores, iamManager))
 	v1pb.RegisterAuthServiceServer(grpcServer, authService)
 	v1pb.RegisterActuatorServiceServer(grpcServer, apiv1.NewActuatorService(stores, profile, errorRecordRing, licenseService))
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
@@ -77,9 +78,11 @@ func configureGrpcRouters(
 	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, activityManager, licenseService, profile, iamManager))
 	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
+	planService := apiv1.NewPlanService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, activityManager, profile, iamManager)
+	v1pb.RegisterPlanServiceServer(grpcServer, planService)
 	issueService := apiv1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
-	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, activityManager, profile, iamManager)
+	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, stateCfg, activityManager, profile, iamManager)
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
 	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, iamManager, licenseService))
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, licenseService, iamManager, profile))
@@ -92,76 +95,85 @@ func configureGrpcRouters(
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)
-	grpcConn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.Dial(
+		grpcEndpoint,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(100*1024*1024), // Set MaxCallRecvMsgSize to 100M so that users can receive up to 100M via REST calls.
+		),
+	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterVCSProviderServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+	if err := v1pb.RegisterPlanServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterVCSConnectorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return rolloutService, issueService, nil
+	return planService, rolloutService, issueService, nil
 }

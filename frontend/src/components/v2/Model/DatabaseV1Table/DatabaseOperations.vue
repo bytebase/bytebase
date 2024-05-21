@@ -116,7 +116,7 @@ import {
 import {
   isArchivedDatabaseV1,
   instanceV1HasAlterSchema,
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   generateIssueName,
   hasProjectPermissionV2,
   extractProjectResourceName,
@@ -293,7 +293,7 @@ const generateMultiDb = async (
 ) => {
   if (
     type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditorV1(props.databases) &&
+    allowUsingSchemaEditor(props.databases) &&
     !isStandaloneMode.value
   ) {
     schemaEditorContext.value.databaseIdList = [
@@ -310,10 +310,7 @@ const generateMultiDb = async (
       props.databases.map((db) => db.databaseName),
       false
     ),
-    project: selectedProjectUid.value,
-    // The server-side will sort the databases by environment.
-    // So we need not to sort them here.
-    databaseList: selectedDatabaseUidList.value.join(","),
+    databaseList: props.databases.map((db) => db.name).join(","),
   };
   const project = useProjectV1Store().getProjectByUID(selectedProjectUid.value);
   router.push({

@@ -35,9 +35,6 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.creator) {
     filter.push(`creator = "${find.creator}"`);
   }
-  if (find.assignee) {
-    filter.push(`assignee = "${find.assignee}"`);
-  }
   if (find.subscriber) {
     filter.push(`subscriber = "${find.subscriber}"`);
   }
@@ -61,11 +58,20 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.type) {
     filter.push(`type = "${find.type}"`);
   }
+  if (find.taskType) {
+    filter.push(`task_type = "${find.taskType}"`);
+  }
   if (find.instance) {
     filter.push(`instance = "${find.instance}"`);
   }
   if (find.database) {
     filter.push(`database = "${find.database}"`);
+  }
+  if (find.labels && find.labels.length > 0) {
+    filter.push(`labels = "${find.labels.join(" & ")}"`);
+  }
+  if (find.hasPipeline !== undefined) {
+    filter.push(`has_pipeline = "${find.hasPipeline}"`);
   }
   return filter.join(" && ");
 };

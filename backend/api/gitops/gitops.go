@@ -17,6 +17,7 @@ type Service struct {
 	activityManager *activity.Manager
 	stateCfg        *state.State
 	licenseService  enterprise.LicenseService
+	planService     *v1pb.PlanService
 	rolloutService  *v1pb.RolloutService
 	issueService    *v1pb.IssueService
 }
@@ -28,6 +29,7 @@ func NewService(
 	activityManager *activity.Manager,
 	stateCfg *state.State,
 	licenseService enterprise.LicenseService,
+	planService *v1pb.PlanService,
 	rolloutService *v1pb.RolloutService,
 	issueService *v1pb.IssueService,
 ) *Service {
@@ -37,6 +39,7 @@ func NewService(
 		activityManager: activityManager,
 		stateCfg:        stateCfg,
 		licenseService:  licenseService,
+		planService:     planService,
 		rolloutService:  rolloutService,
 		issueService:    issueService,
 	}

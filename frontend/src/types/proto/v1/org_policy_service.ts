@@ -4,21 +4,30 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
-import { Engine, engineFromJSON, engineToJSON, MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
+import {
+  Engine,
+  engineFromJSON,
+  engineToJSON,
+  engineToNumber,
+  MaskingLevel,
+  maskingLevelFromJSON,
+  maskingLevelToJSON,
+  maskingLevelToNumber,
+} from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum PolicyType {
-  POLICY_TYPE_UNSPECIFIED = 0,
-  ROLLOUT_POLICY = 11,
-  SQL_REVIEW = 4,
-  MASKING = 5,
-  SLOW_QUERY = 7,
-  DISABLE_COPY_DATA = 8,
-  MASKING_RULE = 9,
-  MASKING_EXCEPTION = 10,
-  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12,
-  UNRECOGNIZED = -1,
+  POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED",
+  ROLLOUT_POLICY = "ROLLOUT_POLICY",
+  SQL_REVIEW = "SQL_REVIEW",
+  MASKING = "MASKING",
+  SLOW_QUERY = "SLOW_QUERY",
+  DISABLE_COPY_DATA = "DISABLE_COPY_DATA",
+  MASKING_RULE = "MASKING_RULE",
+  MASKING_EXCEPTION = "MASKING_EXCEPTION",
+  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function policyTypeFromJSON(object: any): PolicyType {
@@ -83,14 +92,40 @@ export function policyTypeToJSON(object: PolicyType): string {
   }
 }
 
+export function policyTypeToNumber(object: PolicyType): number {
+  switch (object) {
+    case PolicyType.POLICY_TYPE_UNSPECIFIED:
+      return 0;
+    case PolicyType.ROLLOUT_POLICY:
+      return 11;
+    case PolicyType.SQL_REVIEW:
+      return 4;
+    case PolicyType.MASKING:
+      return 5;
+    case PolicyType.SLOW_QUERY:
+      return 7;
+    case PolicyType.DISABLE_COPY_DATA:
+      return 8;
+    case PolicyType.MASKING_RULE:
+      return 9;
+    case PolicyType.MASKING_EXCEPTION:
+      return 10;
+    case PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
+      return 12;
+    case PolicyType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum PolicyResourceType {
-  RESOURCE_TYPE_UNSPECIFIED = 0,
-  WORKSPACE = 1,
-  ENVIRONMENT = 2,
-  PROJECT = 3,
-  INSTANCE = 4,
-  DATABASE = 5,
-  UNRECOGNIZED = -1,
+  RESOURCE_TYPE_UNSPECIFIED = "RESOURCE_TYPE_UNSPECIFIED",
+  WORKSPACE = "WORKSPACE",
+  ENVIRONMENT = "ENVIRONMENT",
+  PROJECT = "PROJECT",
+  INSTANCE = "INSTANCE",
+  DATABASE = "DATABASE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function policyResourceTypeFromJSON(object: any): PolicyResourceType {
@@ -140,12 +175,32 @@ export function policyResourceTypeToJSON(object: PolicyResourceType): string {
   }
 }
 
+export function policyResourceTypeToNumber(object: PolicyResourceType): number {
+  switch (object) {
+    case PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED:
+      return 0;
+    case PolicyResourceType.WORKSPACE:
+      return 1;
+    case PolicyResourceType.ENVIRONMENT:
+      return 2;
+    case PolicyResourceType.PROJECT:
+      return 3;
+    case PolicyResourceType.INSTANCE:
+      return 4;
+    case PolicyResourceType.DATABASE:
+      return 5;
+    case PolicyResourceType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum SQLReviewRuleLevel {
-  LEVEL_UNSPECIFIED = 0,
-  ERROR = 1,
-  WARNING = 2,
-  DISABLED = 3,
-  UNRECOGNIZED = -1,
+  LEVEL_UNSPECIFIED = "LEVEL_UNSPECIFIED",
+  ERROR = "ERROR",
+  WARNING = "WARNING",
+  DISABLED = "DISABLED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function sQLReviewRuleLevelFromJSON(object: any): SQLReviewRuleLevel {
@@ -182,6 +237,22 @@ export function sQLReviewRuleLevelToJSON(object: SQLReviewRuleLevel): string {
     case SQLReviewRuleLevel.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function sQLReviewRuleLevelToNumber(object: SQLReviewRuleLevel): number {
+  switch (object) {
+    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+      return 0;
+    case SQLReviewRuleLevel.ERROR:
+      return 1;
+    case SQLReviewRuleLevel.WARNING:
+      return 2;
+    case SQLReviewRuleLevel.DISABLED:
+      return 3;
+    case SQLReviewRuleLevel.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -377,10 +448,10 @@ export interface MaskingExceptionPolicy_MaskingException {
 }
 
 export enum MaskingExceptionPolicy_MaskingException_Action {
-  ACTION_UNSPECIFIED = 0,
-  QUERY = 1,
-  EXPORT = 2,
-  UNRECOGNIZED = -1,
+  ACTION_UNSPECIFIED = "ACTION_UNSPECIFIED",
+  QUERY = "QUERY",
+  EXPORT = "EXPORT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function maskingExceptionPolicy_MaskingException_ActionFromJSON(
@@ -419,6 +490,22 @@ export function maskingExceptionPolicy_MaskingException_ActionToJSON(
   }
 }
 
+export function maskingExceptionPolicy_MaskingException_ActionToNumber(
+  object: MaskingExceptionPolicy_MaskingException_Action,
+): number {
+  switch (object) {
+    case MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED:
+      return 0;
+    case MaskingExceptionPolicy_MaskingException_Action.QUERY:
+      return 1;
+    case MaskingExceptionPolicy_MaskingException_Action.EXPORT:
+      return 2;
+    case MaskingExceptionPolicy_MaskingException_Action.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface MaskingRulePolicy {
   rules: MaskingRulePolicy_MaskingRule[];
 }
@@ -435,7 +522,7 @@ export interface RestrictIssueCreationForSQLReviewPolicy {
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
-  return { parent: "", policy: undefined, type: 0 };
+  return { parent: "", policy: undefined, type: PolicyType.POLICY_TYPE_UNSPECIFIED };
 }
 
 export const CreatePolicyRequest = {
@@ -446,8 +533,8 @@ export const CreatePolicyRequest = {
     if (message.policy !== undefined) {
       Policy.encode(message.policy, writer.uint32(18).fork()).ldelim();
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
+    if (message.type !== PolicyType.POLICY_TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(policyTypeToNumber(message.type));
     }
     return writer;
   },
@@ -478,7 +565,7 @@ export const CreatePolicyRequest = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = policyTypeFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -493,7 +580,7 @@ export const CreatePolicyRequest = {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
-      type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
     };
   },
 
@@ -505,7 +592,7 @@ export const CreatePolicyRequest = {
     if (message.policy !== undefined) {
       obj.policy = Policy.toJSON(message.policy);
     }
-    if (message.type !== 0) {
+    if (message.type !== PolicyType.POLICY_TYPE_UNSPECIFIED) {
       obj.type = policyTypeToJSON(message.type);
     }
     return obj;
@@ -520,7 +607,7 @@ export const CreatePolicyRequest = {
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? Policy.fromPartial(object.policy)
       : undefined;
-    message.type = object.type ?? 0;
+    message.type = object.type ?? PolicyType.POLICY_TYPE_UNSPECIFIED;
     return message;
   },
 };
@@ -740,7 +827,7 @@ export const ListPoliciesRequest = {
       writer.uint32(10).string(message.parent);
     }
     if (message.policyType !== undefined) {
-      writer.uint32(16).int32(message.policyType);
+      writer.uint32(16).int32(policyTypeToNumber(message.policyType));
     }
     if (message.pageSize !== 0) {
       writer.uint32(24).int32(message.pageSize);
@@ -773,7 +860,7 @@ export const ListPoliciesRequest = {
             break;
           }
 
-          message.policyType = reader.int32() as any;
+          message.policyType = policyTypeFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 24) {
@@ -928,7 +1015,7 @@ function createBasePolicy(): Policy {
     name: "",
     uid: "",
     inheritFromParent: false,
-    type: 0,
+    type: PolicyType.POLICY_TYPE_UNSPECIFIED,
     rolloutPolicy: undefined,
     maskingPolicy: undefined,
     sqlReviewPolicy: undefined,
@@ -938,7 +1025,7 @@ function createBasePolicy(): Policy {
     maskingExceptionPolicy: undefined,
     restrictIssueCreationForSqlReviewPolicy: undefined,
     enforce: false,
-    resourceType: 0,
+    resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
     resourceUid: "",
   };
 }
@@ -954,8 +1041,8 @@ export const Policy = {
     if (message.inheritFromParent === true) {
       writer.uint32(32).bool(message.inheritFromParent);
     }
-    if (message.type !== 0) {
-      writer.uint32(40).int32(message.type);
+    if (message.type !== PolicyType.POLICY_TYPE_UNSPECIFIED) {
+      writer.uint32(40).int32(policyTypeToNumber(message.type));
     }
     if (message.rolloutPolicy !== undefined) {
       RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).ldelim();
@@ -987,8 +1074,8 @@ export const Policy = {
     if (message.enforce === true) {
       writer.uint32(104).bool(message.enforce);
     }
-    if (message.resourceType !== 0) {
-      writer.uint32(112).int32(message.resourceType);
+    if (message.resourceType !== PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED) {
+      writer.uint32(112).int32(policyResourceTypeToNumber(message.resourceType));
     }
     if (message.resourceUid !== "") {
       writer.uint32(122).string(message.resourceUid);
@@ -1029,7 +1116,7 @@ export const Policy = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = policyTypeFromJSON(reader.int32());
           continue;
         case 19:
           if (tag !== 154) {
@@ -1102,7 +1189,7 @@ export const Policy = {
             break;
           }
 
-          message.resourceType = reader.int32() as any;
+          message.resourceType = policyResourceTypeFromJSON(reader.int32());
           continue;
         case 15:
           if (tag !== 122) {
@@ -1125,7 +1212,7 @@ export const Policy = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
-      type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
       maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
@@ -1143,7 +1230,9 @@ export const Policy = {
         ? RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy)
         : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
-      resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
+      resourceType: isSet(object.resourceType)
+        ? policyResourceTypeFromJSON(object.resourceType)
+        : PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
       resourceUid: isSet(object.resourceUid) ? globalThis.String(object.resourceUid) : "",
     };
   },
@@ -1159,7 +1248,7 @@ export const Policy = {
     if (message.inheritFromParent === true) {
       obj.inheritFromParent = message.inheritFromParent;
     }
-    if (message.type !== 0) {
+    if (message.type !== PolicyType.POLICY_TYPE_UNSPECIFIED) {
       obj.type = policyTypeToJSON(message.type);
     }
     if (message.rolloutPolicy !== undefined) {
@@ -1191,7 +1280,7 @@ export const Policy = {
     if (message.enforce === true) {
       obj.enforce = message.enforce;
     }
-    if (message.resourceType !== 0) {
+    if (message.resourceType !== PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED) {
       obj.resourceType = policyResourceTypeToJSON(message.resourceType);
     }
     if (message.resourceUid !== "") {
@@ -1208,7 +1297,7 @@ export const Policy = {
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
     message.inheritFromParent = object.inheritFromParent ?? false;
-    message.type = object.type ?? 0;
+    message.type = object.type ?? PolicyType.POLICY_TYPE_UNSPECIFIED;
     message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
       ? RolloutPolicy.fromPartial(object.rolloutPolicy)
       : undefined;
@@ -1238,7 +1327,7 @@ export const Policy = {
         ? RestrictIssueCreationForSQLReviewPolicy.fromPartial(object.restrictIssueCreationForSqlReviewPolicy)
         : undefined;
     message.enforce = object.enforce ?? false;
-    message.resourceType = object.resourceType ?? 0;
+    message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
     message.resourceUid = object.resourceUid ?? "";
     return message;
   },
@@ -1532,7 +1621,7 @@ function createBaseMaskData(): MaskData {
     schema: "",
     table: "",
     column: "",
-    maskingLevel: 0,
+    maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     fullMaskingAlgorithmId: "",
     partialMaskingAlgorithmId: "",
   };
@@ -1549,8 +1638,8 @@ export const MaskData = {
     if (message.column !== "") {
       writer.uint32(26).string(message.column);
     }
-    if (message.maskingLevel !== 0) {
-      writer.uint32(32).int32(message.maskingLevel);
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+      writer.uint32(32).int32(maskingLevelToNumber(message.maskingLevel));
     }
     if (message.fullMaskingAlgorithmId !== "") {
       writer.uint32(42).string(message.fullMaskingAlgorithmId);
@@ -1594,7 +1683,7 @@ export const MaskData = {
             break;
           }
 
-          message.maskingLevel = reader.int32() as any;
+          message.maskingLevel = maskingLevelFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -1624,7 +1713,9 @@ export const MaskData = {
       schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
       table: isSet(object.table) ? globalThis.String(object.table) : "",
       column: isSet(object.column) ? globalThis.String(object.column) : "",
-      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+      maskingLevel: isSet(object.maskingLevel)
+        ? maskingLevelFromJSON(object.maskingLevel)
+        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
       fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId)
         ? globalThis.String(object.fullMaskingAlgorithmId)
         : "",
@@ -1645,7 +1736,7 @@ export const MaskData = {
     if (message.column !== "") {
       obj.column = message.column;
     }
-    if (message.maskingLevel !== 0) {
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
       obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
     }
     if (message.fullMaskingAlgorithmId !== "") {
@@ -1665,7 +1756,7 @@ export const MaskData = {
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
-    message.maskingLevel = object.maskingLevel ?? 0;
+    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
     message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
     return message;
@@ -1747,7 +1838,13 @@ export const SQLReviewPolicy = {
 };
 
 function createBaseSQLReviewRule(): SQLReviewRule {
-  return { type: "", level: 0, payload: "", engine: 0, comment: "" };
+  return {
+    type: "",
+    level: SQLReviewRuleLevel.LEVEL_UNSPECIFIED,
+    payload: "",
+    engine: Engine.ENGINE_UNSPECIFIED,
+    comment: "",
+  };
 }
 
 export const SQLReviewRule = {
@@ -1755,14 +1852,14 @@ export const SQLReviewRule = {
     if (message.type !== "") {
       writer.uint32(10).string(message.type);
     }
-    if (message.level !== 0) {
-      writer.uint32(16).int32(message.level);
+    if (message.level !== SQLReviewRuleLevel.LEVEL_UNSPECIFIED) {
+      writer.uint32(16).int32(sQLReviewRuleLevelToNumber(message.level));
     }
     if (message.payload !== "") {
       writer.uint32(26).string(message.payload);
     }
-    if (message.engine !== 0) {
-      writer.uint32(32).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(32).int32(engineToNumber(message.engine));
     }
     if (message.comment !== "") {
       writer.uint32(42).string(message.comment);
@@ -1789,7 +1886,7 @@ export const SQLReviewRule = {
             break;
           }
 
-          message.level = reader.int32() as any;
+          message.level = sQLReviewRuleLevelFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -1803,7 +1900,7 @@ export const SQLReviewRule = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -1824,9 +1921,9 @@ export const SQLReviewRule = {
   fromJSON(object: any): SQLReviewRule {
     return {
       type: isSet(object.type) ? globalThis.String(object.type) : "",
-      level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : 0,
+      level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : SQLReviewRuleLevel.LEVEL_UNSPECIFIED,
       payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
@@ -1836,13 +1933,13 @@ export const SQLReviewRule = {
     if (message.type !== "") {
       obj.type = message.type;
     }
-    if (message.level !== 0) {
+    if (message.level !== SQLReviewRuleLevel.LEVEL_UNSPECIFIED) {
       obj.level = sQLReviewRuleLevelToJSON(message.level);
     }
     if (message.payload !== "") {
       obj.payload = message.payload;
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     if (message.comment !== "") {
@@ -1857,9 +1954,9 @@ export const SQLReviewRule = {
   fromPartial(object: DeepPartial<SQLReviewRule>): SQLReviewRule {
     const message = createBaseSQLReviewRule();
     message.type = object.type ?? "";
-    message.level = object.level ?? 0;
+    message.level = object.level ?? SQLReviewRuleLevel.LEVEL_UNSPECIFIED;
     message.payload = object.payload ?? "";
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.comment = object.comment ?? "";
     return message;
   },
@@ -1928,16 +2025,21 @@ export const MaskingExceptionPolicy = {
 };
 
 function createBaseMaskingExceptionPolicy_MaskingException(): MaskingExceptionPolicy_MaskingException {
-  return { action: 0, maskingLevel: 0, member: "", condition: undefined };
+  return {
+    action: MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED,
+    maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+    member: "",
+    condition: undefined,
+  };
 }
 
 export const MaskingExceptionPolicy_MaskingException = {
   encode(message: MaskingExceptionPolicy_MaskingException, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.action !== 0) {
-      writer.uint32(8).int32(message.action);
+    if (message.action !== MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED) {
+      writer.uint32(8).int32(maskingExceptionPolicy_MaskingException_ActionToNumber(message.action));
     }
-    if (message.maskingLevel !== 0) {
-      writer.uint32(16).int32(message.maskingLevel);
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+      writer.uint32(16).int32(maskingLevelToNumber(message.maskingLevel));
     }
     if (message.member !== "") {
       writer.uint32(26).string(message.member);
@@ -1960,14 +2062,14 @@ export const MaskingExceptionPolicy_MaskingException = {
             break;
           }
 
-          message.action = reader.int32() as any;
+          message.action = maskingExceptionPolicy_MaskingException_ActionFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.maskingLevel = reader.int32() as any;
+          message.maskingLevel = maskingLevelFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -1994,8 +2096,12 @@ export const MaskingExceptionPolicy_MaskingException = {
 
   fromJSON(object: any): MaskingExceptionPolicy_MaskingException {
     return {
-      action: isSet(object.action) ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action) : 0,
-      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+      action: isSet(object.action)
+        ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action)
+        : MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED,
+      maskingLevel: isSet(object.maskingLevel)
+        ? maskingLevelFromJSON(object.maskingLevel)
+        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
       member: isSet(object.member) ? globalThis.String(object.member) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
@@ -2003,10 +2109,10 @@ export const MaskingExceptionPolicy_MaskingException = {
 
   toJSON(message: MaskingExceptionPolicy_MaskingException): unknown {
     const obj: any = {};
-    if (message.action !== 0) {
+    if (message.action !== MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED) {
       obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action);
     }
-    if (message.maskingLevel !== 0) {
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
       obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
     }
     if (message.member !== "") {
@@ -2023,8 +2129,8 @@ export const MaskingExceptionPolicy_MaskingException = {
   },
   fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     const message = createBaseMaskingExceptionPolicy_MaskingException();
-    message.action = object.action ?? 0;
-    message.maskingLevel = object.maskingLevel ?? 0;
+    message.action = object.action ?? MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED;
+    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     message.member = object.member ?? "";
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
@@ -2095,7 +2201,7 @@ export const MaskingRulePolicy = {
 };
 
 function createBaseMaskingRulePolicy_MaskingRule(): MaskingRulePolicy_MaskingRule {
-  return { id: "", condition: undefined, maskingLevel: 0 };
+  return { id: "", condition: undefined, maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED };
 }
 
 export const MaskingRulePolicy_MaskingRule = {
@@ -2106,8 +2212,8 @@ export const MaskingRulePolicy_MaskingRule = {
     if (message.condition !== undefined) {
       Expr.encode(message.condition, writer.uint32(18).fork()).ldelim();
     }
-    if (message.maskingLevel !== 0) {
-      writer.uint32(24).int32(message.maskingLevel);
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+      writer.uint32(24).int32(maskingLevelToNumber(message.maskingLevel));
     }
     return writer;
   },
@@ -2138,7 +2244,7 @@ export const MaskingRulePolicy_MaskingRule = {
             break;
           }
 
-          message.maskingLevel = reader.int32() as any;
+          message.maskingLevel = maskingLevelFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2153,7 +2259,9 @@ export const MaskingRulePolicy_MaskingRule = {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+      maskingLevel: isSet(object.maskingLevel)
+        ? maskingLevelFromJSON(object.maskingLevel)
+        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     };
   },
 
@@ -2165,7 +2273,7 @@ export const MaskingRulePolicy_MaskingRule = {
     if (message.condition !== undefined) {
       obj.condition = Expr.toJSON(message.condition);
     }
-    if (message.maskingLevel !== 0) {
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
       obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
     }
     return obj;
@@ -2180,7 +2288,7 @@ export const MaskingRulePolicy_MaskingRule = {
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
       : undefined;
-    message.maskingLevel = object.maskingLevel ?? 0;
+    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     return message;
   },
 };

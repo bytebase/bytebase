@@ -127,13 +127,13 @@ func setActivityFindFilterAndOrder(ctx context.Context, stores *store.Store, act
 		if len(orderByKeys) != 1 || orderByKeys[0].key != "create_time" {
 			return status.Errorf(codes.InvalidArgument, `invalid order_by, only support order by "create_time" for now`)
 		}
-		order := api.DESC
+		order := store.DESC
 		if orderByKeys[0].isAscend {
-			order = api.ASC
+			order = store.ASC
 		}
 		activityFind.Order = &order
 	} else {
-		order := api.ASC
+		order := store.ASC
 		activityFind.Order = &order
 	}
 

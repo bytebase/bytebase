@@ -344,6 +344,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.FunctionConfig"><span class="badge">M</span>FunctionConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.FunctionMetadata"><span class="badge">M</span>FunctionMetadata</a>
                 </li>
               
@@ -357,6 +361,10 @@
               
                 <li>
                   <a href="#bytebase.store.MaterializedViewMetadata"><span class="badge">M</span>MaterializedViewMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ProcedureConfig"><span class="badge">M</span>ProcedureConfig</a>
                 </li>
               
                 <li>
@@ -397,6 +405,10 @@
               
                 <li>
                   <a href="#bytebase.store.TaskMetadata"><span class="badge">M</span>TaskMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ViewConfig"><span class="badge">M</span>ViewConfig</a>
                 </li>
               
                 <li>
@@ -512,11 +524,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
+                  <a href="#bytebase.store.DataSourceOptions.Address"><span class="badge">M</span>DataSourceOptions.Address</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlainSASLConfig"><span class="badge">M</span>PlainSASLConfig</a>
+                  <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
                 </li>
               
                 <li>
@@ -835,14 +847,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.Binding"><span class="badge">M</span>Binding</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.IamPolicy"><span class="badge">M</span>IamPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.MaskData"><span class="badge">M</span>MaskData</a>
                 </li>
               
@@ -896,6 +900,10 @@
           <li>
             <a href="#store%2fproject.proto">store/project.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.store.Label"><span class="badge">M</span>Label</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.Project"><span class="badge">M</span>Project</a>
@@ -1003,6 +1011,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.MD5Mask</a>
                 </li>
               
@@ -1060,6 +1072,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.SMTPMailDeliverySetting.Authentication"><span class="badge">E</span>SMTPMailDeliverySetting.Authentication</a>
                 </li>
               
@@ -1076,6 +1092,10 @@
           <li>
             <a href="#store%2fsheet.proto">store/sheet.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.store.SheetCommand"><span class="badge">M</span>SheetCommand</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.SheetPayload"><span class="badge">M</span>SheetPayload</a>
@@ -1123,6 +1143,41 @@
                   <a href="#bytebase.store.TaskRunResult.Position"><span class="badge">M</span>TaskRunResult.Position</a>
                 </li>
               
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2ftask_run_log.proto">store/task_run_log.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog"><span class="badge">M</span>TaskRunLog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.CommandExecute"><span class="badge">M</span>TaskRunLog.CommandExecute</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.CommandResponse"><span class="badge">M</span>TaskRunLog.CommandResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.SchemaDumpEnd"><span class="badge">M</span>TaskRunLog.SchemaDumpEnd</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.SchemaDumpStart"><span class="badge">M</span>TaskRunLog.SchemaDumpStart</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.Type"><span class="badge">E</span>TaskRunLog.Type</a>
+                </li>
               
               
               
@@ -1917,7 +1972,7 @@ projects/{project} </p></td>
                   <td>user</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: users/d@d.com </p></td>
+                  <td><p>Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -2066,6 +2121,13 @@ Some fields are omitted because they are too large or contain sensitive informat
                   <td><p>The user labels for a column. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -2194,13 +2256,6 @@ classification and user_comment is parsed from the comment. </p></td>
                 </tr>
               
                 <tr>
-                  <td>classification</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The classification is the classification of a table parsed from the comment. </p></td>
-                </tr>
-              
-                <tr>
                   <td>user_comment</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -2236,6 +2291,15 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#bytebase.store.SchemaConfig">SchemaConfig</a></td>
                   <td>repeated</td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If true, we will only store the classification in the config.
+Otherwise we will get the classification from table/column comment,
+and write back to the schema metadata. </p></td>
                 </tr>
               
             </tbody>
@@ -2577,6 +2641,45 @@ It&#39;s empty string for other databases. </p></td>
 
         
       
+        <h3 id="bytebase.store.FunctionConfig">FunctionConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a function. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the function in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the function is updated in branch. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.FunctionMetadata">FunctionMetadata</h3>
         <p>FunctionMetadata is the metadata for functions.</p>
 
@@ -2766,6 +2869,45 @@ If the key length is not specified, it&#39;s -1. </p></td>
 
         
       
+        <h3 id="bytebase.store.ProcedureConfig">ProcedureConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a procedure. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the procedure in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the procedure is updated in branch. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ProcedureMetadata">ProcedureMetadata</h3>
         <p>ProcedureMetadata is the metadata for procedures.</p>
 
@@ -2820,6 +2962,27 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.store.TableConfig">TableConfig</a></td>
                   <td>repeated</td>
                   <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>function_configs</td>
+                  <td><a href="#bytebase.store.FunctionConfig">FunctionConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedure_configs</td>
+                  <td><a href="#bytebase.store.ProcedureConfig">ProcedureConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>view_configs</td>
+                  <td><a href="#bytebase.store.ViewConfig">ViewConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -3069,6 +3232,28 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><p>The column_configs is the ordered list of configs for columns in a table. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the table in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the table is updated in branch. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3162,13 +3347,6 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td></td>
                   <td><p>The comment is the comment of a table.
 classification and user_comment is parsed from the comment. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The classification is the classification of a table parsed from the comment. </p></td>
                 </tr>
               
                 <tr>
@@ -3349,6 +3527,45 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition of the task. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ViewConfig">ViewConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the view in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the view is updated in branch. </p></td>
                 </tr>
               
             </tbody>
@@ -4267,6 +4484,58 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>additional_addresses</td>
+                  <td><a href="#bytebase.store.DataSourceOptions.Address">DataSourceOptions.Address</a></td>
+                  <td>repeated</td>
+                  <td><p>additional_addresses is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>replica_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>replica_set is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>direct_connection</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSourceOptions.Address">DataSourceOptions.Address</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4320,38 +4589,14 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
+                  <td>kdc_port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>kdc_transport_protocol</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlainSASLConfig">PlainSASLConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>username</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -4377,13 +4622,6 @@ Used for authentication when connecting to the data source. </p></td>
                 <tr>
                   <td>krb_config</td>
                   <td><a href="#bytebase.store.KerberosConfig">KerberosConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plain_config</td>
-                  <td><a href="#bytebase.store.PlainSASLConfig">PlainSASLConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -4513,6 +4751,12 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>GOOGLE_CLOUD_SQL_IAM</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AWS_RDS_IAM</td>
+                <td>3</td>
                 <td><p></p></td>
               </tr>
             
@@ -5307,6 +5551,13 @@ Format: users/{userUID}. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5461,20 +5712,6 @@ Format: users/{userUID}. </p></td>
                   <td><a href="#bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus">IssueCommentPayload.IssueUpdate.IssueStatus</a></td>
                   <td>optional</td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>from_assignee</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>to_assignee</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -6742,75 +6979,6 @@ Format: instances/{instance}/databases/{database} </p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.Binding">Binding</h3>
-        <p>Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#binding</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Role that is assigned to the list of members.
-Format: roles/{role} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>members</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Specifies the principals requesting access for a Bytebase resource.
-`members` can have the following values:
-
-* `allUsers`: A special identifier that represents anyone.
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>condition</td>
-                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
-                  <td></td>
-                  <td><p>The condition that is associated with this binding.
-If the condition evaluates to true, then this binding applies to the current request.
-If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.IamPolicy">IamPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>bindings</td>
-                  <td><a href="#bytebase.store.Binding">Binding</a></td>
-                  <td>repeated</td>
-                  <td><p>Collection of binding. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.MaskData">MaskData</h3>
         <p></p>
 
@@ -7234,6 +7402,44 @@ roles/CREATOR </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.Label">Label</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>color</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Project">Project</h3>
         <p></p>
 
@@ -7248,6 +7454,20 @@ roles/CREATOR </p></td>
                   <td>protection_rules</td>
                   <td><a href="#bytebase.store.ProtectionRule">ProtectionRule</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue_labels</td>
+                  <td><a href="#bytebase.store.Label">Label</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>force_issue_labels</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -7838,10 +8058,10 @@ service to identify the node. </p></td>
                   <td>category</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
+                  <td><p>Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
 The range of accepted Payload is decided by the category.
-Mask: FullMask, RangeMask
-Hash: MD5Mask </p></td>
+MASK: FullMask, RangeMask
+HASH: MD5Mask </p></td>
                 </tr>
               
                 <tr>
@@ -7861,6 +8081,13 @@ Hash: MD5Mask </p></td>
                 <tr>
                   <td>md5_mask</td>
                   <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask">MaskingAlgorithmSetting.Algorithm.MD5Mask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>inner_outer_mask</td>
+                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -7888,6 +8115,51 @@ Hash: MD5Mask </p></td>
                   <td></td>
                   <td><p>substitution is the string used to replace the original value, the
 max length of the string is 16 bytes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>prefix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>suffix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -8500,6 +8772,35 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MASK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OUTER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.SMTPMailDeliverySetting.Authentication">SMTPMailDeliverySetting.Authentication</h3>
         <p>We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and</p><p>CRAM-MD5.</p>
         <table class="enum-table">
@@ -8588,6 +8889,37 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.SheetCommand">SheetCommand</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.SheetPayload">SheetPayload</h3>
         <p></p>
 
@@ -8610,6 +8942,20 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                   <td><a href="#bytebase.store.DatabaseConfig">DatabaseConfig</a></td>
                   <td></td>
                   <td><p>The snapshot of the baseline database config when creating the sheet. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine</td>
+                  <td><a href="#bytebase.store.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p>The SQL dialect. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commands</td>
+                  <td><a href="#bytebase.store.SheetCommand">SheetCommand</a></td>
+                  <td>repeated</td>
+                  <td><p>The start and end position of each command in the sheet statement. </p></td>
                 </tr>
               
             </tbody>
@@ -8908,6 +9254,214 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
         
       
 
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/task_run_log.proto">store/task_run_log.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.TaskRunLog">TaskRunLog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.TaskRunLog.Type">TaskRunLog.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_dump_start</td>
+                  <td><a href="#bytebase.store.TaskRunLog.SchemaDumpStart">TaskRunLog.SchemaDumpStart</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_dump_end</td>
+                  <td><a href="#bytebase.store.TaskRunLog.SchemaDumpEnd">TaskRunLog.SchemaDumpEnd</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_execute</td>
+                  <td><a href="#bytebase.store.TaskRunLog.CommandExecute">TaskRunLog.CommandExecute</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_response</td>
+                  <td><a href="#bytebase.store.TaskRunLog.CommandResponse">TaskRunLog.CommandResponse</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.CommandExecute">TaskRunLog.CommandExecute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>command_indexes</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>The indexes of the executed commands. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.CommandResponse">TaskRunLog.CommandResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>command_indexes</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>The indexes of the executed commands. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>all_affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>`all_affected_rows` is the affected rows of each command.
+`all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.SchemaDumpEnd">TaskRunLog.SchemaDumpEnd</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.SchemaDumpStart">TaskRunLog.SchemaDumpStart</h3>
+        <p></p>
+
+        
+
+        
+      
+
+      
+        <h3 id="bytebase.store.TaskRunLog.Type">TaskRunLog.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEMA_DUMP_START</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEMA_DUMP_END</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMAND_EXECUTE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMAND_RESPONSE</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       

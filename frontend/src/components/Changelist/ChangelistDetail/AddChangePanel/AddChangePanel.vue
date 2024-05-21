@@ -22,11 +22,6 @@
                   {{ $t("common.change-history") }}
                 </div>
               </NRadio>
-              <NRadio value="BRANCH">
-                <div class="flex items-center">
-                  <GitBranch :size="16" class="mr-1" />{{ $t("common.branch") }}
-                </div>
-              </NRadio>
               <NRadio value="RAW_SQL">
                 <div class="flex items-center">
                   <File :size="16" class="mr-1" />
@@ -37,7 +32,6 @@
           </div>
 
           <ChangeHistoryForm v-if="changeSource === 'CHANGE_HISTORY'" />
-          <BranchForm v-if="changeSource === 'BRANCH'" />
           <RawSQLForm v-if="changeSource === 'RAW_SQL'" />
         </div>
 
@@ -80,7 +74,7 @@
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
-import { File, GitBranch, History } from "lucide-vue-next";
+import { File, History } from "lucide-vue-next";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
@@ -104,7 +98,7 @@ import {
 } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
-import { BranchForm, ChangeHistoryForm, RawSQLForm } from "./form";
+import { ChangeHistoryForm, RawSQLForm } from "./form";
 import { emptyRawSQLChange } from "./utils";
 
 const { t } = useI18n();

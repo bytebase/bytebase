@@ -1,6 +1,7 @@
 roles:
   - name: roles/workspaceAdmin
     permissions:
+      - bb.auditLogs.get
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -98,6 +99,7 @@ roles:
       - bb.taskRuns.list
   - name: roles/workspaceDBA
     permissions:
+      - bb.auditLogs.get
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -207,6 +209,7 @@ roles:
       - bb.settings.list
   - name: roles/projectOwner
     permissions:
+      - bb.auditLogs.get
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get

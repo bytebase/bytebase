@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -90,7 +89,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		schedule     *api.DeploymentSchedule
+		schedule     *store.Schedule
 		databaseList []*store.DatabaseMessage
 		want         [][]*store.DatabaseMessage
 		// Notice relevant position is preserved from databaseList to want.
@@ -98,12 +97,12 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	}{
 		{
 			"Tenant databases matching the query in a stage should exclude all databases from previous stages.",
-			&api.DeploymentSchedule{
-				Deployments: []*api.Deployment{
+			&store.Schedule{
+				Deployments: []*store.Deployment{
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "location",
 										Operator: "In",
@@ -114,9 +113,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 						},
 					},
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "location",
 										Operator: "Exists",
@@ -138,12 +137,12 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 		},
 		{
 			"simpleDeployments",
-			&api.DeploymentSchedule{
-				Deployments: []*api.Deployment{
+			&store.Schedule{
+				Deployments: []*store.Deployment{
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "location",
 										Operator: "In",
@@ -154,9 +153,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 						},
 					},
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "location",
 										Operator: "In",
@@ -178,12 +177,12 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 		},
 		{
 			"twoDifferentKeys",
-			&api.DeploymentSchedule{
-				Deployments: []*api.Deployment{
+			&store.Schedule{
+				Deployments: []*store.Deployment{
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "tenant",
 										Operator: "In",
@@ -194,9 +193,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 						},
 					},
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "location",
 										Operator: "In",
@@ -218,12 +217,12 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 		},
 		{
 			"differentDatabaseNames",
-			&api.DeploymentSchedule{
-				Deployments: []*api.Deployment{
+			&store.Schedule{
+				Deployments: []*store.Deployment{
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "location",
 										Operator: "In",
@@ -244,12 +243,12 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 		},
 		{
 			"useDatabaseNameTemplate",
-			&api.DeploymentSchedule{
-				Deployments: []*api.Deployment{
+			&store.Schedule{
+				Deployments: []*store.Deployment{
 					{
-						Spec: &api.DeploymentSpec{
-							Selector: &api.LabelSelector{
-								MatchExpressions: []*api.LabelSelectorRequirement{
+						Spec: &store.DeploymentSpec{
+							Selector: &store.LabelSelector{
+								MatchExpressions: []*store.LabelSelectorRequirement{
 									{
 										Key:      "location",
 										Operator: "In",

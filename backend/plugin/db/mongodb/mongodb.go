@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
@@ -158,11 +159,6 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 
-// Restore restores the backup read from src.
-func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	panic("not implemented")
-}
-
 // getBasicMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
@@ -182,6 +178,13 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.Port != "" {
 		u.Host = fmt.Sprintf("%s:%s", u.Host, connConfig.Port)
 	}
+	for _, additionalAddress := range connConfig.AdditionalAddresses {
+		address := additionalAddress.Host
+		if additionalAddress.Port != "" {
+			address = fmt.Sprintf("%s:%s", address, additionalAddress.Port)
+		}
+		u.Host = fmt.Sprintf("%s,%s", u.Host, address)
+	}
 	if connConfig.Database != "" {
 		u.Path = connConfig.Database
 	}
@@ -190,7 +193,25 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		authDatabase = connConfig.AuthenticationDatabase
 	}
 
-	u.RawQuery = fmt.Sprintf("authSource=%s", authDatabase)
+	values := u.Query()
+	values.Add("authSource", authDatabase)
+	if connConfig.ReplicaSet != "" {
+		values.Add("replicaSet", connConfig.ReplicaSet)
+	}
+	// Add SSL options if provided
+	if connConfig.TLSConfig.SslCA != "" {
+		values.Add("tlsCAFile", connConfig.TLSConfig.SslCA)
+		if connConfig.TLSConfig.SslCert != "" && connConfig.TLSConfig.SslKey != "" {
+			values.Add("tlsCertificateKeyFile", connConfig.TLSConfig.SslCert)
+			values.Add("tlsCertificateKeyFilePassword", connConfig.TLSConfig.SslKey)
+		}
+		values.Add("tlsAllowInvalidHostnames", "true")
+	}
+	if connConfig.DirectConnection {
+		values.Add("directConnection", "true")
+	}
+	u.RawQuery = values.Encode()
+
 	return u.String()
 }
 
@@ -218,7 +239,8 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 
 	mongoshArgs := []string{
 		mongoutil.GetMongoshPath(driver.dbBinDir),
-		connectionURI,
+		// quote the connectionURI because we execute the mongosh via sh, and the multi-queries part contains '&', which will be translated to the background process.
+		fmt.Sprintf(`"%s"`, connectionURI),
 		"--quiet",
 		"--eval",
 		evalArg,
@@ -267,6 +289,18 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		return nil, errors.Wrapf(err, "failed to open file: %s", queryResultFileName)
 	}
 	defer f.Close()
+
+	fileInfo, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if fileInfo.Size() > common.MaximumSQLResultSize {
+		return []*v1pb.QueryResult{{
+			Latency:   durationpb.New(time.Since(startTime)),
+			Statement: statement,
+			Error:     common.MaximumSQLResultSizeExceeded,
+		}}, nil
+	}
 
 	content, err := io.ReadAll(f)
 	if err != nil {

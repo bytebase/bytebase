@@ -1,7 +1,10 @@
 import Emittery from "emittery";
 import type { Ref } from "vue";
-import { inject, provide } from "vue";
+import { inject, provide, computed } from "vue";
+import { supportSetClassificationFromComment } from "@/components/ColumnDataTable/utils";
+import { useSettingV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, ResourceType, RolloutObject } from "../types";
 import { useEditConfigs } from "./config";
@@ -27,9 +30,22 @@ export const provideSchemaEditorContext = (params: {
   project: Ref<ComposedProject>;
   targets: Ref<EditTarget[]>;
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
+  showLastUpdater: Ref<boolean>;
   disableDiffColoring: Ref<boolean>;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
+  const showDatabaseConfigColumn = computed(
+    () => params.resourceType.value === "branch"
+  );
+  const classificationConfig = computed(() => {
+    if (!params.project.value.dataClassificationConfigId) {
+      return;
+    }
+    return useSettingV1Store().getProjectClassification(
+      params.project.value.dataClassificationConfigId
+    );
+  });
+
   const context = {
     events,
     ...params,
@@ -38,6 +54,23 @@ export const provideSchemaEditorContext = (params: {
     ...useEditConfigs(params.targets),
     ...useScrollStatus(),
     ...useSelection(params.selectedRolloutObjects, events),
+    showDatabaseConfigColumn,
+    classificationConfig,
+    showClassificationColumn: (
+      engine: Engine,
+      classificationFromConfig: boolean
+    ) => {
+      if (!classificationConfig.value) {
+        return false;
+      }
+      if (showDatabaseConfigColumn.value) {
+        return true;
+      }
+      return supportSetClassificationFromComment(
+        engine,
+        classificationFromConfig
+      );
+    },
   };
 
   provide(KEY, context);

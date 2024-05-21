@@ -19,11 +19,15 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/utils"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
 
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -182,21 +186,32 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 
 func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
 	creatorID := api.SystemBotID
+	creatorName := common.FormatUserUID(api.SystemBotID)
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
 	if err != nil {
 		slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
 	}
 	if user != nil {
 		creatorID = user.ID
+		creatorName = common.FormatUserUID(user.ID)
+	}
+
+	engine, err := s.getDatabaseEngineSample(ctx, project, vcsConnector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database engine")
 	}
 
 	var sheets []int
 	for _, change := range prInfo.changes {
-		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
+		sheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
 			CreatorID:  creatorID,
 			ProjectUID: project.UID,
 			Title:      change.path,
 			Statement:  change.content,
+
+			Payload: &storepb.SheetPayload{
+				Engine: engine,
+			},
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create sheet for file %s", change.path)
@@ -212,7 +227,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
 	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
 	childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
-	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+	plan, err := s.planService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Plan: &v1pb.Plan{
 			Title: prInfo.title,
@@ -265,6 +280,19 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to create activity payload")
 	}
 
+	if err := s.store.CreateAuditLog(ctx, &storepb.AuditLog{
+		Parent:   project.GetName(),
+		Method:   store.AuditLogMethodProjectRepositoryPush.String(),
+		Resource: issue.Name,
+		User:     creatorName,
+		Severity: storepb.AuditLog_INFO,
+		Request:  "",
+		Response: "",
+		Status:   nil,
+	}); err != nil {
+		slog.Warn("failed to create audit log after creating issue from push event", "issueUID", issueUID)
+	}
+
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:        creatorID,
 		ResourceContainer: project.GetName(),
@@ -278,6 +306,64 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
 	return issue, nil
+}
+
+func (s *Service) getDatabaseEngineSample(
+	ctx context.Context,
+	project *store.ProjectMessage,
+	vcsConnector *store.VCSConnectorMessage,
+) (storepb.Engine, error) {
+	sample, err := func() (*store.DatabaseMessage, error) {
+		if dbg := vcsConnector.Payload.GetDatabaseGroup(); dbg != "" {
+			projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(dbg)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get project id and database group id from %q", dbg)
+			}
+			if projectID != project.ResourceID {
+				return nil, errors.Errorf("project id %q in databaseGroup %q does not match project id %q in plan config", projectID, dbg, project.ResourceID)
+			}
+			databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
+			}
+			if databaseGroup == nil {
+				return nil, errors.Errorf("database group %q not found", databaseGroupID)
+			}
+			allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+			}
+
+			matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
+			}
+			if len(matchedDatabases) == 0 {
+				return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
+			}
+			return matchedDatabases[0], nil
+		}
+		allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+		}
+		if len(allDatabases) == 0 {
+			return nil, errors.Errorf("no database in the project %q", project.ResourceID)
+		}
+		return allDatabases[0], nil
+	}()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get sample database")
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &sample.InstanceID})
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get instance")
+	}
+	if instance == nil {
+		return 0, errors.Errorf("instance not found")
+	}
+	return instance.Engine, nil
 }
 
 func (s *Service) getChangeSteps(

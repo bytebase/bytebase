@@ -82,8 +82,8 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, lspServer *lsp.
 	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
 		mux,
 		wsproxy.WithTokenCookieName("access-token"),
-		// 10M.
-		wsproxy.WithMaxRespBodyBufferSize(10*1024*1024),
+		// 100M.
+		wsproxy.WithMaxRespBodyBufferSize(100*1024*1024),
 	)))
 	e.Any("/v1/*", echo.WrapHandler(mux))
 

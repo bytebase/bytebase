@@ -17,7 +17,7 @@
 
     <DatabaseIcon />
 
-    <span v-if="!hasProjectContext" class="text-control-light">
+    <span class="text-control-light">
       {{ database.projectEntity.key }}
     </span>
 
@@ -34,7 +34,6 @@
 import { computed } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { useSQLEditorStore } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
@@ -47,8 +46,6 @@ const props = defineProps<{
   keyword: string;
 }>();
 
-const editorStore = useSQLEditorStore();
-
 const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
 );
@@ -59,9 +56,5 @@ const hasInstanceContext = computed(() => {
 
 const hasEnvironmentContext = computed(() => {
   return props.factors.includes("environment");
-});
-
-const hasProjectContext = computed(() => {
-  return props.factors.includes("project") || !!editorStore.currentProject;
 });
 </script>

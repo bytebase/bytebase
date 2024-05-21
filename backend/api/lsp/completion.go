@@ -15,6 +15,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	// 1MB.
+	contentLengthLimit = 1024 * 1024
+)
+
 func newEmptyCompletionList() *lsp.CompletionList {
 	return &lsp.CompletionList{
 		IsIncomplete: false,
@@ -33,6 +38,10 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	if err != nil {
 		return nil, err
 	}
+	if len(content) > contentLengthLimit {
+		// We don't want to parse a huge file.
+		return newEmptyCompletionList(), nil
+	}
 	_, valid, why := offsetForPosition(content, params.Position)
 	if !valid {
 		return nil, errors.Errorf("invalid position %d:%d (%s)", params.Position.Line, params.Position.Character, why)
@@ -45,7 +54,8 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		// Nothing.
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_GAUSSDB:
 		// Nothing.
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL:
+	case storepb.Engine_MSSQL:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_SNOWFLAKE:
 	default:
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil

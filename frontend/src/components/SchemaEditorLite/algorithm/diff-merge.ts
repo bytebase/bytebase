@@ -1,6 +1,10 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
-import type { TablePartitionMetadata } from "@/types/proto/v1/database_service";
+import type {
+  FunctionMetadata,
+  ProcedureMetadata,
+  TablePartitionMetadata,
+} from "@/types/proto/v1/database_service";
 import {
   type ColumnMetadata,
   type DatabaseMetadata,
@@ -55,6 +59,10 @@ export class DiffMerge {
   targetTableMap = new Map<string, TableMetadata>();
   sourceColumnMap = new Map<string, ColumnMetadata>();
   targetColumnMap = new Map<string, ColumnMetadata>();
+  sourceProcedureMap = new Map<string, ProcedureMetadata>();
+  targetProcedureMap = new Map<string, ProcedureMetadata>();
+  sourceFunctionMap = new Map<string, FunctionMetadata>();
+  targetFunctionMap = new Map<string, FunctionMetadata>();
   sourceSchemaConfigMap = new Map<string, SchemaConfig>();
   targetSchemaConfigMap = new Map<string, SchemaConfig>();
   sourceTableConfigMap = new Map<string, TableConfig>();
@@ -68,6 +76,8 @@ export class DiffMerge {
     | "mergeColumns"
     | "mergeTablePartitions"
     | "diffColumn"
+    | "mergeProcedures"
+    | "mergeFunctions"
     | "mergeSchemaConfigs"
     | "mergeTableConfigs"
     | "mergeColumnConfigs"
@@ -120,7 +130,10 @@ export class DiffMerge {
     const mergedSchemas: SchemaMetadata[] = [];
     for (let i = 0; i < sourceSchemas.length; i++) {
       const sourceSchema = sourceSchemas[i];
-      const key = keyForResourceName(database.name, sourceSchema.name);
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+      });
       let targetSchema = targetSchemaMap.get(key);
       if (targetSchema) {
         // existed schema
@@ -136,6 +149,27 @@ export class DiffMerge {
             schema: targetSchema,
           }
         );
+        this.mergeProcedures(
+          {
+            database: sourceMetadata,
+            schema: sourceSchema,
+          },
+          {
+            database: targetMetadata,
+            schema: targetSchema,
+          }
+        );
+        this.mergeFunctions(
+          {
+            database: sourceMetadata,
+            schema: sourceSchema,
+          },
+          {
+            database: targetMetadata,
+            schema: targetSchema,
+          }
+        );
+
         continue;
       }
       // dropped schema
@@ -146,7 +180,10 @@ export class DiffMerge {
     }
     for (let i = 0; i < targetSchemas.length; i++) {
       const targetSchema = targetSchemas[i];
-      const key = keyForResourceName(database.name, targetSchema.name);
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+      });
       const sourceSchema = sourceSchemaMap.get(key);
       if (!sourceSchema) {
         // newly created schema
@@ -171,11 +208,11 @@ export class DiffMerge {
     const mergedTables: TableMetadata[] = [];
     for (let i = 0; i < sourceTables.length; i++) {
       const sourceTable = sourceTables[i];
-      const key = keyForResourceName(
-        database.name,
-        sourceSchema.name,
-        sourceTable.name
-      );
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+        table: sourceTable.name,
+      });
       let targetTable = targetTableMap.get(key);
       if (targetTable) {
         // existed table
@@ -215,11 +252,11 @@ export class DiffMerge {
     }
     for (let i = 0; i < targetTables.length; i++) {
       const targetTable = targetTables[i];
-      const key = keyForResourceName(
-        database.name,
-        targetSchema.name,
-        targetTable.name
-      );
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+        table: targetTable.name,
+      });
       const sourceTable = sourceTableMap.get(key);
       if (!sourceTable) {
         // newly created table
@@ -340,13 +377,12 @@ export class DiffMerge {
       const mergedPartitions: TablePartitionMetadata[] = [];
       for (let i = 0; i < sourcePartitions.length; i++) {
         const sourcePartition = sourcePartitions[i];
-        const key = keyForResourceName(
-          database.name,
-          sourceSchema.name,
-          sourceTable.name,
-          /* column */ undefined,
-          sourcePartition.name
-        );
+        const key = keyForResourceName({
+          database: database.name,
+          schema: sourceSchema.name,
+          table: sourceTable.name,
+          partition: sourcePartition.name,
+        });
         let targetPartition = targetPartitionMap.get(key);
         if (targetPartition) {
           // existed partition
@@ -365,13 +401,12 @@ export class DiffMerge {
       }
       for (let i = 0; i < targetPartitions.length; i++) {
         const targetPartition = targetPartitions[i];
-        const key = keyForResourceName(
-          database.name,
-          targetSchema.name,
-          targetTable.name,
-          /* column */ undefined,
-          targetPartition.name
-        );
+        const key = keyForResourceName({
+          database: database.name,
+          schema: targetSchema.name,
+          table: targetTable.name,
+          partition: targetPartition.name,
+        });
         const sourcePartition = sourcePartitionMap.get(key);
         if (!sourcePartition) {
           // newly created partition
@@ -418,12 +453,12 @@ export class DiffMerge {
     const mergedColumns: ColumnMetadata[] = [];
     for (let i = 0; i < sourceColumns.length; i++) {
       const sourceColumn = sourceColumns[i];
-      const key = keyForResourceName(
-        database.name,
-        sourceSchema.name,
-        sourceTable.name,
-        sourceColumn.name
-      );
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+        table: sourceTable.name,
+        column: sourceColumn.name,
+      });
       let targetColumn = targetColumnMap.get(key);
       if (targetColumn) {
         // existed column
@@ -442,12 +477,12 @@ export class DiffMerge {
     }
     for (let i = 0; i < targetColumns.length; i++) {
       const targetColumn = targetColumns[i];
-      const key = keyForResourceName(
-        database.name,
-        targetSchema.name,
-        targetTable.name,
-        targetColumn.name
-      );
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+        table: targetTable.name,
+        column: targetColumn.name,
+      });
       const sourceColumn = sourceColumnMap.get(key);
       if (!sourceColumn) {
         // newly created column
@@ -474,15 +509,123 @@ export class DiffMerge {
         pick(targetColumn, ComparableColumnFields)
       )
     ) {
-      const key = keyForResourceName(
-        this.database.name,
-        targetSchema.name,
-        targetTable.name,
-        targetColumn.name
-      );
+      const key = keyForResourceName({
+        database: this.database.name,
+        schema: targetSchema.name,
+        table: targetTable.name,
+        column: targetColumn.name,
+      });
       this.context.markEditStatusByKey(key, "updated");
     }
     this.timer.end("diffColumn", 1);
+  }
+  mergeProcedures(source: RichSchemaMetadata, target: RichSchemaMetadata) {
+    const { context, database, sourceProcedureMap, targetProcedureMap } = this;
+    const { schema: sourceSchema } = source;
+    const { schema: targetSchema } = target;
+    const sourceProcedures = sourceSchema.procedures;
+    const targetProcedures = targetSchema.procedures;
+    this.timer.begin("mergeProcedures");
+    mapProcedures(database, sourceSchema, sourceProcedures, sourceProcedureMap);
+    mapProcedures(database, targetSchema, targetProcedures, targetProcedureMap);
+
+    const mergedProcedures: ProcedureMetadata[] = [];
+    for (let i = 0; i < sourceProcedures.length; i++) {
+      const sourceProcedure = sourceProcedures[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+        procedure: sourceProcedure.name,
+      });
+      let targetProcedure = targetProcedureMap.get(key);
+      if (targetProcedure) {
+        // existed procedure
+        mergedProcedures.push(targetProcedure);
+        if (sourceProcedure.definition !== targetProcedure.definition) {
+          context.markEditStatusByKey(key, "updated");
+        }
+        continue;
+      }
+      // dropped procedure
+      // copy the source procedure to target and mark it as 'dropped'
+      targetProcedure = cloneDeep(sourceProcedure);
+      mergedProcedures.push(targetProcedure);
+      context.markEditStatusByKey(key, "dropped");
+    }
+    for (let i = 0; i < targetProcedures.length; i++) {
+      const targetProcedure = targetProcedures[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+        procedure: targetProcedure.name,
+      });
+      const sourceProcedure = sourceProcedureMap.get(key);
+      if (!sourceProcedure) {
+        // newly created procedure
+        // mark it as 'created'
+        mergedProcedures.push(targetProcedure);
+        context.markEditStatusByKey(key, "created");
+      }
+    }
+    targetSchema.procedures = mergedProcedures;
+    this.timer.end(
+      "mergeProcedures",
+      sourceProcedures.length + targetProcedures.length
+    );
+  }
+  mergeFunctions(source: RichSchemaMetadata, target: RichSchemaMetadata) {
+    const { context, database, sourceFunctionMap, targetFunctionMap } = this;
+    const { schema: sourceSchema } = source;
+    const { schema: targetSchema } = target;
+    const sourceFunctions = sourceSchema.functions;
+    const targetFunctions = targetSchema.functions;
+    this.timer.begin("mergeFunctions");
+    mapFunctions(database, sourceSchema, sourceFunctions, sourceFunctionMap);
+    mapFunctions(database, targetSchema, targetFunctions, targetFunctionMap);
+
+    const mergedFunctions: FunctionMetadata[] = [];
+    for (let i = 0; i < sourceFunctions.length; i++) {
+      const sourceFunction = sourceFunctions[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+        function: sourceFunction.name,
+      });
+      let targetFunction = targetFunctionMap.get(key);
+      if (targetFunction) {
+        // existed function
+        mergedFunctions.push(targetFunction);
+        if (sourceFunction.definition !== targetFunction.definition) {
+          context.markEditStatusByKey(key, "updated");
+        }
+        continue;
+      }
+      // dropped function
+      // copy the source function to target and mark it as 'dropped'
+      targetFunction = cloneDeep(sourceFunction);
+      mergedFunctions.push(targetFunction);
+      context.markEditStatusByKey(key, "dropped");
+    }
+    for (let i = 0; i < targetFunctions.length; i++) {
+      const targetFunction = targetFunctions[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+        function: targetFunction.name,
+      });
+      const sourceFunction = sourceFunctionMap.get(key);
+      if (!sourceFunction) {
+        // newly created function
+        // mark it as 'created'
+        mergedFunctions.push(targetFunction);
+        context.markEditStatusByKey(key, "created");
+      }
+    }
+    targetSchema.functions = mergedFunctions;
+    this.timer.end(
+      "mergeFunctions",
+      sourceFunctions.length + targetFunctions.length
+    );
   }
   mergeSchemaConfigs() {
     const {
@@ -501,7 +644,10 @@ export class DiffMerge {
     const mergedSchemaConfigs: SchemaConfig[] = [];
     for (let i = 0; i < targetMetadata.schemas.length; i++) {
       const schema = targetMetadata.schemas[i];
-      const key = keyForResourceName(database.name, schema.name);
+      const key = keyForResourceName({
+        database: database.name,
+        schema: schema.name,
+      });
       const sourceSchemaConfig = sourceSchemaConfigMap.get(key);
       const targetSchemaConfig = targetSchemaConfigMap.get(key);
       const schemaStatus = context.getEditStatusByKey(key);
@@ -565,7 +711,11 @@ export class DiffMerge {
     const mergedTableConfigs: TableConfig[] = [];
     for (let i = 0; i < schema.tables.length; i++) {
       const table = schema.tables[i];
-      const key = keyForResourceName(database.name, schema.name, table.name);
+      const key = keyForResourceName({
+        database: database.name,
+        schema: schema.name,
+        table: table.name,
+      });
       const sourceTableConfig = sourceTableConfigMap.get(key);
       const targetTableConfig = targetTableConfigMap.get(key);
       const tableStatus = context.getEditStatusByKey(key);
@@ -637,12 +787,12 @@ export class DiffMerge {
     const mergedColumnConfigs: ColumnConfig[] = [];
     for (let i = 0; i < table.columns.length; i++) {
       const column = table.columns[i];
-      const key = keyForResourceName(
-        database.name,
-        schema.name,
-        table.name,
-        column.name
-      );
+      const key = keyForResourceName({
+        database: database.name,
+        schema: schema.name,
+        table: table.name,
+        column: column.name,
+      });
       const sourceColumnConfig = sourceColumnConfigMap.get(key);
       const targetColumnConfig = targetColumnConfigMap.get(key);
       const columnStatus = context.getEditStatusByKey(key);
@@ -699,12 +849,12 @@ export class DiffMerge {
     this.timer.begin("diffColumnConfig");
 
     if (!isEqual(sourceColumnConfig, targetColumnConfig)) {
-      const key = keyForResourceName(
-        this.database.name,
-        targetSchemaConfig.name,
-        targetTableConfig.name,
-        targetColumnConfig.name
-      );
+      const key = keyForResourceName({
+        database: this.database.name,
+        schema: targetSchemaConfig.name,
+        table: targetTableConfig.name,
+        column: targetColumnConfig.name,
+      });
       const status = this.context.getEditStatusByKey(key);
       if (status !== "created" && status !== "dropped") {
         this.context.markEditStatusByKey(key, "updated");
@@ -720,7 +870,10 @@ const mapSchemas = (
   map: Map<string, SchemaMetadata>
 ) => {
   schemas.forEach((schema) => {
-    const key = keyForResourceName(database.name, schema.name);
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+    });
     map.set(key, schema);
   });
 };
@@ -731,7 +884,11 @@ const mapTables = (
   map: Map<string, TableMetadata>
 ) => {
   tables.forEach((table) => {
-    const key = keyForResourceName(database.name, schema.name, table.name);
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      table: table.name,
+    });
     map.set(key, table);
   });
 };
@@ -743,12 +900,12 @@ const mapColumns = (
   map: Map<string, ColumnMetadata>
 ) => {
   columns.forEach((column) => {
-    const key = keyForResourceName(
-      database.name,
-      schema.name,
-      table.name,
-      column.name
-    );
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      table: table.name,
+      column: column.name,
+    });
     map.set(key, column);
   });
 };
@@ -760,14 +917,43 @@ const mapTablePartitions = (
   map: Map<string, TablePartitionMetadata>
 ) => {
   partitions.forEach((partition) => {
-    const key = keyForResourceName(
-      database.name,
-      schema.name,
-      table.name,
-      /* column */ undefined,
-      partition.name
-    );
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      table: table.name,
+      partition: partition.name,
+    });
     map.set(key, partition);
+  });
+};
+const mapProcedures = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  procedures: ProcedureMetadata[],
+  map: Map<string, ProcedureMetadata>
+) => {
+  procedures.forEach((procedure) => {
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      procedure: procedure.name,
+    });
+    map.set(key, procedure);
+  });
+};
+const mapFunctions = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  functions: FunctionMetadata[],
+  map: Map<string, FunctionMetadata>
+) => {
+  functions.forEach((fn) => {
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      function: fn.name,
+    });
+    map.set(key, fn);
   });
 };
 const mapSchemaConfigs = (
@@ -776,7 +962,10 @@ const mapSchemaConfigs = (
   map: Map<string, SchemaConfig>
 ) => {
   schemaConfigs.forEach((schemaConfig) => {
-    const key = keyForResourceName(db.name, schemaConfig.name);
+    const key = keyForResourceName({
+      database: db.name,
+      schema: schemaConfig.name,
+    });
     map.set(key, schemaConfig);
   });
 };
@@ -787,11 +976,11 @@ const mapTableConfigs = (
   map: Map<string, TableConfig>
 ) => {
   tableConfigs.forEach((tableConfig) => {
-    const key = keyForResourceName(
-      db.name,
-      schemaConfig.name,
-      tableConfig.name
-    );
+    const key = keyForResourceName({
+      database: db.name,
+      schema: schemaConfig.name,
+      table: tableConfig.name,
+    });
     map.set(key, tableConfig);
   });
 };
@@ -804,12 +993,12 @@ const mapColumnConfigs = (
   map: Map<string, ColumnConfig>
 ) => {
   columnConfigs.forEach((columnConfig) => {
-    const key = keyForResourceName(
-      db.name,
-      schemaConfig.name,
-      tableConfig.name,
-      columnConfig.name
-    );
+    const key = keyForResourceName({
+      database: db.name,
+      schema: schemaConfig.name,
+      table: tableConfig.name,
+      column: columnConfig.name,
+    });
     map.set(key, columnConfig);
   });
 };

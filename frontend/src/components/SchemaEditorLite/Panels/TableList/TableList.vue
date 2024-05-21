@@ -39,14 +39,6 @@
     </DrawerContent>
   </Drawer>
 
-  <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @apply="onClassificationSelect"
-  />
-
   <FeatureModal
     feature="bb.feature.schema-template"
     :open="state.showFeatureModal"
@@ -61,21 +53,21 @@ import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
-import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
-import { hasFeature, useSettingV1Store } from "@/store";
+import { hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { TableConfig } from "@/types/proto/v1/database_service";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
-import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
 import { markUUID } from "../common";
 import { SelectionCell, NameCell, OperationCell } from "./components";
 
@@ -90,13 +82,11 @@ const props = defineProps<{
 interface LocalState {
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
-  showClassificationDrawer: boolean;
   activeTable?: TableMetadata;
 }
 
 const { t } = useI18n();
 const {
-  project,
   readonly,
   selectionEnabled,
   disableDiffColoring,
@@ -104,11 +94,14 @@ const {
   markEditStatus,
   removeEditStatus,
   getSchemaStatus,
+  getTableConfig,
   getTableStatus,
   upsertTableConfig,
   useConsumePendingScrollToTable,
   getAllTablesSelectionState,
   updateAllTablesSelection,
+  showClassificationColumn,
+  classificationConfig,
 } = useSchemaEditorContext();
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
@@ -125,11 +118,9 @@ const tableBodyHeight = computed(() => {
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
-const settingStore = useSettingV1Store();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
-  showClassificationDrawer: false,
 });
 const filteredTables = computed(() => {
   const keyword = props.searchPattern?.trim();
@@ -141,24 +132,32 @@ const engine = computed(() => {
   return props.db.instanceEntity.engine;
 });
 
-const classificationConfig = computed(() => {
-  if (!project.value.dataClassificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(
-    project.value.dataClassificationConfigId
+const configForTable = (table: TableMetadata) => {
+  return (
+    getTableConfig(props.db, { schema: props.schema, table }) ??
+    TableConfig.fromPartial({
+      name: table.name,
+    })
+  );
+};
+
+const showClassification = computed(() => {
+  return showClassificationColumn(
+    engine.value,
+    props.database.classificationFromConfig
   );
 });
-
-const showClassificationDrawer = (table: TableMetadata) => {
-  state.activeTable = table;
-  state.showClassificationDrawer = true;
-};
 
 const onClassificationSelect = (classificationId: string) => {
   const table = state.activeTable;
   if (!table) return;
-  table.classification = classificationId;
+
+  upsertTableConfig(
+    props.db,
+    metadataForTable(table),
+    (config) => (config.classificationId = classificationId)
+  );
+
   state.activeTable = undefined;
   markEditStatus(props.db, metadataForTable(table), "updated");
 };
@@ -170,6 +169,7 @@ const metadataForTable = (table: TableMetadata) => {
     table,
   };
 };
+
 const statusForTable = (table: TableMetadata) => {
   return getTableStatus(props.db, metadataForTable(table));
 };
@@ -241,19 +241,19 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
-      hide: !classificationConfig.value,
+      hide: !showClassification.value,
       render: (table) => {
+        const config = configForTable(table);
         return h(ClassificationCell, {
-          classification: table.classification,
+          classification: config.classificationId,
           readonly: readonly.value,
           disabled: isDroppedSchema.value || isDroppedTable(table),
           classificationConfig:
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
-          onEdit: () => showClassificationDrawer(table),
-          onRemove: () => {
-            table.classification = "";
-            markEditStatus(props.db, metadataForTable(table), "updated");
+          onApply: (id: string) => {
+            state.activeTable = table;
+            onClassificationSelect(id);
           },
         });
       },

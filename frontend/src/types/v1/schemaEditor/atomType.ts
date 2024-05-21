@@ -28,7 +28,6 @@ export interface Column extends ColumnDefaultValue {
   comment: string;
   userComment: string;
   status: Status;
-  classification?: string;
   config: ColumnConfig;
 }
 
@@ -60,7 +59,7 @@ export interface Table {
   primaryKey: PrimaryKey;
   foreignKeyList: ForeignKey[];
   status: Status;
-  classification?: string;
+  config: TableConfig;
 }
 
 export interface Schema {
@@ -87,7 +86,6 @@ export const convertColumnMetadataToColumn = (
     defaultNull: columnMetadata.defaultNull,
     defaultString: columnMetadata.defaultString,
     defaultExpression: columnMetadata.defaultExpression,
-    classification: columnMetadata.classification,
     status,
     config: ColumnConfig.fromPartial({
       ...(config ?? {}),
@@ -110,7 +108,6 @@ export const convertTableMetadataToTable = (
     dataSize: tableMetadata.dataSize,
     comment: tableMetadata.comment,
     userComment: tableMetadata.userComment,
-    classification: tableMetadata.classification,
     columnList: tableMetadata.columns.map((column) =>
       convertColumnMetadataToColumn(
         column,
@@ -126,6 +123,10 @@ export const convertTableMetadataToTable = (
     },
     foreignKeyList: [],
     status,
+    config: TableConfig.fromPartial({
+      ...(config ?? {}),
+      name: tableMetadata.name,
+    }),
   };
 
   for (const indexMetadata of tableMetadata.indexes) {

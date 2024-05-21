@@ -4,8 +4,16 @@ import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
 
+export interface Label {
+  value: string;
+  color: string;
+  group: string;
+}
+
 export interface Project {
   protectionRules: ProtectionRule[];
+  issueLabels: Label[];
+  forceIssueLabels: boolean;
 }
 
 export interface ProtectionRule {
@@ -24,10 +32,10 @@ export interface ProtectionRule {
 
 /** The type of target. */
 export enum ProtectionRule_Target {
-  PROTECTION_TARGET_UNSPECIFIED = 0,
-  BRANCH = 1,
-  CHANGELIST = 2,
-  UNRECOGNIZED = -1,
+  PROTECTION_TARGET_UNSPECIFIED = "PROTECTION_TARGET_UNSPECIFIED",
+  BRANCH = "BRANCH",
+  CHANGELIST = "CHANGELIST",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function protectionRule_TargetFromJSON(object: any): ProtectionRule_Target {
@@ -62,10 +70,24 @@ export function protectionRule_TargetToJSON(object: ProtectionRule_Target): stri
   }
 }
 
+export function protectionRule_TargetToNumber(object: ProtectionRule_Target): number {
+  switch (object) {
+    case ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED:
+      return 0;
+    case ProtectionRule_Target.BRANCH:
+      return 1;
+    case ProtectionRule_Target.CHANGELIST:
+      return 2;
+    case ProtectionRule_Target.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum ProtectionRule_BranchSource {
-  BRANCH_SOURCE_UNSPECIFIED = 0,
-  DATABASE = 1,
-  UNRECOGNIZED = -1,
+  BRANCH_SOURCE_UNSPECIFIED = "BRANCH_SOURCE_UNSPECIFIED",
+  DATABASE = "DATABASE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function protectionRule_BranchSourceFromJSON(object: any): ProtectionRule_BranchSource {
@@ -95,14 +117,121 @@ export function protectionRule_BranchSourceToJSON(object: ProtectionRule_BranchS
   }
 }
 
+export function protectionRule_BranchSourceToNumber(object: ProtectionRule_BranchSource): number {
+  switch (object) {
+    case ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED:
+      return 0;
+    case ProtectionRule_BranchSource.DATABASE:
+      return 1;
+    case ProtectionRule_BranchSource.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+function createBaseLabel(): Label {
+  return { value: "", color: "", group: "" };
+}
+
+export const Label = {
+  encode(message: Label, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.value !== "") {
+      writer.uint32(10).string(message.value);
+    }
+    if (message.color !== "") {
+      writer.uint32(18).string(message.color);
+    }
+    if (message.group !== "") {
+      writer.uint32(26).string(message.group);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Label {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLabel();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.color = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.group = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Label {
+    return {
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+      color: isSet(object.color) ? globalThis.String(object.color) : "",
+      group: isSet(object.group) ? globalThis.String(object.group) : "",
+    };
+  },
+
+  toJSON(message: Label): unknown {
+    const obj: any = {};
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    if (message.color !== "") {
+      obj.color = message.color;
+    }
+    if (message.group !== "") {
+      obj.group = message.group;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Label>): Label {
+    return Label.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Label>): Label {
+    const message = createBaseLabel();
+    message.value = object.value ?? "";
+    message.color = object.color ?? "";
+    message.group = object.group ?? "";
+    return message;
+  },
+};
+
 function createBaseProject(): Project {
-  return { protectionRules: [] };
+  return { protectionRules: [], issueLabels: [], forceIssueLabels: false };
 }
 
 export const Project = {
   encode(message: Project, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.protectionRules) {
       ProtectionRule.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.issueLabels) {
+      Label.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.forceIssueLabels === true) {
+      writer.uint32(24).bool(message.forceIssueLabels);
     }
     return writer;
   },
@@ -121,6 +250,20 @@ export const Project = {
 
           message.protectionRules.push(ProtectionRule.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.issueLabels.push(Label.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.forceIssueLabels = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -135,6 +278,10 @@ export const Project = {
       protectionRules: globalThis.Array.isArray(object?.protectionRules)
         ? object.protectionRules.map((e: any) => ProtectionRule.fromJSON(e))
         : [],
+      issueLabels: globalThis.Array.isArray(object?.issueLabels)
+        ? object.issueLabels.map((e: any) => Label.fromJSON(e))
+        : [],
+      forceIssueLabels: isSet(object.forceIssueLabels) ? globalThis.Boolean(object.forceIssueLabels) : false,
     };
   },
 
@@ -142,6 +289,12 @@ export const Project = {
     const obj: any = {};
     if (message.protectionRules?.length) {
       obj.protectionRules = message.protectionRules.map((e) => ProtectionRule.toJSON(e));
+    }
+    if (message.issueLabels?.length) {
+      obj.issueLabels = message.issueLabels.map((e) => Label.toJSON(e));
+    }
+    if (message.forceIssueLabels === true) {
+      obj.forceIssueLabels = message.forceIssueLabels;
     }
     return obj;
   },
@@ -152,12 +305,20 @@ export const Project = {
   fromPartial(object: DeepPartial<Project>): Project {
     const message = createBaseProject();
     message.protectionRules = object.protectionRules?.map((e) => ProtectionRule.fromPartial(e)) || [];
+    message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];
+    message.forceIssueLabels = object.forceIssueLabels ?? false;
     return message;
   },
 };
 
 function createBaseProtectionRule(): ProtectionRule {
-  return { id: "", target: 0, nameFilter: "", allowedRoles: [], branchSource: 0 };
+  return {
+    id: "",
+    target: ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED,
+    nameFilter: "",
+    allowedRoles: [],
+    branchSource: ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED,
+  };
 }
 
 export const ProtectionRule = {
@@ -165,8 +326,8 @@ export const ProtectionRule = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.target !== 0) {
-      writer.uint32(16).int32(message.target);
+    if (message.target !== ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED) {
+      writer.uint32(16).int32(protectionRule_TargetToNumber(message.target));
     }
     if (message.nameFilter !== "") {
       writer.uint32(26).string(message.nameFilter);
@@ -174,8 +335,8 @@ export const ProtectionRule = {
     for (const v of message.allowedRoles) {
       writer.uint32(34).string(v!);
     }
-    if (message.branchSource !== 0) {
-      writer.uint32(40).int32(message.branchSource);
+    if (message.branchSource !== ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED) {
+      writer.uint32(40).int32(protectionRule_BranchSourceToNumber(message.branchSource));
     }
     return writer;
   },
@@ -199,7 +360,7 @@ export const ProtectionRule = {
             break;
           }
 
-          message.target = reader.int32() as any;
+          message.target = protectionRule_TargetFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -220,7 +381,7 @@ export const ProtectionRule = {
             break;
           }
 
-          message.branchSource = reader.int32() as any;
+          message.branchSource = protectionRule_BranchSourceFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -234,12 +395,16 @@ export const ProtectionRule = {
   fromJSON(object: any): ProtectionRule {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      target: isSet(object.target) ? protectionRule_TargetFromJSON(object.target) : 0,
+      target: isSet(object.target)
+        ? protectionRule_TargetFromJSON(object.target)
+        : ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED,
       nameFilter: isSet(object.nameFilter) ? globalThis.String(object.nameFilter) : "",
       allowedRoles: globalThis.Array.isArray(object?.allowedRoles)
         ? object.allowedRoles.map((e: any) => globalThis.String(e))
         : [],
-      branchSource: isSet(object.branchSource) ? protectionRule_BranchSourceFromJSON(object.branchSource) : 0,
+      branchSource: isSet(object.branchSource)
+        ? protectionRule_BranchSourceFromJSON(object.branchSource)
+        : ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED,
     };
   },
 
@@ -248,7 +413,7 @@ export const ProtectionRule = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.target !== 0) {
+    if (message.target !== ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED) {
       obj.target = protectionRule_TargetToJSON(message.target);
     }
     if (message.nameFilter !== "") {
@@ -257,7 +422,7 @@ export const ProtectionRule = {
     if (message.allowedRoles?.length) {
       obj.allowedRoles = message.allowedRoles;
     }
-    if (message.branchSource !== 0) {
+    if (message.branchSource !== ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED) {
       obj.branchSource = protectionRule_BranchSourceToJSON(message.branchSource);
     }
     return obj;
@@ -269,10 +434,10 @@ export const ProtectionRule = {
   fromPartial(object: DeepPartial<ProtectionRule>): ProtectionRule {
     const message = createBaseProtectionRule();
     message.id = object.id ?? "";
-    message.target = object.target ?? 0;
+    message.target = object.target ?? ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED;
     message.nameFilter = object.nameFilter ?? "";
     message.allowedRoles = object.allowedRoles?.map((e) => e) || [];
-    message.branchSource = object.branchSource ?? 0;
+    message.branchSource = object.branchSource ?? ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED;
     return message;
   },
 };

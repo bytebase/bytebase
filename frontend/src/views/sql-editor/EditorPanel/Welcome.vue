@@ -5,14 +5,14 @@
     <HideInStandaloneMode>
       <BytebaseLogo component="span" class="mb-4 -mt-[20%]" />
     </HideInStandaloneMode>
-    <div class="flex flex-col items-start gap-y-1 w-auto">
-      <NButton type="primary" @click="changeConnection">
+    <div class="flex flex-col items-start gap-y-1 w-max">
+      <NButton type="primary" class="!w-full !justify-start" @click="changeConnection">
         <template #icon>
           <LinkIcon class="w-4 h-4" />
         </template>
         {{ $t("sql-editor.connect-to-a-database") }}
       </NButton>
-      <NButton quaternary @click="createNewWorksheet">
+      <NButton quaternary class="!w-full !justify-start" @click="createNewWorksheet">
         <template #icon>
           <SquarePenIcon class="w-4 h-4" />
         </template>

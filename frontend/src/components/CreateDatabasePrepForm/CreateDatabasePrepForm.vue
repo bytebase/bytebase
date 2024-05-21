@@ -194,9 +194,9 @@ import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { Engine } from "@/types/proto/v1/common";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
+import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/rollout_service";
-import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   instanceV1HasCollationAndCharacterSet,

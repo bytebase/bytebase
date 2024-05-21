@@ -24,11 +24,11 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
         targets.flatMap((target) => {
           return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
             return schemaConfig.tableConfigs.map((tableConfig) => {
-              const key = keyForResourceName(
-                target.database.name,
-                schemaConfig.name,
-                tableConfig.name
-              );
+              const key = keyForResourceName({
+                database: target.database.name,
+                schema: schemaConfig.name,
+                table: tableConfig.name,
+              });
               return [key, tableConfig];
             });
           });
@@ -41,12 +41,12 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
           return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
             return schemaConfig.tableConfigs.flatMap((tableConfig) => {
               return tableConfig.columnConfigs.map((columnConfig) => {
-                const key = keyForResourceName(
-                  target.database.name,
-                  schemaConfig.name,
-                  tableConfig.name,
-                  columnConfig.name
-                );
+                const key = keyForResourceName({
+                  database: target.database.name,
+                  schema: schemaConfig.name,
+                  table: tableConfig.name,
+                  column: columnConfig.name,
+                });
                 return [key, columnConfig];
               });
             });
@@ -122,12 +122,12 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
     update(config);
     // Maintain the columnConfig map
     config.columnConfigs.forEach((columnConfig) => {
-      const key = keyForResourceName(
-        database.name,
-        metadata.schema.name,
-        metadata.table.name,
-        columnConfig.name
-      );
+      const key = keyForResourceName({
+        database: database.name,
+        schema: metadata.schema.name,
+        table: metadata.table.name,
+        column: columnConfig.name,
+      });
       maps.columnConfig.set(key, columnConfig);
     });
   };

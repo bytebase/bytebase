@@ -27,6 +27,7 @@ import {
   WORKSPACE_ROUTE_SSO_CREATE,
   WORKSPACE_ROUTE_SSO_DETAIL,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
+  WORKSPACE_ROUTE_REVIEW_CENTER,
 } from "./workspaceRoutes";
 
 const workspaceRoutes: RouteRecordRaw[] = [
@@ -102,6 +103,21 @@ const workspaceRoutes: RouteRecordRaw[] = [
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: { content: true, leftSidebar: true },
+  },
+  {
+    path: "review-center",
+    name: WORKSPACE_ROUTE_REVIEW_CENTER,
+    meta: {
+      title: () => startCase(t("review-center.self")),
+    },
+    components: {
+      content: () => import("@/views/ReviewCenter/index.vue"),
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
   },
   {
     path: "export-center",

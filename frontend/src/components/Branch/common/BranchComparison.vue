@@ -49,6 +49,7 @@
         :readonly="true"
         :branch="virtualBranch ?? Branch.fromPartial({})"
         :loading="combinedLoading"
+        :show-last-updater="true"
       />
     </div>
     <MaskSpinner v-if="combinedLoading" />

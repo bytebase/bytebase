@@ -89,9 +89,9 @@ import {
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import type { Plan_Spec } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
@@ -205,7 +205,7 @@ const trySave = async () => {
         config.ghostFlags = cloneDeep(flags.value);
       }
 
-      const updatedPlan = await rolloutServiceClient.updatePlan({
+      const updatedPlan = await planServiceClient.updatePlan({
         plan: planPatch,
         updateMask: ["steps"],
       });

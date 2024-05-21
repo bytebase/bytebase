@@ -1,0 +1,9 @@
+- statement: |
+    SELECT * FROM employee LIMIT 1000000;
+  want:
+    - status: WARN
+      code: 222
+      title: statement.maximum-limit-value
+      content: |-
+        The limit value 1000000 exceeds the maximum allowed value 1000
+      line: 1
