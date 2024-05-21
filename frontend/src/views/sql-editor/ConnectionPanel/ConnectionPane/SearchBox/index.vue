@@ -1,5 +1,6 @@
 <template>
   <NAutoComplete
+    ref="autoCompleteRef"
     size="small"
     clear-after-select
     blur-after-select
@@ -11,6 +12,9 @@
     :get-show="getOptionShow"
     @update:value="$emit('update:search-pattern', $event || '')"
     @select="handleDatabaseSelect"
+    @compositionstart="isIMECompositing = true"
+    @compositionend="isIMECompositing = false"
+    @keydown.esc="handleEscapeKey"
   >
     <template #prefix>
       <SearchIcon class="w-4 h-auto text-gray-300" />
@@ -20,9 +24,9 @@
 
 <script lang="ts" setup>
 import { SearchIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
+import type { AutoCompleteInst, SelectOption } from "naive-ui";
 import { NAutoComplete } from "naive-ui";
-import { computed, watchEffect, h } from "vue";
+import { computed, watchEffect, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
@@ -49,6 +53,8 @@ defineEmits<{
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const { searchHistory } = useSearchHistory();
+const isIMECompositing = ref(false);
+const autoCompleteRef = ref<AutoCompleteInst>();
 
 const getOptionShow = () => {
   if (autoCompleteOptions.value[0].children.length === 0) {
@@ -132,6 +138,11 @@ const handleDatabaseSelect = (databaseName: string) => {
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
   };
   tryConnectToCoreSQLEditorTab(coreTab);
+};
+
+const handleEscapeKey = (e: KeyboardEvent) => {
+  if (isIMECompositing.value) return;
+  autoCompleteRef.value?.blur();
 };
 
 watchEffect(async () => {
