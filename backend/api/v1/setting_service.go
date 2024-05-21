@@ -415,7 +415,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, err
 		}
 
-		payload := convertV1SchemaTemplateSetting(schemaTemplateSetting)
+		payload, err := convertV1SchemaTemplateSetting(ctx, schemaTemplateSetting)
+		if err != nil {
+			return nil, err
+		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
@@ -658,11 +661,15 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 
+		sts, err := convertSchemaTemplateSetting(ctx, value)
+		if err != nil {
+			return nil, err
+		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SchemaTemplateSettingValue{
-					SchemaTemplateSettingValue: convertSchemaTemplateSetting(value),
+					SchemaTemplateSettingValue: sts,
 				},
 			},
 		}, nil
@@ -736,7 +743,10 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	if err := decoder.Unmarshal([]byte(settingValue), value); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
 	}
-	v1Value := convertSchemaTemplateSetting(value)
+	v1Value, err := convertSchemaTemplateSetting(ctx, value)
+	if err != nil {
+		return err
+	}
 
 	// validate the changed field(column) template.
 	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
@@ -752,7 +762,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 			Name:    "temp_table",
 			Columns: []*v1pb.ColumnMetadata{template.Column},
 		}
-		if err := validateTableMetadata(template.Engine, tableMetadata); err != nil {
+		if err := validateTableMetadata(ctx, template.Engine, tableMetadata); err != nil {
 			return err
 		}
 	}
@@ -767,7 +777,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
 			continue
 		}
-		if err := validateTableMetadata(template.Engine, template.Table); err != nil {
+		if err := validateTableMetadata(ctx, template.Engine, template.Table); err != nil {
 			return err
 		}
 	}
@@ -775,7 +785,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	return nil
 }
 
-func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
+func validateTableMetadata(ctx context.Context, engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
 	tempSchema := &v1pb.SchemaMetadata{
 		Name:   "",
 		Tables: []*v1pb.TableMetadata{tableMetadata},
@@ -787,7 +797,10 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 		Name:    "temp_database",
 		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-	tempStoreSchemaMetadata, _ := convertV1DatabaseMetadata(tempMetadata)
+	tempStoreSchemaMetadata, _, err := convertV1DatabaseMetadata(ctx, tempMetadata, nil /* optionalStores */)
+	if err != nil {
+		return err
+	}
 	if err := checkDatabaseMetadata(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to check database metadata")
 	}
@@ -1062,7 +1075,7 @@ func stripSensitiveData(setting *v1pb.Setting) (*v1pb.Setting, error) {
 	return setting, nil
 }
 
-func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
+func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaTemplateSetting) (*v1pb.SchemaTemplateSetting, error) {
 	v1Setting := new(v1pb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
@@ -1101,15 +1114,19 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 			t.Table = convertStoreTableMetadata(v.Table)
 		}
 		if v.Config != nil {
-			t.Config = convertStoreTableConfig(v.Config)
+			c, err := convertStoreTableConfig(ctx, v.Config, nil /* optionalStores */)
+			if err != nil {
+				return nil, err
+			}
+			t.Config = c
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
-	return v1Setting
+	return v1Setting, nil
 }
 
-func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *storepb.SchemaTemplateSetting {
+func convertV1SchemaTemplateSetting(ctx context.Context, template *v1pb.SchemaTemplateSetting) (*storepb.SchemaTemplateSetting, error) {
 	v1Setting := new(storepb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &storepb.SchemaTemplateSetting_ColumnType{
@@ -1148,12 +1165,16 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 			t.Table = convertV1TableMetadata(v.Table)
 		}
 		if v.Config != nil {
-			t.Config = convertV1TableConfig(v.Config)
+			tc, err := convertV1TableConfig(ctx, v.Config, nil /* optionalStores */)
+			if err != nil {
+				return nil, err
+			}
+			t.Config = tc
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
-	return v1Setting
+	return v1Setting, nil
 }
 
 func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm) error {

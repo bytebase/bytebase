@@ -893,7 +893,7 @@ ForeignKeyMetadata is the metadata for foreign keys.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a function. |
-| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
 
 
@@ -983,7 +983,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
-| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
 
 
@@ -1115,7 +1115,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | classification_id | [string](#string) |  |  |
-| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
@@ -1204,7 +1204,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a view. |
-| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
