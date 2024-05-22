@@ -4,6 +4,7 @@ package server
 
 import (
 	// Drivers.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
