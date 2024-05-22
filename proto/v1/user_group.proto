@@ -122,7 +122,7 @@ message UserGroup {
 
   // The name for the creator.
   // Format: users/hello@world.com
-  string creator = 4;
+  string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   repeated UserGroupMember members = 5;
 }
