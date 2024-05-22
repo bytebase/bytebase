@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
@@ -79,6 +80,8 @@ message UpdateSettingRequest {
   bool validate_only = 2;
 
   bool allow_missing = 3;
+
+  google.protobuf.FieldMask update_mask = 4;
 }
 
 // The schema of setting.

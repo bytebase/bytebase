@@ -9258,6 +9258,7 @@ The request message for updating or creating a setting.
 | setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
 | validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
 | allow_missing | [bool](#bool) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
 
 
 

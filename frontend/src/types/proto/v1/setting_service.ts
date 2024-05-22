@@ -2,6 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
+import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
@@ -62,6 +63,7 @@ export interface UpdateSettingRequest {
    */
   validateOnly: boolean;
   allowMissing: boolean;
+  updateMask: string[] | undefined;
 }
 
 /** The schema of setting. */
@@ -881,7 +883,7 @@ export const GetSettingResponse = {
 };
 
 function createBaseUpdateSettingRequest(): UpdateSettingRequest {
-  return { setting: undefined, validateOnly: false, allowMissing: false };
+  return { setting: undefined, validateOnly: false, allowMissing: false, updateMask: undefined };
 }
 
 export const UpdateSettingRequest = {
@@ -894,6 +896,9 @@ export const UpdateSettingRequest = {
     }
     if (message.allowMissing === true) {
       writer.uint32(24).bool(message.allowMissing);
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -926,6 +931,13 @@ export const UpdateSettingRequest = {
 
           message.allowMissing = reader.bool();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -940,6 +952,7 @@ export const UpdateSettingRequest = {
       setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined,
       validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
       allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
@@ -954,6 +967,9 @@ export const UpdateSettingRequest = {
     if (message.allowMissing === true) {
       obj.allowMissing = message.allowMissing;
     }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -967,6 +983,7 @@ export const UpdateSettingRequest = {
       : undefined;
     message.validateOnly = object.validateOnly ?? false;
     message.allowMissing = object.allowMissing ?? false;
+    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
