@@ -166,6 +166,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.ProjectService_SearchProjects_FullMethodName,
 		v1pb.ChangelistService_ListChangelists_FullMethodName,
 		v1pb.PlanService_ListPlans_FullMethodName,
+		v1pb.PlanService_SearchPlans_FullMethodName,
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
 		return true
 	}
