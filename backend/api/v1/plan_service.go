@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"slices"
 	"sort"
@@ -170,7 +169,7 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlans
 		find.ProjectID = &projectID
 	}
 	if err := s.buildPlanFindWithFilter(ctx, find, request.Filter); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to build plan find with filter, error: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "failed to build plan find with filter, error: %v", err)
 	}
 
 	plans, err := s.store.ListPlans(ctx, find)
@@ -865,26 +864,26 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanCh
 func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {
 	filters, err := parseFilter(filter)
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, err.Error())
+		return errors.Wrap(err, "failed to parse filter")
 	}
 	for _, spec := range filters {
 		switch spec.key {
 		case "creator":
 			if spec.operator != comparatorTypeEqual {
-				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
+				return errors.New(`only support "=" operation for "creator" filter`)
 			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to get user by identifier")
 			}
 			planFind.CreatorID = &user.ID
 		case "create_time":
 			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
-				return status.Errorf(codes.InvalidArgument, `only support "<=" or ">=" operation for "create_time" filter`)
+				return errors.New(`only support ">=" and "<=" operation for "create_time" filter`)
 			}
 			t, err := time.Parse(time.RFC3339, spec.value)
 			if err != nil {
-				return status.Errorf(codes.InvalidArgument, "failed to parse create_time %s, err: %v", spec.value, err)
+				return errors.Wrap(err, "failed to parse create_time value")
 			}
 			ts := t.Unix()
 			if spec.operator == comparatorTypeGreaterEqual {
@@ -892,38 +891,30 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 			} else {
 				planFind.CreatedTsBefore = &ts
 			}
-		case "create_time_after":
-			t, err := time.Parse(time.RFC3339, spec.value)
-			if err != nil {
-				return status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.value, err)
-			}
-			ts := t.Unix()
-			planFind.CreatedTsAfter = &ts
 		case "has_pipeline":
 			if spec.operator != comparatorTypeEqual {
-				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+				return errors.New(`only support "=" operation for "has_pipeline" filter`)
 			}
 			switch spec.value {
 			case "false":
 				planFind.NoPipeline = true
 			case "true":
 			default:
-				return status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for has_pipeline", spec.value))
+				return errors.Errorf("invalid value %q for has_pipeline", spec.value)
 			}
 		case "has_issue":
 			if spec.operator != comparatorTypeEqual {
-				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+				return errors.New(`only support "=" operation for "has_issue" filter`)
 			}
 			switch spec.value {
 			case "false":
 				planFind.NoIssue = true
 			case "true":
 			default:
-				return status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for has_issue", spec.value))
+				return errors.Errorf("invalid value %q for has_issue", spec.value)
 			}
 		}
 	}
-
 	return nil
 }
 
