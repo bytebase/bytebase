@@ -225,10 +225,11 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 	}
 
 	return &storepb.TableMetadata{
-		Name:    t.name,
-		Columns: columns,
-		Indexes: indexes,
-		Comment: t.comment,
+		Name:        t.name,
+		Columns:     columns,
+		Indexes:     indexes,
+		Comment:     t.comment,
+		UserComment: t.comment,
 	}
 }
 
@@ -306,10 +307,11 @@ func (c *columnState) toString(buf *strings.Builder) error {
 
 func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 	result := &storepb.ColumnMetadata{
-		Name:     c.name,
-		Type:     c.tp,
-		Nullable: c.nullable,
-		Comment:  c.comment,
+		Name:        c.name,
+		Type:        c.tp,
+		Nullable:    c.nullable,
+		Comment:     c.comment,
+		UserComment: c.comment,
 	}
 	if c.defaultValue != nil {
 		switch value := c.defaultValue.(type) {
