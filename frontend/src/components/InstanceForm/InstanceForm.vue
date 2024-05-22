@@ -106,7 +106,7 @@
           </div>
 
           <div class="sm:col-span-3 sm:col-start-1">
-            <template v-if="basicInfo.engine !== Engine.SPANNER">
+            <template v-if="basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY">
               <label for="host" class="textlabel block">
                 <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
                   {{ $t("instance.account-locator") }}
@@ -166,7 +166,7 @@
 
           <template
             v-if="
-              basicInfo.engine !== Engine.SPANNER &&
+              (basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY) &&
               adminDataSource.authenticationType !==
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
@@ -764,7 +764,7 @@ const handleSelectEnvironmentUID = (uid: string | undefined) => {
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: Engine) => {
   context.resetDataSource();
-  if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER) {
+  if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER || engine === Engine.BIGQUERY) {
     if (
       adminDataSource.value.host === "127.0.0.1" ||
       adminDataSource.value.host === "host.docker.internal"
