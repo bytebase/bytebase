@@ -735,6 +735,8 @@ var (
 		"pg_user":                         true,
 		"pg_user_mappings":                true,
 		"pg_views":                        true,
+		// https://www.postgresql.org/docs/current/contrib.html
+		"pg_stat_statements": true,
 	}
 
 	// systemSchemas is the list of system schemas that we will exclude from the schema sync.
