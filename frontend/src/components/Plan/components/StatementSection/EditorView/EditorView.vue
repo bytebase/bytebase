@@ -247,7 +247,8 @@ type LocalState = EditState & {
 };
 
 const { t } = useI18n();
-const { isCreating, plan, selectedSpec, formatOnSave } = usePlanContext();
+const { isCreating, plan, selectedSpec, selectedStep, formatOnSave } =
+  usePlanContext();
 const project = computed(() => plan.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
@@ -264,12 +265,6 @@ const state = reactive<LocalState>({
 
 const database = computed(() => {
   return databaseForSpec(plan.value, selectedSpec.value);
-});
-
-const selectedStep = computed(() => {
-  return plan.value.steps.find((step) =>
-    step.specs.includes(selectedSpec.value)
-  );
 });
 
 const language = useInstanceV1EditorLanguage(

@@ -70,11 +70,7 @@ const props = defineProps<{
   step: Plan_Step;
 }>();
 
-const { isCreating, plan, selectedSpec, events } = usePlanContext();
-
-const selectedStep = computed(() => {
-  return plan.value.steps.find((s) => s.specs.includes(selectedSpec.value));
-});
+const { isCreating, plan, selectedStep, events } = usePlanContext();
 
 const isSelectedStep = computed(() => {
   return isEqual(props.step, selectedStep.value);
@@ -82,11 +78,7 @@ const isSelectedStep = computed(() => {
 
 const stepClass = computed(() => {
   const classList: string[] = [];
-  if (isCreating.value) {
-    classList.push("create");
-  }
   if (isSelectedStep.value) classList.push("selected");
-
   return classList;
 });
 

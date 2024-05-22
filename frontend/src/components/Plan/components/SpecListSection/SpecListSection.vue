@@ -24,7 +24,7 @@ import SpecCard from "./SpecCard.vue";
 
 const MAX_LIST_HEIGHT = 207;
 
-const { plan, selectedSpec } = usePlanContext();
+const { plan, selectedSpec, selectedStep } = usePlanContext();
 const specBar = ref<HTMLDivElement>();
 const specBarScrollState = useVerticalScrollState(specBar, MAX_LIST_HEIGHT);
 
@@ -33,10 +33,6 @@ const specList = computed(
     plan.value.steps.find((step) => step.specs.includes(selectedSpec.value))
       ?.specs || []
 );
-
-const selectedStep = computed(() => {
-  return plan.value.steps.find((s) => s.specs.includes(selectedSpec.value));
-});
 
 // Show the spec bar when some of the steps have more than one specs.
 const shouldShowSpecBar = computed(() => {

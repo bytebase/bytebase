@@ -1,5 +1,10 @@
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
-import { Plan, PlanCheckRun, Plan_Spec } from "@/types/proto/v1/plan_service";
+import {
+  Plan,
+  PlanCheckRun,
+  Plan_Spec,
+  Plan_Step,
+} from "@/types/proto/v1/plan_service";
 import {
   EMPTY_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
@@ -37,6 +42,12 @@ export const unknownPlan = () => {
     project: UNKNOWN_PROJECT_NAME,
     projectEntity: unknownProject(),
   };
+};
+
+export const emptyPlanStep = () => {
+  return Plan_Step.fromJSON({
+    specs: [],
+  });
 };
 
 export const emptyPlanSpec = () => {

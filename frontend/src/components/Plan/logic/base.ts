@@ -5,8 +5,8 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { emptyPlanSpec } from "@/types/v1/issue/plan";
+import type { Plan_Spec, Plan_Step } from "@/types/proto/v1/plan_service";
+import { emptyPlanSpec, emptyPlanStep } from "@/types/v1/issue/plan";
 import { flattenSpecList } from "@/utils";
 import type { PlanContext, PlanEvents } from "./context";
 import { stepForSpec } from "./utils";
@@ -22,11 +22,10 @@ export const useBasePlanContext = (
 
   const events: PlanEvents = new Emittery();
 
-  // const project = computed(() => plan.value);
   const specs = computed(() => flattenSpecList(plan.value));
 
   const selectedSpec = computed((): Plan_Spec => {
-    // Check if spec is selected from URL. (Not use yet)
+    // Check if spec is selected from URL.
     const specId = route.query.spec as string;
     if (specId) {
       const specFound = specs.value.find((spec) => spec.id === specId);
@@ -37,6 +36,10 @@ export const useBasePlanContext = (
 
     // Fallback to first spec.
     return first(specs.value) || emptyPlanSpec();
+  });
+
+  const selectedStep = computed((): Plan_Step => {
+    return stepForSpec(plan.value, selectedSpec.value) || emptyPlanStep();
   });
 
   const formatOnSave = computed({
@@ -61,6 +64,7 @@ export const useBasePlanContext = (
   return {
     events,
     selectedSpec,
+    selectedStep,
     formatOnSave,
     dialog,
   };
