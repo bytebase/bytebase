@@ -33,6 +33,7 @@ type UserGroupMessage struct {
 	Description string
 	CreatorUID  int
 	Payload     *storepb.UserGroupPayload
+	CreatedTime time.Time
 }
 
 // GetUserGroup gets a group.
@@ -97,12 +98,14 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 	SELECT
 		email,
+		created_ts,
 		creator_id,
 		name,
 		description,
 		payload
 	FROM user_group
 	WHERE %s
+	ORDER BY created_ts DESC
 	`, strings.Join(where, " AND ")), args...)
 	if err != nil {
 		return nil, err
@@ -112,8 +115,10 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 	for rows.Next() {
 		var group UserGroupMessage
 		var payload []byte
+		var createdTs int64
 		if err := rows.Scan(
 			&group.Email,
+			&createdTs,
 			&group.CreatorUID,
 			&group.Title,
 			&group.Description,
@@ -121,7 +126,7 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 		); err != nil {
 			return nil, err
 		}
-
+		group.CreatedTime = time.Unix(createdTs, 0)
 		groupPayload := storepb.UserGroupPayload{}
 		if err := protojson.Unmarshal(payload, &groupPayload); err != nil {
 			return nil, err
@@ -152,6 +157,7 @@ func (s *Store) CreateUserGroup(ctx context.Context, create *UserGroupMessage, c
 			description,
 			payload
 		) VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING created_ts
 	`
 	payloadBytes, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -164,7 +170,8 @@ func (s *Store) CreateUserGroup(ctx context.Context, create *UserGroupMessage, c
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(
+	var createdTs int64
+	if err := tx.QueryRowContext(
 		ctx,
 		query,
 		create.Email,
@@ -173,9 +180,10 @@ func (s *Store) CreateUserGroup(ctx context.Context, create *UserGroupMessage, c
 		create.Title,
 		create.Description,
 		payloadBytes,
-	); err != nil {
+	).Scan(&createdTs); err != nil {
 		return nil, err
 	}
+	create.CreatedTime = time.Unix(createdTs, 0)
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit")
@@ -211,18 +219,22 @@ func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *Update
 
 	var group UserGroupMessage
 	var payload []byte
+	var createdTs int64
+
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE user_group
 		SET %s
 		WHERE email = $%d
 		RETURNING
 			email,
+			created_ts,
 			creator_id,
 			name,
 			description,
 			payload
 		`, strings.Join(set, ", "), len(set)+1), args...).Scan(
 		&group.Email,
+		&createdTs,
 		&group.CreatorUID,
 		&group.Title,
 		&group.Description,
@@ -231,6 +243,7 @@ func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *Update
 		return nil, err
 	}
 
+	group.CreatedTime = time.Unix(createdTs, 0)
 	groupPayload := storepb.UserGroupPayload{}
 	if err := protojson.Unmarshal(payload, &groupPayload); err != nil {
 		return nil, err

@@ -24,7 +24,9 @@ import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
 import type { User } from "@/types/proto/v1/auth_service";
+import type { UserGroup } from "@/types/proto/v1/user_group";
 import { copyServiceKeyToClipboardIfNeeded } from "../common";
+import UserGroupsCell from "./cells/UserGroupsCell.vue";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
@@ -40,6 +42,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (event: "update-user", user: User): void;
+  (event: "select-group", group: UserGroup): void;
 }>();
 
 const { t } = useI18n();
@@ -67,6 +70,16 @@ const columns = computed(() => {
       render: (user: User) => {
         return h(UserRolesCell, {
           user,
+        });
+      },
+    },
+    {
+      key: "groups",
+      title: t("settings.members.table.groups"),
+      render: (user: User) => {
+        return h(UserGroupsCell, {
+          user,
+          "onSelect-group": (group) => emit("select-group", group),
         });
       },
     },

@@ -458,7 +458,7 @@
       "security-and-policy": "セキュリティ戦略",
       "integration": "統合された",
       "general": "ユニバーサル",
-      "members": "メンバー",
+      "members-and-groups": "メンバーとグループ",
       "im-integration": "私は",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -497,13 +497,33 @@
       "table": {
         "account": "アカウント",
         "role": "役割",
+        "groups": "グループ",
         "update-time": "更新時間",
         "granted-time": "の承認",
         "roles": "役割"
       },
+      "groups": {
+        "self": "グループ",
+        "add-group": "グループを追加",
+        "update-group": "更新グループ",
+        "delete-warning": "グループ「{name}」は削除されます。この操作は元に戻せません。",
+        "form": {
+          "email": "Eメール",
+          "email-tips": "電子メールは一意である必要があり、作成後に変更することはできません。",
+          "title": "タイトル",
+          "description": "説明",
+          "members": "メンバー",
+          "add-member": "メンバーを追加",
+          "role": {
+            "owner": "所有者",
+            "member": "メンバー"
+          }
+        }
+      },
       "action": {
         "deactivate": "無効にする",
         "deactivate-confirm-title": "無効にしてもOK",
+        "delete-confirm-title": "本当に削除しますか?",
         "deactivate-confirm-description": "後で再度有効にすることができます",
         "reactivate": "有効にする",
         "reactivate-confirm-title": "[OK] を有効にします"
@@ -529,6 +549,7 @@
       },
       "view-by-principals": "メンバー別に見る",
       "view-by-roles": "役割ごとに表示",
+      "view-by-groups": "グループ別に表示",
       "add-member": "メンバーを追加",
       "update-member": "メンバーを更新する",
       "workspace-role-at-least-one": "少なくとも 1 つのワークスペースレベルの役割を選択してください"

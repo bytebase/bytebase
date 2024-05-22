@@ -10,6 +10,7 @@
     :filter="filterByTitle"
     :render-label="renderLabel"
     :placeholder="$t('principal.select')"
+    :size="size"
     class="bb-user-select"
     @update:show="
       (show: boolean) => {
@@ -66,6 +67,7 @@ const props = withDefaults(
     filter?: (user: User, index: number) => boolean;
     mapOptions?: (users: User[]) => (UserSelectOption | SelectGroupOption)[];
     fallbackOption?: SelectProps["fallbackOption"];
+    size?: "tiny" | "small" | "medium" | "large";
   }>(),
   {
     multiple: false,
@@ -90,6 +92,7 @@ const props = withDefaults(
     filter: undefined,
     mapOptions: undefined,
     fallbackOption: false,
+    size: "medium",
   }
 );
 
