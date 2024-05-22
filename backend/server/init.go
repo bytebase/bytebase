@@ -65,7 +65,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 		return "", 0, err
 	}
 
-	// initial feishu app
+	// initial IM app
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAppIM,
 		Value:       "{}",
