@@ -14167,6 +14167,12 @@ components:
                 url:
                     type: string
                     description: url is the url of the webhook, should be unique within the project.
+                directMessage:
+                    type: boolean
+                    description: |-
+                        if direct_message is set, the notification is sent directly
+                         to the persons and url will be ignored.
+                         IM integration setting should be set for this function to work.
                 notificationTypes:
                     type: array
                     items:
@@ -14198,13 +14204,13 @@ components:
                     description: |-
                         notification_types is the list of activities types that the webhook is interested in.
                          Bytebase will only send notifications to the webhook if the activity type is in the list.
-                         It should not be empty, and shoule be a subset of the following:
+                         It should not be empty, and should be a subset of the following:
                          - TYPE_ISSUE_CREATED
                          - TYPE_ISSUE_STATUS_UPDATE
                          - TYPE_ISSUE_PIPELINE_STAGE_UPDATE
                          - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
                          - TYPE_ISSUE_FIELD_UPDATE
-                         - TYPE_ISSUE_COMMENT_CREAT
+                         - TYPE_ISSUE_COMMENT_CREATE
         Worksheet:
             required:
                 - name

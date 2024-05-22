@@ -20736,18 +20736,27 @@ format: projects/{project}/webhooks/{webhook} </p></td>
                 </tr>
               
                 <tr>
+                  <td>direct_message</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>if direct_message is set, the notification is sent directly
+to the persons and url will be ignored.
+IM integration setting should be set for this function to work. </p></td>
+                </tr>
+              
+                <tr>
                   <td>notification_types</td>
                   <td><a href="#bytebase.v1.Activity.Type">Activity.Type</a></td>
                   <td>repeated</td>
                   <td><p>notification_types is the list of activities types that the webhook is interested in.
 Bytebase will only send notifications to the webhook if the activity type is in the list.
-It should not be empty, and shoule be a subset of the following:
+It should not be empty, and should be a subset of the following:
 - TYPE_ISSUE_CREATED
 - TYPE_ISSUE_STATUS_UPDATE
 - TYPE_ISSUE_PIPELINE_STAGE_UPDATE
 - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
 - TYPE_ISSUE_FIELD_UPDATE
-- TYPE_ISSUE_COMMENT_CREAT </p></td>
+- TYPE_ISSUE_COMMENT_CREATE </p></td>
                 </tr>
               
             </tbody>
