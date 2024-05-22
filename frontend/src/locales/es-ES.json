@@ -458,7 +458,7 @@
       "security-and-policy": "Seguridad y Política",
       "integration": "Integración",
       "general": "General",
-      "members": "Miembros",
+      "members-and-groups": "Miembros y grupos",
       "im-integration": "Integración de IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -497,13 +497,33 @@
       "table": {
         "account": "Cuenta",
         "role": "Rol",
+        "groups": "Grupos",
         "update-time": "Hora de Actualización",
         "granted-time": "Hora de Concesión",
         "roles": "Roles"
       },
+      "groups": {
+        "self": "Grupos",
+        "add-group": "Añadir grupo",
+        "update-group": "Grupo de actualización",
+        "delete-warning": "Se eliminará el grupo \"{name}\". Esta acción no se puede deshacer.",
+        "form": {
+          "email": "Correo electrónico",
+          "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
+          "title": "Título",
+          "description": "Descripción",
+          "members": "Miembros",
+          "add-member": "Añadir miembro",
+          "role": {
+            "owner": "Dueño",
+            "member": "Miembros"
+          }
+        }
+      },
       "action": {
         "deactivate": "Desactivar",
         "deactivate-confirm-title": "¿Estás seguro de que deseas desactivar?",
+        "delete-confirm-title": "¿Estás seguro de eliminar?",
         "deactivate-confirm-description": "Aún puedes reactivar más tarde",
         "reactivate": "Reactivar",
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
@@ -529,6 +549,7 @@
       },
       "view-by-principals": "Ver por responsables",
       "view-by-roles": "Ver por roles",
+      "view-by-groups": "Ver por grupos",
       "add-member": "Agregar miembro",
       "update-member": "Actualizar miembro",
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador"

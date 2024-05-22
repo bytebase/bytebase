@@ -10261,6 +10261,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 | description | [string](#string) |  |  |
 | creator | [string](#string) |  | The name for the creator. Format: users/hello@world.com |
 | members | [UserGroupMember](#bytebase-v1-UserGroupMember) | repeated |  |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the group was created. |
 
 
 

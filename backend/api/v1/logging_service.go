@@ -357,7 +357,7 @@ func convertToLogEntity(ctx context.Context, stores *store.Store, activity *stor
 		if user == nil {
 			return nil, errors.Errorf("cannot found user with id %d", activity.ContainerUID)
 		}
-		resource = fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email)
+		resource = common.FormatUserEmail(user.Email)
 	case
 		api.ActivityIssueCreate,
 		api.ActivityIssueCommentCreate,
@@ -413,7 +413,7 @@ func convertToLogEntity(ctx context.Context, stores *store.Store, activity *stor
 
 	return &v1pb.LogEntity{
 		Name:       fmt.Sprintf("%s/%s%d", parent, common.LogNamePrefix, activity.UID),
-		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
+		Creator:    common.FormatUserEmail(user.Email),
 		Resource:   resource,
 		Action:     convertToActionType(activity.Type),
 		Level:      convertToLogLevel(activity.Level),

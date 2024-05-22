@@ -458,7 +458,7 @@
       "security-and-policy": "安全 & 策略",
       "integration": "集成",
       "general": "通用",
-      "members": "成员",
+      "members-and-groups": "成员和群组",
       "im-integration": "IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -497,13 +497,33 @@
       "table": {
         "account": "账户",
         "role": "角色",
+        "groups": "群组",
         "update-time": "更新时间",
         "granted-time": "批准时间",
         "roles": "角色"
       },
+      "groups": {
+        "self": "群组",
+        "add-group": "添加组",
+        "update-group": "更新组",
+        "delete-warning": "群组“{name}”将被删除。此操作无法撤消。",
+        "form": {
+          "email": "电子邮件",
+          "email-tips": "电子邮件应该是唯一的，并且创建后不能更改。",
+          "title": "标题",
+          "description": "描述",
+          "members": "成员",
+          "add-member": "添加成员",
+          "role": {
+            "owner": "所有者",
+            "member": "成员"
+          }
+        }
+      },
       "action": {
         "deactivate": "禁用",
         "deactivate-confirm-title": "确定禁用",
+        "delete-confirm-title": "您确定要删除吗？",
         "deactivate-confirm-description": "之后可以重新启用",
         "reactivate": "启用",
         "reactivate-confirm-title": "确定启用"
@@ -529,6 +549,7 @@
       },
       "view-by-principals": "按成员查看",
       "view-by-roles": "按角色查看",
+      "view-by-groups": "按组查看",
       "add-member": "添加成员",
       "update-member": "更新成员",
       "workspace-role-at-least-one": "至少选择一个工作空间级别的角色"

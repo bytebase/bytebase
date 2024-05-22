@@ -579,7 +579,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 			}
 			if creator != nil {
-				template.Creator = fmt.Sprintf("%s%s", common.UserNamePrefix, creator.Email)
+				template.Creator = common.FormatUserEmail(creator.Email)
 			}
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
