@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -146,6 +147,8 @@ export interface UserGroup {
    */
   creator: string;
   members: UserGroupMember[];
+  /** The timestamp when the group was created. */
+  createTime: Date | undefined;
 }
 
 function createBaseGetUserGroupRequest(): GetUserGroupRequest {
@@ -620,7 +623,7 @@ export const UserGroupMember = {
 };
 
 function createBaseUserGroup(): UserGroup {
-  return { name: "", title: "", description: "", creator: "", members: [] };
+  return { name: "", title: "", description: "", creator: "", members: [], createTime: undefined };
 }
 
 export const UserGroup = {
@@ -639,6 +642,9 @@ export const UserGroup = {
     }
     for (const v of message.members) {
       UserGroupMember.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -685,6 +691,13 @@ export const UserGroup = {
 
           message.members.push(UserGroupMember.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -703,6 +716,7 @@ export const UserGroup = {
       members: globalThis.Array.isArray(object?.members)
         ? object.members.map((e: any) => UserGroupMember.fromJSON(e))
         : [],
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
     };
   },
 
@@ -723,6 +737,9 @@ export const UserGroup = {
     if (message.members?.length) {
       obj.members = message.members.map((e) => UserGroupMember.toJSON(e));
     }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
     return obj;
   },
 
@@ -736,6 +753,7 @@ export const UserGroup = {
     message.description = object.description ?? "";
     message.creator = object.creator ?? "";
     message.members = object.members?.map((e) => UserGroupMember.fromPartial(e)) || [];
+    message.createTime = object.createTime ?? undefined;
     return message;
   },
 };
@@ -910,6 +928,32 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

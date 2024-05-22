@@ -749,7 +749,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 		Statement:  history.Statement,
 		Error:      history.Payload.Error,
 		Database:   history.Database,
-		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
+		Creator:    common.FormatUserEmail(user.Email),
 		CreateTime: timestamppb.New(history.CreatedTime),
 		Duration:   history.Payload.Duration,
 		Type:       historyType,

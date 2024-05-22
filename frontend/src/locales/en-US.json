@@ -458,7 +458,7 @@
       "security-and-policy": "Security & Policy",
       "integration": "Integration",
       "general": "General",
-      "members": "Members",
+      "members-and-groups": "Members & Groups",
       "im-integration": "IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -497,13 +497,33 @@
       "table": {
         "account": "Account",
         "role": "Role",
+        "groups": "Groups",
         "update-time": "Updated Time",
         "granted-time": "Granted Time",
         "roles": "Roles"
       },
+      "groups": {
+        "self": "Groups",
+        "add-group": "Add Group",
+        "update-group": "Update Group",
+        "delete-warning": "The group \"{name}\" will be deleted. This action cannot be undone.",
+        "form": {
+          "email": "Email",
+          "email-tips": "The email should be unique, and it cannot be changed after creation.",
+          "title": "Title",
+          "description": "Description",
+          "members": "Members",
+          "add-member": "Add member",
+          "role": {
+            "owner": "Owner",
+            "member": "Members"
+          }
+        }
+      },
       "action": {
         "deactivate": "Deactivate",
-        "deactivate-confirm-title": "Are you sure to deactivate",
+        "deactivate-confirm-title": "Are you sure to deactivate?",
+        "delete-confirm-title": "Are you sure to delete?",
         "deactivate-confirm-description": "You can still reactivate later",
         "reactivate": "Reactivate",
         "reactivate-confirm-title": "Are you sure to reactivate"
@@ -529,6 +549,7 @@
       },
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
+      "view-by-groups": "View by groups",
       "add-member": "Add member",
       "update-member": "Update member",
       "workspace-role-at-least-one": "At least one workspace role is required"
