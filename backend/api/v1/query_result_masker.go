@@ -77,9 +77,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		ID: &principalID,
-	})
+	currentPrincipal, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find current principal")
 	}

@@ -223,9 +223,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			if email == api.SystemBotEmail {
 				creatorID = api.SystemBotID
 			} else {
-				creator, err := s.store.GetUser(ctx, &store.FindUserMessage{
-					Email: &email,
-				})
+				creator, err := s.store.GetUserByEmail(ctx, email)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 				}
