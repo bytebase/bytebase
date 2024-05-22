@@ -8515,24 +8515,21 @@ components:
         AppIMSetting:
             type: object
             properties:
-                imType:
-                    enum:
-                        - IM_TYPE_UNSPECIFIED
-                        - FEISHU
-                    type: string
-                    format: enum
+                slack:
+                    $ref: '#/components/schemas/AppIMSetting_Slack'
+                feishu:
+                    $ref: '#/components/schemas/AppIMSetting_Feishu'
+        AppIMSetting_Feishu:
+            type: object
+            properties:
                 appId:
                     type: string
                 appSecret:
                     type: string
-                externalApproval:
-                    $ref: '#/components/schemas/AppIMSetting_ExternalApproval'
-        AppIMSetting_ExternalApproval:
+        AppIMSetting_Slack:
             type: object
             properties:
-                enabled:
-                    type: boolean
-                approvalDefinitionId:
+                token:
                     type: string
         ApprovalFlow:
             type: object

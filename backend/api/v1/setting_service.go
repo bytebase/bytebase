@@ -323,37 +323,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingAppIM:
-		settingValue := request.Setting.Value.GetAppImSettingValue()
-		imType, err := convertToIMType(settingValue.ImType)
-		if err != nil {
-			return nil, err
-		}
-		payload := &api.SettingAppIMValue{
-			IMType:    imType,
-			AppID:     settingValue.AppId,
-			AppSecret: settingValue.AppSecret,
-			ExternalApproval: api.ExternalApproval{
-				Enabled:              settingValue.ExternalApproval.Enabled,
-				ApprovalDefinitionID: settingValue.ExternalApproval.ApprovalDefinitionId,
-			},
-		}
-		if payload.IMType != api.IMTypeFeishu {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unknown IM Type %s", payload.IMType))
-		}
-		if payload.ExternalApproval.Enabled {
-			if err := s.licenseService.IsFeatureEnabled(api.FeatureIMApproval); err != nil {
-				return nil, status.Errorf(codes.PermissionDenied, err.Error())
-			}
-			if payload.AppID == "" || payload.AppSecret == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "application ID and secret cannot be empty")
-			}
-		}
-
-		s, err := json.Marshal(payload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal approval setting: %v", err)
-		}
-		storeSettingValue = string(s)
+		// TODO(p0ny): impl
+		return nil, status.Errorf(codes.Unimplemented, "not implemented")
 	case api.SettingWorkspaceExternalApproval:
 		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
 		if err != nil {
@@ -560,27 +531,12 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		})
 	case api.SettingAppIM:
-		apiValue := new(api.SettingAppIMValue)
-		stringValue := setting.Value
-		if stringValue == "" {
-			stringValue = "{}"
-		}
-		if err := json.Unmarshal([]byte(stringValue), apiValue); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
-		}
+		// TODO(p0ny): impl
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: &v1pb.AppIMSetting{
-						ImType:    convertV1IMType(apiValue.IMType),
-						AppId:     apiValue.AppID,
-						AppSecret: apiValue.AppSecret,
-						ExternalApproval: &v1pb.AppIMSetting_ExternalApproval{
-							Enabled:              apiValue.ExternalApproval.Enabled,
-							ApprovalDefinitionId: apiValue.ExternalApproval.ApprovalDefinitionID,
-						},
-					},
+					AppImSettingValue: &v1pb.AppIMSetting{},
 				},
 			},
 		}, nil
@@ -807,26 +763,6 @@ func validateTableMetadata(ctx context.Context, engine v1pb.Engine, tableMetadat
 		return errors.Wrap(err, "failed to transform database metadata to schema string")
 	}
 	return nil
-}
-
-func convertToIMType(imType v1pb.AppIMSetting_IMType) (api.IMType, error) {
-	var resp api.IMType
-	switch imType {
-	case v1pb.AppIMSetting_FEISHU:
-		resp = api.IMTypeFeishu
-	default:
-		return resp, status.Errorf(codes.InvalidArgument, "unknown im type %v", imType.String())
-	}
-	return resp, nil
-}
-
-func convertV1IMType(imType api.IMType) v1pb.AppIMSetting_IMType {
-	switch imType {
-	case api.IMTypeFeishu:
-		return v1pb.AppIMSetting_FEISHU
-	default:
-		return v1pb.AppIMSetting_IM_TYPE_UNSPECIFIED
-	}
 }
 
 func settingInWhitelist(name api.SettingName) bool {

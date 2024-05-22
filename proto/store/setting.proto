@@ -286,3 +286,16 @@ message MaskingAlgorithmSetting {
   // algorithms is the list of masking algorithms.
   repeated Algorithm algorithms = 1;
 }
+
+message AppIMSetting {
+  message Slack {
+    string token = 1;
+  }
+  message Feishu {
+    string app_id = 1;
+    string app_secret = 2;
+  }
+
+  Slack slack = 1;
+  Feishu feishu = 2;
+}
