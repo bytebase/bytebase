@@ -117,7 +117,7 @@ const allowEdit = computed(() => {
       "bb.plans.update"
     )
   ) {
-    // Allowed if current has issue update permission in the project
+    // Allowed if current has plan update permission in the project
     return true;
   }
   return false;
