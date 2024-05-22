@@ -113,7 +113,7 @@ export interface MaskingExceptionPolicy_MaskingException {
   /**
    * Member is the principal who bind to this exception policy instance.
    *
-   * * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+   * Format: users/{userUID}.
    */
   member: string;
   /** The condition that is associated with this exception policy instance. */

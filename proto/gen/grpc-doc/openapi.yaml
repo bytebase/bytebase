@@ -9932,7 +9932,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the function in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
@@ -11128,7 +11128,7 @@ components:
                     description: |-
                         Member is the principal who bind to this exception policy instance.
 
-                         * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+                         Format: users/{userUID}.
                 condition:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
@@ -11668,7 +11668,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the procedure in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
@@ -13074,7 +13074,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the table in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
@@ -13857,7 +13857,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the view in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
