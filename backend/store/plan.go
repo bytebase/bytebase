@@ -30,13 +30,19 @@ type PlanMessage struct {
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID        *int64
-	ProjectID  *string
-	ProjectIDs *[]string
-	PipelineID *int
+	UID             *int64
+	ProjectID       *string
+	ProjectIDs      *[]string
+	CreatorID       *int
+	PipelineID      *int
+	CreatedTsBefore *int64
+	CreatedTsAfter  *int64
 
 	Limit  *int
 	Offset *int
+
+	NoIssue    bool
+	NoPipeline bool
 }
 
 // UpdatePlanMessage is the message to update a plan.
@@ -136,6 +142,22 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.created_ts < $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.created_ts > $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.NoIssue; v {
+		where = append(where, "issue.id IS NULL")
+	}
+	if v := find.NoPipeline; v {
+		where = append(where, "plan.pipeline_id IS NULL")
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			plan.id,
@@ -150,6 +172,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.config
 		FROM plan
 		LEFT JOIN project on plan.project_id = project.id
+		LEFT JOIN issue on plan.id = issue.plan_id
 		WHERE %s
 		ORDER BY id ASC
 	`, strings.Join(where, " AND "))
