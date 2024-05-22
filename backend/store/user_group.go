@@ -123,8 +123,7 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 		}
 
 		groupPayload := storepb.UserGroupPayload{}
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal(payload, &groupPayload); err != nil {
+		if err := protojson.Unmarshal(payload, &groupPayload); err != nil {
 			return nil, err
 		}
 		group.Payload = &groupPayload
@@ -233,8 +232,7 @@ func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *Update
 	}
 
 	groupPayload := storepb.UserGroupPayload{}
-	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := decoder.Unmarshal(payload, &groupPayload); err != nil {
+	if err := protojson.Unmarshal(payload, &groupPayload); err != nil {
 		return nil, err
 	}
 	group.Payload = &groupPayload

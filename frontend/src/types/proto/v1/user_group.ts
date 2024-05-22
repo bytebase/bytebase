@@ -73,7 +73,7 @@ export interface UserGroupMember {
   /**
    * Member is the principal who belong to this user group.
    *
-   * Format: users/{userUID}.
+   * Format: users/hello@world.com
    */
   member: string;
   role: UserGroupMember_Role;
@@ -142,7 +142,7 @@ export interface UserGroup {
   description: string;
   /**
    * The name for the creator.
-   * Format: users/{userID}
+   * Format: users/hello@world.com
    */
   creator: string;
   members: UserGroupMember[];

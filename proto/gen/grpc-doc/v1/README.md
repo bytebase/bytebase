@@ -10216,7 +10216,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 | name | [string](#string) |  | The name of the group to retrieve. Format: groups/{email} |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator | [string](#string) |  | The name for the creator. Format: users/{userID} |
+| creator | [string](#string) |  | The name for the creator. Format: users/hello@world.com |
 | members | [UserGroupMember](#bytebase-v1-UserGroupMember) | repeated |  |
 
 
@@ -10234,7 +10234,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 | ----- | ---- | ----- | ----------- |
 | member | [string](#string) |  | Member is the principal who belong to this user group.
 
-Format: users/{userUID}. |
+Format: users/hello@world.com |
 | role | [UserGroupMember.Role](#bytebase-v1-UserGroupMember-Role) |  |  |
 
 

@@ -13891,10 +13891,11 @@ components:
                 description:
                     type: string
                 creator:
+                    readOnly: true
                     type: string
                     description: |-
                         The name for the creator.
-                         Format: users/{userID}
+                         Format: users/hello@world.com
                 members:
                     type: array
                     items:
