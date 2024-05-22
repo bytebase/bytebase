@@ -55,7 +55,7 @@ import { head, uniqBy } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { sheetNameForSpec } from "@/components/IssueV1";
+import { sheetNameForSpec } from "@/components/Plan";
 import {
   getLocalSheetByName,
   planCheckRunListForSpec,

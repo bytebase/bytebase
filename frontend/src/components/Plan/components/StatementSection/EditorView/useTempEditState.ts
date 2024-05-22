@@ -83,11 +83,11 @@ export const useTempEditState = (state: EditState) => {
     isCreating,
     () => {
       if (!isCreating.value) {
-        // If we are opening an existed issue, we should listen and store the
+        // If we are opening an existed plan, we should listen and store the
         // temp editing states.
         stopWatching = startWatching();
       } else {
-        // If we are creating an issue, we don't need the temp editing state
+        // If we are creating an plan, we don't need the temp editing state
         // feature since all specs are still in editing mode.
         stopWatching && stopWatching();
       }

@@ -1,5 +1,4 @@
 import { maxBy } from "lodash-es";
-import type { ComposedIssue } from "@/types";
 import type { PlanCheckRun, Plan_Spec } from "@/types/proto/v1/plan_service";
 import {
   PlanCheckRun_Result_Status,
@@ -126,20 +125,4 @@ export const planCheckRunSummaryForCheckRunList = (
   }
 
   return summary;
-};
-
-export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
-  const sheets = issue.planEntity?.steps.reduce((acc, step) => {
-    step.specs.forEach((spec) => {
-      if (spec.changeDatabaseConfig?.sheet) {
-        acc.add(spec.changeDatabaseConfig?.sheet);
-      }
-    });
-    return acc;
-  }, new Set<string>());
-  const planCheckRunList = issue.planCheckRunList.filter((check) => {
-    return sheets?.has(check.sheet);
-  });
-
-  return planCheckRunSummaryForCheckRunList(planCheckRunList);
 };

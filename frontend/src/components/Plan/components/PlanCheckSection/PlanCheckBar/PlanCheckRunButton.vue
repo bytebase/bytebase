@@ -3,7 +3,7 @@
     v-if="actionList.length > 0"
     :action-list="actionList"
     :disabled="hasRunningPlanCheck"
-    preference-key="issue.task.run-checks"
+    preference-key="plan.task.run-checks"
     default-action-key="RUN-CHECKS"
     @click="$emit('run-checks')"
   >

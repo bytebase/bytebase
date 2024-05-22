@@ -34,8 +34,7 @@ const show = computed(() => {
 
 const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks
-  // - the creator of the issue
-  // - the assignee of the issue
+  // - the creator of the plan
   // - ones who have bb.planCheckRuns.run permission in the project
   const me = currentUser.value;
   if (extractUserResourceName(plan.value.creator) === me.email) {
@@ -54,7 +53,7 @@ const planCheckRunList = computed(() => {
   if (selectedSpec.value && selectedSpec.value.id !== String(EMPTY_ID)) {
     return planCheckRunListForSpec(plan.value, selectedSpec.value);
   }
-  // Otherwise, show plan checks for the issue.
+  // Otherwise, show plan checks for the plan.
   return plan.value.planCheckRunList;
 });
 </script>

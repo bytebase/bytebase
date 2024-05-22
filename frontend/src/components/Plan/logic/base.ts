@@ -40,8 +40,8 @@ export const useBasePlanContext = (
   });
 
   const formatOnSave = computed({
-    get: () => uiStateStore.issueFormatStatementOnSave,
-    set: (value: boolean) => uiStateStore.setIssueFormatStatementOnSave(value),
+    get: () => uiStateStore.editorFormatStatementOnSave,
+    set: (value: boolean) => uiStateStore.setEditorFormatStatementOnSave(value),
   });
 
   events.on("select-spec", ({ spec }) => {

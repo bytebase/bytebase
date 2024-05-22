@@ -293,7 +293,6 @@ const { markers } = useSQLAdviceMarkers();
 /**
  * to set the MonacoEditor as readonly
  * This happens when
- * - BASELINE issue
  * - Not in edit mode
  * - Disallowed to edit statement
  */
@@ -301,13 +300,7 @@ const isEditorReadonly = computed(() => {
   if (isCreating.value) {
     return false;
   }
-  return (
-    !state.isEditing ||
-    // !allowEditStatement.value || // TODO
-    isSheetOversize.value ||
-    // isGroupingChangeIssue(issue.value as Issue) || // TODO
-    false // TODO
-  );
+  return !state.isEditing || isSheetOversize.value || false;
 });
 
 const {
@@ -333,7 +326,7 @@ const denyEditStatementReasons = computed(() => {
 });
 
 const shouldShowEditButton = computed(() => {
-  // Need not to show "Edit" while the issue is still pending create.
+  // Need not to show "Edit" while the plan is still pending create.
   if (isCreating.value) {
     return false;
   }
@@ -653,7 +646,7 @@ const handleStatementChange = (value: string) => {
 
   state.statement = value;
   if (isCreating.value) {
-    // When creating an issue, update the local sheet directly.
+    // When creating an plan, update the local sheet directly.
     if (!sheet.value) return;
     setSheetStatement(sheet.value, value);
   }
@@ -668,7 +661,7 @@ watch(
 );
 
 watch(isCreating, (curr, prev) => {
-  // Reset the edit state after creating the issue.
+  // Reset the edit state after creating the plan.
   if (!curr && prev) {
     state.isEditing = false;
   }

@@ -433,7 +433,7 @@ export const prepareDatabaseList = async (
 ) => {
   const databaseStore = useDatabaseV1Store();
   if (projectUID && projectUID !== String(UNKNOWN_ID)) {
-    // For preparing the database if user visits creating issue url directly.
+    // For preparing the database if user visits creating plan url directly.
     // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
     // is big (100+ sometimes)
     // So we are fetching databaseList by project since that's better cached.
