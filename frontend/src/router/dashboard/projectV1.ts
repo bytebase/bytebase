@@ -18,6 +18,7 @@ export const PROJECT_V1_ROUTE_BRANCH_MERGE = `${PROJECT_V1_ROUTE_DASHBOARD}.bran
 export const PROJECT_V1_ROUTE_BRANCH_REBASE = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.rebase`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
+export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE_DASHBOARD}.change-histories`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
@@ -219,6 +220,16 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () => import("@/views/project/ProjectIssueDetail.vue"),
+        props: true,
+      },
+      {
+        path: "plans/:planSlug",
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+        meta: {
+          overrideTitle: true,
+          requiredProjectPermissionList: () => ["bb.projects.get"],
+        },
+        component: () => import("@/views/project/ProjectPlanDetail.vue"),
         props: true,
       },
       {
