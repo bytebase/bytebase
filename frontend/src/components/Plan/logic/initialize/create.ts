@@ -463,7 +463,7 @@ const prepareDatabaseListByProject = async (project: string) => {
 };
 
 export const isValidSpec = (spec: Plan_Spec): boolean => {
-  if (spec.changeDatabaseConfig || spec.exportDataConfig) {
+  if (spec.changeDatabaseConfig) {
     const sheetName = sheetNameForSpec(spec);
     if (!sheetName) {
       return false;

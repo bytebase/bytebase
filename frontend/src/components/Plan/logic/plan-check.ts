@@ -9,13 +9,7 @@ import type { ComposedPlan } from "@/types/v1/issue/plan";
 import { sheetNameForSpec, databaseForSpec } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
-  if (spec.createDatabaseConfig) {
-    return false;
-  }
   if (spec.changeDatabaseConfig !== undefined) {
-    return true;
-  }
-  if (spec.exportDataConfig !== undefined) {
     return true;
   }
   return false;

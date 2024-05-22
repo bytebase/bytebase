@@ -72,6 +72,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       },
       {
         key: "method",
+        resizable: true,
         width: 256,
         title: t("audit-log.table.method"),
         render: (auditLog) => auditLog.method,
@@ -97,7 +98,9 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       },
       {
         key: "request",
+        resizable: true,
         minWidth: 256,
+        width: 256,
         title: t("audit-log.table.request"),
         render: (auditLog) =>
           auditLog.request.length > 0 ? (
@@ -108,7 +111,9 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       },
       {
         key: "response",
+        resizable: true,
         minWidth: 256,
+        width: 256,
         title: t("audit-log.table.response"),
         render: (auditLog) =>
           auditLog.response.length > 0 ? (

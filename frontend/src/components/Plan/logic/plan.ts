@@ -18,30 +18,10 @@ import {
 } from "@/utils";
 
 export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
-  const { createDatabaseConfig, changeDatabaseConfig, exportDataConfig } = spec;
-  if (createDatabaseConfig !== undefined) {
-    const instance = createDatabaseConfig.target;
-    const databaseName = createDatabaseConfig.database;
-    const instanceEntity = useInstanceV1Store().getInstanceByName(instance);
-    return {
-      ...unknownDatabase(),
-      name: `${instance}/databases/${databaseName}`,
-      uid: String(UNKNOWN_ID),
-      databaseName,
-      instance,
-      instanceEntity,
-      project: plan.project,
-      projectEntity: plan.projectEntity,
-      effectiveEnvironment: instanceEntity.environment,
-      effectiveEnvironmentEntity: instanceEntity.environmentEntity,
-    };
-  } else if (
-    changeDatabaseConfig !== undefined ||
-    exportDataConfig !== undefined
-  ) {
-    // TODO(steven): handle db group and deployment config.
-    const target = (changeDatabaseConfig?.target ??
-      exportDataConfig?.target) as string;
+  // Now we only handle changeDatabaseConfig specs.
+  const { changeDatabaseConfig } = spec;
+  if (changeDatabaseConfig !== undefined) {
+    const target = changeDatabaseConfig.target;
     const db = useDatabaseV1Store().getDatabaseByName(target);
     if (db.uid === String(UNKNOWN_ID)) {
       // Database not found, it's probably NOT_FOUND (maybe dropped actually)
@@ -72,7 +52,7 @@ export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
  * @returns empty string if no sheet found
  */
 export const sheetNameForSpec = (spec: Plan_Spec): string => {
-  return spec.changeDatabaseConfig?.sheet ?? spec.exportDataConfig?.sheet ?? "";
+  return spec.changeDatabaseConfig?.sheet ?? "";
 };
 
 export const databaseEngineForSpec = async (
@@ -85,8 +65,7 @@ export const databaseEngineForSpec = async (
     if (typeof specOrTarget === "string") {
       return specOrTarget;
     }
-    const config =
-      specOrTarget.changeDatabaseConfig || specOrTarget.exportDataConfig;
+    const config = specOrTarget.changeDatabaseConfig;
     if (!config) {
       return Engine.ENGINE_UNSPECIFIED;
     }
@@ -97,7 +76,7 @@ export const databaseEngineForSpec = async (
   if (extractDatabaseResourceName(target).databaseName !== String(UNKNOWN_ID)) {
     const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
       target,
-      /* silent */ true
+      true /* silent */
     );
     if (db && db.uid !== String(UNKNOWN_ID)) {
       return db.instanceEntity.engine;
@@ -110,7 +89,7 @@ export const databaseEngineForSpec = async (
     if (dbName) {
       const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
         dbName,
-        /* silent */ true
+        true /* silent */
       );
       if (db && db.uid !== String(UNKNOWN_ID)) {
         return db.instanceEntity.engine;
@@ -145,6 +124,14 @@ export const isDeploymentConfigChangeSpec = (spec?: Plan_Spec) => {
     spec.changeDatabaseConfig?.target ?? ""
   );
   return deploymentConfig !== "";
+};
+
+export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
+  if (!spec) return false;
+  const resourceName = extractDatabaseResourceName(
+    spec.changeDatabaseConfig?.target ?? ""
+  );
+  return resourceName.databaseName !== String(UNKNOWN_ID);
 };
 
 export const isGroupingChangeSpec = (spec?: Plan_Spec) => {
