@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -131,6 +132,68 @@ func (s *PlanService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequ
 	}
 
 	return &v1pb.ListPlansResponse{
+		Plans:         convertedPlans,
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
+// SearchPlans searches plans.
+func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlansRequest) (*v1pb.SearchPlansResponse, error) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansGet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
+	}
+
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := limit + 1
+
+	find := &store.FindPlanMessage{
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
+		ProjectIDs: projectIDs,
+	}
+	if projectID != "-" {
+		find.ProjectID = &projectID
+	}
+	if err := s.buildPlanFindWithFilter(ctx, find, request.Filter); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to build plan find with filter, error: %v", err)
+	}
+
+	plans, err := s.store.ListPlans(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
+	}
+
+	var nextPageToken string
+	// has more pages
+	if len(plans) == limitPlusOne {
+		pageToken, err := getPageToken(limit, offset+limit)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		nextPageToken = pageToken
+		plans = plans[:limit]
+	}
+
+	convertedPlans, err := convertToPlans(ctx, s.store, plans)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plans, error: %v", err)
+	}
+
+	return &v1pb.SearchPlansResponse{
 		Plans:         convertedPlans,
 		NextPageToken: nextPageToken,
 	}, nil
@@ -796,4 +859,76 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanCh
 	s.stateCfg.PlanCheckTickleChan <- 0
 
 	return &v1pb.RunPlanChecksResponse{}, nil
+}
+
+func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {
+	filters, err := parseFilter(filter)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse filter")
+	}
+	for _, spec := range filters {
+		switch spec.key {
+		case "creator":
+			if spec.operator != comparatorTypeEqual {
+				return errors.New(`only support "=" operation for "creator" filter`)
+			}
+			user, err := s.getUserByIdentifier(ctx, spec.value)
+			if err != nil {
+				return errors.Wrap(err, "failed to get user by identifier")
+			}
+			planFind.CreatorID = &user.ID
+		case "create_time":
+			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
+				return errors.New(`only support ">=" and "<=" operation for "create_time" filter`)
+			}
+			t, err := time.Parse(time.RFC3339, spec.value)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse create_time value")
+			}
+			ts := t.Unix()
+			if spec.operator == comparatorTypeGreaterEqual {
+				planFind.CreatedTsAfter = &ts
+			} else {
+				planFind.CreatedTsBefore = &ts
+			}
+		case "has_pipeline":
+			if spec.operator != comparatorTypeEqual {
+				return errors.New(`only support "=" operation for "has_pipeline" filter`)
+			}
+			switch spec.value {
+			case "false":
+				planFind.NoPipeline = true
+			case "true":
+			default:
+				return errors.Errorf("invalid value %q for has_pipeline", spec.value)
+			}
+		case "has_issue":
+			if spec.operator != comparatorTypeEqual {
+				return errors.New(`only support "=" operation for "has_issue" filter`)
+			}
+			switch spec.value {
+			case "false":
+				planFind.NoIssue = true
+			case "true":
+			default:
+				return errors.Errorf("invalid value %q for has_issue", spec.value)
+			}
+		}
+	}
+	return nil
+}
+
+func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
+	email := strings.TrimPrefix(identifier, "users/")
+	if email == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
+	}
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, email, err.Error())
+	}
+	if user == nil {
+		return nil, errors.Errorf("cannot found user %s", email)
+	}
+	return user, nil
 }
