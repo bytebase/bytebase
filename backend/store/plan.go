@@ -43,6 +43,8 @@ type FindPlanMessage struct {
 type UpdatePlanMessage struct {
 	UID         int64
 	PipelineUID *int
+	Name        *string
+	Description *string
 	Config      *storepb.PlanConfig
 	UpdaterID   int
 }
@@ -209,6 +211,12 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 // UpdatePlan updates an existing plan.
 func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
 	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Description; v != nil {
+		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Config; v != nil {
 		config, err := protojson.Marshal(v)
 		if err != nil {

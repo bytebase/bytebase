@@ -77,9 +77,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		ID: &principalID,
-	})
+	currentPrincipal, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find current principal")
 	}
@@ -206,7 +204,11 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 			if maskingException.Action != action {
 				continue
 			}
-			if maskingException.Member == currentPrincipal.Email {
+			uid, err := common.GetUserID(maskingException.Member)
+			if err != nil {
+				continue
+			}
+			if uid == currentPrincipal.ID {
 				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
 			}
 		}

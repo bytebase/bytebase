@@ -432,10 +432,7 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 	if email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
 	}
-	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:       &email,
-		ShowDeleted: true,
-	})
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, email, err.Error())
 	}
@@ -539,7 +536,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+		assignee, err := s.store.GetUserByEmail(ctx, assigneeEmail)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
 		}
@@ -767,7 +764,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+		assignee, err := s.store.GetUserByEmail(ctx, assigneeEmail)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
 		}
@@ -1527,7 +1524,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", subscriber, err)
 				}
-				user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &subscriberEmail})
+				user, err := s.store.GetUserByEmail(ctx, subscriberEmail)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", subscriberEmail, err)
 				}
