@@ -8905,6 +8905,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -9625,6 +9626,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9689,6 +9691,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 oldSchema:
@@ -10253,6 +10256,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 engineVersion:
@@ -10316,6 +10320,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 engineVersion:
@@ -11781,6 +11786,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 currentSchema:
@@ -12379,6 +12385,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 comment:
@@ -12512,6 +12519,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 enabled:
@@ -12549,6 +12557,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 category:
@@ -12586,6 +12595,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 category:
@@ -12885,6 +12895,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The SQL dialect.
                     format: enum
@@ -13134,6 +13145,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The database engine of the schema string.
                     format: enum
