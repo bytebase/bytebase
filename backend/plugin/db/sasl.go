@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -56,8 +57,8 @@ var (
 	//   {realm} = {
 	//	   kdc = {transport_protocol}/{host}:{port}
 	// 	 }
-	KrbConfRealmKeyword = "[realm]"
-	KrbConfRealmFmt     = "\t%s = {\n\t\tkdc = %s/%s:%s\n\t}\n"
+	KrbConfRealmKeyword = "[realms]"
+	KrbConfRealmFmt     = "\t%s = {\n\t\tkdc = %s%s:%s\n\t}\n"
 	// We have to specify the path of 'krb5.conf' for the 'kinit' command.
 	KrbConfEnvVarFmt = "KRB5_CONFIG=%s"
 )
@@ -71,7 +72,7 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 	singletonEnv.krbEnvMutex.Lock()
 	defer singletonEnv.krbEnvMutex.Unlock()
 
-	// Create tmp krb5.conf.
+	// // Create tmp krb5.conf.
 	if err := singletonEnv.AddRealm(krbConfig.Realm); err != nil {
 		return err
 	}
@@ -82,30 +83,30 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 		return err
 	}
 
-	// Close and remove the tmp files after the function call.
-	// defer os.Remove(singletonEnv.KrbConfPath)
-	// defer os.Remove(singletonEnv.KeytabPath)
-	defer keytabFile.Close()
-
 	if n, err := keytabFile.Write(krbConfig.Keytab); err != nil || n != len(krbConfig.Keytab) {
 		return err
 	}
 	if err = keytabFile.Sync(); err != nil {
 		return err
 	}
+	keytabFile.Close()
 
 	// kinit -kt {keytab file path} {principal}.
 	var cmd *exec.Cmd
+	var principal string
 	if krbConfig.Instance == "" {
-		principal := fmt.Sprintf(PrincipalWithoutInstanceFmt, krbConfig.Primary, krbConfig.Realm.Name)
-		cmd = exec.Command(singletonEnv.KinitBinPath, "-kt", singletonEnv.KeytabPath, principal)
+		principal = fmt.Sprintf(PrincipalWithoutInstanceFmt, krbConfig.Primary, krbConfig.Realm.Name)
 	} else {
-		principal := fmt.Sprintf(PrincipalWithInstanceFmt, krbConfig.Primary, krbConfig.Instance, krbConfig.Realm.Name)
-		cmd = exec.Command(singletonEnv.KinitBinPath, "-kt", singletonEnv.KeytabPath, principal)
+		principal = fmt.Sprintf(PrincipalWithInstanceFmt, krbConfig.Primary, krbConfig.Instance, krbConfig.Realm.Name)
 	}
-
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf(KrbConfEnvVarFmt, singletonEnv.KrbConfPath))
+	args := []string{
+		fmt.Sprintf(KrbConfEnvVarFmt, singletonEnv.KrbConfPath),
+		"kinit",
+		"-kt",
+		singletonEnv.KeytabPath,
+		principal,
+	}
+	cmd = exec.Command("bash", "-c", strings.Join(args, " "))
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, fmt.Sprintf("failed to execute command kinit: %s", output))
@@ -114,9 +115,7 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 	return nil
 }
 
-func (env *KerberosEnv) AddRealm(realm Realm) error {
-	// Sync configurations with local krb5.conf if current realm does not exist.
-
+func (*KerberosEnv) AddRealm(realm Realm) error {
 	// Create a krb5.conf file.
 	file, err := os.Create(singletonEnv.KrbConfPath)
 	if err != nil {
@@ -128,21 +127,28 @@ func (env *KerberosEnv) AddRealm(realm Realm) error {
 	if _, err = file.WriteString(fmt.Sprintf("%s\n", KrbConfRealmKeyword)); err != nil {
 		return err
 	}
-	for _, realm := range env.realms {
-		text := fmt.Sprintf(KrbConfRealmFmt, realm.Name, realm.KDCTransportProtocol, realm.KDCHost, realm.KDCPort)
-		if _, err = file.WriteString(text); err != nil {
-			return err
-		}
-		if err = file.Sync(); err != nil {
-			return err
-		}
+
+	var kdcConnStr string
+	if realm.KDCTransportProtocol == "tcp" {
+		// This will force kinit client to communicate with KDC over tcp as Mac
+		// doesn't has fall-down mechanism if it fails to communicate over udp.
+		kdcConnStr = fmt.Sprintf(KrbConfRealmFmt, realm.Name, "tcp/", realm.KDCHost, realm.KDCPort)
+	} else {
+		kdcConnStr = fmt.Sprintf(KrbConfRealmFmt, realm.Name, "", realm.KDCHost, realm.KDCPort)
 	}
+	if _, err = file.WriteString(kdcConnStr); err != nil {
+		return err
+	}
+	if err = file.Sync(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // check whether Kerberos is enabled and its settings are valid.
 func (krbConfig *KerberosConfig) Check() bool {
-	if krbConfig.Primary == "" || krbConfig.Instance == "" || krbConfig.Realm.Name == "" || len(krbConfig.Keytab) == 0 || krbConfig.Realm.KDCTransportProtocol == "" {
+	if krbConfig.Primary == "" || krbConfig.Realm.Name == "" || len(krbConfig.Keytab) == 0 || krbConfig.Realm.KDCTransportProtocol == "" {
 		return false
 	}
 	return true
