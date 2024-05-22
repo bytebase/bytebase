@@ -7383,6 +7383,11 @@ paths:
                   in: query
                   schema:
                     type: boolean
+                - name: updateMask
+                  in: query
+                  schema:
+                    type: string
+                    format: field-mask
             requestBody:
                 content:
                     application/json:
