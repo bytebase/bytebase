@@ -1200,7 +1200,8 @@
     },
     "sql-review": {
       "statement-type": "ステートメントタイプ"
-    }
+    },
+    "sql-review-only": "SQLレビューのみ"
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトでは、VCS ベースのバージョン管理が有効になっています。以下のデータベースを選択すると、対応する Git リポジトリに移動して、変更プロセスを開始します。",
@@ -2145,10 +2146,10 @@
     "read-replica-port": "リードレプリカポート",
     "delete-read-only-data-source": "読み取り専用データソースを削除する",
     "connection-string-schema": "接続文字列モード",
-    "admin": "メインライブラリ",
-    "read-only": "図書館から",
     "additional-node-addresses": "追加のノードアドレス",
     "replica-set": "レプリカセット",
+    "admin": "メインライブラリ",
+    "read-only": "図書館から",
     "direct-connection": "Direct Connection"
   },
   "setting": {
