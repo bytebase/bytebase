@@ -2232,7 +2232,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.AppIMSetting.ExternalApproval"><span class="badge">M</span>AppIMSetting.ExternalApproval</a>
+                  <a href="#bytebase.v1.AppIMSetting.Feishu"><span class="badge">M</span>AppIMSetting.Feishu</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AppIMSetting.Slack"><span class="badge">M</span>AppIMSetting.Slack</a>
                 </li>
               
                 <li>
@@ -2366,10 +2370,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Announcement.AlertLevel"><span class="badge">E</span>Announcement.AlertLevel</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.AppIMSetting.IMType"><span class="badge">E</span>AppIMSetting.IMType</a>
                 </li>
               
                 <li>
@@ -24426,11 +24426,35 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
             <tbody>
               
                 <tr>
-                  <td>im_type</td>
-                  <td><a href="#bytebase.v1.AppIMSetting.IMType">AppIMSetting.IMType</a></td>
+                  <td>slack</td>
+                  <td><a href="#bytebase.v1.AppIMSetting.Slack">AppIMSetting.Slack</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
+              
+                <tr>
+                  <td>feishu</td>
+                  <td><a href="#bytebase.v1.AppIMSetting.Feishu">AppIMSetting.Feishu</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AppIMSetting.Feishu">AppIMSetting.Feishu</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
               
                 <tr>
                   <td>app_id</td>
@@ -24446,13 +24470,6 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>external_approval</td>
-                  <td><a href="#bytebase.v1.AppIMSetting.ExternalApproval">AppIMSetting.ExternalApproval</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -24460,7 +24477,7 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
 
         
       
-        <h3 id="bytebase.v1.AppIMSetting.ExternalApproval">AppIMSetting.ExternalApproval</h3>
+        <h3 id="bytebase.v1.AppIMSetting.Slack">AppIMSetting.Slack</h3>
         <p></p>
 
         
@@ -24471,14 +24488,7 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
             <tbody>
               
                 <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>approval_definition_id</td>
+                  <td>token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -25854,29 +25864,6 @@ The external URL is used for:
               <tr>
                 <td>ALERT_LEVEL_CRITICAL</td>
                 <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.AppIMSetting.IMType">AppIMSetting.IMType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>IM_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FEISHU</td>
-                <td>1</td>
                 <td><p></p></td>
               </tr>
             

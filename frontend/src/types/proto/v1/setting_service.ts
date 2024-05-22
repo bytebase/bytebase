@@ -261,60 +261,17 @@ export function sMTPMailDeliverySettingValue_AuthenticationToNumber(
 }
 
 export interface AppIMSetting {
-  imType: AppIMSetting_IMType;
+  slack: AppIMSetting_Slack | undefined;
+  feishu: AppIMSetting_Feishu | undefined;
+}
+
+export interface AppIMSetting_Slack {
+  token: string;
+}
+
+export interface AppIMSetting_Feishu {
   appId: string;
   appSecret: string;
-  externalApproval: AppIMSetting_ExternalApproval | undefined;
-}
-
-export enum AppIMSetting_IMType {
-  IM_TYPE_UNSPECIFIED = "IM_TYPE_UNSPECIFIED",
-  FEISHU = "FEISHU",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function appIMSetting_IMTypeFromJSON(object: any): AppIMSetting_IMType {
-  switch (object) {
-    case 0:
-    case "IM_TYPE_UNSPECIFIED":
-      return AppIMSetting_IMType.IM_TYPE_UNSPECIFIED;
-    case 1:
-    case "FEISHU":
-      return AppIMSetting_IMType.FEISHU;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return AppIMSetting_IMType.UNRECOGNIZED;
-  }
-}
-
-export function appIMSetting_IMTypeToJSON(object: AppIMSetting_IMType): string {
-  switch (object) {
-    case AppIMSetting_IMType.IM_TYPE_UNSPECIFIED:
-      return "IM_TYPE_UNSPECIFIED";
-    case AppIMSetting_IMType.FEISHU:
-      return "FEISHU";
-    case AppIMSetting_IMType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function appIMSetting_IMTypeToNumber(object: AppIMSetting_IMType): number {
-  switch (object) {
-    case AppIMSetting_IMType.IM_TYPE_UNSPECIFIED:
-      return 0;
-    case AppIMSetting_IMType.FEISHU:
-      return 1;
-    case AppIMSetting_IMType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export interface AppIMSetting_ExternalApproval {
-  enabled: boolean;
-  approvalDefinitionId: string;
 }
 
 export interface AgentPluginSetting {
@@ -1604,22 +1561,16 @@ export const SMTPMailDeliverySettingValue = {
 };
 
 function createBaseAppIMSetting(): AppIMSetting {
-  return { imType: AppIMSetting_IMType.IM_TYPE_UNSPECIFIED, appId: "", appSecret: "", externalApproval: undefined };
+  return { slack: undefined, feishu: undefined };
 }
 
 export const AppIMSetting = {
   encode(message: AppIMSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.imType !== AppIMSetting_IMType.IM_TYPE_UNSPECIFIED) {
-      writer.uint32(8).int32(appIMSetting_IMTypeToNumber(message.imType));
+    if (message.slack !== undefined) {
+      AppIMSetting_Slack.encode(message.slack, writer.uint32(10).fork()).ldelim();
     }
-    if (message.appId !== "") {
-      writer.uint32(18).string(message.appId);
-    }
-    if (message.appSecret !== "") {
-      writer.uint32(26).string(message.appSecret);
-    }
-    if (message.externalApproval !== undefined) {
-      AppIMSetting_ExternalApproval.encode(message.externalApproval, writer.uint32(34).fork()).ldelim();
+    if (message.feishu !== undefined) {
+      AppIMSetting_Feishu.encode(message.feishu, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1632,32 +1583,18 @@ export const AppIMSetting = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.imType = appIMSetting_IMTypeFromJSON(reader.int32());
+          message.slack = AppIMSetting_Slack.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.appId = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.appSecret = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.externalApproval = AppIMSetting_ExternalApproval.decode(reader, reader.uint32());
+          message.feishu = AppIMSetting_Feishu.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1670,30 +1607,18 @@ export const AppIMSetting = {
 
   fromJSON(object: any): AppIMSetting {
     return {
-      imType: isSet(object.imType)
-        ? appIMSetting_IMTypeFromJSON(object.imType)
-        : AppIMSetting_IMType.IM_TYPE_UNSPECIFIED,
-      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
-      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
-      externalApproval: isSet(object.externalApproval)
-        ? AppIMSetting_ExternalApproval.fromJSON(object.externalApproval)
-        : undefined,
+      slack: isSet(object.slack) ? AppIMSetting_Slack.fromJSON(object.slack) : undefined,
+      feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
     };
   },
 
   toJSON(message: AppIMSetting): unknown {
     const obj: any = {};
-    if (message.imType !== AppIMSetting_IMType.IM_TYPE_UNSPECIFIED) {
-      obj.imType = appIMSetting_IMTypeToJSON(message.imType);
+    if (message.slack !== undefined) {
+      obj.slack = AppIMSetting_Slack.toJSON(message.slack);
     }
-    if (message.appId !== "") {
-      obj.appId = message.appId;
-    }
-    if (message.appSecret !== "") {
-      obj.appSecret = message.appSecret;
-    }
-    if (message.externalApproval !== undefined) {
-      obj.externalApproval = AppIMSetting_ExternalApproval.toJSON(message.externalApproval);
+    if (message.feishu !== undefined) {
+      obj.feishu = AppIMSetting_Feishu.toJSON(message.feishu);
     }
     return obj;
   },
@@ -1703,51 +1628,41 @@ export const AppIMSetting = {
   },
   fromPartial(object: DeepPartial<AppIMSetting>): AppIMSetting {
     const message = createBaseAppIMSetting();
-    message.imType = object.imType ?? AppIMSetting_IMType.IM_TYPE_UNSPECIFIED;
-    message.appId = object.appId ?? "";
-    message.appSecret = object.appSecret ?? "";
-    message.externalApproval = (object.externalApproval !== undefined && object.externalApproval !== null)
-      ? AppIMSetting_ExternalApproval.fromPartial(object.externalApproval)
+    message.slack = (object.slack !== undefined && object.slack !== null)
+      ? AppIMSetting_Slack.fromPartial(object.slack)
+      : undefined;
+    message.feishu = (object.feishu !== undefined && object.feishu !== null)
+      ? AppIMSetting_Feishu.fromPartial(object.feishu)
       : undefined;
     return message;
   },
 };
 
-function createBaseAppIMSetting_ExternalApproval(): AppIMSetting_ExternalApproval {
-  return { enabled: false, approvalDefinitionId: "" };
+function createBaseAppIMSetting_Slack(): AppIMSetting_Slack {
+  return { token: "" };
 }
 
-export const AppIMSetting_ExternalApproval = {
-  encode(message: AppIMSetting_ExternalApproval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.enabled === true) {
-      writer.uint32(8).bool(message.enabled);
-    }
-    if (message.approvalDefinitionId !== "") {
-      writer.uint32(18).string(message.approvalDefinitionId);
+export const AppIMSetting_Slack = {
+  encode(message: AppIMSetting_Slack, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_ExternalApproval {
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Slack {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAppIMSetting_ExternalApproval();
+    const message = createBaseAppIMSetting_Slack();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.enabled = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.approvalDefinitionId = reader.string();
+          message.token = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1758,31 +1673,98 @@ export const AppIMSetting_ExternalApproval = {
     return message;
   },
 
-  fromJSON(object: any): AppIMSetting_ExternalApproval {
-    return {
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      approvalDefinitionId: isSet(object.approvalDefinitionId) ? globalThis.String(object.approvalDefinitionId) : "",
-    };
+  fromJSON(object: any): AppIMSetting_Slack {
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
   },
 
-  toJSON(message: AppIMSetting_ExternalApproval): unknown {
+  toJSON(message: AppIMSetting_Slack): unknown {
     const obj: any = {};
-    if (message.enabled === true) {
-      obj.enabled = message.enabled;
-    }
-    if (message.approvalDefinitionId !== "") {
-      obj.approvalDefinitionId = message.approvalDefinitionId;
+    if (message.token !== "") {
+      obj.token = message.token;
     }
     return obj;
   },
 
-  create(base?: DeepPartial<AppIMSetting_ExternalApproval>): AppIMSetting_ExternalApproval {
-    return AppIMSetting_ExternalApproval.fromPartial(base ?? {});
+  create(base?: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
+    return AppIMSetting_Slack.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<AppIMSetting_ExternalApproval>): AppIMSetting_ExternalApproval {
-    const message = createBaseAppIMSetting_ExternalApproval();
-    message.enabled = object.enabled ?? false;
-    message.approvalDefinitionId = object.approvalDefinitionId ?? "";
+  fromPartial(object: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
+    const message = createBaseAppIMSetting_Slack();
+    message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Feishu(): AppIMSetting_Feishu {
+  return { appId: "", appSecret: "" };
+}
+
+export const AppIMSetting_Feishu = {
+  encode(message: AppIMSetting_Feishu, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.appId !== "") {
+      writer.uint32(10).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(18).string(message.appSecret);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Feishu {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Feishu();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Feishu {
+    return {
+      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_Feishu): unknown {
+    const obj: any = {};
+    if (message.appId !== "") {
+      obj.appId = message.appId;
+    }
+    if (message.appSecret !== "") {
+      obj.appSecret = message.appSecret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
+    return AppIMSetting_Feishu.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
+    const message = createBaseAppIMSetting_Feishu();
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
     return message;
   },
 };
