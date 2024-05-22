@@ -99,7 +99,7 @@ message DeleteUserGroupRequest {
 message UserGroupMember {
   // Member is the principal who belong to this user group.
   //
-  // Format: users/{userUID}.
+  // Format: users/hello@world.com
   string member = 1;
 
   enum Role {
