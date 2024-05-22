@@ -54,6 +54,7 @@ import StepCard from "./StepCard.vue";
 
 const { plan, selectedSpec } = usePlanContext();
 
+// Only show steps when the selected spec is related with database changes.
 const show = computed(() => isDatabaseChangeSpec(selectedSpec.value));
 
 const stepList = computed(() => {
