@@ -3,7 +3,10 @@ package v1
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
@@ -12,6 +15,62 @@ import (
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+var (
+	currentTimestampRegexp = regexp.MustCompile(`(?mi)CURRENT_TIMESTAMP(\((?P<fsp>(\d+))?\))?`)
+	nowRegexp              = regexp.MustCompile(`(?mi)NOW(\((?P<fsp>(\d+))?\))?`)
+)
+
+type currentTimestamp struct {
+	// fsp is the fractional seconds precision.
+	fsp int
+}
+
+type now struct {
+	fsp int
+}
+
+func buildNow(input string) *now {
+	matches := nowRegexp.FindStringSubmatch(input)
+	if matches == nil {
+		return nil
+	}
+
+	for i, name := range nowRegexp.SubexpNames() {
+		if name == "fsp" {
+			if matches[i] != "" {
+				fsp, err := strconv.ParseInt(matches[i], 10, 64)
+				if err != nil {
+					return nil
+				}
+				return &now{int(fsp)}
+			}
+		}
+	}
+
+	return &now{}
+}
+
+func buildCurrentTimestamp(input string) *currentTimestamp {
+	matches := currentTimestampRegexp.FindStringSubmatch(input)
+	if matches == nil {
+		return nil
+	}
+
+	for i, name := range currentTimestampRegexp.SubexpNames() {
+		if name == "fsp" {
+			if matches[i] != "" {
+				fsp, err := strconv.ParseInt(matches[i], 10, 64)
+				if err != nil {
+					return nil
+				}
+				return &currentTimestamp{int(fsp)}
+			}
+		}
+	}
+
+	return &currentTimestamp{}
+}
 
 type diffAction string
 
@@ -609,8 +668,8 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if n.head.Type != other.head.Type {
 			return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.head.Type, other.head.Type)
 		}
-		if cmp.Diff(n.head.DefaultValue, other.head.DefaultValue, protocmp.Transform()) != "" {
-			return true, fmt.Sprintf("conflict column default value, one is %v, the other is %v", n.head.DefaultValue, other.head.DefaultValue)
+		if !compareColumnDefaultValue(n.head.DefaultValue, other.head.DefaultValue) {
+			return true, fmt.Sprintf("conflict column default value, one is %+v, the other is %+v", n.head.DefaultValue, other.head.DefaultValue)
 		}
 		if n.head.Nullable != other.head.Nullable {
 			return true, fmt.Sprintf("conflict column nullable, one is %t, the other is %t", n.head.Nullable, other.head.Nullable)
@@ -633,10 +692,10 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 			}
 		}
 
-		if otherDiff := cmp.Diff(other.base.DefaultValue, other.head.DefaultValue, protocmp.Transform()); otherDiff != "" {
-			if nDiff := cmp.Diff(n.base.DefaultValue, n.head.DefaultValue, protocmp.Transform()); nDiff != "" {
-				if d := cmp.Diff(n.head.DefaultValue, other.head.DefaultValue, protocmp.Transform()); d != "" {
-					return true, fmt.Sprintf("conflict column default value, one is %v, the other is %v", n.head.DefaultValue, other.head.DefaultValue)
+		if !compareColumnDefaultValue(n.head.DefaultValue, other.head.DefaultValue) {
+			if !compareColumnDefaultValue(n.base.DefaultValue, n.head.DefaultValue) {
+				if !compareColumnDefaultValue(n.head.DefaultValue, other.head.DefaultValue) {
+					return true, fmt.Sprintf("conflict column default value, one is %+v, the other is %+v", n.head.DefaultValue, other.head.DefaultValue)
 				}
 			} else {
 				n.head.DefaultValue = other.head.DefaultValue
@@ -675,6 +734,35 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 	}
 
 	return false, ""
+}
+
+// To avoid getting caught up in the case struggle, we handle some special cases first.
+// compareColumnDefaultValue compares the default value of two columns.
+// The type of a, b should can be assigned to storepb.isColumnMetadata_DefaultValue.
+// return true if the default value of a and b are equal, otherwise return false.
+func compareColumnDefaultValue(a, b any) bool {
+	// TODO(zp): The special case should be assosiacted with the engine type.
+	aExpr, aOK := a.(*storepb.ColumnMetadata_DefaultExpression)
+	bExpr, bOK := b.(*storepb.ColumnMetadata_DefaultExpression)
+	if aOK && bOK {
+		if strings.EqualFold(aExpr.DefaultExpression, "AUTO_INCREMENT") {
+			return strings.EqualFold(bExpr.DefaultExpression, "AUTO_INCREMENT")
+		}
+		aCurrentTimestamp := buildCurrentTimestamp(aExpr.DefaultExpression)
+		bCurrentTimestamp := buildCurrentTimestamp(bExpr.DefaultExpression)
+		if aCurrentTimestamp != nil && bCurrentTimestamp != nil {
+			return aCurrentTimestamp.fsp == bCurrentTimestamp.fsp
+		}
+		aNow := buildNow(aExpr.DefaultExpression)
+		bNow := buildNow(bExpr.DefaultExpression)
+		if aNow != nil && bNow != nil {
+			return aNow.fsp == bNow.fsp
+		}
+	}
+
+	r := cmp.Diff(a, b, protocmp.Transform())
+
+	return r == ""
 }
 
 func (n *metadataDiffColumnNode) applyDiffTo(target *storepb.TableMetadata) error {
