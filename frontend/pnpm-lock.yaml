@@ -96,8 +96,8 @@ importers:
         specifier: 7.3.0
         version: 7.3.0(@codingame/monaco-vscode-api@1.85.6)(monaco-editor@0.45.0)
       naive-ui:
-        specifier: 2.38.1
-        version: 2.38.1(vue@3.4.26(typescript@5.4.5))
+        specifier: 2.38.2
+        version: 2.38.2(vue@3.4.26(typescript@5.4.5))
       nice-grpc-common:
         specifier: ^2.0.2
         version: 2.0.2
@@ -2855,8 +2855,8 @@ packages:
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
-  naive-ui@2.38.1:
-    resolution: {integrity: sha512-AnU1FQ7K/CbhguAX++V4kCFjk7h7RvWt4nvZPRjORMpq+fUIlzD+EcQ5Cv1VqDloNF8+eMv4Akc2Ogacc9S+5A==}
+  naive-ui@2.38.2:
+    resolution: {integrity: sha512-WhZ+6DW61aYSmFyfH7evcSGFmd2xR68Yq1mNRrVdJwBhZsnNdAUsMN9IeNCVEPMCND/jzYZghkStoNoR5Xa09g==}
     peerDependencies:
       vue: ^3.0.0
 
@@ -6635,7 +6635,7 @@ snapshots:
       object-assign: 4.1.1
       thenify-all: 1.6.0
 
-  naive-ui@2.38.1(vue@3.4.26(typescript@5.4.5)):
+  naive-ui@2.38.2(vue@3.4.26(typescript@5.4.5)):
     dependencies:
       '@css-render/plugin-bem': 0.15.12(css-render@0.15.12)
       '@css-render/vue3-ssr': 0.15.12(vue@3.4.26(typescript@5.4.5))
