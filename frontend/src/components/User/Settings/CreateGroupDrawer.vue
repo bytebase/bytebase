@@ -31,15 +31,15 @@
               {{ $t("settings.members.groups.form.title") }}
               <span class="text-red-600">*</span>
             </label>
-            <NInput :disabled="!allowEdit" v-model:value="state.group.title" />
+            <NInput v-model:value="state.group.title" :disabled="!allowEdit" />
           </div>
           <div class="flex flex-col gap-y-2">
             <label class="textlabel block">
               {{ $t("settings.members.groups.form.description") }}
             </label>
             <NInput
-              :disabled="!allowEdit"
               v-model:value="state.group.description"
+              :disabled="!allowEdit"
             />
           </div>
           <div class="flex flex-col gap-y-2">
