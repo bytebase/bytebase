@@ -51,7 +51,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head, uniqBy } from "lodash-es";
+import { head, isEqual, uniqBy } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { sheetNameForSpec } from "@/components/Plan";
@@ -77,7 +77,7 @@ const selectedStep = computed(() => {
 });
 
 const isSelectedStep = computed(() => {
-  return props.step === selectedStep.value;
+  return isEqual(props.step, selectedStep.value);
 });
 
 const stepClass = computed(() => {
