@@ -624,25 +624,17 @@ const generateMultiDb = async () => {
     databaseList: selectedDatabaseList.map((db) => db.name).join(","),
   };
 
-  if (state.planOnly) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project.name),
-        planSlug: "create",
-      },
-      query,
-    });
-  } else {
-    router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project.name),
-        issueSlug: "create",
-      },
-      query,
-    });
-  }
+  router.push({
+    name: state.planOnly
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: "create",
+      planSlug: "create",
+    },
+    query,
+  });
 };
 
 const allowGenerateTenant = computed(() => {
@@ -759,25 +751,17 @@ const generateTenant = async () => {
 
   emit("dismiss");
 
-  if (state.planOnly) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(selectedProject.value.name),
-        planSlug: "create",
-      },
-      query,
-    });
-  } else {
-    router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(selectedProject.value.name),
-        issueSlug: "create",
-      },
-      query,
-    });
-  }
+  router.push({
+    name: state.planOnly
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(selectedProject.value.name),
+      issueSlug: "create",
+      planSlug: "create",
+    },
+    query,
+  });
 };
 
 const cancel = () => {
