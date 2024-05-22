@@ -50,6 +50,7 @@ type Store struct {
 	schemaGroupCache       *lru.Cache[string, *SchemaGroupMessage]
 	vcsIDCache             *lru.Cache[int, *VCSProviderMessage]
 	rolesCache             *lru.Cache[string, *RoleMessage]
+	userGroupCache         *lru.Cache[string, *UserGroupMessage]
 
 	// Large objects.
 	sheetCache    *lru.Cache[int, string]
@@ -166,6 +167,10 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	userGroupCache, err := lru.New[string, *UserGroupMessage](1024)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Store{
 		db:      db,
@@ -199,6 +204,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		rolesCache:             rolesCache,
 		sheetCache:             sheetCache,
 		dbSchemaCache:          dbSchemaCache,
+		userGroupCache:         userGroupCache,
 	}, nil
 }
 

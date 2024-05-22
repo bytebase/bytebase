@@ -92,6 +92,7 @@ func configureGrpcRouters(
 	v1pb.RegisterLoggingServiceServer(grpcServer, apiv1.NewLoggingService(stores))
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
 	v1pb.RegisterVCSConnectorServiceServer(grpcServer, apiv1.NewVCSConnectorService(stores))
+	v1pb.RegisterUserGroupServiceServer(grpcServer, apiv1.NewUserGroupService(stores))
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)
@@ -173,6 +174,9 @@ func configureGrpcRouters(
 		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterVCSConnectorServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, err
+	}
+	if err := v1pb.RegisterUserGroupServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, err
 	}
 	return planService, rolloutService, issueService, nil
