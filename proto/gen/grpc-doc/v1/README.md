@@ -382,6 +382,8 @@
     - [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport)
     - [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest)
     - [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse)
+    - [SearchPlansRequest](#bytebase-v1-SearchPlansRequest)
+    - [SearchPlansResponse](#bytebase-v1-SearchPlansResponse)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
@@ -537,7 +539,8 @@
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [Announcement](#bytebase-v1-Announcement)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
-    - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
+    - [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu)
+    - [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
@@ -572,7 +575,6 @@
     - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
-    - [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType)
     - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
@@ -6482,6 +6484,42 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 
 
+<a name="bytebase-v1-SearchPlansRequest"></a>
+
+### SearchPlansRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 50 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListPlans` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchPlansResponse"></a>
+
+### SearchPlansResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plans | [Plan](#bytebase-v1-Plan) | repeated | The plans from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdatePlanRequest"></a>
 
 ### UpdatePlanRequest
@@ -6578,6 +6616,7 @@ Type is the database change type.
 | ----------- | ------------ | ------------- | ------------|
 | GetPlan | [GetPlanRequest](#bytebase-v1-GetPlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | ListPlans | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
+| SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) |  |
 | CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
@@ -7431,7 +7470,8 @@ The schema group&#39;s `name` field is used to identify the schema group to upda
 | type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  | type is the type of the webhook. |
 | title | [string](#string) |  | title is the title of the webhook. |
 | url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
-| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and shoule be a subset of the following: - TYPE_ISSUE_CREATED - TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_COMMENT_CREAT |
+| direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
+| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - TYPE_ISSUE_CREATED - TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_COMMENT_CREATE |
 
 
 
@@ -8762,26 +8802,39 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| im_type | [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType) |  |  |
-| app_id | [string](#string) |  |  |
-| app_secret | [string](#string) |  |  |
-| external_approval | [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval) |  |  |
+| slack | [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack) |  |  |
+| feishu | [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-AppIMSetting-ExternalApproval"></a>
+<a name="bytebase-v1-AppIMSetting-Feishu"></a>
 
-### AppIMSetting.ExternalApproval
+### AppIMSetting.Feishu
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
-| approval_definition_id | [string](#string) |  |  |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Slack"></a>
+
+### AppIMSetting.Slack
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  |  |
 
 
 
@@ -9245,6 +9298,7 @@ The request message for updating or creating a setting.
 | setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
 | validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
 | allow_missing | [bool](#bool) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
 
 
 
@@ -9364,18 +9418,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ALERT_LEVEL_INFO | 1 |  |
 | ALERT_LEVEL_WARNING | 2 |  |
 | ALERT_LEVEL_CRITICAL | 3 |  |
-
-
-
-<a name="bytebase-v1-AppIMSetting-IMType"></a>
-
-### AppIMSetting.IMType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| IM_TYPE_UNSPECIFIED | 0 |  |
-| FEISHU | 1 |  |
 
 
 

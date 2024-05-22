@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col divide-y">
+  <div v-if="show" class="w-full flex flex-col divide-y">
     <template v-if="stepList.length > 0">
       <div class="px-0">
         <NScrollbar :x-scrollable="true" class="max-h-[180px] sm:max-h-max">
@@ -49,10 +49,13 @@
 <script lang="ts" setup>
 import { NScrollbar } from "naive-ui";
 import { computed } from "vue";
-import { usePlanContext } from "@/components/Plan/logic";
+import { isDatabaseChangeSpec, usePlanContext } from "@/components/Plan/logic";
 import StepCard from "./StepCard.vue";
 
-const { plan } = usePlanContext();
+const { plan, selectedSpec } = usePlanContext();
+
+// Only show steps when the selected spec is related with database changes.
+const show = computed(() => isDatabaseChangeSpec(selectedSpec.value));
 
 const stepList = computed(() => {
   return plan.value.steps || [];

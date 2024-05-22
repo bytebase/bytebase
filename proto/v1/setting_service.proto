@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
@@ -79,6 +80,8 @@ message UpdateSettingRequest {
   bool validate_only = 2;
 
   bool allow_missing = 3;
+
+  google.protobuf.FieldMask update_mask = 4;
 }
 
 // The schema of setting.
@@ -158,21 +161,16 @@ message SMTPMailDeliverySettingValue {
 }
 
 message AppIMSetting {
-  enum IMType {
-    IM_TYPE_UNSPECIFIED = 0;
-    FEISHU = 1;
+  message Slack {
+    string token = 1;
   }
-  IMType im_type = 1;
-
-  string app_id = 2;
-
-  string app_secret = 3;
-
-  message ExternalApproval {
-    bool enabled = 1;
-    string approval_definition_id = 2;
+  message Feishu {
+    string app_id = 1;
+    string app_secret = 2;
   }
-  ExternalApproval external_approval = 4;
+
+  Slack slack = 1;
+  Feishu feishu = 2;
 }
 
 message AgentPluginSetting {
