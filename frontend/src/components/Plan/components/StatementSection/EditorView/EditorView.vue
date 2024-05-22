@@ -603,8 +603,6 @@ const updateStatement = async (statement: string) => {
     let config = undefined;
     if (spec.changeDatabaseConfig) {
       config = spec.changeDatabaseConfig;
-    } else if (spec.exportDataConfig) {
-      config = spec.exportDataConfig;
     }
     if (!config) continue;
     config.sheet = createdSheet.name;

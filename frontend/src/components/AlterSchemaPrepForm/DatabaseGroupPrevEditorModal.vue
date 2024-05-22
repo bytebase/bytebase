@@ -34,6 +34,9 @@
     </div>
     <div class="w-full flex flex-row justify-end items-center mt-4">
       <div class="flex justify-end items-center gap-x-3">
+        <NCheckbox v-model:checked="state.planOnly">
+          {{ $t("issue.sql-review-only") }}
+        </NCheckbox>
         <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
         </NButton>
@@ -58,7 +61,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
+import { NButton, NCheckbox } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -73,11 +76,13 @@ import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 interface LocalState {
   editStatement: string;
   showActionConfirmModal: boolean;
+  // planOnly is used to indicate whether only to create plan.
+  planOnly: boolean;
 }
 
 const props = defineProps({
   databaseGroupName: {
-    type: Object as PropType<string>,
+    type: String,
     required: true,
   },
   issueType: {
@@ -85,6 +90,10 @@ const props = defineProps({
       "bb.issue.database.schema.update" | "bb.issue.database.data.update"
     >,
     required: true,
+  },
+  planOnly: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -98,6 +107,7 @@ const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   editStatement: "",
   showActionConfirmModal: false,
+  planOnly: props.planOnly,
 });
 
 const databaseGroup = computed(() => {
@@ -155,7 +165,8 @@ const handlePreviewIssue = async () => {
   const issueRoute = generateDatabaseGroupIssueRoute(
     props.issueType,
     databaseGroup.value,
-    state.editStatement
+    state.editStatement,
+    state.planOnly
   );
   router.push(issueRoute);
 };

@@ -1200,7 +1200,8 @@
     },
     "sql-review": {
       "statement-type": "Tipo de declaración"
-    }
+    },
+    "sql-review-only": "Sólo revisión de SQL"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -2145,10 +2146,10 @@
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
     "connection-string-schema": "Esquema de cadena de conexión",
-    "admin": "Admin",
-    "read-only": "Solo lectura",
     "additional-node-addresses": "Direcciones de nodos adicionales",
     "replica-set": "Conjunto de réplicas",
+    "admin": "Admin",
+    "read-only": "Solo lectura",
     "direct-connection": "Direct Connection"
   },
   "setting": {

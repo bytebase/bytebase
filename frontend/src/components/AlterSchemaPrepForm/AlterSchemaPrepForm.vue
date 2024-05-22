@@ -210,6 +210,9 @@
         </div>
 
         <div class="flex items-center justify-end gap-x-3">
+          <NCheckbox v-model:checked="state.planOnly">
+            {{ $t("issue.sql-review-only") }}
+          </NCheckbox>
           <NButton @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>
@@ -250,6 +253,7 @@
     v-if="state.showSchemaEditorModal"
     :database-id-list="schemaEditorContext.databaseIdList"
     :alter-type="state.alterType"
+    :plan-only="state.planOnly"
     @close="state.showSchemaEditorModal = false"
   />
 
@@ -257,6 +261,7 @@
     v-if="state.showDatabaseGroupPrevModal"
     :issue-type="type"
     :database-group-name="state.selectedDatabaseGroupName!"
+    :plan-only="state.planOnly"
     @close="state.showDatabaseGroupPrevModal = false"
   />
 </template>
@@ -270,6 +275,7 @@ import {
   NRadio,
   NInputGroup,
   NInputGroupLabel,
+  NCheckbox,
 } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive, ref, watch, watchEffect, h } from "vue";
@@ -278,7 +284,10 @@ import { useRouter } from "vue-router";
 import { DatabaseGroupDataTable } from "@/components/DatabaseGroup";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   hasFeature,
   useCurrentUserV1,
@@ -327,6 +336,8 @@ type LocalState = {
   selectedDatabaseGroupName?: string;
   showDatabaseGroupPrevModal: boolean;
   params: SearchParams;
+  // planOnly is used to indicate whether only to create plan.
+  planOnly: boolean;
 };
 
 const props = defineProps({
@@ -374,6 +385,7 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
+  planOnly: false,
 });
 
 const scopeOptions = useCommonSearchScopeOptions(
@@ -611,14 +623,26 @@ const generateMultiDb = async () => {
     ),
     databaseList: selectedDatabaseList.map((db) => db.name).join(","),
   };
-  router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(project.name),
-      issueSlug: "create",
-    },
-    query,
-  });
+
+  if (state.planOnly) {
+    router.push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(project.name),
+        planSlug: "create",
+      },
+      query,
+    });
+  } else {
+    router.push({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(project.name),
+        issueSlug: "create",
+      },
+      query,
+    });
+  }
 };
 
 const allowGenerateTenant = computed(() => {
@@ -735,14 +759,25 @@ const generateTenant = async () => {
 
   emit("dismiss");
 
-  router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(selectedProject.value.name),
-      issueSlug: "create",
-    },
-    query,
-  });
+  if (state.planOnly) {
+    router.push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(selectedProject.value.name),
+        planSlug: "create",
+      },
+      query,
+    });
+  } else {
+    router.push({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(selectedProject.value.name),
+        issueSlug: "create",
+      },
+      query,
+    });
+  }
 };
 
 const cancel = () => {

@@ -1,10 +1,13 @@
 <template>
   <div
-    class="spec px-2 py-1 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
+    class="px-2 py-1 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
     :class="specClass"
     @click="onClickSpec(spec)"
   >
-    <div class="w-full flex items-center gap-2">
+    <div
+      v-if="isDatabaseChangeSpec(spec)"
+      class="w-full flex items-center gap-2"
+    >
       <InstanceV1Name
         :instance="databaseForSpec(plan, spec).instanceEntity"
         :link="false"
@@ -14,38 +17,64 @@
         databaseForSpec(plan, spec).databaseName
       }}</span>
     </div>
+    <div
+      v-else-if="isGroupingChangeSpec(spec) && relatedDatabaseGroup"
+      class="w-full flex items-center gap-2"
+    >
+      <NTooltip>
+        <template #trigger> <DatabaseGroupIcon class="w-4 h-auto" /> </template
+        >{{ $t("resource.database-group") }}
+      </NTooltip>
+      <span class="truncate">{{ relatedDatabaseGroup.databaseGroupName }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { isEqual } from "lodash-es";
+import { NTooltip } from "naive-ui";
+import { computed, onMounted } from "vue";
+import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
+import { useDBGroupStore } from "@/store";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { databaseForSpec, usePlanContext } from "../../logic";
+import {
+  databaseForSpec,
+  isDatabaseChangeSpec,
+  usePlanContext,
+  isGroupingChangeSpec,
+} from "../../logic";
 
 const props = defineProps<{
   spec: Plan_Spec;
 }>();
 
-const { isCreating, plan, selectedSpec, events } = usePlanContext();
-const selected = computed(() => props.spec === selectedSpec.value);
+const { plan, selectedSpec, events } = usePlanContext();
+const dbGroupStore = useDBGroupStore();
 
 const specClass = computed(() => {
   const classes: string[] = [];
-  if (isCreating.value) classes.push("create");
-  if (selected.value) classes.push("selected");
+  if (isEqual(props.spec, selectedSpec.value)) {
+    classes.push("border-accent bg-accent bg-opacity-5 shadow");
+  }
   return classes;
+});
+
+const relatedDatabaseGroup = computed(() => {
+  if (!isGroupingChangeSpec(props.spec)) {
+    return undefined;
+  }
+  return dbGroupStore.getDBGroupByName(props.spec.changeDatabaseConfig!.target);
+});
+
+onMounted(async () => {
+  if (isGroupingChangeSpec(props.spec)) {
+    await dbGroupStore.getOrFetchDBGroupByName(
+      props.spec.changeDatabaseConfig!.target
+    );
+  }
 });
 
 const onClickSpec = (spec: Plan_Spec) => {
   events.emit("select-spec", { spec });
 };
 </script>
-
-<style scoped lang="postcss">
-.spec.selected {
-  @apply border-accent bg-accent bg-opacity-5 shadow;
-}
-.spec .name {
-  @apply whitespace-pre-wrap break-all;
-}
-</style>

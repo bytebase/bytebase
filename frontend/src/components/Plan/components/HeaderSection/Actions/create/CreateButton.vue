@@ -46,7 +46,6 @@ import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
@@ -139,15 +138,12 @@ const createSheets = async () => {
     return step.specs;
   });
 
-  const configWithSheetList: (
-    | Plan_ChangeDatabaseConfig
-    | Plan_ExportDataConfig
-  )[] = [];
+  const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
   for (let i = 0; i < flattenSpecList.length; i++) {
     const spec = flattenSpecList[i];
-    const config = spec.changeDatabaseConfig || spec.exportDataConfig;
+    const config = spec.changeDatabaseConfig;
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;
