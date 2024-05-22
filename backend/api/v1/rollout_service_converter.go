@@ -74,6 +74,7 @@ func convertToPlanSteps(steps []*storepb.PlanConfig_Step) []*v1pb.Plan_Step {
 
 func convertToPlanStep(step *storepb.PlanConfig_Step) *v1pb.Plan_Step {
 	return &v1pb.Plan_Step{
+		Title: step.Title,
 		Specs: convertToPlanSpecs(step.Specs),
 	}
 }
