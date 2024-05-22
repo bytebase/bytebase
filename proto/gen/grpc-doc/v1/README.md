@@ -1067,6 +1067,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | DORIS | 19 |  |
 | HIVE | 20 |  |
 | ELASTICSEARCH | 21 |  |
+| BIGQUERY | 22 |  |
 
 
 
