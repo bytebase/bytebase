@@ -207,6 +207,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
+	if len(request.UpdateMask.Paths) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must not be empty")
+	}
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
@@ -258,6 +261,10 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			description := request.Plan.Description
 			planUpdate.Description = &description
 		case "steps":
+			planUpdate.Config = &storepb.PlanConfig{
+				Steps: convertPlanSteps(request.Plan.Steps),
+			}
+
 			if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, convertPlanSteps(request.Plan.GetSteps()), project); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
@@ -711,9 +718,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		}
 	}
 
-	planUpdate.Config = &storepb.PlanConfig{
-		Steps: convertPlanSteps(request.Plan.Steps),
-	}
 	if err := s.store.UpdatePlan(ctx, planUpdate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update plan %q: %v", request.Plan.Name, err)
 	}
