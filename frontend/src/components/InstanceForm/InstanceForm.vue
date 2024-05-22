@@ -466,16 +466,6 @@
     :instance="instance"
     @cancel="missingFeature = undefined"
   />
-
-  <BBAlert
-    v-model:show="state.showCreateInstanceWarningModal"
-    type="warning"
-    :ok-text="t('instance.ignore-and-create')"
-    :title="$t('instance.connection-info-seems-to-be-incorrect')"
-    :description="state.createInstanceWarning"
-    @ok="handleWarningModalOkClick"
-    @cancel="state.showCreateInstanceWarningModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -579,8 +569,6 @@ interface LocalState {
   editingDataSourceId: string | undefined;
   isTestingConnection: boolean;
   isRequesting: boolean;
-  showCreateInstanceWarningModal: boolean;
-  createInstanceWarning: string;
 }
 
 const { t } = useI18n();
@@ -598,8 +586,6 @@ const state = reactive<LocalState>({
   )?.id,
   isTestingConnection: false,
   isRequesting: false,
-  showCreateInstanceWarningModal: false,
-  createInstanceWarning: "",
 });
 
 const instance = toRef(props, "instance");
@@ -891,11 +877,6 @@ const updateEditState = (instance: Instance) => {
 
   // Backend will sync the schema when connection info changed, so we need to fetch the synced schema here.
   instanceV1Store.fetchInstanceRoleListByName(instance.name);
-};
-
-const handleWarningModalOkClick = async () => {
-  state.showCreateInstanceWarningModal = false;
-  doCreate();
 };
 
 const confirmContinueWithConnectionFailure = (message: string) => {
