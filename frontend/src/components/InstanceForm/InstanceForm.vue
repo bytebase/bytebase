@@ -396,7 +396,7 @@
               class="whitespace-nowrap flex items-center"
               :loading="state.isTestingConnection"
               :disabled="!allowCreate || state.isRequesting || !allowEdit"
-              @click.prevent="testConnection(false /* !silent */)"
+              @click.prevent="testConnectionForCurrentEditingDS"
             >
               <span>{{ $t("instance.test-connection") }}</span>
             </NButton>
@@ -415,11 +415,16 @@
           v-if="valueChanged && allowEdit"
           class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky -bottom-4 z-10"
         >
-          <NButton @click.prevent="resetChanges">
+          <NButton
+            :disabled="state.isTestingConnection"
+            @click.prevent="resetChanges"
+          >
             <span> {{ $t("common.cancel") }}</span>
           </NButton>
           <NButton
-            :disabled="!allowUpdate || state.isRequesting"
+            :disabled="
+              !allowUpdate || state.isRequesting || state.isTestingConnection
+            "
             :loading="state.isRequesting"
             type="primary"
             @click.prevent="doUpdate"
@@ -461,16 +466,6 @@
     :instance="instance"
     @cancel="missingFeature = undefined"
   />
-
-  <BBAlert
-    v-model:show="state.showCreateInstanceWarningModal"
-    type="warning"
-    :ok-text="t('instance.ignore-and-create')"
-    :title="$t('instance.connection-info-seems-to-be-incorrect')"
-    :description="state.createInstanceWarning"
-    @ok="handleWarningModalOkClick"
-    @cancel="state.showCreateInstanceWarningModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -483,6 +478,7 @@ import {
   NRadioGroup,
   NRadio,
   NCheckbox,
+  useDialog,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
@@ -515,7 +511,7 @@ import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
 import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
+import { Instance, type DataSource } from "@/types/proto/v1/instance_service";
 import {
   DataSourceType,
   InstanceOptions,
@@ -531,6 +527,7 @@ import {
   calcUpdateMask,
   onlyAllowNumber,
   hasWorkspacePermissionV2,
+  defer,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
@@ -553,6 +550,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["dismiss"]);
+const $d = useDialog();
 
 const bindings = computed(() => {
   if (props.drawer) {
@@ -571,8 +569,6 @@ interface LocalState {
   editingDataSourceId: string | undefined;
   isTestingConnection: boolean;
   isRequesting: boolean;
-  showCreateInstanceWarningModal: boolean;
-  createInstanceWarning: string;
 }
 
 const { t } = useI18n();
@@ -590,8 +586,6 @@ const state = reactive<LocalState>({
   )?.id,
   isTestingConnection: false,
   isRequesting: false,
-  showCreateInstanceWarningModal: false,
-  createInstanceWarning: "",
 });
 
 const instance = toRef(props, "instance");
@@ -885,20 +879,37 @@ const updateEditState = (instance: Instance) => {
   instanceV1Store.fetchInstanceRoleListByName(instance.name);
 };
 
-const handleWarningModalOkClick = async () => {
-  state.showCreateInstanceWarningModal = false;
-  doCreate();
+const confirmContinueWithConnectionFailure = (message: string) => {
+  const d = defer<boolean>();
+  $d.warning({
+    title: t("common.warning"),
+    content: t("instance.unable-to-connect", [message]),
+    contentClass: "whitespace-pre-wrap",
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.continue-anyway"),
+    onNegativeClick: () => {
+      d.resolve(false);
+    },
+    onPositiveClick: () => {
+      d.resolve(true);
+    },
+  });
+  return d.promise;
 };
 
 const tryCreate = async () => {
-  const testResult = await testConnection(true /* silent */);
+  const editingDS = adminDataSource.value;
+  const testResult = await testConnection(/* silent */ true, editingDS);
   if (testResult.success) {
     doCreate();
   } else {
-    state.createInstanceWarning = t("instance.unable-to-connect", [
-      testResult.message,
-    ]);
-    state.showCreateInstanceWarningModal = true;
+    const confirmed = await confirmContinueWithConnectionFailure(
+      testResult.message
+    );
+    if (confirmed) {
+      doCreate();
+    }
   }
 };
 
@@ -984,7 +995,9 @@ const doUpdate = async () => {
   // 2. Update the admin datasource.
   // 3. Create OR update read-only data source(s).
 
-  const maybeUpdateInstanceBasicInfo = async () => {
+  const pendingRequestRunners: (() => Promise<any>)[] = [];
+
+  const maybeQueueUpdateInstanceBasicInfo = () => {
     const instancePatch = {
       ...instance,
       ...basicInfo.value,
@@ -1017,9 +1030,14 @@ const doUpdate = async () => {
     if (updateMask.length === 0) {
       return;
     }
-    return await instanceV1Store.updateInstance(instancePatch, updateMask);
+    pendingRequestRunners.push(() =>
+      instanceV1Store.updateInstance(instancePatch, updateMask)
+    );
   };
-  const updateDataSource = async (
+  /**
+   * @returns true if blocked by connection testing failure
+   */
+  const maybeQueueUpdateDataSource = async (
     editing: DataSource,
     original: DataSource | undefined,
     editState: EditDataSource
@@ -1029,53 +1047,104 @@ const doUpdate = async () => {
     if (updateMask.length === 0) {
       return;
     }
-    return await instanceV1Store.updateDataSource(
-      instance,
-      editing,
-      updateMask
+    const testResult = await testConnection(/* silent */ true, editState);
+    if (!testResult.success) {
+      const continueAnyway = await confirmContinueWithConnectionFailure(
+        testResult.message
+      );
+      if (!continueAnyway) {
+        return true;
+      }
+    }
+
+    pendingRequestRunners.push(() =>
+      instanceV1Store.updateDataSource(instance, editing, updateMask)
     );
   };
-  const maybeUpdateAdminDataSource = async () => {
+  const maybeQueueUpdateAdminDataSource = async () => {
     const original = instance.dataSources.find(
       (ds) => ds.type === DataSourceType.ADMIN
     );
     const editing = extractDataSourceFromEdit(instance, adminDataSource.value);
-    return await updateDataSource(editing, original, adminDataSource.value);
+    return await maybeQueueUpdateDataSource(
+      editing,
+      original,
+      adminDataSource.value
+    );
   };
-  const maybeUpsertReadonlyDataSources = async () => {
+  /**
+   * @returns true if blocked by connection testing failure
+   */
+  const maybeQueueUpsertReadonlyDataSources = async () => {
     if (readonlyDataSourceList.value.length === 0) {
       // Nothing to do
-      return;
+      return true;
     }
     // Upsert readonly data sources one by one
     for (let i = 0; i < readonlyDataSourceList.value.length; i++) {
       const editing = readonlyDataSourceList.value[i];
       const patch = extractDataSourceFromEdit(instance, editing);
       if (editing.pendingCreate) {
-        await instanceV1Store.createDataSource(instance, patch);
+        const testResult = await testConnection(/* silent */ true, editing);
+        if (!testResult.success) {
+          const continueAnyway = await confirmContinueWithConnectionFailure(
+            testResult.message
+          );
+          if (!continueAnyway) {
+            return true;
+          }
+        }
+
+        pendingRequestRunners.push(() =>
+          instanceV1Store.createDataSource(instance, patch)
+        );
       } else {
         const original = instance.dataSources.find(
           (ds) => ds.id === editing.id
         );
-        await updateDataSource(patch, original, editing);
+        const blocked = await maybeQueueUpdateDataSource(
+          patch,
+          original,
+          editing
+        );
+        if (blocked) {
+          return true;
+        }
       }
     }
   };
+
+  // prepare pending request runners
+  await maybeQueueUpdateInstanceBasicInfo();
+  if (await maybeQueueUpdateAdminDataSource()) {
+    // blocked
+    return;
+  }
+  if (await maybeQueueUpsertReadonlyDataSources()) {
+    // blocked
+    return;
+  }
+
+  if (pendingRequestRunners.length === 0) {
+    return;
+  }
+
   state.isRequesting = true;
   try {
-    await useGracefulRequest(async () => {
-      await maybeUpdateInstanceBasicInfo();
-      await maybeUpdateAdminDataSource();
-      await maybeUpsertReadonlyDataSources();
-      const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
-      updateEditState(updatedInstance);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("instance.successfully-updated-instance-instance-name", [
-          updatedInstance.title,
-        ]),
-      });
+    // Send requests one-by-one
+    for (let i = 0; i < pendingRequestRunners.length; i++) {
+      const runner = pendingRequestRunners[i];
+      await runner();
+    }
+
+    const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
+    updateEditState(updatedInstance);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("instance.successfully-updated-instance-instance-name", [
+        updatedInstance.title,
+      ]),
     });
   } finally {
     state.isRequesting = false;
@@ -1083,7 +1152,8 @@ const doUpdate = async () => {
 };
 
 const testConnection = async (
-  silent = false
+  silent = false,
+  editingDS: EditDataSource
 ): Promise<{ success: boolean; message: string }> => {
   if (!editingDataSource.value) {
     throw new Error("should never reach this line");
@@ -1128,11 +1198,8 @@ const testConnection = async (
       engineVersion: "",
       dataSources: [],
     };
-    const adminDataSourceCreate = extractDataSourceFromEdit(
-      instance,
-      adminDataSource.value
-    );
-    instance.dataSources = [adminDataSourceCreate];
+    const dataSourceCreate = extractDataSourceFromEdit(instance, editingDS);
+    instance.dataSources = [dataSourceCreate];
     try {
       await instanceServiceClient.createInstance(
         {
@@ -1146,12 +1213,11 @@ const testConnection = async (
       );
       return ok();
     } catch (err) {
-      return fail(adminDataSourceCreate.host, err);
+      return fail(dataSourceCreate.host, err);
     }
   } else {
     // Editing existed instance.
     const instance = props.instance!;
-    const editingDS = editingDataSource.value;
     const ds = extractDataSourceFromEdit(instance, editingDS);
     if (editingDS.pendingCreate) {
       // When read-only data source is about to be created, use
@@ -1199,6 +1265,12 @@ const testConnection = async (
       }
     }
   }
+};
+
+const testConnectionForCurrentEditingDS = () => {
+  const editingDS = editingDataSource.value;
+  if (!editingDS) return;
+  testConnection(/* !silent */ false, editingDS);
 };
 
 // getOriginalEditState returns the origin instance data including
