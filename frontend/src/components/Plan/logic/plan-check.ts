@@ -29,8 +29,6 @@ export const planCheckRunListForSpec = (
   const sheet = spec ? sheetNameForSpec(spec) : "";
   return plan.planCheckRunList.filter((check) => {
     if (sheet && check.sheet) {
-      // If both the task spec and the planCheckRun have `sheet`
-      // filter by sheet and target combination
       return check.sheet === sheet && check.target === target;
     }
     // Otherwise filter by target only

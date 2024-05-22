@@ -221,7 +221,6 @@ import { usePlanContext } from "@/components/Plan/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
-import { emitWindowEvent } from "@/plugins";
 import { hasFeature, pushNotification, useSheetV1Store } from "@/store";
 import type { SQLDialect } from "@/types";
 import { EMPTY_ID, dialectOfEngineV1 } from "@/types";
@@ -450,19 +449,19 @@ const chooseUpdateStatementTarget = () => {
       );
 
       const buttons = [CANCEL];
-      // For database group change task, don't show the option to select the task.
+      // For database group change spec, don't show the option to select the spec.
       if (!isGroupingChangeSpec(selectedSpec.value)) {
-        const TASK = h(
+        const SPEC = h(
           NButton,
           { size: "small", onClick: () => finish("SPEC") },
           {
             default: () => t("issue.update-statement.target.selected-task"),
           }
         );
-        buttons.push(TASK);
+        buttons.push(SPEC);
 
         if (targets.STEP.length > 1) {
-          // More than one editable tasks in stage
+          // More than one editable specs in stage
           // Add "Selected stage" option
           const STAGE = h(
             NButton,
@@ -478,8 +477,8 @@ const chooseUpdateStatementTarget = () => {
         isGroupingChangeSpec(selectedSpec.value) ||
         targets.ALL.length > targets.STEP.length
       ) {
-        // More editable tasks in other stages
-        // Add "All tasks" option
+        // More editable specs in other steps
+        // Add "All specs" option
         const ALL = h(
           NButton,
           { size: "small", onClick: () => finish("ALL") },
@@ -571,14 +570,7 @@ const updateStatement = async (statement: string) => {
   }
 
   const specsIdList: string[] = [];
-  // - find the task related plan/step/spec
-  // - create a new sheet
-  // - update sheet id in the spec
-  // Find the target editing task(s)
-  // default to selectedTask
-  // also ask whether to apply the change to all tasks in the stage.
   const { target, specs } = await chooseUpdateStatementTarget();
-
   if (target === "CANCELED" || specs.length === 0) {
     cancelEdit();
     return;
@@ -635,8 +627,6 @@ const updateStatement = async (statement: string) => {
     style: "SUCCESS",
     title: t("common.updated"),
   });
-
-  emitWindowEvent("bb.pipeline-task-statement-update");
 };
 
 const handleStatementChange = (value: string) => {

@@ -2,7 +2,7 @@
   <div v-if="shouldShowSpecBar" class="relative py-2">
     <div
       ref="specBar"
-      class="task-list gap-2 px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 overflow-y-auto"
+      class="spec-list gap-2 px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 overflow-y-auto"
       :class="{
         'more-bottom': specBarScrollState.bottom,
         'more-top': specBarScrollState.top,
@@ -38,27 +38,27 @@ const selectedStep = computed(() => {
   return plan.value.steps.find((s) => s.specs.includes(selectedSpec.value));
 });
 
-// Show the task bar when some of the stages have more than one tasks.
+// Show the spec bar when some of the stages have more than one specs.
 const shouldShowSpecBar = computed(() => {
   return selectedStep.value && selectedStep.value.specs.length > 0;
 });
 </script>
 
 <style scoped lang="postcss">
-.task-list::before {
+.spec-list::before {
   @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
-.task-list::after {
+.spec-list::after {
   @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
-.task-list.more-top::before {
+.spec-list.more-top::before {
   box-shadow: inset 0 0.3rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
-.task-list.more-bottom::after {
+.spec-list.more-bottom::after {
   box-shadow: inset 0 -0.3rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
 </style>
