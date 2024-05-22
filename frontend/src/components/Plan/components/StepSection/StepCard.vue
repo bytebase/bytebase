@@ -6,7 +6,7 @@
           v-if="isSelectedStep"
           class="w-5 h-5 inline-block mb-0.5"
         />
-        <span>{{ stepTitle }} {{ $t("common.stage") }}</span>
+        <span>{{ step.title }} {{ $t("common.stage") }}</span>
       </div>
     </div>
 
@@ -54,7 +54,6 @@
 import { head, uniqBy } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { sheetNameForSpec } from "@/components/Plan";
 import {
   getLocalSheetByName,
@@ -71,7 +70,6 @@ const props = defineProps<{
   step: Plan_Step;
 }>();
 
-const { t } = useI18n();
 const { isCreating, plan, selectedSpec, events } = usePlanContext();
 
 const selectedStep = computed(() => {
@@ -90,13 +88,6 @@ const stepClass = computed(() => {
   if (isSelectedStep.value) classList.push("selected");
 
   return classList;
-});
-
-const stepTitle = computed(() => {
-  const { step } = props;
-  return !isCreating.value
-    ? t("issue.stage-select.current", { name: step.title })
-    : step.title;
 });
 
 const stepMissingStatement = computed(() => {
