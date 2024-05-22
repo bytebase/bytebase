@@ -41,7 +41,7 @@ type FindPlanMessage struct {
 	Limit  *int
 	Offset *int
 
-	NoIssue     bool
+	NoIssue    bool
 	NoPipeline bool
 }
 
