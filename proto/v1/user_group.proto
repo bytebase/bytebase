@@ -121,7 +121,7 @@ message UserGroup {
   string description = 3;
 
   // The name for the creator.
-  // Format: users/{userID}
+  // Format: users/hello@world.com
   string creator = 4;
 
   repeated UserGroupMember members = 5;
