@@ -490,6 +490,7 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		Indexes:     indexes,
 		ForeignKeys: fks,
 		Comment:     t.comment,
+		UserComment: t.comment,
 	}
 }
 
@@ -739,10 +740,11 @@ func (c *columnState) toString(buf *strings.Builder) error {
 
 func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 	result := &storepb.ColumnMetadata{
-		Name:     c.name,
-		Type:     c.tp,
-		Nullable: c.nullable,
-		Comment:  c.comment,
+		Name:        c.name,
+		Type:        c.tp,
+		Nullable:    c.nullable,
+		Comment:     c.comment,
+		UserComment: c.comment,
 	}
 	if c.hasDefault {
 		switch value := c.defaultValue.(type) {
