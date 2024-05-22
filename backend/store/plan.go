@@ -30,19 +30,27 @@ type PlanMessage struct {
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID        *int64
-	ProjectID  *string
-	ProjectIDs *[]string
-	PipelineID *int
+	UID             *int64
+	ProjectID       *string
+	ProjectIDs      *[]string
+	CreatorID       *int
+	PipelineID      *int
+	CreatedTsBefore *int64
+	CreatedTsAfter  *int64
 
 	Limit  *int
 	Offset *int
+
+	NoIssue    bool
+	NoPipeline bool
 }
 
 // UpdatePlanMessage is the message to update a plan.
 type UpdatePlanMessage struct {
 	UID         int64
 	PipelineUID *int
+	Name        *string
+	Description *string
 	Config      *storepb.PlanConfig
 	UpdaterID   int
 }
@@ -134,6 +142,22 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.created_ts < $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.created_ts > $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.NoIssue; v {
+		where = append(where, "issue.id IS NULL")
+	}
+	if v := find.NoPipeline; v {
+		where = append(where, "plan.pipeline_id IS NULL")
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			plan.id,
@@ -148,6 +172,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.config
 		FROM plan
 		LEFT JOIN project on plan.project_id = project.id
+		LEFT JOIN issue on plan.id = issue.plan_id
 		WHERE %s
 		ORDER BY id ASC
 	`, strings.Join(where, " AND "))
@@ -209,6 +234,12 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 // UpdatePlan updates an existing plan.
 func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
 	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Description; v != nil {
+		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Config; v != nil {
 		config, err := protojson.Marshal(v)
 		if err != nil {

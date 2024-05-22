@@ -1,0 +1,64 @@
+import { maxBy } from "lodash-es";
+import { computed } from "vue";
+import type { AdviceOption } from "@/components/MonacoEditor";
+import {
+  PlanCheckRun,
+  PlanCheckRun_Result_Status,
+  PlanCheckRun_Type,
+} from "@/types/proto/v1/plan_service";
+import { planCheckRunListForSpec, usePlanContext } from "../../logic";
+
+export const useSQLAdviceMarkers = () => {
+  const { isCreating, plan, selectedSpec } = usePlanContext();
+  const markers = computed(() => {
+    if (isCreating.value) return [];
+
+    const planCheckRunList = planCheckRunListForSpec(
+      plan.value,
+      selectedSpec.value
+    );
+    const types: PlanCheckRun_Type[] = [
+      PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
+    ];
+    return types.flatMap((type) => {
+      return getLatestAdviceOptions(
+        planCheckRunList.filter((checkRun) => checkRun.type === type)
+      );
+    });
+  });
+  return { markers };
+};
+
+const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
+  const latest = maxBy(planCheckRunList, (checkRun) =>
+    parseInt(checkRun.uid, 10)
+  );
+  if (!latest) {
+    return [];
+  }
+  const resultList = latest.results;
+  return resultList
+    .filter(
+      (result) =>
+        result.status === PlanCheckRun_Result_Status.ERROR ||
+        result.status === PlanCheckRun_Result_Status.WARNING
+    )
+    .filter((result) => result.sqlReviewReport?.line !== undefined)
+    .map<AdviceOption>((result) => {
+      const line = result.sqlReviewReport!.line;
+      const column = result.sqlReviewReport?.column ?? Number.MAX_SAFE_INTEGER;
+      const code = result.sqlReviewReport?.code ?? result.code;
+      return {
+        severity:
+          result.status === PlanCheckRun_Result_Status.ERROR
+            ? "ERROR"
+            : "WARNING",
+        message: result.content,
+        source: `${result.title} (${code}) L${line}:C${column}`,
+        startLineNumber: line,
+        endLineNumber: line,
+        startColumn: column,
+        endColumn: column,
+      };
+    });
+};

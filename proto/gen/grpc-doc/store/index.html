@@ -971,6 +971,18 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.AppIMSetting"><span class="badge">M</span>AppIMSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.AppIMSetting.Feishu"><span class="badge">M</span>AppIMSetting.Feishu</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.AppIMSetting.Slack"><span class="badge">M</span>AppIMSetting.Slack</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.DataClassificationSetting"><span class="badge">M</span>DataClassificationSetting</a>
                 </li>
               
@@ -1193,6 +1205,29 @@
                   <a href="#bytebase.store.MFAConfig"><span class="badge">M</span>MFAConfig</a>
                 </li>
               
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2fuser_group.proto">store/user_group.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.UserGroupMember"><span class="badge">M</span>UserGroupMember</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.UserGroupPayload"><span class="badge">M</span>UserGroupPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.UserGroupMember.Role"><span class="badge">E</span>UserGroupMember.Role</a>
+                </li>
               
               
               
@@ -4122,6 +4157,12 @@ Example: projects/project-id/branches/branch-id. </p></td>
               <tr>
                 <td>ELASTICSEARCH</td>
                 <td>21</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BIGQUERY</td>
+                <td>22</td>
                 <td><p></p></td>
               </tr>
             
@@ -7086,7 +7127,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>Member is the principal who bind to this exception policy instance.
 
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. </p></td>
+Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -7734,6 +7775,92 @@ Format: roles/projectOwner. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The optional link, user can follow the link to check extra details </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting">AppIMSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>slack</td>
+                  <td><a href="#bytebase.store.AppIMSetting.Slack">AppIMSetting.Slack</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>feishu</td>
+                  <td><a href="#bytebase.store.AppIMSetting.Feishu">AppIMSetting.Feishu</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.Feishu">AppIMSetting.Feishu</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>app_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>app_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.Slack">AppIMSetting.Slack</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9515,6 +9642,106 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
         
       
 
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/user_group.proto">store/user_group.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.UserGroupMember">UserGroupMember</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>member</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Member is the principal who belong to this user group.
+
+Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#bytebase.store.UserGroupMember.Role">UserGroupMember.Role</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.UserGroupPayload">UserGroupPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>members</td>
+                  <td><a href="#bytebase.store.UserGroupMember">UserGroupMember</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.UserGroupMember.Role">UserGroupMember.Role</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ROLE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OWNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MEMBER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       

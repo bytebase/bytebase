@@ -130,6 +130,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RolloutService_ListTaskRuns_FullMethodName:                      iam.PermissionTaskRunsList,
 	v1pb.RolloutService_GetTaskRunLog_FullMethodName:                     iam.PermissionTaskRunsList,
 	v1pb.PlanService_ListPlans_FullMethodName:                            iam.PermissionPlansList,
+	v1pb.PlanService_SearchPlans_FullMethodName:                          iam.PermissionPlansGet,
 	v1pb.PlanService_GetPlan_FullMethodName:                              iam.PermissionPlansGet,
 	v1pb.PlanService_CreatePlan_FullMethodName:                           iam.PermissionPlansCreate,
 	v1pb.PlanService_UpdatePlan_FullMethodName:                           iam.PermissionPlansUpdate,
@@ -160,4 +161,11 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.IdentityProviderService_DeleteIdentityProvider_FullMethodName:   iam.PermissionIdentityProvidersDelete,
 	v1pb.IdentityProviderService_UndeleteIdentityProvider_FullMethodName: iam.PermissionIdentityProvidersUndelete,
 	v1pb.IdentityProviderService_TestIdentityProvider_FullMethodName:     iam.PermissionIdentityProvidersUpdate,
+
+	// TODO(pony):
+	v1pb.UserGroupService_CreateUserGroup_FullMethodName: "",
+	v1pb.UserGroupService_GetUserGroup_FullMethodName:    "",
+	v1pb.UserGroupService_DeleteUserGroup_FullMethodName: "",
+	v1pb.UserGroupService_UpdateUserGroup_FullMethodName: "",
+	v1pb.UserGroupService_ListUserGroups_FullMethodName:  "",
 }

@@ -759,7 +759,7 @@ func getUpdaterFromEmail(ctx context.Context, emailURI string, optionalStores *s
 	if err != nil {
 		return ""
 	}
-	user, err := optionalStores.GetUser(ctx, &store.FindUserMessage{Email: &email})
+	user, err := optionalStores.GetUserByEmail(ctx, email)
 	if err != nil {
 		return ""
 	}

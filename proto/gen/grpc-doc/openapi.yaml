@@ -869,6 +869,150 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/groups:
+        get:
+            tags:
+                - UserGroupService
+            operationId: UserGroupService_ListUserGroups
+            parameters:
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of groups to return. The service may return fewer than
+                     this value.
+                     If unspecified, at most 50 groups will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from a previous `ListUsers` call.
+                     Provide this to retrieve the subsequent page.
+
+                     When paginating, all other parameters provided to `ListUsers` must match
+                     the call that provided the page token.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListUserGroupsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - UserGroupService
+            operationId: UserGroupService_CreateUserGroup
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserGroup'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserGroup'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/groups/{group}:
+        get:
+            tags:
+                - UserGroupService
+            operationId: UserGroupService_GetUserGroup
+            parameters:
+                - name: group
+                  in: path
+                  description: The group id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserGroup'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - UserGroupService
+            operationId: UserGroupService_DeleteUserGroup
+            parameters:
+                - name: group
+                  in: path
+                  description: The group id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - UserGroupService
+            operationId: UserGroupService_UpdateUserGroup
+            parameters:
+                - name: group
+                  in: path
+                  description: The group id.
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  description: The list of fields to update.
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserGroup'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserGroup'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/idps:
         get:
             tags:
@@ -5618,6 +5762,56 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans:search:
+        get:
+            tags:
+                - PlanService
+            operationId: PlanService_SearchPlans
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of plans to return. The service may return fewer than
+                     this value.
+                     If unspecified, at most 50 plans will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from a previous `ListPlans` call.
+                     Provide this to retrieve the subsequent page.
+
+                     When paginating, all other parameters provided to `ListPlans` must match
+                     the call that provided the page token.
+                  schema:
+                    type: string
+                - name: filter
+                  in: query
+                  description: Filter is used to filter issues returned in the list.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchPlansResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/policies:
         get:
             tags:
@@ -7239,6 +7433,11 @@ paths:
                   in: query
                   schema:
                     type: boolean
+                - name: updateMask
+                  in: query
+                  schema:
+                    type: string
+                    format: field-mask
             requestBody:
                 content:
                     application/json:
@@ -8371,24 +8570,21 @@ components:
         AppIMSetting:
             type: object
             properties:
-                imType:
-                    enum:
-                        - IM_TYPE_UNSPECIFIED
-                        - FEISHU
-                    type: string
-                    format: enum
+                slack:
+                    $ref: '#/components/schemas/AppIMSetting_Slack'
+                feishu:
+                    $ref: '#/components/schemas/AppIMSetting_Feishu'
+        AppIMSetting_Feishu:
+            type: object
+            properties:
                 appId:
                     type: string
                 appSecret:
                     type: string
-                externalApproval:
-                    $ref: '#/components/schemas/AppIMSetting_ExternalApproval'
-        AppIMSetting_ExternalApproval:
+        AppIMSetting_Slack:
             type: object
             properties:
-                enabled:
-                    type: boolean
-                approvalDefinitionId:
+                token:
                     type: string
         ApprovalFlow:
             type: object
@@ -8761,6 +8957,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -9481,6 +9678,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9545,6 +9743,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 oldSchema:
@@ -10109,6 +10308,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 engineVersion:
@@ -10172,6 +10372,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 engineVersion:
@@ -10873,6 +11074,19 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        ListUserGroupsResponse:
+            type: object
+            properties:
+                groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UserGroup'
+                    description: The groups from the specified request.
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
         ListUsersResponse:
             type: object
             properties:
@@ -11128,7 +11342,7 @@ components:
                     description: |-
                         Member is the principal who bind to this exception policy instance.
 
-                         * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+                         Format: users/{userUID}.
                 condition:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
@@ -11624,6 +11838,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 currentSchema:
@@ -12222,6 +12437,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 comment:
@@ -12355,6 +12571,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 enabled:
@@ -12392,6 +12609,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 category:
@@ -12429,6 +12647,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     format: enum
                 category:
@@ -12512,6 +12731,19 @@ components:
                         A token to retrieve next page of log entities.
                          Pass this value in the page_token field in the subsequent call to `SearchLogs` method
                          to retrieve the next page of log entities.
+        SearchPlansResponse:
+            type: object
+            properties:
+                plans:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Plan'
+                    description: The plans from the specified request.
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
         SearchProjectsResponse:
             type: object
             properties:
@@ -12728,6 +12960,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The SQL dialect.
                     format: enum
@@ -12977,6 +13210,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - BIGQUERY
                     type: string
                     description: The database engine of the schema string.
                     format: enum
@@ -13720,6 +13954,45 @@ components:
                     description: |-
                         The roles of the user.
                          This filed is to supersede the `user_role` field.
+        UserGroup:
+            type: object
+            properties:
+                name:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The name of the group to retrieve.
+                         Format: groups/{email}
+                title:
+                    type: string
+                description:
+                    type: string
+                creator:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The name for the creator.
+                         Format: users/hello@world.com
+                members:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UserGroupMember'
+        UserGroupMember:
+            type: object
+            properties:
+                member:
+                    type: string
+                    description: |-
+                        Member is the principal who belong to this user group.
+
+                         Format: users/{userUID}.
+                role:
+                    enum:
+                        - ROLE_UNSPECIFIED
+                        - OWNER
+                        - MEMBER
+                    type: string
+                    format: enum
         VCSConnector:
             type: object
             properties:
@@ -13894,6 +14167,12 @@ components:
                 url:
                     type: string
                     description: url is the url of the webhook, should be unique within the project.
+                directMessage:
+                    type: boolean
+                    description: |-
+                        if direct_message is set, the notification is sent directly
+                         to the persons and url will be ignored.
+                         IM integration setting should be set for this function to work.
                 notificationTypes:
                     type: array
                     items:
@@ -13925,13 +14204,13 @@ components:
                     description: |-
                         notification_types is the list of activities types that the webhook is interested in.
                          Bytebase will only send notifications to the webhook if the activity type is in the list.
-                         It should not be empty, and shoule be a subset of the following:
+                         It should not be empty, and should be a subset of the following:
                          - TYPE_ISSUE_CREATED
                          - TYPE_ISSUE_STATUS_UPDATE
                          - TYPE_ISSUE_PIPELINE_STAGE_UPDATE
                          - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
                          - TYPE_ISSUE_FIELD_UPDATE
-                         - TYPE_ISSUE_COMMENT_CREAT
+                         - TYPE_ISSUE_COMMENT_CREATE
         Worksheet:
             required:
                 - name
@@ -14111,6 +14390,7 @@ tags:
     - name: SettingService
     - name: SheetService
     - name: SubscriptionService
+    - name: UserGroupService
     - name: VCSConnectorService
     - name: VCSProviderService
     - name: WorksheetService

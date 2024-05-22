@@ -199,6 +199,9 @@
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [Announcement](#bytebase-store-Announcement)
+    - [AppIMSetting](#bytebase-store-AppIMSetting)
+    - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
+    - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-store-DataClassificationSetting-DataClassificationConfig)
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
@@ -253,6 +256,12 @@
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
+  
+- [store/user_group.proto](#store_user_group-proto)
+    - [UserGroupMember](#bytebase-store-UserGroupMember)
+    - [UserGroupPayload](#bytebase-store-UserGroupPayload)
+  
+    - [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role)
   
 - [store/vcs.proto](#store_vcs-proto)
     - [VCSConnector](#bytebase-store-VCSConnector)
@@ -1452,6 +1461,7 @@ Used internally for obfuscating the page token.
 | DORIS | 19 |  |
 | HIVE | 20 |  |
 | ELASTICSEARCH | 21 |  |
+| BIGQUERY | 22 |  |
 
 
 
@@ -2728,7 +2738,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
 | member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+Format: users/{userUID}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
 
 
@@ -3063,6 +3073,53 @@ The type of target.
 | level | [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel) |  | The alert level of announcemnt |
 | text | [string](#string) |  | The text of announcemnt |
 | link | [string](#string) |  | The optional link, user can follow the link to check extra details |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting"></a>
+
+### AppIMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
+| feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Feishu"></a>
+
+### AppIMSetting.Feishu
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Slack"></a>
+
+### AppIMSetting.Slack
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  |  |
 
 
 
@@ -3863,6 +3920,68 @@ MFAConfig is the MFA configuration for a user.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_user_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/user_group.proto
+
+
+
+<a name="bytebase-store-UserGroupMember"></a>
+
+### UserGroupMember
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member | [string](#string) |  | Member is the principal who belong to this user group.
+
+Format: users/{userUID}. |
+| role | [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-UserGroupPayload"></a>
+
+### UserGroupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [UserGroupMember](#bytebase-store-UserGroupMember) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-UserGroupMember-Role"></a>
+
+### UserGroupMember.Role
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_UNSPECIFIED | 0 |  |
+| OWNER | 1 |  |
+| MEMBER | 2 |  |
+
 
  
 

@@ -1200,7 +1200,8 @@
     },
     "sql-review": {
       "statement-type": "语句类型"
-    }
+    },
+    "sql-review-only": "仅 SQL 审核"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -2145,10 +2146,10 @@
     "read-replica-port": "只读副本端口",
     "delete-read-only-data-source": "删除只读数据源",
     "connection-string-schema": "连接串模式",
-    "admin": "主库",
-    "read-only": "从库",
     "additional-node-addresses": "附加节点地址",
     "replica-set": "副本集",
+    "admin": "主库",
+    "read-only": "从库",
     "direct-connection": "Direct Connection"
   },
   "setting": {

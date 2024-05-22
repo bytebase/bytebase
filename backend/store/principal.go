@@ -10,13 +10,17 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// SystemBotID is the ID of the system robot.
-const SystemBotID = 1
+var systemBotUser = &UserMessage{
+	ID:    api.SystemBotID,
+	Email: api.SystemBotEmail,
+	Type:  api.SystemBot,
+	Role:  api.WorkspaceAdmin,
+	Roles: []api.Role{api.WorkspaceAdmin},
+}
 
 // FindUserMessage is the message for finding users.
 type FindUserMessage struct {
@@ -56,41 +60,49 @@ type UserMessage struct {
 	Phone string
 }
 
-// GetUser gets an user.
-func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessage, error) {
-	if find.Email != nil && *find.Email == api.SystemBotEmail {
-		return &UserMessage{
-			ID:    api.SystemBotID,
-			Email: api.SystemBotEmail,
-			Type:  api.SystemBot,
-			Role:  api.WorkspaceAdmin,
-			Roles: []api.Role{api.WorkspaceAdmin},
-		}, nil
+// GetUserByID gets the user by ID.
+func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
+	if id == api.SystemBotID {
+		return systemBotUser, nil
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	if v, ok := s.userIDCache.Get(id); ok {
+		return v, nil
+	}
+
+	users, err := s.listAndCacheAllUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-
-	users, err := s.listUserImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
+	for _, user := range users {
+		if user.ID == id {
+			return user, nil
+		}
 	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	if len(users) == 0 {
-		return nil, nil
-	} else if len(users) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with filter %+v, expect 1", len(users), find)}
-	}
-	return users[0], nil
+	return nil, nil
 }
 
-// ListUsers list all users.
+// GetUserByEmail gets the user by email.
+func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
+	if email == api.SystemBotEmail {
+		return systemBotUser, nil
+	}
+	if v, ok := s.userEmailCache.Get(email); ok {
+		return v, nil
+	}
+
+	users, err := s.listAndCacheAllUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, user := range users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return nil, nil
+}
+
+// ListUsers list users.
 func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -109,39 +121,33 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 
 	for _, user := range users {
 		s.userIDCache.Add(user.ID, user)
+		s.userEmailCache.Add(user.Email, user)
 	}
 	return users, nil
 }
 
-// GetUserByID gets the user by ID.
-func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
-	if v, ok := s.userIDCache.Get(id); ok {
-		return v, nil
-	}
-
+// listAndCacheAllUsers is used for caching all users.
+func (s *Store) listAndCacheAllUsers(ctx context.Context) ([]*UserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	users, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &id, ShowDeleted: true})
+	users, err := s.listUserImpl(ctx, tx, &FindUserMessage{ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
-	if len(users) == 0 {
-		return nil, nil
-	}
-	if len(users) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with id %q, expect 1", len(users), id)}
-	}
-	user := users[0]
+
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	s.userIDCache.Add(user.ID, user)
-	return user, nil
+	for _, user := range users {
+		s.userIDCache.Add(user.ID, user)
+		s.userEmailCache.Add(user.Email, user)
+	}
+	return users, nil
 }
 
 func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
@@ -318,12 +324,13 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Role:         backfillRoleFromRoles(roles),
 	}
 	s.userIDCache.Add(user.ID, user)
+	s.userEmailCache.Add(user.Email, user)
 	return user, nil
 }
 
 // UpdateUser updates a user.
-func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMessage, updaterID int) (*UserMessage, error) {
-	if userID == api.SystemBotID {
+func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch *UpdateUserMessage, updaterID int) (*UserMessage, error) {
+	if currentUser.ID == api.SystemBotID {
 		return nil, errors.Errorf("cannot update system bot")
 	}
 
@@ -354,7 +361,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		}
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("mfa_config = $%d", len(principalArgs)+1)), append(principalArgs, mfaConfigBytes)
 	}
-	principalArgs = append(principalArgs, userID)
+	principalArgs = append(principalArgs, currentUser.ID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -380,10 +387,19 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		patchRoles = *v
 	}
 	if doPatchRoles {
-		if err := s.updateUserRoles(ctx, tx, userID, patchRoles, updaterID); err != nil {
+		if err := s.updateUserRoles(ctx, tx, currentUser.ID, patchRoles, updaterID); err != nil {
 			return nil, errors.Wrapf(err, "failed to update user roles")
 		}
 	}
+
+	users, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &currentUser.ID, ShowDeleted: true})
+	if err != nil {
+		return nil, err
+	}
+	if len(users) != 1 {
+		return nil, errors.Errorf("failed invalid users, %d users with id %d", len(users), currentUser.ID)
+	}
+	user := users[0]
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -393,8 +409,10 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		s.projectIDPolicyCache.Purge()
 		s.projectPolicyCache.Purge()
 	}
-	s.userIDCache.Remove(userID)
-	return s.GetUserByID(ctx, userID)
+	s.userEmailCache.Remove(currentUser.Email)
+	s.userIDCache.Add(currentUser.ID, user)
+	s.userEmailCache.Add(user.Email, user)
+	return user, nil
 }
 
 func (s *Store) updateUserRoles(ctx context.Context, tx *Tx, userUID int, roles []api.Role, updaterUID int) error {

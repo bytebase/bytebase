@@ -59,6 +59,42 @@ export interface ListPlansResponse {
   nextPageToken: string;
 }
 
+export interface SearchPlansRequest {
+  /**
+   * The parent, which owns this collection of plans.
+   * Format: projects/{project}
+   * Use "projects/-" to list all plans from all projects.
+   */
+  parent: string;
+  /**
+   * The maximum number of plans to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 plans will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListPlans` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListPlans` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+  /** Filter is used to filter issues returned in the list. */
+  filter: string;
+}
+
+export interface SearchPlansResponse {
+  /** The plans from the specified request. */
+  plans: Plan[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface CreatePlanRequest {
   /**
    * The parent project where this plan will be created.
@@ -861,6 +897,184 @@ export const ListPlansResponse = {
   },
   fromPartial(object: DeepPartial<ListPlansResponse>): ListPlansResponse {
     const message = createBaseListPlansResponse();
+    message.plans = object.plans?.map((e) => Plan.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchPlansRequest(): SearchPlansRequest {
+  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+}
+
+export const SearchPlansRequest = {
+  encode(message: SearchPlansRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchPlansRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchPlansRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchPlansRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+    };
+  },
+
+  toJSON(message: SearchPlansRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchPlansRequest>): SearchPlansRequest {
+    return SearchPlansRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SearchPlansRequest>): SearchPlansRequest {
+    const message = createBaseSearchPlansRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchPlansResponse(): SearchPlansResponse {
+  return { plans: [], nextPageToken: "" };
+}
+
+export const SearchPlansResponse = {
+  encode(message: SearchPlansResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.plans) {
+      Plan.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchPlansResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchPlansResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.plans.push(Plan.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchPlansResponse {
+    return {
+      plans: globalThis.Array.isArray(object?.plans) ? object.plans.map((e: any) => Plan.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: SearchPlansResponse): unknown {
+    const obj: any = {};
+    if (message.plans?.length) {
+      obj.plans = message.plans.map((e) => Plan.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchPlansResponse>): SearchPlansResponse {
+    return SearchPlansResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SearchPlansResponse>): SearchPlansResponse {
+    const message = createBaseSearchPlansResponse();
     message.plans = object.plans?.map((e) => Plan.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -3253,6 +3467,61 @@ export const PlanServiceDefinition = {
               97,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    searchPlans: {
+      name: "SearchPlans",
+      requestType: SearchPlansRequest,
+      requestStream: false,
+      responseType: SearchPlansResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              38,
+              18,
+              36,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              112,
+              108,
+              97,
+              110,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
             ]),
           ],
         },
