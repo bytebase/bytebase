@@ -160,4 +160,11 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.IdentityProviderService_DeleteIdentityProvider_FullMethodName:   iam.PermissionIdentityProvidersDelete,
 	v1pb.IdentityProviderService_UndeleteIdentityProvider_FullMethodName: iam.PermissionIdentityProvidersUndelete,
 	v1pb.IdentityProviderService_TestIdentityProvider_FullMethodName:     iam.PermissionIdentityProvidersUpdate,
+
+	// TODO(pony):
+	v1pb.UserGroupService_CreateUserGroup_FullMethodName: "",
+	v1pb.UserGroupService_GetUserGroup_FullMethodName:    "",
+	v1pb.UserGroupService_DeleteUserGroup_FullMethodName: "",
+	v1pb.UserGroupService_UpdateUserGroup_FullMethodName: "",
+	v1pb.UserGroupService_ListUserGroups_FullMethodName:  "",
 }
