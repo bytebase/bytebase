@@ -91,13 +91,17 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		}
 	}
 
-	// typed elasticsearch client.
-	typedClient, err := elasticsearch.NewTypedClient(elasticsearch.Config{
+	esConfig := elasticsearch.Config{
 		Username:  config.Username,
 		Password:  config.Password,
 		Addresses: addresses,
-		CACert:    []byte(config.TLSConfig.SslCert),
-	})
+	}
+	if protocol == "https" {
+		esConfig.CACert = []byte(config.TLSConfig.SslCert)
+	}
+
+	// typed elasticsearch client.
+	typedClient, err := elasticsearch.NewTypedClient(esConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create elasticsearch client")
 	}
