@@ -14,6 +14,7 @@ import { useI18n } from "vue-i18n";
 import type { RouteRecordRaw } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import workspaceSettingRoutes, {
   SETTING_ROUTE_PROFILE,
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
@@ -46,6 +47,11 @@ const getItemClass = (item: SidebarItem) => {
   switch (route.name) {
     case SETTING_ROUTE_PROFILE_TWO_FACTOR:
       if (item.name === SETTING_ROUTE_PROFILE) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case WORKSPACE_ROUTE_USER_PROFILE:
+      if (item.name === SETTING_ROUTE_WORKSPACE_MEMBER) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
@@ -95,7 +101,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
           type: "route",
         },
         {
-          title: t("settings.sidebar.members"),
+          title: t("settings.sidebar.members-and-groups"),
           name: SETTING_ROUTE_WORKSPACE_MEMBER,
           type: "route",
         },

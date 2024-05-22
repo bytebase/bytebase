@@ -546,7 +546,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	}
 
 	convertedUser := &v1pb.User{
-		Name:     fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID),
+		Name:     common.FormatUserUID(user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Phone:    user.Phone,

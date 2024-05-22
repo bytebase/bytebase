@@ -13977,6 +13977,11 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserGroupMember'
+                createTime:
+                    readOnly: true
+                    type: string
+                    description: The timestamp when the group was created.
+                    format: date-time
         UserGroupMember:
             type: object
             properties:

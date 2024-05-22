@@ -54,7 +54,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		ApprovalFindingDone:  false,
 		ApprovalFindingError: "",
 		Subscribers:          nil,
-		Creator:              fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Creator.Email),
+		Creator:              common.FormatUserEmail(issue.Creator.Email),
 		CreateTime:           timestamppb.New(issue.CreatedTime),
 		UpdateTime:           timestamppb.New(issue.UpdatedTime),
 		Plan:                 "",
@@ -73,11 +73,11 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
 	}
 	if issue.Assignee != nil {
-		issueV1.Assignee = fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email)
+		issueV1.Assignee = common.FormatUserEmail(issue.Assignee.Email)
 	}
 
 	for _, subscriber := range issue.Subscribers {
-		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", common.UserNamePrefix, subscriber.Email))
+		issueV1.Subscribers = append(issueV1.Subscribers, common.FormatUserEmail(subscriber.Email))
 	}
 
 	if issuePayload.Approval != nil {
