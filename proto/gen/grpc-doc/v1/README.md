@@ -624,6 +624,20 @@
   
     - [SQLService](#bytebase-v1-SQLService)
   
+- [v1/user_group.proto](#v1_user_group-proto)
+    - [CreateUserGroupRequest](#bytebase-v1-CreateUserGroupRequest)
+    - [DeleteUserGroupRequest](#bytebase-v1-DeleteUserGroupRequest)
+    - [GetUserGroupRequest](#bytebase-v1-GetUserGroupRequest)
+    - [ListUserGroupsRequest](#bytebase-v1-ListUserGroupsRequest)
+    - [ListUserGroupsResponse](#bytebase-v1-ListUserGroupsResponse)
+    - [UpdateUserGroupRequest](#bytebase-v1-UpdateUserGroupRequest)
+    - [UserGroup](#bytebase-v1-UserGroup)
+    - [UserGroupMember](#bytebase-v1-UserGroupMember)
+  
+    - [UserGroupMember.Role](#bytebase-v1-UserGroupMember-Role)
+  
+    - [UserGroupService](#bytebase-v1-UserGroupService)
+  
 - [v1/vcs_connector_service.proto](#v1_vcs_connector_service-proto)
     - [CreateVCSConnectorRequest](#bytebase-v1-CreateVCSConnectorRequest)
     - [DeleteVCSConnectorRequest](#bytebase-v1-DeleteVCSConnectorRequest)
@@ -10082,6 +10096,183 @@ Type of the SheetPayload.
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
+
+ 
+
+
+
+<a name="v1_user_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/user_group.proto
+
+
+
+<a name="bytebase-v1-CreateUserGroupRequest"></a>
+
+### CreateUserGroupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| group | [UserGroup](#bytebase-v1-UserGroup) |  | The group to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteUserGroupRequest"></a>
+
+### DeleteUserGroupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the group to delete. Format: groups/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetUserGroupRequest"></a>
+
+### GetUserGroupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the group to retrieve. Format: groups/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListUserGroupsRequest"></a>
+
+### ListUserGroupsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of groups to return. The service may return fewer than this value. If unspecified, at most 50 groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListUserGroupsResponse"></a>
+
+### ListUserGroupsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| groups | [UserGroup](#bytebase-v1-UserGroup) | repeated | The groups from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateUserGroupRequest"></a>
+
+### UpdateUserGroupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| group | [UserGroup](#bytebase-v1-UserGroup) |  | The group to update.
+
+The group&#39;s `name` field is used to identify the group to update. Format: groups/{email} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-UserGroup"></a>
+
+### UserGroup
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the group to retrieve. Format: groups/{email} |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| creator | [string](#string) |  | The name for the creator. Format: users/hello@world.com |
+| members | [UserGroupMember](#bytebase-v1-UserGroupMember) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UserGroupMember"></a>
+
+### UserGroupMember
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member | [string](#string) |  | Member is the principal who belong to this user group.
+
+Format: users/hello@world.com |
+| role | [UserGroupMember.Role](#bytebase-v1-UserGroupMember-Role) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-UserGroupMember-Role"></a>
+
+### UserGroupMember.Role
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_UNSPECIFIED | 0 |  |
+| OWNER | 1 |  |
+| MEMBER | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-UserGroupService"></a>
+
+### UserGroupService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetUserGroup | [GetUserGroupRequest](#bytebase-v1-GetUserGroupRequest) | [UserGroup](#bytebase-v1-UserGroup) |  |
+| ListUserGroups | [ListUserGroupsRequest](#bytebase-v1-ListUserGroupsRequest) | [ListUserGroupsResponse](#bytebase-v1-ListUserGroupsResponse) |  |
+| CreateUserGroup | [CreateUserGroupRequest](#bytebase-v1-CreateUserGroupRequest) | [UserGroup](#bytebase-v1-UserGroup) |  |
+| UpdateUserGroup | [UpdateUserGroupRequest](#bytebase-v1-UpdateUserGroupRequest) | [UserGroup](#bytebase-v1-UserGroup) |  |
+| DeleteUserGroup | [DeleteUserGroupRequest](#bytebase-v1-DeleteUserGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

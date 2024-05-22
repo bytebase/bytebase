@@ -254,6 +254,12 @@
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
   
+- [store/user_group.proto](#store_user_group-proto)
+    - [UserGroupMember](#bytebase-store-UserGroupMember)
+    - [UserGroupPayload](#bytebase-store-UserGroupPayload)
+  
+    - [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role)
+  
 - [store/vcs.proto](#store_vcs-proto)
     - [VCSConnector](#bytebase-store-VCSConnector)
   
@@ -3863,6 +3869,68 @@ MFAConfig is the MFA configuration for a user.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_user_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/user_group.proto
+
+
+
+<a name="bytebase-store-UserGroupMember"></a>
+
+### UserGroupMember
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member | [string](#string) |  | Member is the principal who belong to this user group.
+
+Format: users/{userUID}. |
+| role | [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-UserGroupPayload"></a>
+
+### UserGroupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [UserGroupMember](#bytebase-store-UserGroupMember) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-UserGroupMember-Role"></a>
+
+### UserGroupMember.Role
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_UNSPECIFIED | 0 |  |
+| OWNER | 1 |  |
+| MEMBER | 2 |  |
+
 
  
 
