@@ -149,7 +149,7 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlans
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansList)
+	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansGet)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
 	}
