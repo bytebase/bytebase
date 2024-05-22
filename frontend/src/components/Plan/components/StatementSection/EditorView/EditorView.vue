@@ -461,16 +461,16 @@ const chooseUpdateStatementTarget = () => {
         buttons.push(SPEC);
 
         if (targets.STEP.length > 1) {
-          // More than one editable specs in stage
-          // Add "Selected stage" option
-          const STAGE = h(
+          // More than one editable specs in step
+          // Add "Selected step" option
+          const STEP = h(
             NButton,
             { size: "small", onClick: () => finish("STEP") },
             {
               default: () => t("issue.update-statement.target.selected-stage"),
             }
           );
-          buttons.push(STAGE);
+          buttons.push(STEP);
         }
       }
       if (

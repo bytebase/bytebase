@@ -38,7 +38,7 @@ const selectedStep = computed(() => {
   return plan.value.steps.find((s) => s.specs.includes(selectedSpec.value));
 });
 
-// Show the spec bar when some of the stages have more than one specs.
+// Show the spec bar when some of the steps have more than one specs.
 const shouldShowSpecBar = computed(() => {
   return selectedStep.value && selectedStep.value.specs.length > 0;
 });

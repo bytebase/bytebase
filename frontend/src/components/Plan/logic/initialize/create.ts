@@ -146,7 +146,7 @@ export const buildSteps = async (
         databases,
       };
     }),
-    [(stage) => stage.environment?.order],
+    [(step) => step.environment?.order],
     ["asc"]
   );
 
@@ -234,7 +234,7 @@ export const buildStepsViaChangelist = async (
     databaseList,
     (db) => db.effectiveEnvironment
   );
-  const stageList = orderBy(
+  const stepList = orderBy(
     Object.keys(databaseListGroupByEnvironment).map((env) => {
       const environment = useEnvironmentV1Store().getEnvironmentByName(env);
       const databases = databaseListGroupByEnvironment[env];
@@ -243,14 +243,14 @@ export const buildStepsViaChangelist = async (
         databases,
       };
     }),
-    [(stage) => stage.environment?.order],
+    [(step) => step.environment?.order],
     ["asc"]
   );
 
   const steps: Plan_Step[] = [];
-  for (let i = 0; i < stageList.length; i++) {
+  for (let i = 0; i < stepList.length; i++) {
     const step = Plan_Step.fromJSON({});
-    const { databases } = stageList[i];
+    const { databases } = stepList[i];
     for (let j = 0; j < databases.length; j++) {
       const db = databases[j];
       for (let k = 0; k < changes.length; k++) {

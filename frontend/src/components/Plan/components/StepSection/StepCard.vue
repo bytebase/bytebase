@@ -1,5 +1,5 @@
 <template>
-  <div class="step" :class="stageClass">
+  <div class="step" :class="stepClass">
     <div class="text" @click="handleClickStep">
       <div class="text-sm min-w-32 lg:min-w-fit space-x-1 whitespace-nowrap">
         <heroicons:arrow-small-right
@@ -82,7 +82,7 @@ const isSelectedStep = computed(() => {
   return props.step === selectedStep.value;
 });
 
-const stageClass = computed(() => {
+const stepClass = computed(() => {
   const classList: string[] = [];
   if (isCreating.value) {
     classList.push("create");
