@@ -32,7 +32,7 @@ import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref, toRaw } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -51,7 +51,7 @@ import {
   planServiceClient,
   rolloutServiceClient,
 } from "@/grpcweb";
-import { emitWindowEvent, type TemplateType } from "@/plugins";
+import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
@@ -75,7 +75,6 @@ import {
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
-const route = useRoute();
 const router = useRouter();
 const { issue, formatOnSave } = useIssueContext();
 const { runSQLCheck } = useSQLCheckContext();
@@ -155,18 +154,15 @@ const doCreateIssue = async () => {
       planEntity: createdPlan,
     };
 
-    // Don't create rollout for review issue template.
-    if ((route.query.template as TemplateType) !== "bb.issue.sql-review") {
-      const createdRollout = await rolloutServiceClient.createRollout({
-        parent: issue.value.project,
-        rollout: {
-          plan: createdPlan.name,
-        },
-      });
+    const createdRollout = await rolloutServiceClient.createRollout({
+      parent: issue.value.project,
+      rollout: {
+        plan: createdPlan.name,
+      },
+    });
 
-      composedIssue.rollout = createdRollout.name;
-      composedIssue.rolloutEntity = createdRollout;
-    }
+    composedIssue.rollout = createdRollout.name;
+    composedIssue.rolloutEntity = createdRollout;
 
     await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {
