@@ -22,7 +22,7 @@ require (
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a
-	github.com/bytebase/plsql-parser v0.0.0-20240510083925-64a3eb683de7
+	github.com/bytebase/plsql-parser v0.0.0-20240523082029-22d555243c06
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
