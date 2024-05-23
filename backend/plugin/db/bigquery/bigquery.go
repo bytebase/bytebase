@@ -166,14 +166,14 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 			continue
 		}
 		switch r := status.Statistics.Details.(type) {
-		case *bigquery.LoadStatistics:
+		case *bigquery.QueryStatistics:
 			field := []string{"Affected Rows"}
 			types := []string{"INT64"}
 			rows := []*v1pb.QueryRow{
 				{
 					Values: []*v1pb.RowValue{
 						{
-							Kind: &v1pb.RowValue_Int64Value{Int64Value: r.OutputRows},
+							Kind: &v1pb.RowValue_Int64Value{Int64Value: r.NumDMLAffectedRows},
 						},
 					},
 				},
