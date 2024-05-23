@@ -20,9 +20,9 @@ import (
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
@@ -34,23 +34,23 @@ import (
 
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
-	store           *store.Store
-	dbFactory       *dbfactory.DBFactory
-	stateCfg        *state.State
-	activityManager *activity.Manager
-	relayRunner     *relay.Runner
-	licenseService  enterprise.LicenseService
+	store          *store.Store
+	dbFactory      *dbfactory.DBFactory
+	stateCfg       *state.State
+	webhookManager *webhook.Manager
+	relayRunner    *relay.Runner
+	licenseService enterprise.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterprise.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, relayRunner *relay.Runner, licenseService enterprise.LicenseService) *Runner {
 	return &Runner{
-		store:           store,
-		dbFactory:       dbFactory,
-		stateCfg:        stateCfg,
-		activityManager: activityManager,
-		relayRunner:     relayRunner,
-		licenseService:  licenseService,
+		store:          store,
+		dbFactory:      dbFactory,
+		stateCfg:       stateCfg,
+		webhookManager: webhookManager,
+		relayRunner:    relayRunner,
+		licenseService: licenseService,
 	}
 }
 
@@ -182,10 +182,10 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	// Grant privilege and close issue similar to actions on issue approval.
 	if issue.Type == api.IssueGrantRequest && approvalTemplate == nil {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, r.activityManager, issue, payload.GrantRequest); err != nil {
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+		if err := utils.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
@@ -200,7 +200,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = []*storepb.ApprovalTemplate{approvalTemplate}
 	}
 
-	newApprovers, activityCreates, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
+	newApprovers, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to handle incoming approval steps")
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
@@ -226,19 +226,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return nil
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
-	}
-
-	// It's ok to fail to create activity.
-	if err := func() error {
-		for _, create := range activityCreates {
-			if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create activity after approving review", log.BBError(err))
 	}
 
 	if err := func() error {
@@ -275,7 +262,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Comment:           "",
 			Payload:           string(payload),
 		}
-		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+		if _, err := r.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
 			return err
 		}
 		return nil
@@ -313,7 +300,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Comment:           "",
 			Payload:           string(activityPayload),
 		}
-		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+		if _, err := r.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
 			return err
 		}
 
