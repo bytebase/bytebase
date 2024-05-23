@@ -99,8 +99,7 @@
   <SQLRuleEditDialog
     v-if="state.activeRule"
     :editable="false"
-    :rule="state.activeRule.rule"
-    :payload="state.activeRule.payload"
+    :rule="state.activeRule"
     :disabled="true"
     @cancel="state.activeRule = undefined"
   />
@@ -117,7 +116,6 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
-import type { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyByEnvironmentName } from "@/store";
 import type { RuleTemplate } from "@/types";
@@ -129,6 +127,7 @@ import {
   getRuleLocalization,
   ruleTemplateMap,
 } from "@/types";
+import { convertPolicyRuleToRuleTemplate } from "@/types";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import {
   PlanCheckRun_Result,
@@ -142,10 +141,6 @@ interface ErrorCodeLink {
   target: string;
   url: string;
 }
-type PreviewSQLReviewRule = {
-  rule: RuleTemplate;
-  payload: PayloadValueType[];
-};
 
 export type PlanCheckDetailTableRow = {
   checkResult: PlanCheckRun_Result;
@@ -155,7 +150,7 @@ export type PlanCheckDetailTableRow = {
 };
 
 type LocalState = {
-  activeRule?: PreviewSQLReviewRule;
+  activeRule?: RuleTemplate;
   activeResultDefinition?: string;
 };
 
@@ -302,7 +297,7 @@ const reviewPolicy = useReviewPolicyByEnvironmentName(
     return props.environment || UNKNOWN_ENVIRONMENT_NAME;
   })
 );
-const getActiveRule = (type: string): PreviewSQLReviewRule | undefined => {
+const getActiveRule = (type: string): RuleTemplate | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
   if (!rule) {
     return undefined;
@@ -312,20 +307,8 @@ const getActiveRule = (type: string): PreviewSQLReviewRule | undefined => {
   if (!ruleTemplate) {
     return undefined;
   }
-  ruleTemplate.comment = rule.comment;
-  const { componentList } = ruleTemplate;
-  const payload = componentList.reduce<PayloadValueType[]>(
-    (list, component) => {
-      list.push(component.payload.value ?? component.payload.default);
-      return list;
-    },
-    []
-  );
 
-  return {
-    rule: ruleTemplate,
-    payload: payload,
-  };
+  return convertPolicyRuleToRuleTemplate([rule], ruleTemplate);
 };
 const setActiveRule = (type: string) => {
   state.activeRule = getActiveRule(type);
