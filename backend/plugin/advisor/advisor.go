@@ -609,6 +609,12 @@ const (
 
 	// MSSQLTableDisallowDML is an advisor type for MSSQL disallow DML for specific tables.
 	MSSQLTableDisallowDML = "bb.plugin.advisor.mssql.table.disallow-dml"
+
+	// MSSQLFuctionDisallowCreate restricts the creation of functions.
+	MSSQLFunctionDisallowCreateOrAlter Type = "bb.plugin.advisor.mssql.function.disallow-create-or-alter"
+
+	// MSSQLProcedureDisallowCreateOrAlter restricts the creation of procedures.
+	MSSQLProcedureDisallowCreateOrAlter Type = "bb.plugin.advisor.mssql.procedure.disallow-create-or-alter"
 )
 
 // Advice is the result of an advisor.
