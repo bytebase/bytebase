@@ -16,6 +16,7 @@
     </div>
     <div class="flex flex-col">
       <NRadioGroup
+        v-if="!parentBranchOnly"
         :value="sourceType"
         class="space-x-2"
         @update:value="$emit('update:source-type', $event as RebaseSourceType)"
@@ -23,9 +24,14 @@
         <NRadio value="BRANCH">{{ $t("common.branch") }}</NRadio>
         <NRadio value="DATABASE">{{ $t("common.database") }}</NRadio>
       </NRadioGroup>
+      <div v-if="parentBranchOnly">
+        {{ $t("schema-designer.parent-branch") }}
+      </div>
+
       <BranchSelector
         v-if="sourceType === 'BRANCH'"
         class="!w-full text-center"
+        :disabled="parentBranchOnly"
         :clearable="false"
         :project="project"
         :branch="sourceBranch?.name"
@@ -62,6 +68,7 @@ const props = defineProps<{
   headBranch: Branch | undefined;
   sourceBranch: Branch | undefined;
   sourceDatabase: ComposedDatabase | undefined;
+  parentBranchOnly: boolean | undefined;
   isLoadingSourceBranch?: boolean;
   isLoadingHeadBranch?: boolean;
 }>();

@@ -54,7 +54,10 @@
               >
                 {{ $t("branch.merge-rebase.merge-branch") }}
               </NButton>
-              <NButton @click="handleGotoRebaseBranch">
+              <NButton
+                v-if="showRebaseBranchButton"
+                @click="handleGotoRebaseBranch"
+              >
                 {{ $t("branch.merge-rebase.rebase-branch") }}
               </NButton>
               <NButton
@@ -172,6 +175,7 @@ import {
   defer,
   extractProjectResourceName,
   hasProjectPermissionV2,
+  isOwnerOfProjectV1,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { provideSQLCheckContext } from "../SQLCheck";
@@ -259,12 +263,29 @@ const database = computedAsync(() => {
 
 const showMergeBranchButton = computed(() => {
   // main branches (parent-less branches) cannot be merged.
-  return !!parentBranch.value;
+  if (!parentBranch.value) {
+    return false;
+  }
+  // The branch's creator and project owners can merge feature branches into main branches.
+  return allowEdit.value;
+});
+
+const showRebaseBranchButton = computed(() => {
+  // For main branches: only project owners are allowed
+  if (!parentBranch.value) {
+    return isOwnerOfProjectV1(props.project.iamPolicy, currentUser.value);
+  }
+
+  // For feature branches: project owners and branch creator
+  return allowEdit.value;
 });
 
 // Only show apply to database button when the branch is main branch.
 const showApplyBranchButton = computed(() => {
-  return !parentBranch.value;
+  return (
+    !parentBranch.value &&
+    isOwnerOfProjectV1(props.project.iamPolicy, currentUser.value)
+  );
 });
 
 const rebuildMetadataEdit = () => {
