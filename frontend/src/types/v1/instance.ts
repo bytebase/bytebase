@@ -71,6 +71,8 @@ export const defaultCharsetOfEngineV1 = (engine: Engine): string => {
       return "UTF8";
     case Engine.HIVE:
       return "default";
+    case Engine.BIGQUERY:
+      return ""
   }
   return "";
 };
@@ -107,6 +109,8 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
       return "BINARY_CI";
     case Engine.HIVE:
       return "default";
-  }
+    case Engine.BIGQUERY:
+      return ""
+    }
   return "";
 };

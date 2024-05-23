@@ -77,6 +77,7 @@ export const EngineIconPath: Record<string, string> = {
     "@/assets/db-elasticsearch.svg",
     import.meta.url
   ).href,
+  [Engine.BIGQUERY]: new URL("@/assets/bigquery.svg", import.meta.url).href,
 };
 
 export const MongoDBConnectionStringSchemaList = [
