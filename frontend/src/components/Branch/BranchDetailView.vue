@@ -266,8 +266,8 @@ const showMergeBranchButton = computed(() => {
   if (!parentBranch.value) {
     return false;
   }
-  // Project owners can merge feature branches into main branches.
-  return isOwnerOfProjectV1(props.project.iamPolicy, currentUser.value);
+  // The branch's creator and project owners can merge feature branches into main branches.
+  return allowEdit.value;
 });
 
 const showRebaseBranchButton = computed(() => {
