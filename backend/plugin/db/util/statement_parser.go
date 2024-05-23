@@ -1,4 +1,4 @@
-package spanner
+package util
 
 import (
 	"strings"
@@ -188,8 +188,8 @@ func splitStatement(sql string) ([]string, error) {
 	return stmts, nil
 }
 
-// sanitizeSQL removes comments, splits the sql by `;` and returns the trimmed sql statement array.
-func sanitizeSQL(sql string) ([]string, error) {
+// SanitizeSQL removes comments, splits the sql by `;` and returns the trimmed sql statement array.
+func SanitizeSQL(sql string) ([]string, error) {
 	query, err := removeCommentsAndTrim(sql)
 	if err != nil {
 		return nil, err
@@ -201,8 +201,8 @@ func sanitizeSQL(sql string) ([]string, error) {
 	return stmts, nil
 }
 
-// isDDL returns true if the given sql string is a DDL statement.
-func isDDL(query string) bool {
+// IsDDL returns true if the given sql string is a DDL statement.
+func IsDDL(query string) bool {
 	for ddl := range ddlStatements {
 		if len(query) >= len(ddl) && strings.EqualFold(query[:len(ddl)], ddl) {
 			return true
@@ -211,8 +211,8 @@ func isDDL(query string) bool {
 	return false
 }
 
-// isSelect returns true if the given sql string is a SELECT statement.
-func isSelect(query string) bool {
+// IsSelect returns true if the given sql string is a SELECT statement.
+func IsSelect(query string) bool {
 	for keyword := range selectStatements {
 		if len(query) >= len(keyword) && strings.EqualFold(query[:len(keyword)], keyword) {
 			return true
