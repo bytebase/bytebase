@@ -1,6 +1,6 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
-  <template v-if="basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY ">
+  <template v-if="basicInfo.engine !== Engine.SPANNER">
     <div
       v-if="
         basicInfo.engine === Engine.MYSQL ||
