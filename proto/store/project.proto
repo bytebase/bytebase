@@ -62,7 +62,7 @@ message Binding {
 }
 
 message ProjectIamPolicy {
-// Collection of binding.
+  // Collection of binding.
   // A binding binds one or more members or groups to a single project role.
   repeated Binding bindings = 1;
 }
