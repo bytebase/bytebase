@@ -1782,11 +1782,9 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 		}
 
 		for _, member := range binding.Members {
-			if strings.HasPrefix(member, "user:") {
-				email := ""
-				if member == api.AllUsers {
-					email = api.AllUsers
-				} else {
+			if strings.HasPrefix(member, "user:") || member == api.AllUsers {
+				email := member
+				if strings.HasPrefix(member, "user:") {
 					email = strings.TrimPrefix(member, "user:")
 				}
 				user, err := s.store.GetUserByEmail(ctx, email)
