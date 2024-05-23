@@ -18,7 +18,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -33,21 +32,19 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
-	store           *store.Store
-	activityManager *activity.Manager
-	profile         *config.Profile
-	iamManager      *iam.Manager
-	licenseService  enterprise.LicenseService
+	store          *store.Store
+	profile        *config.Profile
+	iamManager     *iam.Manager
+	licenseService enterprise.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store, activityManager *activity.Manager, profile *config.Profile, iamManager *iam.Manager, licenseService enterprise.LicenseService) *ProjectService {
+func NewProjectService(store *store.Store, profile *config.Profile, iamManager *iam.Manager, licenseService enterprise.LicenseService) *ProjectService {
 	return &ProjectService{
-		store:           store,
-		activityManager: activityManager,
-		profile:         profile,
-		iamManager:      iamManager,
-		licenseService:  licenseService,
+		store:          store,
+		profile:        profile,
+		iamManager:     iamManager,
+		licenseService: licenseService,
 	}
 }
 
@@ -382,16 +379,6 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	oldPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &project.UID})
-	if err != nil {
-		return nil, err
-	}
-	remove, add, err := store.GetIAMPolicyDiff(oldPolicy, policy)
-	if err != nil {
-		return nil, err
-	}
-	s.CreateIAMPolicyUpdateActivity(ctx, remove, add, project, creatorUID)
-
 	iamPolicyMessage, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -403,41 +390,6 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 
 	return iamPolicy, nil
-}
-
-// CreateIAMPolicyUpdateActivity creates project IAM policy change activities.
-func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remove, add *store.IAMPolicyMessage, project *store.ProjectMessage, creatorUID int) {
-	var activities []*store.ActivityMessage
-	for _, binding := range remove.Bindings {
-		for _, member := range binding.Members {
-			activities = append(activities, &store.ActivityMessage{
-				CreatorUID:        creatorUID,
-				ResourceContainer: project.GetName(),
-				ContainerUID:      project.UID,
-				Type:              api.ActivityProjectMemberDelete,
-				Level:             api.ActivityInfo,
-				Comment:           fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
-			})
-		}
-	}
-	for _, binding := range add.Bindings {
-		for _, member := range binding.Members {
-			activities = append(activities, &store.ActivityMessage{
-				CreatorUID:        creatorUID,
-				ResourceContainer: project.GetName(),
-				ContainerUID:      project.UID,
-				Type:              api.ActivityProjectMemberCreate,
-				Level:             api.ActivityInfo,
-				Comment:           fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
-			})
-		}
-	}
-
-	for _, a := range activities {
-		if _, err := s.activityManager.CreateActivity(ctx, a, &activity.Metadata{}); err != nil {
-			slog.Warn("Failed to create project activity", log.BBError(err))
-		}
-	}
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
