@@ -44,7 +44,7 @@ const handleCreateRODataSource = () => {
     database: adminDataSource.value.database,
     username: DATASOURCE_READONLY_USER_NAME,
   };
-  if (basicInfo.value.engine === Engine.SPANNER) {
+  if (basicInfo.value.engine === Engine.SPANNER || basicInfo.value.engine === Engine.BIGQUERY) {
     ds.host = adminDataSource.value.host;
   }
   dataSourceEditState.value.dataSources.push(ds);
