@@ -1,4 +1,6 @@
+import { emptyUser, unknownUser } from "@/types";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
+import type { User } from "@/types/proto/v1/auth_service";
 import {
   Plan,
   PlanCheckRun,
@@ -17,11 +19,12 @@ export interface ComposedPlan extends Plan {
   planCheckRunList: PlanCheckRun[];
   project: string;
   projectEntity: ComposedProject;
+  creatorEntity: User;
 }
 
 export const EMPTY_PLAN_NAME = `projects/${EMPTY_ID}/plans/${EMPTY_ID}`;
 export const UNKNOWN_PLAN_NAME = `projects/${UNKNOWN_ID}/plans/${UNKNOWN_ID}`;
-export const emptyPlan = () => {
+export const emptyPlan = (): ComposedPlan => {
   return {
     ...Plan.fromJSON({
       name: EMPTY_PLAN_NAME,
@@ -30,9 +33,10 @@ export const emptyPlan = () => {
     planCheckRunList: [],
     project: EMPTY_PROJECT_NAME,
     projectEntity: emptyProject(),
+    creatorEntity: emptyUser(),
   };
 };
-export const unknownPlan = () => {
+export const unknownPlan = (): ComposedPlan => {
   return {
     ...Plan.fromJSON({
       name: UNKNOWN_PLAN_NAME,
@@ -41,6 +45,7 @@ export const unknownPlan = () => {
     planCheckRunList: [],
     project: UNKNOWN_PROJECT_NAME,
     projectEntity: unknownProject(),
+    creatorEntity: unknownUser(),
   };
 };
 
