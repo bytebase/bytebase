@@ -1771,6 +1771,7 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, err
 	}, nil
 }
 
+// nolint
 // convertToIAMPolicyMessage will convert the IAM policy to IAM policy message.
 func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*store.IAMPolicyMessage, error) {
 	var bindings []*store.PolicyBinding
@@ -1796,7 +1797,6 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 				}
 				users = append(users, user)
 			} else if strings.HasPrefix(member, "group:") {
-				// nolint
 				// TODO: implement
 			}
 		}
