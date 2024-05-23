@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { UNKNOWN_ID } from "@/types";
+import {isDev} from "@/utils";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { Instance } from "@/types/proto/v1/instance_service";
@@ -99,6 +100,10 @@ export const supportedEngineV1List = () => {
     engines.push(Engine.DM);
     engines.push(Engine.DORIS);
   }
+  if (isDev()) {
+    engines.push(Engine.BIGQUERY);
+   
+  }
   return engines;
 };
 
@@ -139,6 +144,8 @@ export const instanceV1HasCreateDatabase = (
   if (engine === Engine.ORACLE) return false;
   if (engine === Engine.DM) return false;
   if (engine === Engine.ELASTICSEARCH) return false;
+  if (engine === Engine.SPANNER) return false;
+  if (engine === Engine.BIGQUERY) return false;
   return true;
 };
 
@@ -287,7 +294,9 @@ export const engineNameV1 = (type: Engine): string => {
       return "Hive";
     case Engine.ELASTICSEARCH:
       return "Elasticsearch";
-  }
+    case Engine.BIGQUERY:
+      return "BigQuery";
+    }
   return "";
 };
 
