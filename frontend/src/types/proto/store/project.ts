@@ -138,8 +138,8 @@ export interface Binding {
   role: string;
   /**
    * Specifies the principals requesting access for a Bytebase resource.
-   * For users, the member should be: user:{email}
-   * For groups, the member should be: group:{email}
+   * For users, the member should be: users/{userUID}
+   * For groups, the member should be: groups/{email}
    */
   members: string[];
   /**
