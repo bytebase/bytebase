@@ -6195,6 +6195,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -6355,7 +6356,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | TODO: implement |
+| title | [string](#string) |  |  |
 | specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
 
 
@@ -6497,7 +6498,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | page_token | [string](#string) |  | A page token, received from a previous `ListPlans` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+| filter | [string](#string) |  | Filter is used to filter plans returned in the list. |
 
 
 

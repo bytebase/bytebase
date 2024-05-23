@@ -3,7 +3,6 @@ import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import {isDev} from "@/utils";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { Instance } from "@/types/proto/v1/instance_service";
@@ -95,14 +94,11 @@ export const supportedEngineV1List = () => {
     Engine.RISINGWAVE,
     Engine.HIVE,
     Engine.ELASTICSEARCH,
+    Engine.BIGQUERY,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
     engines.push(Engine.DORIS);
-  }
-  if (isDev()) {
-    engines.push(Engine.BIGQUERY);
-   
   }
   return engines;
 };
