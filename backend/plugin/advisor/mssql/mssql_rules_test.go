@@ -9,7 +9,7 @@ import (
 )
 
 func TestMSSQLRules(t *testing.T) {
-	snowflakeRules := []advisor.SQLReviewRuleType{
+	mssqlRules := []advisor.SQLReviewRuleType{
 		advisor.SchemaRuleStatementNoSelectAll,
 		advisor.SchemaRuleTableNaming,
 		advisor.SchemaRuleTableNameNoKeyword,
@@ -25,9 +25,11 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleSchemaBackwardCompatibility,
 		advisor.SchemaRuleRequiredColumn,
 		advisor.SchemaRuleColumnTypeDisallowList,
+		advisor.SchemaRuleFunctionDisallowCreate,
+		advisor.SchemaRuleProcedureDisallowCreate,
 	}
 
-	for _, rule := range snowflakeRules {
+	for _, rule := range mssqlRules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, nil, false /* record */)
 	}
 }

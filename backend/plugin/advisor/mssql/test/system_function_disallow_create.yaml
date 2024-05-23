@@ -1,0 +1,23 @@
+- statement: |-
+    CREATE FUNCTION dbo.ufnGetInventoryStock(@ProductID int)
+    RETURNS int
+    AS
+    -- Returns the stock level for the product.
+    BEGIN
+        DECLARE @ret int;
+        SELECT @ret = SUM(p.Quantity)
+        FROM Production.ProductInventory p
+        WHERE p.ProductID = @ProductID
+            AND p.LocationID = '6';
+        IF (@ret IS NULL)
+            SET @ret = 0;
+        RETURN @ret;
+    END;
+  want:
+    - status: WARN
+      code: 1701
+      title: system.function.disallow-create
+      content: |-
+        Creating or altering functions is prohibited
+      line: 1
+      details: ""
