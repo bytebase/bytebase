@@ -1796,6 +1796,7 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 				}
 				users = append(users, user)
 			} else if strings.HasPrefix(member, "group:") {
+				// nolint
 				// TODO: implement
 			}
 		}
