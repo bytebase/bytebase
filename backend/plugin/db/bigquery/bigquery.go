@@ -29,7 +29,7 @@ type Driver struct {
 	client  *bigquery.Client
 
 	// databaseName is the currently connected database name.
-	// databaseName string
+	databaseName string
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -44,8 +44,9 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	d.config = config
 	d.connCtx = config.ConnectionContext
+	d.databaseName = config.Database
 
-	client, err := bigquery.NewClient(ctx, d.config.Host, option.WithCredentialsJSON([]byte(config.Password)))
+	client, err := bigquery.NewClient(ctx, config.Host, option.WithCredentialsJSON([]byte(config.Password)))
 	if err != nil {
 		return nil, err
 	}

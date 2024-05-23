@@ -45,9 +45,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database name from %s", database.Name)
 		}
-		if excludedDatabaseList[databaseName] {
-			continue
-		}
 
 		databases = append(databases, &storepb.DatabaseSchemaMetadata{Name: databaseName})
 	}
