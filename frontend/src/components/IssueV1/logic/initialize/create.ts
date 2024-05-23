@@ -85,16 +85,9 @@ export const createIssueSkeleton = async (
   issue.plan = plan.name;
   issue.planEntity = plan;
 
-  const issueTemplate = query.template as TemplateType | undefined;
-  // Don't initial rollout for SQL review issue.
-  if (issueTemplate === "bb.issue.sql-review") {
-    issue.rollout = "";
-    issue.rolloutEntity = undefined;
-  } else {
-    const rollout = await previewPlan(plan, params);
-    issue.rollout = rollout.name;
-    issue.rolloutEntity = rollout;
-  }
+  const rollout = await previewPlan(plan, params);
+  issue.rollout = rollout.name;
+  issue.rolloutEntity = rollout;
 
   const description = query.description;
   if (description) {
@@ -394,15 +387,6 @@ export const buildSpecForTarget = async (
     spec.exportDataConfig = Plan_ExportDataConfig.fromJSON({
       target,
       sheet,
-    });
-  }
-  if (template === "bb.issue.sql-review") {
-    // SQL review issues is reusing the same plan config type as changing database.
-    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
-      target,
-      sheet,
-      // TODO(steven): let user choose type in UI.
-      type: Plan_ChangeDatabaseConfig_Type.DATA,
     });
   }
 

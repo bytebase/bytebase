@@ -4,8 +4,7 @@ export const generateIssueName = (
   type:
     | "bb.issue.database.schema.update"
     | "bb.issue.database.data.update"
-    | "bb.issue.database.data.export"
-    | "bb.issue.sql-review",
+    | "bb.issue.database.data.export",
   databaseNameList: string[],
   isOnlineMode = false
 ) => {
@@ -24,9 +23,7 @@ export const generateIssueName = (
         ? `Edit schema`
         : type === "bb.issue.database.data.update"
           ? `Change data`
-          : type === "bb.issue.database.data.export"
-            ? "Export data"
-            : "Review SQL"
+          : "Export data"
     );
   }
   const datetime = dayjs().format("@MM-DD HH:mm");
