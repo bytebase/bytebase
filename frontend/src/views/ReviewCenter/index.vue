@@ -176,6 +176,7 @@ const planSearchParams = computed(() => {
 const mergedPlanFind = computed(() => {
   return buildPlanFindBySearchParams(planSearchParams.value, {
     hasIssue: false,
+    hasPipeline: false,
   });
 });
 
