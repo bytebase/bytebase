@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/option"
@@ -46,8 +45,6 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	d.config = config
 	d.connCtx = config.ConnectionContext
 
-	fmt.Printf("Barny1: %q\n", config.Host)
-	fmt.Printf("Barny2: %q\n", config.Password)
 	client, err := bigquery.NewClient(ctx, d.config.Host, option.WithCredentialsJSON([]byte(config.Password)))
 	if err != nil {
 		return nil, err
