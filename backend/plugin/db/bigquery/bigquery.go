@@ -4,6 +4,10 @@ package bigquery
 import (
 	"context"
 	"database/sql"
+	"errors"
+
+	"cloud.google.com/go/bigquery"
+	"google.golang.org/api/option"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -20,8 +24,9 @@ func init() {
 
 // Driver is the Spanner driver.
 type Driver struct {
-	// config  db.ConnectionConfig
-	// connCtx db.ConnectionContext
+	config  db.ConnectionConfig
+	connCtx db.ConnectionContext
+	client  *bigquery.Client
 
 	// databaseName is the currently connected database name.
 	// databaseName string
@@ -33,17 +38,32 @@ func newDriver(_ db.DriverConfig) db.Driver {
 
 // Open opens a Spanner driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
-func (*Driver) Open(_ context.Context, _ storepb.Engine, _ db.ConnectionConfig) (db.Driver, error) {
-	return nil, nil
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	if config.Host == "" {
+		return nil, errors.New("host cannot be empty")
+	}
+	d.config = config
+	d.connCtx = config.ConnectionContext
+
+	client, err := bigquery.NewClient(ctx, d.config.Host, option.WithCredentialsJSON([]byte(config.Password)))
+	if err != nil {
+		return nil, err
+	}
+	d.client = client
+	return d, nil
 }
 
 // Close closes the driver.
-func (*Driver) Close(_ context.Context) error {
-	return nil
+func (d *Driver) Close(_ context.Context) error {
+	return d.client.Close()
 }
 
 // Ping pings the instance.
-func (*Driver) Ping(_ context.Context) error {
+func (d *Driver) Ping(ctx context.Context) error {
+	q := d.client.Query("SELECT 1")
+	if _, err := q.Read(ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
