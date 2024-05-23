@@ -210,7 +210,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-x-3">
-          <NCheckbox v-model:checked="state.planOnly">
+          <NCheckbox v-if="!props.planOnly" v-model:checked="state.planOnly">
             {{ $t("issue.sql-review-only") }}
           </NCheckbox>
           <NButton @click.prevent="cancel">
@@ -351,6 +351,10 @@ const props = defineProps({
     >,
     required: true,
   },
+  planOnly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["dismiss"]);
@@ -385,7 +389,7 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
-  planOnly: false,
+  planOnly: props.planOnly,
 });
 
 const scopeOptions = useCommonSearchScopeOptions(
