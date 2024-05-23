@@ -13,10 +13,10 @@
         <NDropdown
           trigger="hover"
           :options="planCreationButtonOptions"
-          :disabled="!allowToCreateReviewIssue"
+          :disabled="!allowToCreatePlan"
           @select="state.selectedPlanOnlyType = $event"
         >
-          <NButton type="primary" :disabled="!allowToCreateReviewIssue">{{
+          <NButton type="primary" :disabled="!allowToCreatePlan">{{
             $t("review-center.review-sql")
           }}</NButton>
         </NDropdown>
@@ -72,7 +72,7 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
 import {
   extractProjectResourceName,
-  hasPermissionToCreateReviewIssueInProject,
+  hasPermissionToCreatePlanInProject,
   type SearchParams,
   type SearchScope,
   type SearchScopeId,
@@ -179,16 +179,16 @@ const mergedPlanFind = computed(() => {
   });
 });
 
-const allowToCreateReviewIssue = computed(() => {
+const allowToCreatePlan = computed(() => {
   if (specificProject.value) {
-    return hasPermissionToCreateReviewIssueInProject(
+    return hasPermissionToCreatePlanInProject(
       specificProject.value,
       currentUser.value
     );
   }
 
   return projectV1Store.projectList.some((project) =>
-    hasPermissionToCreateReviewIssueInProject(project, currentUser.value)
+    hasPermissionToCreatePlanInProject(project, currentUser.value)
   );
 });
 </script>
