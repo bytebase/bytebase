@@ -11,11 +11,11 @@ import (
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -37,7 +37,7 @@ func configureGrpcRouters(
 	metricReporter *metricreport.Reporter,
 	stateCfg *state.State,
 	schemaSyncer *schemasync.Syncer,
-	activityManager *activity.Manager,
+	webhookManager *webhook.Manager,
 	iamManager *iam.Manager,
 	relayRunner *relay.Runner,
 	planCheckScheduler *plancheck.Scheduler,
@@ -68,21 +68,21 @@ func configureGrpcRouters(
 		dbFactory,
 		schemaSyncer,
 		iamManager))
-	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, activityManager, profile, iamManager, licenseService))
+	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, profile, iamManager, licenseService))
 	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
 	v1pb.RegisterSettingServiceServer(grpcServer, apiv1.NewSettingService(stores, profile, licenseService, stateCfg))
 	v1pb.RegisterAnomalyServiceServer(grpcServer, apiv1.NewAnomalyService(stores))
-	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, activityManager, licenseService, profile, iamManager))
+	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, profile, iamManager))
 	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
-	planService := apiv1.NewPlanService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, activityManager, profile, iamManager)
+	planService := apiv1.NewPlanService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, profile, iamManager)
 	v1pb.RegisterPlanServiceServer(grpcServer, planService)
-	issueService := apiv1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
+	issueService := apiv1.NewIssueService(stores, webhookManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
-	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, stateCfg, activityManager, profile, iamManager)
+	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
 	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, iamManager, licenseService))
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, licenseService, iamManager, profile))
