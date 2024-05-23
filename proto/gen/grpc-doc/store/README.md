@@ -1464,6 +1464,7 @@ Used internally for obfuscating the page token.
 | HIVE | 20 |  |
 | ELASTICSEARCH | 21 |  |
 | BIGQUERY | 22 |  |
+| DYNAMODB | 23 |  |
 
 
 
