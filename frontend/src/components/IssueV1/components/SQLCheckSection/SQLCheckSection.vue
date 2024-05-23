@@ -38,7 +38,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useRoute } from "vue-router";
 import {
   useIssueContext,
   databaseForTask,
@@ -46,7 +45,6 @@ import {
   databaseForSpec,
 } from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
-import type { TemplateType } from "@/plugins";
 import { TaskTypeListWithStatement } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
@@ -56,7 +54,6 @@ import { useEditSheet } from "../StatementSection/useEditSheet";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 
-const route = useRoute();
 const { issue, selectedTask, selectedSpec, events } = useIssueContext();
 const { sheetStatement } = useEditSheet();
 
@@ -68,15 +65,7 @@ const database = computed(() => {
     : databaseForSpec(issue.value, selectedSpec.value);
 });
 
-const issueTemplate = computed(() => {
-  return route.query.template as TemplateType;
-});
-
 const show = computed(() => {
-  if (issueTemplate.value === "bb.issue.sql-review") {
-    return true;
-  }
-
   const type = selectedTask.value.type;
   if (type === Task_Type.DATABASE_SCHEMA_BASELINE) {
     return false;

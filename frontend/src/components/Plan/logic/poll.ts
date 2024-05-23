@@ -1,11 +1,12 @@
 import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { fetchPlanByUID } from "@/store/modules/v1/plan";
+import { usePlanStore } from "@/store/modules/v1/plan";
 import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
   const { isCreating, ready, plan } = usePlanContext();
+  const planStore = usePlanStore();
 
   const shouldPollPlan = computed(() => {
     return !isCreating.value && ready.value;
@@ -14,10 +15,12 @@ export const usePollPlan = () => {
   const refreshPlan = () => {
     if (!shouldPollPlan.value) return;
 
-    fetchPlanByUID(
-      plan.value.uid,
-      extractProjectResourceName(plan.value.name)
-    ).then((updatedPlan) => (plan.value = updatedPlan));
+    planStore
+      .fetchPlanByUID(
+        plan.value.uid,
+        extractProjectResourceName(plan.value.name)
+      )
+      .then((updatedPlan) => (plan.value = updatedPlan));
   };
 
   const poller = useProgressivePoll(refreshPlan, {

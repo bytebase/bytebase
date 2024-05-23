@@ -5796,7 +5796,7 @@ paths:
                     type: string
                 - name: filter
                   in: query
-                  description: Filter is used to filter issues returned in the list.
+                  description: Filter is used to filter plans returned in the list.
                   schema:
                     type: string
             responses:
@@ -11511,6 +11511,10 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                updateTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
         PlanCheckRun:
             type: object
             properties:
@@ -11721,7 +11725,6 @@ components:
             properties:
                 title:
                     type: string
-                    description: 'TODO: implement'
                 specs:
                     type: array
                     items:
