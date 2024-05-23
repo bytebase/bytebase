@@ -163,7 +163,6 @@ const projectV1Routes: RouteRecordRaw[] = [
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
                 "bb.branches.get",
-                "bb.branches.update",
               ],
             },
             component: () => import("@/views/branch/BranchMerge.vue"),
@@ -177,7 +176,6 @@ const projectV1Routes: RouteRecordRaw[] = [
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
                 "bb.branches.get",
-                "bb.branches.update",
               ],
             },
             component: () => import("@/views/branch/BranchRebase.vue"),
