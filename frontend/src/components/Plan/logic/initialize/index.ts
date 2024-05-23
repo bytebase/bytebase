@@ -2,7 +2,7 @@ import type { MaybeRef } from "vue";
 import { computed, ref, unref, watch } from "vue";
 import type { LocationQuery } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
-import { fetchPlanByUID } from "@/store/modules/v1/plan";
+import { usePlanStore } from "@/store/modules/v1/plan";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { emptyPlan, type ComposedPlan } from "@/types/v1/issue/plan";
 import { uidFromSlug } from "@/utils";
@@ -27,6 +27,7 @@ export function useInitializePlan(
   });
   const route = useRoute();
   const router = useRouter();
+  const planStore = usePlanStore();
   const isInitializing = ref(false);
 
   const plan = ref<ComposedPlan>(emptyPlan());
@@ -38,7 +39,7 @@ export function useInitializePlan(
             route,
             convertRouterQuery(router.resolve(url).query)
           )
-        : await fetchPlanByUID(uid, project);
+        : await planStore.fetchPlanByUID(uid, project);
     return {
       plan,
       url,

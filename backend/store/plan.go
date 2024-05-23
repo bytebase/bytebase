@@ -174,7 +174,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		LEFT JOIN project on plan.project_id = project.id
 		LEFT JOIN issue on plan.id = issue.plan_id
 		WHERE %s
-		ORDER BY id ASC
+		ORDER BY id DESC
 	`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)

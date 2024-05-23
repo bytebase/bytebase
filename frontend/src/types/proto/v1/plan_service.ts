@@ -81,7 +81,7 @@ export interface SearchPlansRequest {
    * the call that provided the page token.
    */
   pageToken: string;
-  /** Filter is used to filter issues returned in the list. */
+  /** Filter is used to filter plans returned in the list. */
   filter: string;
 }
 
@@ -142,10 +142,10 @@ export interface Plan {
   /** Format: users/hello@world.com */
   creator: string;
   createTime: Date | undefined;
+  updateTime: Date | undefined;
 }
 
 export interface Plan_Step {
-  /** TODO: implement */
   title: string;
   specs: Plan_Spec[];
 }
@@ -1240,6 +1240,7 @@ function createBasePlan(): Plan {
     vcsSource: undefined,
     creator: "",
     createTime: undefined,
+    updateTime: undefined,
   };
 }
 
@@ -1271,6 +1272,9 @@ export const Plan = {
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(toTimestamp(message.createTime), writer.uint32(74).fork()).ldelim();
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -1345,6 +1349,13 @@ export const Plan = {
 
           message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1365,6 +1376,7 @@ export const Plan = {
       vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
 
@@ -1397,6 +1409,9 @@ export const Plan = {
     if (message.createTime !== undefined) {
       obj.createTime = message.createTime.toISOString();
     }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
@@ -1416,6 +1431,7 @@ export const Plan = {
       : undefined;
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
