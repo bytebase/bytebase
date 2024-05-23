@@ -1676,6 +1676,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLProcedureDisallowCreate, nil
 		}
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLProcedureDisallowCreateOrAlter, nil
+		}
 	case SchemaRuleEventDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLEventDisallowCreate, nil
@@ -1687,6 +1690,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleFunctionDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLFunctionDisallowCreate, nil
+		}
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLFunctionDisallowCreateOrAlter, nil
 		}
 	case SchemaRuleFunctionDisallowList:
 		if engine == storepb.Engine_MYSQL {

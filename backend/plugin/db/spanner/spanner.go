@@ -28,10 +28,6 @@ import (
 )
 
 var (
-	excludedDatabaseList = map[string]bool{
-		"bytebase": true,
-	}
-
 	dsnRegExp = regexp.MustCompile("projects/(?P<PROJECTGROUP>([a-z]|[-.:]|[0-9])+)/instances/(?P<INSTANCEGROUP>([a-z]|[-]|[0-9])+)/databases/(?P<DATABASEGROUP>([a-z]|[-]|[_]|[0-9])+)")
 
 	_ db.Driver = (*Driver)(nil)
