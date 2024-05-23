@@ -20,7 +20,11 @@ export interface Binding {
    * Format: roles/{role}
    */
   role: string;
-  /** Specifies the principals requesting access for a Bytebase resource. */
+  /**
+   * Specifies the principals requesting access for a Bytebase resource.
+   * For users, the member should be: user:{email}
+   * For groups, the member should be: group:{email}
+   */
   members: string[];
   /**
    * The condition that is associated with this binding.
