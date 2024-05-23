@@ -1,6 +1,6 @@
 <template>
   <div
-    class="px-2 py-1 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
+    class="px-3 py-2 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
     :class="specClass"
     @click="onClickSpec(spec)"
   >
