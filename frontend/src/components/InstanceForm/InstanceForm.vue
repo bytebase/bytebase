@@ -106,7 +106,7 @@
           </div>
 
           <div class="sm:col-span-3 sm:col-start-1">
-            <template v-if="basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY">
+            <template v-if="basicInfo.engine !== Engine.SPANNER">
               <label for="host" class="textlabel block">
                 <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
                   {{ $t("instance.account-locator") }}
@@ -166,7 +166,7 @@
 
           <template
             v-if="
-              (basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY) &&
+              (basicInfo.engine !== Engine.SPANNER) &&
               adminDataSource.authenticationType !==
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
