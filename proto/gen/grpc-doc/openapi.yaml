@@ -8891,7 +8891,10 @@ components:
                     type: array
                     items:
                         type: string
-                    description: Specifies the principals requesting access for a Bytebase resource.
+                    description: |-
+                        Specifies the principals requesting access for a Bytebase resource.
+                         For users, the member should be: user:{email}
+                         For groups, the member should be: group:{email}
                 condition:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
