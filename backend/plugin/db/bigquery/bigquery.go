@@ -79,7 +79,18 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement.
-func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+	job, err := d.client.Query(statement).Run(ctx)
+	if err != nil {
+		return 0, err
+	}
+	status, err := job.Wait(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if err := status.Err(); err != nil {
+		return 0, err
+	}
 	return 0, nil
 }
 
