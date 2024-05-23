@@ -183,8 +183,10 @@
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
+    - [Binding](#bytebase-store-Binding)
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
+    - [ProjectIamPolicy](#bytebase-store-ProjectIamPolicy)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
@@ -2889,6 +2891,23 @@ Format: users/{userUID}. |
 
 
 
+<a name="bytebase-store-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+
+
+
+
+
+
 <a name="bytebase-store-Label"></a>
 
 ### Label
@@ -2917,6 +2936,21 @@ Format: users/{userUID}. |
 | protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
 | force_issue_labels | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ProjectIamPolicy"></a>
+
+### ProjectIamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single project role. |
 
 
 

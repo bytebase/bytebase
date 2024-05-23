@@ -1771,6 +1771,7 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, err
 	}, nil
 }
 
+// nolint
 // convertToIAMPolicyMessage will convert the IAM policy to IAM policy message.
 func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*store.IAMPolicyMessage, error) {
 	var bindings []*store.PolicyBinding
@@ -1780,21 +1781,24 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+
 		for _, member := range binding.Members {
-			email := ""
-			if member == api.AllUsers {
-				email = api.AllUsers
-			} else {
-				email = strings.TrimPrefix(member, "user:")
+			if strings.HasPrefix(member, "user:") || member == api.AllUsers {
+				email := member
+				if strings.HasPrefix(member, "user:") {
+					email = strings.TrimPrefix(member, "user:")
+				}
+				user, err := s.store.GetUserByEmail(ctx, email)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, err.Error())
+				}
+				if user == nil {
+					return nil, status.Errorf(codes.NotFound, "user %q not found", member)
+				}
+				users = append(users, user)
+			} else if strings.HasPrefix(member, "group:") {
+				// TODO: implement
 			}
-			user, err := s.store.GetUserByEmail(ctx, email)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if user == nil {
-				return nil, status.Errorf(codes.NotFound, "user %q not found", member)
-			}
-			users = append(users, user)
 		}
 
 		bindings = append(bindings, &store.PolicyBinding{
