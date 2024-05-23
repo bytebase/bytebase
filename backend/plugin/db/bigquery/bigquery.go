@@ -127,8 +127,70 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 }
 
 // RunStatement executes a SQL statement.
-func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
-	return nil, nil
+func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	stmts, err := util.SanitizeSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	for _, stmt := range stmts {
+		startTime := time.Now()
+		if util.IsSelect(stmt) {
+			result, err := d.querySingleSQL(ctx, stmt)
+			if err != nil {
+				results = append(results, &v1pb.QueryResult{
+					Error: err.Error(),
+				})
+				continue
+			}
+			results = append(results, result)
+			continue
+		}
+
+		job, err := d.client.Query(stmt).Run(ctx)
+		if err != nil {
+			return nil, err
+		}
+		status, err := job.Wait(ctx)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+			continue
+		}
+		if err := status.Err(); err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+			continue
+		}
+		switch r := status.Statistics.Details.(type) {
+		case *bigquery.LoadStatistics:
+			field := []string{"Affected Rows"}
+			types := []string{"INT64"}
+			rows := []*v1pb.QueryRow{
+				{
+					Values: []*v1pb.RowValue{
+						{
+							Kind: &v1pb.RowValue_Int64Value{Int64Value: r.OutputRows},
+						},
+					},
+				},
+			}
+			results = append(results, &v1pb.QueryResult{
+				ColumnNames:     field,
+				ColumnTypeNames: types,
+				Rows:            rows,
+				Latency:         durationpb.New(time.Since(startTime)),
+				Statement:       stmt,
+			})
+		default:
+			results = append(results, &v1pb.QueryResult{})
+		}
+	}
+
+	return results, nil
 }
 
 func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
