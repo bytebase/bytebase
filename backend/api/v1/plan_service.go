@@ -17,7 +17,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
@@ -39,20 +38,18 @@ type PlanService struct {
 	dbFactory          *dbfactory.DBFactory
 	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
-	activityManager    *activity.Manager
 	profile            *config.Profile
 	iamManager         *iam.Manager
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager, profile *config.Profile, iamManager *iam.Manager) *PlanService {
+func NewPlanService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
 	return &PlanService{
 		store:              store,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
 		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
-		activityManager:    activityManager,
 		profile:            profile,
 		iamManager:         iamManager,
 	}

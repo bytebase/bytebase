@@ -17,12 +17,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	sc "github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -34,25 +34,25 @@ import (
 // RolloutService represents a service for managing rollout.
 type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
-	store           *store.Store
-	licenseService  enterprise.LicenseService
-	dbFactory       *dbfactory.DBFactory
-	stateCfg        *state.State
-	activityManager *activity.Manager
-	profile         *config.Profile
-	iamManager      *iam.Manager
+	store          *store.Store
+	licenseService enterprise.LicenseService
+	dbFactory      *dbfactory.DBFactory
+	stateCfg       *state.State
+	webhookManager *webhook.Manager
+	profile        *config.Profile
+	iamManager     *iam.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
-		store:           store,
-		licenseService:  licenseService,
-		dbFactory:       dbFactory,
-		stateCfg:        stateCfg,
-		activityManager: activityManager,
-		profile:         profile,
-		iamManager:      iamManager,
+		store:          store,
+		licenseService: licenseService,
+		dbFactory:      dbFactory,
+		stateCfg:       stateCfg,
+		webhookManager: webhookManager,
+		profile:        profile,
+		iamManager:     iamManager,
 	}
 }
 
@@ -358,12 +358,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 
 	var taskRunCreates []*store.TaskRunMessage
-	var tasksToRun []*store.TaskMessage
 	for _, task := range stageToRunTasks {
 		if !taskIDsToRunMap[task.ID] {
 			continue
 		}
-		tasksToRun = append(tasksToRun, task)
 
 		sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
 		if err != nil {
@@ -389,7 +387,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
+	if err := s.webhookManager.BatchCreateActivitiesForRunTasks(ctx, issue, request.Reason, user.ID); err != nil {
 		slog.Error("failed to batch create activities for running tasks", log.BBError(err))
 	}
 
@@ -496,7 +494,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, user.ID); err != nil {
+	if err := s.webhookManager.BatchCreateActivitiesForSkipTasks(ctx, issue, request.Reason, user.ID); err != nil {
 		slog.Error("failed to batch create activities for skipping tasks", log.BBError(err))
 	}
 
@@ -581,21 +579,14 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	}
 
 	var taskRunIDs []int
-	var taskIDs []int
 	var taskNames []string
 	for _, taskRun := range request.TaskRuns {
 		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		taskIDs = append(taskIDs, taskID)
 		taskRunIDs = append(taskRunIDs, taskRunID)
 		taskNames = append(taskNames, common.FormatTask(projectID, rolloutID, stageID, taskID))
-	}
-
-	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{IDs: &taskIDs})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
 	}
 
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
@@ -630,7 +621,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForCancelTaskRuns(ctx, tasks, issue, request.Reason, principalID); err != nil {
+	if err := s.webhookManager.BatchCreateActivitiesForCancelTaskRuns(ctx, issue, request.Reason, principalID); err != nil {
 		slog.Error("failed to batch create activities for cancel task runs", log.BBError(err))
 	}
 

@@ -24,12 +24,11 @@ import (
 	"golang.org/x/text/transform"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -450,47 +449,23 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 // HandleIncomingApprovalSteps handles incoming approval steps.
 // - Blocks approval steps if no user can approve the step.
 // - creates external approvals for external approval nodes.
-func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.ActivityMessage, []*store.IssueCommentMessage, error) {
+func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.IssueCommentMessage, error) {
 	if len(approval.ApprovalTemplates) == 0 {
-		return nil, nil, nil, nil
-	}
-
-	getActivityCreate := func(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status, comment string) (*store.ActivityMessage, error) {
-		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
-			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
-				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
-					Status: status,
-				},
-			},
-			IssueName: issue.Title,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueCommentCreate,
-			Level:             api.ActivityInfo,
-			Comment:           comment,
-			Payload:           string(activityPayload),
-		}, nil
+		return nil, nil, nil
 	}
 
 	var approvers []*storepb.IssuePayloadApproval_Approver
-	var activities []*store.ActivityMessage
 	var issueComments []*store.IssueCommentMessage
 
 	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
-		return nil, nil, nil, nil
+		return nil, nil, nil
 	}
 	if len(step.Nodes) != 1 {
-		return nil, nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+		return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
 	if step.Type != storepb.ApprovalStep_ANY {
-		return nil, nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
+		return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 	}
 	node := step.Nodes[0]
 	if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
@@ -499,12 +474,6 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 				Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
 				PrincipalId: api.SystemBotID,
 			})
-
-			activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			activities = append(activities, activity)
 
 			issueComments = append(issueComments, &store.IssueCommentMessage{
 				IssueUID: issue.UID,
@@ -518,7 +487,7 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 			})
 		}
 	}
-	return approvers, activities, issueComments, nil
+	return approvers, issueComments, nil
 }
 
 func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, externalNodeID string) error {
@@ -572,7 +541,7 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 }
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
-func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, activityManager *activity.Manager, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
+func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
 	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
 	if err != nil {
 		return err
@@ -622,17 +591,6 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 	if _, err := stores.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
 		return err
-	}
-	// Post project IAM policy update activity.
-	if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
-		CreatorUID:        api.SystemBotID,
-		ResourceContainer: issue.Project.GetName(),
-		ContainerUID:      issue.Project.UID,
-		Type:              api.ActivityProjectMemberCreate,
-		Level:             api.ActivityInfo,
-		Comment:           fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, roleID),
-	}, &activity.Metadata{}); err != nil {
-		slog.Warn("Failed to create project activity", log.BBError(err))
 	}
 	return nil
 }
@@ -754,7 +712,7 @@ func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *mo
 }
 
 // ChangeIssueStatus changes the status of an issue.
-func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager *activity.Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
+func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
 	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
 	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
 	if err != nil {
@@ -778,7 +736,7 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager
 		Comment:           comment,
 		Payload:           string(payload),
 	}
-	if _, err := activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+	if _, err := webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
 		Issue: updatedIssue,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
