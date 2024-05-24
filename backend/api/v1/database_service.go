@@ -3,9 +3,7 @@ package v1
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"slices"
 	"sort"
@@ -26,7 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -481,11 +478,6 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if project != nil {
-		if err := s.createTransferProjectActivity(ctx, project, principalID, databaseMessage); err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-	}
 
 	database, err := s.convertToDatabase(ctx, updatedDatabase)
 	if err != nil {
@@ -598,9 +590,6 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 	if len(databases) > 0 {
 		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 		for _, databaseMessage := range updatedDatabases {
@@ -1877,47 +1866,6 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 type metadataFilter struct {
 	schema string
 	table  string
-}
-
-func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, newProject *store.ProjectMessage, updaterID int, databases ...*store.DatabaseMessage) error {
-	var creates []*store.ActivityMessage
-	for _, database := range databases {
-		oldProject, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-		if err != nil {
-			return err
-		}
-		bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
-			DatabaseID:   database.UID,
-			DatabaseName: database.DatabaseName,
-		})
-		if err != nil {
-			return err
-		}
-		creates = append(creates,
-			&store.ActivityMessage{
-				CreatorUID:        updaterID,
-				ResourceContainer: oldProject.GetName(),
-				ContainerUID:      oldProject.UID,
-				Type:              api.ActivityProjectDatabaseTransfer,
-				Level:             api.ActivityInfo,
-				Comment:           fmt.Sprintf("Transferred out database %q to project %q.", database.DatabaseName, newProject.Title),
-				Payload:           string(bytes),
-			},
-			&store.ActivityMessage{
-				CreatorUID:        updaterID,
-				ResourceContainer: newProject.GetName(),
-				ContainerUID:      newProject.UID,
-				Type:              api.ActivityProjectDatabaseTransfer,
-				Level:             api.ActivityInfo,
-				Comment:           fmt.Sprintf("Transferred in database %q from project %q.", database.DatabaseName, oldProject.Title),
-				Payload:           string(bytes),
-			},
-		)
-	}
-	if _, err := s.store.BatchCreateActivityV2(ctx, creates); err != nil {
-		slog.Warn("failed to create activities for database project updates", log.BBError(err))
-	}
-	return nil
 }
 
 func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, instanceID, databaseName string) []*v1pb.Secret {
