@@ -13,7 +13,7 @@
 - statement: |-
     CREATE SEQUENCE public.seq;
     CREATE SEQUENCE seq;
-    DROP SEQUENCE public.seq 
+    DROP SEQUENCE public.seq
   want:
     - status: WARN
       code: 310
@@ -76,17 +76,17 @@
 
 - statement: |-
     CREATE TABLE public.pokes (foo int); 
-    SELECT * FROM (SELECT (foo) FROM pokes) AS foo;
+    SELECT * FROM (SELECT (id) FROM tech_book) AS foo;
   want:
     - status: WARN
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'pokes'"
+      content: "unqualified object name: 'tech_book'"
       line: 2
 
 - statement: |-
     CREATE TABLE public.pokes (foo int);
-    WITH foo1 AS (SELECT * FROM public.pokes) 
+    WITH foo1 AS (SELECT * FROM public.tech_book) 
     SELECT * FROM foo1;
   want:
     - status: SUCCESS

@@ -516,6 +516,10 @@
       "title": "Disallow Offline DDL",
       "description": "To prevent database changes from impacting your business, avoid using Offline DDL."
     },
+    "statement-disallow-cross-db-queries": {
+      "title": "Disallow cross database queries",
+      "description": "Cross-database queries increase system coupling and can lead to efficiency issues. Suggested error level: Warning"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
