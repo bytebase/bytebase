@@ -84,7 +84,7 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 
 	query := `
 		SELECT
-			count(1)
+			count(DISTINCT principal.id)
 		FROM principal
 		LEFT JOIN member ON principal.id = member.principal_id
 		WHERE principal.row_status = $1 AND (principal.type = $2 OR principal.type = $3) AND member.row_status = $4`
