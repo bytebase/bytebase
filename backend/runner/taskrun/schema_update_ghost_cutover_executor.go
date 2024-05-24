@@ -14,7 +14,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
@@ -31,27 +30,25 @@ import (
 )
 
 // NewSchemaUpdateGhostCutoverExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &SchemaUpdateGhostCutoverExecutor{
-		store:           store,
-		dbFactory:       dbFactory,
-		activityManager: activityManager,
-		license:         license,
-		stateCfg:        stateCfg,
-		schemaSyncer:    schemaSyncer,
-		profile:         profile,
+		store:        store,
+		dbFactory:    dbFactory,
+		license:      license,
+		stateCfg:     stateCfg,
+		schemaSyncer: schemaSyncer,
+		profile:      profile,
 	}
 }
 
 // SchemaUpdateGhostCutoverExecutor is the schema update (gh-ost) cutover task executor.
 type SchemaUpdateGhostCutoverExecutor struct {
-	store           *store.Store
-	dbFactory       *dbfactory.DBFactory
-	activityManager *activity.Manager
-	license         enterprise.LicenseService
-	stateCfg        *state.State
-	schemaSyncer    *schemasync.Syncer
-	profile         config.Profile
+	store        *store.Store
+	dbFactory    *dbfactory.DBFactory
+	license      enterprise.LicenseService
+	stateCfg     *state.State
+	schemaSyncer *schemasync.Syncer
+	profile      config.Profile
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.

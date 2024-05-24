@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -23,7 +22,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 
@@ -268,18 +266,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	if err != nil {
 		return nil, err
 	}
-	// Create a project activity after successfully creating the issue from the push event.
-	activityPayload, err := json.Marshal(
-		api.ActivityProjectRepositoryPushPayload{
-			// TODO(d): fix this activity.
-			IssueID:   issueUID,
-			IssueName: issue.Title,
-		},
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity payload")
-	}
-
+	// Create audit log after successfully creating the issue from the push event.
 	if err := s.store.CreateAuditLog(ctx, &storepb.AuditLog{
 		Parent:   project.GetName(),
 		Method:   store.AuditLogMethodProjectRepositoryPush.String(),
@@ -293,18 +280,6 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		slog.Warn("failed to create audit log after creating issue from push event", "issueUID", issueUID)
 	}
 
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        creatorID,
-		ResourceContainer: project.GetName(),
-		ContainerUID:      project.UID,
-		Type:              api.ActivityProjectRepositoryPush,
-		Level:             api.ActivityInfo,
-		Comment:           fmt.Sprintf("Created issue %q.", issue.Title),
-		Payload:           string(activityPayload),
-	}
-	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-		return nil, errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
-	}
 	return issue, nil
 }
 

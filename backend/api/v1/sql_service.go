@@ -22,7 +22,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -50,13 +49,12 @@ const (
 // SQLService is the service for SQL.
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
-	store           *store.Store
-	schemaSyncer    *schemasync.Syncer
-	dbFactory       *dbfactory.DBFactory
-	activityManager *activity.Manager
-	licenseService  enterprise.LicenseService
-	profile         *config.Profile
-	iamManager      *iam.Manager
+	store          *store.Store
+	schemaSyncer   *schemasync.Syncer
+	dbFactory      *dbfactory.DBFactory
+	licenseService enterprise.LicenseService
+	profile        *config.Profile
+	iamManager     *iam.Manager
 }
 
 // NewSQLService creates a SQLService.
@@ -64,19 +62,17 @@ func NewSQLService(
 	store *store.Store,
 	schemaSyncer *schemasync.Syncer,
 	dbFactory *dbfactory.DBFactory,
-	activityManager *activity.Manager,
 	licenseService enterprise.LicenseService,
 	profile *config.Profile,
 	iamManager *iam.Manager,
 ) *SQLService {
 	return &SQLService{
-		store:           store,
-		schemaSyncer:    schemaSyncer,
-		dbFactory:       dbFactory,
-		activityManager: activityManager,
-		licenseService:  licenseService,
-		profile:         profile,
-		iamManager:      iamManager,
+		store:          store,
+		schemaSyncer:   schemaSyncer,
+		dbFactory:      dbFactory,
+		licenseService: licenseService,
+		profile:        profile,
+		iamManager:     iamManager,
 	}
 }
 

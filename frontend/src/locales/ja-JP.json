@@ -273,7 +273,8 @@
     "project-member": "プロジェクトメンバー",
     "leave-without-saving": "変更を保存していませんか?",
     "configure-now": "今すぐ設定する",
-    "connection": "接続する"
+    "connection": "接続する",
+    "permission-denied": "許可が拒否されました"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

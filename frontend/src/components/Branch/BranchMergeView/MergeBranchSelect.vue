@@ -1,16 +1,22 @@
 <template>
   <div
-    class="w-full grid grid-cols-4 items-center text-sm gap-x-2"
+    class="w-full grid grid-cols-3 items-end text-sm gap-x-2"
     style="grid-template-columns: 1fr auto 1fr auto"
   >
-    <BranchSelector
-      class="!w-full text-center"
-      :clearable="false"
-      :project="project"
-      :branch="targetBranch?.name"
-      :filter="targetBranchFilter"
-      @update:branch="$emit('update:target-branch-name', $event)"
-    />
+    <div class="flex flex-col">
+      <div v-if="parentBranchOnly">
+        {{ $t("schema-designer.parent-branch") }}
+      </div>
+      <BranchSelector
+        class="!w-full text-center"
+        :disabled="parentBranchOnly"
+        :clearable="false"
+        :project="project"
+        :branch="targetBranch?.name"
+        :filter="targetBranchFilter"
+        @update:branch="$emit('update:target-branch-name', $event)"
+      />
+    </div>
     <div class="flex flex-row justify-center px-2">
       <MoveLeftIcon :size="40" stroke-width="1" />
     </div>
@@ -34,6 +40,7 @@ const props = defineProps<{
   project: ComposedProject;
   targetBranch: Branch | undefined;
   headBranch: Branch | undefined;
+  parentBranchOnly: boolean | undefined;
 }>();
 
 defineEmits<{

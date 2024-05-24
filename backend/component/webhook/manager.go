@@ -1,5 +1,4 @@
-// Package activity is a component for managing activities.
-package activity
+package webhook
 
 import (
 	"context"
@@ -27,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Manager is the activity manager.
+// Manager is the webhook manager.
 type Manager struct {
 	store *store.Store
 }
@@ -45,40 +44,7 @@ func NewManager(store *store.Store) *Manager {
 }
 
 // BatchCreateActivitiesForRunTasks creates activities for running tasks.
-func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterUID int) error {
-	var creates []*store.ActivityMessage
-	for _, task := range tasks {
-		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
-			TaskID:    task.ID,
-			NewStatus: api.TaskRunPending,
-			IssueName: issue.Title,
-			TaskName:  task.Name,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
-		}
-
-		activityCreate := &store.ActivityMessage{
-			CreatorUID:        updaterUID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      task.PipelineID,
-			Type:              api.ActivityPipelineTaskRunStatusUpdate,
-			Level:             api.ActivityInfo,
-			Comment:           comment,
-			Payload:           string(payload),
-		}
-		creates = append(creates, activityCreate)
-	}
-
-	activityList, err := m.store.BatchCreateActivityV2(ctx, creates)
-	if err != nil {
-		return err
-	}
-	if len(activityList) == 0 {
-		return errors.Errorf("failed to create any activity")
-	}
-	anyActivity := activityList[0]
-
+func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, issue *store.IssueMessage, comment string, updaterUID int) error {
 	activityType := api.ActivityPipelineTaskRunStatusUpdate
 	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID:    &issue.Project.UID,
@@ -97,9 +63,9 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 		return errors.Wrapf(err, "failed to get workspace setting")
 	}
 
-	user, err := m.store.GetUserByID(ctx, anyActivity.CreatorUID)
+	user, err := m.store.GetUserByID(ctx, updaterUID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get principal %d", anyActivity.CreatorUID)
+		return errors.Wrapf(err, "failed to get principal %d", updaterUID)
 	}
 
 	// Send one webhook post for all activities.
@@ -119,9 +85,9 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 			ID:   issue.Project.UID,
 			Name: issue.Project.Title,
 		},
-		Description:  anyActivity.Comment,
+		Description:  comment,
 		Link:         fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, issue.Project.ResourceID, slug.Make(issue.Title), issue.UID),
-		CreatorID:    anyActivity.CreatorUID,
+		CreatorID:    user.ID,
 		CreatorName:  user.Name,
 		CreatorEmail: user.Email,
 	}
@@ -132,40 +98,7 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 }
 
 // BatchCreateActivitiesForSkipTasks creates activities for skipping tasks.
-func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterID int) error {
-	var creates []*store.ActivityMessage
-	for _, task := range tasks {
-		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
-			TaskID:    task.ID,
-			NewStatus: api.TaskRunSkipped,
-			IssueName: issue.Title,
-			TaskName:  task.Name,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
-		}
-
-		activityCreate := &store.ActivityMessage{
-			CreatorUID:        updaterID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      task.PipelineID,
-			Type:              api.ActivityPipelineTaskRunStatusUpdate,
-			Level:             api.ActivityInfo,
-			Comment:           comment,
-			Payload:           string(payload),
-		}
-		creates = append(creates, activityCreate)
-	}
-
-	activityList, err := m.store.BatchCreateActivityV2(ctx, creates)
-	if err != nil {
-		return err
-	}
-	if len(activityList) == 0 {
-		return errors.Errorf("failed to create any activity")
-	}
-	anyActivity := activityList[0]
-
+func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, issue *store.IssueMessage, comment string, updaterID int) error {
 	activityType := api.ActivityPipelineTaskRunStatusUpdate
 	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID:    &issue.Project.UID,
@@ -183,9 +116,9 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 		return errors.Wrapf(err, "failed to get workspace setting")
 	}
 
-	user, err := m.store.GetUserByID(ctx, anyActivity.CreatorUID)
+	user, err := m.store.GetUserByID(ctx, updaterID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get principal %d", anyActivity.CreatorUID)
+		return errors.Wrapf(err, "failed to get principal %d", updaterID)
 	}
 
 	// Send one webhook post for all activities.
@@ -205,9 +138,9 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 			ID:   issue.Project.UID,
 			Name: issue.Project.Title,
 		},
-		Description:  anyActivity.Comment,
+		Description:  comment,
 		Link:         fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, issue.Project.ResourceID, slug.Make(issue.Title), issue.UID),
-		CreatorID:    anyActivity.CreatorUID,
+		CreatorID:    user.ID,
 		CreatorName:  user.Name,
 		CreatorEmail: user.Email,
 	}
@@ -218,40 +151,7 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 }
 
 // BatchCreateActivitiesForCancelTaskRuns creates activities for cancelling task runs.
-func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterUID int) error {
-	var creates []*store.ActivityMessage
-	for _, task := range tasks {
-		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
-			TaskID:    task.ID,
-			NewStatus: api.TaskRunCanceled,
-			IssueName: issue.Title,
-			TaskName:  task.Name,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
-		}
-
-		activityCreate := &store.ActivityMessage{
-			CreatorUID:        updaterUID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      task.PipelineID,
-			Type:              api.ActivityPipelineTaskRunStatusUpdate,
-			Level:             api.ActivityInfo,
-			Comment:           comment,
-			Payload:           string(payload),
-		}
-		creates = append(creates, activityCreate)
-	}
-
-	activityList, err := m.store.BatchCreateActivityV2(ctx, creates)
-	if err != nil {
-		return err
-	}
-	if len(activityList) == 0 {
-		return errors.Errorf("failed to create any activity")
-	}
-	anyActivity := activityList[0]
-
+func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, issue *store.IssueMessage, comment string, updaterUID int) error {
 	activityType := api.ActivityPipelineTaskRunStatusUpdate
 	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID:    &issue.Project.UID,
@@ -270,9 +170,9 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, ta
 		return errors.Wrapf(err, "failed to get workspace setting")
 	}
 
-	user, err := m.store.GetUserByID(ctx, anyActivity.CreatorUID)
+	user, err := m.store.GetUserByID(ctx, updaterUID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get principal %d", anyActivity.CreatorUID)
+		return errors.Wrapf(err, "failed to get principal %d", updaterUID)
 	}
 
 	// Send one webhook post for all activities.
@@ -292,9 +192,9 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, ta
 			ID:   issue.Project.UID,
 			Name: issue.Project.Title,
 		},
-		Description:  anyActivity.Comment,
+		Description:  comment,
 		Link:         fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, issue.Project.ResourceID, slug.Make(issue.Title), issue.UID),
-		CreatorID:    anyActivity.CreatorUID,
+		CreatorID:    user.ID,
 		CreatorName:  user.Name,
 		CreatorEmail: user.Email,
 	}

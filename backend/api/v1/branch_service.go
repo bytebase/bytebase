@@ -391,18 +391,6 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	ok, err = func() (bool, error) {
-		if baseBranch.CreatorID == user.ID {
-			return true, nil
-		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
-	}()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied to merge branch")
-	}
 
 	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
 	if err != nil {
@@ -425,6 +413,22 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 	if headBranch == nil {
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
+	}
+
+	ok, err = func() (bool, error) {
+		if baseBranch.CreatorID == user.ID {
+			return true, nil
+		}
+		if headBranch.CreatorID == user.ID {
+			return true, nil
+		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to merge branch")
 	}
 
 	// Restrict merging only when the head branch is not updated.

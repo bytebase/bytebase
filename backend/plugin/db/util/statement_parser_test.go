@@ -1,4 +1,4 @@
-package spanner
+package util
 
 import (
 	"testing"
@@ -488,7 +488,7 @@ CREATE INDEX bytebase_idx_migration_history_namespace_created ON migration_histo
 	}
 	a := require.New(t)
 	for _, tc := range tests {
-		got, err := sanitizeSQL(tc.input)
+		got, err := SanitizeSQL(tc.input)
 		if tc.wantErr {
 			a.Error(err)
 		} else {
