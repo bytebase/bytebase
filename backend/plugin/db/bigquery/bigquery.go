@@ -89,7 +89,9 @@ func (*Driver) GetDB() *sql.DB {
 
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	job, err := d.client.Query(statement).Run(ctx)
+	q := d.client.Query(statement)
+	q.DefaultDatasetID = d.databaseName
+	job, err := q.Run(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -148,7 +150,9 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 			continue
 		}
 
-		job, err := d.client.Query(stmt).Run(ctx)
+		q := d.client.Query(stmt)
+		q.DefaultDatasetID = d.databaseName
+		job, err := q.Run(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +199,9 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 
 func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	it, err := d.client.Query(statement).Read(ctx)
+	q := d.client.Query(statement)
+	q.DefaultDatasetID = d.databaseName
+	it, err := q.Read(ctx)
 	if err != nil {
 		return nil, err
 	}
