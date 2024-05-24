@@ -148,7 +148,11 @@
                 </div>
                 <template v-else>
                   {{ $t("instance.host-or-socket") }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <span
+                    v-if="basicInfo.engine !== Engine.DYNAMODB"
+                    class="text-red-600 mr-2"
+                    >*</span
+                  >
                 </template>
               </label>
               <NInput
@@ -383,11 +387,15 @@
         </div>
 
         <!-- Connection Info -->
-        <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
-          {{ $t("instance.connection-info") }}
-        </p>
+        <template v-if="basicInfo.engine !== Engine.DYNAMODB">
+          <p
+            class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900"
+          >
+            {{ $t("instance.connection-info") }}
+          </p>
 
-        <DataSourceSection />
+          <DataSourceSection />
+        </template>
 
         <BBAttention
           v-if="outboundIpList && actuatorStore.isSaaSMode"
@@ -656,6 +664,9 @@ const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 onMounted(async () => {
   if (isCreating.value) {
     adminDataSource.value.host = isDev() ? "127.0.0.1" : "host.docker.internal";
+    if (basicInfo.value.engine === Engine.DYNAMODB) {
+      adminDataSource.value.host = "";
+    }
     adminDataSource.value.srv = false;
     adminDataSource.value.authenticationDatabase = "";
   }
@@ -710,11 +721,17 @@ const allowCreate = computed(() => {
     );
   }
 
+  // Check Host
+  if (basicInfo.value.engine !== Engine.DYNAMODB) {
+    if (adminDataSource.value.host === "") {
+      return false;
+    }
+  }
+
   return (
     basicInfo.value.title.trim() &&
     resourceIdField.value?.resourceId &&
     resourceIdField.value?.isValidated &&
-    adminDataSource.value.host &&
     checkDataSource([adminDataSource.value])
   );
 });
@@ -772,7 +789,12 @@ const handleSelectEnvironmentUID = (uid: string | undefined) => {
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: Engine) => {
   context.resetDataSource();
-  if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER || engine === Engine.BIGQUERY) {
+  if (
+    engine === Engine.SNOWFLAKE ||
+    engine === Engine.SPANNER ||
+    engine === Engine.BIGQUERY ||
+    engine === Engine.DYNAMODB
+  ) {
     if (
       adminDataSource.value.host === "127.0.0.1" ||
       adminDataSource.value.host === "host.docker.internal"
