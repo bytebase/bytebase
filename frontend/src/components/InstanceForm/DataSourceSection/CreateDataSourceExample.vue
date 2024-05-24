@@ -427,6 +427,8 @@ db.createUser({
         return "";
       case Engine.BIGQUERY:
         return "";
+      case Engine.DYNAMODB:
+        return "";
       case Engine.REDIS:
         return `ACL SETUSER ${DATASOURCE_ADMIN_USER_NAME} on >YOUR_DB_PWD +@all &*`;
       case Engine.MSSQL:
@@ -586,6 +588,8 @@ db.createUser({
       case Engine.SPANNER:
         return "";
       case Engine.BIGQUERY:
+        return "";
+      case Engine.DYNAMODB:
         return "";
       case Engine.REDIS:
         return `ACL SETUSER ${DATASOURCE_READONLY_USER_NAME} on >YOUR_DB_PWD +@read &*`;
