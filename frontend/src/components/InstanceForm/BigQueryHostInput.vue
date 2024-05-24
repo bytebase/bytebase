@@ -14,20 +14,6 @@
         :disabled="!allowEdit"
       />
     </div>
-    <div>
-      <label class="textlabel">
-        {{ $t("instance.instance-id") }}
-        <span style="color: red">*</span>
-      </label>
-      <NInput
-        v-model:value="state.instanceId"
-        required
-        placeholder="instanceId"
-        class="mt-1 w-full"
-        :status="state.dirty && !isValidInstanceId ? 'error' : undefined"
-        :disabled="!allowEdit"
-      />
-    </div>
 
     <p class="col-span-2 textinfolabel">
       {{ $t("instance.find-gcp-project-id-and-instance-id") }}
@@ -49,7 +35,6 @@ import { computed, reactive, watch } from "vue";
 
 type LocalState = {
   projectId: string;
-  instanceId: string;
   dirty: boolean;
 };
 
@@ -62,14 +47,10 @@ const emit = defineEmits<{
   (name: "update:host", host: string): void;
 }>();
 
-const RE =
-  /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])*)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])*)$/;
 const RE_PROJECT_ID = /^(?:[a-z]|[-.:]|[0-9])+$/;
-const RE_INSTANCE_ID = /^(?:[a-z]|[-]|[0-9])+$/;
 
 const state = reactive<LocalState>({
   projectId: "",
-  instanceId: "",
   dirty: false,
 });
 
@@ -77,30 +58,16 @@ const isValidProjectId = computed(() => {
   return RE_PROJECT_ID.test(state.projectId);
 });
 
-const isValidInstanceId = computed(() => {
-  return RE_INSTANCE_ID.test(state.instanceId);
-});
-
 const update = () => {
-  if (!isValidProjectId.value || !isValidInstanceId.value) {
+  if (!isValidProjectId.value) {
     emit("update:host", "");
     return;
   }
-  const host = `projects/${state.projectId}/instances/${state.instanceId}`;
+  const host = `${state.projectId}`;
   emit("update:host", host);
 };
 
-const parseProjectIdFromHost = (host: string) => {
-  const match = host.match(RE);
-  return match?.groups?.PROJECT_ID ?? "";
-};
-
-const parseInstanceIdFromHost = (host: string) => {
-  const match = host.match(RE);
-  return match?.groups?.INSTANCE_ID ?? "";
-};
-
-watch([() => state.projectId, () => state.instanceId], () => {
+watch([() => state.projectId], () => {
   state.dirty = true;
   update();
 });
@@ -109,8 +76,7 @@ watch(
   () => props.host,
   (host) => {
     if (!host) return;
-    state.projectId = parseProjectIdFromHost(host);
-    state.instanceId = parseInstanceIdFromHost(host);
+    state.projectId = host;
   },
   { immediate: true }
 );
