@@ -16,7 +16,7 @@
     </div>
 
     <p class="col-span-2 textinfolabel">
-      {{ $t("instance.find-gcp-project-id-and-instance-id") }}
+      {{ $t("instance.find-gcp-project-id") }}
       <a
         href="https://www.bytebase.com/docs/get-started/instance/#specify-google-cloud-project-id-and-spanner-instance-id?source=console"
         target="_blank"
