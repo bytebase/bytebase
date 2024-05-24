@@ -89,7 +89,6 @@ func configureGrpcRouters(
 	v1pb.RegisterWorksheetServiceServer(grpcServer, apiv1.NewWorksheetService(stores))
 	v1pb.RegisterBranchServiceServer(grpcServer, apiv1.NewBranchService(stores, licenseService, profile, iamManager))
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
-	v1pb.RegisterLoggingServiceServer(grpcServer, apiv1.NewLoggingService(stores))
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
 	v1pb.RegisterVCSConnectorServiceServer(grpcServer, apiv1.NewVCSConnectorService(stores))
 	v1pb.RegisterUserGroupServiceServer(grpcServer, apiv1.NewUserGroupService(stores))
@@ -165,9 +164,6 @@ func configureGrpcRouters(
 		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, err
-	}
-	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, err
 	}
 	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
