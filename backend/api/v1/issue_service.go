@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -930,14 +929,14 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				},
 			},
 		}
-		if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, user.ID); err != nil {
 			return err
 		}
 		for _, ic := range issueComments {
-			if err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}
@@ -1158,10 +1157,11 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 				},
 			},
 		}
-		return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, user.ID)
+		return err
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
@@ -1245,14 +1245,14 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 				},
 			},
 		}
-		if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, user.ID); err != nil {
 			return err
 		}
 		for _, ic := range issueComments {
-			if err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}
@@ -1476,7 +1476,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		}
 	}
 	for _, create := range issueCommentCreates {
-		if err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {
+		if _, err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {
 			slog.Warn("failed to create issue comment", "issue id", issue.UID, log.BBError(err))
 		}
 	}
@@ -1573,7 +1573,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 			func() {
 				fromStatus := convertToIssueStatus(issue.Status)
-				if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 					IssueUID: issue.UID,
 					Payload: &storepb.IssueCommentPayload{
 						Event: &storepb.IssueCommentPayload_IssueUpdate_{
@@ -1702,28 +1702,22 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 	}
 	activityCreate.Payload = string(bytes)
 
-	activity, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{Issue: issue})
-	if err != nil {
+	if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{Issue: issue}); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err.Error())
 	}
 
 	// TODO(p0ny): dual-write issue_comment and activity for now. Remove activity in the future.
-	if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+	ic, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: request.IssueComment.Comment,
 		},
-	}, principalID); err != nil {
+	}, principalID)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err)
 	}
 
-	return &v1pb.IssueComment{
-		Uid:        fmt.Sprintf("%d", activity.UID),
-		Comment:    activity.Comment,
-		Payload:    activity.Payload,
-		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
-		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
-	}, nil
+	return convertToIssueComment(request.Parent, ic), nil
 }
 
 // UpdateIssueComment updates the issue comment.

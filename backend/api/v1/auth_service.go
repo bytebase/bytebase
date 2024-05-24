@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/mail"
 	"regexp"
@@ -234,26 +233,6 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 			"lark_notified": !isFirstUser,
 		},
 	})
-	bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
-		PrincipalID:    user.ID,
-		PrincipalName:  user.Name,
-		PrincipalEmail: user.Email,
-		MemberStatus:   api.Active,
-		Role:           user.Role,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to construct activity payload, error: %v", err)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:   user.ID,
-		ContainerUID: user.ID,
-		Type:         api.ActivityMemberCreate,
-		Level:        api.ActivityInfo,
-		Payload:      string(bytes),
-	}
-	if _, err := s.store.CreateActivityV2(ctx, activityCreate); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
-	}
 	userResponse := convertToUser(user)
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		userResponse.ServiceKey = password
