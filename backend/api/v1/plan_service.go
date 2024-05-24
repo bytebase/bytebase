@@ -718,7 +718,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				if err := func() error {
 					oldSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.OldSheetID)
 					newSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.NewSheetID)
-					return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 						IssueUID: issue.UID,
 						Payload: &storepb.IssueCommentPayload{
 							Event: &storepb.IssueCommentPayload_TaskUpdate_{
@@ -730,6 +730,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							},
 						},
 					}, user.ID)
+					return err
 				}(); err != nil {
 					slog.Warn("failed to create issue comments for statement update", "issueUID", issue.UID, log.BBError(err))
 				}
@@ -738,7 +739,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				task := tasksMap[earliestUpdate.TaskID]
 
 				if err := func() error {
-					return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 						IssueUID: issue.UID,
 						Payload: &storepb.IssueCommentPayload{
 							Event: &storepb.IssueCommentPayload_TaskUpdate_{
@@ -750,6 +751,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							},
 						},
 					}, user.ID)
+					return err
 				}(); err != nil {
 					slog.Warn("failed to create issue comments for earliest allowed time update", "issueUID", issue.UID, log.BBError(err))
 				}

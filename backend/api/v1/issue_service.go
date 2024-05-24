@@ -929,14 +929,14 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				},
 			},
 		}
-		if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, user.ID); err != nil {
 			return err
 		}
 		for _, ic := range issueComments {
-			if err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}
@@ -1157,10 +1157,11 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 				},
 			},
 		}
-		return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, user.ID)
+		return err
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
@@ -1244,14 +1245,14 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 				},
 			},
 		}
-		if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, user.ID); err != nil {
 			return err
 		}
 		for _, ic := range issueComments {
-			if err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}
@@ -1475,7 +1476,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		}
 	}
 	for _, create := range issueCommentCreates {
-		if err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {
+		if _, err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {
 			slog.Warn("failed to create issue comment", "issue id", issue.UID, log.BBError(err))
 		}
 	}
@@ -1572,7 +1573,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 			func() {
 				fromStatus := convertToIssueStatus(issue.Status)
-				if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 					IssueUID: issue.UID,
 					Payload: &storepb.IssueCommentPayload{
 						Event: &storepb.IssueCommentPayload_IssueUpdate_{

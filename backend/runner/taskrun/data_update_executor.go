@@ -148,7 +148,7 @@ func (exec *DataUpdateExecutor) backupData(
 			originalLine = &num
 		}
 
-		if err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{

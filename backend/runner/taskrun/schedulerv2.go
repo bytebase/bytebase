@@ -646,10 +646,11 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							},
 						},
 					}
-					return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 						IssueUID: issue.UID,
 						Payload:  p,
 					}, api.SystemBotID)
+					return err
 				}(); err != nil {
 					slog.Warn("failed to create issue comment", log.BBError(err))
 				}
@@ -734,7 +735,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 						fromStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[issue.Status.String()])
 						toStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[updatedIssue.Status.String()])
-						if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+						if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 							IssueUID: issue.UID,
 							Payload: &storepb.IssueCommentPayload{
 								Event: &storepb.IssueCommentPayload_IssueUpdate_{
