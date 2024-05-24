@@ -106,7 +106,19 @@
           </div>
 
           <div class="sm:col-span-3 sm:col-start-1">
-            <template v-if="basicInfo.engine !== Engine.SPANNER">
+            <template v-if="basicInfo.engine === Engine.SPANNER">
+              <SpannerHostInput
+              v-model:host="adminDataSource.host"
+              :allow-edit="allowEdit"
+              />
+            </template>
+            <template v-if="basicInfo.engine === Engine.BIGQUERY">
+              <BigQueryHostInput
+              v-model:host="adminDataSource.host"
+              :allow-edit="allowEdit"
+              />
+            </template>
+            <template v-else>
               <label for="host" class="textlabel block">
                 <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
                   {{ $t("instance.account-locator") }}
@@ -161,16 +173,11 @@
                 {{ $t("instance.sentence.proxy.snowflake") }}
               </div>
             </template>
-            <SpannerHostInput
-              v-else
-              v-model:host="adminDataSource.host"
-              :allow-edit="allowEdit"
-            />
           </div>
 
           <template
             v-if="
-              basicInfo.engine !== Engine.SPANNER &&
+              (basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY) &&
               adminDataSource.authenticationType !==
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
@@ -541,6 +548,7 @@ import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
+import BigQueryHostInput from "./BigQueryHostInput.vue";
 import type { EditDataSource } from "./common";
 import { extractBasicInfo, extractDataSourceEditState } from "./common";
 import {
