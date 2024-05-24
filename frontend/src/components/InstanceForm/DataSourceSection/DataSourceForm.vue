@@ -477,7 +477,7 @@
       </div>
     </div>
   </template>
-  <GCPCredentialInput
+  <GcpCredentialInput
     v-if="basicInfo.engine === Engine.SPANNER || basicInfo.engine === Engine.BIGQUERY"
     v-model:value="dataSource.updatedPassword"
     :write-only="!isCreating"
@@ -703,7 +703,7 @@ import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import { useInstanceSpecs } from "../specs";
-import GCPCredentialInput from "./GCPCredentialInput.vue";
+import GcpCredentialInput from "./GcpCredentialInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
 
