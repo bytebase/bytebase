@@ -8961,6 +8961,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -9682,6 +9683,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9747,6 +9749,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 oldSchema:
@@ -10312,6 +10315,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 engineVersion:
@@ -10376,6 +10380,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 engineVersion:
@@ -11845,6 +11850,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 currentSchema:
@@ -12444,6 +12450,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 comment:
@@ -12578,6 +12585,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 enabled:
@@ -12616,6 +12624,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 category:
@@ -12654,6 +12663,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     format: enum
                 category:
@@ -12967,6 +12977,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     description: The SQL dialect.
                     format: enum
@@ -13217,6 +13228,7 @@ components:
                         - HIVE
                         - ELASTICSEARCH
                         - BIGQUERY
+                        - DYNAMODB
                     type: string
                     description: The database engine of the schema string.
                     format: enum

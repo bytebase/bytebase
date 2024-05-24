@@ -8,6 +8,7 @@
       :head-branch="headBranch"
       :source-branch="sourceBranch"
       :source-database="sourceDatabase"
+      :parent-branch-only="parentBranchOnly"
       @update:source-type="state.sourceType = $event"
       @update:head-branch-name="handleUpdateHeadBranch"
       @update:source-branch-name="state.sourceBranchName = $event || null"
@@ -73,11 +74,16 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { branchServiceClient } from "@/grpcweb";
-import { pushNotification, useBranchStore, useDatabaseV1Store } from "@/store";
+import {
+  pushNotification,
+  useBranchStore,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+} from "@/store";
 import type { ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
-import { defer } from "@/utils";
+import { defer, isOwnerOfProjectV1 } from "@/utils";
 import RebaseBranchSelect from "./RebaseBranchSelect.vue";
 import RebaseBranchValidationStateView from "./RebaseBranchValidationStateView.vue";
 import ResolveConflict from "./ResolveConflict.vue";
@@ -113,6 +119,7 @@ const route = useRoute();
 const $dialog = useDialog();
 const resolveConflictRef = ref<InstanceType<typeof ResolveConflict>>();
 const branchStore = useBranchStore();
+const me = useCurrentUserV1();
 const isLoadingHeadBranch = ref(false);
 const isLoadingSourceBranch = ref(false);
 const isValidating = ref(false);
@@ -166,6 +173,20 @@ const sourceBranchOrDatabase = computed(() => {
     return sourceBranch.value;
   }
   return sourceDatabase.value;
+});
+
+const parentBranchOnly = computed(() => {
+  const head = headBranch.value;
+  if (!head) {
+    return false; // not ready yet
+  }
+  if (!head.parentBranch) {
+    return false; // parent-less (main) branches
+  }
+  if (isOwnerOfProjectV1(props.project.iamPolicy, me.value)) {
+    return false; // project owners are not limited
+  }
+  return true;
 });
 
 const validationState = computedAsync(

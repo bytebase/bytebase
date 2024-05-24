@@ -273,7 +273,8 @@
     "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
-    "connection": "连接"
+    "connection": "连接",
+    "permission-denied": "您没有权限执行此操作"
   },
   "error-page": {
     "go-back-home": "回到主页"

@@ -29,9 +29,21 @@
           <NRadio value="PARENT">
             {{ $t("branch.source.parent-branch") }}
           </NRadio>
-          <NRadio value="BASELINE">
-            {{ $t("branch.source.baseline-version") }}
-          </NRadio>
+          <NTooltip :disabled="allowCreateBranchFromDatabase">
+            <template #trigger>
+              <NRadio
+                :disabled="!allowCreateBranchFromDatabase"
+                value="BASELINE"
+              >
+                {{ $t("branch.source.baseline-version") }}
+              </NRadio>
+            </template>
+            <template #default>
+              <div class="whitespace-nowrap">
+                {{ $t("common.permission-denied") }}
+              </div>
+            </template>
+          </NTooltip>
         </NRadioGroup>
       </div>
       <div v-if="source === 'PARENT'" class="contents">
@@ -100,7 +112,7 @@ import type { ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, isOwnerOfProjectV1 } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import BranchSelector from "./BranchSelector.vue";
 import { validateBranchName } from "./utils";
@@ -121,6 +133,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
+const me = useCurrentUserV1();
 const source = ref<Source>("PARENT");
 const databaseId = ref<string>();
 const parentBranchName = ref<string>();
@@ -129,6 +142,10 @@ const branchId = ref<string>("");
 const isPreparingBranch = ref(false);
 
 const EMPTY_BRANCH = Branch.fromPartial({});
+
+const allowCreateBranchFromDatabase = computed(() => {
+  return isOwnerOfProjectV1(props.project.iamPolicy, me.value);
+});
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
 const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
