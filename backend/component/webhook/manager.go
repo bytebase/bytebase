@@ -205,11 +205,9 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, is
 }
 
 // CreateActivity creates an activity.
+// TODO(p0ny): migrate activity struct.
 func (m *Manager) CreateActivity(ctx context.Context, create *store.ActivityMessage, meta *Metadata) (*store.ActivityMessage, error) {
-	activity, err := m.store.CreateActivityV2(ctx, create)
-	if err != nil {
-		return nil, err
-	}
+	activity := create
 
 	if meta.Issue == nil {
 		return activity, nil
