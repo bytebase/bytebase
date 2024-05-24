@@ -283,14 +283,14 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 				},
 			},
 		}
-		if err := r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		if _, err := r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, api.SystemBotID); err != nil {
 			return err
 		}
 		for _, ic := range issueComments {
-			if err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}
@@ -418,10 +418,11 @@ func (r *Runner) RejectExternalApprovalNode(ctx context.Context, issueUID int) e
 				},
 			},
 		}
-		return r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		_, err := r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, api.SystemBotID)
+		return err
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
