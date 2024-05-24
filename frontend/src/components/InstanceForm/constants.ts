@@ -35,6 +35,8 @@ export const defaultPortForEngine = (engine: Engine) => {
     return "10000";
   } else if (engine == Engine.ELASTICSEARCH) {
     return "9200";
+  } else if (engine == Engine.DYNAMODB) {
+    return "";
   }
   return "3306";
 };
@@ -78,6 +80,7 @@ export const EngineIconPath: Record<string, string> = {
     import.meta.url
   ).href,
   [Engine.BIGQUERY]: new URL("@/assets/bigquery.svg", import.meta.url).href,
+  [Engine.DYNAMODB]: new URL("@/assets/db-dynamodb.svg", import.meta.url).href,
 };
 
 export const MongoDBConnectionStringSchemaList = [
