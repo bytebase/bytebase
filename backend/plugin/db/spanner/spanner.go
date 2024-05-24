@@ -61,17 +61,22 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	d.config = config
 	d.connCtx = config.ConnectionContext
+
+	var o []option.ClientOption
+	if config.AuthenticationType != storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
+		o = append(o, option.WithCredentialsJSON([]byte(config.Password)))
+	}
 	if config.Database != "" {
 		d.databaseName = d.config.Database
 		dsn := getDSN(d.config.Host, d.config.Database)
-		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
+		client, err := spanner.NewClient(ctx, dsn, o...)
 		if err != nil {
 			return nil, err
 		}
 		d.client = client
 	}
 
-	dbClient, err := spannerdb.NewDatabaseAdminClient(ctx, option.WithCredentialsJSON([]byte(config.Password)))
+	dbClient, err := spannerdb.NewDatabaseAdminClient(ctx, o...)
 	if err != nil {
 		return nil, err
 	}
