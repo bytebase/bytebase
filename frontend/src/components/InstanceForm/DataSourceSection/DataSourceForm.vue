@@ -1,6 +1,11 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
-  <template v-if="basicInfo.engine !== Engine.SPANNER">
+  <template
+    v-if="
+      basicInfo.engine !== Engine.SPANNER &&
+      basicInfo.engine !== Engine.DYNAMODB
+    "
+  >
     <div
       v-if="
         basicInfo.engine === Engine.MYSQL ||
@@ -472,7 +477,7 @@
     </div>
   </template>
   <SpannerCredentialInput
-    v-else
+    v-if="basicInfo.engine === Engine.SPANNER"
     v-model:value="dataSource.updatedPassword"
     :write-only="!isCreating"
     class="mt-4 sm:col-span-3 sm:col-start-1"
