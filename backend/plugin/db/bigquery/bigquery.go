@@ -55,7 +55,11 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	d.connCtx = config.ConnectionContext
 	d.databaseName = config.Database
 
-	client, err := bigquery.NewClient(ctx, config.Host, option.WithCredentialsJSON([]byte(config.Password)))
+	var o []option.ClientOption
+	if config.AuthenticationType != storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
+		o = append(o, option.WithCredentialsJSON([]byte(config.Password)))
+	}
+	client, err := bigquery.NewClient(ctx, config.Host, o...)
 	if err != nil {
 		return nil, err
 	}
