@@ -1416,6 +1416,8 @@ const checkDataSource = (dataSources: DataSource[]) => {
     if (
       ds.authenticationType ===
       DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+      &&
+      (basicInfo.value.engine === Engine.MYSQL || basicInfo.value.engine === Engine.POSTGRES)
     ) {
       // CloudSQL instance name should be {project}:{region}:{cloud sql name}
       return /.+:.+:.+/.test(ds.host);
