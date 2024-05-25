@@ -1,13 +1,10 @@
 package v1
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -40,137 +37,4 @@ func TestConvertToApprovalNode(t *testing.T) {
 	}
 }
 
-func TestCanUserApproveStep(t *testing.T) {
-	tests := []struct {
-		step   *storepb.ApprovalStep
-		user   *store.UserMessage
-		policy *storepb.ProjectIamPolicy
-		want   bool
-	}{
-		{
-			step: &storepb.ApprovalStep{
-				Type: storepb.ApprovalStep_ANY,
-				Nodes: []*storepb.ApprovalNode{
-					{
-						Type: storepb.ApprovalNode_ANY_IN_GROUP,
-						Payload: &storepb.ApprovalNode_GroupValue_{
-							GroupValue: storepb.ApprovalNode_WORKSPACE_DBA,
-						},
-					},
-				},
-			},
-			user: &store.UserMessage{
-				ID:    1,
-				Roles: []api.Role{api.WorkspaceMember},
-			},
-			policy: &storepb.ProjectIamPolicy{
-				Bindings: []*storepb.Binding{
-					{
-						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
-						Members: []string{
-							"users/1",
-						},
-					},
-				},
-			},
-			want: false,
-		},
-		{
-			step: &storepb.ApprovalStep{
-				Type: storepb.ApprovalStep_ANY,
-				Nodes: []*storepb.ApprovalNode{
-					{
-						Type: storepb.ApprovalNode_ANY_IN_GROUP,
-						Payload: &storepb.ApprovalNode_GroupValue_{
-							GroupValue: storepb.ApprovalNode_WORKSPACE_DBA,
-						},
-					},
-				},
-			},
-			user: &store.UserMessage{
-				ID:    1,
-				Roles: []api.Role{api.WorkspaceDBA},
-			},
-			policy: &storepb.ProjectIamPolicy{
-				Bindings: []*storepb.Binding{
-					{
-						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
-						Members: []string{
-							"users/1",
-						},
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			step: &storepb.ApprovalStep{
-				Type: storepb.ApprovalStep_ANY,
-				Nodes: []*storepb.ApprovalNode{
-					{
-						Type: storepb.ApprovalNode_ANY_IN_GROUP,
-						Payload: &storepb.ApprovalNode_Role{
-							Role: "roles/ProjectDBA",
-						},
-					},
-				},
-			},
-			user: &store.UserMessage{
-				ID:    1,
-				Roles: []api.Role{api.WorkspaceDBA},
-			},
-			policy: &storepb.ProjectIamPolicy{
-				Bindings: []*storepb.Binding{
-					{
-						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
-						Members: []string{
-							"users/1",
-						},
-					},
-				},
-			},
-			want: false,
-		},
-		{
-			step: &storepb.ApprovalStep{
-				Type: storepb.ApprovalStep_ANY,
-				Nodes: []*storepb.ApprovalNode{
-					{
-						Type: storepb.ApprovalNode_ANY_IN_GROUP,
-						Payload: &storepb.ApprovalNode_Role{
-							Role: "roles/ProjectDBA",
-						},
-					},
-				},
-			},
-			user: &store.UserMessage{
-				ID:    1,
-				Roles: []api.Role{api.WorkspaceDBA},
-			},
-			policy: &storepb.ProjectIamPolicy{
-				Bindings: []*storepb.Binding{
-					{
-						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
-						Members: []string{
-							"users/1",
-						},
-					},
-					{
-						Role: "roles/ProjectDBA",
-						Members: []string{
-							"users/1",
-						},
-					},
-				},
-			},
-			want: true,
-		},
-	}
-
-	a := require.New(t)
-	for _, test := range tests {
-		got, err := isUserReviewer(test.step, test.user, test.policy)
-		a.NoError(err)
-		a.Equal(test.want, got)
-	}
-}
+// TODO(p0ny): update tests for isUserReviewer

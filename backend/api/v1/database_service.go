@@ -331,7 +331,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 	}
 
 	expressionDBsFromAllRoles := make(map[string]bool)
-	bindings := utils.GetUserIAMPolicyBindings(user, policy)
+	bindings := utils.GetUserIAMPolicyBindings(ctx, s, user, policy)
 
 	for _, binding := range bindings {
 		permissions, err := iamManager.GetPermissions(ctx, binding.Role)

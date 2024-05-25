@@ -848,7 +848,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 	if err != nil {
 		return err
 	}
-	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	roles, err := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get user roles")
 	}

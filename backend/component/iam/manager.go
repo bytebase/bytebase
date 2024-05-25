@@ -182,15 +182,15 @@ func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, 
 			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
 		}
 
-		projectRoles := getRolesFromProjectPolicy(user, iamPolicy)
+		projectRoles := getRolesFromProjectPolicy(ctx, m.store, user, iamPolicy)
 		roles = append(roles, projectRoles)
 	}
 	return roles, nil
 }
 
-func getRolesFromProjectPolicy(user *store.UserMessage, policy *storepb.ProjectIamPolicy) []string {
+func getRolesFromProjectPolicy(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.ProjectIamPolicy) []string {
 	var roles []string
-	bindings := utils.GetUserIAMPolicyBindings(user, policy)
+	bindings := utils.GetUserIAMPolicyBindings(ctx, stores, user, policy)
 
 	for _, binding := range bindings {
 		roles = append(roles, binding.Role)
