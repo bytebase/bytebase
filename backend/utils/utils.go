@@ -771,8 +771,16 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 
 	var bindings []*storepb.Binding
 	for _, binding := range policy.Bindings {
-		hasUser := false
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), currentTime)
+		if err != nil {
+			slog.Error("failed to eval binding condition", slog.String("expression", binding.Condition.GetExpression()), log.BBError(err))
+			continue
+		}
+		if !ok {
+			continue
+		}
 
+		hasUser := false
 		for _, member := range binding.Members {
 			if member == api.AllUsers || userIDFullName == member {
 				hasUser = true
@@ -796,20 +804,9 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 				}
 			}
 		}
-		if !hasUser {
-			continue
+		if hasUser {
+			bindings = append(bindings, binding)
 		}
-
-		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), currentTime)
-		if err != nil {
-			slog.Error("failed to eval binding condition", slog.String("expression", binding.Condition.GetExpression()), log.BBError(err))
-			continue
-		}
-		if !ok {
-			continue
-		}
-
-		bindings = append(bindings, binding)
 	}
 	return bindings
 }
