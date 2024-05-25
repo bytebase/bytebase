@@ -219,7 +219,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	if err := func() error {
 		for _, ic := range issueComments {
-			if err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}

@@ -144,10 +144,11 @@ func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID
 		},
 	}
 
-	return s.CreateIssueComment(ctx, create, creatorUID)
+	_, err := s.CreateIssueComment(ctx, create, creatorUID)
+	return err
 }
 
-func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) error {
+func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) (*IssueCommentMessage, error) {
 	query := `
 		INSERT INTO issue_comment (
 			creator_id,
@@ -159,19 +160,37 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 			$2,
 			$3,
 			$4
-		)
+		) RETURNING id, created_ts, updated_ts
 	`
 
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal payload")
+		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	if _, err := s.db.db.ExecContext(ctx, query, creatorUID, creatorUID, create.IssueUID, payload); err != nil {
-		return errors.Wrapf(err, "failed to insert")
+	var id int
+	var createdTs, updatedTs int64
+	if err := s.db.db.QueryRowContext(ctx, query, creatorUID, creatorUID, create.IssueUID, payload).Scan(&id, &createdTs, &updatedTs); err != nil {
+		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
-	return nil
+	ic := &IssueCommentMessage{
+		UID:        id,
+		CreatedTs:  createdTs,
+		UpdatedTs:  updatedTs,
+		IssueUID:   create.IssueUID,
+		Payload:    create.Payload,
+		creatorUID: creatorUID,
+		updaterUID: creatorUID,
+	}
+
+	creator, err := s.GetUserByID(ctx, ic.creatorUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get creator")
+	}
+	ic.Creator = creator
+
+	return ic, nil
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {

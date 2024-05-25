@@ -1,6 +1,12 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
-  <template v-if="basicInfo.engine !== Engine.SPANNER">
+  <template
+    v-if="
+      basicInfo.engine !== Engine.SPANNER &&
+      basicInfo.engine !== Engine.BIGQUERY &&
+      basicInfo.engine !== Engine.DYNAMODB
+    "
+  >
     <div
       v-if="
         basicInfo.engine === Engine.MYSQL ||
@@ -471,12 +477,35 @@
       </div>
     </div>
   </template>
-  <SpannerCredentialInput
-    v-else
-    v-model:value="dataSource.updatedPassword"
-    :write-only="!isCreating"
-    class="mt-4 sm:col-span-3 sm:col-start-1"
-  />
+  <template
+  v-if="basicInfo.engine === Engine.SPANNER || basicInfo.engine === Engine.BIGQUERY"
+  >
+    <div
+      class="mt-2 sm:col-span-3 sm:col-start-1"
+    >
+      <NRadioGroup
+        v-model:value="dataSource.authenticationType"
+        class="textlabel"
+        :disabled="!allowEdit"
+      >
+        <NRadio :value="DataSource_AuthenticationType.PASSWORD">
+          {{ $t("common.credentials") }}
+        </NRadio>
+        <NRadio :value="DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM">
+          {{ $t("instance.password-type.google-iam") }}
+        </NRadio>
+      </NRadioGroup>
+    </div>
+
+    <GcpCredentialInput
+      v-if="
+        dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+      "
+      v-model:value="dataSource.updatedPassword"
+      :write-only="!isCreating"
+      class="mt-4 sm:col-span-3 sm:col-start-1"
+    />
+  </template>
 
   <template v-if="basicInfo.engine === Engine.ORACLE">
     <OracleSIDAndServiceNameInput
@@ -697,7 +726,7 @@ import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import { useInstanceSpecs } from "../specs";
-import SpannerCredentialInput from "./SpannerCredentialInput.vue";
+import GcpCredentialInput from "./GcpCredentialInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
 

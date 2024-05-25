@@ -72,7 +72,9 @@ export const defaultCharsetOfEngineV1 = (engine: Engine): string => {
     case Engine.HIVE:
       return "default";
     case Engine.BIGQUERY:
-      return ""
+      return "";
+    case Engine.DYNAMODB:
+      return "";
   }
   return "";
 };
@@ -110,7 +112,9 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
     case Engine.HIVE:
       return "default";
     case Engine.BIGQUERY:
-      return ""
-    }
+      return "";
+    case Engine.DYNAMODB:
+      return "";
+  }
   return "";
 };

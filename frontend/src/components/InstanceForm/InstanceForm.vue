@@ -106,7 +106,19 @@
           </div>
 
           <div class="sm:col-span-3 sm:col-start-1">
-            <template v-if="basicInfo.engine !== Engine.SPANNER">
+            <template v-if="basicInfo.engine === Engine.SPANNER">
+              <SpannerHostInput
+              v-model:host="adminDataSource.host"
+              :allow-edit="allowEdit"
+              />
+            </template>
+            <template v-if="basicInfo.engine === Engine.BIGQUERY">
+              <BigQueryHostInput
+              v-model:host="adminDataSource.host"
+              :allow-edit="allowEdit"
+              />
+            </template>
+            <template v-else>
               <label for="host" class="textlabel block">
                 <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
                   {{ $t("instance.account-locator") }}
@@ -136,7 +148,11 @@
                 </div>
                 <template v-else>
                   {{ $t("instance.host-or-socket") }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <span
+                    v-if="basicInfo.engine !== Engine.DYNAMODB"
+                    class="text-red-600 mr-2"
+                    >*</span
+                  >
                 </template>
               </label>
               <NInput
@@ -157,16 +173,11 @@
                 {{ $t("instance.sentence.proxy.snowflake") }}
               </div>
             </template>
-            <SpannerHostInput
-              v-else
-              v-model:host="adminDataSource.host"
-              :allow-edit="allowEdit"
-            />
           </div>
 
           <template
             v-if="
-              (basicInfo.engine !== Engine.SPANNER) &&
+              (basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY) &&
               adminDataSource.authenticationType !==
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
@@ -376,11 +387,15 @@
         </div>
 
         <!-- Connection Info -->
-        <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
-          {{ $t("instance.connection-info") }}
-        </p>
+        <template v-if="basicInfo.engine !== Engine.DYNAMODB">
+          <p
+            class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900"
+          >
+            {{ $t("instance.connection-info") }}
+          </p>
 
-        <DataSourceSection />
+          <DataSourceSection />
+        </template>
 
         <BBAttention
           v-if="outboundIpList && actuatorStore.isSaaSMode"
@@ -533,6 +548,7 @@ import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
+import BigQueryHostInput from "./BigQueryHostInput.vue";
 import type { EditDataSource } from "./common";
 import { extractBasicInfo, extractDataSourceEditState } from "./common";
 import {
@@ -648,6 +664,9 @@ const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 onMounted(async () => {
   if (isCreating.value) {
     adminDataSource.value.host = isDev() ? "127.0.0.1" : "host.docker.internal";
+    if (basicInfo.value.engine === Engine.DYNAMODB) {
+      adminDataSource.value.host = "";
+    }
     adminDataSource.value.srv = false;
     adminDataSource.value.authenticationDatabase = "";
   }
@@ -702,11 +721,17 @@ const allowCreate = computed(() => {
     );
   }
 
+  // Check Host
+  if (basicInfo.value.engine !== Engine.DYNAMODB) {
+    if (adminDataSource.value.host === "") {
+      return false;
+    }
+  }
+
   return (
     basicInfo.value.title.trim() &&
     resourceIdField.value?.resourceId &&
     resourceIdField.value?.isValidated &&
-    adminDataSource.value.host &&
     checkDataSource([adminDataSource.value])
   );
 });
@@ -764,7 +789,12 @@ const handleSelectEnvironmentUID = (uid: string | undefined) => {
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: Engine) => {
   context.resetDataSource();
-  if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER || engine === Engine.BIGQUERY) {
+  if (
+    engine === Engine.SNOWFLAKE ||
+    engine === Engine.SPANNER ||
+    engine === Engine.BIGQUERY ||
+    engine === Engine.DYNAMODB
+  ) {
     if (
       adminDataSource.value.host === "127.0.0.1" ||
       adminDataSource.value.host === "host.docker.internal"
@@ -1386,6 +1416,8 @@ const checkDataSource = (dataSources: DataSource[]) => {
     if (
       ds.authenticationType ===
       DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+      &&
+      (basicInfo.value.engine === Engine.MYSQL || basicInfo.value.engine === Engine.POSTGRES)
     ) {
       // CloudSQL instance name should be {project}:{region}:{cloud sql name}
       return /.+:.+:.+/.test(ds.host);
