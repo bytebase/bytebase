@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func TestCanUserApproveStep(t *testing.T) {
 	tests := []struct {
 		step   *storepb.ApprovalStep
 		user   *store.UserMessage
-		policy *store.IAMPolicyMessage
+		policy *storepb.ProjectIamPolicy
 		want   bool
 	}{
 		{
@@ -62,15 +63,12 @@ func TestCanUserApproveStep(t *testing.T) {
 				ID:    1,
 				Roles: []api.Role{api.WorkspaceMember},
 			},
-			policy: &store.IAMPolicyMessage{
-				Bindings: []*store.PolicyBinding{
+			policy: &storepb.ProjectIamPolicy{
+				Bindings: []*storepb.Binding{
 					{
-						Role: api.WorkspaceMember,
-						Members: []*store.UserMessage{
-							{
-								ID:   1,
-								Role: api.WorkspaceMember,
-							},
+						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
+						Members: []string{
+							"users/1",
 						},
 					},
 				},
@@ -93,15 +91,12 @@ func TestCanUserApproveStep(t *testing.T) {
 				ID:    1,
 				Roles: []api.Role{api.WorkspaceDBA},
 			},
-			policy: &store.IAMPolicyMessage{
-				Bindings: []*store.PolicyBinding{
+			policy: &storepb.ProjectIamPolicy{
+				Bindings: []*storepb.Binding{
 					{
-						Role: api.WorkspaceMember,
-						Members: []*store.UserMessage{
-							{
-								ID:   1,
-								Role: api.WorkspaceMember,
-							},
+						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
+						Members: []string{
+							"users/1",
 						},
 					},
 				},
@@ -124,15 +119,12 @@ func TestCanUserApproveStep(t *testing.T) {
 				ID:    1,
 				Roles: []api.Role{api.WorkspaceDBA},
 			},
-			policy: &store.IAMPolicyMessage{
-				Bindings: []*store.PolicyBinding{
+			policy: &storepb.ProjectIamPolicy{
+				Bindings: []*storepb.Binding{
 					{
-						Role: api.WorkspaceMember,
-						Members: []*store.UserMessage{
-							{
-								ID:   1,
-								Role: api.WorkspaceMember,
-							},
+						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
+						Members: []string{
+							"users/1",
 						},
 					},
 				},
@@ -155,24 +147,18 @@ func TestCanUserApproveStep(t *testing.T) {
 				ID:    1,
 				Roles: []api.Role{api.WorkspaceDBA},
 			},
-			policy: &store.IAMPolicyMessage{
-				Bindings: []*store.PolicyBinding{
+			policy: &storepb.ProjectIamPolicy{
+				Bindings: []*storepb.Binding{
 					{
-						Role: api.WorkspaceMember,
-						Members: []*store.UserMessage{
-							{
-								ID:   1,
-								Role: api.WorkspaceMember,
-							},
+						Role: fmt.Sprintf("roles/%s", api.WorkspaceMember),
+						Members: []string{
+							"users/1",
 						},
 					},
 					{
-						Role: "ProjectDBA",
-						Members: []*store.UserMessage{
-							{
-								ID:   1,
-								Role: api.WorkspaceMember,
-							},
+						Role: "roles/ProjectDBA",
+						Members: []string{
+							"users/1",
 						},
 					},
 				},

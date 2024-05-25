@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -463,7 +462,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		return true, nil
 	}
 
-	projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
+	projectRoles, err := findProjectRoles(ctx, s.store, worksheet.ProjectUID, user)
 	if err != nil {
 		return false, err
 	}
@@ -507,7 +506,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
 		// For project level visibility, users can read the worksheet as long as they're the project member.
-		projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
+		projectRoles, err := findProjectRoles(ctx, s.store, worksheet.ProjectUID, user)
 		if err != nil {
 			return false, err
 		}
@@ -515,14 +514,6 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	}
 
 	return false, nil
-}
-
-func (s *WorksheetService) findProjectRoles(ctx context.Context, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
-	if err != nil {
-		return nil, err
-	}
-	return utils.GetUserRolesMap(user, policy)
 }
 
 func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {

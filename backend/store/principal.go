@@ -405,10 +405,6 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 		return nil, err
 	}
 
-	if patch.Email != nil || patch.Phone != nil {
-		s.projectIDPolicyCache.Purge()
-		s.projectPolicyCache.Purge()
-	}
 	s.userEmailCache.Remove(currentUser.Email)
 	s.userIDCache.Add(currentUser.ID, user)
 	s.userEmailCache.Add(user.Email, user)

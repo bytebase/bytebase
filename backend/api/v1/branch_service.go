@@ -844,7 +844,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		return nil
 	}
 
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
 		return err
 	}
