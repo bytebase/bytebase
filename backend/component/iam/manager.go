@@ -3,18 +3,17 @@ package iam
 import (
 	"context"
 	_ "embed"
-	"log/slog"
 	"slices"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed acl.yaml
@@ -163,41 +162,38 @@ func (*Manager) getWorkspaceRoles(user *store.UserMessage) []string {
 func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
 	var roles [][]string
 	for _, projectID := range projectIDs {
-		find := &store.GetProjectPolicyMessage{}
 		projectUID, isNumber := isNumber(projectID)
-		if isNumber {
-			find.UID = &projectUID
-		} else {
-			projectID := projectID
-			find.ProjectID = &projectID
+
+		if !isNumber {
+			project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
+				ResourceID: &projectID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			if project == nil {
+				return nil, errors.Errorf("cannot found project %s", projectID)
+			}
+			projectUID = project.UID
 		}
-		iamPolicy, err := m.store.GetProjectPolicy(ctx, find)
+
+		iamPolicy, err := m.store.GetProjectIamPolicy(ctx, projectUID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
 		}
-		projectRoles := getRolesFromProjectPolicy(user, iamPolicy)
+
+		projectRoles := getRolesFromProjectPolicy(ctx, m.store, user, iamPolicy)
 		roles = append(roles, projectRoles)
 	}
 	return roles, nil
 }
 
-func getRolesFromProjectPolicy(user *store.UserMessage, policy *store.IAMPolicyMessage) []string {
+func getRolesFromProjectPolicy(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.ProjectIamPolicy) []string {
 	var roles []string
-	for _, binding := range policy.Bindings {
-		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
-		if err != nil {
-			slog.Error("failed to eval member condition", "expression", binding.Condition.GetExpression(), log.BBError(err))
-			continue
-		}
-		if !ok {
-			continue
-		}
-		for _, member := range binding.Members {
-			if member.ID == user.ID || member.Email == api.AllUsers {
-				roles = append(roles, common.FormatRole(binding.Role.String()))
-				break
-			}
-		}
+	bindings := utils.GetUserIAMPolicyBindings(ctx, stores, user, policy)
+
+	for _, binding := range bindings {
+		roles = append(roles, binding.Role)
 	}
 	return roles
 }

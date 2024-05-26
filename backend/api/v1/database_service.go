@@ -37,6 +37,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -314,38 +315,30 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 }
 
 func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
-	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-		ProjectID: &projectID,
+	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.Errorf("cannot found project %s", projectID)
+	}
+
+	policy, err := s.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
 	}
 
 	expressionDBsFromAllRoles := make(map[string]bool)
-	for _, binding := range policy.Bindings {
-		hasUser := false
-		for _, member := range binding.Members {
-			if member.ID == user.ID || member.Email == api.AllUsers {
-				hasUser = true
-				break
-			}
-		}
-		if !hasUser {
-			continue
-		}
+	bindings := utils.GetUserIAMPolicyBindings(ctx, s, user, policy)
 
-		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
+	for _, binding := range bindings {
+		permissions, err := iamManager.GetPermissions(ctx, binding.Role)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
 		}
 		if !slices.Contains(permissions, needPermission) {
-			continue
-		}
-		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to eval binding condition")
-		}
-		if !ok {
 			continue
 		}
 

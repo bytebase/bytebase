@@ -15,6 +15,29 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*storepb.ProjectIamPolicy, error) {
+	resourceType := api.PolicyResourceTypeProject
+	pType := api.PolicyTypeProjectIAM
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &projectUID,
+		Type:         &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if policy == nil {
+		return &storepb.ProjectIamPolicy{}, nil
+	}
+
+	p := &storepb.ProjectIamPolicy{}
+	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal iam policy")
+	}
+
+	return p, nil
+}
+
 func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*storepb.RolloutPolicy, error) {
 	resourceType := api.PolicyResourceTypeEnvironment
 	pType := api.PolicyTypeRollout

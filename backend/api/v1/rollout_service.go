@@ -946,12 +946,12 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 		return false, errors.Wrapf(err, "failed to get rollout policy for stageEnvironmentID %d", stageEnvironmentID)
 	}
 
-	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
+	policy, err := s.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
 	}
 
-	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	roles, err := utils.GetUserFormattedRolesMap(ctx, s, user, policy)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get roles")
 	}

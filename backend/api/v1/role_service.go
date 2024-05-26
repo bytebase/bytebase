@@ -2,10 +2,10 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
@@ -157,17 +157,47 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	if role == nil {
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
-	has, project, err := s.store.GetProjectUsingRole(ctx, api.Role(roleID))
+
+	has, projectUID, err := s.getProjectUsingRole(ctx, request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
 	}
 	if has {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", common.FormatRole(roleID), fmt.Sprintf("%s%s", common.ProjectNamePrefix, project))
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %v", common.FormatRole(roleID), projectUID)
 	}
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
 	}
 	return &emptypb.Empty{}, nil
+}
+
+// TODO(p0ny): consider using sql for better performance?
+func (s *RoleService) getProjectUsingRole(ctx context.Context, role string) (bool, int, error) {
+	resourceType := api.PolicyResourceTypeProject
+	policyType := api.PolicyTypeProjectIAM
+
+	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &resourceType,
+		Type:         &policyType,
+	})
+	if err != nil {
+		return false, 0, err
+	}
+
+	for _, policy := range policies {
+		iamPolicy := &storepb.ProjectIamPolicy{}
+		if err := protojson.Unmarshal([]byte(policy.Payload), iamPolicy); err != nil {
+			return false, 0, errors.Wrapf(err, "failed to unmarshal iam policy")
+		}
+
+		for _, binding := range iamPolicy.Bindings {
+			if binding.Role == role {
+				return true, policy.ResourceUID, nil
+			}
+		}
+	}
+
+	return false, 0, nil
 }
 
 func convertToRoles(ctx context.Context, iamManager *iam.Manager, roleMessages []*store.RoleMessage) ([]*v1pb.Role, error) {
