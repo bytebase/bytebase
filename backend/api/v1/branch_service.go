@@ -844,11 +844,11 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		return nil
 	}
 
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
 		return err
 	}
-	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	roles, err := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get user roles")
 	}

@@ -36,6 +36,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -903,7 +904,7 @@ func (s *SQLService) accessCheck(
 				return status.Errorf(codes.Internal, "project not found for database: %s", column.Database)
 			}
 			// Allow query databases across different projects.
-			projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 			if err != nil {
 				return status.Errorf(codes.Internal, err.Error())
 			}
@@ -1018,7 +1019,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, projectPolicy *storepb.ProjectIamPolicy, attributes map[string]any, isExport bool) (bool, error) {
 	wantPermission := iam.PermissionDatabasesQuery
 	if isExport {
 		wantPermission = iam.PermissionDatabasesExport
@@ -1034,25 +1035,16 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		}
 	}
 
-	for _, binding := range projectPolicy.Bindings {
-		role := common.FormatRole(binding.Role.String())
-		permissions, err := s.iamManager.GetPermissions(ctx, role)
+	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, projectPolicy)
+	for _, binding := range bindings {
+		permissions, err := s.iamManager.GetPermissions(ctx, binding.Role)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
 		if !slices.Contains(permissions, wantPermission) {
 			continue
 		}
-		hasUser := false
-		for _, member := range binding.Members {
-			if member.ID == user.ID || member.Email == api.AllUsers {
-				hasUser = true
-				break
-			}
-		}
-		if !hasUser {
-			continue
-		}
+
 		ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
 		if err != nil {
 			slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
