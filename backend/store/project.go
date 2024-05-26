@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -180,17 +181,30 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, err
 	}
 
-	policy := &IAMPolicyMessage{
-		Bindings: []*PolicyBinding{
+	policy := &storepb.ProjectIamPolicy{
+		Bindings: []*storepb.Binding{
 			{
-				Role: api.ProjectOwner,
-				Members: []*UserMessage{
-					user,
+				Role: common.FormatRole(api.ProjectOwner.String()),
+				Members: []string{
+					common.FormatUserUID(user.ID),
 				},
+				Condition: &expr.Expr{},
 			},
 		},
 	}
-	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, creatorID, project.UID); err != nil {
+	policyPayload, err := protojson.Marshal(policy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
+		ResourceUID:       project.UID,
+		ResourceType:      api.PolicyResourceTypeProject,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeProjectIAM,
+		InheritFromParent: false,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, creatorID); err != nil {
 		return nil, err
 	}
 

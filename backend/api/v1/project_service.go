@@ -12,8 +12,10 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -297,20 +299,22 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
-	iamPolicyMessage, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-		ProjectID: &projectID,
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "cannot found project %s", projectID)
+	}
 
-	iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return iamPolicy, nil
+	return s.convertToV1IamPolicy(ctx, policy)
 }
 
 // BatchGetIamPolicy returns the IAM policy for projects in batch.
@@ -322,15 +326,23 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 
-		iamPolicyMessage, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-			ProjectID: &projectID,
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectID,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+		if project == nil {
+			continue
+		}
+		policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		iamPolicy, err := s.convertToV1IamPolicy(ctx, policy)
+		if err != nil {
+			return nil, err
 		}
 		resp.PolicyResults = append(resp.PolicyResults, &v1pb.BatchGetIamPolicyResponse_PolicyResult{
 			Project: name,
@@ -374,22 +386,32 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
 	}
 
-	policy, err := s.convertToIAMPolicyMessage(ctx, request.Policy)
+	policy, err := s.convertToStoreIamPolicy(ctx, request.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	iamPolicyMessage, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
+	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
-	iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
-	if err != nil {
+	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       project.UID,
+		ResourceType:      api.PolicyResourceTypeProject,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeProjectIAM,
+		InheritFromParent: false,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, creatorUID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return iamPolicy, nil
+	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return s.convertToV1IamPolicy(ctx, iamPolicyMessage)
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
@@ -1684,56 +1706,71 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, error) {
+func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *storepb.ProjectIamPolicy) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
-			if member.Email == api.AllUsers {
-				members = append(members, api.AllUsers)
+			if strings.HasPrefix(member, common.UserNamePrefix) {
+				userUID, err := common.GetUserID(member)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to parse user id from member %s with error: %v", member, err)
+				}
+				user, err := s.store.GetUserByID(ctx, userUID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get user %s with error: %v", member, err)
+				}
+				if user == nil {
+					continue
+				}
+				members = append(members, fmt.Sprintf("user:%s", user.Email))
+			} else if strings.HasPrefix(member, common.UserGroupPrefix) {
+				email, err := common.GetUserGroupEmail(member)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to parse group email from member %s with error: %v", member, err)
+				}
+				members = append(members, fmt.Sprintf("group:%s", email))
 			} else {
-				members = append(members, fmt.Sprintf("user:%s", member.Email))
+				members = append(members, member)
 			}
 		}
 		v1pbBinding := &v1pb.Binding{
-			Role:      common.FormatRole(binding.Role.String()),
+			Role:      binding.Role,
 			Members:   members,
 			Condition: binding.Condition,
 		}
-		if binding.Condition.Expression != "" {
+		if v1pbBinding.Condition == nil {
+			v1pbBinding.Condition = &expr.Expr{}
+		}
+		if v1pbBinding.Condition.Expression != "" {
 			e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to create cel environment")
+				return nil, status.Errorf(codes.Internal, "failed to create cel environment with error: %v", err)
 			}
-			ast, issues := e.Parse(binding.Condition.Expression)
+			ast, issues := e.Parse(v1pbBinding.Condition.Expression)
 			if issues != nil && issues.Err() != nil {
-				return nil, errors.Wrap(issues.Err(), "failed to parse expression")
+				return nil, status.Errorf(codes.Internal, "failed to parse expression with error: %v", issues.Err())
 			}
 			expr, err := cel.AstToParsedExpr(ast)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to convert ast to parsed expression")
+				return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression with error: %v", err)
 			}
 			v1pbBinding.ParsedExpr = expr
 		}
 		bindings = append(bindings, v1pbBinding)
 	}
+
 	return &v1pb.IamPolicy{
 		Bindings: bindings,
 	}, nil
 }
 
-// nolint
-// convertToIAMPolicyMessage will convert the IAM policy to IAM policy message.
-func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*store.IAMPolicyMessage, error) {
-	var bindings []*store.PolicyBinding
-	for _, binding := range iamPolicy.Bindings {
-		var users []*store.UserMessage
-		role, err := convertProjectRole(binding.Role)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
+func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*storepb.ProjectIamPolicy, error) {
+	var bindings []*storepb.Binding
 
+	for _, binding := range iamPolicy.Bindings {
+		var members []string
 		for _, member := range binding.Members {
 			if strings.HasPrefix(member, "user:") || member == api.AllUsers {
 				email := member
@@ -1747,29 +1784,26 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 				if user == nil {
 					return nil, status.Errorf(codes.NotFound, "user %q not found", member)
 				}
-				users = append(users, user)
+				members = append(members, common.FormatUserUID(user.ID))
 			} else if strings.HasPrefix(member, "group:") {
-				// TODO: implement
+				members = append(members, member)
 			}
 		}
 
-		bindings = append(bindings, &store.PolicyBinding{
-			Role:      role,
-			Members:   users,
+		storeBinding := &storepb.Binding{
+			Role:      binding.Role,
+			Members:   members,
 			Condition: binding.Condition,
-		})
+		}
+		if storeBinding.Condition == nil {
+			storeBinding.Condition = &expr.Expr{}
+		}
+		bindings = append(bindings, storeBinding)
 	}
-	return &store.IAMPolicyMessage{
+
+	return &storepb.ProjectIamPolicy{
 		Bindings: bindings,
 	}, nil
-}
-
-func convertProjectRole(role string) (api.Role, error) {
-	roleID, err := common.GetRoleID(role)
-	if err != nil {
-		return api.Role(""), errors.Wrapf(err, "invalid project role %q", role)
-	}
-	return api.Role(roleID), nil
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
@@ -2055,7 +2089,8 @@ func validateMember(member string) error {
 	}
 
 	userIdentifierMap := map[string]bool{
-		"user:": true,
+		"user:":  true,
+		"group:": true,
 	}
 	for prefix := range userIdentifierMap {
 		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {

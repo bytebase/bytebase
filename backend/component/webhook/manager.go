@@ -526,7 +526,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			}
 			for _, projectRole := range payload.RolloutPolicy.GetProjectRoles() {
 				role := api.Role(strings.TrimPrefix(projectRole, "roles/"))
-				usersGetters = append(usersGetters, getUsersFromProjectRole(m.store, role, meta.Issue.Project.ResourceID))
+				usersGetters = append(usersGetters, getUsersFromProjectRole(m.store, role, meta.Issue.Project.UID))
 			}
 			for _, issueRole := range payload.RolloutPolicy.GetIssueRoles() {
 				switch issueRole {
@@ -600,15 +600,15 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			case storepb.ApprovalNode_WORKSPACE_DBA:
 				usersGetter = getUsersFromWorkspaceRole(m.store, api.WorkspaceDBA)
 			case storepb.ApprovalNode_PROJECT_OWNER:
-				usersGetter = getUsersFromProjectRole(m.store, api.ProjectOwner, meta.Issue.Project.ResourceID)
+				usersGetter = getUsersFromProjectRole(m.store, api.ProjectOwner, meta.Issue.Project.UID)
 			case storepb.ApprovalNode_PROJECT_MEMBER:
-				usersGetter = getUsersFromProjectRole(m.store, api.ProjectDeveloper, meta.Issue.Project.ResourceID)
+				usersGetter = getUsersFromProjectRole(m.store, api.ProjectDeveloper, meta.Issue.Project.UID)
 			default:
 				return nil, errors.Errorf("invalid group value")
 			}
 		case *storepb.ApprovalNode_Role:
 			role := api.Role(strings.TrimPrefix(val.Role, "roles/"))
-			usersGetter = getUsersFromProjectRole(m.store, role, meta.Issue.Project.ResourceID)
+			usersGetter = getUsersFromProjectRole(m.store, role, meta.Issue.Project.UID)
 		case *storepb.ApprovalNode_ExternalNodeId:
 			usersGetter = func(_ context.Context) ([]*store.UserMessage, error) {
 				return nil, nil
@@ -674,22 +674,71 @@ func getUsersFromWorkspaceRole(s *store.Store, role api.Role) func(context.Conte
 }
 
 // TODO(p0ny): renovate this function to respect allUsers and CEL.
-func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) func(context.Context) ([]*store.UserMessage, error) {
+func getUsersFromProjectRole(s *store.Store, role api.Role, projectUID int) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
-		projectIAM, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-			ProjectID: &projectID,
-		})
+		iamPolicy, err := s.GetProjectIamPolicy(ctx, projectUID)
 		if err != nil {
 			return nil, err
 		}
-		var users []*store.UserMessage
-		for _, binding := range projectIAM.Bindings {
-			if binding.Role == role {
-				users = append(users, binding.Members...)
+
+		return GetUsersByRoleInIAMPolicy(ctx, s, role, iamPolicy), nil
+	}
+}
+
+// GetUsersByRoleInIAMPolicy gets users in the iam policy.
+// TODO(p0ny): renovate this function to respect allUsers and CEL.
+func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role api.Role, policy *storepb.ProjectIamPolicy) []*store.UserMessage {
+	roleFullName := common.FormatRole(role.String())
+	var users []*store.UserMessage
+
+	for _, binding := range policy.Bindings {
+		if binding.Role != roleFullName {
+			continue
+		}
+
+		for _, member := range binding.Members {
+			// TODO(p0ny): support all user
+			if strings.HasPrefix(member, common.UserNamePrefix) {
+				user := getUserByMember(ctx, stores, member)
+				if user != nil {
+					users = append(users, user)
+				}
+			} else if strings.HasPrefix(member, common.UserGroupPrefix) {
+				groupEmail, err := common.GetUserGroupEmail(member)
+				if err != nil {
+					slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
+					continue
+				}
+				group, err := stores.GetUserGroup(ctx, groupEmail)
+				if err != nil {
+					slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
+					continue
+				}
+				for _, member := range group.Payload.Members {
+					user := getUserByMember(ctx, stores, member.Member)
+					if user != nil {
+						users = append(users, user)
+					}
+				}
 			}
 		}
-		return users, nil
 	}
+
+	return users
+}
+
+func getUserByMember(ctx context.Context, stores *store.Store, member string) *store.UserMessage {
+	userUID, err := common.GetUserID(member)
+	if err != nil {
+		slog.Error("failed to parse user id", slog.String("user", member), log.BBError(err))
+		return nil
+	}
+	user, err := stores.GetUserByID(ctx, userUID)
+	if err != nil {
+		slog.Error("failed to get user", slog.String("user", member), log.BBError(err))
+		return nil
+	}
+	return user
 }
 
 func getUsersFromUsers(users ...*store.UserMessage) func(context.Context) ([]*store.UserMessage, error) {

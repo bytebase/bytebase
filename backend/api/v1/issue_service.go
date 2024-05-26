@@ -874,12 +874,12 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
 	}
 
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
+	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}
 
-	canApprove, err := isUserReviewer(step, user, policy)
+	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if principal can approve step, error: %v", err)
 	}
@@ -1122,12 +1122,12 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
 	}
 
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
+	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}
 
-	canApprove, err := isUserReviewer(step, user, policy)
+	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if principal can reject step, error: %v", err)
 	}
@@ -1835,7 +1835,7 @@ func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) b
 	return issueCreator.ID == user.ID
 }
 
-func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
+func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.ApprovalStep, user *store.UserMessage, policy *storepb.ProjectIamPolicy) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
@@ -1847,7 +1847,7 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
 	}
 
-	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	roles, err := utils.GetUserFormattedRolesMap(ctx, stores, user, policy)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get user roles")
 	}

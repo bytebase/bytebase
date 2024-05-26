@@ -131,6 +131,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		where = append(where, fmt.Sprintf("(%s)", strings.Join(visibilitiesWhere, " OR ")))
 	}
 	if v := find.PrincipalID; v != nil {
+		// TODO(p0ny): HELP! we need to deprecate the project_member and check the iam policy instead.
 		where, args = append(where, fmt.Sprintf("worksheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.OrganizerPrincipalIDStarred; v != nil {

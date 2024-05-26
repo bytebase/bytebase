@@ -17,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/store"
@@ -202,22 +203,19 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			continue
 		}
 
-		projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 		if err != nil {
 			slog.Error("Failed to get project policy", log.BBError(err))
 			continue
 		}
 
 		// TODO(p0ny): renovate this function to respect allUsers and CEL.
-		for _, binding := range projectPolicy.Bindings {
-			if binding.Role == api.ProjectOwner {
-				for _, member := range binding.Members {
-					apiValue.SMTPTo = member.Email
-					subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
-					if err := send(apiValue, subject, body); err != nil {
-						slog.Error("Failed to send need config slow query policy email", slog.String("user", member.Name), slog.String("email", member.Email), log.BBError(err))
-					}
-				}
+		users := webhook.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, projectPolicy)
+		for _, user := range users {
+			apiValue.SMTPTo = user.Email
+			subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
+			if err := send(apiValue, subject, body); err != nil {
+				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 			}
 		}
 	}

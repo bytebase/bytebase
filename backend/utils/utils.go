@@ -22,8 +22,10 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	textunicode "golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -542,10 +544,11 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
 func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
-	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+	policy, err := stores.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get project policy for project %q", issue.Project.UID)
 	}
+
 	var newConditionExpr string
 	if grantRequest.Condition != nil {
 		newConditionExpr = grantRequest.Condition.Expression
@@ -564,7 +567,8 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		return status.Errorf(codes.Internal, "user %v not found", userID)
 	}
 	for _, binding := range policy.Bindings {
-		if binding.Role != api.Role(grantRequest.Role) {
+		// TODO(p0ny): I'm not sure if the role is in the roles/{xx} format.
+		if binding.Role != grantRequest.Role {
 			continue
 		}
 		var oldConditionExpr string
@@ -575,23 +579,39 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 			continue
 		}
 		// Append
-		binding.Members = append(binding.Members, newUser)
+		binding.Members = append(binding.Members, common.FormatUserUID(newUser.ID))
 		updated = true
 		break
 	}
-	roleID := api.Role(strings.TrimPrefix(grantRequest.Role, "roles/"))
 	if !updated {
 		condition := grantRequest.Condition
+		if condition == nil {
+			condition = &expr.Expr{}
+		}
 		condition.Description = fmt.Sprintf("#%d", issue.UID)
-		policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
-			Role:      roleID,
-			Members:   []*store.UserMessage{newUser},
+		policy.Bindings = append(policy.Bindings, &storepb.Binding{
+			Role:      grantRequest.Role,
+			Members:   []string{common.FormatUserUID(newUser.ID)},
 			Condition: condition,
 		})
 	}
-	if _, err := stores.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
+
+	policyPayload, err := protojson.Marshal(policy)
+	if err != nil {
 		return err
 	}
+	if _, err := stores.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       issue.Project.UID,
+		ResourceType:      api.PolicyResourceTypeProject,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeProjectIAM,
+		InheritFromParent: false,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, api.SystemBotID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -744,35 +764,65 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager 
 	return nil
 }
 
+// GetUserIAMPolicyBindings return the valid bindings for the user.
+func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.ProjectIamPolicy) []*storepb.Binding {
+	userIDFullName := common.FormatUserUID(user.ID)
+	currentTime := time.Now()
+
+	var bindings []*storepb.Binding
+	for _, binding := range policy.Bindings {
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), currentTime)
+		if err != nil {
+			slog.Error("failed to eval binding condition", slog.String("expression", binding.Condition.GetExpression()), log.BBError(err))
+			continue
+		}
+		if !ok {
+			continue
+		}
+
+		hasUser := false
+		for _, member := range binding.Members {
+			if member == api.AllUsers || userIDFullName == member {
+				hasUser = true
+				break
+			} else if strings.HasPrefix(member, common.UserGroupPrefix) {
+				groupEmail, err := common.GetUserGroupEmail(member)
+				if err != nil {
+					slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
+					continue
+				}
+				group, err := stores.GetUserGroup(ctx, groupEmail)
+				if err != nil {
+					slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
+					continue
+				}
+				for _, member := range group.Payload.Members {
+					if userIDFullName == member.Member {
+						hasUser = true
+						break
+					}
+				}
+			}
+		}
+		if hasUser {
+			bindings = append(bindings, binding)
+		}
+	}
+	return bindings
+}
+
 // GetUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
 // the condition of role binding is respected and evaluated with request.time=time.Now().
-func GetUserRoles(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) ([]api.Role, error) {
+func GetUserRoles(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) ([]api.Role, error) {
 	var roles []api.Role
 	roles = append(roles, user.Roles...)
 
-	currentTime := time.Now()
 	for _, projectPolicy := range projectPolicies {
-		for _, binding := range projectPolicy.Bindings {
-			hasUser := false
-			for _, member := range binding.Members {
-				if member.ID == user.ID || member.Email == api.AllUsers {
-					hasUser = true
-					break
-				}
-			}
-			if !hasUser {
-				continue
-			}
+		bindings := GetUserIAMPolicyBindings(ctx, stores, user, projectPolicy)
 
-			ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), currentTime)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to evaluate binding condition")
-			}
-			if !ok {
-				continue
-			}
-
-			roles = append(roles, binding.Role)
+		for _, binding := range bindings {
+			role := api.Role(strings.TrimPrefix(binding.Role, "roles/"))
+			roles = append(roles, role)
 		}
 	}
 	roles = uniq(roles)
@@ -781,8 +831,8 @@ func GetUserRoles(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMe
 }
 
 // See GetUserRoles.
-func GetUserRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[api.Role]bool, error) {
-	roles, err := GetUserRoles(user, projectPolicies...)
+func GetUserRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[api.Role]bool, error) {
+	roles, err := GetUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err
 	}
@@ -795,8 +845,8 @@ func GetUserRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolic
 }
 
 // See GetUserRoles. The returned map key format is roles/{role}.
-func GetUserFormattedRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[string]bool, error) {
-	roles, err := GetUserRoles(user, projectPolicies...)
+func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[string]bool, error) {
+	roles, err := GetUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err
 	}

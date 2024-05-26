@@ -296,7 +296,7 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 		return true, nil
 	}
 
-	projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user)
+	projectRoles, err := findProjectRoles(ctx, s.store, sheet.ProjectUID, user)
 	if err != nil {
 		return false, err
 	}
@@ -306,12 +306,12 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 	return projectRoles[api.ProjectOwner], nil
 }
 
-func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
+func findProjectRoles(ctx context.Context, stores *store.Store, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
+	policy, err := stores.GetProjectIamPolicy(ctx, projectUID)
 	if err != nil {
 		return nil, err
 	}
-	return utils.GetUserRolesMap(user, policy)
+	return utils.GetUserRolesMap(ctx, stores, user, policy)
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
