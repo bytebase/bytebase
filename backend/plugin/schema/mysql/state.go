@@ -345,6 +345,7 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		Columns:     columns,
 		Indexes:     indexes,
 		ForeignKeys: fks,
+		UserComment: t.comment,
 		Comment:     t.comment,
 		Engine:      t.engine,
 		Collation:   t.collation,
@@ -1352,11 +1353,12 @@ func (c *columnState) toString(buf io.StringWriter) error {
 
 func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 	result := &storepb.ColumnMetadata{
-		Name:     c.name,
-		Type:     c.tp,
-		Nullable: c.nullable,
-		OnUpdate: c.onUpdate,
-		Comment:  c.comment,
+		Name:        c.name,
+		Type:        c.tp,
+		Nullable:    c.nullable,
+		OnUpdate:    c.onUpdate,
+		Comment:     c.comment,
+		UserComment: c.comment,
 	}
 	if c.defaultValue != nil {
 		switch value := c.defaultValue.(type) {

@@ -616,8 +616,10 @@ const (
 	// MSSQLProcedureDisallowCreateOrAlter restricts the creation of procedures.
 	MSSQLProcedureDisallowCreateOrAlter Type = "bb.plugin.advisor.mssql.procedure.disallow-create-or-alter"
 
+
 	// MSSQLStatementDisallowCrossDBQueries prohibits cross database queries.
 	MSSQLStatementDisallowCrossDBQueries Type = "bb.plugin.advisor.mssql.procedure.disallow-cross-db-queries"
+
 )
 
 // Advice is the result of an advisor.

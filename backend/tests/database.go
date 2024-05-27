@@ -21,7 +21,7 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 		environmentName = environment.Name
 	}
 
-	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Steps: []*v1pb.Plan_Step{

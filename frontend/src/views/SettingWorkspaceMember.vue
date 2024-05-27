@@ -29,7 +29,14 @@
         </div>
       </div>
 
-      <div>
+      <div class="flex items-center space-x-3">
+        <!-- TODO(ed): permission check -->
+        <NButton class="capitalize" @click="handleCreateGroup">
+          <template #icon>
+            <PlusIcon class="h-5 w-5" />
+          </template>
+          {{ $t(`settings.members.groups.add-group`) }}
+        </NButton>
         <NButton
           v-if="allowCreateUser"
           type="primary"
@@ -49,12 +56,19 @@
         <UserDataTable
           :user-list="activeUserList"
           @update-user="handleUpdateUser"
+          @select-group="handleUpdateGroup"
         />
       </NTabPane>
       <NTabPane name="roles" :tab="$t('settings.members.view-by-roles')">
         <UserDataTableByRole
           :user-list="activeUserList"
           @update-user="handleUpdateUser"
+        />
+      </NTabPane>
+      <NTabPane name="groups" :tab="$t('settings.members.view-by-groups')">
+        <UserDataTableByGroup
+          :user-list="activeUserList"
+          @update-group="handleUpdateGroup"
         />
       </NTabPane>
 
@@ -96,6 +110,11 @@
     :user="state.editingUser"
     @close="state.showCreateUserDrawer = false"
   />
+  <CreateGroupDrawer
+    v-if="state.showCreateGroupDrawer"
+    :group="state.editingGroup"
+    @close="state.showCreateGroupDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -105,6 +124,7 @@ import { NButton, NCheckbox, NTabs, NTabPane } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
+import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import UserDataTableByRole from "@/components/User/Settings/UserDataTableByRole/index.vue";
 import { SearchBox } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
@@ -117,6 +137,7 @@ import {
 import type { User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import type { UserGroup } from "@/types/proto/v1/user_group";
 import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
@@ -129,7 +150,9 @@ type LocalState = {
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
   showCreateUserDrawer: boolean;
+  showCreateGroupDrawer: boolean;
   editingUser?: User;
+  editingGroup?: UserGroup;
 };
 
 const state = reactive<LocalState>({
@@ -137,6 +160,7 @@ const state = reactive<LocalState>({
   inactiveUserFilterText: "",
   showInactiveUserList: false,
   showCreateUserDrawer: false,
+  showCreateGroupDrawer: false,
 });
 
 const { t } = useI18n();
@@ -228,6 +252,16 @@ const userCountAttention = computed((): string => {
 
   return `${status} ${upgrade}`;
 });
+
+const handleCreateGroup = () => {
+  state.editingGroup = undefined;
+  state.showCreateGroupDrawer = true;
+};
+
+const handleUpdateGroup = (group: UserGroup) => {
+  state.editingGroup = group;
+  state.showCreateGroupDrawer = true;
+};
 
 const handleCreateUser = () => {
   state.editingUser = undefined;

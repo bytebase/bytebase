@@ -506,7 +506,7 @@ ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 CREATE TABLE task_run_log (
     id BIGSERIAL PRIMARY KEY,
     task_run_id INTEGER NOT NULL REFERENCES task_run (id),
-    created_ts TIMESTAMP NOT NULL DEFAULT now(),
+    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -991,4 +991,15 @@ CREATE TABLE sql_lint_config (
   updater_id INTEGER NOT NULL REFERENCES principal (id),
   updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   config JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE user_group (
+  email TEXT PRIMARY KEY,
+  creator_id INTEGER NOT NULL REFERENCES principal (id),
+  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  updater_id INTEGER NOT NULL REFERENCES principal (id),
+  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  payload JSONB NOT NULL DEFAULT '{}'
 );

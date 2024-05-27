@@ -516,15 +516,21 @@ export interface Webhook {
   /** url is the url of the webhook, should be unique within the project. */
   url: string;
   /**
+   * if direct_message is set, the notification is sent directly
+   * to the persons and url will be ignored.
+   * IM integration setting should be set for this function to work.
+   */
+  directMessage: boolean;
+  /**
    * notification_types is the list of activities types that the webhook is interested in.
    * Bytebase will only send notifications to the webhook if the activity type is in the list.
-   * It should not be empty, and shoule be a subset of the following:
+   * It should not be empty, and should be a subset of the following:
    * - TYPE_ISSUE_CREATED
    * - TYPE_ISSUE_STATUS_UPDATE
    * - TYPE_ISSUE_PIPELINE_STAGE_UPDATE
    * - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
    * - TYPE_ISSUE_FIELD_UPDATE
-   * - TYPE_ISSUE_COMMENT_CREAT
+   * - TYPE_ISSUE_COMMENT_CREATE
    */
   notificationTypes: Activity_Type[];
 }
@@ -3022,7 +3028,14 @@ export const TestWebhookResponse = {
 };
 
 function createBaseWebhook(): Webhook {
-  return { name: "", type: Webhook_Type.TYPE_UNSPECIFIED, title: "", url: "", notificationTypes: [] };
+  return {
+    name: "",
+    type: Webhook_Type.TYPE_UNSPECIFIED,
+    title: "",
+    url: "",
+    directMessage: false,
+    notificationTypes: [],
+  };
 }
 
 export const Webhook = {
@@ -3038,6 +3051,9 @@ export const Webhook = {
     }
     if (message.url !== "") {
       writer.uint32(34).string(message.url);
+    }
+    if (message.directMessage === true) {
+      writer.uint32(48).bool(message.directMessage);
     }
     writer.uint32(42).fork();
     for (const v of message.notificationTypes) {
@@ -3082,6 +3098,13 @@ export const Webhook = {
 
           message.url = reader.string();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.directMessage = reader.bool();
+          continue;
         case 5:
           if (tag === 40) {
             message.notificationTypes.push(activity_TypeFromJSON(reader.int32()));
@@ -3114,6 +3137,7 @@ export const Webhook = {
       type: isSet(object.type) ? webhook_TypeFromJSON(object.type) : Webhook_Type.TYPE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       url: isSet(object.url) ? globalThis.String(object.url) : "",
+      directMessage: isSet(object.directMessage) ? globalThis.Boolean(object.directMessage) : false,
       notificationTypes: globalThis.Array.isArray(object?.notificationTypes)
         ? object.notificationTypes.map((e: any) => activity_TypeFromJSON(e))
         : [],
@@ -3134,6 +3158,9 @@ export const Webhook = {
     if (message.url !== "") {
       obj.url = message.url;
     }
+    if (message.directMessage === true) {
+      obj.directMessage = message.directMessage;
+    }
     if (message.notificationTypes?.length) {
       obj.notificationTypes = message.notificationTypes.map((e) => activity_TypeToJSON(e));
     }
@@ -3149,6 +3176,7 @@ export const Webhook = {
     message.type = object.type ?? Webhook_Type.TYPE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.url = object.url ?? "";
+    message.directMessage = object.directMessage ?? false;
     message.notificationTypes = object.notificationTypes?.map((e) => e) || [];
     return message;
   },

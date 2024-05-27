@@ -30,7 +30,7 @@ import {
   useVCSConnectorStore,
   useVCSProviderStore,
 } from "@/store";
-import type { Plan_VCSSource } from "@/types/proto/v1/rollout_service";
+import type { Plan_VCSSource } from "@/types/proto/v1/plan_service";
 import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
 
 const { issue } = useIssueContext();

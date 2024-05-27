@@ -46,6 +46,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
 		},
 		CreateTime: timestamppb.New(time.Unix(plan.CreatedTs, 0)),
+		UpdateTime: timestamppb.New(time.Unix(plan.UpdatedTs, 0)),
 	}
 
 	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
@@ -74,6 +75,7 @@ func convertToPlanSteps(steps []*storepb.PlanConfig_Step) []*v1pb.Plan_Step {
 
 func convertToPlanStep(step *storepb.PlanConfig_Step) *v1pb.Plan_Step {
 	return &v1pb.Plan_Step{
+		Title: step.Title,
 		Specs: convertToPlanSpecs(step.Specs),
 	}
 }
@@ -191,6 +193,7 @@ func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
 
 func convertPlanStep(step *v1pb.Plan_Step) *storepb.PlanConfig_Step {
 	return &storepb.PlanConfig_Step{
+		Title: step.Title,
 		Specs: convertPlanSpecs(step.Specs),
 	}
 }

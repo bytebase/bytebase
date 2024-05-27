@@ -223,9 +223,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			if email == api.SystemBotEmail {
 				creatorID = api.SystemBotID
 			} else {
-				creator, err := s.store.GetUser(ctx, &store.FindUserMessage{
-					Email: &email,
-				})
+				creator, err := s.store.GetUserByEmail(ctx, email)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 				}
@@ -325,37 +323,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingAppIM:
-		settingValue := request.Setting.Value.GetAppImSettingValue()
-		imType, err := convertToIMType(settingValue.ImType)
-		if err != nil {
-			return nil, err
-		}
-		payload := &api.SettingAppIMValue{
-			IMType:    imType,
-			AppID:     settingValue.AppId,
-			AppSecret: settingValue.AppSecret,
-			ExternalApproval: api.ExternalApproval{
-				Enabled:              settingValue.ExternalApproval.Enabled,
-				ApprovalDefinitionID: settingValue.ExternalApproval.ApprovalDefinitionId,
-			},
-		}
-		if payload.IMType != api.IMTypeFeishu {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unknown IM Type %s", payload.IMType))
-		}
-		if payload.ExternalApproval.Enabled {
-			if err := s.licenseService.IsFeatureEnabled(api.FeatureIMApproval); err != nil {
-				return nil, status.Errorf(codes.PermissionDenied, err.Error())
-			}
-			if payload.AppID == "" || payload.AppSecret == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "application ID and secret cannot be empty")
-			}
-		}
-
-		s, err := json.Marshal(payload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal approval setting: %v", err)
-		}
-		storeSettingValue = string(s)
+		// TODO(p0ny): impl
+		return nil, status.Errorf(codes.Unimplemented, "not implemented")
 	case api.SettingWorkspaceExternalApproval:
 		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
 		if err != nil {
@@ -415,7 +384,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, err
 		}
 
-		payload := convertV1SchemaTemplateSetting(schemaTemplateSetting)
+		payload, err := convertV1SchemaTemplateSetting(ctx, schemaTemplateSetting)
+		if err != nil {
+			return nil, err
+		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
@@ -559,27 +531,12 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		})
 	case api.SettingAppIM:
-		apiValue := new(api.SettingAppIMValue)
-		stringValue := setting.Value
-		if stringValue == "" {
-			stringValue = "{}"
-		}
-		if err := json.Unmarshal([]byte(stringValue), apiValue); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
-		}
+		// TODO(p0ny): impl
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: &v1pb.AppIMSetting{
-						ImType:    convertV1IMType(apiValue.IMType),
-						AppId:     apiValue.AppID,
-						AppSecret: apiValue.AppSecret,
-						ExternalApproval: &v1pb.AppIMSetting_ExternalApproval{
-							Enabled:              apiValue.ExternalApproval.Enabled,
-							ApprovalDefinitionId: apiValue.ExternalApproval.ApprovalDefinitionID,
-						},
-					},
+					AppImSettingValue: &v1pb.AppIMSetting{},
 				},
 			},
 		}, nil
@@ -622,7 +579,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 			}
 			if creator != nil {
-				template.Creator = fmt.Sprintf("%s%s", common.UserNamePrefix, creator.Email)
+				template.Creator = common.FormatUserEmail(creator.Email)
 			}
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
@@ -658,11 +615,15 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 
+		sts, err := convertSchemaTemplateSetting(ctx, value)
+		if err != nil {
+			return nil, err
+		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SchemaTemplateSettingValue{
-					SchemaTemplateSettingValue: convertSchemaTemplateSetting(value),
+					SchemaTemplateSettingValue: sts,
 				},
 			},
 		}, nil
@@ -736,7 +697,10 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	if err := decoder.Unmarshal([]byte(settingValue), value); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
 	}
-	v1Value := convertSchemaTemplateSetting(value)
+	v1Value, err := convertSchemaTemplateSetting(ctx, value)
+	if err != nil {
+		return err
+	}
 
 	// validate the changed field(column) template.
 	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
@@ -752,7 +716,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 			Name:    "temp_table",
 			Columns: []*v1pb.ColumnMetadata{template.Column},
 		}
-		if err := validateTableMetadata(template.Engine, tableMetadata); err != nil {
+		if err := validateTableMetadata(ctx, template.Engine, tableMetadata); err != nil {
 			return err
 		}
 	}
@@ -767,7 +731,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
 			continue
 		}
-		if err := validateTableMetadata(template.Engine, template.Table); err != nil {
+		if err := validateTableMetadata(ctx, template.Engine, template.Table); err != nil {
 			return err
 		}
 	}
@@ -775,7 +739,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	return nil
 }
 
-func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
+func validateTableMetadata(ctx context.Context, engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
 	tempSchema := &v1pb.SchemaMetadata{
 		Name:   "",
 		Tables: []*v1pb.TableMetadata{tableMetadata},
@@ -787,7 +751,10 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 		Name:    "temp_database",
 		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-	tempStoreSchemaMetadata, _ := convertV1DatabaseMetadata(tempMetadata)
+	tempStoreSchemaMetadata, _, err := convertV1DatabaseMetadata(ctx, tempMetadata, nil /* optionalStores */)
+	if err != nil {
+		return err
+	}
 	if err := checkDatabaseMetadata(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to check database metadata")
 	}
@@ -796,26 +763,6 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 		return errors.Wrap(err, "failed to transform database metadata to schema string")
 	}
 	return nil
-}
-
-func convertToIMType(imType v1pb.AppIMSetting_IMType) (api.IMType, error) {
-	var resp api.IMType
-	switch imType {
-	case v1pb.AppIMSetting_FEISHU:
-		resp = api.IMTypeFeishu
-	default:
-		return resp, status.Errorf(codes.InvalidArgument, "unknown im type %v", imType.String())
-	}
-	return resp, nil
-}
-
-func convertV1IMType(imType api.IMType) v1pb.AppIMSetting_IMType {
-	switch imType {
-	case api.IMTypeFeishu:
-		return v1pb.AppIMSetting_FEISHU
-	default:
-		return v1pb.AppIMSetting_IM_TYPE_UNSPECIFIED
-	}
 }
 
 func settingInWhitelist(name api.SettingName) bool {
@@ -1062,7 +1009,7 @@ func stripSensitiveData(setting *v1pb.Setting) (*v1pb.Setting, error) {
 	return setting, nil
 }
 
-func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
+func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaTemplateSetting) (*v1pb.SchemaTemplateSetting, error) {
 	v1Setting := new(v1pb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
@@ -1101,15 +1048,15 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 			t.Table = convertStoreTableMetadata(v.Table)
 		}
 		if v.Config != nil {
-			t.Config = convertStoreTableConfig(v.Config)
+			t.Config = convertStoreTableConfig(ctx, v.Config, nil /* optionalStores */)
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
-	return v1Setting
+	return v1Setting, nil
 }
 
-func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *storepb.SchemaTemplateSetting {
+func convertV1SchemaTemplateSetting(ctx context.Context, template *v1pb.SchemaTemplateSetting) (*storepb.SchemaTemplateSetting, error) {
 	v1Setting := new(storepb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &storepb.SchemaTemplateSetting_ColumnType{
@@ -1148,12 +1095,12 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 			t.Table = convertV1TableMetadata(v.Table)
 		}
 		if v.Config != nil {
-			t.Config = convertV1TableConfig(v.Config)
+			t.Config = convertV1TableConfig(ctx, v.Config, nil /* optionalStores */)
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
-	return v1Setting
+	return v1Setting, nil
 }
 
 func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm) error {

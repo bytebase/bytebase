@@ -477,12 +477,6 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		default:
 			return "", base.NewDefaultMaskingAttributes(), nil
 		}
-	case plsql.IGeneral_elementContext:
-		var list []antlr.ParserRuleContext
-		for _, item := range rule.AllGeneral_element_part() {
-			list = append(list, item)
-		}
-		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IGeneral_element_partContext:
 		// This case is for functions, such as CONCAT(a, b)
 		if rule.Function_argument() != nil {
@@ -603,6 +597,12 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
+		}
+		if rule.Constant() != nil {
+			list = append(list, rule.Constant())
+		}
+		if rule.General_element_part() != nil {
+			list = append(list, rule.General_element_part())
 		}
 		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IBetween_elementsContext:
@@ -930,13 +930,19 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		if rule.Expressions() != nil {
 			list = append(list, rule.Expressions())
 		}
-		if rule.Constant() != nil {
-			list = append(list, rule.Constant())
+		if rule.Constant_without_variable() != nil {
+			list = append(list, rule.Constant_without_variable())
 		}
-		if rule.General_element() != nil {
-			list = append(list, rule.General_element())
+		if rule.General_element_part() != nil {
+			list = append(list, rule.General_element_part())
 		}
 		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
+	case plsql.IConstant_without_variableContext:
+		list := rule.AllQuoted_string()
+		if len(list) == 1 && rule.DATE() == nil && rule.TIMESTAMP() == nil && rule.INTERVAL() == nil {
+			// This case may be a column name...
+			return extractor.plsqlEvalMaskingLevelInExpression(list[0])
+		}
 	case plsql.ISubquery_operation_partContext:
 		return extractor.plsqlEvalMaskingLevelInExpression(rule.Subquery_basic_elements())
 	case plsql.ISubquery_basic_elementsContext:

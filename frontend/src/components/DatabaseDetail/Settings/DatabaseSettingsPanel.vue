@@ -111,7 +111,7 @@ const handleSelectEnvironmentUID = async (uid?: string) => {
   });
   pushNotification({
     module: "bytebase",
-    style: "INFO",
+    style: "SUCCESS",
     title: t("common.updated"),
   });
 };

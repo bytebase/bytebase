@@ -94,6 +94,9 @@
         </template>
       </div>
       <div class="flex justify-end items-center space-x-3">
+        <NCheckbox v-model:checked="state.planOnly">
+          {{ $t("issue.sql-review-only") }}
+        </NCheckbox>
         <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
         </NButton>
@@ -120,7 +123,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
-import { NTabs, NTabPane, useDialog } from "naive-ui";
+import { NTabs, NCheckbox, NButton, NTabPane, useDialog } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch } from "vue";
 import { I18nT, useI18n } from "vue-i18n";
@@ -128,7 +131,10 @@ import { useRouter } from "vue-router";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { databaseServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -165,6 +171,8 @@ interface LocalState {
   previewStatus: string;
   targets: EditTarget[];
   isUploadingFile: boolean;
+  // planOnly is used to indicate whether only to create plan.
+  planOnly: boolean;
 }
 
 const props = defineProps({
@@ -177,6 +185,10 @@ const props = defineProps({
     required: true,
   },
   newWindow: {
+    type: Boolean,
+    default: false,
+  },
+  planOnly: {
     type: Boolean,
     default: false,
   },
@@ -198,6 +210,7 @@ const state = reactive<LocalState>({
   previewStatus: "",
   targets: [],
   isUploadingFile: false,
+  planOnly: props.planOnly,
 });
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
@@ -481,10 +494,13 @@ const handlePreviewIssue = async () => {
   }
 
   const routeInfo = {
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: state.planOnly
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
       issueSlug: "create",
+      planSlug: "create",
     },
     query,
   };

@@ -2433,6 +2433,7 @@ type IssueComment_IssueUpdate struct {
 	ToDescription   *string      `protobuf:"bytes,4,opt,name=to_description,json=toDescription,proto3,oneof" json:"to_description,omitempty"`
 	FromStatus      *IssueStatus `protobuf:"varint,5,opt,name=from_status,json=fromStatus,proto3,enum=bytebase.v1.IssueStatus,oneof" json:"from_status,omitempty"`
 	ToStatus        *IssueStatus `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.v1.IssueStatus,oneof" json:"to_status,omitempty"`
+	// TODO(d): deprecate from_assignee and to_assignee.
 	// Format: users/{email}
 	FromAssignee *string `protobuf:"bytes,7,opt,name=from_assignee,json=fromAssignee,proto3,oneof" json:"from_assignee,omitempty"`
 	// Format: users/{email}

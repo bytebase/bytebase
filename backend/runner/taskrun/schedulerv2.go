@@ -13,8 +13,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -28,19 +28,19 @@ const (
 
 // SchedulerV2 is the V2 scheduler for task run.
 type SchedulerV2 struct {
-	store           *store.Store
-	stateCfg        *state.State
-	activityManager *activity.Manager
-	executorMap     map[api.TaskType]Executor
+	store          *store.Store
+	stateCfg       *state.State
+	webhookManager *webhook.Manager
+	executorMap    map[api.TaskType]Executor
 }
 
 // NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(store *store.Store, stateCfg *state.State, activityManager *activity.Manager) *SchedulerV2 {
+func NewSchedulerV2(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager) *SchedulerV2 {
 	return &SchedulerV2{
-		store:           store,
-		stateCfg:        stateCfg,
-		activityManager: activityManager,
-		executorMap:     map[api.TaskType]Executor{},
+		store:          store,
+		stateCfg:       stateCfg,
+		webhookManager: webhookManager,
+		executorMap:    map[api.TaskType]Executor{},
 	}
 }
 
@@ -231,8 +231,8 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		}
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, []*store.TaskMessage{task}, issue, "", api.SystemBotID); err != nil {
-		slog.Error("failed to create activities for running tasks", log.BBError(err))
+	if err := s.webhookManager.BatchCreateActivitiesForRunTasks(ctx, issue, "", api.SystemBotID); err != nil {
+		slog.Error("failed to post webhooks for running tasks", log.BBError(err))
 	}
 
 	return nil
@@ -646,10 +646,11 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							},
 						},
 					}
-					return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 						IssueUID: issue.UID,
 						Payload:  p,
 					}, api.SystemBotID)
+					return err
 				}(); err != nil {
 					slog.Warn("failed to create issue comment", log.BBError(err))
 				}
@@ -675,7 +676,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Level:             api.ActivityInfo,
 						Payload:           string(bytes),
 					}
-					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+					if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
 						Issue: issue,
 					}); err != nil {
 						return errors.Wrap(err, "failed to create activity")
@@ -709,7 +710,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Comment:           "",
 						Payload:           string(payload),
 					}
-					if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+					if _, err := s.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
 						return err
 					}
 					return nil
@@ -734,7 +735,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 						fromStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[issue.Status.String()])
 						toStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[updatedIssue.Status.String()])
-						if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+						if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 							IssueUID: issue.UID,
 							Payload: &storepb.IssueCommentPayload{
 								Event: &storepb.IssueCommentPayload_IssueUpdate_{
@@ -765,7 +766,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							Comment:           "",
 							Payload:           string(payload),
 						}
-						if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+						if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
 							Issue: updatedIssue,
 						}); err != nil {
 							return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
@@ -816,7 +817,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 			Level:             api.ActivityInfo,
 			Payload:           string(bytes),
 		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
 			Issue: issue,
 		}); err != nil {
 			return errors.Wrap(err, "failed to create activity")

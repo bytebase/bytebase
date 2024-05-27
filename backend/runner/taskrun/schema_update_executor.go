@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -24,27 +23,25 @@ import (
 )
 
 // NewSchemaUpdateExecutor creates a schema update (DDL) task executor.
-func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &SchemaUpdateExecutor{
-		store:           store,
-		dbFactory:       dbFactory,
-		activityManager: activityManager,
-		license:         license,
-		stateCfg:        stateCfg,
-		schemaSyncer:    schemaSyncer,
-		profile:         profile,
+		store:        store,
+		dbFactory:    dbFactory,
+		license:      license,
+		stateCfg:     stateCfg,
+		schemaSyncer: schemaSyncer,
+		profile:      profile,
 	}
 }
 
 // SchemaUpdateExecutor is the schema update (DDL) task executor.
 type SchemaUpdateExecutor struct {
-	store           *store.Store
-	dbFactory       *dbfactory.DBFactory
-	activityManager *activity.Manager
-	license         enterprise.LicenseService
-	stateCfg        *state.State
-	schemaSyncer    *schemasync.Syncer
-	profile         config.Profile
+	store        *store.Store
+	dbFactory    *dbfactory.DBFactory
+	license      enterprise.LicenseService
+	stateCfg     *state.State
+	schemaSyncer *schemasync.Syncer
+	profile      config.Profile
 }
 
 // RunOnce will run the schema update (DDL) task executor once.

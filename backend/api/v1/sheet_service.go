@@ -107,7 +107,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		}
 		databaseUID = &database.UID
 	}
-	storeSheetCreate, err := convertToStoreSheetMessage(project.UID, databaseUID, principalID, request.Sheet)
+	storeSheetCreate, err := convertToStoreSheetMessage(ctx, project.UID, databaseUID, principalID, request.Sheet)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
 	}
@@ -296,7 +296,7 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 		return true, nil
 	}
 
-	projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user)
+	projectRoles, err := findProjectRoles(ctx, s.store, sheet.ProjectUID, user)
 	if err != nil {
 		return false, err
 	}
@@ -306,12 +306,12 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 	return projectRoles[api.ProjectOwner], nil
 }
 
-func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
+func findProjectRoles(ctx context.Context, stores *store.Store, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
+	policy, err := stores.GetProjectIamPolicy(ctx, projectUID)
 	if err != nil {
 		return nil, err
 	}
-	return utils.GetUserRolesMap(user, policy)
+	return utils.GetUserRolesMap(ctx, stores, user, policy)
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
@@ -353,8 +353,8 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}
 	if payload := sheet.Payload; payload != nil {
 		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */)
-			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */)
+			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(ctx, payload.DatabaseConfig, nil /* filter */, nil /* optionalStores */)
+			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(ctx, payload.BaselineDatabaseConfig, nil /* filter */, nil /* optionalStores */)
 		}
 	}
 
@@ -372,7 +372,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}, nil
 }
 
-func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
+func convertToStoreSheetMessage(ctx context.Context, projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
 	sheetMessage := &store.SheetMessage{
 		ProjectUID:  projectUID,
 		DatabaseUID: databaseUID,
@@ -383,8 +383,8 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 	if sheet.Payload != nil {
-		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(sheet.Payload.DatabaseConfig)
-		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig)
+		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(ctx, sheet.Payload.DatabaseConfig, nil /* optionalStores */)
+		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(ctx, sheet.Payload.BaselineDatabaseConfig, nil /* optionalStores */)
 	}
 
 	return sheetMessage, nil

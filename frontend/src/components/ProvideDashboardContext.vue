@@ -15,6 +15,7 @@ import {
   useUserStore,
   useUIStateStore,
   useDatabaseV1Store,
+  useUserGroupStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
@@ -52,6 +53,7 @@ onMounted(async () => {
   // Then prepare the other resources.
   await Promise.all([
     useUserStore().fetchUserList(),
+    useUserGroupStore().fetchGroupList(),
     useEnvironmentV1Store().fetchEnvironments(),
     useInstanceV1Store().fetchInstanceList(),
     useProjectV1Store().fetchProjectList(true /* showDeleted */),

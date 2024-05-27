@@ -76,7 +76,6 @@
     "role": {
       "self": "Role"
     },
-    "assignee": "Assignee",
     "revert": "Revert",
     "apply": "Apply",
     "reorder": "Reorder",
@@ -274,7 +273,8 @@
     "project-member": "Project member",
     "leave-without-saving": "Leave without saving?",
     "configure-now": "Configure now",
-    "connection": "Connection"
+    "connection": "Connection",
+    "permission-denied": "Permission denied"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -336,7 +336,6 @@
       "warn": "Warning",
       "error": "Error"
     },
-    "earliest-allowed-time-no-modify": "You cannot modify this field because you are not the issue assignee or it's not pending to run.",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sync data",
       "bb-task-database-schema-update-ghost-cutover": "Switch tables",
@@ -460,7 +459,7 @@
       "security-and-policy": "Security & Policy",
       "integration": "Integration",
       "general": "General",
-      "members": "Members",
+      "members-and-groups": "Members & Groups",
       "im-integration": "IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -499,13 +498,33 @@
       "table": {
         "account": "Account",
         "role": "Role",
+        "groups": "Groups",
         "update-time": "Updated Time",
         "granted-time": "Granted Time",
         "roles": "Roles"
       },
+      "groups": {
+        "self": "Groups",
+        "add-group": "Add Group",
+        "update-group": "Update Group",
+        "delete-warning": "The group \"{name}\" will be deleted. This action cannot be undone.",
+        "form": {
+          "email": "Email",
+          "email-tips": "The email should be unique, and it cannot be changed after creation.",
+          "title": "Title",
+          "description": "Description",
+          "members": "Members",
+          "add-member": "Add member",
+          "role": {
+            "owner": "Owner",
+            "member": "Members"
+          }
+        }
+      },
       "action": {
         "deactivate": "Deactivate",
-        "deactivate-confirm-title": "Are you sure to deactivate",
+        "deactivate-confirm-title": "Are you sure to deactivate?",
+        "delete-confirm-title": "Are you sure to delete?",
         "deactivate-confirm-description": "You can still reactivate later",
         "reactivate": "Reactivate",
         "reactivate-confirm-title": "Are you sure to reactivate"
@@ -531,6 +550,7 @@
       },
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
+      "view-by-groups": "View by groups",
       "add-member": "Add member",
       "update-member": "Update member",
       "workspace-role-at-least-one": "At least one workspace role is required"
@@ -896,10 +916,6 @@
     "sentence": {
       "created-issue": "created issue",
       "commented": "commented",
-      "reassigned-issue": "reassigned issue from {oldName} to {newName}",
-      "assigned-issue": "assigned issue to {newName}",
-      "unassigned-issue": "unassigned issue from {oldName}",
-      "invalid-assignee-update": "invalid assignee update",
       "changed-description": "changed description",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "unset-from": "unset {name} from \"{oldValue}\"",
@@ -1015,17 +1031,13 @@
           "title": "Creator",
           "description": "Search by the issue creator"
         },
-        "assignee": {
-          "title": "Assignee",
-          "description": "Search by the issue assignee"
-        },
         "subscriber": {
           "title": "Subscriber",
           "description": "Search by the issue subscriber"
         },
         "principal": {
           "title": "Related Principal",
-          "description": "Search by the issue creator, assignee or subscriber"
+          "description": "Search by the issue creator or subscriber"
         },
         "approver": {
           "title": "Approver",
@@ -1066,7 +1078,7 @@
       "updated": "Updated",
       "approver": "Approver",
       "creator": "Creator",
-      "assignee": "Assignee"
+      "current-approver": "Current approver"
     },
     "stage-select": {
       "current": "{name} (current)"
@@ -1112,19 +1124,12 @@
     },
     "will-rollback": "This task will rollback {link}",
     "issue-link-with-task": "Issue {issue} - task {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "Send a {im} approval request successfully",
-      "send-attention-request-successfully": "Request assignee {principal} attention successfully",
-      "needs-attention": "Attention needed",
-      "click-to-mark": "Click to request assignee attention"
-    },
     "sdl": {
       "schema-change": "Schema change",
       "generated-ddl-statements": "Generated DDL statements",
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     },
-    "assignee-tooltip": "The assignees are those responsible for an issue, and when an issue is assigned to them, it shows up in their list of assigned issues.",
     "approval-flow": {
       "self": "Approval flow",
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk.",
@@ -1190,14 +1195,6 @@
       "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
     },
     "approval-requested": "Approval Requested",
-    "assignee": {
-      "current-assignee": "Current assignee",
-      "workspace-admins": "Workspace admins",
-      "workspace-dbas": "DBA",
-      "project-owners": "Project owners",
-      "releasers-of-current-stage": "Releasers of current stage",
-      "approvers-of-current-step": "Approvers of current step"
-    },
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "preview": "Preview issue",
@@ -1225,7 +1222,8 @@
     },
     "sql-review": {
       "statement-type": "Statement type"
-    }
+    },
+    "sql-review-only": "SQL Review Only"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1454,6 +1452,7 @@
     "failed-to-connect-instance-localhost": "If you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
     "filter-instance-name": "Filter instance name",
     "grants": "Grants",
+    "find-gcp-project-id": "To find GCP Project ID, see",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
     "create-gcp-credentials": "To create Credentials, see",
     "used-for-testing-connection": "Used for testing connections only",
@@ -1910,7 +1909,7 @@
         },
         "issue-info-change": {
           "title": "Issue info change",
-          "label": "When issue info (e.g. assignee, title, description) has changed"
+          "label": "When issue info (e.g. title, description) has changed"
         },
         "issue-comment-creation": {
           "title": "Issue comment creation",
@@ -2173,7 +2172,8 @@
     "additional-node-addresses": "Additional Node Addresses",
     "replica-set": "Replica Set",
     "admin": "Admin",
-    "read-only": "RO"
+    "read-only": "RO",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {

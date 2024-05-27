@@ -22,6 +22,7 @@ export const branchNamePrefix = "branches/";
 export const ssoNamePrefix = "idps/";
 export const protectionRulesSuffix = "/protectionRules";
 export const issueCommentNamePrefix = "issueComments/";
+export const userGroupNamePrefix = "groups/";
 
 export const getNameParentTokens = (
   name: string,
@@ -189,4 +190,9 @@ export const getIssueCommentId = (name: string) => {
     return "";
   }
   return tokens[2];
+};
+
+export const getGroupEmail = (name: string) => {
+  const tokens = getNameParentTokens(name, [userGroupNamePrefix]);
+  return tokens[0];
 };

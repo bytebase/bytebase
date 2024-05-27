@@ -48,6 +48,10 @@ export function issueSlug(issueName: string, issueId: IssueId): string {
   return [slug(issueName), issueId].join("-");
 }
 
+export function planSlug(planName: string, planId: IssueId): string {
+  return [slug(planName), planId].join("-");
+}
+
 export function stageSlug(stageName: string, stageIndex: number): string {
   return [slug(stageName), stageIndex + 1].join("-");
 }
