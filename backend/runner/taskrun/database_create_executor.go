@@ -405,6 +405,8 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 			log.BBError(err),
 		)
 	}
+	mi.ProjectUID = &project.UID
+	// TODO(d): how could issue be nil?
 	if issue == nil {
 		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
 		slog.Error(err.Error(),

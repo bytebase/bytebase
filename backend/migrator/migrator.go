@@ -120,6 +120,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 		CreatorID:      api.SystemBotID,
 		InstanceUID:    nil,
 		DatabaseUID:    nil,
+		ProjectUID:     nil,
 		IssueUID:       nil,
 		ReleaseVersion: serverVersion,
 		// Sequence starts from 1.
