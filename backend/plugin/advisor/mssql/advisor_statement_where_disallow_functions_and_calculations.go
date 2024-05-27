@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	advisor.Register(store.Engine_MSSQL, advisor.MSSQLStatementDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
+	advisor.Register(store.Engine_MSSQL, advisor.MSSQLStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
 }
 
 type DisallowFuncAndCalculationsAdvisor struct{}

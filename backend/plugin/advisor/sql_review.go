@@ -1642,7 +1642,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementWhereDisallowUsingFunction, nil
 		}
 		if engine == storepb.Engine_MSSQL {
-			return MSSQLStatementDisallowFunctionsAndCalculations, nil
+			return MSSQLStatementWhereDisallowFunctionsAndCalculations, nil
 		}
 	case SchemaRuleStatementQueryMinumumPlanLevel:
 		if engine == storepb.Engine_MYSQL {
