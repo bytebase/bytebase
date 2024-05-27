@@ -50,6 +50,7 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context, _ string) 
 		title:            ctx.Rule.Type,
 		selectStatCnt:    0,
 		whereCnt:         0,
+		havingCnt:        0,
 		hasTriggeredRule: false,
 	}
 
