@@ -1223,7 +1223,8 @@
     "sql-review": {
       "statement-type": "ステートメントタイプ"
     },
-    "sql-review-only": "SQLレビューのみ"
+    "sql-review-only": "SQLレビューのみ",
+    "create-issue": "問題を作成"
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトでは、VCS ベースのバージョン管理が有効になっています。以下のデータベースを選択すると、対応する Git リポジトリに移動して、変更プロセスを開始します。",
