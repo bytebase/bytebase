@@ -617,6 +617,7 @@ CREATE TABLE instance_change_history (
     instance_id INTEGER REFERENCES instance (id),
     -- NULL means an instance-level change.
     database_id INTEGER REFERENCES db (id),
+    project_id INTEGER REFERENCES project (id),
     -- issue_id is nullable because this field is backfilled and may not be present.
     issue_id INTEGER REFERENCES issue (id),
     -- Record the client version creating this change history. For Bytebase, we use its binary release version. Different Bytebase release might

@@ -30,6 +30,7 @@ type InstanceChangeHistoryMessage struct {
 	// nil means bytebase meta instance.
 	InstanceUID         *int
 	DatabaseUID         *int
+	ProjectUID          *int
 	IssueUID            *int
 	ReleaseVersion      string
 	Sequence            int64
@@ -49,13 +50,12 @@ type InstanceChangeHistoryMessage struct {
 	Payload             *storepb.InstanceChangeHistoryPayload
 
 	// Output only
-	UID            string
-	Deleted        bool
-	Creator        *UserMessage
-	Updater        *UserMessage
-	InstanceID     string
-	DatabaseName   string
-	IssueProjectID string
+	UID          string
+	Deleted      bool
+	Creator      *UserMessage
+	Updater      *UserMessage
+	InstanceID   string
+	DatabaseName string
 }
 
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
@@ -109,6 +109,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			updater_id,
 			instance_id,
 			database_id,
+			project_id,
 			issue_id,
 			release_version,
 			sequence,
@@ -123,7 +124,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			schema_prev,
 			execution_duration_ns,
 			payload
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		RETURNING id`
 
 	payload, err := protojson.Marshal(create.Payload)
@@ -146,6 +147,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		create.CreatorID,
 		create.InstanceUID,
 		create.DatabaseUID,
+		create.ProjectUID,
 		create.IssueUID,
 		create.ReleaseVersion,
 		create.Sequence,
@@ -174,6 +176,7 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 			updater_id,
 			instance_id,
 			database_id,
+			project_id,
 			issue_id,
 			release_version,
 			sequence,
@@ -187,7 +190,7 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 			schema_prev,
 			execution_duration_ns,
 			payload
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 		RETURNING id`
 
 	payload, err := protojson.Marshal(create.Payload)
@@ -205,6 +208,7 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 		create.CreatorID,
 		create.InstanceUID,
 		create.DatabaseUID,
+		create.ProjectUID,
 		create.IssueUID,
 		create.ReleaseVersion,
 		create.Sequence,
@@ -518,6 +522,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			instance_change_history.updated_ts,
 			instance_change_history.instance_id,
 			instance_change_history.database_id,
+			instance_change_history.project_id,
 			instance_change_history.issue_id,
 			instance_change_history.release_version,
 			instance_change_history.sequence,
@@ -570,7 +575,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
 		var rowStatus, storedVersion, payload string
-		var instanceID, databaseID, issueID, sheetID sql.NullInt32
+		var instanceID, databaseID, projectID, issueID, sheetID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.UID,
 			&rowStatus,
@@ -580,6 +585,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&changeHistory.UpdatedTs,
 			&instanceID,
 			&databaseID,
+			&projectID,
 			&issueID,
 			&changeHistory.ReleaseVersion,
 			&changeHistory.Sequence,
@@ -609,6 +615,10 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		if databaseID.Valid {
 			n := int(databaseID.Int32)
 			changeHistory.DatabaseUID = &n
+		}
+		if projectID.Valid {
+			n := int(projectID.Int32)
+			changeHistory.ProjectUID = &n
 		}
 		if issueID.Valid {
 			n := int(issueID.Int32)
@@ -650,13 +660,6 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			return nil, errors.Wrapf(err, "failed to get updater by updaterID %q", changeHistory.UpdaterID)
 		}
 		changeHistory.Updater = updater
-		if changeHistory.IssueUID != nil {
-			issue, err := s.GetIssueV2(ctx, &FindIssueMessage{UID: changeHistory.IssueUID})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get issue by issueUID %q", *changeHistory.IssueUID)
-			}
-			changeHistory.IssueProjectID = issue.Project.ResourceID
-		}
 	}
 
 	return list, nil
@@ -757,6 +760,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		CreatorID:           m.CreatorID,
 		InstanceUID:         m.InstanceID,
 		DatabaseUID:         m.DatabaseID,
+		ProjectUID:          m.ProjectUID,
 		IssueUID:            m.IssueUID,
 		ReleaseVersion:      m.ReleaseVersion,
 		Sequence:            nextSequence,
@@ -844,6 +848,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			instance_change_history.updated_ts,
 			instance_change_history.instance_id,
 			instance_change_history.database_id,
+			instance_change_history.project_id,
 			instance_change_history.issue_id,
 			instance_change_history.release_version,
 			instance_change_history.sequence,
@@ -886,7 +891,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
 		var rowStatus, storedVersion, payload string
-		var instanceID, databaseID, issueID sql.NullInt32
+		var instanceID, databaseID, projectID, issueID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.UID,
 			&rowStatus,
@@ -896,6 +901,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			&changeHistory.UpdatedTs,
 			&instanceID,
 			&databaseID,
+			&projectID,
 			&issueID,
 			&changeHistory.ReleaseVersion,
 			&changeHistory.Sequence,
@@ -921,6 +927,10 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		if databaseID.Valid {
 			n := int(databaseID.Int32)
 			changeHistory.DatabaseUID = &n
+		}
+		if projectID.Valid {
+			n := int(projectID.Int32)
+			changeHistory.ProjectUID = &n
 		}
 		if issueID.Valid {
 			n := int(issueID.Int32)
