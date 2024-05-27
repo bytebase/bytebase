@@ -82,6 +82,8 @@ export interface QueryRequest {
    * Or it can be used to query a specific read-only data source.
    */
   dataSourceId: string;
+  /** Explain the statement. */
+  explain: boolean;
 }
 
 export interface QueryResponse {
@@ -846,7 +848,15 @@ export const AdminExecuteResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "" };
+  return {
+    name: "",
+    connectionDatabase: "",
+    statement: "",
+    limit: 0,
+    timeout: undefined,
+    dataSourceId: "",
+    explain: false,
+  };
 }
 
 export const QueryRequest = {
@@ -868,6 +878,9 @@ export const QueryRequest = {
     }
     if (message.dataSourceId !== "") {
       writer.uint32(50).string(message.dataSourceId);
+    }
+    if (message.explain === true) {
+      writer.uint32(56).bool(message.explain);
     }
     return writer;
   },
@@ -921,6 +934,13 @@ export const QueryRequest = {
 
           message.dataSourceId = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.explain = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -938,6 +958,7 @@ export const QueryRequest = {
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
       dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
+      explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
     };
   },
 
@@ -961,6 +982,9 @@ export const QueryRequest = {
     if (message.dataSourceId !== "") {
       obj.dataSourceId = message.dataSourceId;
     }
+    if (message.explain === true) {
+      obj.explain = message.explain;
+    }
     return obj;
   },
 
@@ -977,6 +1001,7 @@ export const QueryRequest = {
       ? Duration.fromPartial(object.timeout)
       : undefined;
     message.dataSourceId = object.dataSourceId ?? "";
+    message.explain = object.explain ?? false;
     return message;
   },
 };
