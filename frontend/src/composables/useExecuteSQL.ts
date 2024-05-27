@@ -182,6 +182,7 @@ const useExecuteSQL = () => {
             dataSourceId: dataSourceId,
             statement,
             limit: sqlEditorStore.resultRowsLimit,
+            explain: false,
           },
           abortController.signal
         );
