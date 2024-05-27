@@ -19,6 +19,7 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_SQLITE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_SPANNER, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_HIVE, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_BIGQUERY, ValidateSQLForEditor)
 
 	base.RegisterExtractResourceListFunc(storepb.Engine_CLICKHOUSE, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_SQLITE, ExtractResourceList)
