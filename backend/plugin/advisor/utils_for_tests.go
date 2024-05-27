@@ -172,7 +172,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 	for i, tc := range tests {
 		// Add engine types here for mocked database metadata.
 		var schemaMetadata *storepb.DatabaseSchemaMetadata
-		curDB := "test"
+		curDB := "TEST_DB"
 		if needMetaData {
 			switch dbType {
 			case storepb.Engine_POSTGRES:
