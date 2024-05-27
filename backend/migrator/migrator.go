@@ -54,6 +54,9 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	if err := initializeSchema(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, serverVersion); err != nil {
 		return nil, err
 	}
+	if _, err := metadataDriver.GetDB().ExecContext(ctx, "ALTER TABLE instance_change_history ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES project (id);"); err != nil {
+		return nil, err
+	}
 
 	verBefore, err := getLatestVersion(ctx, storeInstance)
 	if err != nil {
