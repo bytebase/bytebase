@@ -269,11 +269,13 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
-	isExplain := strings.HasPrefix(statement, "EXPLAIN")
-
-	stmt := statement
-	if !isExplain && queryContext.Limit > 0 {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
+	if !isSet {
+		if queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
 	}
 
 	if queryContext.SensitiveSchemaInfo != nil {
@@ -291,7 +293,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, driver.dbType, conn, stmt, queryContext)
+	result, err := util.Query(ctx, driver.dbType, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}

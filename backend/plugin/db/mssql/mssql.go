@@ -207,19 +207,19 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-
-	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
-		var err error
-		stmt, err = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
+	if queryContext.Explain {
+		statement = fmt.Sprintf("EXPLAIN %s", statement)
+	} else if queryContext.Limit > 0 {
+		stmt, err := getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
 			stmt = fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, queryContext.Limit)
 		}
+		statement = stmt
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_MSSQL, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_MSSQL, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}

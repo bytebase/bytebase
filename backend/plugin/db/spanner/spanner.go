@@ -263,6 +263,10 @@ func getDatabaseFromDSN(dsn string) (string, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext.Explain {
+		return nil, errors.New("Spanner does not support EXPLAIN")
+	}
+
 	stmts, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return nil, err

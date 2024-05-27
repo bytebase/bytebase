@@ -501,12 +501,13 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 
 func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
-	isExplain := strings.HasPrefix(statement, "EXPLAIN")
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
-
-	stmt := statement
-	if !isExplain && !isSet && queryContext.Limit > 0 {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+	if !isSet {
+		if queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
 	}
 
 	if queryContext.SensitiveSchemaInfo != nil {
@@ -524,7 +525,7 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, d.dbType, conn, stmt, queryContext)
+	result, err := util.Query(ctx, d.dbType, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}
