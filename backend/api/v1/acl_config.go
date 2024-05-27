@@ -98,6 +98,12 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RoleService_UpdateRole_FullMethodName: iam.PermissionRolesUpdate,
 	v1pb.RoleService_DeleteRole_FullMethodName: iam.PermissionRolesDelete,
 
+	v1pb.UserGroupService_CreateUserGroup_FullMethodName: iam.PermissionUserGroupsCreate,
+	v1pb.UserGroupService_GetUserGroup_FullMethodName:    iam.PermissionUserGroupsGet,
+	v1pb.UserGroupService_DeleteUserGroup_FullMethodName: iam.PermissionUserGroupsDelete,
+	v1pb.UserGroupService_UpdateUserGroup_FullMethodName: iam.PermissionUserGroupsUpdate,
+	v1pb.UserGroupService_ListUserGroups_FullMethodName:  iam.PermissionUserGroupsList,
+
 	v1pb.VCSConnectorService_ListVCSConnectors_FullMethodName:  iam.PermissionVCSConnectorsList,
 	v1pb.VCSConnectorService_GetVCSConnector_FullMethodName:    iam.PermissionVCSConnectorsGet,
 	v1pb.VCSConnectorService_CreateVCSConnector_FullMethodName: iam.PermissionVCSConnectorsCreate,
@@ -161,11 +167,4 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.IdentityProviderService_DeleteIdentityProvider_FullMethodName:   iam.PermissionIdentityProvidersDelete,
 	v1pb.IdentityProviderService_UndeleteIdentityProvider_FullMethodName: iam.PermissionIdentityProvidersUndelete,
 	v1pb.IdentityProviderService_TestIdentityProvider_FullMethodName:     iam.PermissionIdentityProvidersUpdate,
-
-	// TODO(pony):
-	v1pb.UserGroupService_CreateUserGroup_FullMethodName: "",
-	v1pb.UserGroupService_GetUserGroup_FullMethodName:    "",
-	v1pb.UserGroupService_DeleteUserGroup_FullMethodName: "",
-	v1pb.UserGroupService_UpdateUserGroup_FullMethodName: "",
-	v1pb.UserGroupService_ListUserGroups_FullMethodName:  "",
 }

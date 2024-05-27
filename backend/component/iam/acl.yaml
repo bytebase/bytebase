@@ -97,6 +97,11 @@ roles:
       - bb.settings.set
       - bb.slowQueries.list
       - bb.taskRuns.list
+      - bb.userGroups.create
+      - bb.userGroups.delete
+      - bb.userGroups.get
+      - bb.userGroups.list
+      - bb.userGroups.update
   - name: roles/workspaceDBA
     permissions:
       - bb.auditLogs.get
@@ -195,6 +200,8 @@ roles:
       - bb.settings.set
       - bb.slowQueries.list
       - bb.taskRuns.list
+      - bb.userGroups.get
+      - bb.userGroups.list
   - name: roles/workspaceMember
     permissions:
       - bb.environments.get
@@ -207,6 +214,8 @@ roles:
       - bb.risks.list
       - bb.roles.list
       - bb.settings.list
+      - bb.userGroups.get
+      - bb.userGroups.list
   - name: roles/projectOwner
     permissions:
       - bb.auditLogs.get
