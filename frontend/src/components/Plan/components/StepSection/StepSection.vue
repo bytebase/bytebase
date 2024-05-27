@@ -8,7 +8,7 @@
           >
             <template
               v-for="(step, index) in stepList"
-              :key="`${index}-${step - title}`"
+              :key="`${index}-${step.title}`"
             >
               <StepCard
                 :step="step"

@@ -7,7 +7,7 @@ export const createEmptyLocalSheet = () => {
   return reactive(Sheet.fromJSON({}));
 };
 
-export const getLocalSheetByName = (name: string) => {
+export const getLocalSheetByName = (name: string): Sheet => {
   const existed = sheetsByName.get(name);
   if (existed) {
     return existed;
