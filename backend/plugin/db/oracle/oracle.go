@@ -239,14 +239,15 @@ func (driver *Driver) getOracleStatementWithResultLimit(stmt string, queryContex
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
-	stmt := statement
-	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
-		var err error
-		stmt, err = driver.getOracleStatementWithResultLimit(stmt, queryContext)
+	if queryContext.Explain {
+		statement = fmt.Sprintf("EXPLAIN %s", statement)
+	} else if queryContext.Limit > 0 {
+		stmt, err := driver.getOracleStatementWithResultLimit(statement, queryContext)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
 			stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
 		}
+		statement = stmt
 	}
 
 	if queryContext.SensitiveSchemaInfo != nil {
@@ -264,7 +265,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}

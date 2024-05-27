@@ -217,6 +217,7 @@ type ConnectionContext struct {
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
 	Limit               int
+	Explain             bool
 	ReadOnly            bool
 	SensitiveSchemaInfo *base.SensitiveSchemaInfo
 	// EnableSensitive will set to be true if the database instance has license.

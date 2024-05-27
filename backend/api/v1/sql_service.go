@@ -786,6 +786,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	start := time.Now().UnixNano()
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:               int(request.Limit),
+		Explain:             request.Explain,
 		ReadOnly:            true,
 		CurrentDatabase:     database.DatabaseName,
 		SensitiveSchemaInfo: nil,
