@@ -1,13 +1,34 @@
 <template>
   <div
-    class="px-3 py-2 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
+    class="px-3 py-2 w-full cursor-pointer border rounded lg:flex-1 flex justify-start items-center overflow-hidden gap-x-1"
     :class="specClass"
     @click="onClickSpec(spec)"
   >
-    <div
-      v-if="isDatabaseChangeSpec(spec)"
-      class="w-full flex items-center gap-2"
+    <NTooltip
+      v-if="
+        planCheckStatus === PlanCheckRun_Result_Status.ERROR ||
+        planCheckStatus === PlanCheckRun_Result_Status.WARNING
+      "
+      trigger="hover"
+      placement="top"
     >
+      <template #trigger>
+        <heroicons:exclamation-circle-solid
+          class="w-5 h-5 mr-1"
+          :class="[
+            planCheckStatus === PlanCheckRun_Result_Status.ERROR
+              ? 'text-error hover:text-error-hover'
+              : 'text-warning hover:text-warning-hover',
+          ]"
+        />
+      </template>
+      <span>{{
+        $t(
+          "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+        )
+      }}</span>
+    </NTooltip>
+    <div v-if="isDatabaseChangeSpec(spec)" class="flex items-center gap-2">
       <InstanceV1Name
         :instance="databaseForSpec(plan, spec).instanceEntity"
         :link="false"
@@ -19,7 +40,7 @@
     </div>
     <div
       v-else-if="isGroupingChangeSpec(spec) && relatedDatabaseGroup"
-      class="w-full flex items-center gap-2"
+      class="flex items-center gap-2"
     >
       <NTooltip>
         <template #trigger><DatabaseGroupIcon class="w-4 h-auto" /></template>
@@ -31,7 +52,7 @@
     </div>
     <div
       v-else-if="isDeploymentConfigChangeSpec(spec)"
-      class="w-full flex items-center"
+      class="flex items-center"
     >
       <TenantIcon class="w-4 h-auto" />
       <span class="text-gray-500 text-sm truncate ml-1 mr-2">
@@ -40,9 +61,7 @@
       <span class="text-sm">{{ $t("common.deployment-config") }}</span>
     </div>
     <!-- Fallback -->
-    <div v-else class="w-full flex items-center gap-2 text-sm">
-      Unknown type
-    </div>
+    <div v-else class="flex items-center gap-2 text-sm">Unknown type</div>
   </div>
 </template>
 
@@ -53,28 +72,45 @@ import { computed, onMounted } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import TenantIcon from "@/components/TenantIcon.vue";
 import { useDBGroupStore } from "@/store";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import {
+  PlanCheckRun_Result_Status,
+  type Plan_Spec,
+} from "@/types/proto/v1/plan_service";
 import {
   databaseForSpec,
   isDatabaseChangeSpec,
   usePlanContext,
   isGroupingChangeSpec,
   isDeploymentConfigChangeSpec,
+  planCheckRunListForSpec,
+  planCheckRunSummaryForCheckRunList,
 } from "../../logic";
 
 const props = defineProps<{
   spec: Plan_Spec;
 }>();
 
-const { plan, selectedSpec, events } = usePlanContext();
+const { isCreating, plan, selectedSpec, events } = usePlanContext();
 const dbGroupStore = useDBGroupStore();
 
 const project = computed(() => plan.value.projectEntity);
 
 const specClass = computed(() => {
   const classes: string[] = [];
-  if (isEqual(props.spec, selectedSpec.value)) {
+  const isSelected = isEqual(props.spec, selectedSpec.value);
+  if (isSelected) {
     classes.push("border-accent bg-accent bg-opacity-5 shadow");
+  }
+  if (planCheckStatus.value === PlanCheckRun_Result_Status.WARNING) {
+    classes.push("bg-warning bg-opacity-5");
+    if (isSelected) {
+      classes.push("border-warning");
+    }
+  } else if (planCheckStatus.value === PlanCheckRun_Result_Status.ERROR) {
+    classes.push("bg-error bg-opacity-5");
+    if (isSelected) {
+      classes.push("border-error");
+    }
   }
   return classes;
 });
@@ -84,6 +120,21 @@ const relatedDatabaseGroup = computed(() => {
     return undefined;
   }
   return dbGroupStore.getDBGroupByName(props.spec.changeDatabaseConfig!.target);
+});
+
+const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
+  if (isCreating.value) return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+
+  const summary = planCheckRunSummaryForCheckRunList(
+    planCheckRunListForSpec(plan.value, props.spec)
+  );
+  if (summary.errorCount > 0) {
+    return PlanCheckRun_Result_Status.ERROR;
+  }
+  if (summary.warnCount > 0) {
+    return PlanCheckRun_Result_Status.WARNING;
+  }
+  return PlanCheckRun_Result_Status.SUCCESS;
 });
 
 onMounted(async () => {

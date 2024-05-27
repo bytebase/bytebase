@@ -7,6 +7,7 @@ import type { Plan_Spec, Plan_Step } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 
 export type PlanEvents = Emittery<{
+  "status-changed": { eager: boolean };
   "select-spec": { spec: Plan_Spec };
 }>;
 

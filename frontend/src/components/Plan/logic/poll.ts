@@ -5,7 +5,7 @@ import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
-  const { isCreating, ready, plan } = usePlanContext();
+  const { isCreating, ready, plan, events } = usePlanContext();
   const planStore = usePlanStore();
 
   const shouldPollPlan = computed(() => {
@@ -30,6 +30,13 @@ export const usePollPlan = () => {
       growth: 2,
       jitter: 500,
     },
+  });
+
+  events.on("status-changed", ({ eager }) => {
+    if (eager) {
+      refreshPlan();
+      poller.restart();
+    }
   });
 
   watch(
