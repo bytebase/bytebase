@@ -1,15 +1,6 @@
 <template>
   <div class="step" :class="stepClass">
-    <div class="text" @click="handleClickStep">
-      <div class="text-sm min-w-32 lg:min-w-fit space-x-1 whitespace-nowrap">
-        <heroicons:arrow-small-right
-          v-if="isSelectedStep"
-          class="w-5 h-5 inline-block mb-0.5"
-        />
-        <span>{{ step.title }} {{ $t("common.stage") }}</span>
-      </div>
-    </div>
-
+    <ArrowRightIcon v-if="isSelectedStep" class="w-5 h-5 mr-1 inline-block" />
     <NTooltip
       v-if="isCreating && !validateSpecs()"
       trigger="hover"
@@ -17,7 +8,7 @@
     >
       <template #trigger>
         <heroicons:exclamation-circle-solid
-          class="w-6 h-6 ml-2 text-error hover:text-error-hover"
+          class="w-6 h-6 mx-1 text-error hover:text-error-hover"
         />
       </template>
       <span>{{ $t("issue.missing-sql-statement") }}</span>
@@ -33,7 +24,7 @@
     >
       <template #trigger>
         <heroicons:exclamation-circle-solid
-          class="w-6 h-6 ml-2"
+          class="w-6 h-6 mx-1"
           :class="[
             planCheckStatus === PlanCheckRun_Result_Status.ERROR
               ? 'text-error hover:text-error-hover'
@@ -47,11 +38,17 @@
         )
       }}</span>
     </NTooltip>
+    <div class="text" @click="handleClickStep">
+      <div class="text-sm min-w-32 lg:min-w-fit space-x-1 whitespace-nowrap">
+        <span>{{ step.title }} {{ $t("common.stage") }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { head, isEqual, uniqBy } from "lodash-es";
+import { ArrowRightIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import {
