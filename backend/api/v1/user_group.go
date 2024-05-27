@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -195,7 +194,7 @@ func (s *UserGroupService) convertToV1Group(ctx context.Context, groupMessage *s
 	}
 
 	group := &v1pb.UserGroup{
-		Name:        fmt.Sprintf("%s%s", common.UserGroupPrefix, groupMessage.Email),
+		Name:        common.FormatGroupEmail(groupMessage.Email),
 		Title:       groupMessage.Title,
 		Description: groupMessage.Description,
 		Creator:     common.FormatUserEmail(creator.Email),
