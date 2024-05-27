@@ -838,6 +838,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		schemaPrevField = fmt.Sprintf("LEFT(%s, %d)", schemaPrevField, find.TruncateSize)
 	}
 
+	// Project ID is not ready.
 	query := fmt.Sprintf(`
 		SELECT
 			instance_change_history.id,
@@ -848,7 +849,6 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			instance_change_history.updated_ts,
 			instance_change_history.instance_id,
 			instance_change_history.database_id,
-			instance_change_history.project_id,
 			instance_change_history.issue_id,
 			instance_change_history.release_version,
 			instance_change_history.sequence,
@@ -891,7 +891,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
 		var rowStatus, storedVersion, payload string
-		var instanceID, databaseID, projectID, issueID sql.NullInt32
+		var instanceID, databaseID, issueID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.UID,
 			&rowStatus,
@@ -901,7 +901,6 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			&changeHistory.UpdatedTs,
 			&instanceID,
 			&databaseID,
-			&projectID,
 			&issueID,
 			&changeHistory.ReleaseVersion,
 			&changeHistory.Sequence,
@@ -927,10 +926,6 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		if databaseID.Valid {
 			n := int(databaseID.Int32)
 			changeHistory.DatabaseUID = &n
-		}
-		if projectID.Valid {
-			n := int(projectID.Int32)
-			changeHistory.ProjectUID = &n
 		}
 		if issueID.Valid {
 			n := int(issueID.Int32)
