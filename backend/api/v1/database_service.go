@@ -939,7 +939,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		converted, err := convertToChangeHistories(changeHistories[:limit])
+		converted, err := s.convertToChangeHistories(ctx, changeHistories[:limit])
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
 		}
@@ -950,7 +950,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 
 	// no subsequent pages
-	converted, err := convertToChangeHistories(changeHistories)
+	converted, err := s.convertToChangeHistories(ctx, changeHistories)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
 	}
@@ -1012,7 +1012,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if len(changeHistory) > 1 {
 		return nil, status.Errorf(codes.Internal, "expect to find one change history, got %d", len(changeHistory))
 	}
-	converted, err := convertToChangeHistory(changeHistory[0])
+	converted, err := s.convertToChangeHistory(ctx, changeHistory[0])
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert change history, error: %v", err)
 	}
@@ -1172,10 +1172,10 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	return engine, nil
 }
 
-func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {
+func (s *DatabaseService) convertToChangeHistories(ctx context.Context, h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {
 	var changeHistories []*v1pb.ChangeHistory
 	for _, history := range h {
-		converted, err := convertToChangeHistory(history)
+		converted, err := s.convertToChangeHistory(ctx, history)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert change history")
 		}
@@ -1184,7 +1184,7 @@ func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.
 	return changeHistories, nil
 }
 
-func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
+func (s *DatabaseService) convertToChangeHistory(ctx context.Context, h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
 	v1pbHistory := &v1pb.ChangeHistory{
 		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
 		Uid:               h.UID,
@@ -1207,11 +1207,19 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
 		Issue:             "",
 	}
-	if h.SheetID != nil {
-		v1pbHistory.StatementSheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.SheetIDPrefix, *h.SheetID)
+	var projectID string
+	if h.ProjectUID != nil {
+		p, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: h.ProjectUID})
+		if err != nil {
+			return nil, err
+		}
+		projectID = p.ResourceID
 	}
-	if h.IssueUID != nil {
-		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.IssueNamePrefix, *h.IssueUID)
+	if h.SheetID != nil && projectID != "" {
+		v1pbHistory.StatementSheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.SheetIDPrefix, *h.SheetID)
+	}
+	if h.IssueUID != nil && projectID != "" {
+		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.IssueNamePrefix, *h.IssueUID)
 	}
 	if h.Payload != nil && h.Payload.ChangedResources != nil {
 		v1pbHistory.ChangedResources = convertToChangedResources(h.Payload.ChangedResources)

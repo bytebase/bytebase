@@ -137,6 +137,7 @@ type MigrationInfo struct {
 	// InstanceID nil is metadata database.
 	InstanceID *int
 	DatabaseID *int
+	ProjectUID *int
 	IssueUID   *int
 	CreatorID  int
 
