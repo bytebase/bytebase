@@ -61,7 +61,7 @@ func (*DisallowCrossDBQueriesAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 func (checker *DisallowCrossDBQueriesChecker) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
 	if fullTblnameCtx := ctx.Full_table_name(); fullTblnameCtx != nil {
 		// Case insensitive.
-		if fullTblName, err := tsql.NormalizeFullTableName(fullTblnameCtx); err == nil && !strings.EqualFold(fullTblName.Database, checker.curDB) {
+		if fullTblName, err := tsql.NormalizeFullTableName(fullTblnameCtx); err == nil && fullTblName.Database != "" && !strings.EqualFold(fullTblName.Database, checker.curDB) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementDisallowCrossDBQueries,
