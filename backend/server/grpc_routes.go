@@ -91,7 +91,7 @@ func configureGrpcRouters(
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
 	v1pb.RegisterVCSConnectorServiceServer(grpcServer, apiv1.NewVCSConnectorService(stores))
-	v1pb.RegisterUserGroupServiceServer(grpcServer, apiv1.NewUserGroupService(stores))
+	v1pb.RegisterUserGroupServiceServer(grpcServer, apiv1.NewUserGroupService(stores, iamManager))
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)

@@ -113,7 +113,12 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.RoleService_ListRoles_FullMethodName,
 		v1pb.RoleService_CreateRole_FullMethodName,
 		v1pb.RoleService_UpdateRole_FullMethodName,
-		v1pb.RoleService_DeleteRole_FullMethodName:
+		v1pb.RoleService_DeleteRole_FullMethodName,
+		v1pb.UserGroupService_CreateUserGroup_FullMethodName,
+		v1pb.UserGroupService_GetUserGroup_FullMethodName,
+		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
+		v1pb.UserGroupService_UpdateUserGroup_FullMethodName,
+		v1pb.UserGroupService_ListUserGroups_FullMethodName:
 		return nil, nil
 
 	case

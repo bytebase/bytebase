@@ -9,7 +9,10 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -18,13 +21,15 @@ import (
 // UserGroupService implements the user group service.
 type UserGroupService struct {
 	v1pb.UnimplementedUserGroupServiceServer
-	store *store.Store
+	store      *store.Store
+	iamManager *iam.Manager
 }
 
 // NewUserGroupService creates a new UserGroupService.
-func NewUserGroupService(store *store.Store) *UserGroupService {
+func NewUserGroupService(store *store.Store, iamManager *iam.Manager) *UserGroupService {
 	return &UserGroupService{
-		store: store,
+		store:      store,
+		iamManager: iamManager,
 	}
 }
 
@@ -88,9 +93,31 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	ok, err = func() (bool, error) {
+		group, err := s.store.GetUserGroup(ctx, email)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get user group %q", email)
+		}
+		if group == nil {
+			return false, errors.Wrapf(err, "group %q not found", email)
+		}
+		for _, member := range group.Payload.GetMembers() {
+			if member.Role == storepb.UserGroupMember_OWNER && member.Member == common.FormatUserEmail(user.Email) {
+				return true, nil
+			}
+		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsUpdate, user)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission to update user group, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update user group")
 	}
 
 	patch := &store.UpdateUserGroupMessage{}
@@ -107,11 +134,11 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 			}
 			patch.Payload = payload
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
+			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
 	}
 
-	groupMessage, err := s.store.UpdateUserGroup(ctx, email, patch, principalID)
+	groupMessage, err := s.store.UpdateUserGroup(ctx, email, patch, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -124,6 +151,33 @@ func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.De
 	email, err := common.GetUserGroupEmail(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	ok, err = func() (bool, error) {
+		group, err := s.store.GetUserGroup(ctx, email)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get user group %q", email)
+		}
+		if group == nil {
+			return false, errors.Wrapf(err, "group %q not found", email)
+		}
+		for _, member := range group.Payload.GetMembers() {
+			if member.Role == storepb.UserGroupMember_OWNER && member.Member == common.FormatUserEmail(user.Email) {
+				return true, nil
+			}
+		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsDelete, user)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission to delete user group, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete user group")
 	}
 
 	if err := s.store.DeleteUserGroup(ctx, email); err != nil {
