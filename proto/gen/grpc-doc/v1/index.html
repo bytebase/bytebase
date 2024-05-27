@@ -2447,6 +2447,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GenerateRestoreSQLRequest"><span class="badge">M</span>GenerateRestoreSQLRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GenerateRestoreSQLResponse"><span class="badge">M</span>GenerateRestoreSQLResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ParseMyBatisMapperRequest"><span class="badge">M</span>ParseMyBatisMapperRequest</a>
                 </li>
               
@@ -26457,6 +26465,76 @@ The exported data is not masked. </p></td>
 
         
       
+        <h3 id="bytebase.v1.GenerateRestoreSQLRequest">GenerateRestoreSQLRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the instance name to execute the query against.
+Format: instances/{instance}/databases/{databaseName} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The original SQL statement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>backup_database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The backup database name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>bakcup_table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The backup table name. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GenerateRestoreSQLResponse">GenerateRestoreSQLResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The restore SQL statement. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</h3>
         <p></p>
 
@@ -27291,6 +27369,13 @@ to retrieve the next page of history. </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>GenerateRestoreSQL</td>
+                <td><a href="#bytebase.v1.GenerateRestoreSQLRequest">GenerateRestoreSQLRequest</a></td>
+                <td><a href="#bytebase.v1.GenerateRestoreSQLResponse">GenerateRestoreSQLResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -27433,6 +27518,16 @@ to retrieve the next page of history. </p></td>
                 <td>StringifyMetadata</td>
                 <td>POST</td>
                 <td>/v1/schemaDesign:stringifyMetadata</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GenerateRestoreSQL</td>
+                <td>POST</td>
+                <td>/v1/{name=instances/*/databases/*}:generateRestoreSQL</td>
                 <td>*</td>
               </tr>
               
