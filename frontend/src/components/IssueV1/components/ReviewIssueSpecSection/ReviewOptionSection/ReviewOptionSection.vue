@@ -56,13 +56,13 @@ import {
   notifyNotEditableLegacyIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_ChangeDatabaseConfig,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import StatementTypeSelector from "./StatementTypeSelector.vue";
 import type { StatementType } from "./types";
@@ -133,7 +133,7 @@ const handleSaveEdit = async () => {
     config.type = state.statementType;
   }
 
-  const updatedPlan = await rolloutServiceClient.updatePlan({
+  const updatedPlan = await planServiceClient.updatePlan({
     plan: planPatch,
     updateMask: ["steps"],
   });

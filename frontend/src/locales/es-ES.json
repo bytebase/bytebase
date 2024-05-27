@@ -76,7 +76,6 @@
     "role": {
       "self": "Rol"
     },
-    "assignee": "Asignado",
     "revert": "Revertir",
     "apply": "Aplicar",
     "reorder": "Reordenar",
@@ -274,7 +273,8 @@
     "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
     "configure-now": "Configurar ahora",
-    "connection": "Conexión"
+    "connection": "Conexión",
+    "permission-denied": "Permiso denegado"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -336,7 +336,6 @@
       "warn": "Advertencia",
       "error": "Error"
     },
-    "earliest-allowed-time-no-modify": "No puedes modificar este campo porque no eres el asignado a la incidencia o no está pendiente por ejecutar.",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
       "bb-task-database-schema-update-ghost-cutover": "Cambiar de tabla",
@@ -460,7 +459,7 @@
       "security-and-policy": "Seguridad y Política",
       "integration": "Integración",
       "general": "General",
-      "members": "Miembros",
+      "members-and-groups": "Miembros y grupos",
       "im-integration": "Integración de IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -499,13 +498,33 @@
       "table": {
         "account": "Cuenta",
         "role": "Rol",
+        "groups": "Grupos",
         "update-time": "Hora de Actualización",
         "granted-time": "Hora de Concesión",
         "roles": "Roles"
       },
+      "groups": {
+        "self": "Grupos",
+        "add-group": "Añadir grupo",
+        "update-group": "Grupo de actualización",
+        "delete-warning": "Se eliminará el grupo \"{name}\". Esta acción no se puede deshacer.",
+        "form": {
+          "email": "Correo electrónico",
+          "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
+          "title": "Título",
+          "description": "Descripción",
+          "members": "Miembros",
+          "add-member": "Añadir miembro",
+          "role": {
+            "owner": "Dueño",
+            "member": "Miembros"
+          }
+        }
+      },
       "action": {
         "deactivate": "Desactivar",
         "deactivate-confirm-title": "¿Estás seguro de que deseas desactivar?",
+        "delete-confirm-title": "¿Estás seguro de eliminar?",
         "deactivate-confirm-description": "Aún puedes reactivar más tarde",
         "reactivate": "Reactivar",
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
@@ -531,6 +550,7 @@
       },
       "view-by-principals": "Ver por responsables",
       "view-by-roles": "Ver por roles",
+      "view-by-groups": "Ver por grupos",
       "add-member": "Agregar miembro",
       "update-member": "Actualizar miembro",
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador"
@@ -896,10 +916,6 @@
     "sentence": {
       "created-issue": "incidencia creado",
       "commented": "comentado",
-      "reassigned-issue": "incidencia reasignada de {oldName} a {newName}",
-      "assigned-issue": "incidencia asignada a {newName}",
-      "unassigned-issue": "incidencia desasignada de {oldName}",
-      "invalid-assignee-update": "actualización de asignatario no válida",
       "changed-description": "cambio de descripción",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "unset-from": "eliminación de {name} de \"{oldValue}\"",
@@ -1015,10 +1031,6 @@
           "title": "Creador",
           "description": "Búsqueda por tema creador"
         },
-        "assignee": {
-          "title": "Cesionario",
-          "description": "Buscar por el responsable del problema"
-        },
         "subscriber": {
           "title": "Abonado",
           "description": "Buscar por suscriptor del problema"
@@ -1066,7 +1078,7 @@
       "updated": "Actualizado",
       "approver": "Aprobador",
       "creator": "Creador",
-      "assignee": "Asignado"
+      "current-approver": "Aprobador actual"
     },
     "stage-select": {
       "current": "{name} (actual)"
@@ -1112,19 +1124,12 @@
     },
     "will-rollback": "Esta tarea revertirá {link}",
     "issue-link-with-task": "Incidencia {issue} - tarea {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "Enviar una solicitud de aprobación de {im} correctamente",
-      "send-attention-request-successfully": "Solicitar la atención del asignado {principal} con éxito",
-      "needs-attention": "Necesita atención",
-      "click-to-mark": "Haga clic para solicitar la atención del asignado"
-    },
     "sdl": {
       "schema-change": "Cambio de esquema",
       "generated-ddl-statements": "Declaraciones DDL generadas",
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
-    "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
@@ -1190,14 +1195,6 @@
       "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
     },
     "approval-requested": "Aprobación solicitada",
-    "assignee": {
-      "current-assignee": "Asignatario actual",
-      "workspace-admins": "Administrador del espacio de trabajo",
-      "workspace-dbas": "DBA",
-      "project-owners": "Propietarios del proyecto",
-      "releasers-of-current-stage": "Liberadores de la etapa actual.",
-      "approvers-of-current-step": "Aprobadores del paso actual"
-    },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
@@ -1225,7 +1222,9 @@
     },
     "sql-review": {
       "statement-type": "Tipo de declaración"
-    }
+    },
+    "sql-review-only": "Sólo revisión de SQL",
+    "create-issue": "Crear problema"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1454,6 +1453,7 @@
     "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
     "filter-instance-name": "Filtrar nombre de instancia",
     "grants": "Concesiones",
+    "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
@@ -1910,7 +1910,7 @@
         },
         "issue-info-change": {
           "title": "Cambio de información de incidencia",
-          "label": "Cuando cambia la información de la incidencia (por ejemplo, asignación, título, descripción)"
+          "label": "Cuando cambia la información de la incidencia (por ejemplo, título, descripción)"
         },
         "issue-comment-creation": {
           "title": "Creación de comentario de incidencia",
@@ -2170,10 +2170,11 @@
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
     "connection-string-schema": "Esquema de cadena de conexión",
+    "additional-node-addresses": "Direcciones de nodos adicionales",
+    "replica-set": "Conjunto de réplicas",
     "admin": "Admin",
     "read-only": "Solo lectura",
-    "additional-node-addresses": "Direcciones de nodos adicionales",
-    "replica-set": "Conjunto de réplicas"
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {

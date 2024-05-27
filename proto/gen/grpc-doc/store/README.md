@@ -169,8 +169,6 @@
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
-    - [Binding](#bytebase-store-Binding)
-    - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
@@ -185,8 +183,10 @@
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
+    - [Binding](#bytebase-store-Binding)
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
+    - [ProjectIamPolicy](#bytebase-store-ProjectIamPolicy)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
@@ -201,6 +201,9 @@
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [Announcement](#bytebase-store-Announcement)
+    - [AppIMSetting](#bytebase-store-AppIMSetting)
+    - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
+    - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-store-DataClassificationSetting-DataClassificationConfig)
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
@@ -255,6 +258,12 @@
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
+  
+- [store/user_group.proto](#store_user_group-proto)
+    - [UserGroupMember](#bytebase-store-UserGroupMember)
+    - [UserGroupPayload](#bytebase-store-UserGroupPayload)
+  
+    - [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role)
   
 - [store/vcs.proto](#store_vcs-proto)
     - [VCSConnector](#bytebase-store-VCSConnector)
@@ -635,7 +644,7 @@ convert to the expected struct there.
 | parent | [string](#string) |  | The project or workspace the audit log belongs to. Formats: - projects/{project} - workspaces/{workspace} |
 | method | [string](#string) |  | e.g. /bytebase.v1.SQLService/Query |
 | resource | [string](#string) |  | resource name projects/{project} |
-| user | [string](#string) |  | Format: users/d@d.com |
+| user | [string](#string) |  | Format: users/{userUID}. |
 | severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
@@ -895,7 +904,7 @@ ForeignKeyMetadata is the metadata for foreign keys.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a function. |
-| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
 
 
@@ -985,7 +994,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
-| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
 
 
@@ -1117,7 +1126,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | classification_id | [string](#string) |  |  |
-| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
@@ -1206,7 +1215,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a view. |
-| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
@@ -1454,6 +1463,8 @@ Used internally for obfuscating the page token.
 | DORIS | 19 |  |
 | HIVE | 20 |  |
 | ELASTICSEARCH | 21 |  |
+| BIGQUERY | 22 |  |
+| DYNAMODB | 23 |  |
 
 
 
@@ -1578,6 +1589,7 @@ Used internally for obfuscating the page token.
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 
 
 
@@ -2148,8 +2160,6 @@ InstanceOptions is the option for instances.
 | to_description | [string](#string) | optional |  |
 | from_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
 | to_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
-| from_assignee | [string](#string) | optional | Format: users/{email} |
-| to_assignee | [string](#string) | optional | Format: users/{email} |
 
 
 
@@ -2684,40 +2694,6 @@ Type is the database change type.
 
 
 
-<a name="bytebase-store-Binding"></a>
-
-### Binding
-Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#binding
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | Role that is assigned to the list of members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
-
-* `allUsers`: A special identifier that represents anyone. * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-
-
-
-
-
-
-<a name="bytebase-store-IamPolicy"></a>
-
-### IamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. |
-
-
-
-
-
-
 <a name="bytebase-store-MaskData"></a>
 
 ### MaskData
@@ -2765,7 +2741,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
 | member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+Format: users/{userUID}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
 
 
@@ -2916,6 +2892,23 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
+<a name="bytebase-store-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+
+
+
+
+
+
 <a name="bytebase-store-Label"></a>
 
 ### Label
@@ -2944,6 +2937,21 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
 | force_issue_labels | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ProjectIamPolicy"></a>
+
+### ProjectIamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single project role. |
 
 
 
@@ -3100,6 +3108,53 @@ The type of target.
 | level | [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel) |  | The alert level of announcemnt |
 | text | [string](#string) |  | The text of announcemnt |
 | link | [string](#string) |  | The optional link, user can follow the link to check extra details |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting"></a>
+
+### AppIMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
+| feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Feishu"></a>
+
+### AppIMSetting.Feishu
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Slack"></a>
+
+### AppIMSetting.Slack
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  |  |
 
 
 
@@ -3900,6 +3955,68 @@ MFAConfig is the MFA configuration for a user.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_user_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/user_group.proto
+
+
+
+<a name="bytebase-store-UserGroupMember"></a>
+
+### UserGroupMember
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member | [string](#string) |  | Member is the principal who belong to this user group.
+
+Format: users/{userUID}. |
+| role | [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-UserGroupPayload"></a>
+
+### UserGroupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [UserGroupMember](#bytebase-store-UserGroupMember) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-UserGroupMember-Role"></a>
+
+### UserGroupMember.Role
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_UNSPECIFIED | 0 |  |
+| OWNER | 1 |  |
+| MEMBER | 2 |  |
+
 
  
 

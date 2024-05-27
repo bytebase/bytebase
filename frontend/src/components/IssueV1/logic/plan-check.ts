@@ -1,16 +1,14 @@
 import { maxBy } from "lodash-es";
 import type { ComposedIssue } from "@/types";
-import type {
-  PlanCheckRun,
-  Plan_Spec,
-  Task,
-} from "@/types/proto/v1/rollout_service";
 import {
+  PlanCheckRun,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
-  Task_Status,
-} from "@/types/proto/v1/rollout_service";
+  type Plan_Spec,
+} from "@/types/proto/v1/plan_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   databaseForTask,
   sheetNameForSpec,

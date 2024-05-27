@@ -55,7 +55,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         path: "member",
         name: SETTING_ROUTE_WORKSPACE_MEMBER,
         meta: {
-          title: () => t("settings.sidebar.members"),
+          title: () => t("settings.sidebar.members-and-groups"),
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceMember.vue"),

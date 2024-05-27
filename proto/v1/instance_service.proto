@@ -414,6 +414,9 @@ message DataSource {
   repeated Address additional_addresses = 24 [(google.api.field_behavior) = OPTIONAL];
   // replica_set is used for MongoDB replica set.
   string replica_set = 25;
+
+  // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
+  bool direct_connection = 26;
 }
 
 enum DataSourceType {

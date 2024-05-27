@@ -389,7 +389,7 @@ const tryCreateOrUpdateUser = async () => {
     );
     pushNotification({
       module: "bytebase",
-      style: "INFO",
+      style: "SUCCESS",
       title: t("common.updated"),
     });
   }

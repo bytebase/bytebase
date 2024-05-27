@@ -137,6 +137,7 @@ type MigrationInfo struct {
 	// InstanceID nil is metadata database.
 	InstanceID *int
 	DatabaseID *int
+	ProjectUID *int
 	IssueUID   *int
 	CreatorID  int
 
@@ -190,6 +191,7 @@ type ConnectionConfig struct {
 	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
 	AdditionalAddresses []*storepb.DataSourceOptions_Address
 	ReplicaSet          string
+	DirectConnection    bool
 }
 
 // SSHConfig is the configuration for connection over SSH.
@@ -215,6 +217,7 @@ type ConnectionContext struct {
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
 	Limit               int
+	Explain             bool
 	ReadOnly            bool
 	SensitiveSchemaInfo *base.SensitiveSchemaInfo
 	// EnableSensitive will set to be true if the database instance has license.

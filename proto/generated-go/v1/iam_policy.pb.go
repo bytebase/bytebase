@@ -81,6 +81,8 @@ type Binding struct {
 	// Format: roles/{role}
 	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// Specifies the principals requesting access for a Bytebase resource.
+	// For users, the member should be: user:{email}
+	// For groups, the member should be: group:{email}
 	Members []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
 	// The condition that is associated with this binding.
 	// If the condition evaluates to true, then this binding applies to the current request.

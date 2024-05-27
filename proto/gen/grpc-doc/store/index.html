@@ -847,14 +847,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.Binding"><span class="badge">M</span>Binding</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.IamPolicy"><span class="badge">M</span>IamPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.MaskData"><span class="badge">M</span>MaskData</a>
                 </li>
               
@@ -910,11 +902,19 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.Binding"><span class="badge">M</span>Binding</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Label"><span class="badge">M</span>Label</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.Project"><span class="badge">M</span>Project</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ProjectIamPolicy"><span class="badge">M</span>ProjectIamPolicy</a>
                 </li>
               
                 <li>
@@ -976,6 +976,18 @@
               
                 <li>
                   <a href="#bytebase.store.Announcement"><span class="badge">M</span>Announcement</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.AppIMSetting"><span class="badge">M</span>AppIMSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.AppIMSetting.Feishu"><span class="badge">M</span>AppIMSetting.Feishu</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.AppIMSetting.Slack"><span class="badge">M</span>AppIMSetting.Slack</a>
                 </li>
               
                 <li>
@@ -1201,6 +1213,29 @@
                   <a href="#bytebase.store.MFAConfig"><span class="badge">M</span>MFAConfig</a>
                 </li>
               
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2fuser_group.proto">store/user_group.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.UserGroupMember"><span class="badge">M</span>UserGroupMember</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.UserGroupPayload"><span class="badge">M</span>UserGroupPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.UserGroupMember.Role"><span class="badge">E</span>UserGroupMember.Role</a>
+                </li>
               
               
               
@@ -1980,7 +2015,7 @@ projects/{project} </p></td>
                   <td>user</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: users/d@d.com </p></td>
+                  <td><p>Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -2671,7 +2706,7 @@ It&#39;s empty string for other databases. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The last updater of the function in branch.
-Format: users/{email} </p></td>
+Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -2899,7 +2934,7 @@ If the key length is not specified, it&#39;s -1. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The last updater of the procedure in branch.
-Format: users/{email} </p></td>
+Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -3252,7 +3287,7 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The last updater of the table in branch.
-Format: users/{email} </p></td>
+Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -3566,7 +3601,7 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The last updater of the view in branch.
-Format: users/{email} </p></td>
+Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -4133,6 +4168,18 @@ Example: projects/project-id/branches/branch-id. </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>BIGQUERY</td>
+                <td>22</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DYNAMODB</td>
+                <td>23</td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -4498,6 +4545,13 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>replica_set is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>direct_connection</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. </p></td>
                 </tr>
               
             </tbody>
@@ -5707,20 +5761,6 @@ Format: users/{userUID}. </p></td>
                   <td><a href="#bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus">IssueCommentPayload.IssueUpdate.IssueStatus</a></td>
                   <td>optional</td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>from_assignee</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>to_assignee</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -6988,75 +7028,6 @@ Format: instances/{instance}/databases/{database} </p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.Binding">Binding</h3>
-        <p>Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#binding</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Role that is assigned to the list of members.
-Format: roles/{role} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>members</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Specifies the principals requesting access for a Bytebase resource.
-`members` can have the following values:
-
-* `allUsers`: A special identifier that represents anyone.
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>condition</td>
-                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
-                  <td></td>
-                  <td><p>The condition that is associated with this binding.
-If the condition evaluates to true, then this binding applies to the current request.
-If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.IamPolicy">IamPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>bindings</td>
-                  <td><a href="#bytebase.store.Binding">Binding</a></td>
-                  <td>repeated</td>
-                  <td><p>Collection of binding. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.MaskData">MaskData</h3>
         <p></p>
 
@@ -7170,7 +7141,7 @@ If the condition evaluates to false, then this binding does not apply to the cur
                   <td></td>
                   <td><p>Member is the principal who bind to this exception policy instance.
 
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. </p></td>
+Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
@@ -7480,6 +7451,49 @@ roles/CREATOR </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.Binding">Binding</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The role that is assigned to the members.
+Format: roles/{role} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>members</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Specifies the principals requesting access for a Bytebase resource.
+For users, the member should be: users/{userUID}
+For groups, the member should be: groups/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
+                  <td></td>
+                  <td><p>The condition that is associated with this binding.
+If the condition evaluates to true, then this binding applies to the current request.
+If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Label">Label</h3>
         <p></p>
 
@@ -7547,6 +7561,31 @@ roles/CREATOR </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ProjectIamPolicy">ProjectIamPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>bindings</td>
+                  <td><a href="#bytebase.store.Binding">Binding</a></td>
+                  <td>repeated</td>
+                  <td><p>Collection of binding.
+A binding binds one or more members or groups to a single project role. </p></td>
                 </tr>
               
             </tbody>
@@ -7818,6 +7857,92 @@ Format: roles/projectOwner. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The optional link, user can follow the link to check extra details </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting">AppIMSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>slack</td>
+                  <td><a href="#bytebase.store.AppIMSetting.Slack">AppIMSetting.Slack</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>feishu</td>
+                  <td><a href="#bytebase.store.AppIMSetting.Feishu">AppIMSetting.Feishu</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.Feishu">AppIMSetting.Feishu</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>app_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>app_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.Slack">AppIMSetting.Slack</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9599,6 +9724,106 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
         
       
 
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/user_group.proto">store/user_group.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.UserGroupMember">UserGroupMember</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>member</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Member is the principal who belong to this user group.
+
+Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#bytebase.store.UserGroupMember.Role">UserGroupMember.Role</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.UserGroupPayload">UserGroupPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>members</td>
+                  <td><a href="#bytebase.store.UserGroupMember">UserGroupMember</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.UserGroupMember.Role">UserGroupMember.Role</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ROLE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OWNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MEMBER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       

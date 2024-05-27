@@ -26,7 +26,7 @@ import {
   planSpecHasPlanChecks,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { EMPTY_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
@@ -48,13 +48,9 @@ const show = computed(() => {
 const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks
   // - the creator of the issue
-  // - the assignee of the issue
   // - ones who have bb.planCheckRuns.run permission in the project
   const me = currentUser.value;
   if (extractUserResourceName(issue.value.creator) === me.email) {
-    return true;
-  }
-  if (extractUserResourceName(issue.value.assignee) === me.email) {
     return true;
   }
   if (
@@ -87,7 +83,7 @@ const runPlanChecks = async () => {
   if (!plan) return;
 
   try {
-    await rolloutServiceClient.runPlanChecks({
+    await planServiceClient.runPlanChecks({
       name: plan.name,
     });
   } catch (ex) {

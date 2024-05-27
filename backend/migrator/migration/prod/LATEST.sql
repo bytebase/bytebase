@@ -506,7 +506,7 @@ ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 CREATE TABLE task_run_log (
     id BIGSERIAL PRIMARY KEY,
     task_run_id INTEGER NOT NULL REFERENCES task_run (id),
-    created_ts TIMESTAMP NOT NULL DEFAULT now(),
+    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -617,6 +617,7 @@ CREATE TABLE instance_change_history (
     instance_id INTEGER REFERENCES instance (id),
     -- NULL means an instance-level change.
     database_id INTEGER REFERENCES db (id),
+    project_id INTEGER REFERENCES project (id),
     -- issue_id is nullable because this field is backfilled and may not be present.
     issue_id INTEGER REFERENCES issue (id),
     -- Record the client version creating this change history. For Bytebase, we use its binary release version. Different Bytebase release might
@@ -991,4 +992,15 @@ CREATE TABLE sql_lint_config (
   updater_id INTEGER NOT NULL REFERENCES principal (id),
   updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   config JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE user_group (
+  email TEXT PRIMARY KEY,
+  creator_id INTEGER NOT NULL REFERENCES principal (id),
+  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  updater_id INTEGER NOT NULL REFERENCES principal (id),
+  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  payload JSONB NOT NULL DEFAULT '{}'
 );

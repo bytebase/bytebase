@@ -432,14 +432,17 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
-
-	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
+	if !isSet {
+		if queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}

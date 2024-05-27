@@ -349,6 +349,10 @@ func convertToEngine(engine storepb.Engine) v1pb.Engine {
 		return v1pb.Engine_HIVE
 	case storepb.Engine_ELASTICSEARCH:
 		return v1pb.Engine_ELASTICSEARCH
+	case storepb.Engine_BIGQUERY:
+		return v1pb.Engine_BIGQUERY
+	case storepb.Engine_DYNAMODB:
+		return v1pb.Engine_DYNAMODB
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -397,6 +401,10 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_HIVE
 	case v1pb.Engine_ELASTICSEARCH:
 		return storepb.Engine_ELASTICSEARCH
+	case v1pb.Engine_BIGQUERY:
+		return storepb.Engine_BIGQUERY
+	case v1pb.Engine_DYNAMODB:
+		return storepb.Engine_DYNAMODB
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED
 }

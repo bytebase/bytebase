@@ -65,9 +65,6 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.AuthService_Logout_FullMethodName,
 		v1pb.CelService_BatchParse_FullMethodName,
 		v1pb.CelService_BatchDeparse_FullMethodName,
-		v1pb.LoggingService_SearchLogs_FullMethodName,
-		v1pb.LoggingService_GetLog_FullMethodName,
-		v1pb.LoggingService_ExportLogs_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,
 		// TODO(steven): maybe needs to add a permission to check.
 		v1pb.SQLService_Execute_FullMethodName,
@@ -118,7 +115,7 @@ func isSkippedMethod(fullMethod string) bool {
 		return true
 	// handled in the method because we need to consider plan.Creator.
 	case
-		v1pb.RolloutService_UpdatePlan_FullMethodName:
+		v1pb.PlanService_UpdatePlan_FullMethodName:
 		return true
 	// handled in the method because we need to consider issue.Creator and issue type.
 	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
@@ -157,7 +154,10 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
 		v1pb.ProjectService_SearchProjects_FullMethodName,
 		v1pb.ChangelistService_ListChangelists_FullMethodName,
-		v1pb.RolloutService_ListPlans_FullMethodName,
+		v1pb.PlanService_ListPlans_FullMethodName,
+		v1pb.PlanService_SearchPlans_FullMethodName,
+		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
+		v1pb.UserGroupService_UpdateUserGroup_FullMethodName,
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
 		return true
 	}

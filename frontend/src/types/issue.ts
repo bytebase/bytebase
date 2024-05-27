@@ -20,14 +20,11 @@ type IssueTypeDatabase =
 
 type IssueTypeGrantRequest = "bb.issue.grant.request";
 
-type IssueTypeSQLReview = "bb.issue.sql-review";
-
 export type IssueType =
   | IssueTypeGeneral
   | IssueTypeDataSource
   | IssueTypeDatabase
-  | IssueTypeGrantRequest
-  | IssueTypeSQLReview;
+  | IssueTypeGrantRequest;
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 
@@ -59,8 +56,6 @@ export type Issue = {
   status: IssueStatus;
   type: IssueType;
   description: string;
-  assignee: Principal;
-  assigneeNeedAttention: boolean;
   subscriberList: Principal[];
   payload: IssuePayload;
 };

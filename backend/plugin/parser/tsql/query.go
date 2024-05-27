@@ -1,6 +1,7 @@
 package tsql
 
 import (
+	"log/slog"
 	"sort"
 	"strings"
 
@@ -38,7 +39,7 @@ type queryValidateListener struct {
 	valid bool
 }
 
-func (q *queryValidateListener) EnterBatch(ctx *parser.BatchContext) {
+func (q *queryValidateListener) EnterBatch_without_go(ctx *parser.Batch_without_goContext) {
 	if !q.valid {
 		return
 	}
@@ -146,37 +147,33 @@ type reasourceExtractListener struct {
 // EnterTable_source_item is called when the parser enters the table_source_item production.
 func (l *reasourceExtractListener) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
 	if fullTableName := ctx.Full_table_name(); fullTableName != nil {
+		name, err := NormalizeFullTableName(fullTableName)
+		if err != nil {
+			slog.Debug("Failed to normalize full table name", "error", err)
+			return
+		}
 		var parts []string
 		var linkedServer string
-		if server := fullTableName.GetLinkedServer(); server != nil {
-			linkedServer, _ = NormalizeTSQLIdentifier(server)
+		if name.LinkedServer != "" {
+			linkedServer = name.LinkedServer
+			parts = append(parts, linkedServer)
 		}
-		parts = append(parts, linkedServer)
 
 		database := l.currentDatabase
-		if d := fullTableName.GetDatabase(); d != nil {
-			normalizedD, _ := NormalizeTSQLIdentifier(d)
-			if normalizedD != "" {
-				database = normalizedD
-			}
+		if name.Database != "" {
+			database = name.Database
 		}
 		parts = append(parts, database)
 
 		schema := l.currentSchema
-		if s := fullTableName.GetSchema(); s != nil {
-			normalizedS, _ := NormalizeTSQLIdentifier(s)
-			if normalizedS != "" {
-				schema = normalizedS
-			}
+		if name.Schema != "" {
+			schema = name.Schema
 		}
 		parts = append(parts, schema)
 
 		var table string
-		if t := fullTableName.GetTable(); t != nil {
-			normalizedT, _ := NormalizeTSQLIdentifier(t)
-			if normalizedT != "" {
-				table = normalizedT
-			}
+		if name.Table != "" {
+			table = name.Table
 		}
 		parts = append(parts, table)
 		normalizedObjectName := strings.Join(parts, ".")

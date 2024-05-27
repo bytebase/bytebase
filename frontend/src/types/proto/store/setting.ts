@@ -509,6 +509,20 @@ export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeToNumbe
   }
 }
 
+export interface AppIMSetting {
+  slack: AppIMSetting_Slack | undefined;
+  feishu: AppIMSetting_Feishu | undefined;
+}
+
+export interface AppIMSetting_Slack {
+  token: string;
+}
+
+export interface AppIMSetting_Feishu {
+  appId: string;
+  appSecret: string;
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return {
     externalUrl: "",
@@ -3115,6 +3129,215 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
     message.suffixLen = object.suffixLen ?? 0;
     message.substitution = object.substitution ?? "";
     message.type = object.type ?? MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED;
+    return message;
+  },
+};
+
+function createBaseAppIMSetting(): AppIMSetting {
+  return { slack: undefined, feishu: undefined };
+}
+
+export const AppIMSetting = {
+  encode(message: AppIMSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.slack !== undefined) {
+      AppIMSetting_Slack.encode(message.slack, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.feishu !== undefined) {
+      AppIMSetting_Feishu.encode(message.feishu, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.slack = AppIMSetting_Slack.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.feishu = AppIMSetting_Feishu.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting {
+    return {
+      slack: isSet(object.slack) ? AppIMSetting_Slack.fromJSON(object.slack) : undefined,
+      feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
+    };
+  },
+
+  toJSON(message: AppIMSetting): unknown {
+    const obj: any = {};
+    if (message.slack !== undefined) {
+      obj.slack = AppIMSetting_Slack.toJSON(message.slack);
+    }
+    if (message.feishu !== undefined) {
+      obj.feishu = AppIMSetting_Feishu.toJSON(message.feishu);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting>): AppIMSetting {
+    return AppIMSetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting>): AppIMSetting {
+    const message = createBaseAppIMSetting();
+    message.slack = (object.slack !== undefined && object.slack !== null)
+      ? AppIMSetting_Slack.fromPartial(object.slack)
+      : undefined;
+    message.feishu = (object.feishu !== undefined && object.feishu !== null)
+      ? AppIMSetting_Feishu.fromPartial(object.feishu)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Slack(): AppIMSetting_Slack {
+  return { token: "" };
+}
+
+export const AppIMSetting_Slack = {
+  encode(message: AppIMSetting_Slack, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Slack {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Slack();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Slack {
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
+  },
+
+  toJSON(message: AppIMSetting_Slack): unknown {
+    const obj: any = {};
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
+    return AppIMSetting_Slack.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
+    const message = createBaseAppIMSetting_Slack();
+    message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Feishu(): AppIMSetting_Feishu {
+  return { appId: "", appSecret: "" };
+}
+
+export const AppIMSetting_Feishu = {
+  encode(message: AppIMSetting_Feishu, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.appId !== "") {
+      writer.uint32(10).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(18).string(message.appSecret);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Feishu {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Feishu();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Feishu {
+    return {
+      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_Feishu): unknown {
+    const obj: any = {};
+    if (message.appId !== "") {
+      obj.appId = message.appId;
+    }
+    if (message.appSecret !== "") {
+      obj.appSecret = message.appSecret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
+    return AppIMSetting_Feishu.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
+    const message = createBaseAppIMSetting_Feishu();
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
     return message;
   },
 };

@@ -198,6 +198,18 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.ReplicaSet != "" {
 		values.Add("replicaSet", connConfig.ReplicaSet)
 	}
+	// Add SSL options if provided
+	if connConfig.TLSConfig.SslCA != "" {
+		values.Add("tlsCAFile", connConfig.TLSConfig.SslCA)
+		if connConfig.TLSConfig.SslCert != "" && connConfig.TLSConfig.SslKey != "" {
+			values.Add("tlsCertificateKeyFile", connConfig.TLSConfig.SslCert)
+			values.Add("tlsCertificateKeyFilePassword", connConfig.TLSConfig.SslKey)
+		}
+		values.Add("tlsAllowInvalidHostnames", "true")
+	}
+	if connConfig.DirectConnection {
+		values.Add("directConnection", "true")
+	}
 	u.RawQuery = values.Encode()
 
 	return u.String()
@@ -205,6 +217,10 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext.Explain {
+		return nil, errors.New("MongoDB does not support EXPLAIN")
+	}
+
 	statement = strings.Trim(statement, " \t\n\r\f;")
 	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()

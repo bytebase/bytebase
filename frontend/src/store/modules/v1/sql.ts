@@ -3,7 +3,7 @@ import { RichClientError } from "nice-grpc-error-details";
 import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import type { SQLResultSetV1 } from "@/types";
-import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/rollout_service";
+import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/plan_service";
 import type {
   ExportRequest,
   QueryRequest,

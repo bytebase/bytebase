@@ -222,7 +222,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		}
 		config := databaseSchema.GetConfig()
 		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config))
-		initializeBranchUpdaterInfoConfig(filteredBaseSchemaMetadata, config, common.FormatUserEmail(user.Email))
+		initializeBranchUpdaterInfoConfig(filteredBaseSchemaMetadata, config, common.FormatUserUID(user.ID))
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -313,12 +313,15 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	}
 
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
-		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
+		metadata, config, err := convertV1DatabaseMetadata(ctx, request.Branch.GetSchemaMetadata(), s.store)
+		if err != nil {
+			return nil, err
+		}
 		sanitizeCommentForSchemaMetadata(metadata, model.NewDatabaseConfig(config))
 
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
-		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, common.FormatUserEmail(user.Email))
+		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID))
 		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), filteredMetadata)
 		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, "", filteredMetadata)
 		if err != nil {
@@ -388,18 +391,6 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	ok, err = func() (bool, error) {
-		if baseBranch.CreatorID == user.ID {
-			return true, nil
-		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
-	}()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied to merge branch")
-	}
 
 	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
 	if err != nil {
@@ -422,6 +413,22 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 	if headBranch == nil {
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
+	}
+
+	ok, err = func() (bool, error) {
+		if baseBranch.CreatorID == user.ID {
+			return true, nil
+		}
+		if headBranch.CreatorID == user.ID {
+			return true, nil
+		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to merge branch")
 	}
 
 	// Restrict merging only when the head branch is not updated.
@@ -458,7 +465,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
 	reconcileMetadata(filteredMergedMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, common.FormatUserEmail(user.Email))
+	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, common.FormatUserUID(user.ID))
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
@@ -593,7 +600,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
 	filteredNewHeadMetadata := filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(newBaseMetadata, filteredNewHeadMetadata, newHeadConfig, common.FormatUserEmail(user.Email))
+	updateConfigBranchUpdateInfo(newBaseMetadata, filteredNewHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID))
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -746,7 +753,7 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 	return &emptypb.Empty{}, nil
 }
 
-func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
+func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
 	switch request.Engine {
 	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
 	default:
@@ -755,10 +762,16 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	if request.SourceMetadata == nil || request.TargetMetadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
-	storeSourceMetadata, sourceConfig := convertV1DatabaseMetadata(request.SourceMetadata)
+	storeSourceMetadata, sourceConfig, err := convertV1DatabaseMetadata(ctx, request.SourceMetadata, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig))
 
-	storeTargetMetadata, targetConfig := convertV1DatabaseMetadata(request.TargetMetadata)
+	storeTargetMetadata, targetConfig, err := convertV1DatabaseMetadata(ctx, request.TargetMetadata, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
@@ -831,11 +844,11 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		return nil
 	}
 
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
 		return err
 	}
-	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	roles, err := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get user roles")
 	}
@@ -908,9 +921,17 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	v1Branch.Schema = string(branch.HeadSchema)
-	v1Branch.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, nil /* filter */)
+	sm, err := convertStoreDatabaseMetadata(ctx, branch.Head.Metadata, branch.Head.DatabaseConfig, nil /* filter */, s.store)
+	if err != nil {
+		return nil, err
+	}
+	v1Branch.SchemaMetadata = sm
 	v1Branch.BaselineSchema = string(branch.BaseSchema)
-	v1Branch.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, nil /* filter */)
+	bsm, err := convertStoreDatabaseMetadata(ctx, branch.Base.Metadata, branch.Base.DatabaseConfig, nil /* filter */, s.store)
+	if err != nil {
+		return nil, err
+	}
+	v1Branch.BaselineSchemaMetadata = bsm
 	return v1Branch, nil
 }
 
@@ -1261,7 +1282,7 @@ func reconcileMySQLPartitionMetadata(partitions []*storepb.TablePartitionMetadat
 	if len(partitions) > 0 && partitions[0].UseDefault != "" {
 		useDefault, err := strconv.Atoi(partitions[0].UseDefault)
 		if err != nil {
-			slog.Warn("failed to parse use default", err)
+			slog.Warn("failed to parse use default", log.BBError(err))
 			return
 		}
 		if useDefault != 0 && useDefault != len(partitions) {

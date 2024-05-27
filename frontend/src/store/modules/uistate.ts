@@ -6,8 +6,8 @@ const COLLAPSE_MODULE = "ui.list.collapse";
 const INTRO_MODULE = "ui.intro";
 
 // default to false
-const issueFormatStatementOnSave = useLocalStorage(
-  "ui.state.issue.format-statement-on-save",
+const editorFormatStatementOnSave = useLocalStorage(
+  "ui.state.editor.format-statement-on-save",
   false
 );
 
@@ -22,8 +22,8 @@ export const useUIStateStore = defineStore("uistate", {
     introStateByKey: new Map(),
   }),
   getters: {
-    issueFormatStatementOnSave: () => {
-      return issueFormatStatementOnSave.value;
+    editorFormatStatementOnSave: () => {
+      return editorFormatStatementOnSave.value;
     },
   },
   actions: {
@@ -59,8 +59,8 @@ export const useUIStateStore = defineStore("uistate", {
     setIntroStateByKey({ key, newState }: { key: string; newState: boolean }) {
       this.introStateByKey.set(key, newState);
     },
-    setIssueFormatStatementOnSave(value: boolean) {
-      issueFormatStatementOnSave.value = value;
+    setEditorFormatStatementOnSave(value: boolean) {
+      editorFormatStatementOnSave.value = value;
     },
     async restoreState() {
       const storedCollapseState = localStorage.getItem(COLLAPSE_MODULE);

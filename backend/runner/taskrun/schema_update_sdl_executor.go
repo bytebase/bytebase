@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -26,27 +25,25 @@ import (
 )
 
 // NewSchemaUpdateSDLExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &SchemaUpdateSDLExecutor{
-		store:           store,
-		dbFactory:       dbFactory,
-		activityManager: activityManager,
-		license:         license,
-		stateCfg:        stateCfg,
-		schemaSyncer:    schemaSyncer,
-		profile:         profile,
+		store:        store,
+		dbFactory:    dbFactory,
+		license:      license,
+		stateCfg:     stateCfg,
+		schemaSyncer: schemaSyncer,
+		profile:      profile,
 	}
 }
 
 // SchemaUpdateSDLExecutor is the schema update (SDL) task executor.
 type SchemaUpdateSDLExecutor struct {
-	store           *store.Store
-	dbFactory       *dbfactory.DBFactory
-	activityManager *activity.Manager
-	license         enterprise.LicenseService
-	stateCfg        *state.State
-	schemaSyncer    *schemasync.Syncer
-	profile         config.Profile
+	store        *store.Store
+	dbFactory    *dbfactory.DBFactory
+	license      enterprise.LicenseService
+	stateCfg     *state.State
+	schemaSyncer *schemasync.Syncer
+	profile      config.Profile
 }
 
 // RunOnce will run the schema update (SDL) task executor once.

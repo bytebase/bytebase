@@ -231,6 +231,7 @@ func (d *DatabaseState) pgCreateSchema(node *ast.CreateSchemaStmt) *WalkThroughE
 	}
 
 	schema := &SchemaState{
+		ctx:           d.ctx.Copy(),
 		name:          node.Name,
 		identifierMap: make(identifierMap),
 		tableSet:      make(tableStateMap),
@@ -1017,6 +1018,7 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 			}
 		}
 		schema = &SchemaState{
+			ctx:           d.ctx.Copy(),
 			name:          publicSchemaName,
 			tableSet:      make(tableStateMap),
 			viewSet:       make(viewStateMap),

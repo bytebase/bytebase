@@ -2,6 +2,7 @@ package tsql
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -288,7 +289,7 @@ func isTopLevel(ctx antlr.Tree) bool {
 	switch ctx := ctx.(type) {
 	case *parser.Dml_clauseContext,
 		*parser.Sql_clausesContext,
-		*parser.BatchContext:
+		*parser.Batch_without_goContext:
 		return isTopLevel(ctx.GetParent())
 	case *parser.Tsql_fileContext:
 		return true
@@ -297,7 +298,7 @@ func isTopLevel(ctx antlr.Tree) bool {
 	}
 }
 
-func (e *dmlExtractor) ExitBatch(ctx *parser.BatchContext) {
+func (e *dmlExtractor) ExitBatch(ctx *parser.Batch_without_goContext) {
 	if len(ctx.AllSql_clauses()) == 0 {
 		e.offset++
 	}
@@ -408,14 +409,18 @@ func (e *tableExtractor) EnterFull_table_name(ctx *parser.Full_table_nameContext
 }
 
 func extractFullTableName(ctx parser.IFull_table_nameContext, defaultDatabase string, defaultSchema string) (string, string, string) {
-	tableName := unquote(ctx.GetTable().GetText())
+	name, err := NormalizeFullTableName(ctx)
+	if err != nil {
+		slog.Debug("Failed to normalize full table name", "error", err)
+		return defaultDatabase, defaultSchema, ""
+	}
 	schemaName := defaultSchema
-	if ctx.GetSchema() != nil {
-		schemaName = unquote(ctx.GetSchema().GetText())
+	if name.Schema != "" {
+		schemaName = name.Schema
 	}
 	databaseName := defaultDatabase
-	if ctx.GetDatabase() != nil {
-		databaseName = unquote(ctx.GetDatabase().GetText())
+	if name.Database != "" {
+		databaseName = name.Database
 	}
-	return databaseName, schemaName, tableName
+	return databaseName, schemaName, name.Table
 }

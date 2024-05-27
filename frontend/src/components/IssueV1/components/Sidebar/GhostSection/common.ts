@@ -14,9 +14,12 @@ import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase, ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan_Spec, Task } from "@/types/proto/v1/rollout_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
+  type Plan_Spec,
+} from "@/types/proto/v1/plan_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
+import {
   Task_Status,
   Task_Type,
   task_StatusToJSON,

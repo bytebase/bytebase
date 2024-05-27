@@ -18,7 +18,6 @@ import type { ComposedProject } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Stage } from "@/types/proto/v1/rollout_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -26,9 +25,9 @@ import {
   Plan_ExportDataConfig,
   Plan_Spec,
   Plan_Step,
-  Rollout,
-  Task_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
+import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet, SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,
@@ -86,16 +85,9 @@ export const createIssueSkeleton = async (
   issue.plan = plan.name;
   issue.planEntity = plan;
 
-  const issueTemplate = query.template as TemplateType | undefined;
-  // Don't initial rollout for SQL review issue.
-  if (issueTemplate === "bb.issue.sql-review") {
-    issue.rollout = "";
-    issue.rolloutEntity = undefined;
-  } else {
-    const rollout = await previewPlan(plan, params);
-    issue.rollout = rollout.name;
-    issue.rolloutEntity = rollout;
-  }
+  const rollout = await previewPlan(plan, params);
+  issue.rollout = rollout.name;
+  issue.rolloutEntity = rollout;
 
   const description = query.description;
   if (description) {
@@ -395,15 +387,6 @@ export const buildSpecForTarget = async (
     spec.exportDataConfig = Plan_ExportDataConfig.fromJSON({
       target,
       sheet,
-    });
-  }
-  if (template === "bb.issue.sql-review") {
-    // SQL review issues is reusing the same plan config type as changing database.
-    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
-      target,
-      sheet,
-      // TODO(steven): let user choose type in UI.
-      type: Plan_ChangeDatabaseConfig_Type.DATA,
     });
   }
 

@@ -12,83 +12,84 @@
     CREATE INDEX idx_t_c ON public.t USING btree (c);
   metadata: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "name":  "public",
-          "tables":  [
+          "name": "public",
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "c",
-                  "nullable":  true,
-                  "type":  "integer"
+                  "name": "c",
+                  "nullable": true,
+                  "type": "integer"
                 },
                 {
-                  "name":  "a",
-                  "defaultExpression":  "1",
-                  "nullable":  true,
-                  "type":  "integer",
-                  "comment":  "this is a comment"
+                  "name": "a",
+                  "defaultExpression": "1",
+                  "nullable": true,
+                  "type": "integer",
+                  "comment": "this is a comment",
+                  "userComment": "this is a comment"
                 },
                 {
-                  "name":  "b",
-                  "defaultExpression":  "'NULL'",
-                  "nullable":  true,
-                  "type":  "character varying(20)"
+                  "name": "b",
+                  "defaultExpression": "'NULL'",
+                  "nullable": true,
+                  "type": "character varying(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "t_pk",
-                  "expressions":  [
+                  "name": "t_pk",
+                  "expressions": [
                     "a",
                     "b"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 },
                 {
-                  "name":  "idx_t_c",
-                  "expressions":  [
+                  "name": "idx_t_c",
+                  "expressions": [
                     "c"
                   ],
-                  "visible":  true,
-                  "definition":  "CREATE INDEX idx_t_c ON public.t USING btree (c);"
+                  "visible": true,
+                  "definition": "CREATE INDEX idx_t_c ON public.t USING btree (c);"
                 }
               ],
-              "foreignKeys":  [
+              "foreignKeys": [
                 {
-                  "name":  "t_fk1",
-                  "columns":  [
+                  "name": "t_fk1",
+                  "columns": [
                     "a"
                   ],
-                  "referencedTable":  "t2",
-                  "referencedColumns":  [
+                  "referencedTable": "t2",
+                  "referencedColumns": [
                     "b"
                   ]
                 }
               ]
             },
             {
-              "name":  "t2",
-              "columns":  [
+              "name": "t2",
+              "columns": [
                 {
-                  "name":  "b",
-                  "defaultExpression":  "NULL",
-                  "type":  "integer"
+                  "name": "b",
+                  "defaultExpression": "NULL",
+                  "type": "integer"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "t2_pk",
-                  "expressions":  [
+                  "name": "t2_pk",
+                  "expressions": [
                     "b"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ]
             }
