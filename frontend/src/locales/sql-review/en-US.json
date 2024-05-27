@@ -447,7 +447,7 @@
       "title": "Prohibit using NULL equality comparison in WHERE clause",
       "description": "The result of NULL equality comparison is always NULL, which may cause unexpected results. Suggestion error level: Warning"
     },
-    "statement-where-disallow-using-function": {
+    "statement-where-disallow-functions-and-calculations": {
       "title": "Do not apply functions or perform calculations on indexed fields in the WHERE clause",
       "description": "If you apply a function or perform a calculation on the indexed field, the database cannot use the index and has to scan the entire table instead."
     },
