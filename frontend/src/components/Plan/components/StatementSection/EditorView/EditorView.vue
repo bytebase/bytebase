@@ -329,6 +329,9 @@ const shouldShowEditButton = computed(() => {
   if (state.isEditing) {
     return false;
   }
+  if (plan.value.issue) {
+    return false;
+  }
   return true;
 });
 
@@ -548,9 +551,12 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
 };
 
 const applySpecStateToOthers = async () => {
-  const specList = flattenSpecList(plan.value);
-  for (let i = 0; i < specList.length; i++) {
-    const spec = specList[i];
+  if (!selectedStep.value) {
+    return;
+  }
+
+  // Apply current statement to all other specs in the same step.
+  for (const spec of selectedStep.value.specs) {
     const sheetName = sheetNameForSpec(spec);
     if (!sheetName) continue;
     const sheet = getLocalSheetByName(sheetName);
@@ -622,16 +628,16 @@ const updateStatement = async (statement: string) => {
   });
 };
 
-const handleStatementChange = (value: string) => {
+const handleStatementChange = (statement: string) => {
   if (isEditorReadonly.value) {
     return;
   }
 
-  state.statement = value;
+  state.statement = statement;
   if (isCreating.value) {
     // When creating an plan, update the local sheet directly.
     if (!sheet.value) return;
-    setSheetStatement(sheet.value, value);
+    setSheetStatement(sheet.value, statement);
   }
 };
 
