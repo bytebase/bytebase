@@ -38,8 +38,16 @@
     SELECT Department, AVG(Salary) AS AvgSalary
     FROM Employees
     GROUP BY Department
-    HAVING AVG(Salary) > 50000;
+    HAVING AVG(Salary) * 3 + 1 > 50000;
   want:
     - status: SUCCESS
       title: OK
       content: ""
+- statement: |-
+    select * from (select * from t where t.a > 1) t1 where a > AVG(a);
+  want:
+    - status: WARN
+      title: statement.where.disallow-functions-and-calculations
+      code: 234
+      content: Calling function 'AVG(a)' in 'WHERE' clause is not allowed
+      line: 1

@@ -19,16 +19,17 @@ type DisallowFuncAndCalculationsAdvisor struct{}
 
 type DisallowFuncAndCalculationsChecker struct {
 	*parser.BaseTSqlParserListener
-	level     advisor.Status
-	title     string
-	isInWhere bool
-	// We only check 'SELECT' statement.
-	isSelectStat bool
-	// We only check 'WHERE' clause.
-	hasTriggeredRule bool
+	level advisor.Status
+	title string
+
+	// We only check the 'WHERE' clause in a 'SELECT' statement.
+	// Also, the value of 'whereCnt' represents the depth of entering the 'WHERE' clause.  Same below.
+	whereCnt      int
+	selectStatCnt int
+	havingCnt     int
 	// Each statement can only trigger the rule once.
-	enterHavingClause bool
-	adviceList        []advisor.Advice
+	hasTriggeredRule bool
+	adviceList       []advisor.Advice
 }
 
 var _ advisor.Advisor = (*DisallowFuncAndCalculationsAdvisor)(nil)
@@ -47,8 +48,8 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context, _ string) 
 	checker := &DisallowFuncAndCalculationsChecker{
 		level:            level,
 		title:            ctx.Rule.Type,
-		isSelectStat:     false,
-		isInWhere:        false,
+		selectStatCnt:    0,
+		whereCnt:         0,
 		hasTriggeredRule: false,
 	}
 
@@ -67,7 +68,7 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context, _ string) 
 }
 
 func generateAdviceOnFunctionUsing(c *DisallowFuncAndCalculationsChecker, ctx antlr.BaseParserRuleContext) *advisor.Advice {
-	if !c.isInWhere || c.hasTriggeredRule {
+	if c.whereCnt == 0 || c.hasTriggeredRule {
 		return nil
 	}
 	c.hasTriggeredRule = true
@@ -81,7 +82,7 @@ func generateAdviceOnFunctionUsing(c *DisallowFuncAndCalculationsChecker, ctx an
 }
 
 func generateAdviceOnPerformingCalculations(c *DisallowFuncAndCalculationsChecker, ctx antlr.BaseParserRuleContext) *advisor.Advice {
-	if !c.isInWhere || c.hasTriggeredRule {
+	if c.whereCnt == 0 || c.hasTriggeredRule {
 		return nil
 	}
 	c.hasTriggeredRule = true
@@ -95,27 +96,29 @@ func generateAdviceOnPerformingCalculations(c *DisallowFuncAndCalculationsChecke
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterQuery_specification(_ *parser.Query_specificationContext) {
-	c.isSelectStat = true
+	c.selectStatCnt++
 }
 
 func (c *DisallowFuncAndCalculationsChecker) ExitQuery_specification(_ *parser.Query_specificationContext) {
-	c.isSelectStat = false
+	c.selectStatCnt--
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterHaving_clause(_ *parser.Having_clauseContext) {
-	c.enterHavingClause = true
+	c.havingCnt++
 }
 
 func (c *DisallowFuncAndCalculationsChecker) ExitHaving_clause(_ *parser.Having_clauseContext) {
-	c.enterHavingClause = false
+	c.havingCnt--
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterSearch_condition(_ *parser.Search_conditionContext) {
-	c.isInWhere = c.isSelectStat && !c.enterHavingClause
+	if c.selectStatCnt != 0 && c.havingCnt == 0 {
+		c.whereCnt++
+	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) ExitSearch_condition(_ *parser.Search_conditionContext) {
-	c.isInWhere = false
+	c.whereCnt--
 	c.hasTriggeredRule = false
 }
 
