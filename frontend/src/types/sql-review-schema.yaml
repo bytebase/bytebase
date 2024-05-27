@@ -275,10 +275,11 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
-  - type: statement.where.disallow-using-function
+  - type: statement.where.disallow-functions-and-calculations
     category: STATEMENT
     engineList:
       - MYSQL
+      - MSSQL
   - type: statement.query.minimum-plan-level
     category: STATEMENT
     engineList:

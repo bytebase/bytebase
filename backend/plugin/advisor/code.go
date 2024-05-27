@@ -58,6 +58,7 @@ const (
 	StatementAddColumnWithPosition            Code = 231
 	StatementOfflineDDL                       Code = 232
 	StatementDisallowCrossDBQueries           Code = 233
+	StatementDisallowFunctionsAndCalculations Code = 234
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

@@ -114,8 +114,8 @@ const (
 	SchemaRuleStatementDisallowUsingTemporary = "statement.disallow-using-temporary"
 	// SchemaRuleStatementWhereNoEqualNull check the WHERE clause no equal null.
 	SchemaRuleStatementWhereNoEqualNull = "statement.where.no-equal-null"
-	// SchemaRuleStatementWhereDisallowUsingFunction disallow using function in WHERE clause.
-	SchemaRuleStatementWhereDisallowUsingFunction = "statement.where.disallow-using-function"
+	// SchemaRuleStatementWhereDisallowFunctionsAndCaculations disallow using function in WHERE clause.
+	SchemaRuleStatementWhereDisallowFunctionsAndCaculations = "statement.where.disallow-functions-and-calculations"
 	// SchemaRuleStatementQueryMinumumPlanLevel enforce the minimum plan level.
 	SchemaRuleStatementQueryMinumumPlanLevel = "statement.query.minimum-plan-level"
 	// SchemaRuleStatementWhereMaximumLogicalOperatorCount enforce the maximum logical operator count in WHERE clause.
@@ -1637,9 +1637,12 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementWhereNoEqualNull, nil
 		}
-	case SchemaRuleStatementWhereDisallowUsingFunction:
+	case SchemaRuleStatementWhereDisallowFunctionsAndCaculations:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementWhereDisallowUsingFunction, nil
+		}
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLStatementWhereDisallowFunctionsAndCalculations, nil
 		}
 	case SchemaRuleStatementQueryMinumumPlanLevel:
 		if engine == storepb.Engine_MYSQL {
