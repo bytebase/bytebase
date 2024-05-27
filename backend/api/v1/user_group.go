@@ -95,7 +95,7 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	if err := s.checkPermission(ctx, email, iam.PermissionUserGroupsDelete); err != nil {
+	if err := s.checkPermission(ctx, email, iam.PermissionUserGroupsUpdate); err != nil {
 		return nil, err
 	}
 
