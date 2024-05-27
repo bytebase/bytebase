@@ -526,7 +526,7 @@ const generateIssueName = (
   if (isOnlineMode) {
     issueNameParts.push("Online schema change");
   } else {
-    issueNameParts.push(`Alter schema`);
+    issueNameParts.push(`Edit schema`);
   }
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
