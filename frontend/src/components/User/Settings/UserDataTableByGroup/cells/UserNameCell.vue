@@ -14,11 +14,16 @@
             v-if="user.userType === UserType.SERVICE_ACCOUNT"
           />
           <NTag
+            v-if="showGroupRole"
             size="small"
             round
             :type="role === UserGroupMember_Role.OWNER ? 'primary' : 'default'"
           >
-            {{ role }}
+            {{
+              $t(
+                `settings.members.groups.form.role.${userGroupMember_RoleToJSON(role).toLowerCase()}`
+              )
+            }}
           </NTag>
         </div>
         <span v-if="user.name !== SYSTEM_BOT_USER_NAME" class="textlabel">
@@ -34,12 +39,21 @@ import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
-import { UserGroupMember_Role } from "@/types/proto/v1/user_group";
+import {
+  UserGroupMember_Role,
+  userGroupMember_RoleToJSON,
+} from "@/types/proto/v1/user_group";
 
-defineProps<{
-  user: User;
-  role: UserGroupMember_Role;
-}>();
+withDefaults(
+  defineProps<{
+    user: User;
+    role: UserGroupMember_Role;
+    showGroupRole: boolean;
+  }>(),
+  {
+    showGroupRole: true,
+  }
+);
 
 defineEmits<{
   (event: "reset-service-key", user: User): void;

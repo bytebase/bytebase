@@ -8,7 +8,7 @@ export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
   const users: User[] = [];
 
   const project = issue.projectEntity;
-  const projectMembers = memberListInProjectV1(project, project.iamPolicy);
+  const projectMembers = memberListInProjectV1(project.iamPolicy);
   const workspaceMembers = useUserStore().userList;
 
   for (let i = 0; i < issue.releasers.length; i++) {

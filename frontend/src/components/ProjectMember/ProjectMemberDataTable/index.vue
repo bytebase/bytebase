@@ -2,7 +2,7 @@
   <NDataTable
     :columns="columns"
     :data="members"
-    :row-key="(row) => row.user.email"
+    :row-key="(row: ProjectBinding) => row.binding"
     :striped="true"
     :bordered="true"
     @update:checked-row-keys="handleMemberSelection"
@@ -15,14 +15,14 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedProject } from "@/types";
-import type { ProjectMember } from "../types";
+import type { ProjectBinding } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
 
 const props = defineProps<{
   project: ComposedProject;
-  members: ProjectMember[];
+  members: ProjectBinding[];
   selectedMembers: string[];
 }>();
 
@@ -37,7 +37,7 @@ const columns = computed(() => {
   return [
     {
       type: "selection",
-      disabled: (projectMember: ProjectMember) => {
+      disabled: (projectMember: ProjectBinding) => {
         return projectMember.projectRoleBindings.length === 0;
       },
     },
@@ -45,7 +45,7 @@ const columns = computed(() => {
       key: "account",
       title: t("settings.members.table.account"),
       width: "32rem",
-      render: (projectMember: ProjectMember) => {
+      render: (projectMember: ProjectBinding) => {
         return h(UserNameCell, {
           projectMember,
         });
@@ -54,9 +54,9 @@ const columns = computed(() => {
     {
       key: "roles",
       title: t("settings.members.table.role"),
-      render: (projectMember: ProjectMember) => {
+      render: (projectMember: ProjectBinding) => {
         return h(UserRolesCell, {
-          projectMember,
+          projectRole: projectMember,
         });
       },
     },
@@ -64,17 +64,17 @@ const columns = computed(() => {
       key: "operations",
       title: "",
       width: "4rem",
-      render: (projectMember: ProjectMember) => {
+      render: (projectMember: ProjectBinding) => {
         return h(UserOperationsCell, {
           project: props.project,
           projectMember,
           "onUpdate-user": () => {
-            emit("update-member", projectMember.user.email);
+            emit("update-member", projectMember.binding);
           },
         });
       },
     },
-  ] as DataTableColumn<ProjectMember>[];
+  ] as DataTableColumn<ProjectBinding>[];
 });
 
 const handleMemberSelection = (rowKeys: DataTableRowKey[]) => {

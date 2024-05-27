@@ -2,10 +2,18 @@ import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { userGroupServiceClient } from "@/grpcweb";
+import { useCurrentUserV1 } from "@/store";
 import type { UserGroup } from "@/types/proto/v1/user_group";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { userGroupNamePrefix } from "./common";
 
+export const extractGroupEmail = (emailResource: string) => {
+  const matches = emailResource.match(/^(?:group:|groups\/)(.+)$/);
+  return matches?.[1] ?? emailResource;
+};
+
 export const useUserGroupStore = defineStore("user_group", () => {
+  const currentUser = useCurrentUserV1();
   const groupMapByName = reactive(new Map<string, UserGroup>());
   const resetCache = () => {
     groupMapByName.clear();
@@ -28,6 +36,10 @@ export const useUserGroupStore = defineStore("user_group", () => {
   };
 
   const fetchGroupList = async () => {
+    if (!hasWorkspacePermissionV2(currentUser.value, "bb.userGroups.list")) {
+      return [];
+    }
+
     const { groups } = await userGroupServiceClient.listUserGroups({});
     resetCache();
     for (const group of groups) {
@@ -37,6 +49,10 @@ export const useUserGroupStore = defineStore("user_group", () => {
   };
 
   const getOrFetchGroupByEmail = async (email: string) => {
+    if (!hasWorkspacePermissionV2(currentUser.value, "bb.userGroups.get")) {
+      return;
+    }
+
     if (getGroupByEmail(email)) {
       return getGroupByEmail(email);
     }

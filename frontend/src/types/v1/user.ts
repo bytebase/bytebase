@@ -53,3 +53,7 @@ export const getUserEmailInBinding = (email: string) => {
   }
   return `user:${email}`;
 };
+
+export const getGroupEmailInBinding = (email: string) => {
+  return `group:${email}`;
+};
