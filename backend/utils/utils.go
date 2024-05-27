@@ -567,7 +567,6 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		return status.Errorf(codes.Internal, "user %v not found", userID)
 	}
 	for _, binding := range policy.Bindings {
-		// TODO(p0ny): I'm not sure if the role is in the roles/{xx} format.
 		if binding.Role != grantRequest.Role {
 			continue
 		}

@@ -11,7 +11,7 @@
     </div>
 
     <NTooltip
-      v-if="isCreating && stepMissingStatement"
+      v-if="isCreating && !validateSpecs()"
       trigger="hover"
       placement="top"
     >
@@ -54,17 +54,14 @@
 import { head, isEqual, uniqBy } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { sheetNameForSpec } from "@/components/Plan";
 import {
-  getLocalSheetByName,
+  isValidSpec,
   planCheckRunListForSpec,
   planCheckRunSummaryForCheckRunList,
   usePlanContext,
 } from "@/components/Plan/logic";
-import { useSheetV1Store } from "@/store";
 import type { Plan_Step } from "@/types/proto/v1/plan_service";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
-import { extractSheetUID, getSheetStatement } from "@/utils";
 
 const props = defineProps<{
   step: Plan_Step;
@@ -82,27 +79,9 @@ const stepClass = computed(() => {
   return classList;
 });
 
-const stepMissingStatement = computed(() => {
-  for (const spec of props.step.specs) {
-    const sheetName = sheetNameForSpec(spec);
-    const uid = extractSheetUID(sheetName);
-    if (uid.startsWith("-")) {
-      const sheet = getLocalSheetByName(sheetName);
-      if (getSheetStatement(sheet).length === 0) {
-        return true;
-      }
-    } else {
-      const sheet = useSheetV1Store().getSheetByName(sheetName);
-      if (!sheet) {
-        return true;
-      }
-      if (getSheetStatement(sheet).length === 0) {
-        return true;
-      }
-    }
-  }
-  return false;
-});
+const validateSpecs = () => {
+  return props.step.specs.every((spec) => isValidSpec(spec));
+};
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.UNRECOGNIZED;
