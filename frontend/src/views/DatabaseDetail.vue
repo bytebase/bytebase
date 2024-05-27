@@ -364,7 +364,7 @@ const createMigration = async (
   const issueNameParts: string[] = [];
   issueNameParts.push(`[${database.value.databaseName}]`);
   issueNameParts.push(
-    type === "bb.issue.database.schema.update" ? `Alter schema` : `Change data`
+    type === "bb.issue.database.schema.update" ? `Edit schema` : `Change data`
   );
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
