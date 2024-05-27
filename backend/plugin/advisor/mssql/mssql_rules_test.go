@@ -27,9 +27,17 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnTypeDisallowList,
 		advisor.SchemaRuleFunctionDisallowCreate,
 		advisor.SchemaRuleProcedureDisallowCreate,
+		advisor.SchemaRuleStatementDisallowCrossDBQueries,
 	}
 
 	for _, rule := range mssqlRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, nil, false /* record */)
+		_, needMockData := advisorNeedMockData[rule]
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, needMockData, false /* record */)
 	}
+}
+
+// Add SQL review type here if you need metadata for test.
+var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
+	advisor.SchemaRuleStatementDisallowCrossDBQueries: true,
+	advisor.SchemaRuleSchemaBackwardCompatibility:     true,
 }
