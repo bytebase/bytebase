@@ -516,10 +516,14 @@
           "members": "Members",
           "add-member": "Add member",
           "role": {
-            "owner": "Owner",
-            "member": "Members"
+            "owner": "Group owner",
+            "member": "Group member"
           }
-        }
+        },
+        "n-members": "{n} members",
+        "group-members": "Group members",
+        "group-roles": "Group roles",
+        "edit-group": "Edit group"
       },
       "action": {
         "deactivate": "Deactivate",
@@ -1987,6 +1991,7 @@
       "inactive-members": "Inactive members",
       "show-inactive": "Show inactive members",
       "select-users": "Select users",
+      "select-groups": "Select groups",
       "assign-role": "Assign role",
       "assign-reason": "(Optional) Reason",
       "never-expires": "Never",

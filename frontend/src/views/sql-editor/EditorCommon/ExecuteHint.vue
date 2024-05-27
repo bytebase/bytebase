@@ -132,7 +132,7 @@ const gotoCreateIssue = () => {
     query: {
       template: isDDL.value ? DDLIssueTemplate : DMLIssueTemplate,
       name: `[${db.databaseName}] ${
-        isDDL.value ? "Alter schema" : "Change Data"
+        isDDL.value ? "Edit schema" : "Change Data"
       }`,
       databaseList: db.name,
       sql: statement.value,

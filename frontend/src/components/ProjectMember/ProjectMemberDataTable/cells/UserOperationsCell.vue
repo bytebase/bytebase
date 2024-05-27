@@ -19,17 +19,17 @@
 import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useUserStore } from "@/store";
 import type { ComposedProject } from "@/types";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
+import { SYSTEM_BOT_USER_NAME, unknownUser } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
-import type { ProjectMember } from "../../types";
+import type { ProjectBinding } from "../../types";
 
 const props = defineProps<{
   project: ComposedProject;
-  projectMember: ProjectMember;
+  projectMember: ProjectBinding;
 }>();
 
 defineEmits<{
@@ -37,6 +37,7 @@ defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
+const userStore = useUserStore();
 
 const allowEdit = computed(() => {
   return hasProjectPermissionV2(
@@ -46,7 +47,9 @@ const allowEdit = computed(() => {
   );
 });
 
-const user = computed(() => props.projectMember.user);
+const user = computed(
+  () => userStore.getUserByEmail(props.projectMember.email) ?? unknownUser()
+);
 
 const allowUpdateUser = (user: User) => {
   if (user.name === SYSTEM_BOT_USER_NAME) {

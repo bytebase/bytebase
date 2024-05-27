@@ -266,7 +266,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       expand: true,
       children: [
         {
-          title: t("common.members"),
+          title: t("settings.sidebar.members-and-groups"),
           path: PROJECT_V1_ROUTE_MEMBERS,
           type: "div",
         },

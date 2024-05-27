@@ -3,15 +3,18 @@ package oracle
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	// Import go-ora Oracle driver.
+
 	"github.com/pkg/errors"
 	goora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -240,8 +243,28 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	if queryContext.Explain {
-		statement = fmt.Sprintf("EXPLAIN %s", statement)
-	} else if queryContext.Limit > 0 {
+		startTime := time.Now()
+		randNum, err := rand.Int(rand.Reader, big.NewInt(999))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate random statement ID")
+		}
+		randomID := fmt.Sprintf("%d%d", startTime.UnixMilli(), randNum.Int64())
+
+		statement = fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
+			return nil, err
+		}
+		explainQuery := fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
+		result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, explainQuery, queryContext)
+		if err != nil {
+			return nil, err
+		}
+		result.Latency = durationpb.New(time.Since(startTime))
+		result.Statement = statement
+		return result, nil
+	}
+
+	if queryContext.Limit > 0 {
 		stmt, err := driver.getOracleStatementWithResultLimit(statement, queryContext)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
