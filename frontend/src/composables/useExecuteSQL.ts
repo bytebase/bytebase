@@ -101,10 +101,6 @@ const useExecuteSQL = () => {
       return cleanup();
     }
 
-    const statement = params.explain
-      ? `EXPLAIN ${params.statement}`
-      : params.statement;
-
     const selectedDatabase = useDatabaseV1Store().getDatabaseByName(
       params.connection.database
     );
@@ -180,9 +176,9 @@ const useExecuteSQL = () => {
             name: database.name,
             connectionDatabase: database.databaseName, // deprecated field, remove me later
             dataSourceId: dataSourceId,
-            statement,
+            statement: params.statement,
             limit: sqlEditorStore.resultRowsLimit,
-            explain: false,
+            explain: params.explain,
           },
           abortController.signal
         );

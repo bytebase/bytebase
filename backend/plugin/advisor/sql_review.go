@@ -100,7 +100,6 @@ const (
 	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
 	// SchemaRuleStatementAddFKNotValid require add foreign key not valid.
 	SchemaRuleStatementAddFKNotValid = "statement.add-foreign-key-not-valid"
-
 	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
 	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
 	// SchemaRuleStatementDisallowAddColumn disallow to add column.
@@ -139,7 +138,8 @@ const (
 	SchemaRuleStatementAddColumnWithoutPosition = "statement.add-column-without-position"
 	// SchemaRuleStatementDisallowOfflineDDL disallow offline ddl.
 	SchemaRuleStatementDisallowOfflineDDL = "statement.disallow-offline-ddl"
-
+	// SchemaRuleStatementDisallowCrossDBQueries disallow cross database queries.
+	SchemaRuleStatementDisallowCrossDBQueries = "statement.disallow-cross-db-queries"
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
@@ -1667,6 +1667,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementJoinStrictColumnAttrs:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementJoinStrictColumnAttrs, nil
+		}
+	case SchemaRuleStatementDisallowCrossDBQueries:
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLStatementDisallowCrossDBQueries, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {

@@ -3,6 +3,7 @@ package hive
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -277,6 +278,9 @@ func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, sta
 
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")
+		if queryCtx.Explain {
+			statementStr = fmt.Sprintf("EXPLAIN %s", statementStr)
+		}
 
 		result, err := runSingleStatement(ctx, conn, statementStr)
 		if err != nil {

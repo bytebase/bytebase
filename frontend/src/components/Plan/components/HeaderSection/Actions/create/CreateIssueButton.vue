@@ -28,19 +28,25 @@
 </template>
 
 <script setup lang="ts">
+import { uniqBy } from "lodash-es";
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/Plan/components/common";
-import { usePlanContext } from "@/components/Plan/logic";
+import {
+  planCheckRunListForSpec,
+  planCheckRunSummaryForCheckRunList,
+  usePlanContext,
+} from "@/components/Plan/logic";
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { emptyIssue, type ComposedIssue } from "@/types";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
   hasProjectPermissionV2,
@@ -53,6 +59,23 @@ const { plan } = usePlanContext();
 const { runSQLCheck } = useSQLCheckContext();
 const me = useCurrentUserV1();
 const loading = ref(false);
+
+const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
+  const planCheckList = uniqBy(
+    plan.value.steps.flatMap((step) =>
+      step.specs.flatMap((spec) => planCheckRunListForSpec(plan.value, spec))
+    ),
+    (checkRun) => checkRun.uid
+  );
+  const summary = planCheckRunSummaryForCheckRunList(planCheckList);
+  if (summary.errorCount > 0) {
+    return PlanCheckRun_Result_Status.ERROR;
+  }
+  if (summary.warnCount > 0) {
+    return PlanCheckRun_Result_Status.WARNING;
+  }
+  return PlanCheckRun_Result_Status.SUCCESS;
+});
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
@@ -68,7 +91,13 @@ const issueCreateErrorList = computed(() => {
   if (!plan.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-
+  if (planCheckStatus.value !== PlanCheckRun_Result_Status.SUCCESS) {
+    errorList.push(
+      t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+      )
+    );
+  }
   return errorList;
 });
 

@@ -644,6 +644,10 @@
     "statement-non-transactional": {
       "title": "检测并报告非事务性语句",
       "description": ""
+    },
+    "statement-disallow-cross-db-queries": {
+      "title": "禁止跨数据库查询",
+      "description": "跨数据库查询会增加系统的耦合性，并可能导致效率问题。建议的错误级别：警告"
     }
   },
   "level": {

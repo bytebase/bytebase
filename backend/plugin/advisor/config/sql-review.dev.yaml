@@ -106,6 +106,8 @@ ruleList:
     level: WARNING
   - type: statement.prior-backup-check
     level: ERROR
+  - type: statement.disallow-cross-db-queries
+    level: WARNING
   - type: naming.fully-qualified
     level: WARNING
   - type: naming.table
