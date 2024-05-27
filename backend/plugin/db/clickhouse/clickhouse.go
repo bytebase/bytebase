@@ -237,17 +237,18 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func getStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+func getStatementWithResultLimit(statement string, limit int) string {
+	statement = strings.TrimRight(statement, " \n\t;")
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", statement, limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	statement = strings.TrimRight(statement, " \n\t;")
 
-	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+	if queryContext.Explain {
+		statement = fmt.Sprintf("EXPLAIN %s", statement)
+	} else if queryContext.Limit > 0 {
+		statement = getStatementWithResultLimit(statement, queryContext.Limit)
 	}
 
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
@@ -257,9 +258,9 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement str
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, stmt)
+	rows, err := tx.QueryContext(ctx, statement)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, stmt)
+		return nil, err
 	}
 	defer rows.Close()
 

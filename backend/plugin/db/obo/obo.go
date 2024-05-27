@@ -190,7 +190,9 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-	if !strings.HasPrefix(strings.ToUpper(statement), "EXPLAIN") && queryContext.Limit > 0 {
+	if queryContext.Explain {
+		statement = fmt.Sprintf("EXPLAIN %s", statement)
+	} else if queryContext.Limit > 0 {
 		statement = fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", statement, queryContext.Limit)
 	}
 

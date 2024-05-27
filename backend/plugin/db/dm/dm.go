@@ -194,17 +194,20 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func getDMStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
+func getDMStatementWithResultLimit(statement string, limit int) string {
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", statement, limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-
-	stmt := statement
-	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getDMStatementWithResultLimit(stmt, queryContext.Limit)
+	statement := singleSQL.Text
+	statement = strings.TrimRight(statement, " \n\t;")
+	if queryContext.Explain {
+		// TODO(d): fix the query.
+		statement = fmt.Sprintf("EXPLAIN %s", statement)
+	} else if queryContext.Limit > 0 {
+		statement = getDMStatementWithResultLimit(statement, queryContext.Limit)
 	}
+
 	if queryContext.SensitiveSchemaInfo != nil {
 		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
 			if len(database.SchemaList) == 0 {
@@ -220,7 +223,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_DM, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_DM, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}
