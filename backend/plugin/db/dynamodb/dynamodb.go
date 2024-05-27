@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/pkg/errors"
@@ -24,9 +25,10 @@ func init() {
 
 // Driver is the BigQuery driver.
 type Driver struct {
-	config  db.ConnectionConfig
-	connCtx db.ConnectionContext
-	client  *dynamodb.Client
+	config    db.ConnectionConfig
+	connCtx   db.ConnectionContext
+	client    *dynamodb.Client
+	awsConfig aws.Config
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -43,6 +45,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, conf db.ConnectionC
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load AWS config")
 	}
+	d.awsConfig = cfg
 	client := dynamodb.NewFromConfig(cfg)
 	d.client = client
 	return d, nil
@@ -55,7 +58,7 @@ func (*Driver) Close(_ context.Context) error {
 
 // Ping pings the instance.
 func (d *Driver) Ping(ctx context.Context) error {
-	// DynamoDB does not support pint method, we list tables instead. To avoid network overhead,
+	// DynamoDB does not support ping method, we list tables instead. To avoid network overhead,
 	// we set the limit to 1.
 	var limit int32 = 1
 	_, err := d.client.ListTables(ctx, &dynamodb.ListTablesInput{
@@ -74,7 +77,7 @@ func (*Driver) GetType() storepb.Engine {
 
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
-	panic("implement me")
+	return nil
 }
 
 // Execute executes a SQL statement.
