@@ -41,7 +41,7 @@ func (*DisallowCrossDBQueriesAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	checker := &DisallowCrossDBQueriesChecker{
 		level: level,
 		title: ctx.Rule.Type,
-		curDB: strings.ToLower(ctx.CurrentDatabase),
+		curDB: ctx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
@@ -59,18 +59,18 @@ func (*DisallowCrossDBQueriesAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 func (checker *DisallowCrossDBQueriesChecker) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
-	if fullTblname := ctx.Full_table_name(); fullTblname != nil {
-		if database := fullTblname.GetDatabase(); database != nil {
-			if _, lowercaseDBName := tsql.NormalizeTSQLIdentifier(database); lowercaseDBName != checker.curDB {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
-					Status:  checker.level,
-					Code:    advisor.StatementDisallowCrossDBQueries,
-					Title:   checker.title,
-					Content: fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", lowercaseDBName, checker.curDB),
-					Line:    ctx.GetStart().GetLine(),
-				})
-			}
+	if fullTblnameCtx := ctx.Full_table_name(); fullTblnameCtx != nil {
+		// Case insensitive.
+		if fullTblName, err := tsql.NormalizeFullTableName(fullTblnameCtx); err == nil && !strings.EqualFold(fullTblName.Database, checker.curDB) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.StatementDisallowCrossDBQueries,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", fullTblName.Database, checker.curDB),
+				Line:    ctx.GetStart().GetLine(),
+			})
 		}
+		// Ignore internal error...
 	}
 }
 

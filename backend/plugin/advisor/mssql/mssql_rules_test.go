@@ -39,4 +39,5 @@ func TestMSSQLRules(t *testing.T) {
 // Add SQL review type here if you need metadata for test.
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	advisor.SchemaRuleStatementDisallowCrossDBQueries: true,
+	advisor.SchemaRuleSchemaBackwardCompatibility:     true,
 }
