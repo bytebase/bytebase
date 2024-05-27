@@ -59,7 +59,6 @@ const (
 	StatementOfflineDDL                       Code = 232
 	StatementDisallowCrossDBQueries           Code = 233
 	StatementDisallowFunctionsAndCalculations Code = 234
-	StatementDisallowCrossDBQueries           Code = 233
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

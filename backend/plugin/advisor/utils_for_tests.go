@@ -131,19 +131,6 @@ var (
 			},
 		},
 	}
-	MockMSSQLDatabase = &storepb.DatabaseSchemaMetadata{
-		Name: "master",
-		Schemas: []*storepb.SchemaMetadata{
-			{
-				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
-					{Name: "pokes"},
-					{Name: "pokes2"},
-					{Name: "pokes3"},
-				},
-			},
-		},
-	}
 )
 
 // TestCase is the data struct for test.
@@ -222,7 +209,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Catalog:         &testCatalog{finder: finder},
 			Driver:          nil,
 			Context:         context.Background(),
-			CurrentDatabase: curDB,
 			CurrentDatabase: curDB,
 			DBSchema:        schemaMetadata,
 		}
