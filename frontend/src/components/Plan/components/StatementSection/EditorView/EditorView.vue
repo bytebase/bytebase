@@ -247,7 +247,7 @@ type LocalState = EditState & {
 };
 
 const { t } = useI18n();
-const { isCreating, plan, selectedSpec, selectedStep, formatOnSave } =
+const { isCreating, plan, selectedSpec, selectedStep, formatOnSave, events } =
   usePlanContext();
 const project = computed(() => plan.value.projectEntity);
 const dialog = useDialog();
@@ -604,14 +604,12 @@ const updateStatement = async (statement: string) => {
     sheet
   );
 
-  for (let i = 0; i < specsToPatch.length; i++) {
-    const spec = specsToPatch[i];
-    let config = undefined;
+  for (const spec of specsToPatch) {
     if (spec.changeDatabaseConfig) {
-      config = spec.changeDatabaseConfig;
+      spec.changeDatabaseConfig.sheet = createdSheet.name;
+    } else {
+      console.error("Unexpected spec type", spec);
     }
-    if (!config) continue;
-    config.sheet = createdSheet.name;
   }
 
   const updatedPlan = await planServiceClient.updatePlan({
@@ -620,6 +618,8 @@ const updateStatement = async (statement: string) => {
   });
 
   Object.assign(plan.value, updatedPlan);
+
+  events.emit("status-changed", { eager: true });
 
   pushNotification({
     module: "bytebase",
