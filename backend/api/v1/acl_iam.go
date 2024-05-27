@@ -79,14 +79,6 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
 		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
 		return true
-	case
-		// TODO(p0ny): implement iam
-		v1pb.UserGroupService_CreateUserGroup_FullMethodName,
-		v1pb.UserGroupService_GetUserGroup_FullMethodName,
-		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
-		v1pb.UserGroupService_UpdateUserGroup_FullMethodName,
-		v1pb.UserGroupService_ListUserGroups_FullMethodName:
-		return true
 	// skip checking for sheet service because we want to
 	// discriminate bytebase artifact sheets and user sheets first.
 	// TODO(p0ny): implement
@@ -164,6 +156,8 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.ChangelistService_ListChangelists_FullMethodName,
 		v1pb.PlanService_ListPlans_FullMethodName,
 		v1pb.PlanService_SearchPlans_FullMethodName,
+		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
+		v1pb.UserGroupService_UpdateUserGroup_FullMethodName,
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
 		return true
 	}

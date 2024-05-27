@@ -50,7 +50,7 @@ func NewManager(store *store.Store) (*Manager, error) {
 	}, nil
 }
 
-// Check if the user or `allUsers` has the permission p
+// Check if the user or `allUsers` or the user group has the permission p
 // or has the permission p in every project.
 func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
 	ok, err := m.doCheckPermission(ctx, p, user, projectIDs...)
