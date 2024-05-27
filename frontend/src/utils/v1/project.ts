@@ -1,5 +1,11 @@
 import { orderBy, uniq } from "lodash-es";
-import { extractUserEmail, useUserStore } from "@/store";
+import {
+  extractUserEmail,
+  useUserStore,
+  useUserGroupStore,
+  extractGroupEmail,
+} from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
   DEFAULT_PROJECT_V1_NAME,
@@ -18,12 +24,32 @@ export const extractProjectResourceName = (name: string) => {
 };
 
 export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
+  const groupStore = useUserGroupStore();
+
   return iamPolicy.bindings
     .filter((binding) => {
-      return (
-        binding.members.includes(`user:${user.email}`) ||
-        binding.members.includes(ALL_USERS_USER_EMAIL)
-      );
+      for (const member of binding.members) {
+        if (member === ALL_USERS_USER_EMAIL) {
+          return true;
+        }
+        if (member === `user:${user.email}`) {
+          return true;
+        }
+
+        if (member.startsWith("group:")) {
+          const groupEmail = extractGroupEmail(member);
+          const group = groupStore.getGroupByEmail(groupEmail);
+          if (!group) {
+            continue;
+          }
+
+          return group.members.some(
+            (m) => m.member === `${userNamePrefix}${user.email}`
+          );
+        }
+
+        return false;
+      }
     })
     .map((binding) => binding.role);
 };
@@ -50,17 +76,28 @@ export const isViewerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   );
 };
 
-export const memberListInProjectV1 = (
-  project: Project,
-  iamPolicy: IamPolicy
-) => {
+export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
   const userStore = useUserStore();
+  const groupStore = useUserGroupStore();
 
-  const distinctEmailList = uniq(
-    iamPolicy.bindings.flatMap((binding) =>
-      binding.members.map(extractUserEmail)
-    )
-  );
+  const emailList = [];
+  for (const binding of iamPolicy.bindings) {
+    for (const member of binding.members) {
+      if (member.startsWith("group:")) {
+        const groupEmail = extractGroupEmail(member);
+        const group = groupStore.getGroupByEmail(groupEmail);
+        if (!group) {
+          continue;
+        }
+
+        emailList.push(...group.members.map((m) => extractUserEmail(m.member)));
+      } else {
+        emailList.push(extractUserEmail(member));
+      }
+    }
+  }
+
+  const distinctEmailList = uniq(emailList);
   const userList = distinctEmailList.map((email) => {
     const user =
       userStore.getUserByEmail(email) ??

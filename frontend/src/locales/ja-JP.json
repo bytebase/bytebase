@@ -516,10 +516,14 @@
           "members": "メンバー",
           "add-member": "メンバーを追加",
           "role": {
-            "owner": "所有者",
-            "member": "メンバー"
+            "owner": "グループオーナー",
+            "member": "グループの人（仲間）たち"
           }
-        }
+        },
+        "n-members": "{n} 人のメンバー",
+        "group-members": "チームメンバー",
+        "group-roles": "グループの役割",
+        "edit-group": "グループの編集"
       },
       "action": {
         "deactivate": "無効にする",
@@ -1987,6 +1991,7 @@
       "inactive-members": "非アクティブなメンバー",
       "show-inactive": "非アクティブなメンバーを表示する",
       "select-users": "ユーザーの選択",
+      "select-groups": "グループを選択",
       "assign-role": "役割の割り当て",
       "assign-reason": "(オプション) 理由",
       "never-expires": "有効期限が切れることはありません",

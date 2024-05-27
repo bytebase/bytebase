@@ -44,7 +44,12 @@ export type WorkspacePermission =
   | "bb.roles.update"
   | "bb.settings.get"
   | "bb.settings.list"
-  | "bb.settings.set";
+  | "bb.settings.set"
+  | "bb.userGroups.create"
+  | "bb.userGroups.delete"
+  | "bb.userGroups.get"
+  | "bb.userGroups.list"
+  | "bb.userGroups.update";
 
 export type ProjectPermission =
   | "bb.branches.create"

@@ -154,24 +154,24 @@ import { NPopconfirm, NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  extractGroupEmail,
   useUserGroupStore,
   useCurrentUserV1,
   pushNotification,
   useUserStore,
 } from "@/store";
-import {
-  getGroupEmail,
-  userNamePrefix,
-  userGroupNamePrefix,
-} from "@/store/modules/v1/common";
+import { userNamePrefix, userGroupNamePrefix } from "@/store/modules/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import {
   UserGroup,
   UserGroupMember,
   UserGroupMember_Role,
 } from "@/types/proto/v1/user_group";
-import { isValidEmail } from "@/utils";
-import { extractUserUID } from "@/utils";
+import {
+  isValidEmail,
+  extractUserUID,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 
 interface LocalState {
   isRequesting: boolean;
@@ -199,7 +199,7 @@ const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   isRequesting: false,
   group: {
-    email: getGroupEmail(props.group?.name ?? ""),
+    email: extractGroupEmail(props.group?.name ?? ""),
     title: props.group?.title ?? "",
     description: props.group?.description ?? "",
     members: cloneDeep(props.group?.members ?? []),
@@ -219,8 +219,10 @@ const allowEdit = computed(() => {
   if (selfMemberInGroup.value?.role === UserGroupMember_Role.OWNER) {
     return true;
   }
-  // TODO(ed): permission check
-  return true;
+  return hasWorkspacePermissionV2(
+    currentUserV1.value,
+    isCreating.value ? "bb.userGroups.create" : "bb.userGroups.update"
+  );
 });
 
 const validGroup = computed(() => {

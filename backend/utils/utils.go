@@ -810,18 +810,19 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 	return bindings
 }
 
-// GetUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
+// getUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
 // the condition of role binding is respected and evaluated with request.time=time.Now().
-func GetUserRoles(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) ([]api.Role, error) {
-	var roles []api.Role
-	roles = append(roles, user.Roles...)
+// the returned role name should in the roles/{id} format.
+func getUserRoles(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) ([]string, error) {
+	var roles []string
+	for _, userRole := range user.Roles {
+		roles = append(roles, common.FormatRole(userRole.String()))
+	}
 
 	for _, projectPolicy := range projectPolicies {
 		bindings := GetUserIAMPolicyBindings(ctx, stores, user, projectPolicy)
-
 		for _, binding := range bindings {
-			role := api.Role(strings.TrimPrefix(binding.Role, "roles/"))
-			roles = append(roles, role)
+			roles = append(roles, binding.Role)
 		}
 	}
 	roles = uniq(roles)
@@ -831,28 +832,28 @@ func GetUserRoles(ctx context.Context, stores *store.Store, user *store.UserMess
 
 // See GetUserRoles.
 func GetUserRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[api.Role]bool, error) {
-	roles, err := GetUserRoles(ctx, stores, user, projectPolicies...)
+	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err
 	}
 
 	rolesMap := make(map[api.Role]bool)
 	for _, role := range roles {
-		rolesMap[role] = true
+		rolesMap[api.Role(strings.TrimPrefix(role, "roles/"))] = true
 	}
 	return rolesMap, nil
 }
 
 // See GetUserRoles. The returned map key format is roles/{role}.
 func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[string]bool, error) {
-	roles, err := GetUserRoles(ctx, stores, user, projectPolicies...)
+	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err
 	}
 
 	rolesMap := make(map[string]bool)
 	for _, role := range roles {
-		rolesMap[common.FormatRole(role.String())] = true
+		rolesMap[role] = true
 	}
 	return rolesMap, nil
 }

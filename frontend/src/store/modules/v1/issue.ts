@@ -131,7 +131,7 @@ export const candidatesOfApprovalStepV1 = (
     (user) => user.userType === UserType.USER
   );
   const project = issue.projectEntity;
-  const projectMemberList = memberListInProjectV1(project, project.iamPolicy)
+  const projectMemberList = memberListInProjectV1(project.iamPolicy)
     .filter((member) => member.user.userType === UserType.USER)
     .map((member) => ({
       ...member,
@@ -174,7 +174,7 @@ export const candidatesOfApprovalStepV1 = (
       return [];
     };
     const candidatesForCustomRoles = (role: string) => {
-      const memberList = memberListInProjectV1(project, project.iamPolicy);
+      const memberList = memberListInProjectV1(project.iamPolicy);
       return memberList
         .filter((member) => member.user.userType === UserType.USER)
         .filter((member) => member.roleList.includes(role))
