@@ -94,7 +94,7 @@
         </template>
       </div>
       <div class="flex justify-end items-center space-x-3">
-        <NCheckbox v-model:checked="state.planOnly">
+        <NCheckbox v-if="isDev()" v-model:checked="state.planOnly">
           {{ $t("issue.sql-review-only") }}
         </NCheckbox>
         <NButton @click="dismissModal">
@@ -150,7 +150,7 @@ import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
+import { TinyTimer, defer, extractProjectResourceName, isDev } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import type { EditTarget, GenerateDiffDDLResult } from "../SchemaEditorLite";
