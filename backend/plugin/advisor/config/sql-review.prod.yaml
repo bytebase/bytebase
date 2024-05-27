@@ -118,6 +118,8 @@ ruleList:
     level: WARNING
   - type: statement.disallow-offline-ddl
     level: WARNING
+  - type: statement.disallow-cross-db-queries
+    level: WARNING
   - type: naming.fully-qualified
     level: WARNING
   - type: naming.table

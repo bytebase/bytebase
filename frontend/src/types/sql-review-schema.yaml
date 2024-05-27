@@ -352,6 +352,10 @@ ruleList:
     category: STATEMENT
     engineList:
       - OCEANBASE
+  - type: statement.disallow-cross-db-queries
+    category: STATEMENT
+    engineList:
+      - MSSQL
   - type: naming.fully-qualified
     category: NAMING
     engineList:

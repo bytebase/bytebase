@@ -615,6 +615,9 @@ const (
 
 	// MSSQLProcedureDisallowCreateOrAlter restricts the creation of procedures.
 	MSSQLProcedureDisallowCreateOrAlter Type = "bb.plugin.advisor.mssql.procedure.disallow-create-or-alter"
+
+	// MSSQLStatementDisallowCrossDBQueries prohibits cross database queries.
+	MSSQLStatementDisallowCrossDBQueries Type = "bb.plugin.advisor.mssql.statement.disallow-cross-db-queries"
 )
 
 // Advice is the result of an advisor.
@@ -656,7 +659,7 @@ type Context struct {
 	Driver  *sql.DB
 	Context context.Context
 
-	// CurrentDatabase is the current database. Special for Snowflake.
+	// CurrentDatabase is the current database.
 	CurrentDatabase string
 	// Statement is the original statement of AST, it is used for some PostgreSQL
 	// advisors which need to check the token stream.
