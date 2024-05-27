@@ -34,7 +34,7 @@
     </div>
     <div class="w-full flex flex-row justify-end items-center mt-4">
       <div class="flex justify-end items-center gap-x-3">
-        <NCheckbox v-model:checked="state.planOnly">
+        <NCheckbox v-if="isDev()" v-model:checked="state.planOnly">
           {{ $t("issue.sql-review-only") }}
         </NCheckbox>
         <NButton @click="dismissModal">
@@ -71,6 +71,7 @@ import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { useDBGroupStore } from "@/store";
 import type { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
+import { isDev } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {

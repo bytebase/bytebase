@@ -52,7 +52,11 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import type { WorkspacePermission } from "@/types";
-import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  hasProjectPermissionV2,
+  isDev,
+} from "@/utils";
 
 interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;
@@ -195,11 +199,12 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: WORKSPACE_ROUTE_REVIEW_CENTER,
       type: "route",
       shortcuts: ["g", "r", "c"],
-      hide: !hasProjectPermissionV2(
-        undefined,
-        currentUserV1.value,
-        "bb.projects.getIamPolicy"
-      ),
+      hide:
+        !hasProjectPermissionV2(
+          undefined,
+          currentUserV1.value,
+          "bb.projects.getIamPolicy"
+        ) || !isDev(),
     },
     {
       navigationId: "bb.navigation.export-center",
