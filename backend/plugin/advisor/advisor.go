@@ -618,6 +618,9 @@ const (
 
 	// MSSQLStatementDisallowCrossDBQueries prohibits cross database queries.
 	MSSQLStatementDisallowCrossDBQueries Type = "bb.plugin.advisor.mssql.procedure.disallow-cross-db-queries"
+
+	// MSSQLStatementDisallowFunctionsAndCalculations prohibit using functions or performing calculation in the where clause.
+	MSSQLStatementDisallowFunctionsAndCalculations Type = "bb.plugin.advisor.mssql.where.disallow-functions-and-calculations"
 )
 
 // Advice is the result of an advisor.
