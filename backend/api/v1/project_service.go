@@ -1786,7 +1786,10 @@ func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy 
 				}
 				members = append(members, common.FormatUserUID(user.ID))
 			} else if strings.HasPrefix(member, "group:") {
-				members = append(members, member)
+				email := strings.TrimPrefix(member, "group:")
+				members = append(members, common.FormatGroupEmail(email))
+			} else {
+				return nil, status.Errorf(codes.InvalidArgument, "unsupport member %s", member)
 			}
 		}
 

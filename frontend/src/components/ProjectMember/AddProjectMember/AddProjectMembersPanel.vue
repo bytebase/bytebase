@@ -21,7 +21,7 @@
           :project="project"
           :binding="binding"
           :allow-remove="filteredBindings.length > 1"
-          @remove="handleRemove(binding, index)"
+          @remove="handleRemove(index)"
         />
       </div>
       <div>
@@ -116,7 +116,7 @@ const handleAddMore = () => {
   state.bindings.push(Binding.fromPartial({}));
 };
 
-const handleRemove = (binding: Binding, index: number) => {
+const handleRemove = (index: number) => {
   state.bindings[index] = undefined;
 };
 

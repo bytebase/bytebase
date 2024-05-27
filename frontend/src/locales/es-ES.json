@@ -516,10 +516,14 @@
           "members": "Miembros",
           "add-member": "Añadir miembro",
           "role": {
-            "owner": "Dueño",
-            "member": "Miembros"
+            "owner": "Propietario del grupo",
+            "member": "Miembro del grupo"
           }
-        }
+        },
+        "n-members": "{n} miembros",
+        "group-members": "Miembros del grupo",
+        "group-roles": "Roles grupales",
+        "edit-group": "Editar grupo"
       },
       "action": {
         "deactivate": "Desactivar",
@@ -1987,6 +1991,7 @@
       "inactive-members": "Miembros inactivos",
       "show-inactive": "Mostrar miembros inactivos",
       "select-users": "Seleccionar usuarios",
+      "select-groups": "Seleccionar grupos",
       "assign-role": "Asignar rol",
       "assign-reason": "(Opcional) Razón",
       "never-expires": "Nunca caduca",

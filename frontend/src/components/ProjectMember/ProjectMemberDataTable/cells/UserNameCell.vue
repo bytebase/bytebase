@@ -27,21 +27,20 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import { unknownUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
-import type { ProjectMember } from "../../types";
+import type { ProjectBinding } from "../../types";
 
 const props = defineProps<{
-  projectMember: ProjectMember;
-}>();
-
-defineEmits<{
-  (event: "reset-service-key", user: User): void;
+  projectMember: ProjectBinding;
 }>();
 
 const currentUserV1 = useCurrentUserV1();
+const userStore = useUserStore();
 
-const user = computed(() => props.projectMember.user);
+const user = computed(
+  () => userStore.getUserByEmail(props.projectMember.email) ?? unknownUser()
+);
 </script>

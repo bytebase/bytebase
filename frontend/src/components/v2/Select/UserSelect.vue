@@ -126,7 +126,7 @@ watchEffect(prepare);
 
 const getUserListFromProject = (projectUID: string) => {
   const project = projectV1Store.getProjectByUID(projectUID);
-  const memberList = memberListInProjectV1(project, project.iamPolicy);
+  const memberList = memberListInProjectV1(project.iamPolicy);
   const filteredUserList = memberList
     .filter((member) => {
       if (props.allowedProjectMemberRoleList.length === 0) {

@@ -30,8 +30,11 @@
       </div>
 
       <div class="flex items-center space-x-3">
-        <!-- TODO(ed): permission check -->
-        <NButton class="capitalize" @click="handleCreateGroup">
+        <NButton
+          v-if="allowCreateGroup"
+          class="capitalize"
+          @click="handleCreateGroup"
+        >
           <template #icon>
             <PlusIcon class="h-5 w-5" />
           </template>
@@ -51,7 +54,7 @@
       </div>
     </div>
 
-    <NTabs class="!mt-2" type="bar" animated>
+    <NTabs v-model:value="state.tab" class="!mt-2" type="bar" animated>
       <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
         <UserDataTable
           :user-list="activeUserList"
@@ -65,10 +68,18 @@
           @update-user="handleUpdateUser"
         />
       </NTabPane>
-      <NTabPane name="groups" :tab="$t('settings.members.view-by-groups')">
+      <NTabPane
+        v-if="allowListGroup"
+        name="groups"
+        :tab="$t('settings.members.view-by-groups')"
+      >
         <UserDataTableByGroup
-          :user-list="activeUserList"
+          :groups="groupStore.groupList"
+          :filter="state.activeUserFilterText"
+          :allow-delete="allowDeleteGroup"
+          :allow-edit="allowEditGroup"
           @update-group="handleUpdateGroup"
+          @delete-group="handleDeleteGroup"
         />
       </NTabPane>
 
@@ -120,9 +131,10 @@
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NTabs, NTabPane } from "naive-ui";
+import { NButton, NCheckbox, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import UserDataTableByRole from "@/components/User/Settings/UserDataTableByRole/index.vue";
@@ -133,19 +145,23 @@ import {
   useCurrentUserV1,
   useUserStore,
   useUIStateStore,
+  useUserGroupStore,
+  pushNotification,
 } from "@/store";
-import type { User } from "@/types/proto/v1/auth_service";
-import { UserType } from "@/types/proto/v1/auth_service";
-import { State } from "@/types/proto/v1/common";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
   filterUserListByKeyword,
-} from "../types";
-import { hasWorkspacePermissionV2 } from "../utils";
+} from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
+import type { UserGroup } from "@/types/proto/v1/user_group";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 type LocalState = {
+  tab: "users" | "roles" | "groups";
   activeUserFilterText: string;
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
@@ -156,6 +172,7 @@ type LocalState = {
 };
 
 const state = reactive<LocalState>({
+  tab: "users",
   activeUserFilterText: "",
   inactiveUserFilterText: "",
   showInactiveUserList: false,
@@ -164,7 +181,10 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
+const route = useRoute();
+const $dialog = useDialog();
 const userStore = useUserStore();
+const groupStore = useUserGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const uiStateStore = useUIStateStore();
 const subscriptionV1Store = useSubscriptionV1Store();
@@ -172,8 +192,24 @@ const hasRBACFeature = computed(() =>
   subscriptionV1Store.hasFeature("bb.feature.rbac")
 );
 
+const allowListGroup = computed(() =>
+  hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.list")
+);
+
+const allowCreateGroup = computed(() =>
+  hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.create")
+);
+
 const allowCreateUser = computed(() => {
   return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
+});
+
+const allowDeleteGroup = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.delete");
+});
+
+const allowEditGroup = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.update");
 });
 
 onMounted(() => {
@@ -182,6 +218,15 @@ onMounted(() => {
       key: "member.visit",
       newState: true,
     });
+  }
+
+  const name = route.query.name as string;
+  if (name?.startsWith(userGroupNamePrefix)) {
+    state.tab = "groups";
+    state.editingGroup = groupStore.groupList.find(
+      (group) => group.name === name
+    );
+    state.showCreateGroupDrawer = !!state.editingGroup;
   }
 });
 
@@ -256,6 +301,27 @@ const userCountAttention = computed((): string => {
 const handleCreateGroup = () => {
   state.editingGroup = undefined;
   state.showCreateGroupDrawer = true;
+};
+
+const handleDeleteGroup = async (group: UserGroup) => {
+  $dialog.warning({
+    title: t("common.warning"),
+    content: t("settings.members.groups.delete-warning", {
+      name: group.title,
+    }),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.continue-anyway"),
+    onPositiveClick: () => {
+      groupStore.deleteGroup(group.name).then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.deleted"),
+        });
+      });
+    },
+  });
 };
 
 const handleUpdateGroup = (group: UserGroup) => {

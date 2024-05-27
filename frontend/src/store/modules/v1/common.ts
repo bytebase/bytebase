@@ -191,8 +191,3 @@ export const getIssueCommentId = (name: string) => {
   }
   return tokens[2];
 };
-
-export const getGroupEmail = (name: string) => {
-  const tokens = getNameParentTokens(name, [userGroupNamePrefix]);
-  return tokens[0];
-};

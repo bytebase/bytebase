@@ -18,9 +18,9 @@ import { useRoleStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import { PRESET_WORKSPACE_ROLES } from "@/types";
 import { displayRoleTitle, sortRoles } from "@/utils";
-import type { ProjectMember } from "../types";
-import UserNameCell from "./cells/UserNameCell.vue";
-import UserOperationsCell from "./cells/UserOperationsCell.vue";
+import UserNameCell from "../ProjectMemberDataTable/cells/UserNameCell.vue";
+import UserOperationsCell from "../ProjectMemberDataTable/cells/UserOperationsCell.vue";
+import type { ProjectBinding } from "../types";
 
 interface RoleRowData {
   type: "role";
@@ -31,12 +31,12 @@ interface RoleRowData {
 interface UserRowData {
   type: "user";
   name: string;
-  member: ProjectMember;
+  member: ProjectBinding;
 }
 
 const props = defineProps<{
   project: ComposedProject;
-  members: ProjectMember[];
+  members: ProjectBinding[];
 }>();
 
 const emit = defineEmits<{
@@ -95,7 +95,7 @@ const columns = computed(() => {
             project: props.project,
             projectMember: row.member,
             "onUpdate-user": () => {
-              emit("update-member", row.member.user.email);
+              emit("update-member", row.member.binding);
             },
           });
         }
@@ -127,7 +127,7 @@ const userListByRole = computed(() => {
         children: members.map((member) => {
           return {
             type: "user",
-            name: member.user.name,
+            name: member.binding,
             member,
           };
         }),

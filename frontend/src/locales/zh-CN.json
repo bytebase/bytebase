@@ -516,10 +516,14 @@
           "members": "成员",
           "add-member": "添加成员",
           "role": {
-            "owner": "所有者",
-            "member": "成员"
+            "owner": "群组所有者",
+            "member": "群组成员"
           }
-        }
+        },
+        "n-members": "{n} 位成员",
+        "group-members": "小组成员",
+        "group-roles": "群组角色",
+        "edit-group": "编辑群组"
       },
       "action": {
         "deactivate": "禁用",
@@ -1987,6 +1991,7 @@
       "inactive-members": "未激活成员",
       "show-inactive": "显示未激活成员",
       "select-users": "选择用户",
+      "select-groups": "选择群组",
       "assign-role": "分配角色",
       "assign-reason": "（可选）理由",
       "never-expires": "永不过期",

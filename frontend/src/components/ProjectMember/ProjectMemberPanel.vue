@@ -2,31 +2,49 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <div class="w-full flex flex-row justify-between items-center gap-2">
-      <div>
-        <p class="text-lg font-medium leading-7 text-main">
-          <span>{{ $t("common.members") }}</span>
-          <span class="ml-1 font-normal text-control-light">
-            ({{ activeUserList.length }})
-          </span>
-        </p>
-      </div>
-      <div v-if="allowAdmin" class="flex justify-end gap-x-2">
-        <NButton
-          v-if="state.selectedTab === 'users'"
-          :disabled="state.selectedMembers.length === 0"
-          @click="handleRevokeSelectedMembers"
-        >
-          {{ $t("project.members.revoke-access") }}
-        </NButton>
-        <NButton type="primary" @click="state.showAddMemberPanel = true">
-          <template #icon>
-            <heroicons-outline:user-add class="w-4 h-4" />
-          </template>
-          {{ $t("project.members.grant-access") }}
-        </NButton>
-      </div>
-    </div>
+    <NTabs v-model:value="state.typeTab" type="line" animated>
+      <NTabPane name="members">
+        <template #tab>
+          <div>
+            <p class="text-lg font-medium leading-7 text-main">
+              <span>{{ $t("common.members") }}</span>
+              <span class="ml-1 font-normal text-control-light">
+                ({{ activeUserList.length }})
+              </span>
+            </p>
+          </div>
+        </template>
+      </NTabPane>
+      <NTabPane name="groups">
+        <template #tab>
+          <div>
+            <p class="text-lg font-medium leading-7 text-main">
+              <span>{{ $t("settings.members.groups.self") }}</span>
+              <span class="ml-1 font-normal text-control-light">
+                ({{ activeGroupList.length }})
+              </span>
+            </p>
+          </div>
+        </template>
+      </NTabPane>
+      <template #suffix>
+        <div v-if="allowEdit" class="flex justify-end gap-x-2">
+          <NButton
+            v-if="state.typeTab === 'members' && state.selectedTab === 'users'"
+            :disabled="state.selectedMembers.length === 0"
+            @click="handleRevokeSelectedMembers"
+          >
+            {{ $t("project.members.revoke-access") }}
+          </NButton>
+          <NButton type="primary" @click="state.showAddMemberPanel = true">
+            <template #icon>
+              <heroicons-outline:user-add class="w-4 h-4" />
+            </template>
+            {{ $t("project.members.grant-access") }}
+          </NButton>
+        </div>
+      </template>
+    </NTabs>
 
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
@@ -40,7 +58,12 @@
       </a>
     </div>
 
-    <NTabs v-model:value="state.selectedTab" type="bar" animated>
+    <NTabs
+      v-if="state.typeTab === 'members'"
+      v-model:value="state.selectedTab"
+      type="bar"
+      animated
+    >
       <template #suffix>
         <SearchBox
           v-model:value="state.searchText"
@@ -52,7 +75,7 @@
           :project="project"
           :members="projectMembers"
           :selected-members="state.selectedMembers"
-          @update-member="state.editingMember = $event"
+          @update-member="selectMember"
           @update-selected-members="state.selectedMembers = $event"
         />
       </NTabPane>
@@ -60,10 +83,21 @@
         <ProjectMemberDataTableByRole
           :project="project"
           :members="projectMembers"
-          @update-member="state.editingMember = $event"
+          @update-member="selectMember"
         />
       </NTabPane>
     </NTabs>
+    <UserDataTableByGroup
+      v-else
+      :groups="activeGroupList"
+      :group-role-map="groupRoleMap"
+      :show-description="false"
+      :show-group-role="false"
+      :allow-edit="allowEdit"
+      :allow-delete="allowEdit"
+      @update-group="selectGroup"
+      @delete-group="deleteGroup"
+    />
   </div>
 
   <AddProjectMembersPanel
@@ -73,9 +107,9 @@
   />
 
   <ProjectMemberRolePanel
-    v-if="editingMember"
+    v-if="state.editingMember"
     :project="project"
-    :member="editingMember"
+    :binding="state.editingMember"
     @close="state.editingMember = undefined"
   />
 </template>
@@ -86,36 +120,41 @@ import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  extractGroupEmail,
   extractUserEmail,
   pushNotification,
   useCurrentUserV1,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
+  useUserGroupStore,
 } from "@/store";
 import type { ComposedProject } from "@/types";
 import {
-  DEFAULT_PROJECT_V1_NAME,
   getUserEmailInBinding,
+  getGroupEmailInBinding,
   unknownUser,
   ALL_USERS_USER_EMAIL,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import type { UserGroup } from "@/types/proto/v1/user_group";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberDataTable from "./ProjectMemberDataTable/index.vue";
 import ProjectMemberDataTableByRole from "./ProjectMemberDataTableByRole/index.vue";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";
-import type { ProjectMember } from "./types";
+import type { ProjectRole, ProjectBinding } from "./types";
 
 interface LocalState {
   searchText: string;
+  typeTab: "members" | "groups";
   selectedTab: "users" | "roles";
+  // the member should in user:{user} or group:{group} format.
   selectedMembers: string[];
   showInactiveMemberList: boolean;
   showAddMemberPanel: boolean;
-  editingMember?: string;
+  editingMember?: ProjectBinding;
 }
 
 const props = defineProps<{
@@ -126,11 +165,13 @@ const props = defineProps<{
 const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
+const groupStore = useUserGroupStore();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const state = reactive<LocalState>({
   searchText: "",
+  typeTab: "members",
   selectedTab: "users",
   selectedMembers: [],
   showInactiveMemberList: false,
@@ -138,18 +179,6 @@ const state = reactive<LocalState>({
 });
 
 const userStore = useUserStore();
-
-const allowAdmin = computed(() => {
-  if (props.project.name === DEFAULT_PROJECT_V1_NAME) {
-    return false;
-  }
-
-  if (props.project.state === State.DELETED) {
-    return false;
-  }
-
-  return props.allowEdit;
-});
 
 const projectIAMPolicyBindings = computed(() => {
   return iamPolicy.value.bindings;
@@ -167,34 +196,71 @@ const activeUserList = computed(() => {
 
   const projectMembers = uniq(
     projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
-  ).map((user) => {
-    const email = extractUserEmail(user);
-    return (
-      userStore.getUserByEmail(email) ??
-      ({
-        ...unknownUser(),
-        email,
-      } as User)
-    );
-  });
+  )
+    .filter((user) => !user.startsWith("group:"))
+    .map((user) => {
+      const email = extractUserEmail(user);
+      return (
+        userStore.getUserByEmail(email) ??
+        ({
+          ...unknownUser(),
+          email,
+        } as User)
+      );
+    });
 
   const combinedMembers = uniqBy(
     [...workspaceLevelProjectMembers, ...projectMembers],
     "email"
   ).filter((user) => user.state === State.ACTIVE);
 
-  if (state.searchText) {
-    return combinedMembers.filter(
-      (user) =>
-        user.title.toLowerCase().includes(state.searchText.toLowerCase()) ||
-        user.email.toLowerCase().includes(state.searchText.toLowerCase())
-    );
-  }
   return combinedMembers;
 });
 
+const activeGroupList = computed(() => {
+  return uniq(
+    projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
+  )
+    .filter((user) => user.startsWith("group:"))
+    .map((user) => {
+      const email = extractGroupEmail(user);
+      return groupStore.getGroupByEmail(email);
+    })
+    .filter((group) => !!group);
+});
+
+const groupRoleMap = computed(() => {
+  const map = new Map<string, ProjectRole>();
+  for (const group of activeGroupList.value) {
+    if (!group) {
+      continue;
+    }
+    const bindings = projectIAMPolicyBindings.value.filter((binding) =>
+      binding.members.some(
+        (member) => extractGroupEmail(member) === extractGroupEmail(group.name)
+      )
+    );
+    map.set(group.name, {
+      workspaceLevelProjectRoles: [],
+      projectRoleBindings: bindings,
+    });
+  }
+  return map;
+});
+
+const filteredUserList = computed(() => {
+  if (!state.searchText) {
+    return activeUserList.value;
+  }
+  return activeUserList.value.filter(
+    (user) =>
+      user.title.toLowerCase().includes(state.searchText.toLowerCase()) ||
+      user.email.toLowerCase().includes(state.searchText.toLowerCase())
+  );
+});
+
 const projectMembers = computed(() => {
-  return activeUserList.value
+  return filteredUserList.value
     .map((user) => {
       const roles = user.roles.filter(
         (role) => !PRESET_WORKSPACE_ROLES.includes(role)
@@ -208,37 +274,60 @@ const projectMembers = computed(() => {
         return null;
       }
       return {
-        user,
+        type: "user",
+        title: user.title,
+        email: user.email,
+        binding: getUserEmailInBinding(user.email),
         workspaceLevelProjectRoles: roles,
         projectRoleBindings: bindings,
-      } as ProjectMember;
+      } as ProjectBinding;
     })
-    .filter(Boolean) as ProjectMember[];
+    .filter(Boolean) as ProjectBinding[];
 });
 
-const editingMember = computed(() => {
-  if (!state.editingMember) {
-    return undefined;
-  }
-  return projectMembers.value.find(
-    (member) => member.user.email === state.editingMember
+const selectMember = (binding: string) => {
+  const projectMember = projectMembers.value.find(
+    (member) => member.binding === binding
   );
+  if (!projectMember) {
+    return;
+  }
+  state.editingMember = projectMember;
+};
+
+const deleteGroup = (group: UserGroup) => {
+  const email = extractGroupEmail(group.name);
+  state.selectedMembers = [getGroupEmailInBinding(email)];
+  handleRevokeSelectedMembers();
+};
+
+const selectGroup = (group: UserGroup) => {
+  const roleBinding: ProjectRole = groupRoleMap.value.get(group.name) ?? {
+    workspaceLevelProjectRoles: [],
+    projectRoleBindings: [],
+  };
+  const email = extractGroupEmail(group.name);
+
+  state.editingMember = {
+    type: "group",
+    title: group.title,
+    email,
+    binding: getGroupEmailInBinding(email),
+    ...roleBinding,
+  };
+};
+
+const selectedUserEmails = computed(() => {
+  return state.selectedMembers
+    .filter((member) => !member.startsWith("group:"))
+    .map(extractUserEmail);
 });
 
 const handleRevokeSelectedMembers = () => {
-  const selectedMembers = state.selectedMembers
-    .map((email) => {
-      return projectMembers.value.find((member) => member.user.email === email);
-    })
-    .filter((member) => member !== undefined) as ProjectMember[];
-  if (selectedMembers.length === 0) {
+  if (state.selectedMembers.length === 0) {
     return;
   }
-  if (
-    selectedMembers
-      .map((member) => member.user.name)
-      .includes(currentUserV1.value.name)
-  ) {
+  if (selectedUserEmails.value.includes(currentUserV1.value.email)) {
     pushNotification({
       module: "bytebase",
       style: "WARN",
@@ -252,14 +341,11 @@ const handleRevokeSelectedMembers = () => {
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {
-      const userIAMNameList = selectedMembers.map((member) => {
-        return getUserEmailInBinding(member!.user.email);
-      });
       const policy = cloneDeep(iamPolicy.value);
 
       for (const binding of policy.bindings) {
         binding.members = binding.members.filter(
-          (member) => !userIAMNameList.includes(member)
+          (member) => !state.selectedMembers.includes(member)
         );
       }
       policy.bindings = policy.bindings.filter(
