@@ -2,14 +2,11 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -93,31 +90,13 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	ok, err = func() (bool, error) {
-		group, err := s.store.GetUserGroup(ctx, email)
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to get user group %q", email)
-		}
-		if group == nil {
-			return false, errors.Wrapf(err, "group %q not found", email)
-		}
-		for _, member := range group.Payload.GetMembers() {
-			if member.Role == storepb.UserGroupMember_OWNER && member.Member == common.FormatUserEmail(user.Email) {
-				return true, nil
-			}
-		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsUpdate, user)
-	}()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission to update user group, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update user group")
+	if err := s.checkPermission(ctx, email, iam.PermissionUserGroupsUpdate); err != nil {
+		return nil, err
 	}
 
 	patch := &store.UpdateUserGroupMessage{}
@@ -138,7 +117,7 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	groupMessage, err := s.store.UpdateUserGroup(ctx, email, patch, user.ID)
+	groupMessage, err := s.store.UpdateUserGroup(ctx, email, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -153,31 +132,8 @@ func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.De
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
-	ok, err = func() (bool, error) {
-		group, err := s.store.GetUserGroup(ctx, email)
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to get user group %q", email)
-		}
-		if group == nil {
-			return false, errors.Wrapf(err, "group %q not found", email)
-		}
-		for _, member := range group.Payload.GetMembers() {
-			if member.Role == storepb.UserGroupMember_OWNER && member.Member == common.FormatUserEmail(user.Email) {
-				return true, nil
-			}
-		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsDelete, user)
-	}()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission to delete user group, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete user group")
+	if err := s.checkPermission(ctx, email, iam.PermissionUserGroupsDelete); err != nil {
+		return nil, err
 	}
 
 	if err := s.store.DeleteUserGroup(ctx, email); err != nil {
@@ -185,6 +141,34 @@ func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.De
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *UserGroupService) checkPermission(ctx context.Context, groupEmail string, permission iam.Permission) error {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return status.Errorf(codes.Internal, "user not found")
+	}
+
+	group, err := s.store.GetUserGroup(ctx, groupEmail)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to get user group %q with error: %v", groupEmail, err)
+	}
+	if group == nil {
+		return status.Errorf(codes.Internal, "group %q not found", groupEmail)
+	}
+	for _, member := range group.Payload.GetMembers() {
+		if member.Role == storepb.UserGroupMember_OWNER && member.Member == common.FormatUserUID(user.ID) {
+			return nil
+		}
+	}
+	hasPermission, err := s.iamManager.CheckPermission(ctx, permission, user)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission with error: %v", err)
+	}
+	if !hasPermission {
+		return status.Errorf(codes.PermissionDenied, "permission denied: %v", permission)
+	}
+	return nil
 }
 
 func (s *UserGroupService) convertToGroupPayload(ctx context.Context, group *v1pb.UserGroup) (*storepb.UserGroupPayload, error) {
@@ -249,7 +233,7 @@ func (s *UserGroupService) convertToV1Group(ctx context.Context, groupMessage *s
 	}
 
 	group := &v1pb.UserGroup{
-		Name:        fmt.Sprintf("%s%s", common.UserGroupPrefix, groupMessage.Email),
+		Name:        common.FormatGroupEmail(groupMessage.Email),
 		Title:       groupMessage.Title,
 		Description: groupMessage.Description,
 		Creator:     common.FormatUserEmail(creator.Email),

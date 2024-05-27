@@ -76,15 +76,21 @@
           }}</span>
         </div>
 
-        <div class="w-full">
+        <div v-if="type === 'user'" class="w-full">
           <p class="mb-2">
             {{ $t("common.user") }}
           </p>
           <UserSelect
-            v-model:users="state.userUidList"
+            v-model:users="state.memberList"
             :multiple="true"
             :include-all="false"
           />
+        </div>
+        <div v-else class="w-full">
+          <p class="mb-2">
+            {{ $t("settings.members.groups.self") }}
+          </p>
+          <UserGroupSelect v-model:value="state.memberList" :multiple="true" />
         </div>
       </div>
       <template #footer>
@@ -123,15 +129,20 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   extractUserEmail,
+  extractGroupEmail,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
+  useUserGroupStore,
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
-import { getUserEmailInBinding, PresetRoleType } from "@/types";
+import {
+  getUserEmailInBinding,
+  getGroupEmailInBinding,
+  PresetRoleType,
+} from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractUserUID } from "@/utils";
@@ -140,6 +151,7 @@ import { convertFromExpr } from "@/utils/issue/cel";
 const props = defineProps<{
   project: ComposedProject;
   binding: Binding;
+  type: "user" | "group";
 }>();
 
 const emit = defineEmits<{
@@ -149,7 +161,7 @@ const emit = defineEmits<{
 interface LocalState {
   title: string;
   description: string;
-  userUidList: string[];
+  memberList: string[];
   expirationTimestamp?: number;
   // Querier and exporter options.
   databaseResourceCondition?: string;
@@ -161,10 +173,12 @@ interface LocalState {
 
 const databaseStore = useDatabaseV1Store();
 const userStore = useUserStore();
+const groupStore = useUserGroupStore();
+
 const state = reactive<LocalState>({
   title: "",
   description: "",
-  userUidList: [],
+  memberList: [],
   maxRowCount: 1000,
 });
 const isLoading = ref(true);
@@ -190,7 +204,7 @@ const allowRemoveRole = () => {
 };
 
 const allowConfirm = computed(() => {
-  return state.userUidList.length > 0;
+  return state.memberList.length > 0;
 });
 
 onMounted(() => {
@@ -224,29 +238,37 @@ onMounted(() => {
   }
 
   // Extract user list from members.
-  const userList = [];
-  for (const member of binding.members) {
-    const userEmail = extractUserEmail(member);
-    const user = userStore.getUserByEmail(userEmail);
-    if (user && user.state === State.ACTIVE) {
-      userList.push(user);
+  if (props.type === "user") {
+    const userList = [];
+    for (const member of binding.members) {
+      if (member.startsWith("group:")) {
+        continue;
+      }
+      const userEmail = extractUserEmail(member);
+      const user = userStore.getUserByEmail(userEmail);
+      if (user && user.state === State.ACTIVE) {
+        userList.push(user);
+      }
     }
+    state.memberList = userList.map((user) => extractUserUID(user.name));
+  } else {
+    const groupNameList = [];
+    for (const member of props.binding.members) {
+      if (!member.startsWith("group:")) {
+        continue;
+      }
+      const email = member.slice(6);
+      const group = groupStore.getGroupByEmail(email);
+      if (!group) {
+        continue;
+      }
+      groupNameList.push(group.name);
+    }
+    state.memberList = groupNameList;
   }
-  state.userUidList = userList.map((user) => extractUserUID(user.name));
 
   isLoading.value = false;
 });
-
-const getUserList = () => {
-  const users: User[] = [];
-  state.userUidList.forEach((userUid) => {
-    const user = userStore.getUserById(userUid);
-    if (user) {
-      users.push(user);
-    }
-  });
-  return users;
-};
 
 const handleDeleteRole = async () => {
   const policy = cloneDeep(iamPolicy.value);
@@ -267,11 +289,22 @@ const handleUpdateRole = async () => {
   }
   newBinding.condition.title = state.title;
   newBinding.condition.description = state.description;
-  newBinding.members = uniq(
-    getUserList().map((user) => {
-      return getUserEmailInBinding(user.email);
-    })
-  );
+
+  if (props.type === "user") {
+    newBinding.members = uniq(
+      state.memberList.map((uid) => {
+        const user = userStore.getUserById(uid);
+        return getUserEmailInBinding(user!.email);
+      })
+    );
+  } else {
+    newBinding.members = uniq(
+      state.memberList.map((group) => {
+        const email = extractGroupEmail(group);
+        return getGroupEmailInBinding(email);
+      })
+    );
+  }
 
   const expression: string[] = [];
   if (state.expirationTimestamp) {
