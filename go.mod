@@ -10,7 +10,7 @@ require (
 	gitee.com/chunanyong/dm v1.8.14
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.2
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
-	github.com/antlr4-go/antlr/v4 v4.13.0
+	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/aws/aws-sdk-go-v2 v1.27.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.16
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.16
@@ -21,6 +21,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.6
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/bytebase/bq-parser v0.0.0-20240527153526-93beb4d2b4f0
 	github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a
 	github.com/bytebase/plsql-parser v0.0.0-20240523082029-22d555243c06
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
@@ -79,10 +80,10 @@ require (
 	github.com/xuri/excelize/v2 v2.8.1
 	go.mongodb.org/mongo-driver v1.15.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.22.0
-	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
+	golang.org/x/crypto v0.23.0
+	golang.org/x/exp v0.0.0-20240525044651-4c93da0ed11d
 	golang.org/x/oauth2 v0.19.0
-	golang.org/x/text v0.14.0
+	golang.org/x/text v0.15.0
 	google.golang.org/api v0.177.0
 	google.golang.org/genproto v0.0.0-20240429193739-8cf5692501f6
 	google.golang.org/genproto/googleapis/api v0.0.0-20240429193739-8cf5692501f6
@@ -186,8 +187,8 @@ require (
 	go.opentelemetry.io/otel/metric v1.25.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/term v0.19.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/term v0.20.0 // indirect
 )
 
 require (
@@ -300,10 +301,10 @@ require (
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/trace v1.25.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.20.0 // indirect
+	golang.org/x/tools v0.21.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
