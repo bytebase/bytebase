@@ -31,7 +31,11 @@
         </div>
         <div class="border rounded divide-y">
           <div v-for="data in groupMembers" :key="data.user.name" class="p-2">
-            <UserNameCell :user="data.user" :role="data.role" />
+            <UserNameCell
+              :user="data.user"
+              :role="data.role"
+              :show-group-role="true"
+            />
           </div>
         </div>
       </div>
@@ -231,6 +235,7 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
   useUserGroupStore,
+  pushNotification,
 } from "@/store";
 import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
@@ -266,7 +271,7 @@ const props = defineProps<{
   binding: ProjectBinding;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
@@ -429,6 +434,11 @@ const handleDeleteRole = (role: string) => {
         projectResourceName.value,
         policy
       );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
     },
   });
 };
@@ -494,6 +504,11 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
         projectResourceName.value,
         policy
       );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
     },
   });
 };
@@ -512,6 +527,12 @@ const handleDeleteMember = async () => {
     projectResourceName.value,
     policy
   );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.deleted"),
+  });
+  emit("close");
 };
 
 const extractDatabaseName = (databaseResource?: DatabaseResource) => {

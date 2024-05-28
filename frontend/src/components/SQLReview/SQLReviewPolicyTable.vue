@@ -230,6 +230,11 @@ const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
     id: review.id,
     enforce: on,
   });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
 };
 
 const handleClickCreate = (environment: Environment) => {
