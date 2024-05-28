@@ -555,7 +555,11 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
-		sanitizeCommentForSchemaMetadata(newHeadMetadata, model.NewDatabaseConfig(newHeadConfig))
+		// String-based rebase operation do not include the structural information, such as classification, so we need to sanitize the user comment,
+		// trim the classification in user comment if the classification is not from the config.
+		modelNewHeadConfig := model.NewDatabaseConfig(newHeadConfig)
+		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, modelNewHeadConfig)
+		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig)
 		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
@@ -1567,6 +1571,24 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 			} else {
 				procedureConfig.Updater = formattedUserEmail
 				procedureConfig.UpdateTime = time
+			}
+		}
+	}
+}
+
+func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig) {
+	if dbModelConfig.ClassificationFromConfig {
+		return
+	}
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			if !dbModelConfig.ClassificationFromConfig {
+				_, table.UserComment = common.GetClassificationAndUserComment(table.UserComment)
+			}
+			for _, col := range table.Columns {
+				if !dbModelConfig.ClassificationFromConfig {
+					_, col.UserComment = common.GetClassificationAndUserComment(col.UserComment)
+				}
 			}
 		}
 	}
