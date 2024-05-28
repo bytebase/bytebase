@@ -26491,10 +26491,12 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
-                  <td>backup_database</td>
+                  <td>backup_data_source</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The backup database name. </p></td>
+                  <td><p>The data source to restore from.
+Format: instances/{instance}/databases/{databaseName}, for general engines.
+Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only. </p></td>
                 </tr>
               
                 <tr>

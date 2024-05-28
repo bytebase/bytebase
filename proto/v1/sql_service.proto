@@ -436,8 +436,10 @@ message GenerateRestoreSQLRequest {
   // The original SQL statement.
   string statement = 2;
 
-  // The backup database name.
-  string backup_database = 3;
+  // The data source to restore from.
+  // Format: instances/{instance}/databases/{databaseName}, for general engines.
+  // Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
+  string backup_data_source = 3;
 
   // The backup table name.
   string bakcup_table = 4;

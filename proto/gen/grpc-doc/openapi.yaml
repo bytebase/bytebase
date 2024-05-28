@@ -10027,9 +10027,12 @@ components:
                 statement:
                     type: string
                     description: The original SQL statement.
-                backupDatabase:
+                backupDataSource:
                     type: string
-                    description: The backup database name.
+                    description: |-
+                        The data source to restore from.
+                         Format: instances/{instance}/databases/{databaseName}, for general engines.
+                         Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
                 bakcupTable:
                     type: string
                     description: The backup table name.

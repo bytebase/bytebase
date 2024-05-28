@@ -9642,7 +9642,7 @@ Type of the SheetPayload.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
 | statement | [string](#string) |  | The original SQL statement. |
-| backup_database | [string](#string) |  | The backup database name. |
+| backup_data_source | [string](#string) |  | The data source to restore from. Format: instances/{instance}/databases/{databaseName}, for general engines. Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only. |
 | bakcup_table | [string](#string) |  | The backup table name. |
 
 
