@@ -226,6 +226,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			AdditionalAddresses:      dataSource.AdditionalAddresses,
 			ReplicaSet:               dataSource.ReplicaSet,
 			DirectConnection:         dataSource.DirectConnection,
+			Region:                   dataSource.Region,
 		},
 	)
 	if err != nil {

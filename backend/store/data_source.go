@@ -49,6 +49,7 @@ type DataSourceMessage struct {
 	AdditionalAddresses []*storepb.DataSourceOptions_Address
 	ReplicaSet          string
 	DirectConnection    bool
+	Region              string
 }
 
 // Copy returns a copy of the data source message.
@@ -78,6 +79,10 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		ExternalSecret:                     m.ExternalSecret,
 		AuthenticationType:                 m.AuthenticationType,
 		SASLConfig:                         m.SASLConfig,
+		AdditionalAddresses:                m.AdditionalAddresses,
+		ReplicaSet:                         m.ReplicaSet,
+		DirectConnection:                   m.DirectConnection,
+		Region:                             m.Region,
 	}
 }
 
@@ -119,6 +124,7 @@ type UpdateDataSourceMessage struct {
 	ReplicaSet        *string
 	RemoveSASLConfig  bool
 	DirectConnection  *bool
+	Region            *string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -186,6 +192,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.AdditionalAddresses = dataSourceOptions.AdditionalAddresses
 		dataSourceMessage.ReplicaSet = dataSourceOptions.ReplicaSet
 		dataSourceMessage.DirectConnection = dataSourceOptions.DirectConnection
+		dataSourceMessage.Region = dataSourceOptions.Region
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -347,6 +354,9 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.DirectConnection; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('directConnection', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Region; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('region', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -402,6 +412,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		AdditionalAddresses:                dataSource.AdditionalAddresses,
 		ReplicaSet:                         dataSource.ReplicaSet,
 		DirectConnection:                   dataSource.DirectConnection,
+		Region:                             dataSource.Region,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {
