@@ -1613,7 +1613,7 @@ type DataSource struct {
 	ReplicaSet string `protobuf:"bytes,25,opt,name=replica_set,json=replicaSet,proto3" json:"replica_set,omitempty"`
 	// direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
 	DirectConnection bool `protobuf:"varint,26,opt,name=direct_connection,json=directConnection,proto3" json:"direct_connection,omitempty"`
-	// region is the location of where the DB is, works for AWS RDS.
+	// region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
 	Region string `protobuf:"bytes,27,opt,name=region,proto3" json:"region,omitempty"`
 }
 

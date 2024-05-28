@@ -244,7 +244,7 @@ export interface DataSourceOptions {
   replicaSet: string;
   /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
   directConnection: boolean;
-  /** region is the location of where the DB is, works for AWS RDS. */
+  /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
   region: string;
 }
 
