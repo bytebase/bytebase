@@ -229,10 +229,18 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, api.SystemBotID); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
-	}
 
-	if err := s.webhookManager.BatchCreateActivitiesForRunTasks(ctx, issue, "", api.SystemBotID); err != nil {
-		slog.Error("failed to post webhooks for running tasks", log.BBError(err))
+		s.webhookManager.CreateEvent(ctx, webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    webhook.EventTypeTaskRunStatusUpdate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+				Title:  issue.Title,
+				Status: api.TaskRunPending.String(),
+			},
+		})
 	}
 
 	return nil
