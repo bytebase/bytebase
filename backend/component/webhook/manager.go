@@ -21,6 +21,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
@@ -681,64 +682,8 @@ func getUsersFromProjectRole(s *store.Store, role api.Role, projectUID int) func
 			return nil, err
 		}
 
-		return GetUsersByRoleInIAMPolicy(ctx, s, role, iamPolicy), nil
+		return utils.GetUsersByRoleInIAMPolicy(ctx, s, role, iamPolicy), nil
 	}
-}
-
-// GetUsersByRoleInIAMPolicy gets users in the iam policy.
-// TODO(p0ny): renovate this function to respect allUsers and CEL.
-func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role api.Role, policy *storepb.ProjectIamPolicy) []*store.UserMessage {
-	roleFullName := common.FormatRole(role.String())
-	var users []*store.UserMessage
-
-	for _, binding := range policy.Bindings {
-		if binding.Role != roleFullName {
-			continue
-		}
-
-		for _, member := range binding.Members {
-			// TODO(p0ny): support all user
-			if strings.HasPrefix(member, common.UserNamePrefix) {
-				user := getUserByMember(ctx, stores, member)
-				if user != nil {
-					users = append(users, user)
-				}
-			} else if strings.HasPrefix(member, common.UserGroupPrefix) {
-				groupEmail, err := common.GetUserGroupEmail(member)
-				if err != nil {
-					slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
-					continue
-				}
-				group, err := stores.GetUserGroup(ctx, groupEmail)
-				if err != nil {
-					slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
-					continue
-				}
-				for _, member := range group.Payload.Members {
-					user := getUserByMember(ctx, stores, member.Member)
-					if user != nil {
-						users = append(users, user)
-					}
-				}
-			}
-		}
-	}
-
-	return users
-}
-
-func getUserByMember(ctx context.Context, stores *store.Store, member string) *store.UserMessage {
-	userUID, err := common.GetUserID(member)
-	if err != nil {
-		slog.Error("failed to parse user id", slog.String("user", member), log.BBError(err))
-		return nil
-	}
-	user, err := stores.GetUserByID(ctx, userUID)
-	if err != nil {
-		slog.Error("failed to get user", slog.String("user", member), log.BBError(err))
-		return nil
-	}
-	return user
 }
 
 func getUsersFromUsers(users ...*store.UserMessage) func(context.Context) ([]*store.UserMessage, error) {
@@ -794,4 +739,37 @@ func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
 		return "", nil
 	}
 	return strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10), nil
+}
+
+// ChangeIssueStatus changes the status of an issue.
+func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
+	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
+	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+	}
+
+	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+		OldStatus: issue.Status,
+		NewStatus: newStatus,
+		IssueName: updatedIssue.Title,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:        updaterID,
+		ResourceContainer: issue.Project.GetName(),
+		ContainerUID:      issue.UID,
+		Type:              api.ActivityIssueStatusUpdate,
+		Level:             api.ActivityInfo,
+		Comment:           comment,
+		Payload:           string(payload),
+	}
+	if _, err := webhookManager.CreateActivity(ctx, activityCreate, &Metadata{
+		Issue: updatedIssue,
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
+	}
+	return nil
 }

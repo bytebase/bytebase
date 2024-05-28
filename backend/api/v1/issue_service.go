@@ -1059,7 +1059,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := utils.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
