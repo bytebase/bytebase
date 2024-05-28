@@ -77,9 +77,12 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, issue *s
 		Issue: &webhook.Issue{
 			ID:          issue.UID,
 			Name:        issue.Title,
+			Status:      string(issue.Status),
+			Type:        string(issue.Type),
 			Description: issue.Description,
 		},
 		Project: &webhook.Project{
+			ID:   issue.Project.UID,
 			Name: issue.Project.Title,
 		},
 		Description:  comment,
@@ -127,9 +130,12 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, issue *
 		Issue: &webhook.Issue{
 			ID:          issue.UID,
 			Name:        issue.Title,
+			Status:      string(issue.Status),
+			Type:        string(issue.Type),
 			Description: issue.Description,
 		},
 		Project: &webhook.Project{
+			ID:   issue.Project.UID,
 			Name: issue.Project.Title,
 		},
 		Description:  comment,
@@ -178,9 +184,12 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, is
 		Issue: &webhook.Issue{
 			ID:          issue.UID,
 			Name:        issue.Title,
+			Status:      string(issue.Status),
+			Type:        string(issue.Type),
 			Description: issue.Description,
 		},
 		Project: &webhook.Project{
+			ID:   issue.Project.UID,
 			Name: issue.Project.Title,
 		},
 		Description:  comment,
@@ -637,9 +646,12 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		Issue: &webhook.Issue{
 			ID:          meta.Issue.UID,
 			Name:        meta.Issue.Title,
+			Status:      string(meta.Issue.Status),
+			Type:        string(meta.Issue.Type),
 			Description: meta.Issue.Description,
 		},
 		Project: &webhook.Project{
+			ID:   meta.Issue.Project.UID,
 			Name: meta.Issue.Project.Title,
 		},
 		TaskResult:          webhookTaskResult,
