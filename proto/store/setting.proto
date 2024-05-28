@@ -38,6 +38,9 @@ message WorkspaceProfileSetting {
 
   // The setting of custom announcement
   Announcement announcement = 7;
+
+  // The max duration for role expired.
+  google.protobuf.Duration max_role_expired_duration = 8;
 }
 
 message Announcement {
