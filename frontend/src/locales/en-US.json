@@ -1620,6 +1620,7 @@
     "view-full": "View full"
   },
   "database": {
+    "sync-database": "Sync database",
     "select": "Select database",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
     "no-anomalies-detected": "No anomalies detected",

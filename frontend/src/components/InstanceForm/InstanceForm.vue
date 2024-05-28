@@ -1108,8 +1108,8 @@ const doUpdate = async () => {
    */
   const maybeQueueUpsertReadonlyDataSources = async () => {
     if (readonlyDataSourceList.value.length === 0) {
-      // Nothing to do
-      return true;
+      // Nothing to do, don't block
+      return false;
     }
     // Upsert readonly data sources one by one
     for (let i = 0; i < readonlyDataSourceList.value.length; i++) {

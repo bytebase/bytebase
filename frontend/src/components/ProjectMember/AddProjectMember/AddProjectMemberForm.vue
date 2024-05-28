@@ -106,6 +106,7 @@ import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import { ProjectRoleSelect, UserGroupSelect } from "@/components/v2/Select";
 import { useUserStore, useUserGroupStore, extractGroupEmail } from "@/store";
+import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import {
   getUserEmailInBinding,
@@ -160,7 +161,18 @@ const state = reactive<LocalState>({
 
 watch(
   () => state.type,
-  () => (state.memberList = [])
+  (type) => {
+    if (
+      type === "MEMBER" &&
+      !state.memberList.every((m) => !m.startsWith(userGroupNamePrefix))
+    ) {
+      state.memberList = [];
+    } else if (
+      !state.memberList.every((m) => m.startsWith(userGroupNamePrefix))
+    ) {
+      state.memberList = [];
+    }
+  }
 );
 
 onMounted(() => {
