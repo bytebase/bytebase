@@ -78,17 +78,12 @@
           class="flex flex-row justify-start items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
-          <NButton
-            v-if="allowSyncDatabase"
-            :loading="state.syncingSchema"
-            @click.prevent="syncDatabaseSchema"
-          >
-            {{
-              state.syncingSchema
-                ? $t("instance.syncing")
-                : $t("common.sync-now")
-            }}
-          </NButton>
+          <SyncDatabaseButton
+            :type="'default'"
+            :text="false"
+            :database="database"
+            @finish="updateAnomalyList"
+          />
           <NButton
             v-if="allowTransferDatabase"
             @click.prevent="tryTransferProject"
@@ -256,7 +251,6 @@ interface LocalState {
   showSchemaEditorModal: boolean;
   currentProjectId: string;
   selectedIndex: number;
-  syncingSchema: boolean;
   selectedTab: DatabaseHash;
 }
 
@@ -266,10 +260,8 @@ const props = defineProps<{
   databaseName: string;
 }>();
 
-const { t } = useI18n();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaV1Store();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
@@ -277,7 +269,6 @@ const state = reactive<LocalState>({
   showSchemaEditorModal: false,
   currentProjectId: String(UNKNOWN_ID),
   selectedIndex: 0,
-  syncingSchema: false,
   selectedTab: "overview",
 });
 const route = useRoute();
@@ -285,7 +276,6 @@ const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const anomalyList = ref<Anomaly[]>([]);
 const {
-  allowSyncDatabase,
   allowTransferDatabase,
   allowChangeData,
   allowAlterSchema,
@@ -391,39 +381,10 @@ const handleGotoSQLEditorFailed = () => {
   state.showIncorrectProjectModal = true;
 };
 
-const syncDatabaseSchema = async () => {
-  state.syncingSchema = true;
-
-  try {
-    await databaseV1Store.syncDatabase(database.value.name);
-
-    await dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: database.value.name,
-      skipCache: true,
-    });
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t(
-        "db.successfully-synced-schema-for-database-database-value-name",
-        [database.value.databaseName]
-      ),
-    });
-    anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
-      database: database.value.name,
-    });
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("db.failed-to-sync-schema-for-database-database-value-name", [
-        database.value.databaseName,
-      ]),
-      description: (error as ClientError).details,
-    });
-  } finally {
-    state.syncingSchema = false;
-  }
+const updateAnomalyList = async () => {
+  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
+    database: database.value.name,
+  });
 };
 
 const environment = computed(() => {
