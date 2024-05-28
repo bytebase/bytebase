@@ -3,8 +3,8 @@
     <NButton
       :text="text"
       :type="type"
-      @click="syncDatabaseSchema"
       :loading="syncingSchema"
+      @click="syncDatabaseSchema"
     >
       {{ $t("database.sync-database") }}
     </NButton>

@@ -189,9 +189,7 @@
 import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
 import { computed, reactive, watch, ref, onMounted } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRoute } from "vue-router";
 import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
@@ -213,12 +211,10 @@ import {
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  pushNotification,
   useAnomalyV1Store,
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useDBSchemaV1Store,
   useEnvironmentV1Store,
 } from "@/store";
 import {
