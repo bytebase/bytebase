@@ -24,20 +24,8 @@ type Event struct {
 	Actor   *store.UserMessage
 	Type    EventType
 	Comment string
-	Issue   struct {
-		UID         int
-		Title       string
-		Status      string
-		Type        string
-		Description string
-		Creator     *store.UserMessage
-		Approval    *storepb.IssuePayloadApproval
-	}
-	Project struct {
-		UID        int
-		ResourceID string
-		Title      string
-	}
+	Issue   *Issue
+	Project *Project
 
 	IssueStatusUpdate struct {
 		Status string
@@ -49,6 +37,42 @@ type Event struct {
 	IssueRolloutReady   *EventIssueRolloutReady
 	StageStatusUpdate   *EventStageStatusUpdate
 	TaskRunStatusUpdate *EventTaskRunStatusUpdate
+}
+
+func NewIssue(i *store.IssueMessage) *Issue {
+	return &Issue{
+		UID:         i.UID,
+		Status:      i.Status.String(),
+		Type:        i.Type.String(),
+		Title:       i.Title,
+		Description: i.Description,
+		Creator:     i.Creator,
+		Approval:    i.Payload.GetApproval(),
+	}
+}
+
+func NewProject(p *store.ProjectMessage) *Project {
+	return &Project{
+		UID:        p.UID,
+		ResourceID: p.ResourceID,
+		Title:      p.Title,
+	}
+}
+
+type Issue struct {
+	UID         int
+	Status      string
+	Type        string
+	Title       string
+	Description string
+	Creator     *store.UserMessage
+	Approval    *storepb.IssuePayloadApproval
+}
+
+type Project struct {
+	UID        int
+	ResourceID string
+	Title      string
 }
 
 type EventIssueApprovalCreate struct {
