@@ -28,7 +28,7 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleFunctionDisallowCreate,
 		advisor.SchemaRuleProcedureDisallowCreate,
 		advisor.SchemaRuleStatementDisallowCrossDBQueries,
-		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
+		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations,
 	}
 
 	for _, rule := range mssqlRules {
