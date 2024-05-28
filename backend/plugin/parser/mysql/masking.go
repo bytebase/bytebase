@@ -22,25 +22,6 @@ type fieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]base.SensitiveField, error) {
-	list, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(list) == 0 {
-		return nil, nil
-	}
-	if len(list) != 1 {
-		return nil, errors.Errorf("MySQL statement should only have one statement, but got %d", len(list))
-	}
-
-	listener := &mysqlSensitiveFieldListener{
-		extractor: extractor,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, list[0].Tree)
-	return listener.result, listener.err
-}
-
 type mysqlSensitiveFieldListener struct {
 	*mysql.BaseMySQLParserListener
 
