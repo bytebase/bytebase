@@ -8,29 +8,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func init() {
-	base.RegisterGetMaskedFieldsFunc(storepb.Engine_MYSQL, GetMaskedFields)
-	base.RegisterGetMaskedFieldsFunc(storepb.Engine_MARIADB, GetMaskedFields)
-	base.RegisterGetMaskedFieldsFunc(storepb.Engine_OCEANBASE, GetMaskedFields)
-	base.RegisterGetMaskedFieldsFunc(storepb.Engine_STARROCKS, GetMaskedFields)
-	base.RegisterGetMaskedFieldsFunc(storepb.Engine_DORIS, GetMaskedFields)
-}
-
-func GetMaskedFields(statement, currentDatabase string, schemaInfo *base.SensitiveSchemaInfo) ([]base.SensitiveField, error) {
-	extractor := &fieldExtractor{
-		currentDatabase: currentDatabase,
-		schemaInfo:      schemaInfo,
-	}
-	result, err := extractor.extractSensitiveFields(statement)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
+// fieldExtractor is still used by differ.
 type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
