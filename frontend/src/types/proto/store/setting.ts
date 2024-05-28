@@ -38,7 +38,7 @@ export interface WorkspaceProfileSetting {
     | Announcement
     | undefined;
   /** The max duration for role expired. */
-  maxRoleExpiredDuration: Duration | undefined;
+  maximumRoleExpiration: Duration | undefined;
 }
 
 export interface Announcement {
@@ -536,7 +536,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     gitopsWebhookUrl: "",
     tokenDuration: undefined,
     announcement: undefined,
-    maxRoleExpiredDuration: undefined,
+    maximumRoleExpiration: undefined,
   };
 }
 
@@ -563,8 +563,8 @@ export const WorkspaceProfileSetting = {
     if (message.announcement !== undefined) {
       Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
     }
-    if (message.maxRoleExpiredDuration !== undefined) {
-      Duration.encode(message.maxRoleExpiredDuration, writer.uint32(66).fork()).ldelim();
+    if (message.maximumRoleExpiration !== undefined) {
+      Duration.encode(message.maximumRoleExpiration, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -630,7 +630,7 @@ export const WorkspaceProfileSetting = {
             break;
           }
 
-          message.maxRoleExpiredDuration = Duration.decode(reader, reader.uint32());
+          message.maximumRoleExpiration = Duration.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -652,8 +652,8 @@ export const WorkspaceProfileSetting = {
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
-      maxRoleExpiredDuration: isSet(object.maxRoleExpiredDuration)
-        ? Duration.fromJSON(object.maxRoleExpiredDuration)
+      maximumRoleExpiration: isSet(object.maximumRoleExpiration)
+        ? Duration.fromJSON(object.maximumRoleExpiration)
         : undefined,
     };
   },
@@ -681,8 +681,8 @@ export const WorkspaceProfileSetting = {
     if (message.announcement !== undefined) {
       obj.announcement = Announcement.toJSON(message.announcement);
     }
-    if (message.maxRoleExpiredDuration !== undefined) {
-      obj.maxRoleExpiredDuration = Duration.toJSON(message.maxRoleExpiredDuration);
+    if (message.maximumRoleExpiration !== undefined) {
+      obj.maximumRoleExpiration = Duration.toJSON(message.maximumRoleExpiration);
     }
     return obj;
   },
@@ -703,9 +703,9 @@ export const WorkspaceProfileSetting = {
     message.announcement = (object.announcement !== undefined && object.announcement !== null)
       ? Announcement.fromPartial(object.announcement)
       : undefined;
-    message.maxRoleExpiredDuration =
-      (object.maxRoleExpiredDuration !== undefined && object.maxRoleExpiredDuration !== null)
-        ? Duration.fromPartial(object.maxRoleExpiredDuration)
+    message.maximumRoleExpiration =
+      (object.maximumRoleExpiration !== undefined && object.maximumRoleExpiration !== null)
+        ? Duration.fromPartial(object.maximumRoleExpiration)
         : undefined;
     return message;
   },
