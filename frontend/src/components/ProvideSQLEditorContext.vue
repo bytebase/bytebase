@@ -39,6 +39,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
+  useUserGroupStore,
   pushNotification,
   useFilterStore,
 } from "@/store";
@@ -83,6 +84,7 @@ const instanceStore = useInstanceV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
+const groupStore = useUserGroupStore();
 const { isFetching: isFetchingWorksheet } = useSheetContext();
 const { filter } = useFilterStore();
 const {
@@ -591,7 +593,7 @@ const restoreLastVisitedSidebarTab = () => {
 
 onMounted(async () => {
   editorStore.projectContextReady = false;
-  await initializeProjects();
+  await Promise.all([initializeProjects(), groupStore.fetchGroupList()]);
   await prepareInstances();
   await prepareDatabases();
   tabStore.maybeInitProject(editorStore.project);
