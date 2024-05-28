@@ -35,6 +35,10 @@ export const useUserGroupStore = defineStore("user_group", () => {
     return groupMapByName.get(getGroupName(email));
   };
 
+  const getGroupByIdentifier = (id: string) => {
+    return getGroupByEmail(extractGroupEmail(id));
+  };
+
   const fetchGroupList = async () => {
     if (!hasWorkspacePermissionV2(currentUser.value, "bb.userGroups.list")) {
       return [];
@@ -88,6 +92,7 @@ export const useUserGroupStore = defineStore("user_group", () => {
     groupList,
     fetchGroupList,
     getGroupByEmail,
+    getGroupByIdentifier,
     getOrFetchGroupByEmail,
     deleteGroup,
     updateGroup,
