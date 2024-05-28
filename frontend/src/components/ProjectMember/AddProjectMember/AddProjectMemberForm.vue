@@ -283,8 +283,6 @@ watch(
 watch(
   () => state,
   () => {
-    console.log("state changed");
-    console.log(state);
     const conditionName = generateConditionTitle();
     if (state.type === "MEMBER") {
       props.binding.members = state.memberList.map((uid) => {
