@@ -1410,6 +1410,7 @@
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
     },
+    "database-region": "Database Region",
     "external-secret-gcp": {
       "secret-name": "Secret full name",
       "secret-name-tips": "The secret name should be like \"projects/project-id/secrets/secret-id\"."

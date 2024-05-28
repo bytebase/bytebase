@@ -516,6 +516,10 @@
       "title": "禁止离线 DDL",
       "description": "为了防止数据库更改影响您的业务，请避免使用离线 DDL。"
     },
+    "statement-disallow-cross-db-queries": {
+      "title": "禁止跨数据库查询",
+      "description": "跨数据库查询会增加系统的耦合性，并可能导致效率问题。建议的错误级别：警告"
+    },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
       "description": "某些变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
@@ -644,10 +648,6 @@
     "statement-non-transactional": {
       "title": "检测并报告非事务性语句",
       "description": ""
-    },
-    "statement-disallow-cross-db-queries": {
-      "title": "禁止跨数据库查询",
-      "description": "跨数据库查询会增加系统的耦合性，并可能导致效率问题。建议的错误级别：警告"
     }
   },
   "level": {
