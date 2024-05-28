@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1392,4 +1393,53 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 		CurrentSchema:  prettyCurrentSchema,
 		ExpectedSchema: prettyExpectedSchema,
 	}, nil
+}
+
+func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.GenerateRestoreSQLRequest) (*v1pb.GenerateRestoreSQLResponse, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance")
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database")
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+
+	if instance.Engine != storepb.Engine_MYSQL {
+		return nil, status.Errorf(codes.Unimplemented, "Generate restore SQL is only supported for MySQL")
+	}
+
+	offset, originTable, err := getOffsetAndOriginTable(request.BackupTable)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+}
+
+func getOffsetAndOriginTable(backupTable string) (int, string, error) {
+	if backupTable == "" {
+		return 0, "", nil
+	}
+	parts := strings.Split(backupTable, "_")
+	if len(parts) != 3 {
+		return 0, "", status.Errorf(codes.InvalidArgument, "invalid backup table format: %s", backupTable)
+	}
+	offset, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, "", status.Errorf(codes.InvalidArgument, "invalid offset: %s", parts[0])
+	}
+	return offset, parts[2], nil
 }
