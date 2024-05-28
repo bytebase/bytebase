@@ -569,7 +569,7 @@ type MaskingExceptionPolicy_MaskingException struct {
 	MaskingLevel MaskingLevel `protobuf:"varint,2,opt,name=masking_level,json=maskingLevel,proto3,enum=bytebase.store.MaskingLevel" json:"masking_level,omitempty"`
 	// Member is the principal who bind to this exception policy instance.
 	//
-	// Format: users/{userUID}.
+	// Format: users/{userUID} or groups/{group email}
 	Member string `protobuf:"bytes,4,opt,name=member,proto3" json:"member,omitempty"`
 	// The condition that is associated with this exception policy instance.
 	Condition *expr.Expr `protobuf:"bytes,5,opt,name=condition,proto3" json:"condition,omitempty"`

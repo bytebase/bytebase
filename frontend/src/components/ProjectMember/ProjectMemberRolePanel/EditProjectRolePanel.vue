@@ -128,7 +128,6 @@ import { onMounted } from "vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
-  extractUserEmail,
   extractGroupEmail,
   useDatabaseV1Store,
   useProjectIamPolicy,
@@ -244,8 +243,7 @@ onMounted(() => {
       if (member.startsWith("group:")) {
         continue;
       }
-      const userEmail = extractUserEmail(member);
-      const user = userStore.getUserByEmail(userEmail);
+      const user = userStore.getUserByIdentifier(member);
       if (user && user.state === State.ACTIVE) {
         userList.push(user);
       }
@@ -257,8 +255,7 @@ onMounted(() => {
       if (!member.startsWith("group:")) {
         continue;
       }
-      const email = member.slice(6);
-      const group = groupStore.getGroupByEmail(email);
+      const group = groupStore.getGroupByIdentifier(member);
       if (!group) {
         continue;
       }

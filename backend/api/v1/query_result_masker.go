@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -204,12 +205,13 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 			if maskingException.Action != action {
 				continue
 			}
-			uid, err := common.GetUserID(maskingException.Member)
-			if err != nil {
-				continue
-			}
-			if uid == currentPrincipal.ID {
-				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
+
+			users := utils.GetUsersByMember(ctx, s.store, maskingException.Member)
+			for _, user := range users {
+				if user.ID == currentPrincipal.ID {
+					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
+					break
+				}
 			}
 		}
 	}

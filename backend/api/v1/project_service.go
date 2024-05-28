@@ -1773,10 +1773,7 @@ func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy 
 		var members []string
 		for _, member := range binding.Members {
 			if strings.HasPrefix(member, "user:") || member == api.AllUsers {
-				email := member
-				if strings.HasPrefix(member, "user:") {
-					email = strings.TrimPrefix(member, "user:")
-				}
+				email := strings.TrimPrefix(member, "user:")
 				user, err := s.store.GetUserByEmail(ctx, email)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, err.Error())

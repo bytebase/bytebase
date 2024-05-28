@@ -1462,7 +1462,8 @@ type MaskingExceptionPolicy_MaskingException struct {
 	MaskingLevel MaskingLevel `protobuf:"varint,2,opt,name=masking_level,json=maskingLevel,proto3,enum=bytebase.v1.MaskingLevel" json:"masking_level,omitempty"`
 	// Member is the principal who bind to this exception policy instance.
 	//
-	// * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+	// - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+	// - `group:{email}`: An email address for group.
 	Member string `protobuf:"bytes,3,opt,name=member,proto3" json:"member,omitempty"`
 	// The condition that is associated with this exception policy instance.
 	Condition *expr.Expr `protobuf:"bytes,4,opt,name=condition,proto3" json:"condition,omitempty"`

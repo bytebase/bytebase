@@ -17,10 +17,10 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
-	"github.com/bytebase/bytebase/backend/component/webhook"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -210,7 +210,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		}
 
 		// TODO(p0ny): renovate this function to respect allUsers and CEL.
-		users := webhook.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, projectPolicy)
+		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, projectPolicy)
 		for _, user := range users {
 			apiValue.SMTPTo = user.Email
 			subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
