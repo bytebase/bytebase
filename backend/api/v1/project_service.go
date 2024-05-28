@@ -693,6 +693,8 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			Issue: &webhookplugin.Issue{
 				ID:          1,
 				Name:        "Test issue",
+				Status:      "OPEN",
+				Type:        "bb.issue.database.create",
 				Description: "This is a test issue",
 			},
 			Project: &webhookplugin.Project{Name: project.Title},
