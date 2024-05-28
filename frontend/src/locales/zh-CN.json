@@ -1410,6 +1410,7 @@
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
     },
+    "database-region": "数据库区域",
     "external-secret-gcp": {
       "secret-name": "密钥完整路径",
       "secret-name-tips": "密钥完整路径应类似于 “projects/project-id/secrets/secret-id”。"

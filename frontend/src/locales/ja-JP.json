@@ -1410,6 +1410,7 @@
       "external-secret-aws": "AWS シークレットマネージャー",
       "external-secret-gcp": "GCP シークレット マネージャー"
     },
+    "database-region": "データベース領域",
     "external-secret-gcp": {
       "secret-name": "キーのフルパス",
       "secret-name-tips": "キーへのフルパスは、「projects/project-id/secrets/secret-id」のようなものである必要があります。"

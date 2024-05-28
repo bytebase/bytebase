@@ -145,6 +145,24 @@
       <div
         v-if="
           dataSource.authenticationType ===
+          DataSource_AuthenticationType.AWS_RDS_IAM
+        "
+        class="mt-4 sm:col-span-3 sm:col-start-1"
+      >
+        <label for="username" class="textlabel block">
+          {{ $t("instance.database-region") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <NInput
+          v-model:value="dataSource.region"
+          class="mt-2 w-full"
+          :disabled="!allowEdit"
+          :placeholder="'database region, for example, us-east-1'"
+        />
+      </div>
+      <div
+        v-if="
+          dataSource.authenticationType ===
           DataSource_AuthenticationType.PASSWORD
         "
         class="mt-4 sm:col-span-3 sm:col-start-1"
@@ -478,11 +496,12 @@
     </div>
   </template>
   <template
-  v-if="basicInfo.engine === Engine.SPANNER || basicInfo.engine === Engine.BIGQUERY"
+    v-if="
+      basicInfo.engine === Engine.SPANNER ||
+      basicInfo.engine === Engine.BIGQUERY
+    "
   >
-    <div
-      class="mt-2 sm:col-span-3 sm:col-start-1"
-    >
+    <div class="mt-2 sm:col-span-3 sm:col-start-1">
       <NRadioGroup
         v-model:value="dataSource.authenticationType"
         class="textlabel"

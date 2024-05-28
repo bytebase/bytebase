@@ -194,7 +194,7 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 	}
 
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, "us-east-1", connCfg.Username, cfg.Credentials)
+		ctx, dbEndpoint, connCfg.Region, connCfg.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}

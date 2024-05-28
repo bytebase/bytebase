@@ -9289,6 +9289,9 @@ components:
                 directConnection:
                     type: boolean
                     description: direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
+                region:
+                    type: string
+                    description: region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
         DataSourceExternalSecret:
             type: object
             properties:
