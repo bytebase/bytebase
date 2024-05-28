@@ -9185,6 +9185,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
 | announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
+| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 
 
 

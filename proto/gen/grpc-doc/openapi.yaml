@@ -14175,6 +14175,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Announcement'
                     description: The setting of custom announcement
+                maximumRoleExpiration:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The max duration for role expired.
         WorkspaceTrialSetting:
             type: object
             properties:

@@ -305,7 +305,11 @@ export interface WorkspaceProfileSetting {
     | Duration
     | undefined;
   /** The setting of custom announcement */
-  announcement: Announcement | undefined;
+  announcement:
+    | Announcement
+    | undefined;
+  /** The max duration for role expired. */
+  maximumRoleExpiration: Duration | undefined;
 }
 
 export interface Announcement {
@@ -1869,6 +1873,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     gitopsWebhookUrl: "",
     tokenDuration: undefined,
     announcement: undefined,
+    maximumRoleExpiration: undefined,
   };
 }
 
@@ -1894,6 +1899,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.announcement !== undefined) {
       Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.maximumRoleExpiration !== undefined) {
+      Duration.encode(message.maximumRoleExpiration, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -1954,6 +1962,13 @@ export const WorkspaceProfileSetting = {
 
           message.announcement = Announcement.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.maximumRoleExpiration = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1974,6 +1989,9 @@ export const WorkspaceProfileSetting = {
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
+      maximumRoleExpiration: isSet(object.maximumRoleExpiration)
+        ? Duration.fromJSON(object.maximumRoleExpiration)
+        : undefined,
     };
   },
 
@@ -2000,6 +2018,9 @@ export const WorkspaceProfileSetting = {
     if (message.announcement !== undefined) {
       obj.announcement = Announcement.toJSON(message.announcement);
     }
+    if (message.maximumRoleExpiration !== undefined) {
+      obj.maximumRoleExpiration = Duration.toJSON(message.maximumRoleExpiration);
+    }
     return obj;
   },
 
@@ -2019,6 +2040,10 @@ export const WorkspaceProfileSetting = {
     message.announcement = (object.announcement !== undefined && object.announcement !== null)
       ? Announcement.fromPartial(object.announcement)
       : undefined;
+    message.maximumRoleExpiration =
+      (object.maximumRoleExpiration !== undefined && object.maximumRoleExpiration !== null)
+        ? Duration.fromPartial(object.maximumRoleExpiration)
+        : undefined;
     return message;
   },
 };
