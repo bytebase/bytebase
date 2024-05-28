@@ -192,6 +192,9 @@ type ConnectionConfig struct {
 	AdditionalAddresses []*storepb.DataSourceOptions_Address
 	ReplicaSet          string
 	DirectConnection    bool
+
+	// Region is the location of where the DB is, works for AWS RDS.
+	Region string
 }
 
 // SSHConfig is the configuration for connection over SSH.

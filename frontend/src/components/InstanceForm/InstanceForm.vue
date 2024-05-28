@@ -108,14 +108,14 @@
           <div class="sm:col-span-3 sm:col-start-1">
             <template v-if="basicInfo.engine === Engine.SPANNER">
               <SpannerHostInput
-              v-model:host="adminDataSource.host"
-              :allow-edit="allowEdit"
+                v-model:host="adminDataSource.host"
+                :allow-edit="allowEdit"
               />
             </template>
             <template v-if="basicInfo.engine === Engine.BIGQUERY">
               <BigQueryHostInput
-              v-model:host="adminDataSource.host"
-              :allow-edit="allowEdit"
+                v-model:host="adminDataSource.host"
+                :allow-edit="allowEdit"
               />
             </template>
             <template v-else>
@@ -177,7 +177,8 @@
 
           <template
             v-if="
-              (basicInfo.engine !== Engine.SPANNER && basicInfo.engine !== Engine.BIGQUERY) &&
+              basicInfo.engine !== Engine.SPANNER &&
+              basicInfo.engine !== Engine.BIGQUERY &&
               adminDataSource.authenticationType !==
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
@@ -545,10 +546,10 @@ import {
   defer,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
+import BigQueryHostInput from "./BigQueryHostInput.vue";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
-import BigQueryHostInput from "./BigQueryHostInput.vue";
 import type { EditDataSource } from "./common";
 import { extractBasicInfo, extractDataSourceEditState } from "./common";
 import {
@@ -1416,11 +1417,12 @@ const checkDataSource = (dataSources: DataSource[]) => {
     if (
       ds.authenticationType ===
       DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
-      &&
-      (basicInfo.value.engine === Engine.MYSQL || basicInfo.value.engine === Engine.POSTGRES)
     ) {
       // CloudSQL instance name should be {project}:{region}:{cloud sql name}
       return /.+:.+:.+/.test(ds.host);
+    }
+    if (ds.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM) {
+      return !!ds.region;
     }
 
     if (basicInfo.value.engine === Engine.ORACLE) {
