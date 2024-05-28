@@ -25,7 +25,7 @@
 import { orderBy } from "lodash-es";
 import { computed, nextTick, watch } from "vue";
 import { BBSpin } from "@/bbkit";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useFilterStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import {
   useSheetContextByView,
@@ -42,19 +42,35 @@ const emit = defineEmits<{
   (event: "ready"): void;
 }>();
 
+const { filter } = useFilterStore();
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 
-const sortedWorksheetList = computed(() => {
-  const keyword = (props.keyword ?? "").trim().toLowerCase();
-  const filteredList = keyword
-    ? sheetList.value.filter((worksheet) =>
-        worksheet.title.toLowerCase().includes(keyword)
-      )
-    : sheetList.value;
+const filteredWorksheetList = computed(() => {
+  let sheets = sheetList.value;
 
+  // Only show those sheets that match the filtered database or are unconnected.
+  if (filter.database) {
+    sheets = sheets.filter(
+      (worksheet) =>
+        !worksheet.database || worksheet.database === filter.database
+    );
+  }
+
+  // Filter by keyword.
+  const keyword = (props.keyword ?? "").trim().toLowerCase();
+  if (keyword) {
+    sheets = sheets.filter((worksheet) =>
+      worksheet.title.toLowerCase().includes(keyword)
+    );
+  }
+
+  return sheets;
+});
+
+const sortedWorksheetList = computed(() => {
   return orderBy(
-    filteredList,
+    filteredWorksheetList.value,
     [
       // Unconnected sheets go behind
       (worksheet) => {
