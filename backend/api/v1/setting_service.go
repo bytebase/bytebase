@@ -192,12 +192,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			}
 			payload.GitopsWebhookUrl = gitopsWebhookURL
 		}
+		if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
+			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
+		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
-		}
-		if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
-			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceApproval:
