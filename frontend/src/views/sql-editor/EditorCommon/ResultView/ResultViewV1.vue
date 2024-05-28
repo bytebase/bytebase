@@ -48,12 +48,17 @@
       </template>
       <template v-else-if="viewMode === 'ERROR'">
         <ErrorView :error="resultSet.error">
-          <template
-            v-if="resultSet.status === Status.PERMISSION_DENIED"
-            #suffix
-          >
+          <template #suffix>
             <HideInStandaloneMode>
-              <RequestQueryButton />
+              <RequestQueryButton
+                v-if="resultSet.status === Status.PERMISSION_DENIED"
+              />
+              <SyncDatabaseButton
+                v-else-if="resultSet.error.includes('resource not found')"
+                :type="'primary'"
+                :text="true"
+                :database="database"
+              />
             </HideInStandaloneMode>
           </template>
         </ErrorView>
