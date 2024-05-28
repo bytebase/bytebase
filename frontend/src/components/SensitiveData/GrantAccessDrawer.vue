@@ -55,15 +55,38 @@
           }}</span>
         </div>
 
-        <div class="w-full">
-          <p class="mb-2">
-            {{ $t("common.user") }}
-          </p>
-          <UserSelect
-            v-model:users="state.userUidList"
-            :multiple="true"
-            :include-all="false"
-          />
+        <div class="space-y-2">
+          <div class="w-full">
+            <NRadioGroup v-model:value="state.type" class="space-x-2">
+              <NRadio value="MEMBER">{{ $t("project.members.users") }}</NRadio>
+              <NRadio value="GROUP">
+                {{ $t("settings.members.groups.self") }}
+              </NRadio>
+            </NRadioGroup>
+          </div>
+
+          <div v-if="state.type === 'MEMBER'" class="w-full">
+            <div class="flex items-center justify-between">
+              {{ $t("project.members.select-users") }}
+            </div>
+            <UserSelect
+              v-model:users="state.memberList"
+              class="mt-2"
+              :multiple="true"
+              :include-all-users="false"
+              :include-service-account="false"
+            />
+          </div>
+          <div v-else class="w-full">
+            <div class="flex items-center justify-between">
+              {{ $t("project.members.select-groups") }}
+            </div>
+            <UserGroupSelect
+              v-model:value="state.memberList"
+              class="mt-2"
+              :multiple="true"
+            />
+          </div>
         </div>
       </div>
 
@@ -93,9 +116,14 @@ import { NButton, NCheckbox, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { usePolicyV1Store, useUserStore, pushNotification } from "@/store";
+import {
+  usePolicyV1Store,
+  useUserStore,
+  pushNotification,
+  extractGroupEmail,
+} from "@/store";
 import type { ComposedProject } from "@/types";
-import { getUserEmailInBinding } from "@/types";
+import { getUserEmailInBinding, getGroupEmailInBinding } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
@@ -120,7 +148,8 @@ const props = defineProps<{
 const emit = defineEmits(["dismiss"]);
 
 interface LocalState {
-  userUidList: string[];
+  type: "MEMBER" | "GROUP";
+  memberList: string[];
   expirationTimestamp?: number;
   maskingLevel: MaskingLevel;
   processing: boolean;
@@ -134,7 +163,8 @@ const ACTIONS = [
 const MASKING_LEVELS = [MaskingLevel.PARTIAL, MaskingLevel.NONE];
 
 const state = reactive<LocalState>({
-  userUidList: [],
+  type: "MEMBER",
+  memberList: [],
   maskingLevel: MaskingLevel.PARTIAL,
   processing: false,
   supportActions: new Set(ACTIONS),
@@ -148,7 +178,8 @@ const resetState = () => {
   state.expirationTimestamp = undefined;
   state.maskingLevel = MaskingLevel.PARTIAL;
   state.supportActions = new Set(ACTIONS);
-  state.userUidList = [];
+  state.memberList = [];
+  state.type = "MEMBER";
 };
 
 const onDismiss = () => {
@@ -157,7 +188,7 @@ const onDismiss = () => {
 };
 
 const submitDisabled = computed(() => {
-  if (state.userUidList.length === 0) {
+  if (state.memberList.length === 0) {
     return true;
   }
   if (state.supportActions.size === 0) {
@@ -204,12 +235,23 @@ const getPendingUpdatePolicy = async (
   columnList: SensitiveColumn[]
 ): Promise<Partial<Policy>> => {
   const maskingExceptions: MaskingExceptionPolicy_MaskingException[] = [];
-  const members = uniq(
-    state.userUidList
-      .map((id) => userStore.getUserById(id))
-      .filter((u) => u)
-      .map((user) => getUserEmailInBinding(user!.email))
-  );
+
+  let members: string[] = [];
+  if (state.type === "MEMBER") {
+    members = uniq(
+      state.memberList
+        .map((id) => userStore.getUserById(id))
+        .filter((u) => u)
+        .map((user) => getUserEmailInBinding(user!.email))
+    );
+  } else {
+    members = uniq(
+      state.memberList.map((group) => {
+        const email = extractGroupEmail(group);
+        return getGroupEmailInBinding(email);
+      })
+    );
+  }
 
   for (const column of columnList) {
     const expressions = getExpressionsForSensitiveColumn(column);

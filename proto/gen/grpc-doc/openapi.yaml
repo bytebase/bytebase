@@ -11173,7 +11173,7 @@ components:
                     description: |-
                         Member is the principal who bind to this exception policy instance.
 
-                         Format: users/{userUID}.
+                         Format: users/{userUID} or groups/{group email}
                 condition:
                     allOf:
                         - $ref: '#/components/schemas/Expr'

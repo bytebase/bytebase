@@ -113,7 +113,7 @@ export interface MaskingExceptionPolicy_MaskingException {
   /**
    * Member is the principal who bind to this exception policy instance.
    *
-   * Format: users/{userUID}.
+   * Format: users/{userUID} or groups/{group email}
    */
   member: string;
   /** The condition that is associated with this exception policy instance. */

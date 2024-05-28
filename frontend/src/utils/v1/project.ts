@@ -1,10 +1,5 @@
 import { orderBy, uniq } from "lodash-es";
-import {
-  extractUserEmail,
-  useUserStore,
-  useUserGroupStore,
-  extractGroupEmail,
-} from "@/store";
+import { extractUserEmail, useUserStore, useUserGroupStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
@@ -37,8 +32,7 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
         }
 
         if (member.startsWith("group:")) {
-          const groupEmail = extractGroupEmail(member);
-          const group = groupStore.getGroupByEmail(groupEmail);
+          const group = groupStore.getGroupByIdentifier(member);
           if (!group) {
             continue;
           }
@@ -84,8 +78,7 @@ export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
   for (const binding of iamPolicy.bindings) {
     for (const member of binding.members) {
       if (member.startsWith("group:")) {
-        const groupEmail = extractGroupEmail(member);
-        const group = groupStore.getGroupByEmail(groupEmail);
+        const group = groupStore.getGroupByIdentifier(member);
         if (!group) {
           continue;
         }

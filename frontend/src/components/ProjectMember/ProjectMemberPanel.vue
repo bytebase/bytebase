@@ -222,9 +222,8 @@ const activeGroupList = computed(() => {
     projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
   )
     .filter((user) => user.startsWith("group:"))
-    .map((user) => {
-      const email = extractGroupEmail(user);
-      return groupStore.getGroupByEmail(email);
+    .map((member) => {
+      return groupStore.getGroupByIdentifier(member);
     })
     .filter((group) => !!group);
 });
