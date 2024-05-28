@@ -41,8 +41,6 @@ const (
 type Issue struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
-	Status      string `json:"status"`
-	Type        string `json:"type"`
 	Description string `json:"description"`
 }
 
@@ -58,7 +56,6 @@ type TaskResult struct {
 
 // Project object of project.
 type Project struct {
-	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
