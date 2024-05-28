@@ -2,7 +2,7 @@
   want:
     - status: WARN
       code: 1702
-      title: statement.where.disallow-using-function
+      title: statement.where.disallow-functions-and-calculations
       content: |-
         Function is disallowed in where clause, but "SELECT * FROM employee WHERE id = RAND();" uses
       line: 1

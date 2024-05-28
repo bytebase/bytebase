@@ -447,7 +447,7 @@
       "title": "Prohibir el uso de comparación de igualdad con NULL en la cláusula WHERE",
       "description": "El resultado de la comparación de igualdad con NULL siempre es NULL, lo que puede causar resultados inesperados. Nivel de error de sugerencia: Advertencia"
     },
-    "statement-where-disallow-using-function": {
+    "statement-where-disallow-functions-and-calculations": {
       "title": "No aplique funciones ni realice cálculos en campos indexados en la cláusula WHERE",
       "description": "Si aplica una función o realiza un cálculo en el campo indexado, la base de datos no puede usar el índice y tiene que escanear toda la tabla."
     },

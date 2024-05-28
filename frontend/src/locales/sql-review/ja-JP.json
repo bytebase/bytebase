@@ -447,7 +447,7 @@
       "title": "WHERE句でのNULL等価比較の使用を禁止する",
       "description": "NULL等価比較の結果は常にNULLです、これは予期しない結果を引き起こす可能性があります。推奨エラーレベル：警告"
     },
-    "statement-where-disallow-using-function": {
+    "statement-where-disallow-functions-and-calculations": {
       "title": "WHERE 句でインデックス付きフィールドに関数や計算を適用しないでください",
       "description": "あなたがインデックス付けされたフィールドに関数や計算を適用すると、データベースはインデックスを使用できず、代わりにテーブル全体をスキャンする必要があります。"
     },

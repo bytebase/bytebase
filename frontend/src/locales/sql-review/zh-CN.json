@@ -447,7 +447,7 @@
       "title": "禁止在WHERE子句中使用NULL等式比较",
       "description": "NULL 等式比较的结果始终是 NULL，可能导致意外的结果。建议错误级别：警告"
     },
-    "statement-where-disallow-using-function": {
+    "statement-where-disallow-functions-and-calculations": {
       "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算",
       "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。"
     },

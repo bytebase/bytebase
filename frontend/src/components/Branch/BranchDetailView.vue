@@ -557,7 +557,7 @@ const generateIssueName = (databaseNameList: string[]) => {
   } else {
     issueNameParts.push(`[${databaseNameList.length} databases]`);
   }
-  issueNameParts.push(`Alter schema`);
+  issueNameParts.push(`Edit schema`);
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
