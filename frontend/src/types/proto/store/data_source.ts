@@ -244,6 +244,8 @@ export interface DataSourceOptions {
   replicaSet: string;
   /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
   directConnection: boolean;
+  /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
+  region: string;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -636,6 +638,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     additionalAddresses: [],
     replicaSet: "",
     directConnection: false,
+    region: "",
   };
 }
 
@@ -688,6 +691,9 @@ export const DataSourceOptions = {
     }
     if (message.directConnection === true) {
       writer.uint32(128).bool(message.directConnection);
+    }
+    if (message.region !== "") {
+      writer.uint32(138).string(message.region);
     }
     return writer;
   },
@@ -811,6 +817,13 @@ export const DataSourceOptions = {
 
           message.directConnection = reader.bool();
           continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.region = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -850,6 +863,7 @@ export const DataSourceOptions = {
         : [],
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
+      region: isSet(object.region) ? globalThis.String(object.region) : "",
     };
   },
 
@@ -903,6 +917,9 @@ export const DataSourceOptions = {
     if (message.directConnection === true) {
       obj.directConnection = message.directConnection;
     }
+    if (message.region !== "") {
+      obj.region = message.region;
+    }
     return obj;
   },
 
@@ -933,6 +950,7 @@ export const DataSourceOptions = {
       [];
     message.replicaSet = object.replicaSet ?? "";
     message.directConnection = object.directConnection ?? false;
+    message.region = object.region ?? "";
     return message;
   },
 };
