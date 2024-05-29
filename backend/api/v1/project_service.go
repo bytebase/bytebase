@@ -5,17 +5,20 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -370,7 +373,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
 	}
-	if err := s.validateIAMPolicy(request.Policy, roles); err != nil {
+	if err := s.validateIAMPolicy(ctx, request.Policy, roles); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -2023,14 +2026,22 @@ func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (store.Oper
 	return store.OperatorType(""), errors.Errorf("invalid operator type: %v", operator)
 }
 
-func (s *ProjectService) validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
+func (s *ProjectService) validateIAMPolicy(ctx context.Context, policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 	if policy == nil {
 		return errors.Errorf("IAM Policy is required")
 	}
-	return s.validateBindings(policy.Bindings, roles)
+	generalSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get workspace general setting")
+	}
+	var maximumRoleExpiration *durationpb.Duration
+	if generalSetting != nil {
+		maximumRoleExpiration = generalSetting.MaximumRoleExpiration
+	}
+	return s.validateBindings(policy.Bindings, roles, maximumRoleExpiration)
 }
 
-func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
+func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role, maximumRoleExpiration *durationpb.Duration) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
 	}
@@ -2061,9 +2072,15 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		}
 		projectRoleMap[binding.Role] = true
 
-		// TODO(steven): validate the request time with maximum role expiration.
 		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {
 			return err
+		}
+
+		rolesToValidate := []string{fmt.Sprintf("roles/%s", api.ProjectQuerier), fmt.Sprintf("roles/%s", api.ProjectExporter)}
+		if binding.Condition != nil && binding.Condition.Expression != "" && slices.Contains(rolesToValidate, binding.Role) {
+			if err := validateIAMPolicyExpression(binding.Condition.Expression, maximumRoleExpiration); err != nil {
+				return err
+			}
 		}
 	}
 	// Must contain one owner binding.
@@ -2071,6 +2088,99 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		return errors.Errorf("IAM Policy must have at least one binding with %s", api.ProjectOwner.String())
 	}
 	return nil
+}
+
+// validateIAMPolicyExpression validates the IAM policy expression.
+// Currently only validate the following expression:
+// * request.time < timestamp("2021-01-01T00:00:00Z")
+//
+// Other expressions will be ignored.
+func validateIAMPolicyExpression(expr string, maximumRoleExpiration *durationpb.Duration) error {
+	e, err := cel.NewEnv()
+	if err != nil {
+		return errors.Wrap(err, "failed to create cel environment")
+	}
+	ast, iss := e.Parse(expr)
+	if iss != nil {
+		return errors.Wrap(iss.Err(), "failed to parse expression")
+	}
+
+	var validator func(expr celast.Expr) error
+
+	validator = func(expr celast.Expr) error {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case "_||_":
+				for _, arg := range expr.AsCall().Args() {
+					err := validator(arg)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			case "_&&_":
+				for _, arg := range expr.AsCall().Args() {
+					err := validator(arg)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			// Only handle "request.time < timestamp("2021-01-01T00:00:00Z").
+			case "_<_":
+				if maximumRoleExpiration == nil {
+					return nil
+				}
+
+				var value string
+				for _, arg := range expr.AsCall().Args() {
+					switch arg.Kind() {
+					case celast.SelectKind:
+						variable := fmt.Sprintf("%s.%s", arg.AsSelect().Operand().AsIdent(), arg.AsSelect().FieldName())
+						if variable != "request.time" {
+							return errors.Errorf("unexpected variable %v", variable)
+						}
+					case celast.CallKind:
+						functionName := arg.AsCall().FunctionName()
+						if functionName != "timestamp" {
+							return errors.Errorf("unexpected function %v", functionName)
+						}
+						if len(arg.AsCall().Args()) != 1 {
+							return errors.Errorf("unexpected number of arguments %d", len(arg.AsCall().Args()))
+						}
+						valueArg := arg.AsCall().Args()[0]
+						if valueArg.Kind() != celast.LiteralKind {
+							return errors.Errorf("unexpected argument kind %v", valueArg.Kind())
+						}
+						lit, ok := valueArg.AsLiteral().Value().(string)
+						if !ok {
+							return errors.Errorf("expect string, got %T, hint: filter literals should be string", arg.AsLiteral().Value())
+						}
+						value = lit
+					}
+				}
+
+				t, err := time.Parse(time.RFC3339, value)
+				if err != nil {
+					return errors.Errorf("failed to parse time %v, error: %v", value, err)
+				}
+				maxExpirationTime := time.Now().Add(maximumRoleExpiration.AsDuration())
+				if t.After(maxExpirationTime) {
+					return errors.Errorf("time %s exceeds maximum role expiration %s", t.Format(time.DateTime), maxExpirationTime.Format(time.DateTime))
+				}
+				return nil
+			default:
+				// Ignore other functions.
+				return nil
+			}
+		default:
+			return errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	return validator(ast.NativeRep().Expr())
 }
 
 func uniqueBindingMembers(members []string) []string {

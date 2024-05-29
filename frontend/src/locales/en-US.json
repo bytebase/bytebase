@@ -662,7 +662,7 @@
         },
         "maximum-role-expiration": {
           "self": "Maximum role expiration",
-          "description": "Maximum role expiration is the maximum period a role can be granted to a user.",
+          "description": "Maximum role expiration is the maximum period a role can be granted to a user. (Only for querier and exporter roles)",
           "days": "Day(s)",
           "never-expires": "Never expires"
         },
