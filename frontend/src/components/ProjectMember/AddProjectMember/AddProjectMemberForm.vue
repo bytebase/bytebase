@@ -111,6 +111,8 @@ import type { ComposedProject, DatabaseResource } from "@/types";
 import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
+  groupBindingPrefix,
+  userBindingPrefix,
   PresetRoleType,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
@@ -181,13 +183,13 @@ onMounted(() => {
   }
 
   const isMember = props.binding.members.some((member) =>
-    member.startsWith("user:")
+    member.startsWith(userBindingPrefix)
   );
   if (isMember || props.binding.members.length === 0) {
     state.type = "MEMBER";
     const userUidList = [];
     for (const member of props.binding.members) {
-      if (member.startsWith("group:")) {
+      if (member.startsWith(groupBindingPrefix)) {
         continue;
       }
       const user = userStore.getUserByIdentifier(member);
@@ -200,7 +202,7 @@ onMounted(() => {
     state.type = "GROUP";
     const groupNameList = [];
     for (const member of props.binding.members) {
-      if (!member.startsWith("group:")) {
+      if (!member.startsWith(groupBindingPrefix)) {
         continue;
       }
       const group = groupStore.getGroupByIdentifier(member);

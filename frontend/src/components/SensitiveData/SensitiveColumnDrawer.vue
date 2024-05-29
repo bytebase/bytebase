@@ -308,6 +308,7 @@ import {
   unknownGroup,
   getUserEmailInBinding,
   getGroupEmailInBinding,
+  groupBindingPrefix,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { User } from "@/types/proto/v1/auth_service";
@@ -415,7 +416,7 @@ const getAccessUsers = (
     rawExpression: exception.condition?.expression ?? "",
   };
 
-  if (exception.member.startsWith("group:")) {
+  if (exception.member.startsWith(groupBindingPrefix)) {
     access.type = "group";
     access.group =
       groupStore.getGroupByIdentifier(exception.member) ?? unknownGroup();
