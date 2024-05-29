@@ -45,7 +45,6 @@
           </span>
           <ExpirationSelector
             class="grid-cols-3 sm:grid-cols-4"
-            :options="expireDaysOptions"
             :value="state.expireDays"
             @update="state.expireDays = $event"
           />
@@ -83,7 +82,6 @@ import dayjs from "dayjs";
 import { isUndefined, uniq } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -143,43 +141,15 @@ const extractDatabaseResourcesFromProps = (): Pick<
   };
 };
 
-const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   projectId: props.projectId,
   ...extractDatabaseResourcesFromProps(),
-  expireDays: 7,
+  expireDays: 1,
   description: "",
 });
-
-const expireDaysOptions = computed(() => [
-  {
-    value: 7,
-    label: t("common.date.days", { days: 7 }),
-  },
-  {
-    value: 30,
-    label: t("common.date.days", { days: 30 }),
-  },
-  {
-    value: 60,
-    label: t("common.date.days", { days: 60 }),
-  },
-  {
-    value: 90,
-    label: t("common.date.days", { days: 90 }),
-  },
-  {
-    value: 180,
-    label: t("common.date.months", { months: 6 }),
-  },
-  {
-    value: 365,
-    label: t("common.date.years", { years: 1 }),
-  },
-]);
 
 const allowCreate = computed(() => {
   if (!state.projectId) {
