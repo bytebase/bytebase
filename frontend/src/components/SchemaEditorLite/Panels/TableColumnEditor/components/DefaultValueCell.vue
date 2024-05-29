@@ -1,22 +1,4 @@
 <template>
-  <!-- <DropdownInput
-    :value="key"
-    :input-value="inputValue"
-    :options="options"
-    :placeholder="placeholder"
-    :consistent-menu-width="false"
-    :style="style"
-    :disabled="disabled"
-    :input-disabled="inputDisabled"
-    input-event="input"
-    suffix-style="right: 3px"
-    class="bb-schema-editor--column-default-value-select"
-    @focus="focused = true"
-    @blur="focused = false"
-    @update:value="handleUpdateValue"
-    @input="handleInput"
-  /> -->
-
   <NDropdown
     trigger="click"
     placement="bottom-start"
@@ -38,11 +20,16 @@
       :style="inputStyle"
       @update:value="handleInput"
     >
-      <template v-if="!disabled" #suffix>
+      <template #suffix>
         <!-- use the same icon and style with NSelect -->
         <NElement
           tag="button"
-          class="absolute top-1/2 right-[3px] -translate-y-1/2 cursor-pointer text-[var(--placeholder-color)] hover:text-[var(--primary-color-hover)]"
+          class="absolute top-1/2 right-[3px] -translate-y-1/2"
+          :class="[
+            disabled
+              ? 'text-[var(--placeholder-color-disabled)] cursor-not-allowed'
+              : 'text-[var(--placeholder-color)] hover:text-[var(--primary-color-hover)] cursor-pointer',
+          ]"
         >
           <svg
             viewBox="0 0 16 16"
