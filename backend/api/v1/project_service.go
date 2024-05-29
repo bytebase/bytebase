@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -2074,7 +2075,9 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {
 			return err
 		}
-		if binding.Condition.Expression != "" {
+
+		rolesToValidate := []string{fmt.Sprintf("roles/%s", api.ProjectQuerier), fmt.Sprintf("roles/%s", api.ProjectExporter)}
+		if binding.Condition.Expression != "" && slices.Contains(rolesToValidate, binding.Role) {
 			if err := validateIAMPolicyExpression(binding.Condition.Expression, maximumRoleExpiration); err != nil {
 				return err
 			}
