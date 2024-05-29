@@ -30,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -727,6 +728,24 @@ func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *mo
 		}
 	}
 	return matched, unmatched, nil
+}
+
+// ChangeIssueStatus changes the status of an issue.
+func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updater *store.UserMessage, comment string) error {
+	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
+	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updater.ID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+	}
+
+	webhookManager.CreateEvent(ctx, webhook.Event{
+		Actor:   updater,
+		Type:    webhook.EventTypeIssueStatusUpdate,
+		Comment: comment,
+		Issue:   webhook.NewIssue(updatedIssue),
+		Project: webhook.NewProject(updatedIssue.Project),
+	})
+	return nil
 }
 
 // GetUserIAMPolicyBindings return the valid bindings for the user.
