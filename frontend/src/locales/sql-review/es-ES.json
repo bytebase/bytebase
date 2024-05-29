@@ -580,6 +580,10 @@
         }
       }
     },
+    "index-not-redundant": {
+      "title": "Prohibir índices redundantes",
+      "description": "El índice redundante puede resultar en pérdida de rendimiento y ocupar espacio adicional. Por ejemplo, el índice en las columnas (c1, c2) se tratará como índices redundantes si ya hay un índice en la columna (c1). Nivel de error sugerido: Advertencia"
+    },
     "system-charset-allowlist": {
       "title": "Lista permitida de juegos de caracteres",
       "description": "El juego de caracteres determina qué caracteres se pueden almacenar en la tabla. El uso de un juego de caracteres incorrecto puede hacer que ciertos caracteres de la aplicación no se puedan almacenar ni mostrar correctamente, como los caracteres CJK y Emoji. Nivel de error sugerido: Error",
