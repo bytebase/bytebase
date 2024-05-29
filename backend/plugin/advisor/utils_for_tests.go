@@ -124,7 +124,19 @@ var (
 			{
 				Name: "dbo",
 				Tables: []*storepb.TableMetadata{
-					{Name: "pokes"},
+					{
+						Name: "pokes",
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_0",
+								Expressions: []string{"c1", "c2", "c3"},
+							},
+							{
+								Name:        "idx_1",
+								Expressions: []string{"c10", "c20"},
+							},
+						},
+					},
 					{Name: "pokes2"},
 					{Name: "pokes3"},
 				},
@@ -397,7 +409,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementPriorBackupCheck,
 		SchemaRuleStatementJoinStrictColumnAttrs,
 		SchemaRuleTableDisallowSetCharset,
-		SchemaRuleStatementDisallowCrossDBQueries:
+		SchemaRuleStatementDisallowCrossDBQueries,
+		SchemaRuleIndexNotRedundant:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",

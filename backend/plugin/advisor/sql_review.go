@@ -225,6 +225,8 @@ const (
 	SchemaRuleCreateIndexConcurrently SQLReviewRuleType = "index.create-concurrently"
 	// SchemaRuleIndexTypeAllowList enforce the index type allowlist.
 	SchemaRuleIndexTypeAllowList SQLReviewRuleType = "index.type-allow-list"
+	// SchemaRuleIndexNotRedundant prohibits createing redundant indices.
+	SchemaRuleIndexNotRedundant SQLReviewRuleType = "index.not-redundant"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
@@ -1469,6 +1471,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLIndexTotalNumberLimit, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexTotalNumberLimit, nil
+		}
+	case SchemaRuleIndexNotRedundant:
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLIndexNotRedundant, nil
 		}
 	case SchemaRuleStatementDisallowRemoveTblCascade:
 		if engine == storepb.Engine_POSTGRES {

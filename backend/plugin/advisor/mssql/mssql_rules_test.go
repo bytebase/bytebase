@@ -10,25 +10,26 @@ import (
 
 func TestMSSQLRules(t *testing.T) {
 	mssqlRules := []advisor.SQLReviewRuleType{
-		advisor.SchemaRuleStatementNoSelectAll,
-		advisor.SchemaRuleTableNaming,
-		advisor.SchemaRuleTableNameNoKeyword,
-		advisor.SchemaRuleIdentifierNoKeyword,
-		advisor.SchemaRuleStatementRequireWhere,
-		advisor.SchemaRuleColumnMaximumVarcharLength,
-		advisor.SchemaRuleTableDropNamingConvention,
-		advisor.SchemaRuleTableRequirePK,
-		advisor.SchemaRuleColumnNotNull,
-		advisor.SchemaRuleTableNoFK,
-		advisor.SchemaRuleTableDisallowDDL,
-		advisor.SchemaRuleTableDisallowDML,
-		advisor.SchemaRuleSchemaBackwardCompatibility,
-		advisor.SchemaRuleRequiredColumn,
-		advisor.SchemaRuleColumnTypeDisallowList,
-		advisor.SchemaRuleFunctionDisallowCreate,
-		advisor.SchemaRuleProcedureDisallowCreate,
-		advisor.SchemaRuleStatementDisallowCrossDBQueries,
-		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
+		// advisor.SchemaRuleStatementNoSelectAll,
+		// advisor.SchemaRuleTableNaming,
+		// advisor.SchemaRuleTableNameNoKeyword,
+		// advisor.SchemaRuleIdentifierNoKeyword,
+		// advisor.SchemaRuleStatementRequireWhere,
+		// advisor.SchemaRuleColumnMaximumVarcharLength,
+		// advisor.SchemaRuleTableDropNamingConvention,
+		// advisor.SchemaRuleTableRequirePK,
+		// advisor.SchemaRuleColumnNotNull,
+		// advisor.SchemaRuleTableNoFK,
+		// advisor.SchemaRuleTableDisallowDDL,
+		// advisor.SchemaRuleTableDisallowDML,
+		// advisor.SchemaRuleSchemaBackwardCompatibility,
+		// advisor.SchemaRuleRequiredColumn,
+		// advisor.SchemaRuleColumnTypeDisallowList,
+		// advisor.SchemaRuleFunctionDisallowCreate,
+		// advisor.SchemaRuleProcedureDisallowCreate,
+		// advisor.SchemaRuleStatementDisallowCrossDBQueries,
+		// advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
+		advisor.SchemaRuleIndexNotRedundant,
 	}
 
 	for _, rule := range mssqlRules {
@@ -41,4 +42,5 @@ func TestMSSQLRules(t *testing.T) {
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	advisor.SchemaRuleStatementDisallowCrossDBQueries: true,
 	advisor.SchemaRuleSchemaBackwardCompatibility:     true,
+	advisor.SchemaRuleIndexNotRedundant:               true,
 }

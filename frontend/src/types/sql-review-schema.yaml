@@ -818,6 +818,10 @@ ruleList:
         payload:
           type: STRING_ARRAY
           default: []
+  - type: index.not-redundant
+    category: INDEX
+    engineList:
+      - MSSQL
   - type: system.charset.allowlist
     category: SYSTEM
     engineList:

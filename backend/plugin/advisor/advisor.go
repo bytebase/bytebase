@@ -621,6 +621,8 @@ const (
 
 	// MSSQLStatementWhereDisallowFunctionsAndCalculations prohibit using functions or performing calculation in the where clause.
 	MSSQLStatementWhereDisallowFunctionsAndCalculations Type = "bb.plugin.advisor.mssql.statement.disallow-functions-and-calculations"
+
+	MSSQLIndexNotRedundant Type = "bb.plugin.advisor.mssql.index.not-redundant"
 )
 
 // Advice is the result of an advisor.
