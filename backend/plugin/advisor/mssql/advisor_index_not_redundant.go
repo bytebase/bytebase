@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -74,17 +75,19 @@ func (checker *IndexNotRedundantChecker) EnterCreate_index(ctx *parser.Create_in
 	if fullTblName := ctx.Table_name(); fullTblName != nil {
 		// TODO(zp): we only check indexes in the current database due to the lack of necessary metadata.
 		// Case sensitive!
-		if database := fullTblName.GetDatabase(); database != nil && database.GetText() != checker.curDB {
-			return
+		if database := fullTblName.GetDatabase(); database != nil {
+			if oriName, _ := tsql.NormalizeTSQLIdentifier(database); oriName != checker.curDB {
+				return
+			}
 		}
 		if schema := fullTblName.GetSchema(); schema != nil {
-			idxSchemaName = schema.GetText()
+			idxSchemaName, _ = tsql.NormalizeTSQLIdentifier(schema)
 		}
-		idxTblName = fullTblName.GetTable().GetText()
+		idxTblName, _ = tsql.NormalizeTSQLIdentifier(fullTblName.GetTable())
 	}
 
 	// Get index name from statement.
-	statIdxName := ctx.AllId_()[0].GetText()
+	statIdxName, _ := tsql.NormalizeTSQLIdentifier(ctx.AllId_()[0])
 
 	// Get ordered index list from metadata.
 	findIdxKey := FindIndexesKey{
@@ -122,7 +125,8 @@ type IndexMap = map[FindIndexesKey][]*store.IndexMetadata
 func containRedundantPrefix(metaIdxList []*store.IndexMetadata, statColumnList *parser.IColumn_name_list_with_orderContext) string {
 	for _, metaIndex := range metaIdxList {
 		if statColumnList != nil && len((*statColumnList).AllId_()) != 0 && len(metaIdxList) != 0 {
-			if metaIndex.Expressions[0] == (*statColumnList).AllId_()[0].GetText() {
+			statIdxCol, _ := tsql.NormalizeTSQLIdentifier((*statColumnList).AllId_()[0])
+			if metaIndex.Expressions[0] == statIdxCol {
 				return metaIndex.Name
 			}
 		}
