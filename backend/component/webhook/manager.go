@@ -132,7 +132,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e Event, activ
 
 	case EventTypeIssueUpdate:
 		update := e.IssueUpdate
-		switch update.Field {
+		switch update.Path {
 		case "description":
 			title = fmt.Sprintf("Changed issue description - %s", e.Issue.Title)
 			titleZh = fmt.Sprintf("工单描述变更 - %s", e.Issue.Title)

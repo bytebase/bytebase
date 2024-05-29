@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -1211,7 +1210,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
-	var activityCreates []*store.ActivityMessage
+	var webhookEvents []webhook.Event
 	var issueCommentCreates []*store.IssueCommentMessage
 	for _, path := range request.UpdateMask.Paths {
 		updateMasks[path] = true
@@ -1268,23 +1267,15 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				},
 			})
 
-			payload := &api.ActivityIssueFieldUpdatePayload{
-				FieldID:   api.IssueFieldName,
-				OldValue:  issue.Title,
-				NewValue:  request.Issue.Title,
-				IssueName: issue.Title,
-			}
-			activityPayload, err := json.Marshal(payload)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-			}
-			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:        user.ID,
-				ResourceContainer: issue.Project.GetName(),
-				ContainerUID:      issue.UID,
-				Type:              api.ActivityIssueFieldUpdate,
-				Level:             api.ActivityInfo,
-				Payload:           string(activityPayload),
+			webhookEvents = append(webhookEvents, webhook.Event{
+				Actor:   user,
+				Type:    webhook.EventTypeIssueUpdate,
+				Comment: "",
+				Issue:   webhook.NewIssue(issue),
+				Project: webhook.NewProject(issue.Project),
+				IssueUpdate: &webhook.EventIssueUpdate{
+					Path: path,
+				},
 			})
 
 		case "description":
@@ -1302,23 +1293,15 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				},
 			})
 
-			payload := &api.ActivityIssueFieldUpdatePayload{
-				FieldID:   api.IssueFieldDescription,
-				OldValue:  issue.Description,
-				NewValue:  request.Issue.Description,
-				IssueName: issue.Title,
-			}
-			activityPayload, err := json.Marshal(payload)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-			}
-			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:        user.ID,
-				ResourceContainer: issue.Project.GetName(),
-				ContainerUID:      issue.UID,
-				Type:              api.ActivityIssueFieldUpdate,
-				Level:             api.ActivityInfo,
-				Payload:           string(activityPayload),
+			webhookEvents = append(webhookEvents, webhook.Event{
+				Actor:   user,
+				Type:    webhook.EventTypeIssueUpdate,
+				Comment: "",
+				Issue:   webhook.NewIssue(issue),
+				Project: webhook.NewProject(issue.Project),
+				IssueUpdate: &webhook.EventIssueUpdate{
+					Path: path,
+				},
 			})
 
 		case "subscribers":
@@ -1396,10 +1379,8 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 	}
 
-	for _, create := range activityCreates {
-		if _, err := s.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
-			slog.Warn("failed to create issue field update activity", "issue_id", issue.UID, log.BBError(err))
-		}
+	for _, e := range webhookEvents {
+		s.webhookManager.CreateEvent(ctx, e)
 	}
 	for _, create := range issueCommentCreates {
 		if _, err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {

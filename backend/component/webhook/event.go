@@ -27,9 +27,7 @@ type Event struct {
 	Issue   *Issue
 	Project *Project
 
-	IssueUpdate *struct {
-		Field string
-	}
+	IssueUpdate         *EventIssueUpdate
 	IssueApprovalCreate *EventIssueApprovalCreate
 	IssueRolloutReady   *EventIssueRolloutReady
 	StageStatusUpdate   *EventStageStatusUpdate
@@ -70,6 +68,10 @@ type Project struct {
 	UID        int
 	ResourceID string
 	Title      string
+}
+
+type EventIssueUpdate struct {
+	Path string
 }
 
 type EventIssueApprovalCreate struct {
