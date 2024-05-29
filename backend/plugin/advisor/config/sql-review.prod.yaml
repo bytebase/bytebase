@@ -268,6 +268,8 @@ ruleList:
       list:
         - BTREE
         - HASH
+  - type: index.not-redundant
+    level: WARNING
   - type: system.charset.allowlist
     level: ERROR
     payload:

@@ -28,7 +28,8 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleFunctionDisallowCreate,
 		advisor.SchemaRuleProcedureDisallowCreate,
 		advisor.SchemaRuleStatementDisallowCrossDBQueries,
-		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations,
+		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
+		advisor.SchemaRuleIndexNotRedundant,
 	}
 
 	for _, rule := range mssqlRules {
@@ -41,4 +42,5 @@ func TestMSSQLRules(t *testing.T) {
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	advisor.SchemaRuleStatementDisallowCrossDBQueries: true,
 	advisor.SchemaRuleSchemaBackwardCompatibility:     true,
+	advisor.SchemaRuleIndexNotRedundant:               true,
 }
