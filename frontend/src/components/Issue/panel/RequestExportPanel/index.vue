@@ -55,7 +55,6 @@
           </span>
           <ExpirationSelector
             class="grid-cols-3 sm:grid-cols-4 md:grid-cols-6"
-            :options="expireDaysOptions"
             :value="state.expireDays"
             @update="state.expireDays = $event"
           />
@@ -154,25 +153,6 @@ const state = reactive<LocalState>({
   maxRowCount: 1000,
   description: "",
 });
-
-const expireDaysOptions = computed(() => [
-  {
-    value: 1,
-    label: t("common.date.days", { days: 1 }),
-  },
-  {
-    value: 3,
-    label: t("common.date.days", { days: 3 }),
-  },
-  {
-    value: 7,
-    label: t("common.date.days", { days: 7 }),
-  },
-  {
-    value: 15,
-    label: t("common.date.days", { days: 15 }),
-  },
-]);
 
 const allowCreate = computed(() => {
   if (!state.projectId) {

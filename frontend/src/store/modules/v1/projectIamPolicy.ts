@@ -11,6 +11,7 @@ import {
   isOwnerOfProjectV1,
   isViewerOfProjectV1,
 } from "@/utils";
+import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
 import { useProjectV1Store } from "./project";
@@ -197,24 +198,16 @@ export const useCurrentUserIamPolicy = () => {
     // Check if the user has the permission to query the database.
     const policy = database.projectEntity.iamPolicy;
     for (const binding of policy.bindings) {
-      if (
-        binding.role === PresetRoleType.PROJECT_OWNER &&
-        binding.members.find(
-          (member) =>
-            member === ALL_USERS_USER_EMAIL ||
-            member === `user:${currentUser.value.email}`
-        )
-      ) {
+      const userEmailList = getUserEmailListInBinding(binding);
+      const userExist = userEmailList.some(
+        (email) =>
+          email === ALL_USERS_USER_EMAIL || email === currentUser.value.email
+      );
+
+      if (binding.role === PresetRoleType.PROJECT_OWNER && userExist) {
         return true;
       }
-      if (
-        binding.role === PresetRoleType.PROJECT_QUERIER &&
-        binding.members.find(
-          (member) =>
-            member === ALL_USERS_USER_EMAIL ||
-            member === `user:${currentUser.value.email}`
-        )
-      ) {
+      if (binding.role === PresetRoleType.PROJECT_QUERIER && userExist) {
         if (binding.parsedExpr?.expr) {
           const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
           if (
@@ -260,25 +253,18 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
+
     const iamPolicyCheckResult = policy.bindings.map((binding) => {
-      if (
-        binding.role === PresetRoleType.PROJECT_OWNER &&
-        binding.members.find(
-          (member) =>
-            member === ALL_USERS_USER_EMAIL ||
-            member === `user:${currentUser.value.email}`
-        )
-      ) {
+      const userEmailList = getUserEmailListInBinding(binding);
+      const userExist = userEmailList.some(
+        (email) =>
+          email === ALL_USERS_USER_EMAIL || email === currentUser.value.email
+      );
+
+      if (binding.role === PresetRoleType.PROJECT_OWNER && userExist) {
         return true;
       }
-      if (
-        binding.role === PresetRoleType.PROJECT_EXPORTER &&
-        binding.members.find(
-          (member) =>
-            member === ALL_USERS_USER_EMAIL ||
-            member === `user:${currentUser.value.email}`
-        )
-      ) {
+      if (binding.role === PresetRoleType.PROJECT_EXPORTER && userExist) {
         if (binding.parsedExpr?.expr) {
           const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
           if (

@@ -19,7 +19,7 @@
           {{ $t("settings.members.groups.group-members") }}
           <router-link
             :to="{
-              name: SETTING_ROUTE_WORKSPACE_MEMBER,
+              name: WORKSPACE_ROUTE_MEMBERS,
               query: {
                 name: `${userGroupNamePrefix}${binding.email}`,
               },
@@ -227,7 +227,7 @@ import type { BBGridRow } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
 import UserNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/UserNameCell.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_MEMBER } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_MEMBERS } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,

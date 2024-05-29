@@ -5,8 +5,8 @@ go 1.22.3
 require (
 	cloud.google.com/go/bigquery v1.61.0
 	cloud.google.com/go/cloudsqlconn v1.9.0
-	cloud.google.com/go/secretmanager v1.12.0
-	cloud.google.com/go/spanner v1.61.0
+	cloud.google.com/go/secretmanager v1.13.1
+	cloud.google.com/go/spanner v1.63.0
 	gitee.com/chunanyong/dm v1.8.14
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.2
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
@@ -14,14 +14,14 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.27.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.16
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.16
-	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.4.5
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.16.15
-	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.25.5
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.6
+	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.4.7
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.16.21
+	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.25.9
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.54.3
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.29.1
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/bq-parser v0.0.0-20240527153526-93beb4d2b4f0
+	github.com/bytebase/bq-parser v0.0.0-20240529032606-614a0230b8f7
 	github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a
 	github.com/bytebase/plsql-parser v0.0.0-20240523082029-22d555243c06
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
@@ -57,7 +57,7 @@ require (
 	github.com/mattn/go-oci8 v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/microsoft/go-mssqldb v1.7.1
-	github.com/nyaruka/phonenumbers v1.3.4
+	github.com/nyaruka/phonenumbers v1.3.6
 	github.com/paulmach/orb v0.11.1
 	github.com/pganalyze/pg_query_go/v5 v5.1.0
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
@@ -81,20 +81,20 @@ require (
 	go.mongodb.org/mongo-driver v1.15.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.23.0
-	golang.org/x/exp v0.0.0-20240525044651-4c93da0ed11d
-	golang.org/x/oauth2 v0.19.0
+	golang.org/x/exp v0.0.0-20240529005216-23cca8864a10
+	golang.org/x/oauth2 v0.20.0
 	golang.org/x/text v0.15.0
-	google.golang.org/api v0.177.0
-	google.golang.org/genproto v0.0.0-20240429193739-8cf5692501f6
-	google.golang.org/genproto/googleapis/api v0.0.0-20240429193739-8cf5692501f6
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240429193739-8cf5692501f6
-	google.golang.org/grpc v1.63.2
+	google.golang.org/api v0.180.0
+	google.golang.org/genproto v0.0.0-20240528184218-531527333157
+	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157
+	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	cloud.google.com/go/auth v0.3.0 // indirect
+	cloud.google.com/go/auth v0.4.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -153,14 +153,11 @@ require (
 	github.com/jcmturner/goidentity/v6 v6.0.1 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/onsi/gomega v1.27.10 // indirect
@@ -192,10 +189,10 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.112.2 // indirect
+	cloud.google.com/go v0.114.0 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	cloud.google.com/go/iam v1.1.7 // indirect
-	cloud.google.com/go/longrunning v0.5.6 // indirect
+	cloud.google.com/go/iam v1.1.8 // indirect
+	cloud.google.com/go/longrunning v0.5.7 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 // indirect
@@ -203,12 +200,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.7 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.7 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.32.4
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.32.6
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.20.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.24.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.10
@@ -218,7 +215,7 @@ require (
 	github.com/bytebase/tsql-parser v0.0.0-20240517092106-72be97694442
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa // indirect
+	github.com/cncf/xds/go v0.0.0-20240318125728-8a4994d93e50 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -242,7 +239,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.3 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
