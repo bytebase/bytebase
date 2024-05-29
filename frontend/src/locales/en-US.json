@@ -2383,12 +2383,13 @@
     "default": {
       "no-default": "No default",
       "empty-string": "Empty string",
-      "expression": "Literal / expression",
+      "expression": "Expression",
       "zero": "0",
       "true": "True",
       "false": "False",
       "null": "NULL",
-      "string": "String"
+      "string": "String",
+      "value": "Value"
     },
     "nothing-changed-for-database": "Nothing changed for database {database}",
     "message": {

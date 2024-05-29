@@ -2383,12 +2383,13 @@
     "default": {
       "no-default": "Sin valor predeterminado",
       "empty-string": "Cadena vacía",
-      "expression": "Literal / expresión",
+      "expression": "Expresión",
       "zero": "0",
       "true": "True",
       "false": "False",
       "null": "NULL",
-      "string": "Cadena"
+      "string": "Cadena",
+      "value": "Valor"
     },
     "nothing-changed-for-database": "Nada cambió para la base de datos {database}",
     "message": {

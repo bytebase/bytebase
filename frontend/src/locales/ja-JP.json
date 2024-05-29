@@ -2383,12 +2383,13 @@
     "default": {
       "no-default": "デフォルト値なし",
       "empty-string": "空の文字列",
-      "expression": "リテラル / 式",
+      "expression": "式",
       "zero": "0",
       "true": "真実",
       "false": "間違い",
       "null": "NULL",
-      "string": "文字列"
+      "string": "文字列",
+      "value": "値"
     },
     "nothing-changed-for-database": "データベース {database} 変更なし",
     "message": {
