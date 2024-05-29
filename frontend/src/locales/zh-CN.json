@@ -2383,10 +2383,12 @@
     "default": {
       "no-default": "无默认值",
       "empty-string": "空字符串",
-      "expression": "表达式",
+      "expression": "值 / 表达式",
       "zero": "0",
       "true": "True",
-      "false": "False"
+      "false": "False",
+      "null": "NULL",
+      "string": "字符串"
     },
     "nothing-changed-for-database": "数据库 {database} 无任何改动",
     "message": {
