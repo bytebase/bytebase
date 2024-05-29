@@ -442,7 +442,7 @@ message GenerateRestoreSQLRequest {
   string backup_data_source = 3;
 
   // The backup table name.
-  string bakcup_table = 4;
+  string backup_table = 4;
 }
 
 message GenerateRestoreSQLResponse {
