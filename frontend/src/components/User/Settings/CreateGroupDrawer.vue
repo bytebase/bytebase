@@ -202,7 +202,14 @@ const state = reactive<LocalState>({
     email: extractGroupEmail(props.group?.name ?? ""),
     title: props.group?.title ?? "",
     description: props.group?.description ?? "",
-    members: cloneDeep(props.group?.members ?? []),
+    members: cloneDeep(
+      props.group?.members ?? [
+        UserGroupMember.fromPartial({
+          role: UserGroupMember_Role.OWNER,
+          member: `${userNamePrefix}${currentUserV1.value.email}`,
+        }),
+      ]
+    ),
   },
 });
 
