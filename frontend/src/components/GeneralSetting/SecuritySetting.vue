@@ -113,6 +113,7 @@
         </div>
       </div>
       <SignInFrequencySetting :allow-edit="allowEdit" />
+      <MaximumRoleExpirationSetting :allow-edit="allowEdit" />
     </div>
   </div>
 
