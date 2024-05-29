@@ -125,7 +125,7 @@ const options = computed((): DefaultValueSelectOption[] => {
     {
       key: DEFAULT_STRING_OPTION.key,
       value: DEFAULT_STRING_OPTION.key,
-      label: t("schema-editor.default.string"),
+      label: t("schema-editor.default.value"),
       defaults: DEFAULT_STRING_OPTION,
     },
     {
