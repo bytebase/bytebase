@@ -22,6 +22,7 @@ var (
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	affectedRows            = make(map[storepb.Engine]GetAffectedRowsFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
+	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
@@ -40,6 +41,8 @@ type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQu
 
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
 type TransformDMLToSelectFunc func(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
+
+type GenerateRestoreSQLFunc func(statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -230,4 +233,21 @@ func TransformDMLToSelect(engine storepb.Engine, statement string, sourceDatabas
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement, sourceDatabase, targetDatabase, tablePrefix)
+}
+
+func RegisterGenerateRestoreSQL(engine storepb.Engine, f GenerateRestoreSQLFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := generateRestoreSQL[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	generateRestoreSQL[engine] = f
+}
+
+func GenerateRestoreSQL(engine storepb.Engine, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
+	f, ok := generateRestoreSQL[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(statement, backupDatabase, backupTable, originalDatabase, originalTable)
 }

@@ -502,7 +502,7 @@ export interface GenerateRestoreSQLRequest {
    */
   backupDataSource: string;
   /** The backup table name. */
-  bakcupTable: string;
+  backupTable: string;
 }
 
 export interface GenerateRestoreSQLResponse {
@@ -3045,7 +3045,7 @@ export const QueryHistory = {
 };
 
 function createBaseGenerateRestoreSQLRequest(): GenerateRestoreSQLRequest {
-  return { name: "", statement: "", backupDataSource: "", bakcupTable: "" };
+  return { name: "", statement: "", backupDataSource: "", backupTable: "" };
 }
 
 export const GenerateRestoreSQLRequest = {
@@ -3059,8 +3059,8 @@ export const GenerateRestoreSQLRequest = {
     if (message.backupDataSource !== "") {
       writer.uint32(26).string(message.backupDataSource);
     }
-    if (message.bakcupTable !== "") {
-      writer.uint32(34).string(message.bakcupTable);
+    if (message.backupTable !== "") {
+      writer.uint32(34).string(message.backupTable);
     }
     return writer;
   },
@@ -3098,7 +3098,7 @@ export const GenerateRestoreSQLRequest = {
             break;
           }
 
-          message.bakcupTable = reader.string();
+          message.backupTable = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3114,7 +3114,7 @@ export const GenerateRestoreSQLRequest = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       backupDataSource: isSet(object.backupDataSource) ? globalThis.String(object.backupDataSource) : "",
-      bakcupTable: isSet(object.bakcupTable) ? globalThis.String(object.bakcupTable) : "",
+      backupTable: isSet(object.backupTable) ? globalThis.String(object.backupTable) : "",
     };
   },
 
@@ -3129,8 +3129,8 @@ export const GenerateRestoreSQLRequest = {
     if (message.backupDataSource !== "") {
       obj.backupDataSource = message.backupDataSource;
     }
-    if (message.bakcupTable !== "") {
-      obj.bakcupTable = message.bakcupTable;
+    if (message.backupTable !== "") {
+      obj.backupTable = message.backupTable;
     }
     return obj;
   },
@@ -3143,7 +3143,7 @@ export const GenerateRestoreSQLRequest = {
     message.name = object.name ?? "";
     message.statement = object.statement ?? "";
     message.backupDataSource = object.backupDataSource ?? "";
-    message.bakcupTable = object.bakcupTable ?? "";
+    message.backupTable = object.backupTable ?? "";
     return message;
   },
 };

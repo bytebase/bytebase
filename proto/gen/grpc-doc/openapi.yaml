@@ -10036,7 +10036,7 @@ components:
                         The data source to restore from.
                          Format: instances/{instance}/databases/{databaseName}, for general engines.
                          Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
-                bakcupTable:
+                backupTable:
                     type: string
                     description: The backup table name.
         GenerateRestoreSQLResponse:
