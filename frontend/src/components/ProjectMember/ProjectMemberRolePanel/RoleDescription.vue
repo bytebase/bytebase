@@ -13,7 +13,9 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { issueServiceClient } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { extractProjectResourceName, issueSlug } from "@/utils";
@@ -29,6 +31,7 @@ const props = defineProps({
   },
 });
 
+const router = useRouter();
 const issueUID = ref(String(UNKNOWN_ID));
 
 const descriptionType = computed<DescriptionType>(() => {
@@ -51,11 +54,14 @@ const gotoIssuePage = async () => {
     return;
   }
 
-  const projectId = extractProjectResourceName(issue.name);
-  window.open(
-    `/projects/${projectId}/issues/${issueSlug(issue.title, issue.uid)}`,
-    "_blank"
-  );
+  const route = router.resolve({
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(issue.name),
+      issueSlug: issueSlug(issue.title, issue.uid),
+    },
+  });
+  window.open(route.href, "_blank");
 };
 
 onMounted(() => {
