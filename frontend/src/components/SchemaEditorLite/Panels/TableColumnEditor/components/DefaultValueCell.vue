@@ -1,44 +1,106 @@
 <template>
-  <DropdownInput
-    :value="value"
+  <NDropdown
+    trigger="click"
+    placement="bottom-start"
+    :value="dropdownValue"
     :options="options"
-    :placeholder="placeholder"
     :consistent-menu-width="false"
-    :style="style"
-    suffix-style="right: 3px"
+    :disabled="disabled"
     class="bb-schema-editor--column-default-value-select"
+    style="max-height: 20rem; overflow-y: auto; overflow-x: hidden"
     @focus="focused = true"
     @blur="focused = false"
-    @update:value="handleUpdateValue"
-  />
+    @select="handleSelect"
+  >
+    <NInput
+      ref="inputRef"
+      :value="inputValue"
+      :placeholder="placeholder"
+      :disabled="inputDisabled"
+      :style="inputStyle"
+      @update:value="handleInput"
+    >
+      <template #suffix>
+        <!-- use the same icon and style with NSelect -->
+        <NElement
+          tag="button"
+          class="absolute top-1/2 right-[3px] -translate-y-1/2"
+          :class="[
+            disabled
+              ? 'text-[var(--placeholder-color-disabled)] cursor-not-allowed'
+              : 'text-[var(--placeholder-color)] hover:text-[var(--primary-color-hover)] cursor-pointer',
+          ]"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4"
+          >
+            <path
+              d="M3.14645 5.64645C3.34171 5.45118 3.65829 5.45118 3.85355 5.64645L8 9.79289L12.1464 5.64645C12.3417 5.45118 12.6583 5.45118 12.8536 5.64645C13.0488 5.84171 13.0488 6.15829 12.8536 6.35355L8.35355 10.8536C8.15829 11.0488 7.84171 11.0488 7.64645 10.8536L3.14645 6.35355C2.95118 6.15829 2.95118 5.84171 3.14645 5.64645Z"
+              fill="currentColor"
+            ></path>
+          </svg>
+        </NElement>
+      </template>
+    </NInput>
+  </NDropdown>
 </template>
 
 <script lang="ts" setup>
-import type { SelectOption } from "naive-ui";
+import {
+  type InputInst,
+  type SelectOption,
+  NDropdown,
+  NElement,
+  NInput,
+} from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { DefaultValueOption } from "@/components/SchemaEditorLite/utils";
 import {
+  DEFAULT_EXPRESSION_OPTION,
+  DEFAULT_NULL_OPTION,
+  DEFAULT_STRING_OPTION,
+  NO_DEFAULT_OPTION,
   getColumnDefaultDisplayString,
-  getColumnDefaultValueOptions,
   getColumnDefaultValuePlaceholder,
-  getDefaultValueByKey,
 } from "@/components/SchemaEditorLite/utils";
-import { DropdownInput } from "@/components/v2";
 import type { Engine } from "@/types/proto/v1/common";
 import type { ColumnMetadata } from "@/types/proto/v1/database_service";
+
+type DefaultValueSelectOption = SelectOption & {
+  value: string;
+  defaults: DefaultValueOption;
+};
 
 const props = defineProps<{
   column: ColumnMetadata;
   engine: Engine;
+  disabled?: boolean;
 }>();
 const emit = defineEmits<{
   (event: "input", value: string): void;
   (event: "select", option: DefaultValueOption): void;
 }>();
-const focused = ref(false);
 
-const value = computed(() => {
+const { t } = useI18n();
+const focused = ref(false);
+const inputRef = ref<InputInst>();
+
+const dropdownValue = computed(() => {
+  const { hasDefault, defaultNull, defaultString, defaultExpression } =
+    props.column;
+  if (!hasDefault) return "no-default";
+  if (defaultNull) return "null";
+  if (typeof defaultString === "string") return "string";
+  if (typeof defaultExpression === "string") return "expression";
+  return null;
+});
+
+const inputValue = computed(() => {
   return getColumnDefaultDisplayString(props.column) ?? null;
 });
 
@@ -46,28 +108,66 @@ const placeholder = computed(() => {
   return getColumnDefaultValuePlaceholder(props.column);
 });
 
-const options = computed(() => {
-  return getColumnDefaultValueOptions(
-    props.engine,
-    props.column.type
-  ).map<SelectOption>((opt) => ({
-    value: opt.key,
-    label: opt.label as string,
-    defaultValue: opt.value,
-  }));
+const options = computed((): DefaultValueSelectOption[] => {
+  return [
+    {
+      key: NO_DEFAULT_OPTION.key,
+      value: NO_DEFAULT_OPTION.key,
+      label: t("schema-editor.default.no-default"),
+      defaults: NO_DEFAULT_OPTION,
+    },
+    {
+      key: DEFAULT_NULL_OPTION.key,
+      value: DEFAULT_NULL_OPTION.key,
+      label: t("schema-editor.default.null"),
+      defaults: DEFAULT_NULL_OPTION,
+    },
+    {
+      key: DEFAULT_STRING_OPTION.key,
+      value: DEFAULT_STRING_OPTION.key,
+      label: t("schema-editor.default.value"),
+      defaults: DEFAULT_STRING_OPTION,
+    },
+    {
+      key: DEFAULT_EXPRESSION_OPTION.key,
+      value: DEFAULT_EXPRESSION_OPTION.key,
+      label: t("schema-editor.default.expression"),
+      defaults: DEFAULT_EXPRESSION_OPTION,
+    },
+  ];
 });
 
-const handleUpdateValue = (key: string) => {
-  const value = getDefaultValueByKey(key);
-  if (value) {
-    emit("select", { key, value });
+const inputDisabled = computed(() => {
+  if (props.disabled) return true;
+  if (dropdownValue.value === "no-default" || dropdownValue.value === "null")
+    return true;
+  return false;
+});
+
+const handleSelect = (value: string) => {
+  const option = options.value.find((opt) => opt.value === value);
+  if (!option) {
     return;
   }
 
-  emit("input", key);
+  const { defaults } = option;
+  emit("select", defaults);
+
+  if (
+    typeof defaults.value.defaultExpression === "string" ||
+    typeof defaults.value.defaultString === "string"
+  ) {
+    requestAnimationFrame(() => {
+      inputRef.value?.focus();
+    });
+  }
 };
 
-const style = computed(() => {
+const handleInput = (value: string) => {
+  emit("input", value);
+};
+
+const inputStyle = computed(() => {
   const style: CSSProperties = {
     "--n-padding-left": "6px",
     "--n-padding-right": "16px",
