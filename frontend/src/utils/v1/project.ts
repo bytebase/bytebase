@@ -6,10 +6,12 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_ID,
   PresetRoleType,
+  groupBindingPrefix,
+  getUserEmailInBinding,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import type { IamPolicy } from "@/types/proto/v1/iam_policy";
+import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import type { Project } from "@/types/proto/v1/project_service";
 
 export const extractProjectResourceName = (name: string) => {
@@ -27,11 +29,11 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
         if (member === ALL_USERS_USER_EMAIL) {
           return true;
         }
-        if (member === `user:${user.email}`) {
+        if (member === getUserEmailInBinding(user.email)) {
           return true;
         }
 
-        if (member.startsWith("group:")) {
+        if (member.startsWith(groupBindingPrefix)) {
           const group = groupStore.getGroupByIdentifier(member);
           if (!group) {
             continue;
@@ -70,24 +72,37 @@ export const isViewerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   );
 };
 
+export const getUserEmailListInBinding = (binding: Binding): string[] => {
+  const groupStore = useUserGroupStore();
+  const emailList = [];
+
+  for (const member of binding.members) {
+    if (member.startsWith(groupBindingPrefix)) {
+      const group = groupStore.getGroupByIdentifier(member);
+      if (!group) {
+        continue;
+      }
+
+      emailList.push(...group.members.map((m) => extractUserEmail(m.member)));
+    } else {
+      emailList.push(extractUserEmail(member));
+    }
+  }
+  return emailList;
+};
+
 export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
   const userStore = useUserStore();
-  const groupStore = useUserGroupStore();
 
   const emailList = [];
+  const usersByRole: { role: string; emailList: Set<string> }[] = [];
   for (const binding of iamPolicy.bindings) {
-    for (const member of binding.members) {
-      if (member.startsWith("group:")) {
-        const group = groupStore.getGroupByIdentifier(member);
-        if (!group) {
-          continue;
-        }
-
-        emailList.push(...group.members.map((m) => extractUserEmail(m.member)));
-      } else {
-        emailList.push(extractUserEmail(member));
-      }
-    }
+    const emails = getUserEmailListInBinding(binding);
+    usersByRole.push({
+      role: binding.role,
+      emailList: new Set(emails),
+    });
+    emailList.push(...emails);
   }
 
   const distinctEmailList = uniq(emailList);
@@ -101,12 +116,7 @@ export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
       });
     return user;
   });
-  const usersByRole = iamPolicy.bindings.map((binding) => {
-    return {
-      role: binding.role,
-      emailList: new Set(binding.members.map(extractUserEmail)),
-    };
-  });
+
   const composedUserList = userList.map((user) => {
     const roleList = usersByRole
       .filter((binding) => binding.emailList.has(user.email))
