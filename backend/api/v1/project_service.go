@@ -2074,8 +2074,10 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {
 			return err
 		}
-		if err := validateIAMPolicyExpression(binding.Condition.Expression, maximumRoleExpiration); err != nil {
-			return err
+		if binding.Condition.Expression != "" {
+			if err := validateIAMPolicyExpression(binding.Condition.Expression, maximumRoleExpiration); err != nil {
+				return err
+			}
 		}
 	}
 	// Must contain one owner binding.
@@ -2161,12 +2163,14 @@ func validateIAMPolicyExpression(expr string, maximumRoleExpiration *durationpb.
 				if err != nil {
 					return errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
-				if t.After(time.Now().Add(maximumRoleExpiration.AsDuration())) {
-					return errors.Errorf("time %v exceeds maximum role expiration %v", t, maximumRoleExpiration.AsDuration())
+				maxExpirationTime := time.Now().Add(maximumRoleExpiration.AsDuration())
+				if t.After(maxExpirationTime) {
+					return errors.Errorf("time %s exceeds maximum role expiration %s", t.Format(time.DateTime), maxExpirationTime.Format(time.DateTime))
 				}
 				return nil
 			default:
-				return errors.Errorf("unexpected function %v", functionName)
+				// Ignore other functions.
+				return nil
 			}
 		default:
 			return errors.Errorf("unexpected expr kind %v", expr.Kind())
