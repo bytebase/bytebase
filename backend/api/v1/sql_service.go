@@ -1427,6 +1427,29 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, request.Statement)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to split SQL: %v", err)
+	}
+
+	if len(list) <= offset {
+		return nil, status.Errorf(codes.InvalidArgument, "offset %d is out of range", offset)
+	}
+
+	_, backupDatabase, err := common.GetInstanceDatabaseID(request.BackupDataSource)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	result, err := base.GenerateRestoreSQL(storepb.Engine_MYSQL, list[offset].Text, backupDatabase, request.BackupTable, databaseName, originTable)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate restore SQL: %v", err)
+	}
+
+	return &v1pb.GenerateRestoreSQLResponse{
+		Statement: result,
+	}, nil
 }
 
 func getOffsetAndOriginTable(backupTable string) (int, string, error) {
