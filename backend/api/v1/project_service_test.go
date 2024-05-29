@@ -172,8 +172,10 @@ func TestValidateBindings(t *testing.T) {
 	}
 
 	a := require.New(t)
+	// Mock an empty project service to test the validateBindings function.
+	projectService := NewProjectService(nil, nil, nil, nil)
 	for _, tt := range tests {
-		err := validateBindings(tt.bindings, tt.roles)
+		err := projectService.validateBindings(tt.bindings, tt.roles)
 		if tt.wantErr {
 			a.Error(err)
 		} else {

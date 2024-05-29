@@ -2030,7 +2030,7 @@ func (s *ProjectService) validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb
 	return s.validateBindings(policy.Bindings, roles)
 }
 
-func (s *ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
+func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
 	}

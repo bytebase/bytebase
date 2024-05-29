@@ -196,6 +196,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
 		}
 		if payload.MaximumRoleExpiration != nil {
+			// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
 			if payload.MaximumRoleExpiration.Seconds <= 0 {
 				payload.MaximumRoleExpiration = nil
 			}
