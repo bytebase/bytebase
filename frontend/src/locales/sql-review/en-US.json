@@ -580,6 +580,10 @@
         }
       }
     },
+    "index-not-redundant": {
+      "title": "Disallow redundant indexes",
+      "description": "Redundant index may result in performance loss and occupy additional space. For example, the index on columns (c1, c2) will be treated as redundant indexes if there is already a index on column (c1). Suggestion error level: Warning"
+    },
     "system-charset-allowlist": {
       "title": "Allowable list of Charset",
       "description": "The character set determines which characters can be stored in the table. Using the wrong character set may result in certain characters in the application being unable to be stored and displayed correctly, such as CJK and Emoji. Suggested error level: Error",

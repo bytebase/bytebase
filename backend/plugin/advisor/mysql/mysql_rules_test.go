@@ -60,7 +60,7 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleStatementMaximumJoinTableCount enforces maximum of tables in the joins.
 		advisor.SchemaRuleStatementMaximumJoinTableCount,
 		// advisor.SchemaRuleStatementWhereDisallowUsingFunction disallow using function in where clause.
-		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations,
+		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
 		// advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount enforces maximum number of logical operators in the where clause.
 		advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount,
 

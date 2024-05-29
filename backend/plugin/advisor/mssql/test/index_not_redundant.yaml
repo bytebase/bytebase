@@ -1,0 +1,14 @@
+- statement: |-
+    CREATE INDEX test_index ON dbo.pokes (c1, c2);
+  want:
+    - status: WARN
+      title: index.not-redundant
+      content: "Redundant indexes with the same prefix ('idx_0' and 'test_index') in 'dbo.pokes' is not allowed"
+      code: 817
+      line: 1
+- statement: |-
+    CREATE INDEX test_index ON dbo.pokes (c100, c200);
+  want:
+    - status: SUCCESS
+      title: OK
+      content: ""

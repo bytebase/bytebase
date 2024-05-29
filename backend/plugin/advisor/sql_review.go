@@ -114,8 +114,8 @@ const (
 	SchemaRuleStatementDisallowUsingTemporary = "statement.disallow-using-temporary"
 	// SchemaRuleStatementWhereNoEqualNull check the WHERE clause no equal null.
 	SchemaRuleStatementWhereNoEqualNull = "statement.where.no-equal-null"
-	// SchemaRuleStatementWhereDisallowFunctionsAndCalculations disallow using function in WHERE clause.
-	SchemaRuleStatementWhereDisallowFunctionsAndCalculations = "statement.where.disallow-functions-and-calculations"
+	// SchemaRuleStatementWhereDisallowFunctionsAndCaculations disallow using function in WHERE clause.
+	SchemaRuleStatementWhereDisallowFunctionsAndCaculations = "statement.where.disallow-functions-and-calculations"
 	// SchemaRuleStatementQueryMinumumPlanLevel enforce the minimum plan level.
 	SchemaRuleStatementQueryMinumumPlanLevel = "statement.query.minimum-plan-level"
 	// SchemaRuleStatementWhereMaximumLogicalOperatorCount enforce the maximum logical operator count in WHERE clause.
@@ -225,6 +225,8 @@ const (
 	SchemaRuleCreateIndexConcurrently SQLReviewRuleType = "index.create-concurrently"
 	// SchemaRuleIndexTypeAllowList enforce the index type allowlist.
 	SchemaRuleIndexTypeAllowList SQLReviewRuleType = "index.type-allow-list"
+	// SchemaRuleIndexNotRedundant prohibits createing redundant indices.
+	SchemaRuleIndexNotRedundant SQLReviewRuleType = "index.not-redundant"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
@@ -1470,6 +1472,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexTotalNumberLimit, nil
 		}
+	case SchemaRuleIndexNotRedundant:
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLIndexNotRedundant, nil
+		}
 	case SchemaRuleStatementDisallowRemoveTblCascade:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLStatementDisallowRemoveTblCascade, nil
@@ -1637,9 +1643,12 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementWhereNoEqualNull, nil
 		}
-	case SchemaRuleStatementWhereDisallowFunctionsAndCalculations:
+	case SchemaRuleStatementWhereDisallowFunctionsAndCaculations:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementWhereDisallowUsingFunction, nil
+		}
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLStatementWhereDisallowFunctionsAndCalculations, nil
 		}
 		if engine == storepb.Engine_MSSQL {
 			return MSSQLStatementWhereDisallowFunctionsAndCalculations, nil
