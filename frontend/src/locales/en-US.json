@@ -1410,6 +1410,7 @@
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
     },
+    "database-region": "Database Region",
     "external-secret-gcp": {
       "secret-name": "Secret full name",
       "secret-name-tips": "The secret name should be like \"projects/project-id/secrets/secret-id\"."
@@ -1619,6 +1620,7 @@
     "view-full": "View full"
   },
   "database": {
+    "sync-database": "Sync database",
     "select": "Select database",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
     "no-anomalies-detected": "No anomalies detected",
@@ -2384,7 +2386,10 @@
       "expression": "Expression",
       "zero": "0",
       "true": "True",
-      "false": "False"
+      "false": "False",
+      "null": "NULL",
+      "string": "String",
+      "value": "Value"
     },
     "nothing-changed-for-database": "Nothing changed for database {database}",
     "message": {

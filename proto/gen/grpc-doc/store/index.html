@@ -4554,6 +4554,13 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p>direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. </p></td>
                 </tr>
               
+                <tr>
+                  <td>region</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>region is the location of where the DB is, works for AWS RDS. For example, us-east-1. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7141,7 +7148,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>Member is the principal who bind to this exception policy instance.
 
-Format: users/{userUID}. </p></td>
+Format: users/{userUID} or groups/{group email} </p></td>
                 </tr>
               
                 <tr>
@@ -8929,6 +8936,13 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                   <td><a href="#bytebase.store.Announcement">Announcement</a></td>
                   <td></td>
                   <td><p>The setting of custom announcement </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_role_expiration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The max duration for role expired. </p></td>
                 </tr>
               
             </tbody>

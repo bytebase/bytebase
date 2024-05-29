@@ -1,28 +1,40 @@
 import type { DropdownOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { Engine } from "@/types/proto/v1/common";
+import type { ColumnMetadata } from "@/types/proto/v1/database_service";
 import type { ColumnDefaultValue } from "@/types/v1/schemaEditor";
 
-interface DefaultValue {
-  hasDefault: boolean;
-  defaultNull?: boolean;
-  defaultString?: string;
-  defaultExpression?: string;
-}
+type DefaultValue = Pick<
+  ColumnMetadata,
+  "hasDefault" | "defaultNull" | "defaultString" | "defaultExpression"
+>;
 
 export interface DefaultValueOption {
   key: string;
   value: DefaultValue;
 }
 
-const NO_DEFAULT_OPTION: DefaultValueOption = {
+export const NO_DEFAULT_OPTION: DefaultValueOption = {
   key: "no-default",
   value: {
     hasDefault: false,
+    defaultNull: undefined,
+    defaultString: undefined,
+    defaultExpression: undefined,
   },
 };
 
-const EMPTY_STRING_OPTION: DefaultValueOption = {
+export const DEFAULT_NULL_OPTION: DefaultValueOption = {
+  key: "null",
+  value: {
+    hasDefault: true,
+    defaultNull: true,
+    defaultString: undefined,
+    defaultExpression: undefined,
+  },
+};
+
+export const EMPTY_STRING_OPTION: DefaultValueOption = {
   key: "empty-string",
   value: {
     hasDefault: true,
@@ -30,10 +42,22 @@ const EMPTY_STRING_OPTION: DefaultValueOption = {
   },
 };
 
-const EXPRESSION_OPTION: DefaultValueOption = {
+export const DEFAULT_STRING_OPTION: DefaultValueOption = {
+  key: "string",
+  value: {
+    hasDefault: true,
+    defaultNull: undefined,
+    defaultString: "",
+    defaultExpression: undefined,
+  },
+};
+
+export const DEFAULT_EXPRESSION_OPTION: DefaultValueOption = {
   key: "expression",
   value: {
     hasDefault: true,
+    defaultNull: undefined,
+    defaultString: undefined,
     defaultExpression: "",
   },
 };
@@ -85,7 +109,11 @@ export const getColumnTypeDefaultValueOptions = (
       type.startsWith("VARCHAR") ||
       type.startsWith("CHAR")
     ) {
-      return [NO_DEFAULT_OPTION, EMPTY_STRING_OPTION, EXPRESSION_OPTION];
+      return [
+        NO_DEFAULT_OPTION,
+        EMPTY_STRING_OPTION,
+        DEFAULT_EXPRESSION_OPTION,
+      ];
     } else if (
       type === "INTEGER" ||
       type === "INT" ||
@@ -94,7 +122,7 @@ export const getColumnTypeDefaultValueOptions = (
       type === "MEDIUMINT" ||
       type === "BIGINT"
     ) {
-      return [NO_DEFAULT_OPTION, INT_ZERO_OPTION, EXPRESSION_OPTION];
+      return [NO_DEFAULT_OPTION, INT_ZERO_OPTION, DEFAULT_EXPRESSION_OPTION];
     } else if (type === "FLOAT" || type === "DOUBLE") {
       return [NO_DEFAULT_OPTION, INT_ZERO_OPTION];
     } else if (type === "BOOL" || type === "BOOLEAN") {
@@ -106,7 +134,11 @@ export const getColumnTypeDefaultValueOptions = (
       type.startsWith("VARCHAR") ||
       type.startsWith("CHAR")
     ) {
-      return [NO_DEFAULT_OPTION, EMPTY_STRING_OPTION, EXPRESSION_OPTION];
+      return [
+        NO_DEFAULT_OPTION,
+        EMPTY_STRING_OPTION,
+        DEFAULT_EXPRESSION_OPTION,
+      ];
     } else if (
       type === "SMALLINT" ||
       type === "INTEGER" ||
@@ -118,21 +150,21 @@ export const getColumnTypeDefaultValueOptions = (
       type === "INT4" ||
       type === "INT8"
     ) {
-      return [NO_DEFAULT_OPTION, INT_ZERO_OPTION, EXPRESSION_OPTION];
+      return [NO_DEFAULT_OPTION, INT_ZERO_OPTION, DEFAULT_EXPRESSION_OPTION];
     } else if (type === "BOOLEAN") {
       return [NO_DEFAULT_OPTION, BOOLEAN_TRUE_OPTION, BOOLEAN_FALSE_OPTION];
     }
   }
 
   // Default options.
-  return [NO_DEFAULT_OPTION, EMPTY_STRING_OPTION, EXPRESSION_OPTION];
+  return [NO_DEFAULT_OPTION, EMPTY_STRING_OPTION, DEFAULT_EXPRESSION_OPTION];
 };
 
 export const getDefaultValueByKey = (key: string) => {
   const options = [
     NO_DEFAULT_OPTION,
     EMPTY_STRING_OPTION,
-    EXPRESSION_OPTION,
+    DEFAULT_EXPRESSION_OPTION,
     INT_ZERO_OPTION,
     BOOLEAN_TRUE_OPTION,
     BOOLEAN_FALSE_OPTION,

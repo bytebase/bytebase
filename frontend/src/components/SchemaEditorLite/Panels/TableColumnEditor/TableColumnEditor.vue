@@ -81,7 +81,6 @@ import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueEx
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
 import type { DefaultValueOption } from "../../utils";
-import { getDefaultValueByKey, isTextOfColumnType } from "../../utils";
 import { markUUID } from "../common";
 import {
   DataTypeCell,
@@ -90,9 +89,9 @@ import {
   ReorderCell,
   SelectionCell,
   SemanticTypeCell,
+  DefaultValueCell,
+  LabelsCell,
 } from "./components";
-import DefaultValueCell from "./components/DefaultValueCell.vue";
-import LabelsCell from "./components/LabelsCell.vue";
 
 interface LocalState {
   pendingUpdateColumn?: ColumnMetadata;
@@ -419,11 +418,9 @@ const columns = computed(() => {
         return h(DefaultValueCell, {
           column,
           disabled: props.readonly || props.disableAlterColumn(column),
-          schemaTemplateColumnTypes: schemaTemplateColumnTypes.value,
           engine: props.engine,
-          onInput: (value: string) => handleColumnDefaultInput(column, value),
-          onSelect: (option: DefaultValueOption) =>
-            handleColumnDefaultSelect(column, option.key),
+          onInput: (value) => handleColumnDefaultInput(column, value),
+          onSelect: (option) => handleColumnDefaultSelect(column, option),
         });
       },
     },
@@ -606,43 +603,58 @@ const schemaTemplateColumnTypes = computed(() => {
 });
 
 const handleColumnDefaultInput = (column: ColumnMetadata, value: string) => {
-  column.hasDefault = true;
-  column.defaultNull = undefined;
-  // If column is text type or has default string, we will treat user's input as string.
-  if (
-    isTextOfColumnType(props.engine, column.type) ||
-    column.defaultString !== undefined
-  ) {
+  if (!column.hasDefault) return;
+  if (column.defaultNull) return;
+
+  if (typeof column.defaultString === "string") {
     column.defaultString = value;
-    column.defaultExpression = undefined;
-    markColumnStatus(column, "updated");
-    return;
+  } else if (typeof column.defaultExpression === "string") {
+    column.defaultExpression = value;
   }
-  // Otherwise we will treat user's input as expression.
-  column.defaultExpression = value;
   markColumnStatus(column, "updated");
 };
 
-const handleColumnDefaultSelect = (column: ColumnMetadata, key: string) => {
-  if (key === "expression") {
-    editColumnDefaultValueExpressionContext.value = column;
+const handleColumnDefaultSelect = (
+  column: ColumnMetadata,
+  option: DefaultValueOption
+) => {
+  const defaults = option.value;
+  if (!defaults.hasDefault) {
+    Object.assign(column, defaults);
     markColumnStatus(column, "updated");
     return;
   }
-
-  const defaultValue = getDefaultValueByKey(key);
-  if (!defaultValue) {
+  if (defaults.defaultNull) {
+    Object.assign(column, defaults);
+    markColumnStatus(column, "updated");
     return;
   }
-
-  column.hasDefault = defaultValue.hasDefault;
-  column.defaultNull = defaultValue.defaultNull;
-  column.defaultString = defaultValue.defaultString;
-  column.defaultExpression = defaultValue.defaultExpression;
-  if (column.hasDefault && column.defaultNull) {
-    column.nullable = true;
+  if (typeof defaults.defaultExpression === "string") {
+    Object.assign(column, {
+      ...defaults,
+      // copy current editing expr / string to column.defaultExpression
+      defaultExpression:
+        column.defaultExpression ??
+        column.defaultString ??
+        defaults.defaultExpression ??
+        "",
+    });
+    markColumnStatus(column, "updated");
+    return;
   }
-  markColumnStatus(column, "updated");
+  if (typeof defaults.defaultString === "string") {
+    Object.assign(column, {
+      ...defaults,
+      // copy current editing string to column.defaultString
+      defaultString:
+        column.defaultString ??
+        column.defaultExpression ??
+        defaults.defaultString ??
+        "",
+    });
+    markColumnStatus(column, "updated");
+    return;
+  }
 };
 
 const handleSelectColumnDefaultValueExpression = (expression: string) => {

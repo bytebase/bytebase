@@ -1410,6 +1410,7 @@
       "external-secret-aws": "AWS シークレットマネージャー",
       "external-secret-gcp": "GCP シークレット マネージャー"
     },
+    "database-region": "データベース領域",
     "external-secret-gcp": {
       "secret-name": "キーのフルパス",
       "secret-name-tips": "キーへのフルパスは、「projects/project-id/secrets/secret-id」のようなものである必要があります。"
@@ -1619,6 +1620,7 @@
     "view-full": "すべて見る"
   },
   "database": {
+    "sync-database": "データベースを同期",
     "select": "データベースの選択",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "表は約10分ごとに更新されるため、表示される情報は最新ではない場合があります。",
     "no-anomalies-detected": "例外は検出されませんでした",
@@ -2381,10 +2383,13 @@
     "default": {
       "no-default": "デフォルト値なし",
       "empty-string": "空の文字列",
-      "expression": "表現",
+      "expression": "式",
       "zero": "0",
       "true": "真実",
-      "false": "間違い"
+      "false": "間違い",
+      "null": "NULL",
+      "string": "文字列",
+      "value": "値"
     },
     "nothing-changed-for-database": "データベース {database} 変更なし",
     "message": {

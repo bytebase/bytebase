@@ -95,6 +95,13 @@ service SQLService {
       body: "*"
     };
   }
+
+  rpc GenerateRestoreSQL(GenerateRestoreSQLRequest) returns (GenerateRestoreSQLResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:generateRestoreSQL"
+      body: "*"
+    };
+  }
 }
 
 message ExecuteRequest {
@@ -419,4 +426,26 @@ message QueryHistory {
   }
 
   Type type = 8;
+}
+
+message GenerateRestoreSQLRequest {
+  // The name is the instance name to execute the query against.
+  // Format: instances/{instance}/databases/{databaseName}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The original SQL statement.
+  string statement = 2;
+
+  // The data source to restore from.
+  // Format: instances/{instance}/databases/{databaseName}, for general engines.
+  // Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
+  string backup_data_source = 3;
+
+  // The backup table name.
+  string bakcup_table = 4;
+}
+
+message GenerateRestoreSQLResponse {
+  // The restore SQL statement.
+  string statement = 1;
 }

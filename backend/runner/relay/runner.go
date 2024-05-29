@@ -351,7 +351,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := utils.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}

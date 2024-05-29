@@ -14,7 +14,6 @@ import (
 var (
 	mux                     sync.Mutex
 	queryValidators         = make(map[storepb.Engine]ValidateSQLForEditorFunc)
-	fieldMaskers            = make(map[storepb.Engine]GetMaskedFieldsFunc)
 	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
 	resourcesGetters        = make(map[storepb.Engine]ExtractResourceListFunc)
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
@@ -79,27 +78,6 @@ func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentS
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(currentDatabase, currentSchema, sql)
-}
-
-func RegisterGetMaskedFieldsFunc(engine storepb.Engine, f GetMaskedFieldsFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := fieldMaskers[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	fieldMaskers[engine] = f
-}
-
-func ExtractSensitiveField(engine storepb.Engine, statement string, currentDatabase string, schemaInfo *SensitiveSchemaInfo) ([]SensitiveField, error) {
-	if schemaInfo == nil {
-		return nil, nil
-	}
-
-	f, ok := fieldMaskers[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(statement, currentDatabase, schemaInfo)
 }
 
 func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {

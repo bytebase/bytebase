@@ -106,6 +106,9 @@ message DataSourceOptions {
 
   // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
   bool direct_connection = 16;
+
+  // region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
+  string region = 17;
 }
 
 message SASLConfig {

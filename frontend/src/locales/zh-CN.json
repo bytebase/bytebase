@@ -1410,6 +1410,7 @@
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
     },
+    "database-region": "数据库区域",
     "external-secret-gcp": {
       "secret-name": "密钥完整路径",
       "secret-name-tips": "密钥完整路径应类似于 “projects/project-id/secrets/secret-id”。"
@@ -1619,6 +1620,7 @@
     "view-full": "查看全部"
   },
   "database": {
+    "sync-database": "同步数据库",
     "select": "选择数据库",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "该表每隔约10分钟刷新一次，所以展示的可能不是最新信息。",
     "no-anomalies-detected": "没有检测到异常",
@@ -2384,7 +2386,10 @@
       "expression": "表达式",
       "zero": "0",
       "true": "True",
-      "false": "False"
+      "false": "False",
+      "null": "NULL",
+      "string": "字符串",
+      "value": "值"
     },
     "nothing-changed-for-database": "数据库 {database} 无任何改动",
     "message": {

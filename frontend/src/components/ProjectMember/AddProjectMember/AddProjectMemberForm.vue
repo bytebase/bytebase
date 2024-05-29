@@ -105,12 +105,8 @@ import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import { ProjectRoleSelect, UserGroupSelect } from "@/components/v2/Select";
-import {
-  useUserStore,
-  useUserGroupStore,
-  extractUserEmail,
-  extractGroupEmail,
-} from "@/store";
+import { useUserStore, useUserGroupStore, extractGroupEmail } from "@/store";
+import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import {
   getUserEmailInBinding,
@@ -165,7 +161,18 @@ const state = reactive<LocalState>({
 
 watch(
   () => state.type,
-  () => (state.memberList = [])
+  (type) => {
+    if (
+      type === "MEMBER" &&
+      !state.memberList.every((m) => !m.startsWith(userGroupNamePrefix))
+    ) {
+      state.memberList = [];
+    } else if (
+      !state.memberList.every((m) => m.startsWith(userGroupNamePrefix))
+    ) {
+      state.memberList = [];
+    }
+  }
 );
 
 onMounted(() => {
@@ -183,8 +190,7 @@ onMounted(() => {
       if (member.startsWith("group:")) {
         continue;
       }
-      const email = extractUserEmail(member);
-      const user = userStore.getUserByEmail(email);
+      const user = userStore.getUserByIdentifier(member);
       if (user) {
         userUidList.push(extractUserUID(user.name));
       }
@@ -197,8 +203,7 @@ onMounted(() => {
       if (!member.startsWith("group:")) {
         continue;
       }
-      const email = member.slice(6);
-      const group = groupStore.getGroupByEmail(email);
+      const group = groupStore.getGroupByIdentifier(member);
       if (!group) {
         continue;
       }
