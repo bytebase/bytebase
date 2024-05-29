@@ -370,7 +370,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
 	}
-	if err := validateIAMPolicy(request.Policy, roles); err != nil {
+	if err := s.validateIAMPolicy(request.Policy, roles); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -2023,17 +2023,18 @@ func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (store.Oper
 	return store.OperatorType(""), errors.Errorf("invalid operator type: %v", operator)
 }
 
-func validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
+func (s *ProjectService) validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 	if policy == nil {
 		return errors.Errorf("IAM Policy is required")
 	}
-	return validateBindings(policy.Bindings, roles)
+	return s.validateBindings(policy.Bindings, roles)
 }
 
-func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
+func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
 	}
+
 	projectRoleMap := make(map[string]bool)
 	existingRoles := make(map[string]bool)
 	for _, role := range roles {
@@ -2060,6 +2061,7 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 		}
 		projectRoleMap[binding.Role] = true
 
+		// TODO(steven): validate the request time with maximum role expiration.
 		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {
 			return err
 		}

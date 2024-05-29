@@ -87,7 +87,6 @@
       <span>{{ $t("common.expiration") }}</span>
       <ExpirationSelector
         class="grid-cols-3 sm:grid-cols-4"
-        :options="expireDaysOptions"
         :value="state.expireDays"
         @update="state.expireDays = $event"
       />
@@ -100,12 +99,16 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { NInputNumber, NInput, NRadioGroup, NRadio } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import { ProjectRoleSelect, UserGroupSelect } from "@/components/v2/Select";
-import { useUserStore, useUserGroupStore, extractGroupEmail } from "@/store";
+import {
+  useUserStore,
+  useUserGroupStore,
+  extractGroupEmail,
+  useSettingV1Store,
+} from "@/store";
 import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import {
@@ -145,19 +148,66 @@ interface LocalState {
   databaseId?: string;
 }
 
-const { t } = useI18n();
+const getInitialState = (): LocalState => {
+  const defaultState: LocalState = {
+    type: "MEMBER",
+    memberList: [],
+    reason: "",
+    // Default to never expire.
+    expireDays: 0,
+    maxRowCount: 1000,
+  };
+  const isMember = props.binding.members.some((member) =>
+    member.startsWith("user:")
+  );
+  if (isMember || props.binding.members.length === 0) {
+    defaultState.type = "MEMBER";
+    const userUidList = [];
+    for (const member of props.binding.members) {
+      if (member.startsWith("group:")) {
+        continue;
+      }
+      const user = userStore.getUserByIdentifier(member);
+      if (user) {
+        userUidList.push(extractUserUID(user.name));
+      }
+    }
+    defaultState.memberList = userUidList;
+  } else {
+    defaultState.type = "GROUP";
+    const groupNameList = [];
+    for (const member of props.binding.members) {
+      if (!member.startsWith("group:")) {
+        continue;
+      }
+      const group = groupStore.getGroupByIdentifier(member);
+      if (!group) {
+        continue;
+      }
+      groupNameList.push(group.name);
+    }
+    defaultState.memberList = groupNameList;
+  }
+
+  if (maximumRoleExpiration.value) {
+    defaultState.expireDays = maximumRoleExpiration.value;
+  }
+  return defaultState;
+};
+
+const maximumRoleExpiration = computed(() => {
+  const seconds =
+    settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds?.toNumber();
+  if (!seconds) {
+    return undefined;
+  }
+  return Math.floor(seconds / (60 * 60 * 24));
+});
+
 const userStore = useUserStore();
 const groupStore = useUserGroupStore();
-
-const state = reactive<LocalState>({
-  type: "MEMBER",
-  memberList: [],
-  reason: "",
-  // Default is never expires.
-  expireDays: 0,
-  // Exporter options.
-  maxRowCount: 1000,
-});
+const settingV1Store = useSettingV1Store();
+const state = reactive<LocalState>(getInitialState());
 
 watch(
   () => state.type,
@@ -174,93 +224,6 @@ watch(
     }
   }
 );
-
-onMounted(() => {
-  if (!props.binding) {
-    return;
-  }
-
-  const isMember = props.binding.members.some((member) =>
-    member.startsWith("user:")
-  );
-  if (isMember || props.binding.members.length === 0) {
-    state.type = "MEMBER";
-    const userUidList = [];
-    for (const member of props.binding.members) {
-      if (member.startsWith("group:")) {
-        continue;
-      }
-      const user = userStore.getUserByIdentifier(member);
-      if (user) {
-        userUidList.push(extractUserUID(user.name));
-      }
-    }
-    state.memberList = userUidList;
-  } else {
-    state.type = "GROUP";
-    const groupNameList = [];
-    for (const member of props.binding.members) {
-      if (!member.startsWith("group:")) {
-        continue;
-      }
-      const group = groupStore.getGroupByIdentifier(member);
-      if (!group) {
-        continue;
-      }
-      groupNameList.push(group.name);
-    }
-    state.memberList = groupNameList;
-  }
-});
-
-const expireDaysOptions = computed(() => {
-  if (state.role === PresetRoleType.PROJECT_EXPORTER) {
-    return [
-      {
-        value: 1,
-        label: t("common.date.days", { days: 1 }),
-      },
-      {
-        value: 3,
-        label: t("common.date.days", { days: 3 }),
-      },
-      {
-        value: 30,
-        label: t("common.date.days", { days: 30 }),
-      },
-      {
-        value: 90,
-        label: t("common.date.days", { days: 90 }),
-      },
-      {
-        value: 0,
-        label: t("project.members.never-expires"),
-      },
-    ];
-  }
-  return [
-    {
-      value: 7,
-      label: t("common.date.days", { days: 7 }),
-    },
-    {
-      value: 30,
-      label: t("common.date.days", { days: 30 }),
-    },
-    {
-      value: 90,
-      label: t("common.date.days", { days: 90 }),
-    },
-    {
-      value: 365,
-      label: t("common.date.years", { years: 1 }),
-    },
-    {
-      value: 0,
-      label: t("project.members.never-expires"),
-    },
-  ];
-});
 
 watch(
   () => state.role,

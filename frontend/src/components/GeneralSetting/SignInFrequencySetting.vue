@@ -14,7 +14,7 @@
         <div class="mt-3 w-full flex flex-row justify-start items-center">
           <NInputNumber
             v-model:value="state.inputValue"
-            class="w-20 mr-4"
+            class="w-24 mr-4"
             :disabled="!allowChangeSetting"
             :min="1"
             :max="state.timeFormat === 'HOURS' ? 23 : undefined"
