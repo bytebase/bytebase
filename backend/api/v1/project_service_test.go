@@ -1,9 +1,12 @@
 package v1
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -175,11 +178,39 @@ func TestValidateBindings(t *testing.T) {
 	// Mock an empty project service to test the validateBindings function.
 	projectService := NewProjectService(nil, nil, nil, nil)
 	for _, tt := range tests {
-		err := projectService.validateBindings(tt.bindings, tt.roles)
+		err := projectService.validateBindings(tt.bindings, tt.roles, nil)
 		if tt.wantErr {
 			a.Error(err)
 		} else {
 			a.NoError(err)
+		}
+	}
+}
+
+func TestValidateIAMPolicyExpression(t *testing.T) {
+	timeNow := time.Now()
+	tests := []struct {
+		expr                  string
+		maximumRoleExpiration *durationpb.Duration
+		wantErr               bool
+	}{
+		{
+			expr:                  fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339)),
+			maximumRoleExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30}, // 30 days
+		},
+		{
+			expr:                  fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 60).Format(time.RFC3339)),
+			maximumRoleExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30},
+			wantErr:               true,
+		},
+	}
+
+	for _, tt := range tests {
+		err := validateIAMPolicyExpression(tt.expr, tt.maximumRoleExpiration)
+		if tt.wantErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
 		}
 	}
 }

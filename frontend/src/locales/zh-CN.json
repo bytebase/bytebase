@@ -662,7 +662,7 @@
         },
         "maximum-role-expiration": {
           "self": "角色最大过期时间",
-          "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间。",
+          "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间。(包括数据查询者和导出者)",
           "days": "天数",
           "never-expires": "永不过期"
         },
