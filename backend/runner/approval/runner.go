@@ -13,7 +13,6 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	celtypes "github.com/google/cel-go/common/types"
 
@@ -246,25 +245,17 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err != nil {
 			return errors.Wrapf(err, "failed to get rollout policy")
 		}
-		payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
-			RolloutPolicy: policy,
-			StageName:     stages[0].Name,
+		r.webhookManager.CreateEvent(ctx, webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    webhook.EventTypeIssueRolloutReady,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueRolloutReady: &webhook.EventIssueRolloutReady{
+				RolloutPolicy: policy,
+				StageName:     stages[0].Name,
+			},
 		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal activity payload")
-		}
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      *issue.PipelineUID,
-			Type:              api.ActivityNotifyPipelineRollout,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(payload),
-		}
-		if _, err := r.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
-			return err
-		}
 		return nil
 	}(); err != nil {
 		slog.Error("failed to create rollout release notification activity", log.BBError(err))
@@ -278,32 +269,16 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if approvalStep == nil {
 			return nil
 		}
-		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
-			ApprovalStep: approvalStep,
+		r.webhookManager.CreateEvent(ctx, webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    webhook.EventTypeIssueApprovalCreate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
+				ApprovalStep: approvalStep,
+			},
 		})
-		if err != nil {
-			return err
-		}
-		activityPayload, err := json.Marshal(api.ActivityIssueApprovalNotifyPayload{
-			ProtoPayload: string(protoPayload),
-		})
-		if err != nil {
-			return err
-		}
-
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueApprovalNotify,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(activityPayload),
-		}
-		if _, err := r.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
-			return err
-		}
-
 		return nil
 	}(); err != nil {
 		slog.Error("failed to create approval step pending activity after creating review", log.BBError(err))
