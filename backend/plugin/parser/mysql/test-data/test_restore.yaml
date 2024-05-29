@@ -1,0 +1,18 @@
+- input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test`;
+- input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `c1` = VALUES(`c1`);
+- input: UPDATE test SET c1 = 1 WHERE c1 = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `c1` = VALUES(`c1`);
