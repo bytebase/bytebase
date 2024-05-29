@@ -136,6 +136,7 @@ import {
   unknownUser,
   ALL_USERS_USER_EMAIL,
   PRESET_WORKSPACE_ROLES,
+  groupBindingPrefix,
 } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -197,7 +198,7 @@ const activeUserList = computed(() => {
   const projectMembers = uniq(
     projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
   )
-    .filter((user) => !user.startsWith("group:"))
+    .filter((user) => !user.startsWith(groupBindingPrefix))
     .map((user) => {
       const email = extractUserEmail(user);
       return (
@@ -221,7 +222,7 @@ const activeGroupList = computed(() => {
   return uniq(
     projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
   )
-    .filter((user) => user.startsWith("group:"))
+    .filter((user) => user.startsWith(groupBindingPrefix))
     .map((member) => {
       return groupStore.getGroupByIdentifier(member);
     })
@@ -318,7 +319,7 @@ const selectGroup = (group: UserGroup) => {
 
 const selectedUserEmails = computed(() => {
   return state.selectedMembers
-    .filter((member) => !member.startsWith("group:"))
+    .filter((member) => !member.startsWith(groupBindingPrefix))
     .map(extractUserEmail);
 });
 
