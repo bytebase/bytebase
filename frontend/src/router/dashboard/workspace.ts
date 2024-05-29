@@ -2,7 +2,6 @@ import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
 import Home from "@/views/Home.vue";
-import SettingSidebar from "@/views/SettingSidebar.vue";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
@@ -28,6 +27,8 @@ import {
   WORKSPACE_ROUTE_SSO_DETAIL,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
   WORKSPACE_ROUTE_REVIEW_CENTER,
+  WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_ROLES,
 } from "./workspaceRoutes";
 
 const workspaceRoutes: RouteRecordRaw[] = [
@@ -158,7 +159,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: WORKSPACE_ROUTE_USER_PROFILE,
     components: {
       content: () => import("@/views/ProfileDashboard.vue"),
-      leftSidebar: SettingSidebar,
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: true,
   },
@@ -399,6 +400,26 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceMailDelivery.vue"),
+      },
+      {
+        path: "members",
+        name: WORKSPACE_ROUTE_MEMBERS,
+        meta: {
+          title: () => t("settings.sidebar.members-and-groups"),
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+        },
+        component: () => import("@/views/SettingWorkspaceMember.vue"),
+        props: true,
+      },
+      {
+        path: "roles",
+        name: WORKSPACE_ROUTE_ROLES,
+        meta: {
+          title: () => t("settings.sidebar.custom-roles"),
+          requiredWorkspacePermissionList: () => ["bb.roles.list"],
+        },
+        component: () => import("@/views/SettingWorkspaceRole.vue"),
+        props: true,
       },
     ],
   },
