@@ -2,9 +2,7 @@
 package rollbackrun
 
 import (
-	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -123,94 +121,9 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		return
 	}
 
-	switch instance.Engine {
-	case storepb.Engine_MYSQL:
-		// TODO(d): support MariaDB.
+	if instance.Engine == storepb.Engine_MYSQL {
 		r.generateMySQLRollbackSQL(ctx, task, payload, instance, project)
-	case storepb.Engine_ORACLE:
-		r.generateOracleRollbackSQL(ctx, task, payload, instance, project)
 	}
-}
-
-func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage, project *store.ProjectMessage) {
-	var rollbackSQLStatus api.RollbackSQLStatus
-	var rollbackStatement, rollbackError string
-
-	statementsBuffer, err := r.generateOracleRollbackSQLImpl(ctx, payload, instance)
-	if err != nil {
-		slog.Error("Failed to generate rollback SQL statement", log.BBError(err))
-		rollbackSQLStatus = api.RollbackSQLStatusFailed
-		rollbackError = err.Error()
-	} else {
-		rollbackSQLStatus = api.RollbackSQLStatusDone
-		rollbackStatement = statementsBuffer.String()
-	}
-
-	sheet, err := sc.CreateSheet(ctx, r.store, &store.SheetMessage{
-		CreatorID:  api.SystemBotID,
-		ProjectUID: project.UID,
-		Title:      fmt.Sprintf("Sheet for rolling back task %v", task.ID),
-		Statement:  rollbackStatement,
-
-		Payload: &storepb.SheetPayload{
-			Engine: instance.Engine,
-		},
-	})
-	if err != nil {
-		slog.Error("failed to create database creation sheet", log.BBError(err))
-		return
-	}
-
-	patch := &api.TaskPatch{
-		ID:                task.ID,
-		UpdaterID:         api.SystemBotID,
-		RollbackSQLStatus: &rollbackSQLStatus,
-		RollbackSheetID:   &sheet.UID,
-		RollbackError:     &rollbackError,
-	}
-	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
-		slog.Error("Failed to patch task with the Oracle payload", slog.Int("taskID", task.ID))
-		return
-	}
-	slog.Debug("Rollback SQL generation success", slog.Int("taskID", task.ID))
-}
-
-func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) (*bytes.Buffer, error) {
-	if payload.TransactionID == "" {
-		return nil, errors.New("missing transaction ID, may be there is no data change in the transaction")
-	}
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get admin database driver")
-	}
-	defer driver.Close(ctx)
-
-	db := driver.GetDB()
-	// Get the undo SQL from the undo log.
-	var statements bytes.Buffer
-	rows, err := db.QueryContext(ctx, "SELECT undo_sql FROM flashback_transaction_query WHERE xid=HEXTORAW(:1)", payload.TransactionID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query undo SQL")
-	}
-	defer rows.Close()
-
-	var undoSQL sql.NullString
-	for rows.Next() {
-		err := rows.Scan(&undoSQL)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to scan undo SQL")
-		}
-		if !undoSQL.Valid {
-			continue
-		}
-		if _, err := statements.WriteString(undoSQL.String); err != nil {
-			return nil, errors.Wrapf(err, "failed to write undo SQL to buffer")
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to iterate undo SQL")
-	}
-	return &statements, nil
 }
 
 func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage, project *store.ProjectMessage) {
