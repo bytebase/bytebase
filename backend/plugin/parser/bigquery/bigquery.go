@@ -18,9 +18,9 @@ type ParseResult struct {
 func ParseBigQuerySQL(statement string) (*ParseResult, error) {
 	statement = strings.TrimRight(statement, " \t\n\r\f;") + "\n;"
 	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewbigqueryLexer(inputStream)
+	lexer := parser.NewBigQueryLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewbigqueryParser(stream)
+	p := parser.NewBigQueryParser(stream)
 
 	// Remove default error listener and add our own error listener.
 	lexer.RemoveErrorListeners()
