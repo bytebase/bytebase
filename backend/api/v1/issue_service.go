@@ -1471,30 +1471,13 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 			}
 
 			func() {
-				payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-					OldStatus: issue.Status,
-					NewStatus: updatedIssue.Status,
-					IssueName: updatedIssue.Title,
+				s.webhookManager.CreateEvent(ctx, webhook.Event{
+					Actor:   user,
+					Type:    webhook.EventTypeIssueStatusUpdate,
+					Comment: request.Reason,
+					Issue:   webhook.NewIssue(updatedIssue),
+					Project: webhook.NewProject(updatedIssue.Project),
 				})
-				if err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title))
-					return
-				}
-				activityCreate := &store.ActivityMessage{
-					CreatorUID:        user.ID,
-					ResourceContainer: updatedIssue.Project.GetName(),
-					ContainerUID:      updatedIssue.UID,
-					Type:              api.ActivityIssueStatusUpdate,
-					Level:             api.ActivityInfo,
-					Comment:           request.Reason,
-					Payload:           string(payload),
-				}
-				if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
-					Issue: updatedIssue,
-				}); err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title))
-					return
-				}
 			}()
 
 			func() {
@@ -1601,44 +1584,20 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to create issue comment")
 	}
 
-	// TODO: migrate to store v2.
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        principalID,
-		ResourceContainer: issue.Project.GetName(),
-		ContainerUID:      issue.UID,
-		Type:              api.ActivityIssueCommentCreate,
-		Level:             api.ActivityInfo,
-		Comment:           request.IssueComment.Comment,
-	}
+	s.webhookManager.CreateEvent(ctx, webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeIssueCommentCreate,
+		Comment: request.IssueComment.Comment,
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+	})
 
-	var payload api.ActivityIssueCommentCreatePayload
-	if activityCreate.Payload != "" {
-		if err := json.Unmarshal([]byte(activityCreate.Payload), &payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal payload: %v", err.Error())
-		}
-	}
-	payload.IssueName = issue.Title
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal payload: %v", err.Error())
-	}
-	activityCreate.Payload = string(bytes)
-
-	if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{Issue: issue}); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err.Error())
-	}
-
-	// TODO(p0ny): dual-write issue_comment and activity for now. Remove activity in the future.
 	ic, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: request.IssueComment.Comment,
 		},
-	}, principalID)
+	}, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err)
 	}

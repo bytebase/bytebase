@@ -27,9 +27,6 @@ type Event struct {
 	Issue   *Issue
 	Project *Project
 
-	IssueStatusUpdate struct {
-		Status string
-	}
 	IssueUpdate *struct {
 		Field string
 	}
