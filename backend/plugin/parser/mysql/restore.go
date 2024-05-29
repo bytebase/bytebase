@@ -6,6 +6,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -22,7 +23,7 @@ func GenerateRestoreSQL(statement string, backupDatabase string, backupTable str
 	}
 
 	if len(parseResult) != 1 {
-		return "", fmt.Errorf("expected 1 statement, but got %d", len(parseResult))
+		return "", errors.Errorf("expected 1 statement, but got %d", len(parseResult))
 	}
 
 	g := &generator{
