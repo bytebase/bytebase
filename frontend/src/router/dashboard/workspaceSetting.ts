@@ -7,8 +7,6 @@ export const SETTING_ROUTE_WORKSPACE = `${SETTING_ROUTE}.workspace`;
 export const SETTING_ROUTE_PROFILE = `${SETTING_ROUTE}.profile`;
 export const SETTING_ROUTE_PROFILE_TWO_FACTOR = `${SETTING_ROUTE_PROFILE}.two-factor`;
 export const SETTING_ROUTE_WORKSPACE_GENERAL = `${SETTING_ROUTE_WORKSPACE}.general`;
-export const SETTING_ROUTE_WORKSPACE_MEMBER = `${SETTING_ROUTE_WORKSPACE}.member`;
-export const SETTING_ROUTE_WORKSPACE_ROLE = `${SETTING_ROUTE_WORKSPACE}.role`;
 export const SETTING_ROUTE_WORKSPACE_SUBSCRIPTION = `${SETTING_ROUTE_WORKSPACE}.subscription`;
 export const SETTING_ROUTE_WORKSPACE_DEBUG_LOG = `${SETTING_ROUTE_WORKSPACE}.debug-log`;
 export const SETTING_ROUTE_WORKSPACE_ARCHIVE = `${SETTING_ROUTE_WORKSPACE}.archive`;
@@ -49,26 +47,6 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceGeneral.vue"),
-        props: true,
-      },
-      {
-        path: "member",
-        name: SETTING_ROUTE_WORKSPACE_MEMBER,
-        meta: {
-          title: () => t("settings.sidebar.members-and-groups"),
-          requiredWorkspacePermissionList: () => ["bb.policies.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceMember.vue"),
-        props: true,
-      },
-      {
-        path: "role",
-        name: SETTING_ROUTE_WORKSPACE_ROLE,
-        meta: {
-          title: () => t("settings.sidebar.custom-roles"),
-          requiredWorkspacePermissionList: () => ["bb.roles.list"],
-        },
-        component: () => import("@/views/SettingWorkspaceRole.vue"),
         props: true,
       },
       {

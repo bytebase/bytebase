@@ -49,6 +49,9 @@ import {
   WORKSPACE_ROUTE_SSO,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
   WORKSPACE_ROUTE_REVIEW_CENTER,
+  WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_ROLES,
+  WORKSPACE_ROUTE_USER_PROFILE,
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import type { WorkspacePermission } from "@/types";
@@ -77,6 +80,14 @@ const getItemClass = (item: SidebarItem): string[] => {
   const classes: string[] = [];
   if (isActiveRoute) {
     classes.push("router-link-active", "bg-link-hover");
+    return classes;
+  }
+  if (
+    item.name === WORKSPACE_ROUTE_MEMBERS &&
+    current?.toString() === WORKSPACE_ROUTE_USER_PROFILE
+  ) {
+    classes.push("router-link-active", "bg-link-hover");
+    return classes;
   }
   return classes;
 };
@@ -232,6 +243,16 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       icon: h(ShieldCheck),
       type: "div",
       children: [
+        {
+          title: t("settings.sidebar.members-and-groups"),
+          name: WORKSPACE_ROUTE_MEMBERS,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.custom-roles"),
+          name: WORKSPACE_ROUTE_ROLES,
+          type: "route",
+        },
         {
           title: t("sql-review.title"),
           name: WORKSPACE_ROUTE_SQL_REVIEW,

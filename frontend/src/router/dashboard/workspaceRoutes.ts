@@ -20,6 +20,8 @@ export const WORKSPACE_ROUTE_RISK_CENTER = "workspace.risk-center";
 export const WORKSPACE_ROUTE_SENSITIVE_DATA = "workspace.sensitive-data";
 export const WORKSPACE_ROUTE_AUDIT_LOG = "workspace.audit-log";
 export const WORKSPACE_ROUTE_MAIL_DELIVERY = "workspace.mail-delivery";
+export const WORKSPACE_ROUTE_MEMBERS = "workspace.members";
+export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
 
 export const WORKSPACE_ROUTE_GITOPS = "workspace.gitops";
 export const WORKSPACE_ROUTE_GITOPS_CREATE = `${WORKSPACE_ROUTE_GITOPS}.create`;

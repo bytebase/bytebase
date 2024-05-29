@@ -143,7 +143,7 @@
               <div v-else class="bb-grid-cell gap-x-1">
                 <router-link
                   :to="{
-                    name: SETTING_ROUTE_WORKSPACE_MEMBER,
+                    name: WORKSPACE_ROUTE_MEMBERS,
                     query: {
                       name: item.group!.name,
                     },
@@ -290,8 +290,10 @@ import { useI18n } from "vue-i18n";
 import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_WORKSPACE_MEMBER } from "@/router/dashboard/workspaceSetting";
+import {
+  WORKSPACE_ROUTE_USER_PROFILE,
+  WORKSPACE_ROUTE_MEMBERS,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   useSettingV1Store,
   usePolicyV1Store,
