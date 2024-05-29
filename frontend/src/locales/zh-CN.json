@@ -660,6 +660,12 @@
           "days": "天数",
           "config-updated": "配置已更新，需要重新启动 Bytebase 以及重新登录后生效。"
         },
+        "maximum-role-expiration": {
+          "self": "角色最大过期时间",
+          "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间。",
+          "days": "天数",
+          "never-expires": "永不过期"
+        },
         "config-updated": "配置已更新。",
         "plugin": {
           "openai": {

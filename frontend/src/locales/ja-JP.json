@@ -660,6 +660,12 @@
           "days": "日々",
           "config-updated": "構成が更新されたため、有効にするには Bytebase を再起動し、再度ログインする必要があります。"
         },
+        "maximum-role-expiration": {
+          "self": "最大ロール有効期限",
+          "description": "最大ロール有効期限は、ユーザーにロールを付与できる最大期間です。",
+          "days": "日々）",
+          "never-expires": "期限切れなし"
+        },
         "config-updated": "構成が更新されました。",
         "plugin": {
           "openai": {

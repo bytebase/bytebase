@@ -16,7 +16,7 @@ import { computed, onMounted, ref } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { issueSlug } from "@/utils";
+import { extractProjectResourceName, issueSlug } from "@/utils";
 
 type DescriptionType = "TEXT" | "ISSUE";
 
@@ -51,7 +51,11 @@ const gotoIssuePage = async () => {
     return;
   }
 
-  window.open(`/issue/${issueSlug(issue.title, issue.uid)}`, "_blank");
+  const projectId = extractProjectResourceName(issue.name);
+  window.open(
+    `/projects/${projectId}/issues/${issueSlug(issue.title, issue.uid)}`,
+    "_blank"
+  );
 };
 
 onMounted(() => {

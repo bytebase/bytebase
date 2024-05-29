@@ -660,6 +660,12 @@
           "days": "Días",
           "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
         },
+        "maximum-role-expiration": {
+          "self": "Caducidad máxima del rol",
+          "description": "La caducidad máxima de la función es el período máximo que se puede otorgar una función a un usuario.",
+          "days": "Días)",
+          "never-expires": "Nunca expira"
+        },
         "config-updated": "La configuración se ha actualizado.",
         "plugin": {
           "openai": {

@@ -660,6 +660,12 @@
           "days": "Day(s)",
           "config-updated": "Configuration is updated. Need to restart Bytebase and re-login to take effect."
         },
+        "maximum-role-expiration": {
+          "self": "Maximum role expiration",
+          "description": "Maximum role expiration is the maximum period a role can be granted to a user.",
+          "days": "Day(s)",
+          "never-expires": "Never expires"
+        },
         "config-updated": "Configuration is updated.",
         "plugin": {
           "openai": {

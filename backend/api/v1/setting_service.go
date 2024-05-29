@@ -195,6 +195,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
 			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
 		}
+		if payload.MaximumRoleExpiration != nil {
+			if payload.MaximumRoleExpiration.Seconds <= 0 {
+				payload.MaximumRoleExpiration = nil
+			}
+		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
