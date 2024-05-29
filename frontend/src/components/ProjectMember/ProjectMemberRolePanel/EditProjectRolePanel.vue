@@ -140,6 +140,7 @@ import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
   PresetRoleType,
+  groupBindingPrefix,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { State } from "@/types/proto/v1/common";
@@ -240,7 +241,7 @@ onMounted(() => {
   if (props.type === "user") {
     const userList = [];
     for (const member of binding.members) {
-      if (member.startsWith("group:")) {
+      if (member.startsWith(groupBindingPrefix)) {
         continue;
       }
       const user = userStore.getUserByIdentifier(member);
@@ -252,7 +253,7 @@ onMounted(() => {
   } else {
     const groupNameList = [];
     for (const member of props.binding.members) {
-      if (!member.startsWith("group:")) {
+      if (!member.startsWith(groupBindingPrefix)) {
         continue;
       }
       const group = groupStore.getGroupByIdentifier(member);
