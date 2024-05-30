@@ -1,0 +1,1 @@
+DELETE FROM plan_check_run WHERE type = 'bb.plan-check.database.statement.type';
