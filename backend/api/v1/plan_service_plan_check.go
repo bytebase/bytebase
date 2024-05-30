@@ -259,20 +259,6 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		return planCheckRuns, nil
 	}
 
-	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-		CreatorUID: api.SystemBotID,
-		UpdaterUID: api.SystemBotID,
-		PlanUID:    plan.UID,
-		Status:     store.PlanCheckRunStatusRunning,
-		Type:       store.PlanCheckDatabaseStatementType,
-		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-			InstanceUid:        int32(instance.UID),
-			DatabaseName:       database.DatabaseName,
-			DatabaseGroupUid:   databaseGroupUID,
-		},
-	})
 	preUpdateBackupDetail := (*storepb.PlanCheckRunConfig_PreUpdateBackupDetail)(nil)
 	if config.PreUpdateBackupDetail != nil {
 		preUpdateBackupDetail = &storepb.PlanCheckRunConfig_PreUpdateBackupDetail{
@@ -376,7 +362,6 @@ func getPlanCheckRunsFromExportDataConfigForDatabase(ctx context.Context, s *sto
 
 	planCheckRunTypes := []store.PlanCheckRunType{
 		store.PlanCheckDatabaseConnect,
-		store.PlanCheckDatabaseStatementType,
 		store.PlanCheckDatabaseStatementAdvise,
 	}
 	planCheckRuns := []*store.PlanCheckRunMessage{}
