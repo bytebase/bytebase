@@ -431,34 +431,19 @@ func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
 }
 
 // ChangeIssueStatus changes the status of an issue.
-func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
+func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updater *store.UserMessage, comment string) error {
 	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
-	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
+	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updater.ID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}
 
-	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-		OldStatus: issue.Status,
-		NewStatus: newStatus,
-		IssueName: updatedIssue.Title,
+	webhookManager.CreateEvent(ctx, Event{
+		Actor:   updater,
+		Type:    EventTypeIssueStatusUpdate,
+		Comment: comment,
+		Issue:   NewIssue(updatedIssue),
+		Project: NewProject(updatedIssue.Project),
 	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        updaterID,
-		ResourceContainer: issue.Project.GetName(),
-		ContainerUID:      issue.UID,
-		Type:              api.ActivityIssueStatusUpdate,
-		Level:             api.ActivityInfo,
-		Comment:           comment,
-		Payload:           string(payload),
-	}
-	if _, err := webhookManager.CreateActivity(ctx, activityCreate, &Metadata{
-		Issue: updatedIssue,
-	}); err != nil {
-		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
-	}
 	return nil
 }

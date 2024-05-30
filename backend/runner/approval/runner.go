@@ -184,7 +184,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := utils.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, store.SystemBotUser, ""); err != nil {
+		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, store.SystemBotUser, ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
