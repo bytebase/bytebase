@@ -3319,13 +3319,6 @@
     "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
-    "matched-table": "マッチングテーブル",
-    "unmatched-table": "不一致のテーブル",
-    "table-group": {
-      "self": "テーブルのグループ化",
-      "create": "新しいテーブルグループを作成する",
-      "edit": "テーブルのグループ化を編集する"
-    },
     "condition": {
       "self": "状態"
     },

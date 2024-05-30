@@ -3319,13 +3319,6 @@
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
-    "matched-table": "相匹配的表",
-    "unmatched-table": "不匹配的表",
-    "table-group": {
-      "self": "表分组",
-      "create": "新建表分组",
-      "edit": "编辑表分组"
-    },
     "condition": {
       "self": "条件"
     },

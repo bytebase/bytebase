@@ -3319,13 +3319,6 @@
     "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
-    "matched-table": "Matched table",
-    "unmatched-table": "Unmatched table",
-    "table-group": {
-      "self": "Table group",
-      "create": "New table group",
-      "edit": "Edit table group"
-    },
     "condition": {
       "self": "Condition"
     },
