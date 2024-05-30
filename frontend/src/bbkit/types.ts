@@ -47,4 +47,10 @@ export type BBTabItem<T = any> = {
   data?: T;
 };
 
-export type BBAvatarSizeType = "TINY" | "SMALL" | "NORMAL" | "LARGE" | "HUGE";
+export type BBAvatarSizeType =
+  | "MINI"
+  | "TINY"
+  | "SMALL"
+  | "NORMAL"
+  | "LARGE"
+  | "HUGE";
