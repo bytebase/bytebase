@@ -5,16 +5,7 @@
     :readonly="disallowChangeFunction"
     :status="status"
     @update:code="handleUpdateDefinition"
-  >
-    <template v-if="showLastUpdater && functionConfig" #header-suffix>
-      <div class="flex justify-end items-center h-[28px]">
-        <LastUpdater
-          :updater="functionConfig.updater"
-          :update-time="functionConfig.updateTime"
-        />
-      </div>
-    </template>
-  </CommonCodeEditor>
+  />
 </template>
 
 <script setup lang="ts">
@@ -36,13 +27,8 @@ const props = defineProps<{
   func: FunctionMetadata;
 }>();
 
-const {
-  readonly,
-  showLastUpdater,
-  markEditStatus,
-  getSchemaStatus,
-  getFunctionStatus,
-} = useSchemaEditorContext();
+const { readonly, markEditStatus, getSchemaStatus, getFunctionStatus } =
+  useSchemaEditorContext();
 
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {
@@ -74,14 +60,6 @@ const disallowChangeFunction = computed(() => {
     return true;
   }
   return statusForSchema() === "dropped" || status.value === "dropped";
-});
-
-const functionConfig = computed(() => {
-  const sc = props.database.schemaConfigs.find(
-    (sc) => sc.name === props.schema.name
-  );
-  if (!sc) return undefined;
-  return sc.functionConfigs.find((pc) => pc.name === props.func.name);
 });
 
 const handleUpdateDefinition = (code: string) => {
