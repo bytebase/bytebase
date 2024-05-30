@@ -78,7 +78,7 @@
             :allow-admin="false"
             :factor-list="FactorList"
             :factor-support-dropdown="factorSupportDropdown"
-            :factor-options-map="FactorOptionsMap"
+            :factor-options-map="DatabaseGroupFactorOptionsMap()"
           />
         </div>
         <div class="col-span-2">
@@ -118,7 +118,7 @@ import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.
 import { FactorList } from "@/components/DatabaseGroup/utils";
 import {
   factorSupportDropdown,
-  FactorOptionsMap,
+  DatabaseGroupFactorOptionsMap,
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";

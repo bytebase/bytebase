@@ -19,7 +19,7 @@ export const factorSupportDropdown: Factor[] = [
   "resource.instance_id",
 ];
 
-export const FactorOptionsMap = () => {
+export const DatabaseGroupFactorOptionsMap = () => {
   return FactorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
