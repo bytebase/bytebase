@@ -74,9 +74,6 @@ type FindWorkSheetMessage struct {
 	// For now, we only need the starred sheets.
 	OrganizerPrincipalIDStarred    *int
 	OrganizerPrincipalIDNotStarred *int
-	// Used to find a sheet list from projects containing PrincipalID as an active member.
-	// When finding a shared PROJECT/PUBLIC sheets, this value should be present.
-	PrincipalID *int
 }
 
 // PatchWorkSheetMessage is the message to patch a sheet.
@@ -129,10 +126,6 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 	}
 	if len(visibilitiesWhere) > 0 {
 		where = append(where, fmt.Sprintf("(%s)", strings.Join(visibilitiesWhere, " OR ")))
-	}
-	if v := find.PrincipalID; v != nil {
-		// TODO(p0ny): HELP! we need to deprecate the project_member and check the iam policy instead.
-		where, args = append(where, fmt.Sprintf("worksheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.OrganizerPrincipalIDStarred; v != nil {
 		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)

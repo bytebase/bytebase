@@ -240,7 +240,8 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 
 		// Rows.
 		result.Rows = append(result.Rows, &queryRow)
-		if proto.Size(result) > common.MaximumSQLResultSize {
+		n := len(result.Rows)
+		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 			result.Error = common.MaximumSQLResultSizeExceeded
 			result.Latency = durationpb.New(time.Since(startTime))
 			return result, nil

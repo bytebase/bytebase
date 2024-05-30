@@ -320,7 +320,8 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 			return nil, err
 		}
 		result.Rows = append(result.Rows, rowData)
-		if proto.Size(result) > common.MaximumSQLResultSize {
+		n := len(result.Rows)
+		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 			result.Error = common.MaximumSQLResultSizeExceeded
 			result.Latency = durationpb.New(time.Since(startTime))
 			return result, nil

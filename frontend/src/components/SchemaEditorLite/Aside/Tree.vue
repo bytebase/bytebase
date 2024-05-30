@@ -97,7 +97,16 @@ import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
 import { NInput, NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
-import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
+import {
+  computed,
+  onMounted,
+  watch,
+  ref,
+  h,
+  reactive,
+  nextTick,
+  type VNode,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { ComposedDatabase } from "@/types";
@@ -116,6 +125,7 @@ import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { engineSupportsMultiSchema } from "../spec";
+import LastUpdate from "./LastUpdate.vue";
 import NodePrefix from "./NodePrefix.vue";
 import type {
   TreeNode,
@@ -495,10 +505,27 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option }: { option: TreeOption }) => {
-  if (readonly.value) {
-    return null;
-  }
   const node = option as TreeNode;
+  const icons: VNode[] = [];
+
+  const renderIcons = () => {
+    if (icons.length === 0) return null;
+    return h("div", { class: "inline-flex gap-1" }, icons);
+  };
+
+  if (
+    node.type === "table" ||
+    node.type === "view" ||
+    node.type === "procedure" ||
+    node.type === "function"
+  ) {
+    icons.push(h(LastUpdate, { node }));
+  }
+
+  if (readonly.value) {
+    return renderIcons();
+  }
+
   const menuIcon = h(MoreHorizontalIcon, {
     class: "w-4 h-auto text-gray-600",
     onClick: (e) => {
@@ -508,19 +535,18 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   if (node.type === "database") {
     const { engine } = node.db.instanceEntity;
     if (engineSupportsMultiSchema(engine)) {
-      return menuIcon;
+      icons.push(menuIcon);
     }
   }
   if (node.type === "schema") {
-    return menuIcon;
+    icons.push(menuIcon);
   }
   if (node.type === "group") {
-    return menuIcon;
+    icons.push(menuIcon);
   }
   if (node.type === "table") {
-    const icons = [menuIcon];
     const duplicateIcon = h(CopyIcon, {
-      class: "w-4 h-auto mr-2 text-gray-600",
+      class: "w-4 h-auto text-gray-600",
       onClick: (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -529,17 +555,17 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
         handleDuplicateTable(node);
       },
     });
-    icons.unshift(duplicateIcon);
-    return icons;
+    icons.push(duplicateIcon);
+    icons.push(menuIcon);
   }
   if (node.type === "procedure") {
-    return menuIcon;
+    icons.push(menuIcon);
   }
   if (node.type === "function") {
-    return menuIcon;
+    icons.push(menuIcon);
   }
 
-  return null;
+  return renderIcons();
 };
 
 const handleDuplicateTable = (treeNode: TreeNodeForTable) => {

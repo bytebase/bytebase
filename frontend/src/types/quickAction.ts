@@ -13,8 +13,7 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.schema.update"
   | "quickaction.bb.database.data.update";
 export type DatabaseGroupQuickActionType =
-  | "quickaction.bb.group.database-group.create"
-  | "quickaction.bb.group.table-group.create";
+  | "quickaction.bb.group.database-group.create";
 export type IssueQuickActionType =
   | "quickaction.bb.issue.grant.request.querier"
   | "quickaction.bb.issue.grant.request.exporter";
@@ -56,7 +55,6 @@ export const QuickActionProjectPermissionMap: Map<
   ["quickaction.bb.database.schema.update", ["bb.issues.create"]],
   ["quickaction.bb.database.data.update", ["bb.issues.create"]],
   ["quickaction.bb.group.database-group.create", ["bb.projects.update"]],
-  ["quickaction.bb.group.table-group.create", ["bb.projects.update"]],
   ["quickaction.bb.issue.grant.request.querier", ["bb.issues.create"]],
   ["quickaction.bb.issue.grant.request.exporter", ["bb.issues.create"]],
 ]);

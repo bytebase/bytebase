@@ -192,10 +192,6 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.ProjectService_UpdateDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_DeleteDatabaseGroup_FullMethodName,
 
-		v1pb.ProjectService_GetSchemaGroup_FullMethodName,
-		v1pb.ProjectService_CreateSchemaGroup_FullMethodName,
-		v1pb.ProjectService_UpdateSchemaGroup_FullMethodName,
-		v1pb.ProjectService_DeleteSchemaGroup_FullMethodName,
 		v1pb.ProjectService_GetProjectProtectionRules_FullMethodName,
 		v1pb.ProjectService_UpdateProjectProtectionRules_FullMethodName:
 
@@ -392,7 +388,7 @@ func (*ContextProvider) getProjectIDsForBranchService(_ context.Context, req any
 }
 
 func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
-	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, schemaGroups, protectionRules []string
+	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, protectionRules []string
 
 	switch r := req.(type) {
 	case *v1pb.GetProjectRequest:
@@ -425,14 +421,6 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		databaseGroups = append(databaseGroups, r.GetDatabaseGroup().GetName())
 	case *v1pb.DeleteDatabaseGroupRequest:
 		databaseGroups = append(databaseGroups, r.GetName())
-	case *v1pb.GetSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetName())
-	case *v1pb.CreateSchemaGroupRequest:
-		databaseGroups = append(databaseGroups, r.GetParent())
-	case *v1pb.UpdateSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetSchemaGroup().GetName())
-	case *v1pb.DeleteSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetName())
 	case *v1pb.GetProjectProtectionRulesRequest:
 		protectionRules = append(protectionRules, r.GetName())
 	case *v1pb.UpdateProjectProtectionRulesRequest:
@@ -466,13 +454,6 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		projectID, _, err := common.GetProjectIDDatabaseGroupID(databaseGroup)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse %q", databaseGroup)
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-	for _, schemaGroup := range schemaGroups {
-		projectID, _, _, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(schemaGroup)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse %q", schemaGroup)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}

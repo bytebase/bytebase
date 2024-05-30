@@ -35,7 +35,6 @@ const (
 	SheetIDPrefix              = "sheets/"
 	WorksheetIDPrefix          = "worksheets/"
 	DatabaseGroupNamePrefix    = "databaseGroups/"
-	SchemaGroupNamePrefix      = "schemaGroups/"
 	SchemaNamePrefix           = "schemas/"
 	TableNamePrefix            = "tables/"
 	ChangeHistoryPrefix        = "changeHistories/"
@@ -72,15 +71,6 @@ func GetProjectIDDatabaseGroupID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
-}
-
-// GetProjectIDDatabaseGroupIDSchemaGroupID returns the project ID, database group ID, and schema group ID from a resource name.
-func GetProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, DatabaseGroupNamePrefix, SchemaGroupNamePrefix)
-	if err != nil {
-		return "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // GetSchemaTableName returns the schema and table names from a resource name.

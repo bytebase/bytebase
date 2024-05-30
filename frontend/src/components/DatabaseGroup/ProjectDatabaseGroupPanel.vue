@@ -15,7 +15,6 @@
   <DatabaseGroupPanel
     :show="state.showDatabaseGroupPanel"
     :project="project"
-    :resource-type="'DATABASE_GROUP'"
     :database-group="state.editingDatabaseGroup"
     @close="state.showDatabaseGroupPanel = false"
   />

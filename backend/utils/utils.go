@@ -34,7 +34,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -691,42 +690,6 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 		}
 	}
 	return matches, unmatches, nil
-}
-
-// GetMatchedAndUnmatchedTablesInSchemaGroup returns the matched and unmatched tables in the given schema group.
-func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *model.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
-	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var matched []string
-	var unmatched []string
-
-	for _, schema := range dbSchema.GetMetadata().Schemas {
-		for _, table := range schema.Tables {
-			res, _, err := prog.ContextEval(ctx, map[string]any{
-				"resource": map[string]any{
-					"table_name": table.Name,
-				},
-			})
-			if err != nil {
-				return nil, nil, status.Errorf(codes.Internal, err.Error())
-			}
-
-			val, err := res.ConvertToNative(reflect.TypeOf(false))
-			if err != nil {
-				return nil, nil, status.Errorf(codes.Internal, "expect bool result")
-			}
-
-			if boolVal, ok := val.(bool); ok && boolVal {
-				matched = append(matched, table.Name)
-			} else {
-				unmatched = append(unmatched, table.Name)
-			}
-		}
-	}
-	return matched, unmatched, nil
 }
 
 // GetUserIAMPolicyBindings return the valid bindings for the user.

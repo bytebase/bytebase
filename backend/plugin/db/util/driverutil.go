@@ -190,6 +190,10 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 				case "NULLUNIQUEIDENTIFIER":
 					scanArgs[i] = new(mssqldb.NullUniqueIdentifier)
 					continue
+				case "GEOMETRY":
+					scanArgs[i] = new(sql.NullString)
+					wantBytesValue[i] = true
+					continue
 				}
 			}
 			switch v {
@@ -222,7 +226,8 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 		}
 
 		result.Rows = append(result.Rows, &rowData)
-		if proto.Size(result) > common.MaximumSQLResultSize {
+		n := len(result.Rows)
+		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 			result.Error = common.MaximumSQLResultSizeExceeded
 			return nil
 		}
