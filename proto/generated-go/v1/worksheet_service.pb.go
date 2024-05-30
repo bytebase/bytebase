@@ -422,6 +422,7 @@ type SearchWorksheetsRequest struct {
 	// Format: only support the following spec for now:
 	// - `creator = users/{email}`, `creator != users/{email}`
 	// - `starred = true`, `starred = false`.
+	// - `visibility = "VISIBILITY_PRIVATE"`, `visibility = "VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE"`, etc.
 	// Not support empty filter for now.
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Not used. The maximum number of worksheets to return. The service may return fewer than

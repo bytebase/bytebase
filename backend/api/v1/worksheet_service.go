@@ -190,8 +190,6 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 				worksheetFind.CreatorID = &user.ID
 			case comparatorTypeNotEqual:
 				worksheetFind.ExcludedCreatorID = &user.ID
-				worksheetFind.Visibilities = []store.WorkSheetVisibility{store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet}
-				worksheetFind.PrincipalID = &user.ID
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for creator", spec.operator))
 			}
@@ -206,6 +204,17 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 				worksheetFind.OrganizerPrincipalIDNotStarred = &principalID
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
+			}
+		case "visibility":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for starred", spec.operator))
+			}
+			for _, rawVisibility := range strings.Split(spec.value, " | ") {
+				visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[rawVisibility]))
+				if err != nil {
+					return nil, err
+				}
+				worksheetFind.Visibilities = append(worksheetFind.Visibilities, visibility)
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
