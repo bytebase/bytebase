@@ -388,7 +388,7 @@ func (*ContextProvider) getProjectIDsForBranchService(_ context.Context, req any
 }
 
 func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
-	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, schemaGroups, protectionRules []string
+	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, protectionRules []string
 
 	switch r := req.(type) {
 	case *v1pb.GetProjectRequest:
@@ -454,13 +454,6 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		projectID, _, err := common.GetProjectIDDatabaseGroupID(databaseGroup)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse %q", databaseGroup)
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-	for _, schemaGroup := range schemaGroups {
-		projectID, _, _, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(schemaGroup)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse %q", schemaGroup)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}

@@ -211,10 +211,6 @@ func getDatabaseGroupCacheKey(projectUID int, databaseGroupResourceID string) st
 	return fmt.Sprintf("%d/%s", projectUID, databaseGroupResourceID)
 }
 
-func getSchemaGroupCacheKey(databaseGroupUID int64, schemaGroupResourceID string) string {
-	return fmt.Sprintf("%d/%s", databaseGroupUID, schemaGroupResourceID)
-}
-
 func getPlaceholders(start int, count int) string {
 	var placeholders []string
 	for i := start; i < start+count; i++ {
