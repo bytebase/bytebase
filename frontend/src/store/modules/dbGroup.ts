@@ -12,9 +12,7 @@ import {
   wrapAsGroup,
 } from "@/plugins/cel";
 import type {
-  ComposedSchemaGroupTable,
   ComposedDatabaseGroup,
-  ComposedSchemaGroup,
   ComposedDatabase,
   ComposedProject,
 } from "@/types";
@@ -22,7 +20,6 @@ import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import type {
   DatabaseGroup,
-  SchemaGroup,
 } from "@/types/proto/v1/project_service";
 import {
   DatabaseGroupView,
@@ -36,9 +33,7 @@ import { useProjectV1Store, useDatabaseV1Store } from "./v1";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
-  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
   projectNamePrefix,
-  schemaGroupNamePrefix,
 } from "./v1/common";
 
 const batchComposeDatabaseGroup = async (
@@ -86,27 +81,9 @@ const batchComposeDatabaseGroup = async (
   return [...composedDatabaseGroupMap.values()];
 };
 
-const composeSchemaGroup = async (
-  schemaGroup: SchemaGroup
-): Promise<ComposedSchemaGroup> => {
-  const [projectName, databaseGroupName] =
-    getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
-  const databaseGroup = await useDBGroupStore().getOrFetchDBGroupByName(
-    `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
-  );
-
-  const composedData: ComposedSchemaGroup = {
-    ...schemaGroup,
-    databaseGroup,
-  };
-  return composedData;
-};
-
 export const useDBGroupStore = defineStore("db-group", () => {
   const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
-  const schemaGroupMapByName = ref<Map<string, ComposedSchemaGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
-  const cachedDatabaseGroupNameSet = ref<Set<string>>(new Set());
 
   const fetchAllDatabaseGroupList = async () => {
     const { databaseGroups } = await projectServiceClient.listDatabaseGroups({
@@ -301,186 +278,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
     dbGroupMapByName.value.delete(name);
   };
 
-  const getOrFetchSchemaGroupByName = async (name: string, silent = false) => {
-    const cached = schemaGroupMapByName.value.get(name);
-    if (cached) return cached;
-
-    const schemaGroup = await projectServiceClient.getSchemaGroup(
-      {
-        name: name,
-      },
-      { silent }
-    );
-    const composedData = await composeSchemaGroup(schemaGroup);
-    schemaGroupMapByName.value.set(name, composedData);
-    return schemaGroup;
-  };
-
-  const getOrFetchSchemaGroupListByDBGroupName = async (
-    dbGroupName: string
-  ) => {
-    const hasCache = cachedDatabaseGroupNameSet.value.has(dbGroupName);
-    if (hasCache) {
-      return Array.from(schemaGroupMapByName.value.values()).filter(
-        (schemaGroup) => schemaGroup.name.startsWith(dbGroupName)
-      );
-    }
-    const { schemaGroups } = await projectServiceClient.listSchemaGroups({
-      parent: dbGroupName,
-    });
-    const composedList: ComposedSchemaGroup[] = [];
-    for (const schemaGroup of schemaGroups) {
-      const composedData = await composeSchemaGroup(schemaGroup);
-      schemaGroupMapByName.value.set(schemaGroup.name, composedData);
-      composedList.push(composedData);
-    }
-    cachedDatabaseGroupNameSet.value.add(dbGroupName);
-    return composedList;
-  };
-
-  const getSchemaGroupListByDBGroupName = (dbGroupName: string) => {
-    return Array.from(schemaGroupMapByName.value.values()).filter(
-      (schemaGroup) => schemaGroup.name.startsWith(dbGroupName)
-    );
-  };
-
-  const getSchemaGroupByName = (name: string) => {
-    return schemaGroupMapByName.value.get(name);
-  };
-
-  const createSchemaGroup = async ({
-    dbGroupName,
-    schemaGroup,
-    schemaGroupId,
-    validateOnly = false,
-  }: {
-    dbGroupName: string;
-    schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">;
-    schemaGroupId: string;
-    validateOnly?: boolean;
-  }) => {
-    const createdSchemaGroup = await projectServiceClient.createSchemaGroup({
-      parent: dbGroupName,
-      schemaGroup,
-      schemaGroupId,
-      validateOnly,
-    });
-    const composedData = await composeSchemaGroup(createdSchemaGroup);
-    if (!validateOnly) {
-      schemaGroupMapByName.value.set(composedData.name, composedData);
-    }
-    return composedData;
-  };
-
-  const fetchSchemaGroupMatchList = async ({
-    projectName,
-    databaseGroupName,
-    expr,
-  }: {
-    projectName: string;
-    databaseGroupName: string;
-    expr: ConditionGroupExpr;
-  }) => {
-    if (!buildCELExpr(expr)) {
-      return {
-        matchedTableList: [],
-        unmatchedTableList: [],
-      };
-    }
-    const celStrings = await batchConvertParsedExprToCELString([
-      ParsedExpr.fromJSON({
-        expr: buildCELExpr(expr),
-      }),
-    ]);
-    const validateOnlyResourceId = `creating-schema-group-${Date.now()}`;
-    const parent = `${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
-
-    try {
-      const result = await createSchemaGroup({
-        dbGroupName: parent,
-        schemaGroup: {
-          name: `${databaseGroupName}/${schemaGroupNamePrefix}${validateOnlyResourceId}`,
-          tablePlaceholder: validateOnlyResourceId,
-          tableExpr: Expr.fromJSON({
-            expression: celStrings[0] || "true",
-          }),
-        },
-        schemaGroupId: validateOnlyResourceId,
-        validateOnly: true,
-      });
-
-      const matchedTableList: ComposedSchemaGroupTable[] = [];
-      const unmatchedTableList: ComposedSchemaGroupTable[] = [];
-      const databaseStore = useDatabaseV1Store();
-
-      for (const item of result.matchedTables) {
-        const database = await databaseStore.getOrFetchDatabaseByName(
-          item.database
-        );
-        if (!database) {
-          continue;
-        }
-
-        matchedTableList.push({
-          ...item,
-          databaseEntity: database,
-        });
-      }
-      for (const item of result.unmatchedTables) {
-        const database = await databaseStore.getOrFetchDatabaseByName(
-          item.database
-        );
-        unmatchedTableList.push({
-          ...item,
-          databaseEntity: database,
-        });
-      }
-
-      return {
-        matchedTableList,
-        unmatchedTableList,
-      };
-    } catch (e) {
-      console.error(e);
-      return {
-        matchedTableList: [],
-        unmatchedTableList: [],
-      };
-    }
-  };
-
-  const updateSchemaGroup = async (
-    schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">
-  ) => {
-    const rawSchemaGroup = schemaGroupMapByName.value.get(schemaGroup.name);
-    if (!rawSchemaGroup) {
-      throw new Error("Schema group not found");
-    }
-    const updateMask: string[] = [];
-    if (
-      !isEqual(rawSchemaGroup.tablePlaceholder, schemaGroup.tablePlaceholder)
-    ) {
-      updateMask.push("table_placeholder");
-    }
-    if (!isEqual(rawSchemaGroup.tableExpr, schemaGroup.tableExpr)) {
-      updateMask.push("table_expr");
-    }
-    const updatedSchemaGroup = await projectServiceClient.updateSchemaGroup({
-      schemaGroup,
-      updateMask,
-    });
-    const composedData = await composeSchemaGroup(updatedSchemaGroup);
-    schemaGroupMapByName.value.set(composedData.name, composedData);
-    return composedData;
-  };
-
-  const deleteSchemaGroup = async (name: string) => {
-    await projectServiceClient.deleteSchemaGroup({
-      name: name,
-    });
-    schemaGroupMapByName.value.delete(name);
-  };
-
   return {
     fetchAllDatabaseGroupList,
     getAllDatabaseGroupList,
@@ -491,15 +288,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     createDatabaseGroup,
     updateDatabaseGroup,
     deleteDatabaseGroup,
-    getOrFetchSchemaGroupByName,
-    getOrFetchSchemaGroupListByDBGroupName,
-    getSchemaGroupListByDBGroupName,
-    getSchemaGroupByName,
-    createSchemaGroup,
-    updateSchemaGroup,
-    deleteSchemaGroup,
     fetchDatabaseGroupMatchList,
-    fetchSchemaGroupMatchList,
   };
 });
 

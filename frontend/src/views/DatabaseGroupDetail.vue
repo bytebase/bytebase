@@ -76,9 +76,9 @@
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
-            :factor-list="FactorList.get('DATABASE_GROUP') ?? []"
+            :factor-list="FactorList"
             :factor-support-dropdown="factorSupportDropdown"
-            :factor-options-map="getFactorOptionsMap('DATABASE_GROUP')"
+            :factor-options-map="FactorOptionsMap"
           />
         </div>
         <div class="col-span-2">
@@ -89,28 +89,12 @@
           />
         </div>
       </div>
-
-      <hr />
-      <div class="w-full max-w-5xl">
-        <div class="w-full flex flex-row justify-between items-center">
-          <p class="my-4">{{ $t("database-group.table-group.self") }}</p>
-          <NButton v-if="allowEdit" @click.prevent="handleCreateSchemaGroup">
-            {{ $t("database-group.table-group.create") }}
-          </NButton>
-        </div>
-        <SchemaGroupDataTable
-          :schema-group-list="schemaGroupList"
-          @row-click="handleSchemaGroupClick"
-          @edit="handleEditSchemaGroup"
-        />
-      </div>
     </main>
   </div>
 
   <DatabaseGroupPanel
     :show="editState.showConfigurePanel"
     :project="project"
-    :resource-type="editState.type"
     :database-group="editState.databaseGroup"
     :parent-database-group="editState.parentDatabaseGroup"
     @close="editState.showConfigurePanel = false"
@@ -128,20 +112,16 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
-import { useRouter } from "vue-router";
 import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
-import { SchemaGroupDataTable } from "@/components/DatabaseGroup";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
-import type { ResourceType } from "@/components/DatabaseGroup/utils";
 import { FactorList } from "@/components/DatabaseGroup/utils";
 import {
   factorSupportDropdown,
-  getFactorOptionsMap,
+  FactorOptionsMap,
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useDBGroupStore,
@@ -150,17 +130,14 @@ import {
 } from "@/store";
 import {
   databaseGroupNamePrefix,
-  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type {
   ComposedDatabase,
   ComposedDatabaseGroup,
-  ComposedSchemaGroup,
 } from "@/types";
 import type {
   DatabaseGroup,
-  SchemaGroup,
 } from "@/types/proto/v1/project_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 
@@ -171,8 +148,7 @@ interface LocalState {
 
 interface EditDatabaseGroupState {
   showConfigurePanel: boolean;
-  type: ResourceType;
-  databaseGroup?: DatabaseGroup | SchemaGroup;
+  databaseGroup?: DatabaseGroup;
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }
 
@@ -182,7 +158,6 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const router = useRouter();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const subscriptionV1Store = useSubscriptionV1Store();
@@ -193,7 +168,6 @@ const state = reactive<LocalState>({
 });
 const editState = reactive<EditDatabaseGroupState>({
   showConfigurePanel: false,
-  type: "DATABASE_GROUP",
 });
 const issueType = ref<
   | "bb.issue.database.schema.update"
@@ -213,11 +187,6 @@ const databaseGroup = computed(() => {
     databaseGroupResourceName.value
   ) as ComposedDatabaseGroup;
 });
-const schemaGroupList = computed(() => {
-  return dbGroupStore.getSchemaGroupListByDBGroupName(
-    databaseGroupResourceName.value
-  );
-});
 const hasPermissionToCreateIssue = computed(() => {
   return hasPermissionToCreateChangeDatabaseIssueInProject(
     project.value,
@@ -230,21 +199,7 @@ onMounted(async () => {
 });
 
 const handleEditDatabaseGroup = () => {
-  editState.type = "DATABASE_GROUP";
   editState.databaseGroup = databaseGroup.value;
-  editState.showConfigurePanel = true;
-};
-
-const handleCreateSchemaGroup = () => {
-  editState.type = "SCHEMA_GROUP";
-  editState.databaseGroup = undefined;
-  editState.showConfigurePanel = true;
-  editState.parentDatabaseGroup = databaseGroup.value;
-};
-
-const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
-  editState.type = "SCHEMA_GROUP";
-  editState.databaseGroup = schemaGroup;
   editState.showConfigurePanel = true;
 };
 
@@ -253,44 +208,6 @@ const createMigration = (
 ) => {
   issueType.value = type;
 };
-
-const handleSchemaGroupClick = (
-  event: MouseEvent,
-  schemaGroup: ComposedSchemaGroup
-) => {
-  const [, , schemaGroupName] =
-    getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
-  const url = router.resolve({
-    name: PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
-    params: {
-      schemaGroupName: schemaGroupName,
-    },
-  }).fullPath;
-  if (event.ctrlKey || event.metaKey) {
-    window.open(url, "_blank");
-  } else {
-    router.push(url);
-  }
-};
-
-watch(
-  () => [databaseGroup.value],
-  async () => {
-    if (!databaseGroup.value) {
-      return;
-    }
-
-    state.expr = databaseGroup.value.simpleExpr;
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
-      databaseGroup.value.name
-    );
-
-    state.isLoaded = true;
-  },
-  {
-    immediate: true,
-  }
-);
 
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);

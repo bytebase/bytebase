@@ -6,28 +6,21 @@ import {
   extractInstanceResourceName,
 } from "@/utils";
 
-export type ResourceType = "DATABASE_GROUP" | "SCHEMA_GROUP";
+export type ResourceType = "DATABASE_GROUP";
 
-export const FactorList: Map<ResourceType, Factor[]> = new Map([
-  [
-    "DATABASE_GROUP",
-    [
-      "resource.environment_name",
-      "resource.database_name",
-      "resource.instance_id",
-    ],
-  ],
-  ["SCHEMA_GROUP", ["resource.table_name"]],
-]);
+export const FactorList: Factor[] = [
+  "resource.environment_name",
+  "resource.database_name",
+  "resource.instance_id",
+];
 
 export const factorSupportDropdown: Factor[] = [
   "resource.environment_name",
   "resource.instance_id",
 ];
 
-export const getFactorOptionsMap = (resourceType: ResourceType) => {
-  const factorList = FactorList.get(resourceType) || [];
-  return factorList.reduce((map, factor) => {
+export const FactorOptionsMap = () => {
+  return FactorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
       case "resource.environment_name":
