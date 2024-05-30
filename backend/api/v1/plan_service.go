@@ -360,8 +360,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 			tasksMap := map[int]*store.TaskMessage{}
 			var taskPatchList []*api.TaskPatch
-			var statementUpdates []api.ActivityPipelineTaskStatementUpdatePayload
-			var earliestUpdates []api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload
+			var issueCommentCreates []*store.IssueCommentMessage
 			var taskDAGRebuildList []struct {
 				fromTaskIDs []int
 				toTaskID    int
@@ -430,12 +429,18 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						seconds := spec.EarliestAllowedTime.GetSeconds()
 						taskPatch.EarliestAllowedTs = &seconds
 						doUpdate = true
-						earliestUpdates = append(earliestUpdates, api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
-							TaskID:               task.ID,
-							OldEarliestAllowedTs: task.EarliestAllowedTs,
-							NewEarliestAllowedTs: seconds,
-							IssueName:            issue.Title,
-							TaskName:             task.Name,
+
+						issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+							IssueUID: issue.UID,
+							Payload: &storepb.IssueCommentPayload{
+								Event: &storepb.IssueCommentPayload_TaskUpdate_{
+									TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+										Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+										FromEarliestAllowedTime: timestamppb.New(time.Unix(task.EarliestAllowedTs, 0)),
+										ToEarliestAllowedTime:   timestamppb.New(time.Unix(seconds, 0)),
+									},
+								},
+							},
 						})
 					}
 
@@ -540,14 +545,21 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 								return status.Errorf(codes.NotFound, "sheet %q not found", oldSheetName)
 							}
 							doUpdate = true
-							// TODO(p0ny): update schema version
 							taskPatch.SheetID = &sheet.UID
-							statementUpdates = append(statementUpdates, api.ActivityPipelineTaskStatementUpdatePayload{
-								TaskID:     task.ID,
-								OldSheetID: taskPayload.SheetID,
-								NewSheetID: sheet.UID,
-								TaskName:   task.Name,
-								IssueName:  issue.Title,
+
+							oldSheet := common.FormatSheet(issue.Project.ResourceID, taskPayload.SheetID)
+							newSheet := common.FormatSheet(issue.Project.ResourceID, sheet.UID)
+							issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+								IssueUID: issue.UID,
+								Payload: &storepb.IssueCommentPayload{
+									Event: &storepb.IssueCommentPayload_TaskUpdate_{
+										TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+											Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+											FromSheet: &oldSheet,
+											ToSheet:   &newSheet,
+										},
+									},
+								},
 							})
 						}
 						return nil
@@ -712,48 +724,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 			}
 
-			for _, statementUpdate := range statementUpdates {
-				task := tasksMap[statementUpdate.TaskID]
-
-				if err := func() error {
-					oldSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.OldSheetID)
-					newSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.NewSheetID)
-					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-						IssueUID: issue.UID,
-						Payload: &storepb.IssueCommentPayload{
-							Event: &storepb.IssueCommentPayload_TaskUpdate_{
-								TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-									Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
-									FromSheet: &oldSheet,
-									ToSheet:   &newSheet,
-								},
-							},
-						},
-					}, user.ID)
-					return err
-				}(); err != nil {
-					slog.Warn("failed to create issue comments for statement update", "issueUID", issue.UID, log.BBError(err))
-				}
-			}
-			for _, earliestUpdate := range earliestUpdates {
-				task := tasksMap[earliestUpdate.TaskID]
-
-				if err := func() error {
-					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-						IssueUID: issue.UID,
-						Payload: &storepb.IssueCommentPayload{
-							Event: &storepb.IssueCommentPayload_TaskUpdate_{
-								TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-									Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
-									FromEarliestAllowedTime: timestamppb.New(time.Unix(earliestUpdate.OldEarliestAllowedTs, 0)),
-									ToEarliestAllowedTime:   timestamppb.New(time.Unix(earliestUpdate.NewEarliestAllowedTs, 0)),
-								},
-							},
-						},
-					}, user.ID)
-					return err
-				}(); err != nil {
-					slog.Warn("failed to create issue comments for earliest allowed time update", "issueUID", issue.UID, log.BBError(err))
+			for _, issueCommentCreate := range issueCommentCreates {
+				if _, err := s.store.CreateIssueComment(ctx, issueCommentCreate, user.ID); err != nil {
+					slog.Warn("failed to create issue comments", "issueUID", issue.UID, log.BBError(err))
 				}
 			}
 
