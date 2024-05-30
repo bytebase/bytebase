@@ -330,3 +330,5 @@ replace (
 	github.com/beltran/gohive => github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4
 	github.com/beltran/gosasl => github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08
 )
+
+replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240530043406-8d83e82c0231
