@@ -960,7 +960,8 @@
       "task": "Tarea",
       "stage": "Etapa"
     },
-    "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
+    "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)",
+    "restore": "Restaurar"
   },
   "issue": {
     "my-issues": "Mis Incidencias",
