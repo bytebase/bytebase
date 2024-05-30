@@ -230,7 +230,6 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.syntax"
   | "bb.task-check.database.statement.compatibility"
   | "bb.task-check.database.statement.advise"
-  | "bb.task-check.database.statement.type"
   | "bb.task-check.database.connect"
   | "bb.task-check.database.ghost.sync"
   | "bb.task-check.issue.lgtm"

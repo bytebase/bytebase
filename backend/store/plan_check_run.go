@@ -22,8 +22,6 @@ const (
 	PlanCheckDatabaseStatementCompatibility PlanCheckRunType = "bb.plan-check.database.statement.compatibility"
 	// PlanCheckDatabaseStatementAdvise is the plan check type for schema system review policy.
 	PlanCheckDatabaseStatementAdvise PlanCheckRunType = "bb.plan-check.database.statement.advise"
-	// PlanCheckDatabaseStatementType is the plan check type for statement type.
-	PlanCheckDatabaseStatementType PlanCheckRunType = "bb.plan-check.database.statement.type"
 	// PlanCheckDatabaseStatementSummaryReport is the plan check type for statement summary report.
 	PlanCheckDatabaseStatementSummaryReport PlanCheckRunType = "bb.plan-check.database.statement.summary.report"
 	// PlanCheckDatabaseConnect is the plan check type for database connection.

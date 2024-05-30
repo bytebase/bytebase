@@ -440,7 +440,6 @@ export enum PlanCheckRun_Type {
   DATABASE_STATEMENT_FAKE_ADVISE = "DATABASE_STATEMENT_FAKE_ADVISE",
   DATABASE_STATEMENT_COMPATIBILITY = "DATABASE_STATEMENT_COMPATIBILITY",
   DATABASE_STATEMENT_ADVISE = "DATABASE_STATEMENT_ADVISE",
-  DATABASE_STATEMENT_TYPE = "DATABASE_STATEMENT_TYPE",
   DATABASE_STATEMENT_SUMMARY_REPORT = "DATABASE_STATEMENT_SUMMARY_REPORT",
   DATABASE_CONNECT = "DATABASE_CONNECT",
   DATABASE_GHOST_SYNC = "DATABASE_GHOST_SYNC",
@@ -461,9 +460,6 @@ export function planCheckRun_TypeFromJSON(object: any): PlanCheckRun_Type {
     case 3:
     case "DATABASE_STATEMENT_ADVISE":
       return PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE;
-    case 4:
-    case "DATABASE_STATEMENT_TYPE":
-      return PlanCheckRun_Type.DATABASE_STATEMENT_TYPE;
     case 5:
     case "DATABASE_STATEMENT_SUMMARY_REPORT":
       return PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT;
@@ -490,8 +486,6 @@ export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
       return "DATABASE_STATEMENT_COMPATIBILITY";
     case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
       return "DATABASE_STATEMENT_ADVISE";
-    case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE:
-      return "DATABASE_STATEMENT_TYPE";
     case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
       return "DATABASE_STATEMENT_SUMMARY_REPORT";
     case PlanCheckRun_Type.DATABASE_CONNECT:
@@ -514,8 +508,6 @@ export function planCheckRun_TypeToNumber(object: PlanCheckRun_Type): number {
       return 2;
     case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
       return 3;
-    case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE:
-      return 4;
     case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
       return 5;
     case PlanCheckRun_Type.DATABASE_CONNECT:
