@@ -105,7 +105,7 @@ import {
 } from "@/store";
 import type { AccessOption } from "@/types";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
-import { extractProjectResourceName, extractSheetUID } from "@/utils";
+import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
 
 const { t } = useI18n();
 
@@ -177,7 +177,7 @@ const sharedTabLink = computed(() => {
     name: SQL_EDITOR_WORKSHEET_MODULE,
     params: {
       project: extractProjectResourceName(sheet.value.project),
-      sheet: extractSheetUID(sheet.value.name),
+      sheet: extractWorksheetUID(sheet.value.name),
     },
   });
   return new URL(route.href, window.location.origin).href;
