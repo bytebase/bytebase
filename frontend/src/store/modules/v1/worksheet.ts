@@ -8,6 +8,7 @@ import type {
   Worksheet,
   WorksheetOrganizer,
 } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import {
   extractWorksheetUID,
   getSheetStatement,
@@ -147,7 +148,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   const fetchSharedWorksheetList = async () => {
     const me = useCurrentUserV1();
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
-      filter: `creator != users/${me.value.email}`,
+      filter: `creator != "users/${me.value.email}" && visibility = "${Worksheet_Visibility.VISIBILITY_PROJECT_READ} | ${Worksheet_Visibility.VISIBILITY_PROJECT_WRITE}"`,
     });
     setListCache(worksheets);
     return worksheets;
