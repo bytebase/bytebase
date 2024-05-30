@@ -190,6 +190,10 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 				case "NULLUNIQUEIDENTIFIER":
 					scanArgs[i] = new(mssqldb.NullUniqueIdentifier)
 					continue
+				case "GEOMETRY":
+					scanArgs[i] = new(sql.NullString)
+					wantBytesValue[i] = true
+					continue
 				}
 			}
 			switch v {
