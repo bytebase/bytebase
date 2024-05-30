@@ -12,10 +12,10 @@
         />
 
         <ActionSentence :issue="issue" :issue-comment="issueComment" />
-        
+
         <NButton
-            v-if="showRestoreButton(issueComment)"
-            @click.prevent="createRestoreIssue(issueComment)"
+          v-if="showRestoreButton(issueComment)"
+          @click.prevent="createRestoreIssue(issueComment)"
         >
           <span>{{ $t("activity.restore") }}</span>
         </NButton>
@@ -60,28 +60,29 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from "vue-router";
+import dayjs from "dayjs";
 import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { IssueCommentType, type ComposedIssueComment } from "@/store";
+import { useSheetV1Store } from "@/store";
+import { useGenerateRestoreSQL } from "@/store/modules/restore";
 import type { ComposedIssue } from "@/types";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import { 
+import { Engine } from "@/types/proto/v1/common";
+import { IssueComment_TaskPriorBackup } from "@/types/proto/v1/issue_service";
+import type { IssueComment } from "@/types/proto/v1/issue_service";
+import {
   extractUserResourceName,
   extractProjectResourceName,
   getSheetStatement,
   sheetNameOfTaskV1,
   extractDatabaseResourceName,
- } from "@/utils";
+} from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
-import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import dayjs from "dayjs";
-import { useSheetV1Store } from "@/store";
-import { IssueComment_TaskPriorBackup } from "@/types/proto/v1/issue_service";
-import type { IssueComment } from "@/types/proto/v1/issue_service";
-import { useGenerateRestoreSQL } from "@/store/modules/restore";
-import { Engine } from "@/types/proto/v1/common";
+
 const { issue, selectedTask } = useIssueContext();
 const router = useRouter();
 
@@ -102,37 +103,39 @@ const showRestoreButton = (comment: ComposedIssueComment) => {
   return true;
 };
 
+const createRestoreIssue = async (comment: IssueComment) => {
+  const {
+    tables,
+    originalLine,
+    database: backupDatabase,
+  } = IssueComment_TaskPriorBackup.fromPartial(comment.taskPriorBackup || {});
 
-const createRestoreIssue = async (comment: IssueComment) =>  {
-  const { tables, originalLine, database: backupDatabase } =
-   IssueComment_TaskPriorBackup.fromPartial(
-     comment.taskPriorBackup || {}
-   );
-  
   const issueNameParts: string[] = [];
-  issueNameParts.push(`Restore the sql at line ${originalLine} of (${issue.value.title})`);
-  const datetime = dayjs().format("%MM-DD HH:mm")
+  issueNameParts.push(
+    `Restore the sql at line ${originalLine} of (${issue.value.title})`
+  );
+  const datetime = dayjs().format("%MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
   const sheetName = sheetNameOfTaskV1(selectedTask.value);
-  const sheet = useSheetV1Store().getSheetByName(sheetName)
+  const sheet = useSheetV1Store().getSheetByName(sheetName);
   if (!sheet) {
     console.error(`Sheet ${sheetName} not found`);
     return;
   }
-  const statement = getSheetStatement(sheet)
-  const {instance} = extractDatabaseResourceName(selectedTask.value.target);
+  const statement = getSheetStatement(sheet);
+  const { instance } = extractDatabaseResourceName(selectedTask.value.target);
   const restoreSQL = await useGenerateRestoreSQL().generateRestoreSQL({
     name: selectedTask.value.target,
     statement: statement,
     backupDataSource: `${instance}/databases/${backupDatabase.length > 0 ? backupDatabase : "bbdataarchive"}`,
     backupTable: tables[0].table,
-  })
+  });
   if (!restoreSQL) {
     console.error("Failed to generate restore SQL");
     return;
   }
-  
+
   const query: Record<string, any> = {
     template: "bb.issue.database.data.update",
     name: issueNameParts.join(" "),
