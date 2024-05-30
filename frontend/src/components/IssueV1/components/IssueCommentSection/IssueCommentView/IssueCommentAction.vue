@@ -83,11 +83,18 @@ import {
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
 
-const { issue, selectedTask } = useIssueContext();
+const props = defineProps<{
+  issue: ComposedIssue;
+  index: number;
+  issueComment: ComposedIssueComment;
+  similar: ComposedIssueComment[];
+}>();
+
+const { selectedTask } = useIssueContext();
 const router = useRouter();
 
 const coreDatabaseInfo = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return databaseForTask(props.issue, selectedTask.value);
 });
 
 const showRestoreButton = (comment: ComposedIssueComment) => {
@@ -112,7 +119,7 @@ const createRestoreIssue = async (comment: IssueComment) => {
 
   const issueNameParts: string[] = [];
   issueNameParts.push(
-    `Restore the sql at line ${originalLine} of (${issue.value.title})`
+    `Restore the sql at line ${originalLine} of (${props.issue.title})`
   );
   const datetime = dayjs().format("%MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
@@ -153,10 +160,4 @@ const createRestoreIssue = async (comment: IssueComment) => {
   });
 };
 
-defineProps<{
-  issue: ComposedIssue;
-  index: number;
-  issueComment: ComposedIssueComment;
-  similar: ComposedIssueComment[];
-}>();
 </script>
