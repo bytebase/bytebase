@@ -209,6 +209,20 @@ const createMigration = (
   issueType.value = type;
 };
 
+watch(
+  () => [databaseGroup.value],
+  async () => {
+    if (!databaseGroup.value) {
+      return;
+    }
+    state.expr = databaseGroup.value.simpleExpr;
+    state.isLoaded = true;
+  },
+  {
+    immediate: true,
+  }
+);
+
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
 
