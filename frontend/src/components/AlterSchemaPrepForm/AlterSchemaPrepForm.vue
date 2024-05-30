@@ -259,14 +259,6 @@
     :plan-only="state.planOnly"
     @close="state.showSchemaEditorModal = false"
   />
-
-  <DatabaseGroupPrevEditorModal
-    v-if="state.showDatabaseGroupPrevModal"
-    :issue-type="type"
-    :database-group-name="state.selectedDatabaseGroupName!"
-    :plan-only="state.planOnly"
-    @close="state.showDatabaseGroupPrevModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -300,10 +292,7 @@ import {
   useProjectV1Store,
   useDBGroupStore,
 } from "@/store";
-import type {
-  ComposedDatabase,
-  FeatureType,
-} from "@/types";
+import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
@@ -319,10 +308,10 @@ import {
   extractProjectResourceName,
   isDev,
 } from "@/utils";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import AdvancedSearch from "../AdvancedSearch";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import { DatabaseLabelFilter, DrawerContent } from "../v2";
-import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
 import ProjectStandardView from "./ProjectStandardView.vue";
 import ProjectTenantView from "./ProjectTenantView.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
@@ -337,7 +326,6 @@ type LocalState = {
   selectedDatabaseUidList: Set<string>;
   showSchemaEditorModal: boolean;
   selectedDatabaseGroupName?: string;
-  showDatabaseGroupPrevModal: boolean;
   params: SearchParams;
   // planOnly is used to indicate whether only to create plan.
   planOnly: boolean;
@@ -387,7 +375,6 @@ const state = reactive<LocalState>({
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   selectedLabels: [],
-  showDatabaseGroupPrevModal: false,
   params: {
     query: "",
     scopes: [],
@@ -590,13 +577,37 @@ const allowGenerateMultiDb = computed(() => {
   }
 });
 
+const previewDatabaseGroupIssue = () => {
+  if (!state.selectedDatabaseGroupName) {
+    // Should not reach here.
+    return;
+  }
+
+  const databaseGroup = dbGroupStore.getDBGroupByName(
+    state.selectedDatabaseGroupName
+  );
+  if (!databaseGroup) {
+    console.error("Database group not found");
+    return;
+  }
+
+  router.push(
+    generateDatabaseGroupIssueRoute(
+      props.type,
+      databaseGroup,
+      "",
+      state.planOnly
+    )
+  );
+};
+
 // Also works when single db selected.
 const generateMultiDb = async () => {
   if (
     state.databaseSelectedTab === "DATABASE_GROUP" &&
     state.selectedDatabaseGroupName
   ) {
-    state.showDatabaseGroupPrevModal = true;
+    previewDatabaseGroupIssue();
     return;
   }
 
@@ -668,23 +679,11 @@ const handleDatabaseGroupsSelectionChanged = (
 ): void => {
   const databaseGroupName = head(Array.from(databaseGroupNames));
   if (!databaseGroupName) return;
-  selectDatabaseGroup(databaseGroupName, true);
-};
-
-const selectDatabaseGroup = async (
-  databaseGroupName: string,
-  showModal = false
-) => {
   if (!hasDatabaseGroupFeature.value) {
     featureModalContext.value.feature = "bb.feature.database-grouping";
     return;
   }
-
   state.selectedDatabaseGroupName = databaseGroupName;
-
-  if (showModal) {
-    state.showDatabaseGroupPrevModal = true;
-  }
 };
 
 const generateTenant = async () => {
@@ -692,7 +691,7 @@ const generateTenant = async () => {
     state.databaseSelectedTab === "DATABASE_GROUP" &&
     state.selectedDatabaseGroupName
   ) {
-    state.showDatabaseGroupPrevModal = true;
+    previewDatabaseGroupIssue();
     return;
   }
 

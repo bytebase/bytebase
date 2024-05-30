@@ -18,9 +18,7 @@ import type {
 } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import type {
-  DatabaseGroup,
-} from "@/types/proto/v1/project_service";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 import {
   DatabaseGroupView,
   TenantMode,
@@ -147,7 +145,9 @@ export const useDBGroupStore = defineStore("db-group", () => {
     );
   };
 
-  const getDBGroupByName = (name: string) => {
+  const getDBGroupByName = (
+    name: string
+  ): ComposedDatabaseGroup | undefined => {
     return dbGroupMapByName.value.get(name);
   };
 
