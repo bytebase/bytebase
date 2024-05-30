@@ -6,8 +6,6 @@ import {
   extractInstanceResourceName,
 } from "@/utils";
 
-export type ResourceType = "DATABASE_GROUP";
-
 export const FactorList: Factor[] = [
   "resource.environment_name",
   "resource.database_name",
