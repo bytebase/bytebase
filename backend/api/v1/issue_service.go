@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -14,7 +13,6 @@ import (
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -478,9 +476,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 }
 
 func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -565,32 +563,19 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	createActivityPayload := api.ActivityIssueCreatePayload{
-		IssueName: issue.Title,
-	}
-	bytes, err := json.Marshal(createActivityPayload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        principalID,
-		ResourceContainer: project.GetName(),
-		ContainerUID:      issue.UID,
-		Type:              api.ActivityIssueCreate,
-		Level:             api.ActivityInfo,
-		Payload:           string(bytes),
-	}
-	if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
-		Issue: issue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeIssueCreate,
+		Comment: "",
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+	})
 
 	converted, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
@@ -601,9 +586,9 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 }
 
 func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -662,32 +647,19 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	createActivityPayload := api.ActivityIssueCreatePayload{
-		IssueName: issue.Title,
-	}
-	bytes, err := json.Marshal(createActivityPayload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        principalID,
-		ResourceContainer: project.GetName(),
-		ContainerUID:      issue.UID,
-		Type:              api.ActivityIssueCreate,
-		Level:             api.ActivityInfo,
-		Payload:           string(bytes),
-	}
-	if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
-		Issue: issue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeIssueCreate,
+		Comment: "",
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+	})
 
 	converted, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
@@ -706,9 +678,9 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 }
 
 func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -793,32 +765,19 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	createActivityPayload := api.ActivityIssueCreatePayload{
-		IssueName: issue.Title,
-	}
-	bytes, err := json.Marshal(createActivityPayload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        principalID,
-		ResourceContainer: project.GetName(),
-		ContainerUID:      issue.UID,
-		Type:              api.ActivityIssueCreate,
-		Level:             api.ActivityInfo,
-		Payload:           string(bytes),
-	}
-	if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
-		Issue: issue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeIssueCreate,
+		Comment: "",
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+	})
 
 	converted, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
@@ -953,31 +912,17 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		if approvalStep == nil {
 			return nil
 		}
-		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
-			ApprovalStep: approvalStep,
-		})
-		if err != nil {
-			return err
-		}
-		activityPayload, err := json.Marshal(api.ActivityIssueApprovalNotifyPayload{
-			ProtoPayload: string(protoPayload),
-		})
-		if err != nil {
-			return err
-		}
 
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueApprovalNotify,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(activityPayload),
-		}
-		if _, err := s.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
-			return err
-		}
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    webhook.EventTypeIssueApprovalCreate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
+				ApprovalStep: approvalStep,
+			},
+		})
 
 		return nil
 	}(); err != nil {
@@ -990,25 +935,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		}
 
 		// notify issue approved
-		if err := func() error {
-			create := &store.ActivityMessage{
-				CreatorUID:        api.SystemBotID,
-				ResourceContainer: issue.Project.GetName(),
-				ContainerUID:      issue.UID,
-				Type:              api.ActivityNotifyIssueApproved,
-				Level:             api.ActivityInfo,
-				Comment:           "",
-				Payload:           "",
-			}
-			if _, err := s.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{
-				Issue: issue,
-			}); err != nil {
-				return errors.Wrapf(err, "failed to create activity")
-			}
-			return nil
-		}(); err != nil {
-			slog.Error("failed to create activity for notifying issue approved", log.BBError(err))
-		}
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    webhook.EventTypeIssueApprovalPass,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+		})
 
 		// notify pipeline rollout
 		if err := func() error {
@@ -1026,25 +959,17 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			if err != nil {
 				return errors.Wrapf(err, "failed to get rollout policy")
 			}
-			payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
-				RolloutPolicy: policy,
-				StageName:     stages[0].Name,
+			s.webhookManager.CreateEvent(ctx, &webhook.Event{
+				Actor:   user,
+				Type:    webhook.EventTypeIssueRolloutReady,
+				Comment: "",
+				Issue:   webhook.NewIssue(issue),
+				Project: webhook.NewProject(issue.Project),
+				IssueRolloutReady: &webhook.EventIssueRolloutReady{
+					RolloutPolicy: policy,
+					StageName:     stages[0].Name,
+				},
 			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to marshal activity payload")
-			}
-			create := &store.ActivityMessage{
-				CreatorUID:        api.SystemBotID,
-				ResourceContainer: issue.Project.GetName(),
-				ContainerUID:      *issue.PipelineUID,
-				Type:              api.ActivityNotifyPipelineRollout,
-				Level:             api.ActivityInfo,
-				Comment:           "",
-				Payload:           string(payload),
-			}
-			if _, err := s.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
-				return err
-			}
 			return nil
 		}(); err != nil {
 			slog.Error("failed to create rollout release notification activity", log.BBError(err))
@@ -1059,7 +984,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, api.IssueDone, store.SystemBotUser, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
@@ -1285,7 +1210,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
-	var activityCreates []*store.ActivityMessage
+	var webhookEvents []*webhook.Event
 	var issueCommentCreates []*store.IssueCommentMessage
 	for _, path := range request.UpdateMask.Paths {
 		updateMasks[path] = true
@@ -1342,23 +1267,15 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				},
 			})
 
-			payload := &api.ActivityIssueFieldUpdatePayload{
-				FieldID:   api.IssueFieldName,
-				OldValue:  issue.Title,
-				NewValue:  request.Issue.Title,
-				IssueName: issue.Title,
-			}
-			activityPayload, err := json.Marshal(payload)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-			}
-			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:        user.ID,
-				ResourceContainer: issue.Project.GetName(),
-				ContainerUID:      issue.UID,
-				Type:              api.ActivityIssueFieldUpdate,
-				Level:             api.ActivityInfo,
-				Payload:           string(activityPayload),
+			webhookEvents = append(webhookEvents, &webhook.Event{
+				Actor:   user,
+				Type:    webhook.EventTypeIssueUpdate,
+				Comment: "",
+				Issue:   webhook.NewIssue(issue),
+				Project: webhook.NewProject(issue.Project),
+				IssueUpdate: &webhook.EventIssueUpdate{
+					Path: path,
+				},
 			})
 
 		case "description":
@@ -1376,23 +1293,15 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				},
 			})
 
-			payload := &api.ActivityIssueFieldUpdatePayload{
-				FieldID:   api.IssueFieldDescription,
-				OldValue:  issue.Description,
-				NewValue:  request.Issue.Description,
-				IssueName: issue.Title,
-			}
-			activityPayload, err := json.Marshal(payload)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-			}
-			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:        user.ID,
-				ResourceContainer: issue.Project.GetName(),
-				ContainerUID:      issue.UID,
-				Type:              api.ActivityIssueFieldUpdate,
-				Level:             api.ActivityInfo,
-				Payload:           string(activityPayload),
+			webhookEvents = append(webhookEvents, &webhook.Event{
+				Actor:   user,
+				Type:    webhook.EventTypeIssueUpdate,
+				Comment: "",
+				Issue:   webhook.NewIssue(issue),
+				Project: webhook.NewProject(issue.Project),
+				IssueUpdate: &webhook.EventIssueUpdate{
+					Path: path,
+				},
 			})
 
 		case "subscribers":
@@ -1470,10 +1379,8 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 	}
 
-	for _, create := range activityCreates {
-		if _, err := s.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
-			slog.Warn("failed to create issue field update activity", "issue_id", issue.UID, log.BBError(err))
-		}
+	for _, e := range webhookEvents {
+		s.webhookManager.CreateEvent(ctx, e)
 	}
 	for _, create := range issueCommentCreates {
 		if _, err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {
@@ -1545,30 +1452,13 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 			}
 
 			func() {
-				payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-					OldStatus: issue.Status,
-					NewStatus: updatedIssue.Status,
-					IssueName: updatedIssue.Title,
+				s.webhookManager.CreateEvent(ctx, &webhook.Event{
+					Actor:   user,
+					Type:    webhook.EventTypeIssueStatusUpdate,
+					Comment: request.Reason,
+					Issue:   webhook.NewIssue(updatedIssue),
+					Project: webhook.NewProject(updatedIssue.Project),
 				})
-				if err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title))
-					return
-				}
-				activityCreate := &store.ActivityMessage{
-					CreatorUID:        user.ID,
-					ResourceContainer: updatedIssue.Project.GetName(),
-					ContainerUID:      updatedIssue.UID,
-					Type:              api.ActivityIssueStatusUpdate,
-					Level:             api.ActivityInfo,
-					Comment:           request.Reason,
-					Payload:           string(payload),
-				}
-				if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{
-					Issue: updatedIssue,
-				}); err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title))
-					return
-				}
 			}()
 
 			func() {
@@ -1675,44 +1565,20 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to create issue comment")
 	}
 
-	// TODO: migrate to store v2.
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        principalID,
-		ResourceContainer: issue.Project.GetName(),
-		ContainerUID:      issue.UID,
-		Type:              api.ActivityIssueCommentCreate,
-		Level:             api.ActivityInfo,
-		Comment:           request.IssueComment.Comment,
-	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeIssueCommentCreate,
+		Comment: request.IssueComment.Comment,
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+	})
 
-	var payload api.ActivityIssueCommentCreatePayload
-	if activityCreate.Payload != "" {
-		if err := json.Unmarshal([]byte(activityCreate.Payload), &payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal payload: %v", err.Error())
-		}
-	}
-	payload.IssueName = issue.Title
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal payload: %v", err.Error())
-	}
-	activityCreate.Payload = string(bytes)
-
-	if _, err := s.webhookManager.CreateActivity(ctx, activityCreate, &webhook.Metadata{Issue: issue}); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err.Error())
-	}
-
-	// TODO(p0ny): dual-write issue_comment and activity for now. Remove activity in the future.
 	ic, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: request.IssueComment.Comment,
 		},
-	}, principalID)
+	}, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err)
 	}

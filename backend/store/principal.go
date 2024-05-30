@@ -14,7 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var systemBotUser = &UserMessage{
+var SystemBotUser = &UserMessage{
 	ID:    api.SystemBotID,
 	Email: api.SystemBotEmail,
 	Type:  api.SystemBot,
@@ -63,7 +63,7 @@ type UserMessage struct {
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	if id == api.SystemBotID {
-		return systemBotUser, nil
+		return SystemBotUser, nil
 	}
 	if v, ok := s.userIDCache.Get(id); ok {
 		return v, nil
@@ -84,7 +84,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 // GetUserByEmail gets the user by email.
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
 	if email == api.SystemBotEmail {
-		return systemBotUser, nil
+		return SystemBotUser, nil
 	}
 	if v, ok := s.userEmailCache.Get(email); ok {
 		return v, nil
