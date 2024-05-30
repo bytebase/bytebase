@@ -42,6 +42,7 @@ const BACKGROUND_COLOR_LIST: string[] = [
 ];
 
 const sizeClassMap: Map<BBAvatarSizeType, string> = new Map([
+  ["MINI", "w-[18px] h-[18px] font-medium"],
   ["TINY", "w-5 h-5 font-medium"],
   ["SMALL", "w-6 h-6 font-medium"],
   ["NORMAL", "w-8 h-8 font-medium"],
@@ -50,6 +51,7 @@ const sizeClassMap: Map<BBAvatarSizeType, string> = new Map([
 ]);
 
 const fontStyleClassMap: Map<BBAvatarSizeType, string> = new Map([
+  ["MINI", "0.5rem"], // customized font size
   ["TINY", "0.5rem"], // customized font size
   ["SMALL", "0.675rem"], // customized font size
   ["NORMAL", "0.875rem"], // text-sm
