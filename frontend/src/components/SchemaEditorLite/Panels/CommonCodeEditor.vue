@@ -24,6 +24,7 @@
             </NButton>
             <NButton
               size="small"
+              type="primary"
               :disabled="props.code === state.code"
               @click="confirmEdit"
             >
