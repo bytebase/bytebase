@@ -48,7 +48,6 @@ const planCheckRunsGroupByType = computed(() => {
 
 const PlanCheckTypeOrderList: PlanCheckRun_Type[] = [
   PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY,
-  PlanCheckRun_Type.DATABASE_STATEMENT_TYPE,
   PlanCheckRun_Type.DATABASE_CONNECT,
   PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
 ];

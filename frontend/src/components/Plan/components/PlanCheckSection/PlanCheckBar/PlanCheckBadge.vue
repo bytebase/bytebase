@@ -133,7 +133,6 @@ const PlanCheckRunTypeNameDict = new Map<PlanCheckRun_Type, string>([
     "task.check-type.compatibility",
   ],
   [PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE, "task.check-type.sql-review"],
-  [PlanCheckRun_Type.DATABASE_STATEMENT_TYPE, "task.check-type.statement-type"],
   [PlanCheckRun_Type.DATABASE_CONNECT, "task.check-type.connection"],
   [PlanCheckRun_Type.DATABASE_GHOST_SYNC, "task.check-type.ghost-sync"],
   [
