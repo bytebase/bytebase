@@ -438,16 +438,10 @@ const maybeWrapStatementsAsSheets = (
     const { tasks } = stage;
     for (let j = 0; j < tasks.length; j++) {
       const task = tasks[j];
-      // For database group changes, tasks returned by previewRollout
-      // have `sheet` fields actually generated SQL statements instead
-      // of sheet names.
-      // So we create a local sheet for each task and set the statement
-      // to the local task.
-      const statement = sheetNameOfTaskV1(task);
       const sheetName = `${params.project.name}/sheets/${nextUID()}`;
       const sheet = getLocalSheetByName(sheetName);
       sheet.database = task.target;
-      setSheetStatement(sheet, statement);
+      setSheetStatement(sheet, getSheetStatement(sheet));
       setSheetNameForTask(task, sheetName);
     }
   }
