@@ -1,12 +1,14 @@
 import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import Home from "@/views/Home.vue";
+import DashboardLandingPage from "@/views/DashboardLandingPage.vue";
+import MyIssues from "@/views/MyIssues.vue";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_HOME_MODULE,
+  WORKSPACE_ROUTE_MY_ISSUES,
   WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
@@ -35,6 +37,18 @@ const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "",
     name: WORKSPACE_HOME_MODULE,
+    components: {
+      content: DashboardLandingPage,
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
+  },
+  {
+    path: "issues",
+    name: WORKSPACE_ROUTE_MY_ISSUES,
     meta: {
       getQuickActionList: () => {
         return [
@@ -48,7 +62,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
       },
     },
     components: {
-      content: Home,
+      content: MyIssues,
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: {
