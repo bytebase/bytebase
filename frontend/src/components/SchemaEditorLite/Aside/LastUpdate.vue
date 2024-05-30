@@ -1,9 +1,6 @@
 <template>
   <NPopover
     v-if="updater"
-    :show="
-      node.type === 'procedure' && node.metadata.procedure.name === 'myproc'
-    "
     :disabled="!updateTime"
     placement="right"
   >
