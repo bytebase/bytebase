@@ -41,7 +41,7 @@
           :allow-admin="true"
           :factor-list="FactorList"
           :factor-support-dropdown="factorSupportDropdown"
-          :factor-options-map="FactorOptionsMap"
+          :factor-options-map="DatabaseGroupFactorOptionsMap()"
         />
       </div>
       <div class="col-span-2">
@@ -83,7 +83,7 @@ import type {
 import { getErrorCode } from "@/utils/grpcweb";
 import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import { factorSupportDropdown, FactorOptionsMap } from "./utils";
+import { factorSupportDropdown, DatabaseGroupFactorOptionsMap } from "./utils";
 import { FactorList } from "./utils";
 
 const props = defineProps<{
