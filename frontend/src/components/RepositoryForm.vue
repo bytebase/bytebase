@@ -110,7 +110,6 @@
   <DatabaseGroupPanel
     :show="showDatabaseGroupPanel"
     :project="project"
-    :resource-type="'DATABASE_GROUP'"
     :redirect-to-detail-page="false"
     @close="showDatabaseGroupPanel = false"
   />
