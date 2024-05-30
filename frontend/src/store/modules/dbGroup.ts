@@ -84,7 +84,6 @@ const batchComposeDatabaseGroup = async (
 export const useDBGroupStore = defineStore("db-group", () => {
   const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
-  const cachedDatabaseGroupNameSet = ref<Set<string>>(new Set());
 
   const fetchAllDatabaseGroupList = async () => {
     const { databaseGroups } = await projectServiceClient.listDatabaseGroups({

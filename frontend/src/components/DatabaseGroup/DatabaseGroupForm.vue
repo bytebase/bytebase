@@ -58,13 +58,12 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NInput } from "naive-ui";
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
-import { DatabaseGroupSelect } from "@/components/v2/Select";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { emptySimpleExpr, wrapAsGroup } from "@/plugins/cel";
 import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
@@ -114,12 +113,6 @@ const state = reactive<LocalState>({
   expr: wrapAsGroup(emptySimpleExpr()),
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-const selectedDatabaseGroupName = computed(() => {
-  const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
-    state.selectedDatabaseGroupId || ""
-  );
-  return databaseGroupName;
-});
 const formattedResourceType = computed(() =>
   props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
 );
@@ -220,15 +213,13 @@ watch(
 );
 
 const existMatchedUnactivateInstance = computed(() => {
-  if (props.resourceType === "DATABASE_GROUP") {
-    return matchedDatabaseList.value.some(
-      (database) =>
-        !subscriptionV1Store.hasInstanceFeature(
-          "bb.feature.database-grouping",
-          database.instanceEntity
-        )
-    );
-  }
+  return matchedDatabaseList.value.some(
+    (database) =>
+      !subscriptionV1Store.hasInstanceFeature(
+        "bb.feature.database-grouping",
+        database.instanceEntity
+      )
+  );
 });
 
 defineExpose({

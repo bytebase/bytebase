@@ -113,7 +113,6 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
-import { useRouter } from "vue-router";
 import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
@@ -162,7 +161,6 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const router = useRouter();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const subscriptionV1Store = useSubscriptionV1Store();

@@ -63,7 +63,7 @@
 <script lang="ts" setup>
 import { NButton, NCheckbox } from "naive-ui";
 import type { PropType } from "vue";
-import { computed, onMounted, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
