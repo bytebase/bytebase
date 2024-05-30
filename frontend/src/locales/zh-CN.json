@@ -960,7 +960,8 @@
       "task": "任务",
       "stage": "阶段"
     },
-    "n-similar-activities": "({count} 个相似的活动)"
+    "n-similar-activities": "({count} 个相似的活动)",
+    "restore": "恢复"
   },
   "issue": {
     "my-issues": "我的工单",

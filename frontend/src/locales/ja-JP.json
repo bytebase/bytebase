@@ -960,7 +960,8 @@
       "task": "タスク",
       "stage": "ステージ"
     },
-    "n-similar-activities": "({count} 件の同様のイベント)"
+    "n-similar-activities": "({count} 件の同様のイベント)",
+    "restore": "復元する"
   },
   "issue": {
     "my-issues": "私の仕事の命令",
