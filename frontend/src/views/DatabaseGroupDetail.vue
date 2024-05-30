@@ -76,9 +76,9 @@
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
-            :factor-list="FactorList.get('DATABASE_GROUP') ?? []"
+            :factor-list="FactorList"
             :factor-support-dropdown="factorSupportDropdown"
-            :factor-options-map="getFactorOptionsMap('DATABASE_GROUP')"
+            :factor-options-map="FactorOptionsMap"
           />
         </div>
         <div class="col-span-2">
@@ -95,7 +95,6 @@
   <DatabaseGroupPanel
     :show="editState.showConfigurePanel"
     :project="project"
-    :resource-type="editState.type"
     :database-group="editState.databaseGroup"
     :parent-database-group="editState.parentDatabaseGroup"
     @close="editState.showConfigurePanel = false"
@@ -116,11 +115,10 @@ import { onMounted, reactive, computed, watch, ref } from "vue";
 import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
-import type { ResourceType } from "@/components/DatabaseGroup/utils";
 import { FactorList } from "@/components/DatabaseGroup/utils";
 import {
   factorSupportDropdown,
-  getFactorOptionsMap,
+  FactorOptionsMap,
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
@@ -150,7 +148,6 @@ interface LocalState {
 
 interface EditDatabaseGroupState {
   showConfigurePanel: boolean;
-  type: ResourceType;
   databaseGroup?: DatabaseGroup;
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }
@@ -171,7 +168,6 @@ const state = reactive<LocalState>({
 });
 const editState = reactive<EditDatabaseGroupState>({
   showConfigurePanel: false,
-  type: "DATABASE_GROUP",
 });
 const issueType = ref<
   | "bb.issue.database.schema.update"
@@ -203,7 +199,6 @@ onMounted(async () => {
 });
 
 const handleEditDatabaseGroup = () => {
-  editState.type = "DATABASE_GROUP";
   editState.databaseGroup = databaseGroup.value;
   editState.showConfigurePanel = true;
 };

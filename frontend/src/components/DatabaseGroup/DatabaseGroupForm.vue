@@ -14,7 +14,7 @@
           <ResourceIdField
             ref="resourceIdField"
             editing-class="mt-4"
-            :resource-type="formattedResourceType"
+            resource-type="database-group"
             :readonly="!isCreating"
             :value="state.resourceId"
             :resource-title="state.placeholder"
@@ -22,7 +22,7 @@
           />
         </div>
       </div>
-      <div v-if="resourceType === 'DATABASE_GROUP'">
+      <div>
         <p class="text-lg mb-2">{{ $t("common.project") }}</p>
         <ProjectSelect
           :project="project.uid"
@@ -39,14 +39,13 @@
         <ExprEditor
           :expr="state.expr"
           :allow-admin="true"
-          :factor-list="FactorList.get(resourceType) ?? []"
+          :factor-list="FactorList"
           :factor-support-dropdown="factorSupportDropdown"
-          :factor-options-map="getFactorOptionsMap(resourceType)"
+          :factor-options-map="FactorOptionsMap"
         />
       </div>
       <div class="col-span-2">
         <MatchedDatabaseView
-          v-if="resourceType === 'DATABASE_GROUP'"
           :loading="state.isRequesting"
           :matched-database-list="matchedDatabaseList"
           :unmatched-database-list="unmatchedDatabaseList"
@@ -84,13 +83,11 @@ import type {
 import { getErrorCode } from "@/utils/grpcweb";
 import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import type { ResourceType } from "./utils";
-import { factorSupportDropdown, getFactorOptionsMap } from "./utils";
+import { factorSupportDropdown, FactorOptionsMap } from "./utils";
 import { FactorList } from "./utils";
 
 const props = defineProps<{
   project: ComposedProject;
-  resourceType: ResourceType;
   databaseGroup?: DatabaseGroup;
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }>();
@@ -113,15 +110,8 @@ const state = reactive<LocalState>({
   expr: wrapAsGroup(emptySimpleExpr()),
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-const formattedResourceType = computed(() =>
-  props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
-);
 
 const isCreating = computed(() => props.databaseGroup === undefined);
-
-const resourceIdType = computed(() =>
-  props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
-);
 
 onMounted(async () => {
   const databaseGroup = props.databaseGroup;
@@ -129,19 +119,17 @@ onMounted(async () => {
     return;
   }
 
-  if (props.resourceType === "DATABASE_GROUP") {
-    const databaseGroupEntity = databaseGroup as DatabaseGroup;
-    const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
-      databaseGroup.name
-    );
-    state.resourceId = databaseGroupName;
-    state.placeholder = databaseGroupEntity.databasePlaceholder;
-    const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-      databaseGroup.name
-    );
-    if (composedDatabaseGroup.simpleExpr) {
-      state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
-    }
+  const databaseGroupEntity = databaseGroup as DatabaseGroup;
+  const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+    databaseGroup.name
+  );
+  state.resourceId = databaseGroupName;
+  state.placeholder = databaseGroupEntity.databasePlaceholder;
+  const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+    databaseGroup.name
+  );
+  if (composedDatabaseGroup.simpleExpr) {
+    state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
   }
 });
 
@@ -152,13 +140,10 @@ const validateResourceId = async (
     return [];
   }
 
-  let request = undefined;
-  if (props.resourceType === "DATABASE_GROUP") {
-    request = dbGroupStore.getOrFetchDBGroupByName(
-      `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`,
-      true /* silent */
-    );
-  }
+  const request = dbGroupStore.getOrFetchDBGroupByName(
+    `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`,
+    true /* silent */
+  );
 
   if (!request) {
     return [];
@@ -171,7 +156,7 @@ const validateResourceId = async (
         {
           type: "error",
           message: t("resource-id.validation.duplicated", {
-            resource: t(`resource.${resourceIdType.value}`),
+            resource: t(`resource.database-group`),
           }),
         },
       ];
@@ -188,10 +173,6 @@ const validateResourceId = async (
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
 const updateDatabaseMatchingState = useDebounceFn(async () => {
-  if (props.resourceType !== "DATABASE_GROUP") {
-    return;
-  }
-
   state.isRequesting = true;
   const result = await dbGroupStore.fetchDatabaseGroupMatchList({
     projectName: props.project.name,

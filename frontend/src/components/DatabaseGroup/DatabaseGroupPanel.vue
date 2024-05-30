@@ -12,7 +12,6 @@
       <DatabaseGroupForm
         ref="formRef"
         :project="project"
-        :resource-type="resourceType"
         :database-group="props.databaseGroup"
         :parent-database-group="props.parentDatabaseGroup"
       />
@@ -61,12 +60,10 @@ import type {
 } from "@/types/proto/v1/project_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
-import type { ResourceType } from "./utils";
 
 const props = defineProps<{
   show: boolean;
   project: ComposedProject;
-  resourceType: ResourceType;
   databaseGroup?: DatabaseGroup;
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }>();
@@ -85,13 +82,9 @@ const formRef = ref<InstanceType<typeof DatabaseGroupForm>>();
 const isCreating = computed(() => props.databaseGroup === undefined);
 
 const title = computed(() => {
-  if (props.resourceType === "DATABASE_GROUP") {
-    return isCreating.value
-      ? t("database-group.create")
-      : t("database-group.edit");
-  } else {
-    throw new Error("Unknown resource type");
-  }
+  return isCreating.value
+    ? t("database-group.create")
+    : t("database-group.edit");
 });
 
 const allowConfirm = computed(() => {
@@ -107,10 +100,7 @@ const allowConfirm = computed(() => {
   if (formState.existMatchedUnactivateInstance) {
     return false;
   }
-  if (props.resourceType === "DATABASE_GROUP") {
-    return formState.resourceId && formState.placeholder;
-  }
-  return false;
+  return formState.resourceId && formState.placeholder;
 });
 
 const showDeleteButton = computed(() => {
@@ -127,17 +117,15 @@ const doDelete = () => {
     positiveText: t("common.confirm"),
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
-      if (props.resourceType === "DATABASE_GROUP") {
-        const databaseGroup = props.databaseGroup as DatabaseGroup;
-        await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
-        if (
-          router.currentRoute.value.name ===
-          PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL
-        ) {
-          router.replace({
-            name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-          });
-        }
+      const databaseGroup = props.databaseGroup as DatabaseGroup;
+      await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
+      if (
+        router.currentRoute.value.name ===
+        PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL
+      ) {
+        router.replace({
+          name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
+        });
       }
       emit("close");
     },
@@ -151,41 +139,40 @@ const doConfirm = async () => {
   }
 
   try {
-    if (props.resourceType === "DATABASE_GROUP") {
-      if (isCreating.value) {
-        const celStrings = await batchConvertParsedExprToCELString([
-          ParsedExpr.fromJSON({
-            expr: buildCELExpr(formState.expr),
-          }),
-        ]);
-        const resourceId = formState.resourceId;
-        await dbGroupStore.createDatabaseGroup({
-          projectName: props.project.name,
-          databaseGroup: {
-            name: `${props.project.name}/databaseGroups/${resourceId}`,
-            databasePlaceholder: formState.placeholder,
-            databaseExpr: Expr.fromJSON({
-              expression: celStrings[0] || "true",
-            }),
-          },
-          databaseGroupId: resourceId,
-        });
-        emit("created", resourceId);
-      } else {
-        const celStrings = await batchConvertParsedExprToCELString([
-          ParsedExpr.fromJSON({
-            expr: buildCELExpr(formState.expr),
-          }),
-        ]);
-        await dbGroupStore.updateDatabaseGroup({
-          ...props.databaseGroup!,
+    if (isCreating.value) {
+      const celStrings = await batchConvertParsedExprToCELString([
+        ParsedExpr.fromJSON({
+          expr: buildCELExpr(formState.expr),
+        }),
+      ]);
+      const resourceId = formState.resourceId;
+      await dbGroupStore.createDatabaseGroup({
+        projectName: props.project.name,
+        databaseGroup: {
+          name: `${props.project.name}/databaseGroups/${resourceId}`,
           databasePlaceholder: formState.placeholder,
           databaseExpr: Expr.fromJSON({
-            expression: celStrings[0],
+            expression: celStrings[0] || "true",
           }),
-        });
-      }
+        },
+        databaseGroupId: resourceId,
+      });
+      emit("created", resourceId);
+    } else {
+      const celStrings = await batchConvertParsedExprToCELString([
+        ParsedExpr.fromJSON({
+          expr: buildCELExpr(formState.expr),
+        }),
+      ]);
+      await dbGroupStore.updateDatabaseGroup({
+        ...props.databaseGroup!,
+        databasePlaceholder: formState.placeholder,
+        databaseExpr: Expr.fromJSON({
+          expression: celStrings[0],
+        }),
+      });
     }
+
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
