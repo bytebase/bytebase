@@ -80,11 +80,6 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.ProjectService_CreateDatabaseGroup_FullMethodName:          iam.PermissionProjectsUpdate,
 	v1pb.ProjectService_UpdateDatabaseGroup_FullMethodName:          iam.PermissionProjectsUpdate,
 	v1pb.ProjectService_DeleteDatabaseGroup_FullMethodName:          iam.PermissionProjectsUpdate,
-	v1pb.ProjectService_ListSchemaGroups_FullMethodName:             iam.PermissionProjectsGet,
-	v1pb.ProjectService_GetSchemaGroup_FullMethodName:               iam.PermissionProjectsGet,
-	v1pb.ProjectService_CreateSchemaGroup_FullMethodName:            iam.PermissionProjectsUpdate,
-	v1pb.ProjectService_UpdateSchemaGroup_FullMethodName:            iam.PermissionProjectsUpdate,
-	v1pb.ProjectService_DeleteSchemaGroup_FullMethodName:            iam.PermissionProjectsUpdate,
 	v1pb.ProjectService_GetProjectProtectionRules_FullMethodName:    iam.PermissionProjectsGet,
 	v1pb.ProjectService_UpdateProjectProtectionRules_FullMethodName: iam.PermissionProjectsUpdate,
 

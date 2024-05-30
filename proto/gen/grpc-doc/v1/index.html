@@ -1662,10 +1662,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.CreateSchemaGroupRequest"><span class="badge">M</span>CreateSchemaGroupRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.DatabaseGroup"><span class="badge">M</span>DatabaseGroup</a>
                 </li>
               
@@ -1679,10 +1675,6 @@
               
                 <li>
                   <a href="#bytebase.v1.DeleteProjectRequest"><span class="badge">M</span>DeleteProjectRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteSchemaGroupRequest"><span class="badge">M</span>DeleteSchemaGroupRequest</a>
                 </li>
               
                 <li>
@@ -1714,10 +1706,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetSchemaGroupRequest"><span class="badge">M</span>GetSchemaGroupRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Label"><span class="badge">M</span>Label</a>
                 </li>
               
@@ -1746,14 +1734,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListSchemaGroupsRequest"><span class="badge">M</span>ListSchemaGroupsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListSchemaGroupsResponse"><span class="badge">M</span>ListSchemaGroupsResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Project"><span class="badge">M</span>Project</a>
                 </li>
               
@@ -1775,14 +1755,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ScheduleDeployment"><span class="badge">M</span>ScheduleDeployment</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SchemaGroup"><span class="badge">M</span>SchemaGroup</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SchemaGroup.Table"><span class="badge">M</span>SchemaGroup.Table</a>
                 </li>
               
                 <li>
@@ -1826,10 +1798,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateSchemaGroupRequest"><span class="badge">M</span>UpdateSchemaGroupRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UpdateWebhookRequest"><span class="badge">M</span>UpdateWebhookRequest</a>
                 </li>
               
@@ -1856,10 +1824,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ProtectionRule.Target"><span class="badge">E</span>ProtectionRule.Target</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SchemaGroupView"><span class="badge">E</span>SchemaGroupView</a>
                 </li>
               
                 <li>
@@ -18628,56 +18592,6 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
-        <h3 id="bytebase.v1.CreateSchemaGroupRequest">CreateSchemaGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource where this schema group will be created.
-Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_group</td>
-                  <td><a href="#bytebase.v1.SchemaGroup">SchemaGroup</a></td>
-                  <td></td>
-                  <td><p>The schema group to create. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_group_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The ID to use for the schema group, which will become the final component of
-the schema group&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters
-are /[a-z][0-9]-/. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validate_only</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set, validate the create request and preview the full schema group response, but do not actually create it. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.DatabaseGroup">DatabaseGroup</h3>
         <p></p>
 
@@ -18805,31 +18719,6 @@ Format: projects/{project} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteSchemaGroupRequest">DeleteSchemaGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the schema group to delete.
-Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} </p></td>
                 </tr>
               
             </tbody>
@@ -19025,38 +18914,6 @@ Format: projects/{project}/protectionRules </p></td>
                   <td></td>
                   <td><p>The name of the project to retrieve.
 Format: projects/{project} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetSchemaGroupRequest">GetSchemaGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the database group to retrieve.
-Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.SchemaGroupView">SchemaGroupView</a></td>
-                  <td></td>
-                  <td><p>The view to return. Defaults to SCHEMA_GROUP_VIEW_BASIC. </p></td>
                 </tr>
               
             </tbody>
@@ -19322,84 +19179,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListSchemaGroupsRequest">ListSchemaGroupsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource whose schema groups are to be listed.
-Format: projects/{project}/schemaGroups/{schemaGroup} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Not used. The maximum number of anomalies to return. The service may return fewer than
-this value.
-If unspecified, at most 50 anomalies will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used. A page token, received from a previous `ListSchemaGroups` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListSchemaGroups` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListSchemaGroupsResponse">ListSchemaGroupsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema_groups</td>
-                  <td><a href="#bytebase.v1.SchemaGroup">SchemaGroup</a></td>
-                  <td>repeated</td>
-                  <td><p>schema_groups is the list of schema groups. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used. A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Project">Project</h3>
         <p></p>
 
@@ -19648,100 +19427,6 @@ Format: projects/{project}/protectionRules </p></td>
                 <tr>
                   <td>spec</td>
                   <td><a href="#bytebase.v1.DeploymentSpec">DeploymentSpec</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SchemaGroup">SchemaGroup</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the schema group.
-Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table_expr</td>
-                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
-                  <td></td>
-                  <td><p>The table condition that is associated with this schema group.
-The table_placeholder in the sheet script will be rendered to the actual table name. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table_placeholder</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The table placeholder used for rendering. For example, if set to &#34;tbl&#34;, all the table name
-&#34;tbl&#34; in the SQL script will be rendered to the actual table name. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>matched_tables</td>
-                  <td><a href="#bytebase.v1.SchemaGroup.Table">SchemaGroup.Table</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of databases that match the database group condition. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>unmatched_tables</td>
-                  <td><a href="#bytebase.v1.SchemaGroup.Table">SchemaGroup.Table</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of databases that match the database group condition. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SchemaGroup.Table">SchemaGroup.Table</h3>
-        <p>In the future, we can introduce schema_expr if users use schema (Postgres schema) for groups.</p><p>Its keyword will be {{SCHEMA}}.</p><p>All the expressions will be used to filter the schema objects in DatabaseSchema.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the database.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -20014,40 +19699,6 @@ Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
 
 The project&#39;s `name` field is used to identify the project to update.
 Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateSchemaGroupRequest">UpdateSchemaGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema_group</td>
-                  <td><a href="#bytebase.v1.SchemaGroup">SchemaGroup</a></td>
-                  <td></td>
-                  <td><p>The schema group to update.
-
-The schema group&#39;s `name` field is used to identify the schema group to update.
-Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} </p></td>
                 </tr>
               
                 <tr>
@@ -20436,36 +20087,6 @@ The API will default to the BASIC view.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.SchemaGroupView">SchemaGroupView</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>SCHEMA_GROUP_VIEW_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The default / unset value.
-The API will default to the BASIC view.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SCHEMA_GROUP_VIEW_BASIC</td>
-                <td>1</td>
-                <td><p>Include basic information about the schema group, but exclude the list of matched tables and unmatched tables.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SCHEMA_GROUP_VIEW_FULL</td>
-                <td>2</td>
-                <td><p>Include everything.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.TenantMode">TenantMode</h3>
         <p></p>
         <table class="enum-table">
@@ -20743,41 +20364,6 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>ListSchemaGroups</td>
-                <td><a href="#bytebase.v1.ListSchemaGroupsRequest">ListSchemaGroupsRequest</a></td>
-                <td><a href="#bytebase.v1.ListSchemaGroupsResponse">ListSchemaGroupsResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GetSchemaGroup</td>
-                <td><a href="#bytebase.v1.GetSchemaGroupRequest">GetSchemaGroupRequest</a></td>
-                <td><a href="#bytebase.v1.SchemaGroup">SchemaGroup</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CreateSchemaGroup</td>
-                <td><a href="#bytebase.v1.CreateSchemaGroupRequest">CreateSchemaGroupRequest</a></td>
-                <td><a href="#bytebase.v1.SchemaGroup">SchemaGroup</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateSchemaGroup</td>
-                <td><a href="#bytebase.v1.UpdateSchemaGroupRequest">UpdateSchemaGroupRequest</a></td>
-                <td><a href="#bytebase.v1.SchemaGroup">SchemaGroup</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteSchemaGroup</td>
-                <td><a href="#bytebase.v1.DeleteSchemaGroupRequest">DeleteSchemaGroupRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>GetProjectProtectionRules</td>
                 <td><a href="#bytebase.v1.GetProjectProtectionRulesRequest">GetProjectProtectionRulesRequest</a></td>
                 <td><a href="#bytebase.v1.ProtectionRules">ProtectionRules</a></td>
@@ -21015,56 +20601,6 @@ The API will default to the BASIC view.</p></td>
                 <td>DeleteDatabaseGroup</td>
                 <td>DELETE</td>
                 <td>/v1/{name=projects/*/databaseGroups/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListSchemaGroups</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*/databaseGroups/*}/schemaGroups</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetSchemaGroup</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/databaseGroups/*/schemaGroups/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateSchemaGroup</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*/databaseGroups/*}/schemaGroups</td>
-                <td>schema_group</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateSchemaGroup</td>
-                <td>PATCH</td>
-                <td>/v1/{schema_group.name=projects/*/databaseGroups/*/schemaGroups/*}</td>
-                <td>schema_group</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteSchemaGroup</td>
-                <td>DELETE</td>
-                <td>/v1/{name=projects/*/databaseGroups/*/schemaGroups/*}</td>
                 <td></td>
               </tr>
               

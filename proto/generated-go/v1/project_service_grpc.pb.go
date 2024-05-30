@@ -41,11 +41,6 @@ const (
 	ProjectService_CreateDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/CreateDatabaseGroup"
 	ProjectService_UpdateDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/UpdateDatabaseGroup"
 	ProjectService_DeleteDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/DeleteDatabaseGroup"
-	ProjectService_ListSchemaGroups_FullMethodName             = "/bytebase.v1.ProjectService/ListSchemaGroups"
-	ProjectService_GetSchemaGroup_FullMethodName               = "/bytebase.v1.ProjectService/GetSchemaGroup"
-	ProjectService_CreateSchemaGroup_FullMethodName            = "/bytebase.v1.ProjectService/CreateSchemaGroup"
-	ProjectService_UpdateSchemaGroup_FullMethodName            = "/bytebase.v1.ProjectService/UpdateSchemaGroup"
-	ProjectService_DeleteSchemaGroup_FullMethodName            = "/bytebase.v1.ProjectService/DeleteSchemaGroup"
 	ProjectService_GetProjectProtectionRules_FullMethodName    = "/bytebase.v1.ProjectService/GetProjectProtectionRules"
 	ProjectService_UpdateProjectProtectionRules_FullMethodName = "/bytebase.v1.ProjectService/UpdateProjectProtectionRules"
 )
@@ -75,11 +70,6 @@ type ProjectServiceClient interface {
 	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	ListSchemaGroups(ctx context.Context, in *ListSchemaGroupsRequest, opts ...grpc.CallOption) (*ListSchemaGroupsResponse, error)
-	GetSchemaGroup(ctx context.Context, in *GetSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
-	CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
-	UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
-	DeleteSchemaGroup(ctx context.Context, in *DeleteSchemaGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
 	UpdateProjectProtectionRules(ctx context.Context, in *UpdateProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
 }
@@ -281,51 +271,6 @@ func (c *projectServiceClient) DeleteDatabaseGroup(ctx context.Context, in *Dele
 	return out, nil
 }
 
-func (c *projectServiceClient) ListSchemaGroups(ctx context.Context, in *ListSchemaGroupsRequest, opts ...grpc.CallOption) (*ListSchemaGroupsResponse, error) {
-	out := new(ListSchemaGroupsResponse)
-	err := c.cc.Invoke(ctx, ProjectService_ListSchemaGroups_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) GetSchemaGroup(ctx context.Context, in *GetSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error) {
-	out := new(SchemaGroup)
-	err := c.cc.Invoke(ctx, ProjectService_GetSchemaGroup_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error) {
-	out := new(SchemaGroup)
-	err := c.cc.Invoke(ctx, ProjectService_CreateSchemaGroup_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error) {
-	out := new(SchemaGroup)
-	err := c.cc.Invoke(ctx, ProjectService_UpdateSchemaGroup_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) DeleteSchemaGroup(ctx context.Context, in *DeleteSchemaGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, ProjectService_DeleteSchemaGroup_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error) {
 	out := new(ProtectionRules)
 	err := c.cc.Invoke(ctx, ProjectService_GetProjectProtectionRules_FullMethodName, in, out, opts...)
@@ -369,11 +314,6 @@ type ProjectServiceServer interface {
 	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
 	UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error)
 	DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error)
-	ListSchemaGroups(context.Context, *ListSchemaGroupsRequest) (*ListSchemaGroupsResponse, error)
-	GetSchemaGroup(context.Context, *GetSchemaGroupRequest) (*SchemaGroup, error)
-	CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*SchemaGroup, error)
-	UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*SchemaGroup, error)
-	DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error)
 	GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error)
 	UpdateProjectProtectionRules(context.Context, *UpdateProjectProtectionRulesRequest) (*ProtectionRules, error)
 	mustEmbedUnimplementedProjectServiceServer()
@@ -445,21 +385,6 @@ func (UnimplementedProjectServiceServer) UpdateDatabaseGroup(context.Context, *U
 }
 func (UnimplementedProjectServiceServer) DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteDatabaseGroup not implemented")
-}
-func (UnimplementedProjectServiceServer) ListSchemaGroups(context.Context, *ListSchemaGroupsRequest) (*ListSchemaGroupsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSchemaGroups not implemented")
-}
-func (UnimplementedProjectServiceServer) GetSchemaGroup(context.Context, *GetSchemaGroupRequest) (*SchemaGroup, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSchemaGroup not implemented")
-}
-func (UnimplementedProjectServiceServer) CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*SchemaGroup, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateSchemaGroup not implemented")
-}
-func (UnimplementedProjectServiceServer) UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*SchemaGroup, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateSchemaGroup not implemented")
-}
-func (UnimplementedProjectServiceServer) DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteSchemaGroup not implemented")
 }
 func (UnimplementedProjectServiceServer) GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectProtectionRules not implemented")
@@ -858,96 +783,6 @@ func _ProjectService_DeleteDatabaseGroup_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_ListSchemaGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSchemaGroupsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).ListSchemaGroups(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_ListSchemaGroups_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).ListSchemaGroups(ctx, req.(*ListSchemaGroupsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetSchemaGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetSchemaGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetSchemaGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetSchemaGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetSchemaGroup(ctx, req.(*GetSchemaGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_CreateSchemaGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateSchemaGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).CreateSchemaGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_CreateSchemaGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).CreateSchemaGroup(ctx, req.(*CreateSchemaGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_UpdateSchemaGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateSchemaGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).UpdateSchemaGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_UpdateSchemaGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).UpdateSchemaGroup(ctx, req.(*UpdateSchemaGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_DeleteSchemaGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteSchemaGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).DeleteSchemaGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_DeleteSchemaGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).DeleteSchemaGroup(ctx, req.(*DeleteSchemaGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_GetProjectProtectionRules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetProjectProtectionRulesRequest)
 	if err := dec(in); err != nil {
@@ -1074,26 +909,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteDatabaseGroup",
 			Handler:    _ProjectService_DeleteDatabaseGroup_Handler,
-		},
-		{
-			MethodName: "ListSchemaGroups",
-			Handler:    _ProjectService_ListSchemaGroups_Handler,
-		},
-		{
-			MethodName: "GetSchemaGroup",
-			Handler:    _ProjectService_GetSchemaGroup_Handler,
-		},
-		{
-			MethodName: "CreateSchemaGroup",
-			Handler:    _ProjectService_CreateSchemaGroup_Handler,
-		},
-		{
-			MethodName: "UpdateSchemaGroup",
-			Handler:    _ProjectService_UpdateSchemaGroup_Handler,
-		},
-		{
-			MethodName: "DeleteSchemaGroup",
-			Handler:    _ProjectService_DeleteSchemaGroup_Handler,
 		},
 		{
 			MethodName: "GetProjectProtectionRules",

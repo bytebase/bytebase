@@ -46,10 +46,6 @@ func getPipelineCreateFromDatabaseGroupTarget(ctx context.Context, s *store.Stor
 	if databaseGroup == nil {
 		return nil, errors.Errorf("database group %q not found", databaseGroupID)
 	}
-	schemaGroups, err := s.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroupID)
-	}
 	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
@@ -81,10 +77,6 @@ func getPipelineCreateFromDatabaseGroupTarget(ctx context.Context, s *store.Stor
 	taskIndexDAGsMatrixByEnv := map[string][][]store.TaskIndexDAG{}
 
 	for _, db := range matchedDatabases {
-		dbSchema, err := s.GetDBSchema(ctx, db.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get db schema %q", db.UID)
-		}
 		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &db.InstanceID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get instance %q", db.InstanceID)
@@ -93,26 +85,7 @@ func getPipelineCreateFromDatabaseGroupTarget(ctx context.Context, s *store.Stor
 			return nil, errors.Errorf("instance %q not found", db.InstanceID)
 		}
 
-		schemaGroupsMatchedTables := map[string][]string{}
-		for _, schemaGroup := range schemaGroups {
-			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
-			}
-			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
-		}
-
-		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
-		}
-
-		statements, schemaGroupNames, err := utils.GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, c.Target, schemaGroups, schemaGroupsMatchedTables)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get statements from schema groups")
-		}
-
-		taskCreates, err := getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db, instance, spec, c, statements, schemaGroupNames)
+		taskCreates, err := getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db, instance, spec, c, sheetStatement)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
 		}
@@ -673,67 +646,61 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 	}
 }
 
-func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.DatabaseMessage, instance *store.InstanceMessage, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, statements []string, schemaGroupNames []string) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.DatabaseMessage, instance *store.InstanceMessage, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, statement string) ([]*store.TaskMessage, error) {
 	var creates []*store.TaskMessage
-	for idx, statement := range statements {
-		schemaVersionSuffix := fmt.Sprintf("-%03d", idx)
-		schemaGroupName := schemaGroupNames[idx]
-		switch c.Type {
-		case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-			payload := api.TaskDatabaseSchemaUpdatePayload{
-				SpecID:          spec.Id,
-				SheetID:         0,
-				SchemaVersion:   getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
-				SchemaGroupName: schemaGroupName,
-			}
-			bytes, err := json.Marshal(payload)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
-			}
-			payloadString := string(bytes)
-			taskCreate := &store.TaskMessage{
-				Name:              fmt.Sprintf("DDL(schema) for database %q", db.DatabaseName),
-				InstanceID:        instance.UID,
-				DatabaseID:        &db.UID,
-				Type:              api.TaskDatabaseSchemaUpdate,
-				EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
-				Payload:           payloadString,
-				Statement:         statement,
-			}
-			creates = append(creates, taskCreate)
-
-		case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-			preUpdateBackupDetail := api.PreUpdateBackupDetail{}
-			if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
-				preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
-			}
-
-			payload := api.TaskDatabaseDataUpdatePayload{
-				SpecID:                spec.Id,
-				SheetID:               0,
-				SchemaVersion:         getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
-				RollbackEnabled:       c.RollbackEnabled,
-				RollbackSQLStatus:     api.RollbackSQLStatusPending,
-				SchemaGroupName:       schemaGroupName,
-				PreUpdateBackupDetail: preUpdateBackupDetail,
-			}
-
-			bytes, err := json.Marshal(payload)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal database data update payload")
-			}
-			payloadString := string(bytes)
-			taskCreate := &store.TaskMessage{
-				Name:              fmt.Sprintf("DML(data) for database %q", db.DatabaseName),
-				InstanceID:        instance.UID,
-				DatabaseID:        &db.UID,
-				Type:              api.TaskDatabaseDataUpdate,
-				EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
-				Payload:           payloadString,
-				Statement:         statement,
-			}
-			creates = append(creates, taskCreate)
+	switch c.Type {
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+		payload := api.TaskDatabaseSchemaUpdatePayload{
+			SpecID:        spec.Id,
+			SheetID:       0,
+			SchemaVersion: c.SchemaVersion,
 		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
+		}
+		payloadString := string(bytes)
+		taskCreate := &store.TaskMessage{
+			Name:              fmt.Sprintf("DDL(schema) for database %q", db.DatabaseName),
+			InstanceID:        instance.UID,
+			DatabaseID:        &db.UID,
+			Type:              api.TaskDatabaseSchemaUpdate,
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+			Payload:           payloadString,
+			Statement:         statement,
+		}
+		creates = append(creates, taskCreate)
+
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+		preUpdateBackupDetail := api.PreUpdateBackupDetail{}
+		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
+			preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
+		}
+
+		payload := api.TaskDatabaseDataUpdatePayload{
+			SpecID:                spec.Id,
+			SheetID:               0,
+			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
+			RollbackEnabled:       c.RollbackEnabled,
+			RollbackSQLStatus:     api.RollbackSQLStatusPending,
+			PreUpdateBackupDetail: preUpdateBackupDetail,
+		}
+
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal database data update payload")
+		}
+		payloadString := string(bytes)
+		taskCreate := &store.TaskMessage{
+			Name:              fmt.Sprintf("DML(data) for database %q", db.DatabaseName),
+			InstanceID:        instance.UID,
+			DatabaseID:        &db.UID,
+			Type:              api.TaskDatabaseDataUpdate,
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+			Payload:           payloadString,
+			Statement:         statement,
+		}
+		creates = append(creates, taskCreate)
 	}
 
 	return creates, nil
@@ -869,11 +836,4 @@ func getOrDefaultSchemaVersion(v string) string {
 		return v
 	}
 	return common.DefaultMigrationVersion().Version
-}
-
-func getOrDefaultSchemaVersionWithSuffix(v string, suffix string) string {
-	if v != "" {
-		return v + suffix
-	}
-	return common.DefaultMigrationVersion().Version + suffix
 }
