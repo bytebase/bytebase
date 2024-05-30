@@ -32,8 +32,16 @@ func GenerateRestoreSQL(statement string, backupDatabase string, backupTable str
 		originalDatabase: originalDatabase,
 		originalTable:    originalTable,
 	}
+	var buf strings.Builder
 	antlr.ParseTreeWalkerDefault.Walk(g, parseResult[0].Tree)
-	return g.result, g.err
+	if g.err != nil {
+		return "", g.err
+	}
+
+	if _, err := fmt.Fprintf(&buf, "/*\nOriginal SQL:\n%s\n*/\n%s", statement, g.result); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 type generator struct {
