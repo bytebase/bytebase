@@ -158,10 +158,6 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	if databaseGroup == nil {
 		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
 	}
-	schemaGroups, err := e.store.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroup.UID)
-	}
 	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		UID: &databaseGroup.ProjectUID,
 	})
@@ -241,66 +237,46 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 		if dbSchema.GetMetadata() == nil {
 			return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
 		}
-		schemaGroupsMatchedTables := map[string][]string{}
-		for _, schemaGroup := range schemaGroups {
-			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
-			}
-			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
-		}
 
-		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
-		}
-
-		statements, _, err := utils.GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, "", schemaGroups, schemaGroupsMatchedTables)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get statements from schema groups")
-		}
-
-		for _, statement := range statements {
-			materials := utils.GetSecretMapFromDatabaseMessage(database)
-			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-			renderedStatement := utils.RenderStatement(statement, materials)
-			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
-				switch instance.Engine {
-				case storepb.Engine_POSTGRES:
-					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-					if err != nil {
-						return nil, err
-					}
-					defer driver.Close(ctx)
-					sqlDB := driver.GetDB()
-
-					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
-				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-					if err != nil {
-						return nil, err
-					}
-					defer driver.Close(ctx)
-					sqlDB := driver.GetDB()
-
-					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
-				case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-					return reportForOracle(database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
-				default:
-					return nil, nil
+		materials := utils.GetSecretMapFromDatabaseMessage(database)
+		// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+		renderedStatement := utils.RenderStatement(sheetStatement, materials)
+		stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
+			switch instance.Engine {
+			case storepb.Engine_POSTGRES:
+				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+				if err != nil {
+					return nil, err
 				}
-			}()
-			if err != nil {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_ERROR,
-					Title:   "Failed to run report executor",
-					Content: err.Error(),
-					Code:    common.Internal.Int32(),
-					Report:  nil,
-				})
-			} else {
-				results = append(results, stmtResults...)
+				defer driver.Close(ctx)
+				sqlDB := driver.GetDB()
+
+				return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
+			case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+				if err != nil {
+					return nil, err
+				}
+				defer driver.Close(ctx)
+				sqlDB := driver.GetDB()
+
+				return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
+			case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+				return reportForOracle(database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
+			default:
+				return nil, nil
 			}
+		}()
+		if err != nil {
+			results = append(results, &storepb.PlanCheckRunResult_Result{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Title:   "Failed to run report executor",
+				Content: err.Error(),
+				Code:    common.Internal.Int32(),
+				Report:  nil,
+			})
+		} else {
+			results = append(results, stmtResults...)
 		}
 	}
 

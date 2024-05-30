@@ -157,8 +157,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.PlanService_ListPlans_FullMethodName,
 		v1pb.PlanService_SearchPlans_FullMethodName,
 		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
-		v1pb.UserGroupService_UpdateUserGroup_FullMethodName,
-		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
+		v1pb.UserGroupService_UpdateUserGroup_FullMethodName:
 		return true
 	}
 	return false
