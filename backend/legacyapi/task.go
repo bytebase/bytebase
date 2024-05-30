@@ -91,9 +91,8 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID         int    `json:"sheetId,omitempty"`
-	SchemaVersion   string `json:"schemaVersion,omitempty"`
-	SchemaGroupName string `json:"schemaGroupName,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
@@ -183,8 +182,6 @@ type TaskDatabaseDataUpdatePayload struct {
 	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
 	RollbackFromTaskID    int                   `json:"rollbackFromTaskId,omitempty"`
 	PreUpdateBackupDetail PreUpdateBackupDetail `json:"preUpdateBackupDetail,omitempty"`
-
-	SchemaGroupName string `json:"schemaGroupName,omitempty"`
 }
 
 type PreUpdateBackupDetail struct {

@@ -47,13 +47,15 @@
           </NButton>
           <NButton
             v-if="hasPermissionToCreateIssue"
-            @click="createMigration('bb.issue.database.schema.update')"
+            @click="
+              previewDatabaseGroupIssue('bb.issue.database.schema.update')
+            "
           >
             {{ $t("database.edit-schema") }}
           </NButton>
           <NButton
             v-if="hasPermissionToCreateIssue"
-            @click="createMigration('bb.issue.database.data.update')"
+            @click="previewDatabaseGroupIssue('bb.issue.database.data.update')"
           >
             {{ $t("database.change-data") }}
           </NButton>
@@ -99,20 +101,13 @@
     :parent-database-group="editState.parentDatabaseGroup"
     @close="editState.showConfigurePanel = false"
   />
-
-  <DatabaseGroupPrevEditorModal
-    v-if="issueType"
-    :issue-type="issueType"
-    :database-group-name="databaseGroup.name"
-    @close="issueType = undefined"
-  />
 </template>
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
-import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
+import { useRouter } from "vue-router";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import { FactorList } from "@/components/DatabaseGroup/utils";
@@ -128,18 +123,12 @@ import {
   useProjectV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import {
-  databaseGroupNamePrefix,
-} from "@/store/modules/v1/common";
+import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type {
-  ComposedDatabase,
-  ComposedDatabaseGroup,
-} from "@/types";
-import type {
-  DatabaseGroup,
-} from "@/types/proto/v1/project_service";
+import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
   isLoaded: boolean;
@@ -158,6 +147,7 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
+const router = useRouter();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const subscriptionV1Store = useSubscriptionV1Store();
@@ -169,11 +159,6 @@ const state = reactive<LocalState>({
 const editState = reactive<EditDatabaseGroupState>({
   showConfigurePanel: false,
 });
-const issueType = ref<
-  | "bb.issue.database.schema.update"
-  | "bb.issue.database.data.update"
-  | undefined
->();
 const project = computed(() => {
   return projectStore.getProjectByName(
     `${projectNamePrefix}${props.projectId}`
@@ -203,10 +188,11 @@ const handleEditDatabaseGroup = () => {
   editState.showConfigurePanel = true;
 };
 
-const createMigration = (
+const previewDatabaseGroupIssue = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  issueType.value = type;
+  const issueRoute = generateDatabaseGroupIssueRoute(type, databaseGroup.value);
+  router.push(issueRoute);
 };
 
 watch(
