@@ -10608,7 +10608,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
+| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. - `visibility = &#34;VISIBILITY_PRIVATE&#34;`, `visibility = &#34;VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE&#34;`, etc. Not support empty filter for now. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 50 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page.
 
