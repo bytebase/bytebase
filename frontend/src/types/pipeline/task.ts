@@ -66,7 +66,6 @@ export type TaskDatabaseSchemaUpdatePayload = {
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
-  schemaGroupName?: string;
 };
 
 export type TaskDatabaseSchemaUpdateSDLPayload = {
@@ -94,7 +93,6 @@ export type TaskDatabaseDataUpdatePayload = {
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
-  schemaGroupName?: string;
   rollbackEnabled: boolean;
   rollbackSqlStatus?: RollbackSQLStatus;
   rollbackSheetId?: SheetId;
