@@ -6,7 +6,7 @@ import {
   extractInstanceResourceName,
 } from "@/utils";
 
-export type ResourceType = "DATABASE_GROUP" | "SCHEMA_GROUP";
+export type ResourceType = "DATABASE_GROUP";
 
 export const FactorList: Map<ResourceType, Factor[]> = new Map([
   [
@@ -17,7 +17,6 @@ export const FactorList: Map<ResourceType, Factor[]> = new Map([
       "resource.instance_id",
     ],
   ],
-  ["SCHEMA_GROUP", ["resource.table_name"]],
 ]);
 
 export const factorSupportDropdown: Factor[] = [

@@ -70,7 +70,7 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { useDBGroupStore } from "@/store";
-import type { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
+import type { ComposedDatabaseGroup } from "@/types";
 import { isDev } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
@@ -128,31 +128,6 @@ const title = computed(() => {
     return t("database.change-data");
   }
 });
-
-onMounted(async () => {
-  const schemaGroupList =
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
-      databaseGroup.value.name
-    );
-  // Initial statement with schema group list;
-  state.editStatement = generateReferenceStatement(schemaGroupList);
-});
-
-const generateReferenceStatement = (schemaGroupList: ComposedSchemaGroup[]) => {
-  const statementList: string[] = [];
-  for (const schemaGroup of schemaGroupList) {
-    if (props.issueType === "bb.issue.database.schema.update") {
-      statementList.push(
-        `ALTER TABLE ${schemaGroup.tablePlaceholder} ADD COLUMN <<column>> <<datatype>>;`
-      );
-    } else {
-      statementList.push(
-        `UPDATE ${schemaGroup.tablePlaceholder} SET <<column>> = <<value>> WHERE <<condition>>;`
-      );
-    }
-  }
-  return statementList.join("\n\n");
-};
 
 const dismissModal = () => {
   if (allowPreviewIssue.value) {

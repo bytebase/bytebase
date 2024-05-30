@@ -12,7 +12,6 @@ export const settingNamePrefix = "settings/";
 export const sheetNamePrefix = "sheets/";
 export const worksheetNamePrefix = "worksheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
-export const schemaGroupNamePrefix = "schemaGroups/";
 export const vcsProviderPrefix = "vcsProviders/";
 export const vcsConnectorPrefix = "vcsConnectors/";
 export const logNamePrefix = "logs/";
@@ -115,22 +114,6 @@ export const getProjectNameAndDatabaseGroupName = (name: string): string[] => {
 
   if (tokens.length !== 2) {
     return ["", ""];
-  }
-
-  return tokens;
-};
-
-export const getProjectNameAndDatabaseGroupNameAndSchemaGroupName = (
-  name: string
-): string[] => {
-  const tokens = getNameParentTokens(name, [
-    projectNamePrefix,
-    databaseGroupNamePrefix,
-    schemaGroupNamePrefix,
-  ]);
-
-  if (tokens.length !== 3) {
-    return ["", "", ""];
   }
 
   return tokens;

@@ -89,21 +89,6 @@
           />
         </div>
       </div>
-
-      <hr />
-      <div class="w-full max-w-5xl">
-        <div class="w-full flex flex-row justify-between items-center">
-          <p class="my-4">{{ $t("database-group.table-group.self") }}</p>
-          <NButton v-if="allowEdit" @click.prevent="handleCreateSchemaGroup">
-            {{ $t("database-group.table-group.create") }}
-          </NButton>
-        </div>
-        <SchemaGroupDataTable
-          :schema-group-list="schemaGroupList"
-          @row-click="handleSchemaGroupClick"
-          @edit="handleEditSchemaGroup"
-        />
-      </div>
     </main>
   </div>
 
@@ -130,7 +115,6 @@ import { NButton } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
-import { SchemaGroupDataTable } from "@/components/DatabaseGroup";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import type { ResourceType } from "@/components/DatabaseGroup/utils";
@@ -141,7 +125,6 @@ import {
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useDBGroupStore,
@@ -150,17 +133,14 @@ import {
 } from "@/store";
 import {
   databaseGroupNamePrefix,
-  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type {
   ComposedDatabase,
   ComposedDatabaseGroup,
-  ComposedSchemaGroup,
 } from "@/types";
 import type {
   DatabaseGroup,
-  SchemaGroup,
 } from "@/types/proto/v1/project_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 
@@ -172,7 +152,7 @@ interface LocalState {
 interface EditDatabaseGroupState {
   showConfigurePanel: boolean;
   type: ResourceType;
-  databaseGroup?: DatabaseGroup | SchemaGroup;
+  databaseGroup?: DatabaseGroup;
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }
 
@@ -213,11 +193,6 @@ const databaseGroup = computed(() => {
     databaseGroupResourceName.value
   ) as ComposedDatabaseGroup;
 });
-const schemaGroupList = computed(() => {
-  return dbGroupStore.getSchemaGroupListByDBGroupName(
-    databaseGroupResourceName.value
-  );
-});
 const hasPermissionToCreateIssue = computed(() => {
   return hasPermissionToCreateChangeDatabaseIssueInProject(
     project.value,
@@ -235,62 +210,11 @@ const handleEditDatabaseGroup = () => {
   editState.showConfigurePanel = true;
 };
 
-const handleCreateSchemaGroup = () => {
-  editState.type = "SCHEMA_GROUP";
-  editState.databaseGroup = undefined;
-  editState.showConfigurePanel = true;
-  editState.parentDatabaseGroup = databaseGroup.value;
-};
-
-const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
-  editState.type = "SCHEMA_GROUP";
-  editState.databaseGroup = schemaGroup;
-  editState.showConfigurePanel = true;
-};
-
 const createMigration = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
   issueType.value = type;
 };
-
-const handleSchemaGroupClick = (
-  event: MouseEvent,
-  schemaGroup: ComposedSchemaGroup
-) => {
-  const [, , schemaGroupName] =
-    getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
-  const url = router.resolve({
-    name: PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
-    params: {
-      schemaGroupName: schemaGroupName,
-    },
-  }).fullPath;
-  if (event.ctrlKey || event.metaKey) {
-    window.open(url, "_blank");
-  } else {
-    router.push(url);
-  }
-};
-
-watch(
-  () => [databaseGroup.value],
-  async () => {
-    if (!databaseGroup.value) {
-      return;
-    }
-
-    state.expr = databaseGroup.value.simpleExpr;
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
-      databaseGroup.value.name
-    );
-
-    state.isLoaded = true;
-  },
-  {
-    immediate: true,
-  }
-);
 
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);

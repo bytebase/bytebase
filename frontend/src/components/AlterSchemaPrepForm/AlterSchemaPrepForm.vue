@@ -483,10 +483,6 @@ const prepareDatabaseGroupList = async () => {
   } else {
     list = await dbGroupStore.fetchAllDatabaseGroupList();
   }
-
-  for (const group of list) {
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(group.name);
-  }
 };
 
 watchEffect(async () => {

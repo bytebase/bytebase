@@ -30,14 +30,6 @@
           style="width: auto"
         />
       </div>
-      <div v-if="resourceType === 'SCHEMA_GROUP'">
-        <p class="text-lg mb-2">{{ $t("database-group.self") }}</p>
-        <DatabaseGroupSelect
-          v-model:selected="state.selectedDatabaseGroupId"
-          :disabled="!isCreating || disableEditDatabaseGroupFields"
-          :project="project.name"
-        />
-      </div>
     </div>
     <div class="w-full grid grid-cols-5 gap-x-6">
       <div class="col-span-3">
@@ -59,12 +51,6 @@
           :matched-database-list="matchedDatabaseList"
           :unmatched-database-list="unmatchedDatabaseList"
         />
-        <MatchedTableView
-          v-if="resourceType === 'SCHEMA_GROUP'"
-          :loading="state.isRequesting"
-          :matched-table-list="matchedTableList"
-          :unmatched-table-list="unmatchedTableList"
-        />
       </div>
     </div>
   </div>
@@ -85,12 +71,8 @@ import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
-  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
-  schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
-import { projectNamePrefix } from "@/store/modules/v1/common";
 import type {
-  ComposedSchemaGroupTable,
   ComposedDatabase,
   ComposedDatabaseGroup,
   ComposedProject,
@@ -99,13 +81,10 @@ import type {
 } from "@/types";
 import type {
   DatabaseGroup,
-  SchemaGroup,
 } from "@/types/proto/v1/project_service";
-import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { getErrorCode } from "@/utils/grpcweb";
 import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import MatchedTableView from "./MatchedTableView.vue";
 import type { ResourceType } from "./utils";
 import { factorSupportDropdown, getFactorOptionsMap } from "./utils";
 import { FactorList } from "./utils";
@@ -113,7 +92,7 @@ import { FactorList } from "./utils";
 const props = defineProps<{
   project: ComposedProject;
   resourceType: ResourceType;
-  databaseGroup?: DatabaseGroup | SchemaGroup;
+  databaseGroup?: DatabaseGroup;
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }>();
 
@@ -147,30 +126,11 @@ const formattedResourceType = computed(() =>
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
-const disableEditDatabaseGroupFields = computed(() => {
-  return (
-    props.resourceType === "SCHEMA_GROUP" &&
-    props.parentDatabaseGroup !== undefined
-  );
-});
-
 const resourceIdType = computed(() =>
   props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
 );
 
 onMounted(async () => {
-  if (isCreating.value && props.resourceType === "SCHEMA_GROUP") {
-    if (props.parentDatabaseGroup) {
-      state.selectedDatabaseGroupId = props.parentDatabaseGroup.name;
-    } else {
-      const dbGroup = head(dbGroupStore.getAllDatabaseGroupList());
-      if (dbGroup) {
-        state.selectedDatabaseGroupId = dbGroup.name;
-      }
-    }
-    return;
-  }
-
   const databaseGroup = props.databaseGroup;
   if (!databaseGroup) {
     return;
@@ -189,23 +149,6 @@ onMounted(async () => {
     if (composedDatabaseGroup.simpleExpr) {
       state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
     }
-  } else {
-    const schemaGroupEntity = databaseGroup as SchemaGroup;
-    const expression = schemaGroupEntity.tableExpr?.expression ?? "";
-    const [projectName, databaseGroupName, schemaGroupName] =
-      getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
-        schemaGroupEntity.name
-      );
-    state.resourceId = schemaGroupName;
-    state.placeholder = schemaGroupEntity.tablePlaceholder;
-    state.selectedDatabaseGroupId = `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
-    const expr = await convertCELStringToExpr(expression);
-    state.expr = expr;
-
-    // Fetch related database group.
-    await dbGroupStore.getOrFetchDBGroupByName(
-      `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
-    );
   }
 });
 
@@ -222,13 +165,6 @@ const validateResourceId = async (
       `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`,
       true /* silent */
     );
-  } else if (props.resourceType === "SCHEMA_GROUP") {
-    if (state.selectedDatabaseGroupId) {
-      request = dbGroupStore.getOrFetchSchemaGroupByName(
-        `${state.selectedDatabaseGroupId}/${schemaGroupNamePrefix}${resourceId}`,
-        true /* silent */
-      );
-    }
   }
 
   if (!request) {
@@ -283,41 +219,6 @@ watch(
   }
 );
 
-const matchedTableList = ref<ComposedSchemaGroupTable[]>([]);
-const unmatchedTableList = ref<ComposedSchemaGroupTable[]>([]);
-const updateTableMatchingState = useDebounceFn(async () => {
-  if (props.resourceType !== "SCHEMA_GROUP") {
-    return;
-  }
-  if (!selectedDatabaseGroupName.value) {
-    return;
-  }
-
-  state.isRequesting = true;
-  const result = await dbGroupStore.fetchSchemaGroupMatchList({
-    projectName: props.project.name,
-    databaseGroupName: selectedDatabaseGroupName.value,
-    expr: state.expr,
-  });
-
-  matchedTableList.value = result.matchedTableList;
-  unmatchedTableList.value = result.unmatchedTableList;
-  state.isRequesting = false;
-}, 500);
-
-watch(
-  [
-    () => props.project.name,
-    () => selectedDatabaseGroupName.value,
-    () => state.expr,
-  ],
-  updateTableMatchingState,
-  {
-    immediate: true,
-    deep: true,
-  }
-);
-
 const existMatchedUnactivateInstance = computed(() => {
   if (props.resourceType === "DATABASE_GROUP") {
     return matchedDatabaseList.value.some(
@@ -325,14 +226,6 @@ const existMatchedUnactivateInstance = computed(() => {
         !subscriptionV1Store.hasInstanceFeature(
           "bb.feature.database-grouping",
           database.instanceEntity
-        )
-    );
-  } else {
-    return matchedTableList.value.some(
-      (tb) =>
-        !subscriptionV1Store.hasInstanceFeature(
-          "bb.feature.database-grouping",
-          tb.databaseEntity.instanceEntity
         )
     );
   }
