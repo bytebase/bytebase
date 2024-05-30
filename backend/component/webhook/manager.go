@@ -2,7 +2,6 @@ package webhook
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -154,8 +153,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e Event, activ
 		}
 		switch u.Status {
 		case api.TaskRunPending.String():
-			title = "Task run is pending - " + u.Title
-			titleZh = "任务等待中 - " + u.Title
+			title = "Task run started - " + u.Title
+			titleZh = "任务开始 - " + u.Title
 		case api.TaskRunRunning.String():
 			title = "Task run is running - " + u.Title
 			titleZh = "任务运行中 - " + u.Title
@@ -396,18 +395,6 @@ func getUsersFromIssueLastApprover(s *store.Store, approval *storepb.IssuePayloa
 		}
 		return []*store.UserMessage{user}, nil
 	}
-}
-
-// getTaskSkippedAndReason gets skipped and skippedReason from a task.
-func getTaskSkippedAndReason(task *store.TaskMessage) (bool, string, error) {
-	var payload struct {
-		Skipped       bool   `json:"skipped,omitempty"`
-		SkippedReason string `json:"skippedReason,omitempty"`
-	}
-	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-		return false, "", err
-	}
-	return payload.Skipped, payload.SkippedReason, nil
 }
 
 func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
