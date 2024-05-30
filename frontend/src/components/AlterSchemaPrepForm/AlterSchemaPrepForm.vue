@@ -302,7 +302,6 @@ import {
 } from "@/store";
 import type {
   ComposedDatabase,
-  ComposedDatabaseGroup,
   FeatureType,
 } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -475,17 +474,12 @@ const { ready } = useSearchDatabaseV1List({
 });
 
 const prepareDatabaseGroupList = async () => {
-  let list: ComposedDatabaseGroup[] = [];
   if (selectedProject.value) {
-    list = await dbGroupStore.getOrFetchDBGroupListByProjectName(
+    await dbGroupStore.getOrFetchDBGroupListByProjectName(
       selectedProject.value.name
     );
   } else {
-    list = await dbGroupStore.fetchAllDatabaseGroupList();
-  }
-
-  for (const group of list) {
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(group.name);
+    await dbGroupStore.fetchAllDatabaseGroupList();
   }
 };
 

@@ -14,7 +14,7 @@
           <ResourceIdField
             ref="resourceIdField"
             editing-class="mt-4"
-            :resource-type="formattedResourceType"
+            resource-type="database-group"
             :readonly="!isCreating"
             :value="state.resourceId"
             :resource-title="state.placeholder"
@@ -22,20 +22,12 @@
           />
         </div>
       </div>
-      <div v-if="resourceType === 'DATABASE_GROUP'">
+      <div>
         <p class="text-lg mb-2">{{ $t("common.project") }}</p>
         <ProjectSelect
           :project="project.uid"
           :disabled="true"
           style="width: auto"
-        />
-      </div>
-      <div v-if="resourceType === 'SCHEMA_GROUP'">
-        <p class="text-lg mb-2">{{ $t("database-group.self") }}</p>
-        <DatabaseGroupSelect
-          v-model:selected="state.selectedDatabaseGroupId"
-          :disabled="!isCreating || disableEditDatabaseGroupFields"
-          :project="project.name"
         />
       </div>
     </div>
@@ -47,23 +39,16 @@
         <ExprEditor
           :expr="state.expr"
           :allow-admin="true"
-          :factor-list="FactorList.get(resourceType) ?? []"
+          :factor-list="FactorList"
           :factor-support-dropdown="factorSupportDropdown"
-          :factor-options-map="getFactorOptionsMap(resourceType)"
+          :factor-options-map="FactorOptionsMap"
         />
       </div>
       <div class="col-span-2">
         <MatchedDatabaseView
-          v-if="resourceType === 'DATABASE_GROUP'"
           :loading="state.isRequesting"
           :matched-database-list="matchedDatabaseList"
           :unmatched-database-list="unmatchedDatabaseList"
-        />
-        <MatchedTableView
-          v-if="resourceType === 'SCHEMA_GROUP'"
-          :loading="state.isRequesting"
-          :matched-table-list="matchedTableList"
-          :unmatched-table-list="unmatchedTableList"
         />
       </div>
     </div>
@@ -72,25 +57,20 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NInput } from "naive-ui";
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
-import { DatabaseGroupSelect } from "@/components/v2/Select";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { emptySimpleExpr, wrapAsGroup } from "@/plugins/cel";
 import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
-  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
-  schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
-import { projectNamePrefix } from "@/store/modules/v1/common";
 import type {
-  ComposedSchemaGroupTable,
   ComposedDatabase,
   ComposedDatabaseGroup,
   ComposedProject,
@@ -99,21 +79,16 @@ import type {
 } from "@/types";
 import type {
   DatabaseGroup,
-  SchemaGroup,
 } from "@/types/proto/v1/project_service";
-import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { getErrorCode } from "@/utils/grpcweb";
 import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import MatchedTableView from "./MatchedTableView.vue";
-import type { ResourceType } from "./utils";
-import { factorSupportDropdown, getFactorOptionsMap } from "./utils";
+import { factorSupportDropdown, FactorOptionsMap } from "./utils";
 import { FactorList } from "./utils";
 
 const props = defineProps<{
   project: ComposedProject;
-  resourceType: ResourceType;
-  databaseGroup?: DatabaseGroup | SchemaGroup;
+  databaseGroup?: DatabaseGroup;
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }>();
 
@@ -135,77 +110,26 @@ const state = reactive<LocalState>({
   expr: wrapAsGroup(emptySimpleExpr()),
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-const selectedDatabaseGroupName = computed(() => {
-  const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
-    state.selectedDatabaseGroupId || ""
-  );
-  return databaseGroupName;
-});
-const formattedResourceType = computed(() =>
-  props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
-);
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
-const disableEditDatabaseGroupFields = computed(() => {
-  return (
-    props.resourceType === "SCHEMA_GROUP" &&
-    props.parentDatabaseGroup !== undefined
-  );
-});
-
-const resourceIdType = computed(() =>
-  props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
-);
-
 onMounted(async () => {
-  if (isCreating.value && props.resourceType === "SCHEMA_GROUP") {
-    if (props.parentDatabaseGroup) {
-      state.selectedDatabaseGroupId = props.parentDatabaseGroup.name;
-    } else {
-      const dbGroup = head(dbGroupStore.getAllDatabaseGroupList());
-      if (dbGroup) {
-        state.selectedDatabaseGroupId = dbGroup.name;
-      }
-    }
-    return;
-  }
-
   const databaseGroup = props.databaseGroup;
   if (!databaseGroup) {
     return;
   }
 
-  if (props.resourceType === "DATABASE_GROUP") {
-    const databaseGroupEntity = databaseGroup as DatabaseGroup;
-    const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
-      databaseGroup.name
-    );
-    state.resourceId = databaseGroupName;
-    state.placeholder = databaseGroupEntity.databasePlaceholder;
-    const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-      databaseGroup.name
-    );
-    if (composedDatabaseGroup.simpleExpr) {
-      state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
-    }
-  } else {
-    const schemaGroupEntity = databaseGroup as SchemaGroup;
-    const expression = schemaGroupEntity.tableExpr?.expression ?? "";
-    const [projectName, databaseGroupName, schemaGroupName] =
-      getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
-        schemaGroupEntity.name
-      );
-    state.resourceId = schemaGroupName;
-    state.placeholder = schemaGroupEntity.tablePlaceholder;
-    state.selectedDatabaseGroupId = `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
-    const expr = await convertCELStringToExpr(expression);
-    state.expr = expr;
-
-    // Fetch related database group.
-    await dbGroupStore.getOrFetchDBGroupByName(
-      `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
-    );
+  const databaseGroupEntity = databaseGroup as DatabaseGroup;
+  const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+    databaseGroup.name
+  );
+  state.resourceId = databaseGroupName;
+  state.placeholder = databaseGroupEntity.databasePlaceholder;
+  const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+    databaseGroup.name
+  );
+  if (composedDatabaseGroup.simpleExpr) {
+    state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
   }
 });
 
@@ -216,20 +140,10 @@ const validateResourceId = async (
     return [];
   }
 
-  let request = undefined;
-  if (props.resourceType === "DATABASE_GROUP") {
-    request = dbGroupStore.getOrFetchDBGroupByName(
-      `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`,
-      true /* silent */
-    );
-  } else if (props.resourceType === "SCHEMA_GROUP") {
-    if (state.selectedDatabaseGroupId) {
-      request = dbGroupStore.getOrFetchSchemaGroupByName(
-        `${state.selectedDatabaseGroupId}/${schemaGroupNamePrefix}${resourceId}`,
-        true /* silent */
-      );
-    }
-  }
+  const request = dbGroupStore.getOrFetchDBGroupByName(
+    `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`,
+    true /* silent */
+  );
 
   if (!request) {
     return [];
@@ -242,7 +156,7 @@ const validateResourceId = async (
         {
           type: "error",
           message: t("resource-id.validation.duplicated", {
-            resource: t(`resource.${resourceIdType.value}`),
+            resource: t(`resource.database-group`),
           }),
         },
       ];
@@ -259,10 +173,6 @@ const validateResourceId = async (
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
 const updateDatabaseMatchingState = useDebounceFn(async () => {
-  if (props.resourceType !== "DATABASE_GROUP") {
-    return;
-  }
-
   state.isRequesting = true;
   const result = await dbGroupStore.fetchDatabaseGroupMatchList({
     projectName: props.project.name,
@@ -283,59 +193,14 @@ watch(
   }
 );
 
-const matchedTableList = ref<ComposedSchemaGroupTable[]>([]);
-const unmatchedTableList = ref<ComposedSchemaGroupTable[]>([]);
-const updateTableMatchingState = useDebounceFn(async () => {
-  if (props.resourceType !== "SCHEMA_GROUP") {
-    return;
-  }
-  if (!selectedDatabaseGroupName.value) {
-    return;
-  }
-
-  state.isRequesting = true;
-  const result = await dbGroupStore.fetchSchemaGroupMatchList({
-    projectName: props.project.name,
-    databaseGroupName: selectedDatabaseGroupName.value,
-    expr: state.expr,
-  });
-
-  matchedTableList.value = result.matchedTableList;
-  unmatchedTableList.value = result.unmatchedTableList;
-  state.isRequesting = false;
-}, 500);
-
-watch(
-  [
-    () => props.project.name,
-    () => selectedDatabaseGroupName.value,
-    () => state.expr,
-  ],
-  updateTableMatchingState,
-  {
-    immediate: true,
-    deep: true,
-  }
-);
-
 const existMatchedUnactivateInstance = computed(() => {
-  if (props.resourceType === "DATABASE_GROUP") {
-    return matchedDatabaseList.value.some(
-      (database) =>
-        !subscriptionV1Store.hasInstanceFeature(
-          "bb.feature.database-grouping",
-          database.instanceEntity
-        )
-    );
-  } else {
-    return matchedTableList.value.some(
-      (tb) =>
-        !subscriptionV1Store.hasInstanceFeature(
-          "bb.feature.database-grouping",
-          tb.databaseEntity.instanceEntity
-        )
-    );
-  }
+  return matchedDatabaseList.value.some(
+    (database) =>
+      !subscriptionV1Store.hasInstanceFeature(
+        "bb.feature.database-grouping",
+        database.instanceEntity
+      )
+  );
 });
 
 defineExpose({
