@@ -192,10 +192,6 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.ProjectService_UpdateDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_DeleteDatabaseGroup_FullMethodName,
 
-		v1pb.ProjectService_GetSchemaGroup_FullMethodName,
-		v1pb.ProjectService_CreateSchemaGroup_FullMethodName,
-		v1pb.ProjectService_UpdateSchemaGroup_FullMethodName,
-		v1pb.ProjectService_DeleteSchemaGroup_FullMethodName,
 		v1pb.ProjectService_GetProjectProtectionRules_FullMethodName,
 		v1pb.ProjectService_UpdateProjectProtectionRules_FullMethodName:
 
@@ -425,14 +421,6 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		databaseGroups = append(databaseGroups, r.GetDatabaseGroup().GetName())
 	case *v1pb.DeleteDatabaseGroupRequest:
 		databaseGroups = append(databaseGroups, r.GetName())
-	case *v1pb.GetSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetName())
-	case *v1pb.CreateSchemaGroupRequest:
-		databaseGroups = append(databaseGroups, r.GetParent())
-	case *v1pb.UpdateSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetSchemaGroup().GetName())
-	case *v1pb.DeleteSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetName())
 	case *v1pb.GetProjectProtectionRulesRequest:
 		protectionRules = append(protectionRules, r.GetName())
 	case *v1pb.UpdateProjectProtectionRulesRequest:

@@ -63,15 +63,9 @@
   <DatabaseGroupPanel
     v-if="project"
     :show="
-      state.quickActionType === 'quickaction.bb.group.database-group.create' ||
-      state.quickActionType === 'quickaction.bb.group.table-group.create'
+      state.quickActionType === 'quickaction.bb.group.database-group.create'
     "
     :project="project"
-    :resource-type="
-      state.quickActionType === 'quickaction.bb.group.database-group.create'
-        ? 'DATABASE_GROUP'
-        : 'SCHEMA_GROUP'
-    "
     @close="state.quickActionType = undefined"
     @created="onDatabaseGroupCreated"
   />
@@ -287,13 +281,6 @@ const availableQuickActionList = computed((): QuickAction[] => {
       title: t("database-group.create"),
       action: () =>
         openDatabaseGroupDrawer("quickaction.bb.group.database-group.create"),
-      icon: h(PlusIcon),
-    },
-    {
-      type: "quickaction.bb.group.table-group.create",
-      title: t("database-group.table-group.create"),
-      action: () =>
-        openDatabaseGroupDrawer("quickaction.bb.group.table-group.create"),
       icon: h(PlusIcon),
     },
     {

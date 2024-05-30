@@ -184,10 +184,6 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
 	}
 
-	schemaGroups, err := e.store.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroup.UID)
-	}
 	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		UID: &databaseGroup.ProjectUID,
 	})
@@ -268,82 +264,61 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
 		}
 
-		schemaGroupsMatchedTables := map[string][]string{}
-		for _, schemaGroup := range schemaGroups {
-			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
-			}
-			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
-		}
+		materials := utils.GetSecretMapFromDatabaseMessage(database)
+		// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+		renderedStatement := utils.RenderStatement(sheetStatement, materials)
 
-		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
-		}
-
-		statements, _, err := utils.GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, "", schemaGroups, schemaGroupsMatchedTables)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get statements from schema groups")
-		}
-
-		for _, statement := range statements {
-			materials := utils.GetSecretMapFromDatabaseMessage(database)
-			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-			renderedStatement := utils.RenderStatement(statement, materials)
-
-			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
-				var results []*storepb.PlanCheckRunResult_Result
-				switch instance.Engine {
-				case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
-					checkResults, err := postgresqlStatementTypeCheck(renderedStatement)
-					if err != nil {
-						return nil, err
-					}
-					results = append(results, checkResults...)
-				case storepb.Engine_TIDB:
-					checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation)
-					if err != nil {
-						return nil, err
-					}
-					results = append(results, checkResults...)
-					if changeType == storepb.PlanCheckRunConfig_SDL {
-						sdlAdvice, err := e.tidbSDLTypeCheck(ctx, renderedStatement, instance, database)
-						if err != nil {
-							return nil, err
-						}
-						results = append(results, sdlAdvice...)
-					}
-				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-					checkResults, err := mysqlStatementTypeCheck(renderedStatement)
-					if err != nil {
-						return nil, err
-					}
-					results = append(results, checkResults...)
-					if changeType == storepb.PlanCheckRunConfig_SDL {
-						sdlAdvice, err := e.mysqlSDLTypeCheck(ctx, renderedStatement, instance, database)
-						if err != nil {
-							return nil, err
-						}
-						results = append(results, sdlAdvice...)
-					}
-				default:
-					return nil, common.Errorf(common.Invalid, "invalid check statement type database type: %s", instance.Engine)
+		stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
+			var results []*storepb.PlanCheckRunResult_Result
+			switch instance.Engine {
+			case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+				checkResults, err := postgresqlStatementTypeCheck(renderedStatement)
+				if err != nil {
+					return nil, err
 				}
-
-				return results, nil
-			}()
-			if err != nil {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_ERROR,
-					Title:   "Failed to run statement type check",
-					Content: err.Error(),
-					Code:    common.Internal.Int32(),
-					Report:  nil,
-				})
-			} else {
-				results = append(results, stmtResults...)
+				results = append(results, checkResults...)
+			case storepb.Engine_TIDB:
+				checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation)
+				if err != nil {
+					return nil, err
+				}
+				results = append(results, checkResults...)
+				if changeType == storepb.PlanCheckRunConfig_SDL {
+					sdlAdvice, err := e.tidbSDLTypeCheck(ctx, renderedStatement, instance, database)
+					if err != nil {
+						return nil, err
+					}
+					results = append(results, sdlAdvice...)
+				}
+			case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+				checkResults, err := mysqlStatementTypeCheck(renderedStatement)
+				if err != nil {
+					return nil, err
+				}
+				results = append(results, checkResults...)
+				if changeType == storepb.PlanCheckRunConfig_SDL {
+					sdlAdvice, err := e.mysqlSDLTypeCheck(ctx, renderedStatement, instance, database)
+					if err != nil {
+						return nil, err
+					}
+					results = append(results, sdlAdvice...)
+				}
+			default:
+				return nil, common.Errorf(common.Invalid, "invalid check statement type database type: %s", instance.Engine)
 			}
+
+			return results, nil
+		}()
+		if err != nil {
+			results = append(results, &storepb.PlanCheckRunResult_Result{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Title:   "Failed to run statement type check",
+				Content: err.Error(),
+				Code:    common.Internal.Int32(),
+				Report:  nil,
+			})
+		} else {
+			results = append(results, stmtResults...)
 		}
 	}
 

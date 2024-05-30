@@ -3319,13 +3319,6 @@
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
-    "matched-table": "Tabla coincidente",
-    "unmatched-table": "Tabla no coincidente",
-    "table-group": {
-      "self": "Grupo de tablas",
-      "create": "Crear grupo de tablas",
-      "edit": "Editar grupo de tablas"
-    },
     "condition": {
       "self": "Condición"
     },
