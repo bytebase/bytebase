@@ -2176,7 +2176,8 @@ func validateIAMPolicyExpression(expr string, maximumRoleExpiration *durationpb.
 				return nil
 			}
 		default:
-			return errors.Errorf("unexpected expr kind %v", expr.Kind())
+			// Ignore other kinds.
+			return nil
 		}
 	}
 
