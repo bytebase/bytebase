@@ -306,7 +306,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 		if approvalStep == nil {
 			return nil
 		}
-		r.webhookManager.CreateEvent(ctx, webhook.Event{
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    webhook.EventTypeIssueApprovalCreate,
 			Comment: "",

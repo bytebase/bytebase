@@ -39,7 +39,7 @@ func NewManager(store *store.Store) *Manager {
 	}
 }
 
-func (m *Manager) CreateEvent(ctx context.Context, e Event) {
+func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 	var activityType api.ActivityType
 	//exhaustive:enforce
 	switch e.Type {
@@ -88,7 +88,7 @@ func (m *Manager) CreateEvent(ctx context.Context, e Event) {
 	go postWebhookList(ctx, webhookCtx, webhookList)
 }
 
-func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e Event, activityType api.ActivityType) (*webhook.Context, error) {
+func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, activityType api.ActivityType) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
 	var mentions []string
@@ -425,7 +425,7 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager 
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}
 
-	webhookManager.CreateEvent(ctx, Event{
+	webhookManager.CreateEvent(ctx, &Event{
 		Actor:   updater,
 		Type:    EventTypeIssueStatusUpdate,
 		Comment: comment,

@@ -230,7 +230,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
 
-		s.webhookManager.CreateEvent(ctx, webhook.Event{
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    webhook.EventTypeTaskRunStatusUpdate,
 			Comment: "",
@@ -666,7 +666,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				// every task in the stage terminated
 				// create "stage ends" activity.
 				if err := func() error {
-					s.webhookManager.CreateEvent(ctx, webhook.Event{
+					s.webhookManager.CreateEvent(ctx, &webhook.Event{
 						Actor:   store.SystemBotUser,
 						Type:    webhook.EventTypeStageStatusUpdate,
 						Comment: "",
@@ -690,7 +690,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					if err != nil {
 						return errors.Wrapf(err, "failed to get rollout policy")
 					}
-					s.webhookManager.CreateEvent(ctx, webhook.Event{
+					s.webhookManager.CreateEvent(ctx, &webhook.Event{
 						Actor:   store.SystemBotUser,
 						Type:    webhook.EventTypeIssueRolloutReady,
 						Comment: "",
@@ -737,7 +737,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 						}
 
-						s.webhookManager.CreateEvent(ctx, webhook.Event{
+						s.webhookManager.CreateEvent(ctx, &webhook.Event{
 							Actor:   store.SystemBotUser,
 							Type:    webhook.EventTypeIssueStatusUpdate,
 							Comment: "",
@@ -771,7 +771,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 		if issue == nil {
 			return nil
 		}
-		s.webhookManager.CreateEvent(ctx, webhook.Event{
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    webhook.EventTypeTaskRunStatusUpdate,
 			Comment: "",

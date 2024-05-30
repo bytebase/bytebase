@@ -245,7 +245,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err != nil {
 			return errors.Wrapf(err, "failed to get rollout policy")
 		}
-		r.webhookManager.CreateEvent(ctx, webhook.Event{
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    webhook.EventTypeIssueRolloutReady,
 			Comment: "",
@@ -269,7 +269,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if approvalStep == nil {
 			return nil
 		}
-		r.webhookManager.CreateEvent(ctx, webhook.Event{
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    webhook.EventTypeIssueApprovalCreate,
 			Comment: "",

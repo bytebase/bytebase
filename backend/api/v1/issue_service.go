@@ -569,7 +569,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	s.webhookManager.CreateEvent(ctx, webhook.Event{
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    webhook.EventTypeIssueCreate,
 		Comment: "",
@@ -653,7 +653,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	s.webhookManager.CreateEvent(ctx, webhook.Event{
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    webhook.EventTypeIssueCreate,
 		Comment: "",
@@ -771,7 +771,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	s.webhookManager.CreateEvent(ctx, webhook.Event{
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    webhook.EventTypeIssueCreate,
 		Comment: "",
@@ -913,7 +913,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			return nil
 		}
 
-		s.webhookManager.CreateEvent(ctx, webhook.Event{
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    webhook.EventTypeIssueApprovalCreate,
 			Comment: "",
@@ -935,7 +935,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		}
 
 		// notify issue approved
-		s.webhookManager.CreateEvent(ctx, webhook.Event{
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    webhook.EventTypeIssueApprovalPass,
 			Comment: "",
@@ -959,7 +959,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			if err != nil {
 				return errors.Wrapf(err, "failed to get rollout policy")
 			}
-			s.webhookManager.CreateEvent(ctx, webhook.Event{
+			s.webhookManager.CreateEvent(ctx, &webhook.Event{
 				Actor:   user,
 				Type:    webhook.EventTypeIssueRolloutReady,
 				Comment: "",
@@ -1210,7 +1210,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
-	var webhookEvents []webhook.Event
+	var webhookEvents []*webhook.Event
 	var issueCommentCreates []*store.IssueCommentMessage
 	for _, path := range request.UpdateMask.Paths {
 		updateMasks[path] = true
@@ -1267,7 +1267,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				},
 			})
 
-			webhookEvents = append(webhookEvents, webhook.Event{
+			webhookEvents = append(webhookEvents, &webhook.Event{
 				Actor:   user,
 				Type:    webhook.EventTypeIssueUpdate,
 				Comment: "",
@@ -1293,7 +1293,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				},
 			})
 
-			webhookEvents = append(webhookEvents, webhook.Event{
+			webhookEvents = append(webhookEvents, &webhook.Event{
 				Actor:   user,
 				Type:    webhook.EventTypeIssueUpdate,
 				Comment: "",
@@ -1452,7 +1452,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 			}
 
 			func() {
-				s.webhookManager.CreateEvent(ctx, webhook.Event{
+				s.webhookManager.CreateEvent(ctx, &webhook.Event{
 					Actor:   user,
 					Type:    webhook.EventTypeIssueStatusUpdate,
 					Comment: request.Reason,
@@ -1565,7 +1565,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to create issue comment")
 	}
 
-	s.webhookManager.CreateEvent(ctx, webhook.Event{
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    webhook.EventTypeIssueCommentCreate,
 		Comment: request.IssueComment.Comment,

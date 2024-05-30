@@ -387,7 +387,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	s.webhookManager.CreateEvent(ctx, webhook.Event{
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    webhook.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
@@ -502,7 +502,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	s.webhookManager.CreateEvent(ctx, webhook.Event{
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    webhook.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
@@ -638,7 +638,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	s.webhookManager.CreateEvent(ctx, webhook.Event{
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    webhook.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
