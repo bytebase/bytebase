@@ -30,21 +30,3 @@ type Executor interface {
 	// Run will be called periodically by the plan check scheduler
 	Run(ctx context.Context, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error)
 }
-
-func isStatementAdviseSupported(dbType storepb.Engine) bool {
-	switch dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL:
-		return true
-	default:
-		return false
-	}
-}
-
-func isStatementReportSupported(dbType storepb.Engine) bool {
-	switch dbType {
-	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_OCEANBASE, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
-		return true
-	default:
-		return false
-	}
-}

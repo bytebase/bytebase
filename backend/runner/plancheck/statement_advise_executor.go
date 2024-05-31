@@ -61,7 +61,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, errors.Errorf("instance not found UID %v", instanceUID)
 	}
 
-	if !isStatementAdviseSupported(instance.Engine) {
+	if !common.StatementAdviseEngines[instance.Engine] {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
