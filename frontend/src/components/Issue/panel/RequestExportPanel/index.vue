@@ -10,8 +10,8 @@
       class="w-[50rem] max-w-[100vw] relative"
     >
       <div class="w-full mx-auto space-y-4">
-        <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
+        <div class="w-full flex flex-row justify-start items-center gap-2">
+          <span class="flex items-center textlabel">
             {{ $t("common.project") }}
             <RequiredStar />
           </span>
@@ -19,6 +19,7 @@
             class="!w-60 shrink-0"
             :project="state.projectId"
             :filter="filterProject"
+            :disabled="Boolean(props.projectId)"
             @update:project="handleProjectSelect"
           />
         </div>
