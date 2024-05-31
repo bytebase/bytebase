@@ -787,52 +787,6 @@ useEmitteryEventListener(contextMenuEvents, "restore-function", (node) => {
   removeEditStatus(node.db, node.metadata, /* recursive */ false);
 });
 
-// const handleContextMenuSelect = async (key: string) => {
-//   const treeNode = contextMenu.treeNode;
-//   if (!treeNode) return;
-//   if (treeNode.type === "database") {
-//     const engine = treeNode.db.instanceEntity.engine;
-//     if (key === "create-schema") {
-//       if (engineSupportsMultiSchema(engine)) {
-//         state.schemaNameModalContext = {
-//           db: treeNode.db,
-//           database: treeNode.metadata.database,
-//           schema: undefined,
-//         };
-//       }
-//     }
-//   } else if (treeNode.type === "schema") {
-//     if (key === "drop-schema") {
-//       markEditStatus(treeNode.db, treeNode.metadata, "dropped");
-//     } else if (key === "restore") {
-//       removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
-//     }
-//   } else if (treeNode.type === "group") {
-//     if (treeNode.group === "table" && key === "create-table") {
-//       state.tableNameModalContext = {
-//         db: treeNode.db,
-//         database: treeNode.metadata.database,
-//         schema: treeNode.metadata.schema,
-//         table: undefined,
-//       };
-//     }
-//   } else if (treeNode.type === "table") {
-//     if (key === "rename") {
-//       state.tableNameModalContext = {
-//         db: treeNode.db,
-//         database: treeNode.metadata.database,
-//         schema: treeNode.metadata.schema,
-//         table: treeNode.metadata.table,
-//       };
-//     } else if (key === "drop") {
-//       markEditStatus(treeNode.db, treeNode.metadata, "dropped");
-//     } else if (key === "restore") {
-//       removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
-//     }
-//   }
-//   contextMenu.showDropdown = false;
-// };
-
 const handleExpandedKeysChange = (expandedKeys: string[]) => {
   expandedKeysRef.value = expandedKeys;
 };
