@@ -326,6 +326,7 @@ onMounted(async () => {
       return;
     }
   }
+  // Try to signin with example account in demo site.
   if (
     window.location.href.startsWith("https://demo.bytebase.com") &&
     isDemo.value &&
