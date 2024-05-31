@@ -14,6 +14,7 @@ import {
   InstanceOptions,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { calcUpdateMask } from "@/utils";
 
 export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
 
@@ -86,4 +87,43 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
     updatedPassword: "",
     useEmptyPassword: false,
   };
+};
+
+export const calcDataSourceUpdateMask = (
+  editing: DataSource,
+  original: DataSource,
+  editState: EditDataSource
+) => {
+  const updateMask = new Set(
+    calcUpdateMask(editing, original, true /* toSnakeCase */)
+  );
+  const {
+    useEmptyPassword,
+    updateSsh,
+    updateSsl,
+    updateAuthenticationPrivateKey,
+  } = editState;
+  if (useEmptyPassword) {
+    // We need to implicitly set "password" need to be updated
+    // if the "use empty password" option if checked
+    editing.password = "";
+    updateMask.add("password");
+  }
+  if (updateSsl) {
+    updateMask.add("ssl_ca");
+    updateMask.add("ssl_key");
+    updateMask.add("ssl_cert");
+  }
+  if (updateSsh) {
+    updateMask.add("ssh_host");
+    updateMask.add("ssh_port");
+    updateMask.add("ssh_user");
+    updateMask.add("ssh_password");
+    updateMask.add("ssh_private_key");
+  }
+  if (updateAuthenticationPrivateKey) {
+    updateMask.add("authentication_private_key");
+  }
+
+  return Array.from(updateMask);
 };

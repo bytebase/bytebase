@@ -744,7 +744,6 @@ import {
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
-import { useInstanceSpecs } from "../specs";
 import GcpCredentialInput from "./GcpCredentialInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
@@ -759,6 +758,7 @@ const props = defineProps<{
 
 const {
   instance,
+  specs,
   isCreating,
   allowEdit,
   basicInfo,
@@ -775,7 +775,7 @@ const {
   showAuthenticationDatabase,
   hasReadonlyReplicaHost,
   hasReadonlyReplicaPort,
-} = useInstanceSpecs();
+} = specs;
 
 const state = reactive<LocalState>({
   passwordType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
