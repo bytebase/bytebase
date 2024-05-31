@@ -26,7 +26,7 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   return iamPolicy.bindings
     .filter((binding) => {
       for (const member of binding.members) {
-        if (member === ALL_USERS_USER_EMAIL) {
+        if (member === getUserEmailInBinding(ALL_USERS_USER_EMAIL)) {
           return true;
         }
         if (member === getUserEmailInBinding(user.email)) {
