@@ -126,11 +126,11 @@ router.beforeEach((to, from, next) => {
     if (!isLoggedIn) {
       const query: any = {};
       if (to.fullPath !== "/") {
-        query["redirect"] = to.fullPath;
         if (to.query["idp"]) {
-          // TODO: remove query param idp from redirect URL.
+          // TODO: remove query param `idp` from fullPath.
           query["idp"] = to.query["idp"];
         }
+        query["redirect"] = to.fullPath;
       }
 
       next({
