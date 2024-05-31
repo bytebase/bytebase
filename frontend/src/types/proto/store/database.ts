@@ -32,6 +32,7 @@ export interface DatabaseSchemaMetadata {
   datashare: boolean;
   /** The service name of the database. It's the Oracle specific concept. */
   serviceName: string;
+  linkedDatabases: LinkedDatabaseMetadata[];
 }
 
 /**
@@ -717,6 +718,12 @@ export interface ColumnConfig_LabelsEntry {
   value: string;
 }
 
+export interface LinkedDatabaseMetadata {
+  name: string;
+  username: string;
+  host: string;
+}
+
 function createBaseDatabaseMetadata(): DatabaseMetadata {
   return { labels: {}, lastSyncTime: undefined };
 }
@@ -885,7 +892,16 @@ export const DatabaseMetadata_LabelsEntry = {
 };
 
 function createBaseDatabaseSchemaMetadata(): DatabaseSchemaMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false, serviceName: "" };
+  return {
+    name: "",
+    schemas: [],
+    characterSet: "",
+    collation: "",
+    extensions: [],
+    datashare: false,
+    serviceName: "",
+    linkedDatabases: [],
+  };
 }
 
 export const DatabaseSchemaMetadata = {
@@ -910,6 +926,9 @@ export const DatabaseSchemaMetadata = {
     }
     if (message.serviceName !== "") {
       writer.uint32(58).string(message.serviceName);
+    }
+    for (const v of message.linkedDatabases) {
+      LinkedDatabaseMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -970,6 +989,13 @@ export const DatabaseSchemaMetadata = {
 
           message.serviceName = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.linkedDatabases.push(LinkedDatabaseMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -992,6 +1018,9 @@ export const DatabaseSchemaMetadata = {
         : [],
       datashare: isSet(object.datashare) ? globalThis.Boolean(object.datashare) : false,
       serviceName: isSet(object.serviceName) ? globalThis.String(object.serviceName) : "",
+      linkedDatabases: globalThis.Array.isArray(object?.linkedDatabases)
+        ? object.linkedDatabases.map((e: any) => LinkedDatabaseMetadata.fromJSON(e))
+        : [],
     };
   },
 
@@ -1018,6 +1047,9 @@ export const DatabaseSchemaMetadata = {
     if (message.serviceName !== "") {
       obj.serviceName = message.serviceName;
     }
+    if (message.linkedDatabases?.length) {
+      obj.linkedDatabases = message.linkedDatabases.map((e) => LinkedDatabaseMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -1033,6 +1065,7 @@ export const DatabaseSchemaMetadata = {
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
     message.datashare = object.datashare ?? false;
     message.serviceName = object.serviceName ?? "";
+    message.linkedDatabases = object.linkedDatabases?.map((e) => LinkedDatabaseMetadata.fromPartial(e)) || [];
     return message;
   },
 };
@@ -4343,6 +4376,95 @@ export const ColumnConfig_LabelsEntry = {
     const message = createBaseColumnConfig_LabelsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseLinkedDatabaseMetadata(): LinkedDatabaseMetadata {
+  return { name: "", username: "", host: "" };
+}
+
+export const LinkedDatabaseMetadata = {
+  encode(message: LinkedDatabaseMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.host !== "") {
+      writer.uint32(26).string(message.host);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LinkedDatabaseMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLinkedDatabaseMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LinkedDatabaseMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+    };
+  },
+
+  toJSON(message: LinkedDatabaseMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LinkedDatabaseMetadata>): LinkedDatabaseMetadata {
+    return LinkedDatabaseMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LinkedDatabaseMetadata>): LinkedDatabaseMetadata {
+    const message = createBaseLinkedDatabaseMetadata();
+    message.name = object.name ?? "";
+    message.username = object.username ?? "";
+    message.host = object.host ?? "";
     return message;
   },
 };
