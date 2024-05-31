@@ -724,6 +724,10 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 					slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 					continue
 				}
+				if group == nil {
+					slog.Error("cannot found group", slog.String("group", member))
+					continue
+				}
 				for _, member := range group.Payload.Members {
 					if userIDFullName == member.Member {
 						hasUser = true
