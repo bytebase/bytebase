@@ -128,10 +128,6 @@ const buttonClasses = computed(() => {
 // Defines the mapping from PlanCheckRun_Type to an i18n resource keypath
 const PlanCheckRunTypeNameDict = new Map<PlanCheckRun_Type, string>([
   [PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE, "task.check-type.fake"],
-  [
-    PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY,
-    "task.check-type.compatibility",
-  ],
   [PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE, "task.check-type.sql-review"],
   [PlanCheckRun_Type.DATABASE_CONNECT, "task.check-type.connection"],
   [PlanCheckRun_Type.DATABASE_GHOST_SYNC, "task.check-type.ghost-sync"],

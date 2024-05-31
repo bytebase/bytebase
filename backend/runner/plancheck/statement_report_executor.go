@@ -57,7 +57,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, errors.Errorf("instance not found UID %v", instanceUID)
 	}
 
-	if !isStatementReportSupported(instance.Engine) {
+	if !common.StatementReportEngines[instance.Engine] {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
