@@ -50,9 +50,6 @@ export const filterUserListByKeyword = (userList: User[], keyword: string) => {
 export const userBindingPrefix = "user:";
 
 export const getUserEmailInBinding = (email: string) => {
-  if (email === ALL_USERS_USER_EMAIL) {
-    return ALL_USERS_USER_EMAIL;
-  }
   return `${userBindingPrefix}${email}`;
 };
 

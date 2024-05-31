@@ -90,14 +90,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
+	dbLinks, err := getDBLinks(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get db links from database %q", driver.databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:        driver.databaseName,
-		ServiceName: driver.serviceName,
+		Name:            driver.databaseName,
+		ServiceName:     driver.serviceName,
+		LinkedDatabases: dbLinks,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 		Name:   driver.databaseName,
@@ -105,6 +110,36 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Views:  viewMap[driver.databaseName],
 	})
 	return databaseMetadata, nil
+}
+
+func getDBLinks(txn *sql.Tx) ([]*storepb.LinkedDatabaseMetadata, error) {
+	query := `
+	SELECT DB_LINK, HOST, USERNAME
+	FROM all_db_links
+	ORDER BY DB_LINK`
+	slog.Debug("running get db link query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var result []*storepb.LinkedDatabaseMetadata
+	for rows.Next() {
+		dbLink := &storepb.LinkedDatabaseMetadata{}
+		if err := rows.Scan(&dbLink.Name, &dbLink.Host, &dbLink.Username); err != nil {
+			return nil, err
+		}
+		result = append(result, dbLink)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return result, nil
 }
 
 func getSchemas(txn *sql.Tx) ([]string, error) {

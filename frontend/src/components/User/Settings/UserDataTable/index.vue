@@ -57,6 +57,7 @@ const columns = computed(() => {
       key: "account",
       title: t("settings.members.table.account"),
       width: "32rem",
+      resizable: true,
       render: (user: User) => {
         return h(UserNameCell, {
           user,
@@ -67,6 +68,7 @@ const columns = computed(() => {
     {
       key: "roles",
       title: t("settings.members.table.role"),
+      resizable: true,
       render: (user: User) => {
         return h(UserRolesCell, {
           user,
@@ -76,6 +78,7 @@ const columns = computed(() => {
     {
       key: "groups",
       title: t("settings.members.table.groups"),
+      resizable: true,
       render: (user: User) => {
         return h(UserGroupsCell, {
           user,

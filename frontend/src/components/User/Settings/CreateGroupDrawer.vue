@@ -91,35 +91,18 @@
       </template>
       <template #footer>
         <div class="w-full flex justify-between items-center">
-          <div>
-            <NPopconfirm
-              v-if="!isCreating"
-              :disabled="!allowEdit"
-              @positive-click="handleDeleteGroup"
-            >
-              <template #trigger>
-                <NButton
-                  quaternary
-                  size="small"
-                  :disabled="!allowEdit"
-                  @click.stop
-                >
-                  <template #icon>
-                    <Trash2Icon class="w-4 h-auto" />
-                  </template>
-                  <template #default>
-                    {{ $t("common.delete") }}
-                  </template>
-                </NButton>
-              </template>
-
-              <template #default>
-                <div>
-                  {{ $t("settings.members.action.delete-confirm-title") }}
-                </div>
-              </template>
-            </NPopconfirm>
-          </div>
+          <RemoveGroupButton
+            v-if="!isCreating"
+            :group="group!"
+            @removed="$emit('close')"
+          >
+            <template #icon>
+              <Trash2Icon class="w-4 h-auto" />
+            </template>
+            <template #default>
+              {{ $t("common.delete") }}
+            </template>
+          </RemoveGroupButton>
 
           <div class="flex flex-row items-center justify-end gap-x-3">
             <NButton @click="$emit('close')">
@@ -150,7 +133,7 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
-import { NPopconfirm, NButton, NInput, NTooltip } from "naive-ui";
+import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -172,6 +155,7 @@ import {
   extractUserUID,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import RemoveGroupButton from "./RemoveGroupButton.vue";
 
 interface LocalState {
   isRequesting: boolean;
@@ -325,19 +309,6 @@ const updateMemberRole = (index: number, role: UserGroupMember_Role) => {
 
 const deleteMember = (index: number) => {
   state.group.members.splice(index, 1);
-};
-
-const handleDeleteGroup = async () => {
-  if (!props.group) {
-    return;
-  }
-  await groupStore.deleteGroup(props.group.name);
-  pushNotification({
-    module: "bytebase",
-    style: "INFO",
-    title: t("common.deleted"),
-  });
-  emit("close");
 };
 
 const tryCreateOrUpdateGroup = async () => {

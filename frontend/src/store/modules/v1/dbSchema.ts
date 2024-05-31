@@ -238,6 +238,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     );
   };
 
+  const getDatabaseMetadataWithoutDefault = (
+    database: string,
+    view?: DatabaseMetadataView
+  ) => getCache(database, view)[0];
+
   /**
    *
    * @param database
@@ -249,7 +254,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     view?: DatabaseMetadataView
   ) => {
     return (
-      getCache(database, view)[0] ??
+      getDatabaseMetadataWithoutDefault(database, view) ??
       DatabaseMetadata.fromPartial({
         name: ensureDatabaseMetadataResourceName(database),
       })
@@ -488,6 +493,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     getSchemaConfig,
     getTableConfig,
     getColumnConfig,
+    getDatabaseMetadataWithoutDefault,
     getDatabaseMetadata,
     getOrFetchDatabaseMetadata,
     getSchemaList,

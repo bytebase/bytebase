@@ -1,7 +1,6 @@
 <template>
-  <div class="w-full space-y-2">
+  <div class="w-full relative">
     <NTransfer
-      v-if="!loading"
       v-model:value="selectedValueList"
       style="height: 512px"
       :options="sourceTransferOptions"
@@ -11,9 +10,8 @@
       :source-filter-placeholder="$t('common.filter-by-name')"
     />
     <div
-      v-else
-      style="height: 512px"
-      class="border flex items-center justify-center"
+      v-if="loading"
+      class="z-1 absolute inset-0 bg-white bg-opacity-80 flex flex-row justify-center items-center"
     >
       <BBSpin size="large" />
     </div>
@@ -24,16 +22,21 @@
 import { orderBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
 import { NTransfer, NTree } from "naive-ui";
-import { computed, h, ref, watch } from "vue";
+import { computed, h, onMounted, ref, watch } from "vue";
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useProjectV1Store,
 } from "@/store";
 import type { DatabaseResource } from "@/types";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
-import { flattenTreeOptions, mapTreeOptions } from "./common";
+import {
+  flattenTreeOptions,
+  getSchemaOrTableTreeOptions,
+  mapTreeOptions,
+} from "./common";
 
 const props = defineProps<{
   projectId: string;
@@ -49,88 +52,52 @@ const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const selectedValueList = ref<string[]>(
   props.databaseResources.map((databaseResource) => {
-    const database = databaseStore.getDatabaseByName(
-      databaseResource.databaseName
-    );
     if (databaseResource.table !== undefined) {
-      return `t-${database.uid}-${databaseResource.schema}-${databaseResource.table}`;
+      return `${databaseResource.databaseName}/schemas/${databaseResource.schema}/tables/${databaseResource.table}`;
     } else if (databaseResource.schema !== undefined) {
-      return `s-${database.uid}-${databaseResource.schema}`;
+      return `${databaseResource.databaseName}/schemas/${databaseResource.schema}`;
     } else {
-      return `d-${database.uid}`;
+      return databaseResource.databaseName;
     }
   })
 );
 const defaultExpandedKeys = ref<string[]>([]);
-const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
-const loading = ref(false);
+const loading = ref(true);
 
-// Fetch database list when projectId changed.
-watch(
-  () => props.projectId,
-  async () => {
-    loading.value = true;
-    const project = await useProjectV1Store().getOrFetchProjectByUID(
-      props.projectId
-    );
-    const filters = [`instance = "instances/-"`, `project = "${project.name}"`];
-    const databaseList = await databaseStore.searchDatabases({
-      filter: filters.join(" && "),
-    });
+onMounted(async () => {
+  const project = await useProjectV1Store().getOrFetchProjectByUID(
+    props.projectId
+  );
+  const filters = [`instance = "instances/-"`, `project = "${project.name}"`];
+  await databaseStore.searchDatabases({
+    filter: filters.join(" && "),
+  });
 
-    for (const database of databaseList) {
-      const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
-        database: database.name,
+  await Promise.all(
+    selectedValueList.value.map(async (key) => {
+      const [databaseName] = key.split("/schemas/");
+      await dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: databaseName,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
       });
-      databaseResourceMap.value.set(`d-${database.uid}`, {
-        databaseName: database.name,
-      });
-      for (const schema of databaseMetadata.schemas) {
-        databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
-          databaseName: database.name,
-          schema: schema.name,
-        });
-        for (const table of schema.tables) {
-          databaseResourceMap.value.set(
-            `t-${database.uid}-${schema.name}-${table.name}`,
-            {
-              databaseName: database.name,
-              schema: schema.name,
-              table: table.name,
-            }
-          );
-        }
+    })
+  );
+  defaultExpandedKeys.value = selectedValueList.value
+    .map((key) => {
+      if (key.includes("/tables/")) {
+        const schemaName = key.split("/tables/")[0];
+        const databaseName = schemaName.split("/schemas/")[0];
+        return [databaseName, schemaName];
+      } else if (key.includes("/schemas/")) {
+        const databaseName = key.split("/schemas/")[0];
+        return [databaseName];
+      } else {
+        return [];
       }
-    }
-
-    // Only initalized defaultExpandedKeys when projectId changed.
-    defaultExpandedKeys.value = selectedValueList.value
-      .map((key) => {
-        if (key.startsWith("t-")) {
-          const [_, database, schema] = key.split("-");
-          return [`d-${database}`, `s-${database}-${schema}`];
-        } else if (key.startsWith("s-")) {
-          const [_, database] = key.split("-");
-          return [`d-${database}`];
-        } else {
-          return [];
-        }
-      })
-      .flat();
-    loading.value = false;
-  },
-  {
-    immediate: true,
-  }
-);
-
-// Clear selectedValueList when projectId changed.
-watch(
-  () => props.projectId,
-  () => {
-    selectedValueList.value = [];
-  }
-);
+    })
+    .flat();
+  loading.value = false;
+});
 
 const databaseList = computed(() => {
   const project = useProjectV1Store().getProjectByUID(props.projectId);
@@ -178,6 +145,23 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     showIrrelevantNodes: false,
     defaultExpandedKeys: defaultExpandedKeys.value,
     checkedKeys: selectedValueList.value,
+    onLoad: async (node: TreeOption) => {
+      const treeNode = node as DatabaseTreeOption;
+      if (treeNode.level === "database") {
+        await dbSchemaStore.getOrFetchDatabaseMetadata({
+          database: treeNode.value,
+          view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+        });
+        const database = databaseStore.getDatabaseByName(treeNode.value);
+        const children = getSchemaOrTableTreeOptions(database);
+        if (children && children.length > 0) {
+          treeNode.children = children;
+          treeNode.isLeaf = false;
+        } else {
+          treeNode.isLeaf = true;
+        }
+      }
+    },
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
       onCheck(checkedKeys);
     },
@@ -185,7 +169,23 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
 };
 
 const targetTreeOptions = computed(() => {
-  return mapTreeOptions(databaseList.value, selectedValueList.value);
+  if (selectedValueList.value.length === 0) {
+    return [];
+  }
+  const nodes = mapTreeOptions(databaseList.value, selectedValueList.value);
+  for (const databaseNode of nodes) {
+    if (!databaseNode.children || databaseNode.children.length === 0) {
+      databaseNode.isLeaf = true;
+      continue;
+    } else {
+      for (const childNode of databaseNode.children) {
+        if (!childNode.children || childNode.children.length === 0) {
+          childNode.isLeaf = true;
+        }
+      }
+    }
+  }
+  return nodes;
 });
 
 const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
@@ -215,7 +215,22 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
 watch(selectedValueList, () => {
   emit(
     "update",
-    selectedValueList.value.map((key) => databaseResourceMap.value.get(key)!)
+    selectedValueList.value.map((key) => {
+      const [databaseName, schemaAndTable] = key.split("/schemas/");
+      const databaseResource: DatabaseResource = {
+        databaseName,
+      };
+      if (schemaAndTable) {
+        const [schema, table] = schemaAndTable.split("/tables/");
+        if (table) {
+          databaseResource.schema = schema;
+          databaseResource.table = table;
+        } else {
+          databaseResource.schema = schema;
+        }
+      }
+      return databaseResource;
+    })
   );
 });
 </script>

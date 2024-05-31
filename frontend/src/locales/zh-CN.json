@@ -508,6 +508,7 @@
         "add-group": "添加组",
         "update-group": "更新组",
         "delete-warning": "群组“{name}”将被删除。此操作无法撤消。",
+        "delete-warning-with-resources": "以下资源使用了群组“{name}”：",
         "form": {
           "email": "电子邮件",
           "email-tips": "电子邮件应该是唯一的，并且创建后不能更改。",
@@ -554,7 +555,6 @@
       },
       "view-by-principals": "按成员查看",
       "view-by-roles": "按角色查看",
-      "view-by-groups": "按组查看",
       "add-member": "添加成员",
       "update-member": "更新成员",
       "workspace-role-at-least-one": "至少选择一个工作空间级别的角色"
@@ -1993,7 +1993,7 @@
       "revoke-access": "撤销访问",
       "grant-access": "授权访问",
       "edit": "编辑成员 - {member}",
-      "view-by-principals": "按负责人查看",
+      "view-by-members": "按成员查看",
       "view-by-roles": "按角色查看",
       "cannot-remove-last-owner": "无法移除项目的最后一个所有者",
       "revoke-role-from-user": "删除'{user}'{role}的角色",

@@ -14,36 +14,15 @@
           $t("project.members.grant-access")
         }}</NButton>
       </div>
-      <div v-if="binding.type === 'group'">
+      <div v-if="binding.type === 'groups'" class="mb-6">
         <div class="text-lg px-1 pb-1 w-full border-b mb-3">
-          {{ $t("settings.members.groups.group-members") }}
-          <router-link
-            :to="{
-              name: WORKSPACE_ROUTE_MEMBERS,
-              query: {
-                name: `${userGroupNamePrefix}${binding.email}`,
-              },
-            }"
-            class="normal-link text-sm ml-2"
-          >
-            {{ $t("settings.members.groups.edit-group") }}
-          </router-link>
+          <GroupNameCell :group="binding.group!" :show-icon="false" />
         </div>
         <div class="border rounded divide-y">
           <div v-for="data in groupMembers" :key="data.user.name" class="p-2">
-            <UserNameCell
-              :user="data.user"
-              :role="data.role"
-              :show-group-role="true"
-            />
+            <GroupMemberNameCell :user="data.user" :role="data.role" />
           </div>
         </div>
-      </div>
-      <div
-        v-if="binding.type === 'group'"
-        class="text-lg px-1 pb-1 w-full border-b mt-4 mb-3"
-      >
-        Group roles
       </div>
       <template v-if="binding.workspaceLevelProjectRoles.length > 0">
         <p class="text-lg px-1 pb-1 w-full border-b mb-3">
@@ -225,16 +204,15 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridRow } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
-import UserNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/UserNameCell.vue";
+import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
+import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
-import { WORKSPACE_ROUTE_MEMBERS } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
-  useUserGroupStore,
   pushNotification,
 } from "@/store";
 import { userGroupNamePrefix } from "@/store/modules/v1/common";
@@ -278,7 +256,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const dialog = useDialog();
 const userStore = useUserStore();
-const groupStore = useUserGroupStore();
 const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();
@@ -297,7 +274,7 @@ const editingBinding = ref<Binding | null>(null);
 
 const panelTitle = computed(() => {
   return t("project.members.edit", {
-    member: `${props.binding.title}(${props.binding.email})`,
+    member: `${props.binding.title}(${props.binding.binding})`,
   });
 });
 
@@ -371,7 +348,7 @@ const allowRemoveRole = (role: string) => {
   if (props.project.state === State.DELETED) {
     return false;
   }
-  if (props.binding.type === "group") {
+  if (props.binding.type === "groups") {
     return true;
   }
 
@@ -660,12 +637,11 @@ watch(
 );
 
 const groupMembers = computed(() => {
-  if (props.binding.type !== "group") {
+  if (props.binding.type !== "groups") {
     return [];
   }
   const resp = [];
-  for (const member of groupStore.getGroupByEmail(props.binding.email)
-    ?.members ?? []) {
+  for (const member of props.binding.group?.members ?? []) {
     const user = userStore.getUserByIdentifier(member.member);
     if (!user) {
       continue;
