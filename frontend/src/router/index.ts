@@ -127,6 +127,10 @@ router.beforeEach((to, from, next) => {
       const query: any = {};
       if (to.fullPath !== "/") {
         query["redirect"] = to.fullPath;
+        if (to.query["idp"]) {
+          // TODO: remove query param idp from redirect URL.
+          query["idp"] = to.query["idp"];
+        }
       }
 
       next({
