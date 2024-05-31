@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/store/model"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -37,7 +38,26 @@ const (
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
 
-var MaximumSQLResultSizeExceeded = fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", MaximumSQLResultSize/1024/1024)
+var (
+	MaximumSQLResultSizeExceeded = fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", MaximumSQLResultSize/1024/1024)
+	StatementAdviseEngines       = map[storepb.Engine]bool{
+		storepb.Engine_MYSQL:            true,
+		storepb.Engine_TIDB:             true,
+		storepb.Engine_POSTGRES:         true,
+		storepb.Engine_ORACLE:           true,
+		storepb.Engine_OCEANBASE_ORACLE: true,
+		storepb.Engine_OCEANBASE:        true,
+		storepb.Engine_SNOWFLAKE:        true,
+		storepb.Engine_MSSQL:            true,
+	}
+	StatementReportEngines = map[storepb.Engine]bool{
+		storepb.Engine_POSTGRES:         true,
+		storepb.Engine_MYSQL:            true,
+		storepb.Engine_OCEANBASE:        true,
+		storepb.Engine_ORACLE:           true,
+		storepb.Engine_OCEANBASE_ORACLE: true,
+	}
+)
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
