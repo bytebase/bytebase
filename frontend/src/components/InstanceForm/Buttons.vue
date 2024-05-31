@@ -3,6 +3,7 @@
     <div class="w-full flex justify-between items-center" v-bind="$attrs">
       <div class="w-full flex justify-end items-center gap-x-3">
         <NButton
+          v-if="allowCancel"
           :disabled="state.isRequesting || state.isTestingConnection"
           @click.prevent="cancel"
         >
@@ -75,6 +76,15 @@ import {
   type EditDataSource,
 } from "./common";
 import { useInstanceFormContext } from "./context";
+
+withDefaults(
+  defineProps<{
+    allowCancel?: boolean;
+  }>(),
+  {
+    allowCancel: true,
+  }
+);
 
 const context = useInstanceFormContext();
 const {
