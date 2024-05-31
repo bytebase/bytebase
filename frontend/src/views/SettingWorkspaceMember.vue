@@ -7,86 +7,100 @@
     />
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <div class="flex justify-between items-center">
-      <div class="flex-1 flex space-x-2">
-        <p class="text-lg font-medium leading-7 text-main">
-          <span>{{ $t("common.members") }}</span>
-          <span class="ml-1 font-normal text-control-light">
-            ({{ activeUserList.length }})
-          </span>
-        </p>
-        <div
-          v-if="showUpgradeInfo"
-          class="flex flex-row items-center space-x-1"
-        >
-          <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
-          <router-link
-            :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
-            class="text-lg accent-link"
+    <NTabs v-model:value="state.typeTab" type="line" animated>
+      <NTabPane name="members">
+        <template #tab>
+          <div class="flex-1 flex space-x-2">
+            <p class="text-lg font-medium leading-7 text-main">
+              <span>{{ $t("common.members") }}</span>
+              <span class="ml-1 font-normal text-control-light">
+                ({{ userStore.activeUserList.length }})
+              </span>
+            </p>
+            <div
+              v-if="showUpgradeInfo"
+              class="flex flex-row items-center space-x-1"
+            >
+              <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
+              <router-link
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+                class="text-lg accent-link"
+              >
+                {{ $t("settings.members.upgrade") }}
+              </router-link>
+            </div>
+          </div>
+        </template>
+      </NTabPane>
+
+      <NTabPane name="groups">
+        <template #tab>
+          <div>
+            <p class="text-lg font-medium leading-7 text-main">
+              <span>{{ $t("settings.members.groups.self") }}</span>
+              <span class="ml-1 font-normal text-control-light">
+                ({{ groupStore.groupList.length }})
+              </span>
+            </p>
+          </div>
+        </template>
+      </NTabPane>
+
+      <template #suffix>
+        <div class="flex items-center space-x-3">
+          <SearchBox v-model:value="state.activeUserFilterText" />
+          <NButton
+            v-if="allowCreateGroup"
+            class="capitalize"
+            @click="handleCreateGroup"
           >
-            {{ $t("settings.members.upgrade") }}
-          </router-link>
+            <template #icon>
+              <PlusIcon class="h-5 w-5" />
+            </template>
+            {{ $t(`settings.members.groups.add-group`) }}
+          </NButton>
+          <NButton
+            v-if="allowCreateUser"
+            type="primary"
+            class="capitalize"
+            @click="handleCreateUser"
+          >
+            <template #icon>
+              <PlusIcon class="h-5 w-5" />
+            </template>
+            {{ $t(`settings.members.add-member`) }}
+          </NButton>
         </div>
-      </div>
+      </template>
+    </NTabs>
 
-      <div class="flex items-center space-x-3">
-        <NButton
-          v-if="allowCreateGroup"
-          class="capitalize"
-          @click="handleCreateGroup"
-        >
-          <template #icon>
-            <PlusIcon class="h-5 w-5" />
-          </template>
-          {{ $t(`settings.members.groups.add-group`) }}
-        </NButton>
-        <NButton
-          v-if="allowCreateUser"
-          type="primary"
-          class="capitalize"
-          @click="handleCreateUser"
-        >
-          <template #icon>
-            <PlusIcon class="h-5 w-5" />
-          </template>
-          {{ $t(`settings.members.add-member`) }}
-        </NButton>
-      </div>
-    </div>
-
-    <NTabs v-model:value="state.tab" class="!mt-2" type="bar" animated>
+    <NTabs
+      v-if="state.typeTab === 'members'"
+      v-model:value="state.tab"
+      class="!mt-2"
+      type="bar"
+      animated
+    >
       <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
         <UserDataTable
-          :user-list="activeUserList"
+          :user-list="filteredUserList"
           @update-user="handleUpdateUser"
           @select-group="handleUpdateGroup"
         />
       </NTabPane>
       <NTabPane name="roles" :tab="$t('settings.members.view-by-roles')">
         <UserDataTableByRole
-          :user-list="activeUserList"
+          :user-list="filteredUserList"
           @update-user="handleUpdateUser"
         />
       </NTabPane>
-      <NTabPane
-        v-if="allowListGroup"
-        name="groups"
-        :tab="$t('settings.members.view-by-groups')"
-      >
-        <UserDataTableByGroup
-          :groups="groupStore.groupList"
-          :filter="state.activeUserFilterText"
-          :allow-delete="allowDeleteGroup"
-          :allow-edit="allowEditGroup"
-          @update-group="handleUpdateGroup"
-          @delete-group="handleDeleteGroup"
-        />
-      </NTabPane>
-
-      <template #suffix>
-        <SearchBox v-model:value="state.activeUserFilterText" />
-      </template>
     </NTabs>
+    <UserDataTableByGroup
+      v-else
+      :groups="filteredGroupList"
+      :allow-edit="allowEditGroup"
+      @update-group="handleUpdateGroup"
+    />
 
     <div v-if="inactiveUserList.length > 0 || state.inactiveUserFilterText">
       <div>
@@ -128,13 +142,13 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NTabs, NTabPane, useDialog } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { NButton, NCheckbox, NTabs, NTabPane } from "naive-ui";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter, RouterLink } from "vue-router";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import UserDataTableByRole from "@/components/User/Settings/UserDataTableByRole/index.vue";
@@ -146,7 +160,6 @@ import {
   useUserStore,
   useUIStateStore,
   useUserGroupStore,
-  pushNotification,
 } from "@/store";
 import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -160,8 +173,14 @@ import { State } from "@/types/proto/v1/common";
 import type { UserGroup } from "@/types/proto/v1/user_group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
+const tabList = ["members", "groups"] as const;
+type MemberTab = (typeof tabList)[number];
+const isMemberTab = (tab: any): tab is MemberTab => tabList.includes(tab);
+const defaultTab: MemberTab = "members";
+
 type LocalState = {
-  tab: "users" | "roles" | "groups";
+  typeTab: MemberTab;
+  tab: "users" | "roles";
   activeUserFilterText: string;
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
@@ -172,6 +191,7 @@ type LocalState = {
 };
 
 const state = reactive<LocalState>({
+  typeTab: defaultTab,
   tab: "users",
   activeUserFilterText: "",
   inactiveUserFilterText: "",
@@ -182,18 +202,37 @@ const state = reactive<LocalState>({
 
 const { t } = useI18n();
 const route = useRoute();
-const $dialog = useDialog();
+const router = useRouter();
 const userStore = useUserStore();
 const groupStore = useUserGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const uiStateStore = useUIStateStore();
 const subscriptionV1Store = useSubscriptionV1Store();
-const hasRBACFeature = computed(() =>
-  subscriptionV1Store.hasFeature("bb.feature.rbac")
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const tab = hash.slice(1);
+    if (isMemberTab(tab)) {
+      state.typeTab = tab;
+    } else {
+      state.typeTab = defaultTab;
+    }
+  },
+  {
+    immediate: true,
+  }
 );
 
-const allowListGroup = computed(() =>
-  hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.list")
+watch(
+  () => state.typeTab,
+  (tab) => {
+    router.push({ hash: `#${tab}` });
+  }
+);
+
+const hasRBACFeature = computed(() =>
+  subscriptionV1Store.hasFeature("bb.feature.rbac")
 );
 
 const allowCreateGroup = computed(() =>
@@ -202,10 +241,6 @@ const allowCreateGroup = computed(() =>
 
 const allowCreateUser = computed(() => {
   return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
-});
-
-const allowDeleteGroup = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.delete");
 });
 
 const allowEditGroup = computed(() => {
@@ -222,7 +257,7 @@ onMounted(() => {
 
   const name = route.query.name as string;
   if (name?.startsWith(userGroupNamePrefix)) {
-    state.tab = "groups";
+    state.typeTab = "groups";
     state.editingGroup = groupStore.groupList.find(
       (group) => group.name === name
     );
@@ -236,11 +271,22 @@ const userList = computed(() => {
   );
 });
 
-const activeUserList = computed(() => {
+const filteredUserList = computed(() => {
   return filterUserListByKeyword(
     userStore.activeUserList,
     state.activeUserFilterText
   );
+});
+
+const filteredGroupList = computed(() => {
+  const keyword = state.activeUserFilterText.trim().toLowerCase();
+  if (!keyword) return groupStore.groupList;
+  return groupStore.groupList.filter((group) => {
+    return (
+      group.title.toLowerCase().includes(keyword) ||
+      group.name.toLowerCase().includes(keyword)
+    );
+  });
 });
 
 const inactiveUserList = computed(() => {
@@ -301,27 +347,6 @@ const userCountAttention = computed((): string => {
 const handleCreateGroup = () => {
   state.editingGroup = undefined;
   state.showCreateGroupDrawer = true;
-};
-
-const handleDeleteGroup = async (group: UserGroup) => {
-  $dialog.warning({
-    title: t("common.warning"),
-    content: t("settings.members.groups.delete-warning", {
-      name: group.title,
-    }),
-    style: "z-index: 100000",
-    negativeText: t("common.cancel"),
-    positiveText: t("common.continue-anyway"),
-    onPositiveClick: () => {
-      groupStore.deleteGroup(group.name).then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("common.deleted"),
-        });
-      });
-    },
-  });
 };
 
 const handleUpdateGroup = (group: UserGroup) => {

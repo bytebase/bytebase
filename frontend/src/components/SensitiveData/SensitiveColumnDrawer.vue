@@ -141,24 +141,7 @@
                 </div>
               </div>
               <div v-else class="bb-grid-cell gap-x-1">
-                <router-link
-                  :to="{
-                    name: WORKSPACE_ROUTE_MEMBERS,
-                    query: {
-                      name: item.group!.name,
-                    },
-                  }"
-                  class="normal-link"
-                >
-                  {{ item.group!.title }}
-                </router-link>
-                <span class="font-normal text-control-light">
-                  {{
-                    `(${t("settings.members.groups.n-members", {
-                      n: item.group?.members.length,
-                    })})`
-                  }}
-                </span>
+                <GroupNameCell :group="item.group!" />
               </div>
               <div class="bb-grid-cell">
                 <NCheckbox
@@ -289,11 +272,9 @@ import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
+import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  WORKSPACE_ROUTE_USER_PROFILE,
-  WORKSPACE_ROUTE_MEMBERS,
-} from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
   useSettingV1Store,
   usePolicyV1Store,
@@ -306,8 +287,6 @@ import {
   extractGroupEmail,
 } from "@/store";
 import {
-  unknownUser,
-  unknownGroup,
   getUserEmailInBinding,
   getGroupEmailInBinding,
   groupBindingPrefix,
@@ -402,7 +381,7 @@ const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 
 const getAccessUsers = (
   exception: MaskingExceptionPolicy_MaskingException
-): AccessUser => {
+): AccessUser | undefined => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const matches = expirationTimeRegex.exec(expression);
@@ -420,12 +399,14 @@ const getAccessUsers = (
 
   if (exception.member.startsWith(groupBindingPrefix)) {
     access.type = "group";
-    access.group =
-      groupStore.getGroupByIdentifier(exception.member) ?? unknownGroup();
+    access.group = groupStore.getGroupByIdentifier(exception.member);
   } else {
     access.type = "user";
-    access.user =
-      userStore.getUserByIdentifier(exception.member) ?? unknownUser();
+    access.user = userStore.getUserByIdentifier(exception.member);
+  }
+
+  if (!access.group && !access.user) {
+    return;
   }
 
   return access;
@@ -476,6 +457,9 @@ const updateAccessUserList = (policy: Policy | undefined) => {
     }
     const identifier = getExceptionIdentifier(exception);
     const item = getAccessUsers(exception);
+    if (!item) {
+      continue;
+    }
     const id = `${getMemberBinding(item)}:${identifier}`;
     const target = memberMap.get(id) ?? item;
     if (memberMap.has(id)) {

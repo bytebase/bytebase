@@ -508,6 +508,7 @@
         "add-group": "Add Group",
         "update-group": "Update Group",
         "delete-warning": "The group \"{name}\" will be deleted. This action cannot be undone.",
+        "delete-warning-with-resources": "The group \"{name}\" is used by following resources:",
         "form": {
           "email": "Email",
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
@@ -554,7 +555,6 @@
       },
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
-      "view-by-groups": "View by groups",
       "add-member": "Add member",
       "update-member": "Update member",
       "workspace-role-at-least-one": "At least one workspace role is required"
@@ -1993,7 +1993,7 @@
       "revoke-access": "Revoke Access",
       "grant-access": "Grant Access",
       "edit": "Edit member - {member}",
-      "view-by-principals": "View by principals",
+      "view-by-members": "View by members",
       "view-by-roles": "View by roles",
       "cannot-remove-last-owner": "Cannot remove the last owner of a project",
       "revoke-role-from-user": "Revoke '{role}' from '{user}'",

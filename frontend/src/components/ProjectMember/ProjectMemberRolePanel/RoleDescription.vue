@@ -24,12 +24,9 @@ type DescriptionType = "TEXT" | "ISSUE";
 
 const issueDescriptionRegexp = /^#(\d+)$/;
 
-const props = defineProps({
-  description: {
-    type: String,
-    required: true,
-  },
-});
+const props = defineProps<{
+  description: string;
+}>();
 
 const router = useRouter();
 const issueUID = ref(String(UNKNOWN_ID));
