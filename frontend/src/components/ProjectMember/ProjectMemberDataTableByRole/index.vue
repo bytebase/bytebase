@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="project-members-by-role"
     :columns="columns"
     :data="userListByRole"
     :row-key="(row) => row.name"
@@ -9,11 +10,12 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
+import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useRoleStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import { PRESET_WORKSPACE_ROLES } from "@/types";
@@ -25,22 +27,22 @@ import type { ProjectBinding } from "../types";
 interface RoleRowData {
   type: "role";
   name: string;
-  children: UserRowData[];
+  children: BindingRowData[];
 }
 
-interface UserRowData {
-  type: "user";
+interface BindingRowData {
+  type: "binding";
   name: string;
   member: ProjectBinding;
 }
 
 const props = defineProps<{
   project: ComposedProject;
-  members: ProjectBinding[];
+  bindings: ProjectBinding[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-member", member: string): void;
+  (event: "update-binding", binding: ProjectBinding): void;
 }>();
 
 const { t } = useI18n();
@@ -52,7 +54,7 @@ const columns = computed(() => {
       key: "role-members",
       title: `${t("common.role.self")} / ${t("common.members")}`,
       className: "flex items-center",
-      render: (row: RoleRowData | UserRowData) => {
+      render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
           return h(
             "div",
@@ -78,16 +80,18 @@ const columns = computed(() => {
           );
         }
 
-        return h(UserNameCell, {
-          projectMember: row.member,
-        });
+        if (row.member.type === "groups") {
+          return <GroupNameCell group={row.member.group!} />;
+        }
+
+        return <UserNameCell projectMember={row.member} />;
       },
     },
     {
       key: "operations",
       title: "",
       width: "4rem",
-      render: (row: RoleRowData | UserRowData) => {
+      render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
           return "";
         } else {
@@ -95,13 +99,13 @@ const columns = computed(() => {
             project: props.project,
             projectMember: row.member,
             "onUpdate-user": () => {
-              emit("update-member", row.member.binding);
+              emit("update-binding", row.member);
             },
           });
         }
       },
     },
-  ] as DataTableColumn<RoleRowData | UserRowData>[];
+  ] as DataTableColumn<RoleRowData | BindingRowData>[];
 });
 
 const userListByRole = computed(() => {
@@ -113,7 +117,7 @@ const userListByRole = computed(() => {
   const rowDataList: RoleRowData[] = [];
 
   for (const role of roles) {
-    const members = props.members.filter((member) => {
+    const members = props.bindings.filter((member) => {
       return (
         member.workspaceLevelProjectRoles.includes(role) ||
         member.projectRoleBindings.find((binding) => binding.role === role)
@@ -126,7 +130,7 @@ const userListByRole = computed(() => {
         name: role,
         children: members.map((member) => {
           return {
-            type: "user",
+            type: "binding",
             name: member.binding,
             member,
           };

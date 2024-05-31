@@ -2,49 +2,21 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <NTabs v-model:value="state.typeTab" type="line" animated>
-      <NTabPane name="members">
-        <template #tab>
-          <div>
-            <p class="text-lg font-medium leading-7 text-main">
-              <span>{{ $t("common.members") }}</span>
-              <span class="ml-1 font-normal text-control-light">
-                ({{ activeUserList.length }})
-              </span>
-            </p>
-          </div>
+    <div v-if="allowEdit" class="flex justify-end gap-x-3">
+      <NButton
+        v-if="state.selectedTab === 'users'"
+        :disabled="state.selectedMembers.length === 0"
+        @click="handleRevokeSelectedMembers"
+      >
+        {{ $t("project.members.revoke-access") }}
+      </NButton>
+      <NButton type="primary" @click="state.showAddMemberPanel = true">
+        <template #icon>
+          <heroicons-outline:user-add class="w-4 h-4" />
         </template>
-      </NTabPane>
-      <NTabPane name="groups">
-        <template #tab>
-          <div>
-            <p class="text-lg font-medium leading-7 text-main">
-              <span>{{ $t("settings.members.groups.self") }}</span>
-              <span class="ml-1 font-normal text-control-light">
-                ({{ activeGroupList.length }})
-              </span>
-            </p>
-          </div>
-        </template>
-      </NTabPane>
-      <template #suffix>
-        <div v-if="allowEdit" class="flex justify-end gap-x-2">
-          <NButton
-            v-if="state.typeTab === 'members' && state.selectedTab === 'users'"
-            :disabled="state.selectedMembers.length === 0"
-            @click="handleRevokeSelectedMembers"
-          >
-            {{ $t("project.members.revoke-access") }}
-          </NButton>
-          <NButton type="primary" @click="state.showAddMemberPanel = true">
-            <template #icon>
-              <heroicons-outline:user-add class="w-4 h-4" />
-            </template>
-            {{ $t("project.members.grant-access") }}
-          </NButton>
-        </div>
-      </template>
-    </NTabs>
+        {{ $t("project.members.grant-access") }}
+      </NButton>
+    </div>
 
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
@@ -58,46 +30,30 @@
       </a>
     </div>
 
-    <NTabs
-      v-if="state.typeTab === 'members'"
-      v-model:value="state.selectedTab"
-      type="bar"
-      animated
-    >
+    <NTabs v-model:value="state.selectedTab" type="bar" animated>
       <template #suffix>
         <SearchBox
           v-model:value="state.searchText"
           :placeholder="$t('project.members.search-member')"
         />
       </template>
-      <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
+      <NTabPane name="users" :tab="$t('project.members.view-by-members')">
         <ProjectMemberDataTable
           :project="project"
-          :members="projectMembers"
-          :selected-members="state.selectedMembers"
-          @update-member="selectMember"
-          @update-selected-members="state.selectedMembers = $event"
+          :bindings="projectBindings"
+          :selected-bindings="state.selectedMembers"
+          @update-binding="selectMember"
+          @update-selected-bindings="state.selectedMembers = $event"
         />
       </NTabPane>
-      <NTabPane name="roles" :tab="$t('settings.members.view-by-roles')">
+      <NTabPane name="roles" :tab="$t('project.members.view-by-roles')">
         <ProjectMemberDataTableByRole
           :project="project"
-          :members="projectMembers"
-          @update-member="selectMember"
+          :bindings="projectBindings"
+          @update-binding="selectMember"
         />
       </NTabPane>
     </NTabs>
-    <UserDataTableByGroup
-      v-else
-      :groups="activeGroupList"
-      :group-role-map="groupRoleMap"
-      :show-description="false"
-      :show-group-role="false"
-      :allow-edit="allowEdit"
-      :allow-delete="allowEdit"
-      @update-group="selectGroup"
-      @delete-group="deleteGroup"
-    />
   </div>
 
   <AddProjectMembersPanel
@@ -149,7 +105,6 @@ import type { ProjectRole, ProjectBinding } from "./types";
 
 interface LocalState {
   searchText: string;
-  typeTab: "members" | "groups";
   selectedTab: "users" | "roles";
   // the member should in user:{user} or group:{group} format.
   selectedMembers: string[];
@@ -172,7 +127,6 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const state = reactive<LocalState>({
   searchText: "",
-  typeTab: "members",
   selectedTab: "users",
   selectedMembers: [],
   showInactiveMemberList: false,
@@ -226,7 +180,7 @@ const activeGroupList = computed(() => {
     .map((member) => {
       return groupStore.getGroupByIdentifier(member);
     })
-    .filter((group) => !!group);
+    .filter((group) => !!group) as UserGroup[];
 });
 
 const groupRoleMap = computed(() => {
@@ -248,19 +202,8 @@ const groupRoleMap = computed(() => {
   return map;
 });
 
-const filteredUserList = computed(() => {
-  if (!state.searchText) {
-    return activeUserList.value;
-  }
-  return activeUserList.value.filter(
-    (user) =>
-      user.title.toLowerCase().includes(state.searchText.toLowerCase()) ||
-      user.email.toLowerCase().includes(state.searchText.toLowerCase())
-  );
-});
-
 const projectMembers = computed(() => {
-  return filteredUserList.value
+  return activeUserList.value
     .map((user) => {
       const roles = user.roles.filter(
         (role) => !PRESET_WORKSPACE_ROLES.includes(role)
@@ -274,9 +217,9 @@ const projectMembers = computed(() => {
         return null;
       }
       return {
-        type: "user",
+        type: "users",
         title: user.title,
-        email: user.email,
+        user,
         binding: getUserEmailInBinding(user.email),
         workspaceLevelProjectRoles: roles,
         projectRoleBindings: bindings,
@@ -285,36 +228,39 @@ const projectMembers = computed(() => {
     .filter(Boolean) as ProjectBinding[];
 });
 
-const selectMember = (binding: string) => {
-  const projectMember = projectMembers.value.find(
-    (member) => member.binding === binding
-  );
-  if (!projectMember) {
-    return;
+const projectGroups = computed((): ProjectBinding[] => {
+  return activeGroupList.value.map((group) => {
+    const roleBinding: ProjectRole = groupRoleMap.value.get(group.name) ?? {
+      workspaceLevelProjectRoles: [],
+      projectRoleBindings: [],
+    };
+    const email = extractGroupEmail(group.name);
+
+    return {
+      type: "groups",
+      title: group.title,
+      group,
+      binding: getGroupEmailInBinding(email),
+      ...roleBinding,
+    };
+  });
+});
+
+const projectBindings = computed(() => {
+  const bindings = [...projectMembers.value, ...projectGroups.value];
+
+  if (!state.searchText) {
+    return bindings;
   }
-  state.editingMember = projectMember;
-};
+  return bindings.filter(
+    (binding) =>
+      binding.title.toLowerCase().includes(state.searchText.toLowerCase()) ||
+      binding.binding.toLowerCase().includes(state.searchText.toLowerCase())
+  );
+});
 
-const deleteGroup = (group: UserGroup) => {
-  const email = extractGroupEmail(group.name);
-  state.selectedMembers = [getGroupEmailInBinding(email)];
-  handleRevokeSelectedMembers();
-};
-
-const selectGroup = (group: UserGroup) => {
-  const roleBinding: ProjectRole = groupRoleMap.value.get(group.name) ?? {
-    workspaceLevelProjectRoles: [],
-    projectRoleBindings: [],
-  };
-  const email = extractGroupEmail(group.name);
-
-  state.editingMember = {
-    type: "group",
-    title: group.title,
-    email,
-    binding: getGroupEmailInBinding(email),
-    ...roleBinding,
-  };
+const selectMember = (binding: ProjectBinding) => {
+  state.editingMember = binding;
 };
 
 const selectedUserEmails = computed(() => {

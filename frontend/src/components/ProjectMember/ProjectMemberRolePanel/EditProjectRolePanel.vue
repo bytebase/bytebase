@@ -76,7 +76,7 @@
           }}</span>
         </div>
 
-        <div v-if="type === 'user'" class="w-full">
+        <div v-if="type === 'users'" class="w-full">
           <p class="mb-2">
             {{ $t("common.user") }}
           </p>
@@ -151,7 +151,7 @@ import { convertFromExpr } from "@/utils/issue/cel";
 const props = defineProps<{
   project: ComposedProject;
   binding: Binding;
-  type: "user" | "group";
+  type: "users" | "groups";
 }>();
 
 const emit = defineEmits<{
@@ -238,7 +238,7 @@ onMounted(() => {
   }
 
   // Extract user list from members.
-  if (props.type === "user") {
+  if (props.type === "users") {
     const userList = [];
     for (const member of binding.members) {
       if (member.startsWith(groupBindingPrefix)) {
@@ -288,7 +288,7 @@ const handleUpdateRole = async () => {
   newBinding.condition.title = state.title;
   newBinding.condition.description = state.description;
 
-  if (props.type === "user") {
+  if (props.type === "users") {
     newBinding.members = uniq(
       state.memberList.map((uid) => {
         const user = userStore.getUserById(uid);
