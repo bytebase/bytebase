@@ -19,12 +19,18 @@
     </div>
 
     <OpenAIButton :size="size" />
+
+    <HideInStandaloneMode>
+      <SettingsButton />
+      <SettingsPanel />
+    </HideInStandaloneMode>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, toRef, watch } from "vue";
+import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
@@ -34,10 +40,15 @@ import { UNKNOWN_ID } from "@/types";
 import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
 import OpenAIButton from "./OpenAIButton.vue";
+import {
+  SettingsButton,
+  SettingsPanel,
+  provideSettingsContext,
+} from "./Settings";
 import TabItem from "./TabItem.vue";
 import type { Size } from "./common";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     size?: Size;
   }>(),
@@ -50,6 +61,9 @@ const me = useCurrentUserV1();
 const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+provideSettingsContext({
+  size: toRef(props, "size"),
+});
 
 const isSchemalessInstance = computed(() => {
   if (instance.value.uid === String(UNKNOWN_ID)) {
