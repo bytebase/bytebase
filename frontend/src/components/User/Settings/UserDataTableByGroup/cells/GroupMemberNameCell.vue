@@ -14,7 +14,7 @@
             v-if="user.userType === UserType.SERVICE_ACCOUNT"
           />
           <NTag
-            v-if="showGroupRole"
+            v-if="role"
             size="small"
             round
             :type="role === UserGroupMember_Role.OWNER ? 'primary' : 'default'"
@@ -47,11 +47,10 @@ import {
 withDefaults(
   defineProps<{
     user: User;
-    role: UserGroupMember_Role;
-    showGroupRole: boolean;
+    role?: UserGroupMember_Role;
   }>(),
   {
-    showGroupRole: true,
+    role: undefined,
   }
 );
 

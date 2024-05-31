@@ -1,4 +1,6 @@
+import type { User } from "@/types/proto/v1/auth_service";
 import type { Binding } from "@/types/proto/v1/iam_policy";
+import type { UserGroup } from "@/types/proto/v1/user_group";
 
 export interface ProjectRole {
   // Format: "roles/{roleName}"
@@ -8,9 +10,10 @@ export interface ProjectRole {
 
 export interface ProjectBinding extends ProjectRole {
   title: string;
-  email: string;
   // binidng is the fullname for binding member,
   // like user:{email} or group:{email}
   binding: string;
-  type: "user" | "group";
+  type: "users" | "groups";
+  user?: User;
+  group?: UserGroup;
 }

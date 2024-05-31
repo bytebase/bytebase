@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="member-by-group"
     :columns="columns"
     :data="userListByGroup"
     :row-key="(row) => row.name"
@@ -14,15 +15,13 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import UserRolesCell from "@/components/ProjectMember/ProjectMemberDataTable/cells/UserRolesCell.vue";
-import type { ProjectRole } from "@/components/ProjectMember/types";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import { filterUserListByKeyword } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { UserGroup, UserGroupMember_Role } from "@/types/proto/v1/user_group";
+import GroupMemberNameCell from "./cells/GroupMemberNameCell.vue";
+import GroupNameCell from "./cells/GroupNameCell.vue";
 import GroupOperationsCell from "./cells/GroupOperationsCell.vue";
-import UserNameCell from "./cells/UserNameCell.vue";
 
 interface GroupRowData {
   type: "group";
@@ -41,16 +40,10 @@ interface UserRowData {
 const props = withDefaults(
   defineProps<{
     groups: UserGroup[];
-    filter?: string;
-    showDescription?: boolean;
     showGroupRole?: boolean;
-    groupRoleMap?: Map<string, ProjectRole>;
-    allowDelete: boolean;
     allowEdit: boolean;
   }>(),
   {
-    filter: "",
-    showDescription: true,
     showGroupRole: true,
     groupRoleMap: () => new Map(),
   }
@@ -58,7 +51,6 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: "update-group", group: UserGroup): void;
-  (event: "delete-group", group: UserGroup): void;
 }>();
 
 const { t } = useI18n();
@@ -74,38 +66,15 @@ const columns = computed(() => {
       className: "flex items-center",
       render: (row: GroupRowData | UserRowData) => {
         if (row.type === "group") {
-          return (
-            <div>
-              <div class="flex items-center">
-                <span class="font-medium">{row.group.title}</span>
-                <span class="ml-1 font-normal text-control-light">
-                  (
-                  {t("settings.members.groups.n-members", {
-                    n: row.children.length,
-                  })}
-                  )
-                </span>
-                {props.groupRoleMap.has(row.group.name) && (
-                  <UserRolesCell
-                    class="ml-3"
-                    projectRole={props.groupRoleMap.get(row.group.name)!}
-                  />
-                )}
-              </div>
-              {props.showDescription && (
-                <span class="textinfolabel text-sm">
-                  {row.group.description}
-                </span>
-              )}
-            </div>
-          );
+          return <GroupNameCell group={row.group} link={false} />;
         }
 
-        return h(UserNameCell, {
-          user: row.user,
-          role: row.role,
-          showGroupRole: props.showGroupRole,
-        });
+        return (
+          <GroupMemberNameCell
+            user={row.user}
+            role={props.showGroupRole ? row.role : undefined}
+          />
+        );
       },
     },
     {
@@ -116,13 +85,9 @@ const columns = computed(() => {
         if (row.type === "group") {
           return h(GroupOperationsCell, {
             group: row.group,
-            allowDelete: props.allowDelete,
             allowEdit: props.allowEdit,
             "onUpdate-group": () => {
               emit("update-group", row.group);
-            },
-            "onDelete-group": () => {
-              emit("delete-group", row.group);
             },
           });
         } else {
@@ -133,17 +98,13 @@ const columns = computed(() => {
   ] as DataTableColumn<GroupRowData | UserRowData>[];
 });
 
-const filteredUserList = computed(() => {
-  return filterUserListByKeyword(userStore.activeUserList, props.filter);
-});
-
 const userListByGroup = computed(() => {
   const rowDataList: GroupRowData[] = [];
 
   for (const group of props.groups) {
     const members: UserRowData[] = [];
     for (const member of group.members) {
-      const user = filteredUserList.value.find(
+      const user = userStore.activeUserList.find(
         (user) => user.email === getUserEmailFromIdentifier(member.member)
       );
       if (!user) {
@@ -151,7 +112,7 @@ const userListByGroup = computed(() => {
       }
       members.push({
         type: "user",
-        name: user.name,
+        name: `${group.name}-${user.name}`,
         user,
         role: member.role,
       });

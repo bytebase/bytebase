@@ -18,7 +18,7 @@
 import { NCheckbox, NTag, type SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
+import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useUserGroupStore } from "@/store";
 import type { UserGroup } from "@/types/proto/v1/user_group";
 
@@ -49,7 +49,6 @@ defineEmits<{
   (event: "update:value", val: string | string[]): void;
 }>();
 
-const { t } = useI18n();
 const groupStore = useUserGroupStore();
 
 const options = computed(() => {
@@ -75,19 +74,7 @@ const renderLabel = (option: SelectOption, selected: boolean) => {
   return (
     <div class="flex items-start space-x-2 py-2">
       <NCheckbox checked={selected} size="small" class="mt-1" />
-      <div>
-        <div class="flex items-center">
-          <span class="font-medium">{group.title}</span>
-          <span class="ml-1 font-normal text-control-light">
-            (
-            {t("settings.members.groups.n-members", {
-              n: group.members.length,
-            })}
-            )
-          </span>
-        </div>
-        <span class="textinfolabel text-sm">{group.description}</span>
-      </div>
+      <GroupNameCell group={group} showIcon={false} link={false} />
     </div>
   );
 };
@@ -102,13 +89,12 @@ const renderTag = ({
   const { group } = option as GroupSelectOption;
   return (
     <NTag size={props.size} closable={!props.disabled} onClose={handleClose}>
-      <div class="flex items-center">
-        <span class="font-medium">{group.title}</span>
-        <span class="ml-1 font-normal text-control-light">
-          ({t("settings.members.groups.n-members", { n: group.members.length })}
-          )
-        </span>
-      </div>
+      <GroupNameCell
+        group={group}
+        showIcon={false}
+        link={false}
+        showEmail={false}
+      />
     </NTag>
   );
 };
