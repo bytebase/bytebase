@@ -259,7 +259,8 @@ func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd) {
 	if ok {
 		for i, v := range l {
 			result.Rows = append(result.Rows, getResultRow(i+1, v))
-			if proto.Size(result) > common.MaximumSQLResultSize {
+			n := len(result.Rows)
+			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 				result.Error = common.MaximumSQLResultSizeExceeded
 				return
 			}

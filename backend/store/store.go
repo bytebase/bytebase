@@ -45,7 +45,6 @@ type Store struct {
 	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
 	databaseGroupIDCache   *lru.Cache[int64, *DatabaseGroupMessage]
-	schemaGroupCache       *lru.Cache[string, *SchemaGroupMessage]
 	vcsIDCache             *lru.Cache[int, *VCSProviderMessage]
 	rolesCache             *lru.Cache[string, *RoleMessage]
 	userGroupCache         *lru.Cache[string, *UserGroupMessage]
@@ -137,10 +136,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	schemaGroupCache, err := lru.New[string, *SchemaGroupMessage](10)
-	if err != nil {
-		return nil, err
-	}
 	vcsIDCache, err := lru.New[int, *VCSProviderMessage](1024)
 	if err != nil {
 		return nil, err
@@ -187,7 +182,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		risksCache:             risksCache,
 		databaseGroupCache:     databaseGroupCache,
 		databaseGroupIDCache:   databaseGroupIDCache,
-		schemaGroupCache:       schemaGroupCache,
 		vcsIDCache:             vcsIDCache,
 		rolesCache:             rolesCache,
 		sheetCache:             sheetCache,
@@ -215,10 +209,6 @@ func getDatabaseCacheKey(instanceID, databaseName string) string {
 
 func getDatabaseGroupCacheKey(projectUID int, databaseGroupResourceID string) string {
 	return fmt.Sprintf("%d/%s", projectUID, databaseGroupResourceID)
-}
-
-func getSchemaGroupCacheKey(databaseGroupUID int64, schemaGroupResourceID string) string {
-	return fmt.Sprintf("%d/%s", databaseGroupUID, schemaGroupResourceID)
 }
 
 func getPlaceholders(start int, count int) string {

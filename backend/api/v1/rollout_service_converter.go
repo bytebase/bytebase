@@ -356,8 +356,6 @@ func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type 
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_COMPATIBILITY
 	case store.PlanCheckDatabaseStatementAdvise:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE
-	case store.PlanCheckDatabaseStatementType:
-		return v1pb.PlanCheckRun_DATABASE_STATEMENT_TYPE
 	case store.PlanCheckDatabaseStatementSummaryReport:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
 	case store.PlanCheckDatabaseConnect:

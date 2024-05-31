@@ -31,15 +31,6 @@ type Executor interface {
 	Run(ctx context.Context, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error)
 }
 
-func isStatementTypeCheckSupported(dbType storepb.Engine) bool {
-	switch dbType {
-	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return true
-	default:
-		return false
-	}
-}
-
 func isStatementAdviseSupported(dbType storepb.Engine) bool {
 	switch dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL:

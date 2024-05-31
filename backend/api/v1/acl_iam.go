@@ -75,6 +75,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SQLService_ParseMyBatisMapper_FullMethodName,
 		v1pb.SQLService_Pretty_FullMethodName,
 		v1pb.SQLService_StringifyMetadata_FullMethodName,
+		v1pb.SQLService_GenerateRestoreSQL_FullMethodName,
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
 		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
@@ -157,8 +158,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.PlanService_ListPlans_FullMethodName,
 		v1pb.PlanService_SearchPlans_FullMethodName,
 		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
-		v1pb.UserGroupService_UpdateUserGroup_FullMethodName,
-		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
+		v1pb.UserGroupService_UpdateUserGroup_FullMethodName:
 		return true
 	}
 	return false

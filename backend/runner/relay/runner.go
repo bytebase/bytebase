@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -307,32 +306,16 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 		if approvalStep == nil {
 			return nil
 		}
-		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
-			ApprovalStep: approvalStep,
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    webhook.EventTypeIssueApprovalCreate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
+				ApprovalStep: approvalStep,
+			},
 		})
-		if err != nil {
-			return err
-		}
-		activityPayload, err := json.Marshal(api.ActivityIssueApprovalNotifyPayload{
-			ProtoPayload: string(protoPayload),
-		})
-		if err != nil {
-			return err
-		}
-
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueApprovalNotify,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(activityPayload),
-		}
-		if _, err := r.webhookManager.CreateActivity(ctx, create, &webhook.Metadata{Issue: issue}); err != nil {
-			return err
-		}
-
 		return nil
 	}(); err != nil {
 		slog.Error("failed to create approval step pending activity after creating review", log.BBError(err))
@@ -351,7 +334,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, store.SystemBotUser, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}

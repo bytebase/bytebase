@@ -387,9 +387,17 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	if err := s.webhookManager.BatchCreateActivitiesForRunTasks(ctx, issue, request.Reason, user.ID); err != nil {
-		slog.Error("failed to batch create activities for running tasks", log.BBError(err))
-	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Comment: request.Reason,
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+			Title:  issue.Title,
+			Status: api.TaskRunPending.String(),
+		},
+	})
 
 	// Tickle task run scheduler.
 	s.stateCfg.TaskRunTickleChan <- 0
@@ -494,9 +502,18 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	if err := s.webhookManager.BatchCreateActivitiesForSkipTasks(ctx, issue, request.Reason, user.ID); err != nil {
-		slog.Error("failed to batch create activities for skipping tasks", log.BBError(err))
-	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Comment: request.Reason,
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+			Title:         issue.Title,
+			Status:        api.TaskRunSkipped.String(),
+			SkippedReason: request.Reason,
+		},
+	})
 
 	return &v1pb.BatchSkipTasksResponse{}, nil
 }
@@ -621,9 +638,17 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
-	if err := s.webhookManager.BatchCreateActivitiesForCancelTaskRuns(ctx, issue, request.Reason, principalID); err != nil {
-		slog.Error("failed to batch create activities for cancel task runs", log.BBError(err))
-	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Comment: request.Reason,
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(issue.Project),
+		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+			Title:  issue.Title,
+			Status: api.TaskRunCanceled.String(),
+		},
+	})
 
 	return &v1pb.BatchCancelTaskRunsResponse{}, nil
 }

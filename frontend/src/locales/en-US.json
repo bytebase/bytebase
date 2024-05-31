@@ -960,7 +960,8 @@
       "task": "Task",
       "stage": "Stage"
     },
-    "n-similar-activities": "({count} similar activity) | ({count} similar activities)"
+    "n-similar-activities": "({count} similar activity) | ({count} similar activities)",
+    "restore": "Restore"
   },
   "issue": {
     "my-issues": "My Issues",
@@ -3319,13 +3320,6 @@
     "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
-    "matched-table": "Matched table",
-    "unmatched-table": "Unmatched table",
-    "table-group": {
-      "self": "Table group",
-      "create": "New table group",
-      "edit": "Edit table group"
-    },
     "condition": {
       "self": "Condition"
     },

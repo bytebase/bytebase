@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 bytebase:
-  version: 2.16.0
+  version: 2.18.0
   registryMirrorHost: ""
   option:
     port: 8080

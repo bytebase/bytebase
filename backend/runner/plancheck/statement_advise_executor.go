@@ -230,10 +230,6 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	if databaseGroup == nil {
 		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
 	}
-	schemaGroups, err := e.store.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroup.UID)
-	}
 	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		UID: &databaseGroup.ProjectUID,
 	})
@@ -329,107 +325,86 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
 		}
 
-		schemaGroupsMatchedTables := map[string][]string{}
-		for _, schemaGroup := range schemaGroups {
-			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
-			}
-			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
-		}
-
-		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
+		policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
-		}
-
-		statements, _, err := utils.GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, "", schemaGroups, schemaGroupsMatchedTables)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get statements from schema groups")
-		}
-
-		for _, statement := range statements {
-			policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
-			if err != nil {
-				if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-					policy = &storepb.SQLReviewPolicy{
-						Name: "Default",
-					}
-				} else {
-					return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
+			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+				policy = &storepb.SQLReviewPolicy{
+					Name: "Default",
 				}
-			}
-
-			catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
-			if err != nil {
-				return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
-			}
-
-			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
-				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
-				if err != nil {
-					return nil, err
-				}
-				defer driver.Close(ctx)
-				connection := driver.GetDB()
-
-				materials := utils.GetSecretMapFromDatabaseMessage(database)
-				// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-				renderedStatement := utils.RenderStatement(statement, materials)
-				adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
-					Charset:    dbSchema.GetMetadata().CharacterSet,
-					Collation:  dbSchema.GetMetadata().Collation,
-					DBSchema:   dbSchema.GetMetadata(),
-					ChangeType: changeType,
-					DbType:     instance.Engine,
-					Catalog:    catalog,
-					Driver:     connection,
-					Context:    ctx,
-				})
-				if err != nil {
-					return nil, err
-				}
-
-				var results []*storepb.PlanCheckRunResult_Result
-				for _, advice := range adviceList {
-					status := storepb.PlanCheckRunResult_Result_SUCCESS
-					switch advice.Status {
-					case advisor.Success:
-						continue
-					case advisor.Warn:
-						status = storepb.PlanCheckRunResult_Result_WARNING
-					case advisor.Error:
-						status = storepb.PlanCheckRunResult_Result_ERROR
-					}
-
-					results = append(results, &storepb.PlanCheckRunResult_Result{
-						Status:  status,
-						Title:   advice.Title,
-						Content: advice.Content,
-						Code:    0,
-						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int32(advice.Line),
-								Column: int32(advice.Column),
-								Code:   advice.Code.Int32(),
-								Detail: advice.Details,
-							},
-						},
-					})
-				}
-				return results, nil
-			}()
-			if err != nil {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_ERROR,
-					Title:   "Failed to run SQL review",
-					Content: err.Error(),
-					Code:    common.Internal.Int32(),
-					Report:  nil,
-				})
 			} else {
-				results = append(results, stmtResults...)
+				return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 			}
+		}
+
+		catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
+		if err != nil {
+			return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
+		}
+
+		stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
+			driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
+			if err != nil {
+				return nil, err
+			}
+			defer driver.Close(ctx)
+			connection := driver.GetDB()
+
+			materials := utils.GetSecretMapFromDatabaseMessage(database)
+			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+			renderedStatement := utils.RenderStatement(sheetStatement, materials)
+			adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
+				Charset:    dbSchema.GetMetadata().CharacterSet,
+				Collation:  dbSchema.GetMetadata().Collation,
+				DBSchema:   dbSchema.GetMetadata(),
+				ChangeType: changeType,
+				DbType:     instance.Engine,
+				Catalog:    catalog,
+				Driver:     connection,
+				Context:    ctx,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			var results []*storepb.PlanCheckRunResult_Result
+			for _, advice := range adviceList {
+				status := storepb.PlanCheckRunResult_Result_SUCCESS
+				switch advice.Status {
+				case advisor.Success:
+					continue
+				case advisor.Warn:
+					status = storepb.PlanCheckRunResult_Result_WARNING
+				case advisor.Error:
+					status = storepb.PlanCheckRunResult_Result_ERROR
+				}
+
+				results = append(results, &storepb.PlanCheckRunResult_Result{
+					Status:  status,
+					Title:   advice.Title,
+					Content: advice.Content,
+					Code:    0,
+					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
+						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
+							Line:   int32(advice.Line),
+							Column: int32(advice.Column),
+							Code:   advice.Code.Int32(),
+							Detail: advice.Details,
+						},
+					},
+				})
+			}
+			return results, nil
+		}()
+		if err != nil {
+			results = append(results, &storepb.PlanCheckRunResult_Result{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Title:   "Failed to run SQL review",
+				Content: err.Error(),
+				Code:    common.Internal.Int32(),
+				Report:  nil,
+			})
+		} else {
+			results = append(results, stmtResults...)
 		}
 	}
 

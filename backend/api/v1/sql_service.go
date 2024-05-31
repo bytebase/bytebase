@@ -1457,12 +1457,12 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 		return 0, "", nil
 	}
 	parts := strings.Split(backupTable, "_")
-	if len(parts) != 3 {
+	if len(parts) != 4 {
 		return 0, "", status.Errorf(codes.InvalidArgument, "invalid backup table format: %s", backupTable)
 	}
-	offset, err := strconv.Atoi(parts[1])
+	offset, err := strconv.Atoi(parts[2])
 	if err != nil {
 		return 0, "", status.Errorf(codes.InvalidArgument, "invalid offset: %s", parts[0])
 	}
-	return offset, parts[2], nil
+	return offset, parts[3], nil
 }
