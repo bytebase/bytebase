@@ -710,10 +710,16 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 
 		hasUser := false
 		for _, member := range binding.Members {
-			if member == api.AllUsers || userIDFullName == member {
+			// TODO: only support AllUsers or users/{AllUsersID}
+			if member == api.AllUsers || member == common.FormatUserUID(api.AllUsersID) {
 				hasUser = true
 				break
-			} else if strings.HasPrefix(member, common.UserGroupPrefix) {
+			}
+			if userIDFullName == member {
+				hasUser = true
+				break
+			}
+			if strings.HasPrefix(member, common.UserGroupPrefix) {
 				groupEmail, err := common.GetUserGroupEmail(member)
 				if err != nil {
 					slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
