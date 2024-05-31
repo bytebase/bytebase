@@ -53,7 +53,7 @@ var (
 	PrincipalWithoutInstanceFmt = "%s@%s"
 	PrincipalWithInstanceFmt    = "%s/%s@%s"
 	// KrbConfRealmFmt is the content format for krb5.conf, for example:
-	// [realm]
+	// [realms]
 	//   {realm} = {
 	//	   kdc = {transport_protocol}/{host}:{port}
 	// 	 }
