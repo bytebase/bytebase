@@ -15,7 +15,14 @@ export const mapTreeOptions = (
   filterValueList?: string[]
 ) => {
   const databaseNodes: DatabaseTreeOption<"database">[] = [];
-  for (const database of databaseList) {
+  const filteredDatabaseList = filterValueList
+    ? databaseList.filter((database) =>
+        filterValueList.some(
+          (value) => value.split("/schemas/")[0] === database.name
+        )
+      )
+    : databaseList;
+  for (const database of filteredDatabaseList) {
     const databaseNode: DatabaseTreeOption<"database"> = {
       level: "database",
       value: database.name,
@@ -39,13 +46,7 @@ export const mapTreeOptions = (
       databaseNode.isLeaf = true;
     }
   }
-  return filterValueList
-    ? databaseNodes.filter((node) =>
-        filterValueList.some(
-          (value) => value.split("/schemas/")[0] === node.value
-        )
-      )
-    : databaseNodes;
+  return databaseNodes;
 };
 
 export const getSchemaOrTableTreeOptions = (
