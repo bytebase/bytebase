@@ -9,6 +9,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 
 	// Parsers.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 
 	// Schema designer.

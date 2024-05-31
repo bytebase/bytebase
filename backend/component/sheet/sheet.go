@@ -33,6 +33,7 @@ func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetC
 	case storepb.Engine_POSTGRES:
 	case storepb.Engine_ORACLE:
 	case storepb.Engine_MSSQL:
+	case storepb.Engine_DYNAMODB:
 	default:
 		return nil
 	}
