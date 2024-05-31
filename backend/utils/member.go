@@ -53,6 +53,10 @@ func GetUsersByMember(ctx context.Context, stores *store.Store, member string) [
 			slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 			return users
 		}
+		if group == nil {
+			slog.Error("cannot found group", slog.String("group", member))
+			return users
+		}
 		for _, member := range group.Payload.Members {
 			user := getUserByIdentifier(ctx, stores, member.Member)
 			if user != nil {
