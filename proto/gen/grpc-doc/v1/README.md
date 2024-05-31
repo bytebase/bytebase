@@ -6391,7 +6391,6 @@ Type is the database change type.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_STATEMENT_FAKE_ADVISE | 1 |  |
-| DATABASE_STATEMENT_COMPATIBILITY | 2 |  |
 | DATABASE_STATEMENT_ADVISE | 3 |  |
 | DATABASE_STATEMENT_SUMMARY_REPORT | 5 |  |
 | DATABASE_CONNECT | 6 |  |

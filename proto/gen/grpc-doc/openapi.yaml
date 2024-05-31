@@ -11117,7 +11117,6 @@ components:
                     enum:
                         - TYPE_UNSPECIFIED
                         - DATABASE_STATEMENT_FAKE_ADVISE
-                        - DATABASE_STATEMENT_COMPATIBILITY
                         - DATABASE_STATEMENT_ADVISE
                         - DATABASE_STATEMENT_SUMMARY_REPORT
                         - DATABASE_CONNECT
