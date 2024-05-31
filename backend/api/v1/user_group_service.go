@@ -154,7 +154,7 @@ func (s *UserGroupService) checkPermission(ctx context.Context, groupEmail strin
 		return status.Errorf(codes.Internal, "failed to get user group %q with error: %v", groupEmail, err)
 	}
 	if group == nil {
-		return status.Errorf(codes.Internal, "group %q not found", groupEmail)
+		return status.Errorf(codes.NotFound, "group %q not found", groupEmail)
 	}
 	for _, member := range group.Payload.GetMembers() {
 		if member.Role == storepb.UserGroupMember_OWNER && member.Member == common.FormatUserUID(user.ID) {
@@ -224,6 +224,9 @@ func (s *UserGroupService) convertToGroupMessage(ctx context.Context, group *v1p
 }
 
 func (s *UserGroupService) convertToV1Group(ctx context.Context, groupMessage *store.UserGroupMessage) (*v1pb.UserGroup, error) {
+	if groupMessage == nil {
+		return nil, status.Errorf(codes.NotFound, "cannot found group")
+	}
 	creator, err := s.store.GetUserByID(ctx, groupMessage.CreatorUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get creator, error %v", err)
