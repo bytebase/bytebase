@@ -27,7 +27,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useCurrentUserV1, useUserStore } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { unknownUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
@@ -38,9 +38,6 @@ const props = defineProps<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
-const userStore = useUserStore();
 
-const user = computed(
-  () => userStore.getUserByEmail(props.projectMember.email) ?? unknownUser()
-);
+const user = computed(() => props.projectMember.user ?? unknownUser());
 </script>

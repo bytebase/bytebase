@@ -508,6 +508,7 @@
         "add-group": "グループを追加",
         "update-group": "更新グループ",
         "delete-warning": "グループ「{name}」は削除されます。この操作は元に戻せません。",
+        "delete-warning-with-resources": "次のリソースはグループ '{name}' を使用します:",
         "form": {
           "email": "Eメール",
           "email-tips": "電子メールは一意である必要があり、作成後に変更することはできません。",
@@ -554,7 +555,6 @@
       },
       "view-by-principals": "メンバー別に見る",
       "view-by-roles": "役割ごとに表示",
-      "view-by-groups": "グループ別に表示",
       "add-member": "メンバーを追加",
       "update-member": "メンバーを更新する",
       "workspace-role-at-least-one": "少なくとも 1 つのワークスペースレベルの役割を選択してください"
@@ -1993,7 +1993,7 @@
       "revoke-access": "アクセス権を取り消す",
       "grant-access": "許可されたアクセス",
       "edit": "メンバーの編集 - {member}",
-      "view-by-principals": "担当者ごとに見る",
+      "view-by-members": "メンバー別に見る",
       "view-by-roles": "役割ごとに表示",
       "cannot-remove-last-owner": "プロジェクトの最後の所有者を削除できません",
       "revoke-role-from-user": "「{user}」{role} のロールを削除します",
