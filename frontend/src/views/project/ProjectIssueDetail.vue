@@ -3,10 +3,7 @@
     <template v-if="ready">
       <GrantRequestIssueDetailPage v-if="isGrantRequestIssue(issue)" />
       <DataExportIssueDetailPage v-else-if="isDatabaseDataExportIssue(issue)" />
-      <template v-else>
-        <IssueDetailPage v-if="!!issue.rollout" />
-        <SQLReviewIssueDetailPage v-else />
-      </template>
+      <IssueDetailPage v-else />
     </template>
     <div v-else class="w-full h-full flex flex-col items-center justify-center">
       <NSpin />
@@ -32,7 +29,6 @@ import {
   useBaseIssueContext,
   useInitializeIssue,
 } from "@/components/IssueV1";
-import SQLReviewIssueDetailPage from "@/components/IssueV1/SQLReviewIssueDetailPage.vue";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { useUIStateStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
