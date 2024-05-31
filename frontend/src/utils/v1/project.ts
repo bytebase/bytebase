@@ -43,9 +43,8 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
             (m) => m.member === `${userNamePrefix}${user.email}`
           );
         }
-
-        return false;
       }
+      return false;
     })
     .map((binding) => binding.role);
 };
