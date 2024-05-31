@@ -32,7 +32,15 @@
       v-if="state.quickActionType === 'quickaction.bb.instance.create'"
       :drawer="true"
       @dismiss="state.quickActionType = undefined"
-    />
+    >
+      <DrawerContent :title="$t('quick-action.add-instance')">
+        <InstanceFormBody />
+        <template #footer>
+          <InstanceFormButtons />
+        </template>
+      </DrawerContent>
+      <InstanceFormBody />
+    </InstanceForm>
     <CreateDatabasePrepPanel
       v-if="state.quickActionType === 'quickaction.bb.database.create'"
       :project-id="project?.uid"
@@ -110,7 +118,11 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
-import InstanceForm from "@/components/InstanceForm/";
+import {
+  InstanceForm,
+  Form as InstanceFormBody,
+  Buttons as InstanceFormButtons,
+} from "@/components/InstanceForm/";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";

@@ -1,24 +1,20 @@
-import { computed } from "vue";
+import { computed, type Ref } from "vue";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
+import type { BasicInfo, EditDataSource } from "./common";
 import { defaultPortForEngine } from "./constants";
-import type { InstanceFormContext } from "./context";
-import { useInstanceFormContext } from "./context";
 
 export const useInstanceSpecs = (
-  context: InstanceFormContext | undefined = undefined
+  basicInfo: Ref<BasicInfo>,
+  adminDataSource: Ref<EditDataSource>,
+  editingDataSource: Ref<EditDataSource | undefined>
 ) => {
-  if (!context) {
-    context = useInstanceFormContext();
-  }
-  const { basicInfo, adminDataSource, editingDataSource } = context;
-
   const showDatabase = computed((): boolean => {
     return (
       (basicInfo.value.engine === Engine.POSTGRES ||
         basicInfo.value.engine === Engine.REDSHIFT) &&
-      context?.editingDataSource.value?.type === DataSourceType.ADMIN
+      editingDataSource.value?.type === DataSourceType.ADMIN
     );
   });
   const showSSL = computed((): boolean => {
@@ -78,3 +74,5 @@ export const useInstanceSpecs = (
     hasReadonlyReplicaPort,
   };
 };
+
+export type InstanceSpecs = ReturnType<typeof useInstanceSpecs>;
