@@ -287,8 +287,8 @@ devDependencies:
     specifier: 13.0.0
     version: 13.0.0(eslint-plugin-vue@9.25.0)(eslint@9.1.1)(typescript@5.4.5)
   '@vue/test-utils':
-    specifier: 2.4.5
-    version: 2.4.5
+    specifier: 2.4.6
+    version: 2.4.6
   '@vue/tsconfig':
     specifier: 0.5.1
     version: 0.5.1
@@ -2364,8 +2364,8 @@ packages:
     resolution: {integrity: sha512-DL3NmY2OFlqmYYrzp39yi3LDkKxa5vZVwxWdQ3rG0ekuWscHraeIbnI8t+aZK7qhYqEqWKTUdijadunb9pnrgA==}
     dev: true
 
-  /@vue/test-utils@2.4.5:
-    resolution: {integrity: sha512-oo2u7vktOyKUked36R93NB7mg2B+N7Plr8lxp2JBGwr18ch6EggFjixSCdIVVLkT6Qr0z359Xvnafc9dcKyDUg==}
+  /@vue/test-utils@2.4.6:
+    resolution: {integrity: sha512-FMxEjOpYNYiFe0GkaHsnJPXFHxQ6m4t8vI/ElPGpMWxZKpmRvQ33OIrvRXemy6yha03RxhOlQuy+gZMC3CQSow==}
     dependencies:
       js-beautify: 1.15.1
       vue-component-type-helpers: 2.0.19

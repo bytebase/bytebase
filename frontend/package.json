@@ -115,7 +115,7 @@
     "@vue/compiler-sfc": "3.4.26",
     "@vue/eslint-config-prettier": "9.0.0",
     "@vue/eslint-config-typescript": "13.0.0",
-    "@vue/test-utils": "2.4.5",
+    "@vue/test-utils": "2.4.6",
     "@vue/tsconfig": "0.5.1",
     "autoprefixer": "10.4.19",
     "code-inspector-plugin": "^0.13.0",
