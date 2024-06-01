@@ -84,7 +84,7 @@ require (
 	golang.org/x/exp v0.0.0-20240531132922-fd00a4e0eefc
 	golang.org/x/oauth2 v0.20.0
 	golang.org/x/text v0.15.0
-	google.golang.org/api v0.180.0
+	google.golang.org/api v0.182.0
 	google.golang.org/genproto v0.0.0-20240528184218-531527333157
 	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157
@@ -94,7 +94,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/auth v0.4.1 // indirect
+	cloud.google.com/go/auth v0.4.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
