@@ -44,7 +44,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/hashicorp/vault/api v1.14.0
-	github.com/hashicorp/vault/api/auth/approle v0.6.0
+	github.com/hashicorp/vault/api/auth/approle v0.7.0
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jackc/pgtype v1.14.3
 	github.com/jackc/pgx/v5 v5.5.5
