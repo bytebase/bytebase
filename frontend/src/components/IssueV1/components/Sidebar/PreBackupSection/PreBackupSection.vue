@@ -7,7 +7,6 @@
       <template #trigger>
         <div class="textlabel flex items-center">
           {{ $t("task.prior-backup") }}
-          <BBBetaBadge class="scale-75" />
         </div>
       </template>
       <template #default>
@@ -24,7 +23,6 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { BBBetaBadge } from "@/bbkit";
 import PreBackupSwitch from "./PreBackupSwitch.vue";
 import { usePreBackupContext } from "./common";
 

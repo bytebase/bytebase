@@ -9,7 +9,6 @@
 
     <EarliestAllowedTime />
     <PreBackupSection />
-    <RollbackSection />
     <GhostSection />
   </div>
 </template>
@@ -22,7 +21,6 @@ import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
 import ReviewSection from "./ReviewSection";
 import RollbackFromTips from "./RollbackFromTips.vue";
-import RollbackSection from "./RollbackSection";
 import VCSInfo from "./VCSInfo.vue";
 
 const vcsInfoRef = ref<InstanceType<typeof VCSInfo>>();
