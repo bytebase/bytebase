@@ -8699,19 +8699,6 @@ components:
                     description: |-
                         The database for keeping the backup data.
                          Format: instances/{instance}/databases/{database}
-        ChangeDatabaseConfig_RollbackDetail:
-            type: object
-            properties:
-                rollbackFromTask:
-                    type: string
-                    description: |-
-                        rollback_from_task is the task from which the rollback SQL statement is generated for this task.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-                rollbackFromIssue:
-                    type: string
-                    description: |-
-                        rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
-                         Format: projects/{project}/issues/{issue}
         ChangeHistory:
             type: object
             properties:
@@ -11202,11 +11189,6 @@ components:
                     description: |-
                         schema_version is parsed from VCS file name.
                          It is automatically generated in the UI workflow.
-                rollbackEnabled:
-                    type: boolean
-                    description: If RollbackEnabled, build the RollbackSheetID of the task after the task is completed.
-                rollbackDetail:
-                    $ref: '#/components/schemas/ChangeDatabaseConfig_RollbackDetail'
                 ghostFlags:
                     type: object
                     additionalProperties:
