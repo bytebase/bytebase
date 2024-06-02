@@ -3,7 +3,6 @@ import type { Database } from "../database";
 import type {
   DatabaseId,
   InstanceId,
-  IssueId,
   ProjectId,
   SheetId,
   TaskId,
@@ -163,13 +162,11 @@ export type TaskCreate = {
   characterSet?: string;
   collation?: string;
   earliestAllowedTs: number;
-  rollbackEnabled?: boolean;
 };
 
 export type TaskPatch = {
   sheetId?: SheetId;
   earliestAllowedTs?: number;
-  rollbackEnabled?: boolean;
   updatedTs?: number;
 };
 
