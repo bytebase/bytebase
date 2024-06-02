@@ -13220,38 +13220,6 @@ components:
                     description: 'Format: projects/{project}/sheets/{sheet}'
                 schemaVersion:
                     type: string
-                rollbackEnabled:
-                    type: boolean
-                    description: Build the rollback SQL if rollback_enabled.
-                rollbackSqlStatus:
-                    enum:
-                        - ROLLBACK_SQL_STATUS_UNSPECIFIED
-                        - PENDING
-                        - DONE
-                        - FAILED
-                    type: string
-                    description: The status of the rollback SQL generation.
-                    format: enum
-                rollbackError:
-                    type: string
-                rollbackSheet:
-                    type: string
-                    description: |-
-                        rollback_sheet is the resource name of
-                         the sheet that stores the generated rollback SQL statement.
-                         Format: projects/{project}/sheets/{sheet}
-                rollbackFromIssue:
-                    type: string
-                    description: |-
-                        rollback_from_issue is the resource name of the issue that
-                         the rollback SQL statement is generated from.
-                         Format: projects/{project}/issues/{issue}
-                rollbackFromTask:
-                    type: string
-                    description: |-
-                        rollback_from_task is the resource name of the task that
-                         the rollback SQL statement is generated from.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
         Task_DatabaseSchemaBaseline:
             type: object
             properties:

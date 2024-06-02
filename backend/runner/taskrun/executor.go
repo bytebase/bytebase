@@ -259,43 +259,6 @@ func executeMigration(
 		return "", "", err
 	}
 
-	// If the migration is a data migration, enable the rollback SQL generation and the type of the driver is Oracle, we need to get the rollback SQL before the transaction is committed.
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == storepb.Engine_ORACLE {
-		updatedTask, err := stores.GetTaskV2ByID(ctx, task.ID)
-		if err != nil {
-			return "", "", errors.Wrapf(err, "cannot get task by id %d", task.ID)
-		}
-		payload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
-			return "", "", errors.Wrap(err, "invalid database data update payload")
-		}
-		if payload.RollbackEnabled {
-			// The runner will periodically scan the map to generate rollback SQL asynchronously.
-			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
-		}
-	}
-
-	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB) {
-		conn, err := driver.GetDB().Conn(ctx)
-		if err != nil {
-			return "", "", errors.Wrap(err, "failed to create connection")
-		}
-		defer conn.Close()
-		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, conn, task, stores, migrationID)
-		if err != nil {
-			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
-		}
-
-		payload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-			return "", "", errors.Wrap(err, "invalid database data update payload")
-		}
-		if payload.RollbackEnabled {
-			// The runner will periodically scan the map to generate rollback SQL asynchronously.
-			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
-		}
-	}
-
 	return migrationID, schema, nil
 }
 

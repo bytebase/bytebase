@@ -86,19 +86,11 @@ export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
   skippedReason: string;
 };
 
-export type RollbackSQLStatus = "PENDING" | "DONE" | "FAILED";
-
 export type TaskDatabaseDataUpdatePayload = {
   skipped: boolean;
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
-  rollbackEnabled: boolean;
-  rollbackSqlStatus?: RollbackSQLStatus;
-  rollbackSheetId?: SheetId;
-  rollbackError?: string;
-  rollbackFromIssueId?: IssueId;
-  rollbackFromTaskId?: TaskId;
 };
 
 export type TaskPayload =
