@@ -761,10 +761,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.RollbackDetail"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig.RollbackDetail</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.CreateDatabaseConfig"><span class="badge">M</span>PlanConfig.CreateDatabaseConfig</a>
                 </li>
               
@@ -6198,20 +6194,6 @@ It is automatically generated in the UI workflow. </p></td>
                 </tr>
               
                 <tr>
-                  <td>rollback_enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_detail</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.RollbackDetail">PlanConfig.ChangeDatabaseConfig.RollbackDetail</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -6279,39 +6261,6 @@ It is automatically generated in the UI workflow. </p></td>
                   <td></td>
                   <td><p>The database for keeping the backup data.
 Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.RollbackDetail">PlanConfig.ChangeDatabaseConfig.RollbackDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>rollback_from_task</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_task is the task from which the rollback SQL statement is generated for this task.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_from_issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
-Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
             </tbody>

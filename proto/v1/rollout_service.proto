@@ -286,30 +286,6 @@ message Task {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     string schema_version = 2;
-
-    // Build the rollback SQL if rollback_enabled.
-    bool rollback_enabled = 3;
-    enum RollbackSqlStatus {
-      ROLLBACK_SQL_STATUS_UNSPECIFIED = 0;
-      PENDING = 1;
-      DONE = 2;
-      FAILED = 3;
-    }
-    // The status of the rollback SQL generation.
-    RollbackSqlStatus rollback_sql_status = 4;
-    string rollback_error = 5;
-    // rollback_sheet is the resource name of
-    // the sheet that stores the generated rollback SQL statement.
-    // Format: projects/{project}/sheets/{sheet}
-    string rollback_sheet = 6;
-    // rollback_from_issue is the resource name of the issue that
-    // the rollback SQL statement is generated from.
-    // Format: projects/{project}/issues/{issue}
-    string rollback_from_issue = 7;
-    // rollback_from_task is the resource name of the task that
-    // the rollback SQL statement is generated from.
-    // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-    string rollback_from_task = 8;
   }
 
   message DatabaseDataExport {

@@ -611,21 +611,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecID:                spec.Id,
 			SheetID:               sheetUID,
 			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
-			RollbackEnabled:       c.RollbackEnabled,
-			RollbackSQLStatus:     api.RollbackSQLStatusPending,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
-		}
-		if c.RollbackDetail != nil {
-			issueID, err := common.GetIssueID(c.RollbackDetail.RollbackFromIssue)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get issue id from issue %q", c.RollbackDetail.RollbackFromIssue)
-			}
-			payload.RollbackFromIssueID = issueID
-			taskID, err := common.GetTaskID(c.RollbackDetail.RollbackFromTask)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get task id from task %q", c.RollbackDetail.RollbackFromTask)
-			}
-			payload.RollbackFromTaskID = taskID
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -681,8 +667,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 			SpecID:                spec.Id,
 			SheetID:               0,
 			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
-			RollbackEnabled:       c.RollbackEnabled,
-			RollbackSQLStatus:     api.RollbackSQLStatusPending,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		}
 
