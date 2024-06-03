@@ -1,4 +1,4 @@
-import type { IssueId, TaskId } from "./id";
+import type { IssueId } from "./id";
 import type { Pipeline } from "./pipeline";
 import type { Principal } from "./principal";
 import type { Project } from "./project";
@@ -27,14 +27,6 @@ export type IssueType =
   | IssueTypeGrantRequest;
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
-
-// RollbackDetail is the detail for rolling back a task.
-export type RollbackDetail = {
-  // IssueID is the id of the issue to rollback.
-  issueId: IssueId;
-  // TaskID is the task id to rollback.
-  taskId: TaskId;
-};
 
 export type IssuePayload = IssueProtoPayload | { [key: string]: any };
 

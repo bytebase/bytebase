@@ -131,18 +131,6 @@ type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
 	SpecID        string `json:"specId,omitempty"`
 }
 
-// RollbackSQLStatus is the status of a rollback SQL generation task.
-type RollbackSQLStatus string
-
-const (
-	// RollbackSQLStatusPending means the rollback SQL generation task is pending.
-	RollbackSQLStatusPending RollbackSQLStatus = "PENDING"
-	// RollbackSQLStatusDone means the rollback SQL generation task finished and has no error.
-	RollbackSQLStatusDone RollbackSQLStatus = "DONE"
-	// RollbackSQLStatusFailed means the rollback SQL generation task failed.
-	RollbackSQLStatusFailed RollbackSQLStatus = "FAILED"
-)
-
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
 	// Common fields
@@ -155,10 +143,6 @@ type TaskDatabaseDataUpdatePayload struct {
 
 	// MySQL rollback SQL related.
 
-	// Build the RollbackSheetID if RollbackEnabled.
-	RollbackEnabled bool `json:"rollbackEnabled,omitempty"`
-	// RollbackSQLStatus is the status of the rollback generation.
-	RollbackSQLStatus RollbackSQLStatus `json:"rollbackSqlStatus,omitempty"`
 	// TransactionID is the ID of the transaction executing the migration.
 	// It is only use for Oracle to find Rollback SQL statement now.
 	TransactionID string `json:"transactionId,omitempty"`
@@ -170,17 +154,10 @@ type TaskDatabaseDataUpdatePayload struct {
 	MigrationID string `json:"migrationId,omitempty"`
 	// BinlogXxx are obtained before and after executing the migration.
 	// We use them to locate the range of binlog for the migration transaction.
-	BinlogFileStart string `json:"binlogFileStart,omitempty"`
-	BinlogFileEnd   string `json:"binlogFileEnd,omitempty"`
-	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
-	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
-	RollbackError   string `json:"rollbackError,omitempty"`
-	// RollbackSheetID is the generated rollback SQL statement for the DML task.
-	RollbackSheetID int `json:"rollbackSheetId,omitempty"`
-	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
-	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
-	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
-	RollbackFromTaskID    int                   `json:"rollbackFromTaskId,omitempty"`
+	BinlogFileStart       string                `json:"binlogFileStart,omitempty"`
+	BinlogFileEnd         string                `json:"binlogFileEnd,omitempty"`
+	BinlogPosStart        int64                 `json:"binlogPosStart,omitempty"`
+	BinlogPosEnd          int64                 `json:"binlogPosEnd,omitempty"`
 	PreUpdateBackupDetail PreUpdateBackupDetail `json:"preUpdateBackupDetail,omitempty"`
 }
 
@@ -259,14 +236,8 @@ type TaskPatch struct {
 	// Payload and others cannot be set at the same time.
 	Payload *string
 
-	SheetID           *int `jsonapi:"attr,sheetId"`
-	SchemaVersion     *string
-	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
-	RollbackSQLStatus *RollbackSQLStatus
-	// RollbackSheetID sets the rollback sheet ID.
-	// When RollbackEnabled is enabled, RollbackSheetID is kept till it's set to the new sheet ID by the runner.
-	RollbackSheetID       *int
-	RollbackError         *string
+	SheetID               *int `jsonapi:"attr,sheetId"`
+	SchemaVersion         *string
 	ExportFormat          *storepb.ExportFormat
 	ExportPassword        *string
 	PreUpdateBackupDetail *PreUpdateBackupDetail

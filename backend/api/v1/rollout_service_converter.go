@@ -128,27 +128,15 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 	c := config.ChangeDatabaseConfig
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target:          c.Target,
-			Sheet:           c.Sheet,
-			Type:            convertToPlanSpecChangeDatabaseConfigType(c.Type),
-			SchemaVersion:   c.SchemaVersion,
-			RollbackEnabled: c.RollbackEnabled,
-			RollbackDetail:  convertToPlanSpecChangeDatabaseConfigRollbackDetail(c.RollbackDetail),
-			GhostFlags:      c.GhostFlags,
+			Target:        c.Target,
+			Sheet:         c.Sheet,
+			Type:          convertToPlanSpecChangeDatabaseConfigType(c.Type),
+			SchemaVersion: c.SchemaVersion,
+			GhostFlags:    c.GhostFlags,
 			PreUpdateBackupDetail: &v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail{
 				Database: c.PreUpdateBackupDetail.GetDatabase(),
 			},
 		},
-	}
-}
-
-func convertToPlanSpecChangeDatabaseConfigRollbackDetail(d *storepb.PlanConfig_ChangeDatabaseConfig_RollbackDetail) *v1pb.Plan_ChangeDatabaseConfig_RollbackDetail {
-	if d == nil {
-		return nil
-	}
-	return &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
-		RollbackFromIssue: d.RollbackFromIssue,
-		RollbackFromTask:  d.RollbackFromIssue,
 	}
 }
 
@@ -259,7 +247,6 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Sheet:                 c.Sheet,
 			Type:                  storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
 			SchemaVersion:         c.SchemaVersion,
-			RollbackEnabled:       c.RollbackEnabled,
 			GhostFlags:            c.GhostFlags,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		},
@@ -764,10 +751,6 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	var rollbackSheetName string
-	if payload.RollbackSheetID != 0 {
-		rollbackSheetName = getResourceNameForSheet(project, payload.RollbackSheetID)
-	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
@@ -797,29 +780,9 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:             sheet,
-			SchemaVersion:     payload.SchemaVersion,
-			RollbackEnabled:   payload.RollbackEnabled,
-			RollbackSqlStatus: convertToRollbackSQLStatus(payload.RollbackSQLStatus),
-			RollbackError:     payload.RollbackError,
-			RollbackSheet:     rollbackSheetName,
-			RollbackFromIssue: "",
-			RollbackFromTask:  "",
+			Sheet:         sheet,
+			SchemaVersion: payload.SchemaVersion,
 		},
-	}
-	if payload.RollbackFromIssueID != 0 && payload.RollbackFromTaskID != 0 {
-		rollbackFromIssue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{
-			UID: &payload.RollbackFromIssueID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get rollback issue %q", payload.RollbackFromIssueID)
-		}
-		rollbackFromTask, err := s.GetTaskV2ByID(ctx, payload.RollbackFromTaskID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get rollback task %q", payload.RollbackFromTaskID)
-		}
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromIssue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.IssueNamePrefix, rollbackFromIssue.UID)
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromTask = fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, rollbackFromIssue.Project.ResourceID, common.RolloutPrefix, rollbackFromTask.PipelineID, common.StagePrefix, rollbackFromTask.StageID, common.TaskPrefix, rollbackFromTask.ID)
 	}
 
 	v1pbTask.Payload = v1pbTaskPayload
@@ -908,20 +871,6 @@ func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
-	}
-}
-
-func convertToRollbackSQLStatus(status api.RollbackSQLStatus) v1pb.Task_DatabaseDataUpdate_RollbackSqlStatus {
-	switch status {
-	case api.RollbackSQLStatusPending:
-		return v1pb.Task_DatabaseDataUpdate_PENDING
-	case api.RollbackSQLStatusDone:
-		return v1pb.Task_DatabaseDataUpdate_DONE
-	case api.RollbackSQLStatusFailed:
-		return v1pb.Task_DatabaseDataUpdate_FAILED
-
-	default:
-		return v1pb.Task_DatabaseDataUpdate_ROLLBACK_SQL_STATUS_UNSPECIFIED
 	}
 }
 
