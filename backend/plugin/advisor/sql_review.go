@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	partiqlparser "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -506,6 +507,8 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 		return snowflakeSyntaxCheck(statement)
 	case storepb.Engine_MSSQL:
 		return mssqlSyntaxCheck(statement)
+	case storepb.Engine_DYNAMODB:
+		return partiqlSyntaxCheck(statement)
 	}
 	return nil, []Advice{
 		{
@@ -516,6 +519,39 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 			Line:    1,
 		},
 	}
+}
+
+func partiqlSyntaxCheck(statement string) (any, []Advice) {
+	result, err := partiqlparser.ParsePartiQL(statement)
+	if err != nil {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	return result.Tree, nil
 }
 
 func mssqlSyntaxCheck(statement string) (any, []Advice) {
