@@ -49,6 +49,13 @@ type TableKey struct {
 	Table  string
 }
 
+// ColumnKey is the map key for table metadata.
+type ColumnKey struct {
+	Schema string
+	Table  string
+	Column string
+}
+
 // IndexKey is the map key for table metadata.
 type IndexKey struct {
 	Schema string

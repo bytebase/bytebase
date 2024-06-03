@@ -444,28 +444,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						})
 					}
 
-					// RollbackEnabled
-					if err := func() error {
-						if task.Type != api.TaskDatabaseDataUpdate {
-							return nil
-						}
-						payload := &api.TaskDatabaseDataUpdatePayload{}
-						if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-						}
-						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-						if !ok {
-							return nil
-						}
-						if config.ChangeDatabaseConfig.RollbackEnabled != payload.RollbackEnabled {
-							taskPatch.RollbackEnabled = &config.ChangeDatabaseConfig.RollbackEnabled
-							doUpdate = true
-						}
-						return nil
-					}(); err != nil {
-						return nil, err
-					}
-
 					// PreUpdateBackupDetail
 					if err := func() error {
 						if task.Type != api.TaskDatabaseDataUpdate {
@@ -685,34 +663,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if oldConfig.Sheet != newConfig.Sheet {
 							doUpdateSheet = true
 							break
-						}
-					}
-				}
-			}
-
-			for _, taskPatch := range taskPatchList {
-				task := tasksMap[taskPatch.ID]
-				if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
-				}
-
-				taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
-				}
-
-				// enqueue or cancel after it's written to the database.
-				if taskPatch.RollbackEnabled != nil {
-					// Enqueue the rollback sql generation if the task done.
-					if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
-						s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
-					} else if !*taskPatch.RollbackEnabled {
-						// Cancel running rollback sql generation.
-						if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
-							if cancel, ok := v.(context.CancelFunc); ok {
-								cancel()
-							}
-							// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 						}
 					}
 				}

@@ -62,7 +62,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Code:    common.Ok.Int32(),
-				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
+				Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Engine),
 				Content: "",
 			},
 		}, nil

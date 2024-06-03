@@ -233,7 +233,11 @@ func executeMigration(
 		switch task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
 			switch instance.Engine {
-			case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_MSSQL:
+			case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE,
+				storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_POSTGRES,
+				storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_ORACLE,
+				storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_MSSQL,
+				storepb.Engine_DYNAMODB:
 				opts.ChunkedSubmission = true
 				opts.UpdateExecutionStatus = func(detail *v1pb.TaskRun_ExecutionDetail) {
 					stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
@@ -253,43 +257,6 @@ func executeMigration(
 	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, driverCtx, stores, stateCfg, taskRunUID, driver, mi, statement, sheetID, opts)
 	if err != nil {
 		return "", "", err
-	}
-
-	// If the migration is a data migration, enable the rollback SQL generation and the type of the driver is Oracle, we need to get the rollback SQL before the transaction is committed.
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == storepb.Engine_ORACLE {
-		updatedTask, err := stores.GetTaskV2ByID(ctx, task.ID)
-		if err != nil {
-			return "", "", errors.Wrapf(err, "cannot get task by id %d", task.ID)
-		}
-		payload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
-			return "", "", errors.Wrap(err, "invalid database data update payload")
-		}
-		if payload.RollbackEnabled {
-			// The runner will periodically scan the map to generate rollback SQL asynchronously.
-			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
-		}
-	}
-
-	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB) {
-		conn, err := driver.GetDB().Conn(ctx)
-		if err != nil {
-			return "", "", errors.Wrap(err, "failed to create connection")
-		}
-		defer conn.Close()
-		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, conn, task, stores, migrationID)
-		if err != nil {
-			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
-		}
-
-		payload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-			return "", "", errors.Wrap(err, "invalid database data update payload")
-		}
-		if payload.RollbackEnabled {
-			// The runner will periodically scan the map to generate rollback SQL asynchronously.
-			stateCfg.RollbackGenerate.Store(task.ID, updatedTask)
-		}
 	}
 
 	return migrationID, schema, nil
@@ -362,41 +329,6 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, conn *sql.Conn, ta
 	}
 	payload.BinlogFileStart = binlogInfo.FileName
 	payload.BinlogPosStart = binlogInfo.Position
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal task payload")
-	}
-	payloadString := string(payloadBytes)
-	patch := &api.TaskPatch{
-		ID:        task.ID,
-		UpdaterID: api.SystemBotID,
-		Payload:   &payloadString,
-	}
-	updatedTask, err := store.UpdateTaskV2(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
-	}
-	return updatedTask, nil
-}
-
-func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store, migrationID string) (*store.TaskMessage, error) {
-	payload := &api.TaskDatabaseDataUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrap(err, "invalid database data update payload")
-	}
-
-	payload.MigrationID = migrationID
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
-	}
-	if (binlogInfo == api.BinlogInfo{}) {
-		slog.Warn("binlog is not enabled", slog.Int("task", task.ID))
-		return task, nil
-	}
-	payload.BinlogFileEnd = binlogInfo.FileName
-	payload.BinlogPosEnd = binlogInfo.Position
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {

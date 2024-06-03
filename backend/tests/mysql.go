@@ -5,20 +5,7 @@ package tests
 import (
 	"database/sql"
 	"fmt"
-
-	"github.com/bytebase/bytebase/backend/plugin/db"
 )
-
-func getMySQLConnectionConfig(port string, database string) db.ConnectionConfig {
-	return db.ConnectionConfig{
-		Host:      "127.0.0.1",
-		Port:      port,
-		Username:  "root",
-		Password:  "",
-		Database:  database,
-		TLSConfig: db.TLSConfig{},
-	}
-}
 
 // connectTestMySQL connects to the test mysql instance.
 func connectTestMySQL(port int, database string) (*sql.DB, error) {

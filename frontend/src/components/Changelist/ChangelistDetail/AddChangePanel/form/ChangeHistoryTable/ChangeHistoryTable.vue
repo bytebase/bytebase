@@ -1,68 +1,23 @@
 <template>
-  <BBGrid
-    :column-list="columns"
-    :ready="!isFetching"
-    :data-source="changeHistoryList"
-    :show-placeholder="true"
-    :custom-header="true"
-    class="border"
-    @click-row="handleClickRow"
-  >
-    <template #header>
-      <div role="table-row" class="bb-grid-row bb-grid-header-row group">
-        <div
-          v-for="(column, index) in columns"
-          :key="index"
-          role="table-cell"
-          class="bb-grid-header-cell capitalize whitespace-nowrap"
-          :class="[column.class]"
-        >
-          <template v-if="index === 0">
-            <NCheckbox
-              v-bind="allSelectionState"
-              @update:checked="toggleSelectAll"
-            />
-          </template>
-          <template v-else>{{ column.title }}</template>
-        </div>
-      </div>
-    </template>
-    <template #item="{ item: changeHistory }: BBGridRow<ChangeHistory>">
-      <div class="bb-grid-cell !pr-4" @click.stop.prevent="tryClickCheckbox">
-        <NCheckbox
-          :checked="isSelected(changeHistory)"
-          @update:checked="toggleSelect(changeHistory, $event)"
-        />
-      </div>
-
-      <div class="bb-grid-cell !pl-0">
-        {{ displaySemanticType(changeHistory.type) }}
-      </div>
-      <div class="bb-grid-cell">
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <span class="whitespace-nowrap" v-html="renderVersion(changeHistory)" />
-      </div>
-      <div class="bb-grid-cell whitespace-nowrap">
-        <IssueUID :change-history="changeHistory" />
-      </div>
-      <div class="bb-grid-cell">
-        <Tables :change-history="changeHistory" />
-      </div>
-      <div class="bb-grid-cell overflow-hidden">
-        <SQL :change-history="changeHistory" />
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    :columns="dataTableColumns"
+    :data="changeHistoryList"
+    :row-key="(history: ComposedChangeHistory) => history.name"
+    :bordered="true"
+    :checked-row-keys="props.selected"
+    :loading="isFetching"
+    :row-props="rowProps"
+    @update:checked-row-keys="handleSelection"
+  />
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import { escape } from "lodash-es";
-import { NCheckbox } from "naive-ui";
+import type { DataTableColumn, DataTableRowKey } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridRow, BBGridColumn } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
-import type { ChangeHistory } from "@/types/proto/v1/database_service";
+import { type ComposedChangeHistory } from "@/types";
 import { getHighlightHTMLByRegExp } from "@/utils";
 import { displaySemanticType } from "../utils";
 import IssueUID from "./IssueUID.vue";
@@ -71,82 +26,95 @@ import Tables from "./Tables.vue";
 
 const props = defineProps<{
   selected: string[];
-  changeHistoryList: ChangeHistory[];
+  changeHistoryList: ComposedChangeHistory[];
   isFetching: boolean;
   keyword: string;
 }>();
 
 const emit = defineEmits<{
   (event: "update:selected", selected: string[]): void;
-  (event: "click-item", change: ChangeHistory): void;
+  (event: "click-item", change: ComposedChangeHistory): void;
 }>();
 
 const { t } = useI18n();
 
-const columns = computed((): BBGridColumn[] => {
+const dataTableColumns = computed(() => {
   return [
-    { title: "", width: "auto", class: "!pr-4" },
-    { title: t("common.type"), width: "auto", class: "!pl-0" },
-    { title: t("common.version"), width: "1fr" },
-    { title: t("common.issue"), width: "auto" },
     {
+      type: "selection",
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+    },
+    {
+      key: "type",
+      title: t("common.type"),
+      width: "5rem",
+      render: (changeHistory) => displaySemanticType(changeHistory.type),
+    },
+    {
+      key: "version",
+      title: t("common.version"),
+      width: "20rem",
+      resizable: true,
+      render: (changeHistory) => {
+        return (
+          <span
+            class="whitespace-nowrap"
+            innerHTML={renderVersion(changeHistory)}
+          />
+        );
+      },
+    },
+    {
+      key: "issueId",
+      title: t("common.issue"),
+      resizable: true,
+      render: (changeHistory) => {
+        return (
+          <IssueUID changeHistory={changeHistory} keyword={props.keyword} />
+        );
+      },
+    },
+    {
+      key: "tables",
       title: t("changelist.change-source.change-history.tables"),
       width: "minmax(auto, 1fr)",
+      resizable: true,
+      render: (changeHistory) => {
+        return <Tables changeHistory={changeHistory} />;
+      },
     },
     {
+      key: "sql",
       title: t("common.sql"),
       width: "3fr",
+      resizable: true,
+      render: (changeHistory) => {
+        return <SQL changeHistory={changeHistory} />;
+      },
     },
-  ];
+  ] as DataTableColumn<ComposedChangeHistory>[];
 });
 
-const allSelectionState = computed(() => {
-  const { changeHistoryList: list, selected } = props;
-  const set = new Set(selected);
+const handleSelection = (rowKeys: DataTableRowKey[]) => {
+  const keys = rowKeys as string[];
+  emit("update:selected", Array.from(keys));
+};
 
-  const checked =
-    selected.length > 0 &&
-    list.every((changeHistory) => set.has(changeHistory.name));
-  const indeterminate = !checked && selected.some((name) => set.has(name));
-
+const rowProps = (history: ComposedChangeHistory) => {
   return {
-    checked,
-    indeterminate,
+    onClick: (e: MouseEvent) => {
+      emit("click-item", history);
+    },
   };
-});
-
-const toggleSelectAll = (on: boolean) => {
-  if (on) {
-    emit(
-      "update:selected",
-      props.changeHistoryList.map((changeHistory) => changeHistory.name)
-    );
-  } else {
-    emit("update:selected", []);
-  }
 };
 
-const isSelected = (changeHistory: ChangeHistory) => {
-  return props.selected.includes(changeHistory.name);
-};
-
-const toggleSelect = (changeHistory: ChangeHistory, on: boolean) => {
-  const set = new Set(props.selected);
-  const key = changeHistory.name;
-  if (on) {
-    if (!set.has(key)) {
-      set.add(key);
-      emit("update:selected", Array.from(set));
-    }
-  } else {
-    if (set.has(key)) {
-      set.delete(key);
-      emit("update:selected", Array.from(set));
-    }
-  }
-};
-
-const renderVersion = (item: ChangeHistory) => {
+const renderVersion = (item: ComposedChangeHistory) => {
   const keyword = props.keyword.trim().toLowerCase();
 
   const { version } = item;
@@ -160,17 +128,5 @@ const renderVersion = (item: ChangeHistory) => {
     escape(keyword),
     false /* !caseSensitive */
   );
-};
-
-const handleClickRow = (item: ChangeHistory) => {
-  emit("click-item", item);
-};
-
-const tryClickCheckbox = (e: MouseEvent) => {
-  const div = e.target as HTMLElement;
-  const checkbox = div.querySelector(".n-checkbox");
-  if (!checkbox) return;
-  const e2 = new MouseEvent("click");
-  checkbox.dispatchEvent(e2);
 };
 </script>

@@ -21,11 +21,7 @@
         <span class="text-sm">{{ changeHistory.version }}</span>
         <router-link
           :to="{
-            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-            params: {
-              projectId: extractProjectResourceName(changeHistory.issue),
-              issueSlug: extractIssueUID(changeHistory.issue),
-            },
+            path: `/${changeHistory.issue}`,
           }"
           class="normal-link text-sm hover:!no-underline"
           target="_blank"
@@ -56,15 +52,10 @@
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
-import {
-  extractDatabaseResourceName,
-  extractIssueUID,
-  extractProjectResourceName,
-} from "@/utils";
+import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
 import { displaySemanticType } from "./utils";
 
 const props = defineProps<{
