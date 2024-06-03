@@ -53,12 +53,14 @@ const props = withDefaults(
     showSelection?: boolean;
     showOperation?: boolean;
     canAssignLicense?: boolean;
+    onClick?: (instance: ComposedInstance, e: MouseEvent) => void;
   }>(),
   {
     bordered: true,
     showSelection: true,
     showOperation: true,
     canAssignLicense: true,
+    onClick: undefined,
   }
 );
 
@@ -139,6 +141,10 @@ const rowProps = (instance: ComposedInstance) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
+      if (props.onClick) {
+        props.onClick(instance, e);
+        return;
+      }
       const url = `/${instance.name}`;
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
