@@ -3,7 +3,6 @@ import type { Database } from "../database";
 import type {
   DatabaseId,
   InstanceId,
-  IssueId,
   ProjectId,
   SheetId,
   TaskId,
@@ -86,19 +85,11 @@ export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
   skippedReason: string;
 };
 
-export type RollbackSQLStatus = "PENDING" | "DONE" | "FAILED";
-
 export type TaskDatabaseDataUpdatePayload = {
   skipped: boolean;
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
-  rollbackEnabled: boolean;
-  rollbackSqlStatus?: RollbackSQLStatus;
-  rollbackSheetId?: SheetId;
-  rollbackError?: string;
-  rollbackFromIssueId?: IssueId;
-  rollbackFromTaskId?: TaskId;
 };
 
 export type TaskPayload =
@@ -171,13 +162,11 @@ export type TaskCreate = {
   characterSet?: string;
   collation?: string;
   earliestAllowedTs: number;
-  rollbackEnabled?: boolean;
 };
 
 export type TaskPatch = {
   sheetId?: SheetId;
   earliestAllowedTs?: number;
-  rollbackEnabled?: boolean;
   updatedTs?: number;
 };
 

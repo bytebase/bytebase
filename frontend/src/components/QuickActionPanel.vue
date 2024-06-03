@@ -39,7 +39,6 @@
           <InstanceFormButtons />
         </template>
       </DrawerContent>
-      <InstanceFormBody />
     </InstanceForm>
     <CreateDatabasePrepPanel
       v-if="state.quickActionType === 'quickaction.bb.database.create'"

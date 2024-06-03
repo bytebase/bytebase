@@ -209,7 +209,6 @@
     "restart": "再起動",
     "want-help": "ユーザーグループに参加する",
     "operation": "操作する",
-    "rollback": "ロールバック",
     "total": "合計",
     "discard-changes": "変更をキャンセルする",
     "error-message": "エラーメッセージ",
@@ -356,16 +355,6 @@
     "skip-modal-title": "タスク [{name}] をスキップしますか?",
     "task-checks": "タスクのチェック項目",
     "prior-backup": "影響を受けるデータの事前バックアップ",
-    "rollback": {
-      "sql-rollback": "SQLロールバック",
-      "failed": "失敗",
-      "preview-rollback-issue": "ロールバック作業指示のプレビュー",
-      "generating": "生成中",
-      "empty-rollback-statement": "ロールバック ステートメントが空です",
-      "cancel-generating": "ロールバックステートメントの生成をキャンセルします",
-      "sql-rollback-tips": "有効にすると、データ変更のロールバック ログが保持され、この変更をロールバックするための新しい作業指示を作成するために使用できます。\n警告: データ テーブルに主キーがない場合、ロールバック ステートメントは重複行に影響を与える可能性があります。実行前にご確認ください。\n{link}",
-      "maximum-size-tips": "サポートされるロールバック データの最大サイズは 32MB です"
-    },
     "skip-failed-in-current-stage": "現在のステージで失敗したタスクをスキップします",
     "apply-change-to-all-pending-tasks": {
       "title": "すべての未処理のタスクに適用しますか?",
