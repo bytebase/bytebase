@@ -29,15 +29,9 @@ import IssueLabelSelector, {
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
 import { type ComposedIssue } from "@/types";
-import {
-  issueSlug,
-  extractProjectResourceName,
-  humanizeTs,
-  flattenSpecList,
-} from "@/utils";
+import { humanizeTs, flattenSpecList } from "@/utils";
 
 const { t } = useI18n();
 
@@ -168,11 +162,7 @@ const rowProps = (issue: ComposedIssue) => {
         uid: issue.uid,
       });
       const route = router.resolve({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(issue.project),
-          issueSlug: issueSlug(issue.title, issue.uid),
-        },
+        path: `/${issue.name}`,
       });
       const url = route.fullPath;
       if (e.ctrlKey || e.metaKey) {
