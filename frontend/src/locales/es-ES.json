@@ -3442,7 +3442,8 @@
       "change-history": {
         "tables": "Mesas"
       },
-      "source": "Fuente"
+      "source": "Fuente",
+      "filter": "Filtrar por problema o versión"
     },
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",

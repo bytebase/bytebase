@@ -22,16 +22,12 @@
       <div class="flex-1">
         <router-link
           :to="{
-            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-            params: {
-              projectId: extractProjectResourceName(changeHistory.issue),
-              issueSlug: extractIssueUID(changeHistory.issue),
-            },
+            path: `/${changeHistory.issue}`,
           }"
           target="_blank"
           class="normal-link flex items-center gap-x-1"
         >
-          {{ extractIssueUID(changeHistory.issue) }}
+          #{{ extractIssueUID(changeHistory.issue) }}
         </router-link>
       </div>
     </div>
@@ -88,7 +84,6 @@
 import dayjs from "dayjs";
 import type { PropType } from "vue";
 import { computed } from "vue";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -96,7 +91,6 @@ import {
   extractUserResourceName,
   extractIssueUID,
   changeHistoryLink as makeChangeHistoryLink,
-  extractProjectResourceName,
 } from "@/utils";
 
 const props = defineProps({

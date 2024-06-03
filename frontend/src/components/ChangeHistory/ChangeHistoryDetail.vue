@@ -29,15 +29,11 @@
               >
               <router-link
                 :to="{
-                  name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-                  params: {
-                    projectId: extractProjectResourceName(changeHistory.issue),
-                    issueSlug: extractIssueUID(changeHistory.issue),
-                  },
+                  path: `/${changeHistory.issue}`,
                 }"
                 class="normal-link"
               >
-                {{ extractIssueUID(changeHistory.issue) }}
+                #{{ extractIssueUID(changeHistory.issue) }}
               </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.duration") }}</dt>
@@ -296,7 +292,6 @@ import { BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -324,7 +319,6 @@ import {
   toClipboard,
   getStatementSize,
   hasProjectPermissionV2,
-  extractProjectResourceName,
 } from "@/utils";
 
 interface LocalState {
