@@ -9,36 +9,55 @@ import (
 )
 
 func TestSplitSQL(t *testing.T) {
-	statement := `
-SELECT * FROM my_table;
-SELECT * FROM my_table;
-foobar();`
+	statement := `DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';
+	INSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};
+	INSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};
+	INSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};
+	DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'`
 	want := []base.SingleSQL{
 		{
-			Text:                 "\nSELECT * FROM my_table;",
+			Text:                 "DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';",
+			BaseLine:             0,
+			FirstStatementLine:   0,
+			FirstStatementColumn: 0,
+			LastLine:             0,
+			LastColumn:           69,
+			Empty:                false,
+		},
+		{
+			Text:                 "\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};",
 			BaseLine:             0,
 			FirstStatementLine:   1,
-			FirstStatementColumn: 0,
+			FirstStatementColumn: 1,
 			LastLine:             1,
-			LastColumn:           22,
+			LastColumn:           129,
 			Empty:                false,
 		},
 		{
-			Text:                 "\nSELECT * FROM my_table;",
+			Text:                 "\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};",
 			BaseLine:             1,
 			FirstStatementLine:   2,
-			FirstStatementColumn: 0,
+			FirstStatementColumn: 1,
 			LastLine:             2,
-			LastColumn:           22,
+			LastColumn:           131,
 			Empty:                false,
 		},
 		{
-			Text:                 "\nfoobar();",
+			Text:                 "\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};",
 			BaseLine:             2,
 			FirstStatementLine:   3,
-			FirstStatementColumn: 0,
+			FirstStatementColumn: 1,
 			LastLine:             3,
-			LastColumn:           8,
+			LastColumn:           131,
+			Empty:                false,
+		},
+		{
+			Text:                 "\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'",
+			BaseLine:             3,
+			FirstStatementLine:   4,
+			FirstStatementColumn: 1,
+			LastLine:             4,
+			LastColumn:           63,
 			Empty:                false,
 		},
 	}
