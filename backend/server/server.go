@@ -47,7 +47,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/relay"
-	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -72,7 +71,6 @@ type Server struct {
 	schemaSyncer       *schemasync.Syncer
 	slowQuerySyncer    *slowquerysync.Syncer
 	mailSender         *mail.SlowQueryWeeklyMailSender
-	rollbackRunner     *rollbackrun.Runner
 	approvalRunner     *approval.Runner
 	relayRunner        *relay.Runner
 	runnerWG           sync.WaitGroup
@@ -268,7 +266,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		s.rollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
 		s.mailSender = mail.NewSender(s.store, s.stateCfg)
 		s.relayRunner = relay.NewRunner(storeInstance, s.webhookManager, s.stateCfg)
 		s.approvalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.webhookManager, s.relayRunner, s.licenseService)
@@ -385,8 +382,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.slowQuerySyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.mailSender.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.rollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.approvalRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)

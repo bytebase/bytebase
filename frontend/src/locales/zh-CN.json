@@ -209,7 +209,6 @@
     "restart": "重启",
     "want-help": "加入用户群",
     "operation": "操作",
-    "rollback": "回滚",
     "total": "共计",
     "discard-changes": "取消修改",
     "error-message": "错误信息",
@@ -356,16 +355,6 @@
     "skip-modal-title": "跳过任务[{name}]？",
     "task-checks": "任务检查项",
     "prior-backup": "受影响数据预备份",
-    "rollback": {
-      "sql-rollback": "SQL 回滚",
-      "failed": "失败",
-      "preview-rollback-issue": "预览回滚工单",
-      "generating": "生成中",
-      "empty-rollback-statement": "回滚语句为空",
-      "cancel-generating": "取消生成回滚语句",
-      "sql-rollback-tips": "开启时会保留数据变更的回滚日志，可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能会影响重复的行。执行前请注意确认。\n{link}",
-      "maximum-size-tips": "支持的最大回滚数据量为 32MB"
-    },
     "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
     "apply-change-to-all-pending-tasks": {
       "title": "应用到所有未执行任务？",

@@ -8699,19 +8699,6 @@ components:
                     description: |-
                         The database for keeping the backup data.
                          Format: instances/{instance}/databases/{database}
-        ChangeDatabaseConfig_RollbackDetail:
-            type: object
-            properties:
-                rollbackFromTask:
-                    type: string
-                    description: |-
-                        rollback_from_task is the task from which the rollback SQL statement is generated for this task.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-                rollbackFromIssue:
-                    type: string
-                    description: |-
-                        rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
-                         Format: projects/{project}/issues/{issue}
         ChangeHistory:
             type: object
             properties:
@@ -11202,11 +11189,6 @@ components:
                     description: |-
                         schema_version is parsed from VCS file name.
                          It is automatically generated in the UI workflow.
-                rollbackEnabled:
-                    type: boolean
-                    description: If RollbackEnabled, build the RollbackSheetID of the task after the task is completed.
-                rollbackDetail:
-                    $ref: '#/components/schemas/ChangeDatabaseConfig_RollbackDetail'
                 ghostFlags:
                     type: object
                     additionalProperties:
@@ -13238,38 +13220,6 @@ components:
                     description: 'Format: projects/{project}/sheets/{sheet}'
                 schemaVersion:
                     type: string
-                rollbackEnabled:
-                    type: boolean
-                    description: Build the rollback SQL if rollback_enabled.
-                rollbackSqlStatus:
-                    enum:
-                        - ROLLBACK_SQL_STATUS_UNSPECIFIED
-                        - PENDING
-                        - DONE
-                        - FAILED
-                    type: string
-                    description: The status of the rollback SQL generation.
-                    format: enum
-                rollbackError:
-                    type: string
-                rollbackSheet:
-                    type: string
-                    description: |-
-                        rollback_sheet is the resource name of
-                         the sheet that stores the generated rollback SQL statement.
-                         Format: projects/{project}/sheets/{sheet}
-                rollbackFromIssue:
-                    type: string
-                    description: |-
-                        rollback_from_issue is the resource name of the issue that
-                         the rollback SQL statement is generated from.
-                         Format: projects/{project}/issues/{issue}
-                rollbackFromTask:
-                    type: string
-                    description: |-
-                        rollback_from_task is the resource name of the task that
-                         the rollback SQL statement is generated from.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
         Task_DatabaseSchemaBaseline:
             type: object
             properties:
