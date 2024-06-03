@@ -3442,7 +3442,8 @@
       "change-history": {
         "tables": "Tables"
       },
-      "source": "Source"
+      "source": "Source",
+      "filter": "Filter by issue or version"
     },
     "confirm-remove-change": "Remove this change?",
     "delete-this-changelist": "Delete this changelist",

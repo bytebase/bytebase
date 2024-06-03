@@ -15,10 +15,8 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { issueServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { extractProjectResourceName, issueSlug } from "@/utils";
 
 type DescriptionType = "TEXT" | "ISSUE";
 
@@ -52,11 +50,7 @@ const gotoIssuePage = async () => {
   }
 
   const route = router.resolve({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(issue.name),
-      issueSlug: issueSlug(issue.title, issue.uid),
-    },
+    path: `/${issue.name}`,
   });
   window.open(route.href, "_blank");
 };
