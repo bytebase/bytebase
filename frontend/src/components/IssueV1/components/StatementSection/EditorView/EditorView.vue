@@ -17,15 +17,6 @@
             🎈{{ $t("sql-review.unlock-full-feature") }}
           </NButton>
         </div>
-
-        <NButton
-          v-if="isCreating && allowApplyTaskStateToOthers"
-          :disabled="isEmpty(state.statement)"
-          size="tiny"
-          @click.prevent="applyTaskStateToOthers"
-        >
-          {{ $t("issue.apply-to-other-tasks") }}
-        </NButton>
       </div>
 
       <div
@@ -226,7 +217,6 @@ import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseForTask,
-  getLocalSheetByName,
   useIssueContext,
   allowUserToEditStatementForTask,
   stageForTask,
@@ -258,7 +248,6 @@ import {
   dialectOfEngineV1,
 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
@@ -267,7 +256,6 @@ import {
   flattenTaskV1List,
   getSheetStatement,
   setSheetStatement,
-  sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
   getStatementSize,
 } from "@/utils";
@@ -406,26 +394,6 @@ const shouldShowEditButton = computed(() => {
     return false;
   }
   return true;
-});
-
-const allowApplyTaskStateToOthers = computed(() => {
-  if (!isCreating.value) {
-    return false;
-  }
-  if (!rolloutMode.value) {
-    return false;
-  }
-  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    return !isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value);
-  }
-
-  const taskList = flattenTaskV1List(issue.value.rolloutEntity);
-  // Allowed when more than one tasks need SQL statement or sheet.
-  const count = taskList.filter((task) =>
-    TaskTypeListWithStatement.includes(task.type)
-  ).length;
-
-  return count > 1;
 });
 
 const allowSaveSQL = computed((): boolean => {
@@ -639,19 +607,6 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
     resetTempEditState();
   } finally {
     state.isUploadingFile = false;
-  }
-};
-
-const applyTaskStateToOthers = async () => {
-  const taskList = flattenTaskV1List(issue.value.rolloutEntity).filter((task) =>
-    TaskTypeListWithStatement.includes(task.type)
-  );
-  for (let i = 0; i < taskList.length; i++) {
-    const task = taskList[i];
-    const sheetName = sheetNameOfTaskV1(task);
-    if (!sheetName) continue;
-    const sheet = getLocalSheetByName(sheetName);
-    setSheetStatement(sheet, state.statement);
   }
 };
 
