@@ -69,6 +69,9 @@ message SchemaMetadata {
 
   // The materialized_views is the list of materialized views in a schema.
   repeated MaterializedViewMetadata materialized_views = 9;
+
+  // The sequences is the list of sequences in a schema.
+  repeated SequenceMetadata sequences = 10;
 }
 
 message TaskMetadata {
@@ -557,4 +560,13 @@ message LinkedDatabaseMetadata {
   string username = 2;
 
   string host = 3;
+}
+
+// SequenceMetadata is the metadata for sequences.
+message SequenceMetadata {
+  // The name of a sequence.
+  string name = 1;
+
+  // The data type of a sequence.
+  string data_type = 2;
 }
