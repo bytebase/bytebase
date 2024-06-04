@@ -99,7 +99,6 @@ import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { ProjectSelect, DrawerContent, Drawer } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -111,11 +110,7 @@ import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import {
-  extractProjectResourceName,
-  hasProjectPermissionV2,
-  issueSlug,
-} from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
 interface LocalState {
@@ -258,11 +253,7 @@ const doCreateIssue = async () => {
 
   if (props.redirectToIssuePage) {
     const route = router.resolve({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project.name),
-        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
-      },
+      path: `/${createdIssue.name}`,
     });
     window.open(route.href, "_blank");
   }

@@ -3442,7 +3442,8 @@
       "change-history": {
         "tables": "表面"
       },
-      "source": "ソース"
+      "source": "ソース",
+      "filter": "チケットまたはバージョンでフィルタリングする"
     },
     "confirm-remove-change": "この変更を削除しますか?",
     "delete-this-changelist": "この変更リストを削除します",

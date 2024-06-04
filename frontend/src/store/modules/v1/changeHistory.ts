@@ -62,6 +62,13 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     params: Partial<GetChangeHistoryRequest>
   ) => {
     const changeHistory = await databaseServiceClient.getChangeHistory(params);
+    cache.setEntity(
+      [
+        changeHistory.name,
+        params.view ?? ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC,
+      ],
+      changeHistory
+    );
     return changeHistory;
   };
   const getOrFetchChangeHistoryByName = async (

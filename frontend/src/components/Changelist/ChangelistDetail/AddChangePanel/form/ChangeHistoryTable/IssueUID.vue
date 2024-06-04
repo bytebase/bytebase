@@ -1,35 +1,44 @@
 <template>
-  <router-link
-    v-if="project && issueUID"
-    :to="{
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: project,
-        issueSlug: issueUID,
-      },
-    }"
-    class="normal-link"
-    target="_blank"
-    @click.stop
-    >#{{ issueUID }}</router-link
-  >
+  <div v-if="changeHistory.issueEntity" class="flex items-center space-x-1">
+    <router-link
+      :to="{
+        path: `/${changeHistory.issueEntity.name}`,
+      }"
+      class="normal-link"
+      target="_blank"
+      @click.stop
+    >
+      #{{ changeHistory.issueEntity.uid }}
+    </router-link>
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <span class="textinfo" v-html="issueTitle" />
+  </div>
   <span v-else>-</span>
 </template>
 
 <script setup lang="ts">
+import { escape } from "lodash-es";
 import { computed } from "vue";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import type { ChangeHistory } from "@/types/proto/v1/database_service";
-import { extractIssueUID, extractProjectResourceName } from "@/utils";
+import { type ComposedChangeHistory } from "@/types";
+import { getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
-  changeHistory: ChangeHistory;
+  changeHistory: ComposedChangeHistory;
+  keyword: string;
 }>();
 
-const project = computed(() => {
-  return extractProjectResourceName(props.changeHistory.issue);
-});
-const issueUID = computed(() => {
-  return extractIssueUID(props.changeHistory.issue);
+const issueTitle = computed(() => {
+  const keyword = props.keyword.trim().toLowerCase();
+  const title = props.changeHistory.issueEntity?.title ?? "";
+
+  if (!keyword) {
+    return title;
+  }
+
+  return getHighlightHTMLByRegExp(
+    title,
+    escape(keyword),
+    false /* !caseSensitive */
+  );
 });
 </script>

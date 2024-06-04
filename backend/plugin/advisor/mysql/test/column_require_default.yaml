@@ -95,3 +95,16 @@
       content: Column `tech_book`.`b` doesn't have DEFAULT.
       line: 3
       details: ""
+- statement: |-
+    CREATE TABLE t(
+      id int,
+      PRIMARY KEY (id)
+    )
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
+      details: ""

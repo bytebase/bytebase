@@ -3,6 +3,7 @@
     <div class="w-full flex justify-between items-center" v-bind="$attrs">
       <div class="w-full flex justify-end items-center gap-x-3">
         <NButton
+          v-if="allowCancel"
           :disabled="state.isRequesting || state.isTestingConnection"
           @click.prevent="cancel"
         >
@@ -75,6 +76,19 @@ import {
   type EditDataSource,
 } from "./common";
 import { useInstanceFormContext } from "./context";
+
+const props = withDefaults(
+  defineProps<{
+    allowCancel?: boolean;
+    onCreated?: (instance: Instance) => void;
+    onUpdated?: (instance: Instance) => void;
+  }>(),
+  {
+    allowCancel: true,
+    onCreated: undefined,
+    onUpdated: undefined,
+  }
+);
 
 const context = useInstanceFormContext();
 const {
@@ -270,7 +284,14 @@ const doCreate = async () => {
       useDatabaseV1Store().searchDatabases({
         filter: `instance = "${createdInstance.name}"`,
       });
-      router.push(`/${createdInstance.name}`);
+
+      if (props.onCreated) {
+        props.onCreated(createdInstance);
+      } else {
+        router.push(`/${createdInstance.name}`);
+        events.emit("dismiss");
+      }
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -282,7 +303,6 @@ const doCreate = async () => {
     });
   } finally {
     state.value.isRequesting = false;
-    events.emit("dismiss");
   }
 };
 
@@ -483,6 +503,10 @@ const doUpdate = async () => {
         updatedInstance.title,
       ]),
     });
+
+    if (props.onUpdated) {
+      props.onUpdated(updatedInstance);
+    }
   } finally {
     state.value.isRequesting = false;
   }

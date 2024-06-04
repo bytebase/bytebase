@@ -3442,7 +3442,8 @@
       "change-history": {
         "tables": "表"
       },
-      "source": "来源"
+      "source": "来源",
+      "filter": "按工单或版本过滤"
     },
     "confirm-remove-change": "移除这项变更？",
     "delete-this-changelist": "删除这个变更列表",

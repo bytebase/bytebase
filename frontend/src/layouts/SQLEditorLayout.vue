@@ -6,12 +6,10 @@
     ></ul>
 
     <BannersWrapper v-if="showBanners" />
-    <!-- Suspense is experimental, be aware of the potential change -->
-    <Suspense v-if="ready">
-      <ProvideSQLEditorContext>
-        <router-view />
-      </ProvideSQLEditorContext>
-    </Suspense>
+    <template v-if="ready">
+      <ProvideSQLEditorSettingContext v-if="isSettingPage" />
+      <ProvideSQLEditorContext v-else />
+    </template>
   </div>
 </template>
 
@@ -21,6 +19,8 @@ import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
+import ProvideSQLEditorSettingContext from "@/components/ProvideSQLEditorSettingContext.vue";
+import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
 import {
   useEnvironmentV1Store,
   usePageMode,
@@ -42,6 +42,12 @@ const pageMode = usePageMode();
 provideSQLEditorContext();
 // provide context for sheets
 provideSheetContext();
+
+const isSettingPage = computed(() => {
+  return !!router.currentRoute.value.matched.find(
+    (r) => r.name === SQL_EDITOR_SETTING_MODULE
+  );
+});
 
 const showBanners = computed(() => {
   return pageMode.value === "BUNDLED";

@@ -2,7 +2,7 @@
   <div v-if="summary.warningCount === 0 && summary.errorCount === 0">
     <heroicons:check class="w-4 h-4 text-success" />
   </div>
-  <NButton v-else quaternary size="small" @click="showDetailPanel = true">
+  <NButton v-else quaternary size="small" @click="$emit('click')">
     <div class="inline-flex items-center gap-x-1">
       <heroicons:exclamation-circle class="w-4 h-4 text-error" />
       <span>{{ summary.errorCount }}</span>
@@ -10,22 +10,14 @@
       <span>{{ summary.warningCount }}</span>
     </div>
   </NButton>
-
-  <SQLCheckPanel
-    v-if="showDetailPanel"
-    :database="database"
-    :advices="advices"
-    @close="showDetailPanel = false"
-  />
 </template>
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
-import SQLCheckPanel from "./SQLCheckPanel.vue";
 
 type Summary = {
   successCount: number;
@@ -38,7 +30,9 @@ const props = defineProps<{
   advices: Advice[];
 }>();
 
-const showDetailPanel = ref(false);
+defineEmits<{
+  (event: "click"): void;
+}>();
 
 const summary = computed(() => {
   const summary: Summary = {

@@ -10,8 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	sc "github.com/bytebase/bytebase/backend/component/sheet"
-
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -186,7 +184,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Create a schema update issue and start with creating the sheet for the schema update.
-	testSheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
+	testSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
 		ProjectUID:  project.UID,
@@ -203,7 +201,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		return errors.Wrapf(err, "failed to create test sheet for sample project")
 	}
 
-	prodSheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
+	prodSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
 		ProjectUID:  project.UID,

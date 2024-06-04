@@ -176,7 +176,6 @@ import {
   InstanceSelect,
   InstanceV1EngineIcon,
 } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   hasFeature,
@@ -198,10 +197,8 @@ import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import {
-  extractProjectResourceName,
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
-  issueSlug,
 } from "@/utils";
 
 interface LocalState {
@@ -407,11 +404,7 @@ const createV1 = async () => {
       planCreate
     );
     router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project.value.name),
-        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
-      },
+      path: `/${createdIssue.name}`,
     });
   } finally {
     state.creating = false;

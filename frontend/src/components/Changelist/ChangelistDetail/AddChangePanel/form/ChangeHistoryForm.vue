@@ -38,7 +38,7 @@
       <div class="flex flex-row items-center justify-end gap-x-2">
         <SearchBox
           v-model:value="state.keyword"
-          :placeholder="$t('common.filter-by-name')"
+          :placeholder="$t('changelist.change-source.filter')"
         />
       </div>
     </div>
@@ -63,20 +63,22 @@ import { NCheckbox, NCheckboxGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { AffectedTableSelect } from "@/components/ChangeHistory";
 import { DatabaseSelect, SearchBox } from "@/components/v2";
+import { issueServiceClient } from "@/grpcweb";
 import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
   useDatabaseV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { type ComposedChangeHistory } from "@/types";
 import type { AffectedTable } from "@/types/changeHistory";
 import { EmptyAffectedTable } from "@/types/changeHistory";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory_Status,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
+import type { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractDatabaseResourceName,
   extractIssueUID,
@@ -93,12 +95,13 @@ type LocalState = {
   isLoading: boolean;
   keyword: string;
   databaseUID: string | undefined;
-  changeHistoryList: ChangeHistory[];
+  changeHistoryList: ComposedChangeHistory[];
   affectedTable: AffectedTable;
   changeHistoryTypes: ChangeHistory_Type[];
   detailChangeHistoryName: string | undefined;
 };
 
+const changeHistoryStore = useChangeHistoryStore();
 const { project } = useChangelistDetailContext();
 const { changesFromChangeHistory: changes } = useAddChangeContext();
 
@@ -119,9 +122,8 @@ const database = computed(() => {
 });
 
 const filteredChangeHistoryList = computed(() => {
-  let list = [...state.changeHistoryList];
   const types = state.changeHistoryTypes;
-  list = list.filter((changeHistory) => {
+  let list = state.changeHistoryList.filter((changeHistory) => {
     const semanticType = semanticChangeHistoryType(changeHistory.type);
     return (
       types.includes(semanticType) &&
@@ -131,9 +133,12 @@ const filteredChangeHistoryList = computed(() => {
 
   const kw = state.keyword.trim().toLowerCase();
   if (kw) {
-    list = list.filter((changeHistory) =>
-      changeHistory.version.toLowerCase().includes(kw)
-    );
+    list = list.filter((changeHistory) => {
+      return (
+        changeHistory.version.toLowerCase().includes(kw) ||
+        changeHistory.issueEntity?.title?.toLowerCase()?.includes(kw)
+      );
+    });
   }
   const { affectedTable: table } = state;
   if (!isEqual(table, EmptyAffectedTable)) {
@@ -153,10 +158,9 @@ const selectedChangeHistoryList = computed<string[]>({
     });
   },
   set(selected) {
-    const changeHistories: ChangeHistory[] = [];
+    const changeHistories: ComposedChangeHistory[] = [];
     for (let i = 0; i < selected.length; i++) {
       const name = selected[i];
-      const changeHistoryStore = useChangeHistoryStore();
       const changeHistory = changeHistoryStore.getChangeHistoryByName(name);
       if (changeHistory) {
         changeHistories.push(changeHistory);
@@ -176,6 +180,24 @@ const selectedChangeHistoryList = computed<string[]>({
   },
 });
 
+const composeChangeHistory = async (
+  history: ComposedChangeHistory
+): Promise<ComposedChangeHistory> => {
+  let issue: Issue | undefined = history.issueEntity;
+  if (!issue && history.issue) {
+    issue = await issueServiceClient.getIssue(
+      {
+        name: history.issue,
+      },
+      { silent: true }
+    );
+  }
+  return {
+    ...history,
+    issueEntity: issue,
+  };
+};
+
 const fetchChangeHistoryList = async () => {
   const db = database.value;
   if (!db) {
@@ -191,10 +213,13 @@ const fetchChangeHistoryList = async () => {
     silent: true,
   });
   const changeHistoryList =
-    await useChangeHistoryStore().getOrFetchChangeHistoryListOfDatabase(name);
+    await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(name);
+  const composedHistories = await Promise.all(
+    changeHistoryList.map((history) => composeChangeHistory(history))
+  );
   // Check if the state is still valid
   if (name === database.value?.name) {
-    state.changeHistoryList = changeHistoryList;
+    state.changeHistoryList = composedHistories;
   }
   state.isLoading = false;
 };

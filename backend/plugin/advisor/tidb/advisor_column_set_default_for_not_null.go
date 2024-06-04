@@ -80,9 +80,11 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 		}
 
 		for _, column := range node.Cols {
-			_, ok := pkColumn[column.Name.Name.O]
-			notNull := ok || !canNull(column)
-			if notNull && !setDefault(column) && needDefault(column) {
+			isPk := pkColumn[column.Name.Name.O]
+			if isPk {
+				continue
+			}
+			if !canNull(column) && !setDefault(column) && needDefault(column) {
 				notNullColumnWithNoDefault = append(notNullColumnWithNoDefault, columnName{
 					tableName:  node.Table.Name.O,
 					columnName: column.Name.Name.O,

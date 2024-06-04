@@ -15,13 +15,25 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func CreateSheet(ctx context.Context, s *store.Store, sheet *store.SheetMessage) (*store.SheetMessage, error) {
+// Manager is the coordinator for all sheets and SQL statements.
+type Manager struct {
+	store *store.Store
+}
+
+// NewManager creates a new sheet manager.
+func NewManager(store *store.Store) *Manager {
+	return &Manager{
+		store: store,
+	}
+}
+
+func (sm *Manager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (*store.SheetMessage, error) {
 	if sheet.Payload == nil {
 		sheet.Payload = &storepb.SheetPayload{}
 	}
 	sheet.Payload.Commands = getSheetCommands(sheet.Payload.Engine, sheet.Statement)
 
-	return s.CreateSheet(ctx, sheet)
+	return sm.store.CreateSheet(ctx, sheet)
 }
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {

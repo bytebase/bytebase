@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	sc "github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -24,15 +24,17 @@ import (
 type SheetService struct {
 	v1pb.UnimplementedSheetServiceServer
 	store          *store.Store
+	sheetManager   *sheet.Manager
 	licenseService enterprise.LicenseService
 	iamManager     *iam.Manager
 	profile        *config.Profile
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store, licenseService enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *SheetService {
+func NewSheetService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *SheetService {
 	return &SheetService{
 		store:          store,
+		sheetManager:   sheetManager,
 		licenseService: licenseService,
 		iamManager:     iamManager,
 		profile:        profile,
@@ -111,7 +113,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
 	}
-	sheet, err := sc.CreateSheet(ctx, s.store, storeSheetCreate)
+	sheet, err := s.sheetManager.CreateSheet(ctx, storeSheetCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
 	}

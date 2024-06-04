@@ -4,6 +4,7 @@ package gitops
 import (
 	v1pb "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
@@ -18,6 +19,7 @@ type Service struct {
 	planService    *v1pb.PlanService
 	rolloutService *v1pb.RolloutService
 	issueService   *v1pb.IssueService
+	sheetManager   *sheet.Manager
 }
 
 // NewService creates a GitOps service.
@@ -29,6 +31,7 @@ func NewService(
 	planService *v1pb.PlanService,
 	rolloutService *v1pb.RolloutService,
 	issueService *v1pb.IssueService,
+	sheetManager *sheet.Manager,
 ) *Service {
 	return &Service{
 		store:          store,
@@ -38,5 +41,6 @@ func NewService(
 		planService:    planService,
 		rolloutService: rolloutService,
 		issueService:   issueService,
+		sheetManager:   sheetManager,
 	}
 }

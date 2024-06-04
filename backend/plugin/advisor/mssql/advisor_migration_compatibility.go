@@ -294,51 +294,11 @@ func (l *migrationCompatibilityChecker) EnterExecute_body(ctx *parser.Execute_bo
 	if firstArgument.Execute_parameter().Constant().STRING() == nil {
 		return
 	}
-	if len(unnamedArguments) == 2 {
-		secondArgument := unnamedArguments[1]
-		if secondArgument == nil {
-			return
-		}
-		if secondArgument.Execute_parameter() == nil {
-			return
-		}
-		if secondArgument.Execute_parameter().Constant() == nil {
-			return
-		}
-		if secondArgument.Execute_parameter().Constant().STRING() == nil {
-			return
-		}
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  l.level,
-			Code:    advisor.CompatibilityRenameTable,
-			Title:   l.title,
-			Content: fmt.Sprintf("Rename Table %s WITH may cause incompatibility with the existing data and code", firstArgument.GetText()),
-			Line:    ctx.GetStart().GetLine(),
-		})
-	} else if len(unnamedArguments) == 3 {
-		thirdArgument := unnamedArguments[2]
-		if thirdArgument == nil {
-			return
-		}
-		if thirdArgument.Execute_parameter() == nil {
-			return
-		}
-		if thirdArgument.Execute_parameter().Constant() == nil {
-			return
-		}
-		if thirdArgument.Execute_parameter().Constant().STRING() == nil {
-			return
-		}
-		if thirdArgument.GetText() != "'COLUMN'" {
-			return
-		}
-
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  l.level,
-			Code:    advisor.CompatibilityRenameColumn,
-			Title:   l.title,
-			Content: fmt.Sprintf("Rename COLUMN %s may cause incompatibility with the existing data and code", firstArgument.GetText()),
-			Line:    ctx.GetStart().GetLine(),
-		})
-	}
+	l.adviceList = append(l.adviceList, advisor.Advice{
+		Status:  l.level,
+		Code:    advisor.CompatibilityRenameTable,
+		Title:   l.title,
+		Content: "sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.",
+		Line:    ctx.GetStart().GetLine(),
+	})
 }

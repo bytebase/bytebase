@@ -30,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/demo"
@@ -86,6 +87,7 @@ type Server struct {
 	muxServer       cmux.CMux
 	lspServer       *lsp.Server
 	store           *store.Store
+	sheetManager    *sheet.Manager
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
@@ -213,6 +215,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 	}
 	s.store = storeInstance
+	s.sheetManager = sheet.NewManager(storeInstance)
 
 	s.stateCfg, err = state.New()
 	if err != nil {
@@ -268,7 +271,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		s.mailSender = mail.NewSender(s.store, s.stateCfg)
 		s.relayRunner = relay.NewRunner(storeInstance, s.webhookManager, s.stateCfg)
-		s.approvalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.webhookManager, s.relayRunner, s.licenseService)
+		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.relayRunner, s.licenseService)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager)
 		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
@@ -353,13 +356,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	planService, rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	planService, rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
 	s.planService, s.rolloutService, s.issueService = planService, rolloutService, issueService
 	// GitOps webhook server.
-	gitOpsServer := gitops.NewService(s.store, s.dbFactory, s.stateCfg, s.licenseService, planService, rolloutService, issueService)
+	gitOpsServer := gitops.NewService(s.store, s.dbFactory, s.stateCfg, s.licenseService, planService, rolloutService, issueService, s.sheetManager)
 
 	// Configure echo server routes.
 	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, mux, profile)

@@ -44,7 +44,6 @@ import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -59,9 +58,7 @@ import {
   changeHistoryLink,
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
-  extractProjectResourceName,
   humanizeDurationV1,
-  isDescendantOf,
   getAffectedTableDisplayName,
 } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
@@ -95,6 +92,13 @@ const columnList = computed(() => {
       width: "2rem",
       disabled: (history) => {
         return !allowToSelectChangeHistory(history);
+      },
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
       },
     },
     {
@@ -151,11 +155,7 @@ const columnList = computed(() => {
         return (
           <RouterLink
             to={{
-              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-              params: {
-                projectId: extractProjectResourceName(history.issue),
-                issueSlug: extractIssueUID(history.issue),
-              },
+              path: `/${history.issue}`,
             }}
             custom={true}
           >
@@ -166,7 +166,7 @@ const columnList = computed(() => {
                   class="normal-link"
                   onClick={(e: MouseEvent) => e.stopPropagation()}
                 >
-                  {uid}
+                  #{uid}
                 </a>
               ),
             }}
@@ -248,9 +248,6 @@ const columnList = computed(() => {
 const rowProps = (history: ChangeHistory) => {
   return {
     onClick: (e: MouseEvent) => {
-      if (isDescendantOf(e.target as HTMLElement, ".n-checkbox, a")) {
-        return;
-      }
       if (props.customClick) {
         emit("row-click", history.uid);
         return;
