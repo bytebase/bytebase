@@ -54,6 +54,9 @@ func exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 }
 
 func convertValueToBytesInCSV(value *v1pb.RowValue) []byte {
+	if value == nil || value.Kind == nil {
+		return []byte("")
+	}
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
 		var result []byte
@@ -592,6 +595,10 @@ func exportJSON(result *v1pb.QueryResult) ([]byte, error) {
 }
 
 func convertValueToStringInJSON(value *v1pb.RowValue) string {
+	if value == nil || value.Kind == nil {
+		return ""
+	}
+
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
 		return value.GetStringValue()
@@ -679,6 +686,9 @@ func getExcelColumnName(index int) (string, error) {
 }
 
 func convertValueToStringInXLSX(value *v1pb.RowValue) string {
+	if value == nil || value.Kind == nil {
+		return ""
+	}
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
 		return value.GetStringValue()
