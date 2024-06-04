@@ -61,6 +61,8 @@ export interface SchemaMetadata {
   tasks: TaskMetadata[];
   /** The materialized_views is the list of materialized views in a schema. */
   materializedViews: MaterializedViewMetadata[];
+  /** The sequences is the list of sequences in a schema. */
+  sequences: SequenceMetadata[];
 }
 
 export interface TaskMetadata {
@@ -724,6 +726,14 @@ export interface LinkedDatabaseMetadata {
   host: string;
 }
 
+/** SequenceMetadata is the metadata for sequences. */
+export interface SequenceMetadata {
+  /** The name of a sequence. */
+  name: string;
+  /** The data type of a sequence. */
+  dataType: string;
+}
+
 function createBaseDatabaseMetadata(): DatabaseMetadata {
   return { labels: {}, lastSyncTime: undefined };
 }
@@ -1081,6 +1091,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     streams: [],
     tasks: [],
     materializedViews: [],
+    sequences: [],
   };
 }
 
@@ -1112,6 +1123,9 @@ export const SchemaMetadata = {
     }
     for (const v of message.materializedViews) {
       MaterializedViewMetadata.encode(v!, writer.uint32(74).fork()).ldelim();
+    }
+    for (const v of message.sequences) {
+      SequenceMetadata.encode(v!, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -1186,6 +1200,13 @@ export const SchemaMetadata = {
 
           message.materializedViews.push(MaterializedViewMetadata.decode(reader, reader.uint32()));
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.sequences.push(SequenceMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1215,6 +1236,9 @@ export const SchemaMetadata = {
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => TaskMetadata.fromJSON(e)) : [],
       materializedViews: globalThis.Array.isArray(object?.materializedViews)
         ? object.materializedViews.map((e: any) => MaterializedViewMetadata.fromJSON(e))
+        : [],
+      sequences: globalThis.Array.isArray(object?.sequences)
+        ? object.sequences.map((e: any) => SequenceMetadata.fromJSON(e))
         : [],
     };
   },
@@ -1248,6 +1272,9 @@ export const SchemaMetadata = {
     if (message.materializedViews?.length) {
       obj.materializedViews = message.materializedViews.map((e) => MaterializedViewMetadata.toJSON(e));
     }
+    if (message.sequences?.length) {
+      obj.sequences = message.sequences.map((e) => SequenceMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -1265,6 +1292,7 @@ export const SchemaMetadata = {
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
+    message.sequences = object.sequences?.map((e) => SequenceMetadata.fromPartial(e)) || [];
     return message;
   },
 };
@@ -4465,6 +4493,80 @@ export const LinkedDatabaseMetadata = {
     message.name = object.name ?? "";
     message.username = object.username ?? "";
     message.host = object.host ?? "";
+    return message;
+  },
+};
+
+function createBaseSequenceMetadata(): SequenceMetadata {
+  return { name: "", dataType: "" };
+}
+
+export const SequenceMetadata = {
+  encode(message: SequenceMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.dataType !== "") {
+      writer.uint32(18).string(message.dataType);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SequenceMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSequenceMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.dataType = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SequenceMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      dataType: isSet(object.dataType) ? globalThis.String(object.dataType) : "",
+    };
+  },
+
+  toJSON(message: SequenceMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.dataType !== "") {
+      obj.dataType = message.dataType;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SequenceMetadata>): SequenceMetadata {
+    return SequenceMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SequenceMetadata>): SequenceMetadata {
+    const message = createBaseSequenceMetadata();
+    message.name = object.name ?? "";
+    message.dataType = object.dataType ?? "";
     return message;
   },
 };
