@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
