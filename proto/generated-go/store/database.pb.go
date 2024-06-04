@@ -434,6 +434,8 @@ type SchemaMetadata struct {
 	Tasks []*TaskMetadata `protobuf:"bytes,8,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	// The materialized_views is the list of materialized views in a schema.
 	MaterializedViews []*MaterializedViewMetadata `protobuf:"bytes,9,rep,name=materialized_views,json=materializedViews,proto3" json:"materialized_views,omitempty"`
+	// The sequences is the list of sequences in a schema.
+	Sequences []*SequenceMetadata `protobuf:"bytes,10,rep,name=sequences,proto3" json:"sequences,omitempty"`
 }
 
 func (x *SchemaMetadata) Reset() {
@@ -527,6 +529,13 @@ func (x *SchemaMetadata) GetTasks() []*TaskMetadata {
 func (x *SchemaMetadata) GetMaterializedViews() []*MaterializedViewMetadata {
 	if x != nil {
 		return x.MaterializedViews
+	}
+	return nil
+}
+
+func (x *SchemaMetadata) GetSequences() []*SequenceMetadata {
+	if x != nil {
+		return x.Sequences
 	}
 	return nil
 }
@@ -2694,6 +2703,64 @@ func (x *LinkedDatabaseMetadata) GetHost() string {
 	return ""
 }
 
+// SequenceMetadata is the metadata for sequences.
+type SequenceMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name of a sequence.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The data type of a sequence.
+	DataType string `protobuf:"bytes,2,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`
+}
+
+func (x *SequenceMetadata) Reset() {
+	*x = SequenceMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_database_proto_msgTypes[28]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SequenceMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SequenceMetadata) ProtoMessage() {}
+
+func (x *SequenceMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_store_database_proto_msgTypes[28]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SequenceMetadata.ProtoReflect.Descriptor instead.
+func (*SequenceMetadata) Descriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *SequenceMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *SequenceMetadata) GetDataType() string {
+	if x != nil {
+		return x.DataType
+	}
+	return ""
+}
+
 var File_store_database_proto protoreflect.FileDescriptor
 
 var file_store_database_proto_rawDesc = []byte{
@@ -2743,7 +2810,7 @@ var file_store_database_proto_rawDesc = []byte{
 	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4c, 0x69, 0x6e, 0x6b,
 	0x65, 0x64, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
 	0x74, 0x61, 0x52, 0x0f, 0x6c, 0x69, 0x6e, 0x6b, 0x65, 0x64, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
-	0x73, 0x65, 0x73, 0x22, 0xa9, 0x04, 0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4d, 0x65,
+	0x73, 0x65, 0x73, 0x22, 0xe9, 0x04, 0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4d, 0x65,
 	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x35, 0x0a, 0x06, 0x74, 0x61,
 	0x62, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x62, 0x79, 0x74,
@@ -2777,7 +2844,11 @@ var file_store_database_proto_rawDesc = []byte{
 	0x28, 0x0b, 0x32, 0x28, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74,
 	0x6f, 0x72, 0x65, 0x2e, 0x4d, 0x61, 0x74, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x69, 0x7a, 0x65, 0x64,
 	0x56, 0x69, 0x65, 0x77, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x11, 0x6d, 0x61,
-	0x74, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x69, 0x7a, 0x65, 0x64, 0x56, 0x69, 0x65, 0x77, 0x73, 0x22,
+	0x74, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x69, 0x7a, 0x65, 0x64, 0x56, 0x69, 0x65, 0x77, 0x73, 0x12,
+	0x3e, 0x0a, 0x09, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x73, 0x18, 0x0a, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x2e, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0x52, 0x09, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x73, 0x22,
 	0x80, 0x03, 0x0a, 0x0c, 0x54, 0x61, 0x73, 0x6b, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
 	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
 	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
@@ -3116,9 +3187,13 @@ var file_store_database_proto_rawDesc = []byte{
 	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d,
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d,
 	0x65, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x68, 0x6f, 0x73, 0x74, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74,
-	0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x04, 0x68, 0x6f, 0x73, 0x74, 0x22, 0x43, 0x0a, 0x10, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63,
+	0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1b, 0x0a,
+	0x09, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x08, 0x64, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65,
+	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -3134,7 +3209,7 @@ func file_store_database_proto_rawDescGZIP() []byte {
 }
 
 var file_store_database_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_store_database_proto_goTypes = []interface{}{
 	(TaskMetadata_State)(0),          // 0: bytebase.store.TaskMetadata.State
 	(StreamMetadata_Type)(0),         // 1: bytebase.store.StreamMetadata.Type
@@ -3168,14 +3243,15 @@ var file_store_database_proto_goTypes = []interface{}{
 	(*ViewConfig)(nil),               // 29: bytebase.store.ViewConfig
 	(*ColumnConfig)(nil),             // 30: bytebase.store.ColumnConfig
 	(*LinkedDatabaseMetadata)(nil),   // 31: bytebase.store.LinkedDatabaseMetadata
-	nil,                              // 32: bytebase.store.DatabaseMetadata.LabelsEntry
-	nil,                              // 33: bytebase.store.ColumnConfig.LabelsEntry
-	(*timestamppb.Timestamp)(nil),    // 34: google.protobuf.Timestamp
-	(*wrapperspb.StringValue)(nil),   // 35: google.protobuf.StringValue
+	(*SequenceMetadata)(nil),         // 32: bytebase.store.SequenceMetadata
+	nil,                              // 33: bytebase.store.DatabaseMetadata.LabelsEntry
+	nil,                              // 34: bytebase.store.ColumnConfig.LabelsEntry
+	(*timestamppb.Timestamp)(nil),    // 35: google.protobuf.Timestamp
+	(*wrapperspb.StringValue)(nil),   // 36: google.protobuf.StringValue
 }
 var file_store_database_proto_depIdxs = []int32{
-	32, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
-	34, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
+	33, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
+	35, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
 	6,  // 2: bytebase.store.DatabaseSchemaMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
 	19, // 3: bytebase.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
 	31, // 4: bytebase.store.DatabaseSchemaMetadata.linked_databases:type_name -> bytebase.store.LinkedDatabaseMetadata
@@ -3187,36 +3263,37 @@ var file_store_database_proto_depIdxs = []int32{
 	8,  // 10: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
 	7,  // 11: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
 	15, // 12: bytebase.store.SchemaMetadata.materialized_views:type_name -> bytebase.store.MaterializedViewMetadata
-	0,  // 13: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
-	1,  // 14: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
-	2,  // 15: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
-	12, // 16: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	18, // 17: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	20, // 18: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
-	11, // 19: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
-	12, // 20: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	3,  // 21: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
-	11, // 22: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
-	35, // 23: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
-	14, // 24: bytebase.store.ViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
-	14, // 25: bytebase.store.MaterializedViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
-	23, // 26: bytebase.store.Secrets.items:type_name -> bytebase.store.SecretItem
-	25, // 27: bytebase.store.DatabaseConfig.schema_configs:type_name -> bytebase.store.SchemaConfig
-	26, // 28: bytebase.store.SchemaConfig.table_configs:type_name -> bytebase.store.TableConfig
-	27, // 29: bytebase.store.SchemaConfig.function_configs:type_name -> bytebase.store.FunctionConfig
-	28, // 30: bytebase.store.SchemaConfig.procedure_configs:type_name -> bytebase.store.ProcedureConfig
-	29, // 31: bytebase.store.SchemaConfig.view_configs:type_name -> bytebase.store.ViewConfig
-	30, // 32: bytebase.store.TableConfig.column_configs:type_name -> bytebase.store.ColumnConfig
-	34, // 33: bytebase.store.TableConfig.update_time:type_name -> google.protobuf.Timestamp
-	34, // 34: bytebase.store.FunctionConfig.update_time:type_name -> google.protobuf.Timestamp
-	34, // 35: bytebase.store.ProcedureConfig.update_time:type_name -> google.protobuf.Timestamp
-	34, // 36: bytebase.store.ViewConfig.update_time:type_name -> google.protobuf.Timestamp
-	33, // 37: bytebase.store.ColumnConfig.labels:type_name -> bytebase.store.ColumnConfig.LabelsEntry
-	38, // [38:38] is the sub-list for method output_type
-	38, // [38:38] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	32, // 13: bytebase.store.SchemaMetadata.sequences:type_name -> bytebase.store.SequenceMetadata
+	0,  // 14: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
+	1,  // 15: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
+	2,  // 16: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
+	12, // 17: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	18, // 18: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	20, // 19: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
+	11, // 20: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
+	12, // 21: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	3,  // 22: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
+	11, // 23: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
+	36, // 24: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
+	14, // 25: bytebase.store.ViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
+	14, // 26: bytebase.store.MaterializedViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
+	23, // 27: bytebase.store.Secrets.items:type_name -> bytebase.store.SecretItem
+	25, // 28: bytebase.store.DatabaseConfig.schema_configs:type_name -> bytebase.store.SchemaConfig
+	26, // 29: bytebase.store.SchemaConfig.table_configs:type_name -> bytebase.store.TableConfig
+	27, // 30: bytebase.store.SchemaConfig.function_configs:type_name -> bytebase.store.FunctionConfig
+	28, // 31: bytebase.store.SchemaConfig.procedure_configs:type_name -> bytebase.store.ProcedureConfig
+	29, // 32: bytebase.store.SchemaConfig.view_configs:type_name -> bytebase.store.ViewConfig
+	30, // 33: bytebase.store.TableConfig.column_configs:type_name -> bytebase.store.ColumnConfig
+	35, // 34: bytebase.store.TableConfig.update_time:type_name -> google.protobuf.Timestamp
+	35, // 35: bytebase.store.FunctionConfig.update_time:type_name -> google.protobuf.Timestamp
+	35, // 36: bytebase.store.ProcedureConfig.update_time:type_name -> google.protobuf.Timestamp
+	35, // 37: bytebase.store.ViewConfig.update_time:type_name -> google.protobuf.Timestamp
+	34, // 38: bytebase.store.ColumnConfig.labels:type_name -> bytebase.store.ColumnConfig.LabelsEntry
+	39, // [39:39] is the sub-list for method output_type
+	39, // [39:39] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -3561,6 +3638,18 @@ func file_store_database_proto_init() {
 				return nil
 			}
 		}
+		file_store_database_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SequenceMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_store_database_proto_msgTypes[8].OneofWrappers = []interface{}{
 		(*ColumnMetadata_Default)(nil),
@@ -3573,7 +3662,7 @@ func file_store_database_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_database_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   30,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
