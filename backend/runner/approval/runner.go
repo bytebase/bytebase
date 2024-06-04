@@ -696,6 +696,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get query export factors")
 	}
+	// Default to max float64 if expiration is not set. AKA no expiration.
 	expirationDays := math.MaxFloat64
 	if payload.GrantRequest.Expiration != nil {
 		expirationDays = payload.GrantRequest.Expiration.AsDuration().Hours() / 24
