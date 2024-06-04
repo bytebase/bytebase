@@ -77,8 +77,6 @@ ruleList:
     level: WARNING
   - type: statement.where.no-equal-null
     level: WARNING
-  - type: statement.where.disallow-using-function
-    level: WARNING
   - type: statement.query.minimum-plan-level
     level: WARNING
     payload:
