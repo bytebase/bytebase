@@ -21,7 +21,7 @@
     - status: WARN
       code: 1701
       title: system.procedure.disallow-create
-      content: |-
-        Creating or altering procedures is prohibited
+      content: Creating or altering procedures is prohibited
       line: 1
+      column: 0
       details: ""

@@ -1,10 +1,12 @@
-# case insensitive.
-- statement: |-
-    SELECT * FROM MASTER.dbo.pokes;
+- statement: SELECT * FROM MASTER.dbo.pokes;
   want:
     - status: SUCCESS
       code: 0
       title: OK
+      content: ""
+      line: 0
+      column: 0
+      details: ""
 - statement: |-
     WITH foo1 AS (SELECT * FROM master2.dbo.tech_book)
     SELECT * FROM master.dbo.pokes;
@@ -13,9 +15,10 @@
     - status: WARN
       code: 233
       title: statement.disallow-cross-db-queries
-      content: "Cross database queries (target databse: 'master2', current database: 'master') are prohibited"
+      content: 'Cross database queries (target databse: ''master2'', current database: ''master'') are prohibited'
       line: 1
-# Testing with database switching.
+      column: 0
+      details: ""
 - statement: |-
     USE master2;
     SELECT * FROM master.dbo.pokes;
@@ -23,5 +26,7 @@
     - status: WARN
       code: 233
       title: statement.disallow-cross-db-queries
-      content: "Cross database queries (target databse: 'master', current database: 'master2') are prohibited"
+      content: 'Cross database queries (target databse: ''master'', current database: ''master2'') are prohibited'
       line: 2
+      column: 0
+      details: ""
