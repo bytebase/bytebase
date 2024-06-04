@@ -20,7 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	sc "github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -35,6 +35,7 @@ import (
 type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
 	store          *store.Store
+	sheetManager   *sheet.Manager
 	licenseService enterprise.LicenseService
 	dbFactory      *dbfactory.DBFactory
 	stateCfg       *state.State
@@ -44,9 +45,10 @@ type RolloutService struct {
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
 		store:          store,
+		sheetManager:   sheetManager,
 		licenseService: licenseService,
 		dbFactory:      dbFactory,
 		stateCfg:       stateCfg,
@@ -77,7 +79,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	}
 	steps := convertPlanSteps(request.Plan.Steps)
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, steps, project)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -154,7 +156,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, plan.Config.Steps, project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.Steps, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -755,7 +757,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	transformedSteps := steps
 	if len(steps) == 1 && len(steps[0].Specs) == 1 {
 		spec := steps[0].Specs[0]
@@ -794,7 +796,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 
 		taskIndexesBySpecID := map[string][]int{}
 		for _, spec := range step.Specs {
-			taskCreates, taskIndexDAGCreates, err := getTaskCreatesFromSpec(ctx, s, licenseService, dbFactory, spec, project, registerEnvironmentID)
+			taskCreates, taskIndexDAGCreates, err := getTaskCreatesFromSpec(ctx, s, sheetManager, licenseService, dbFactory, spec, project, registerEnvironmentID)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get task creates from spec")
 			}
@@ -894,7 +896,7 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 				if instance == nil {
 					return nil, errors.Errorf("instance not found, id %v", c.InstanceID)
 				}
-				sheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
+				sheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 					CreatorID:  api.SystemBotID,
 					ProjectUID: project.UID,
 					Title:      fmt.Sprintf("Sheet for task %v", c.Name),
