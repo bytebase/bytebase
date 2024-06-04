@@ -40,12 +40,11 @@
             PRIMARY KEY (id)
           )
   want:
-    - status: WARN
-      code: 404
-      title: column.set-default-for-not-null
-      content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
-      line: 2
-      column: 0
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
       details: ""
 - statement: |-
     CREATE TABLE book(a int);

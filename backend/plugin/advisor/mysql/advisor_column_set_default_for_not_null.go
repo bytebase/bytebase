@@ -70,19 +70,8 @@ type columnSetDefaultForNotNullChecker struct {
 	title      string
 }
 
-func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	pkColumn := make(map[string]struct{})
+func getPKColumn(ctx *mysql.CreateTableContext) map[string]bool {
+	pkColumn := make(map[string]bool)
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
 			continue
@@ -99,9 +88,25 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 		}
 		columnList := mysqlparser.NormalizeKeyListVariants(tableElement.TableConstraintDef().KeyListVariants())
 		for _, column := range columnList {
-			pkColumn[column] = struct{}{}
+			pkColumn[column] = true
 		}
 	}
+	return pkColumn
+}
+
+func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
+	if ctx.TableName() == nil {
+		return
+	}
+	if ctx.TableElementList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	pkColumn := getPKColumn(ctx)
 
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
@@ -111,13 +116,15 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 			continue
 		}
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		if tableElement.ColumnDefinition().FieldDefinition() == nil {
+		filed := tableElement.ColumnDefinition().FieldDefinition()
+		if filed == nil {
 			continue
 		}
 
-		_, ok := pkColumn[columnName]
-		notNull := ok || !checker.canNull(tableElement.ColumnDefinition().FieldDefinition())
-		if notNull && !checker.hasDefault(tableElement.ColumnDefinition().FieldDefinition()) && checker.needDefault(tableElement.ColumnDefinition().FieldDefinition()) {
+		if pkColumn[columnName] {
+			continue
+		}
+		if !checker.canNull(filed) && !checker.hasDefault(filed) && checker.needDefault(filed) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.NotNullColumnWithNoDefault,
