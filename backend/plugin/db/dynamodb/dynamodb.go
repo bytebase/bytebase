@@ -152,7 +152,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // QueryConn queries a SQL statement in a given connection.
-// The result.Rows.Values can be nil in DynamoDB, which means the column does not set in the row.
+// The result.Rows.Values can be nil in DynamoDB, which means the column is not set in the row.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Explain {
 		return nil, errors.New("DynamoDB does not support EXPLAIN")
