@@ -46,7 +46,10 @@ func TestGetQuerySpan(t *testing.T) {
 		metadata := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(protojson.Unmarshal([]byte(tc.Metadata), metadata))
 		databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
-		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, "", databaseMetadataGetter, databaseNameLister, false)
+		result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: databaseMetadataGetter,
+			ListDatabaseNamesFunc:   databaseNameLister,
+		}, tc.Statement, tc.ConnectedDatabase, "", false)
 		a.NoError(err)
 		resultYaml := result.ToYaml()
 		if record {

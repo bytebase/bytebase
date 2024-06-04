@@ -1,3 +1,46 @@
+- description: Test For Database Link
+  statement: SELECT * FROM T@REMOTE;
+  connectedDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "PUBLIC"
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: PUBLIC
+              table: T
+              column: A
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: PUBLIC
+          table: T
+          column: ""
 - description: Test For Explain statements
   statement: EXPLAIN PLAN for SELECT 1 FROM DUAL;
   connectedDatabase: PUBLIC
