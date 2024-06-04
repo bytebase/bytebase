@@ -1,6 +1,13 @@
 <template>
   <div class="flex flex-row items-center gap-2">
-    <slot name="result" :advices="advices" :is-running="isRunning" />
+    <slot name="result" :advices="advices" :is-running="isRunning">
+      <SQLCheckSummary
+        v-if="advices !== undefined && !isRunning"
+        :database="database"
+        :advices="advices"
+        @click="showDetailPanel = true"
+      />
+    </slot>
 
     <NPopover :disabled="policyErrors.length === 0" to="body">
       <template #trigger>
@@ -10,7 +17,7 @@
           :style="buttonStyle"
           tag="div"
           v-bind="buttonProps"
-          @click="runChecks"
+          @click="handleButtonClick"
         >
           <template #icon>
             <BBSpin v-if="isRunning" :size="20" />
@@ -48,12 +55,12 @@
     </NPopover>
 
     <SQLCheckPanel
-      v-if="database && advices && confirmDialog"
+      v-if="database && advices && showDetailPanel"
       :database="database"
       :advices="advices"
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
-      @close="confirmDialog = undefined"
+      @close="onPanelClose"
     >
       <template #row-extra="{ row }">
         <slot name="row-extra" :row="row" :confirm="confirmDialog" />
@@ -79,7 +86,7 @@ import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer, hasWorkspacePermissionV2 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
-import SQLCheckPanel from "./SQLCheckPanel.vue";
+import SQLCheckSummary from "./SQLCheckSummary.vue";
 import { useSQLCheckContext } from "./context";
 
 const props = withDefaults(
@@ -104,6 +111,7 @@ const currentUser = useCurrentUserV1();
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
 const SKIP_CHECK_THRESHOLD = 1024 * 1024;
 const isRunning = ref(false);
+const showDetailPanel = ref(false);
 const advices = ref<Advice[]>();
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
@@ -152,6 +160,13 @@ const runCheckInternal = async (
   return result;
 };
 
+const handleButtonClick = async () => {
+  await runChecks();
+  if (hasError.value) {
+    showDetailPanel.value = true;
+  }
+};
+
 const runChecks = async () => {
   if (policyErrors.value.length > 0) {
     return;
@@ -188,6 +203,19 @@ const runChecks = async () => {
   }
 };
 
+const onPanelClose = () => {
+  showDetailPanel.value = false;
+  confirmDialog.value = undefined;
+};
+
+const hasError = computed(() => {
+  return advices.value?.some(
+    (advice) =>
+      advice.status === Advice_Status.ERROR ||
+      advice.status === Advice_Status.WARNING
+  );
+});
+
 onMounted(() => {
   if (!context) return;
   context.runSQLCheck.value = async () => {
@@ -197,18 +225,12 @@ onMounted(() => {
     }
 
     await runChecks();
-
-    const hasError = advices.value?.some(
-      (advice) =>
-        advice.status === Advice_Status.ERROR ||
-        advice.status === Advice_Status.WARNING
-    );
-    if (hasError) {
+    if (hasError.value) {
       const d = defer<boolean>();
       confirmDialog.value = d;
-      d.promise.finally(() => {
-        confirmDialog.value = undefined;
-      });
+      d.promise.finally(onPanelClose);
+
+      showDetailPanel.value = true;
 
       return d.promise;
     }
