@@ -323,12 +323,15 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 
 	spans, err := base.GetQuerySpan(
 		ctx,
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(s.store, instance),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(s.store, instance),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(s.store, instance),
+		},
 		instance.Engine,
 		statement,
 		database.DatabaseName,
 		"",
-		BuildGetDatabaseMetadataFunc(s.store, instance),
-		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
 	if err != nil {
@@ -698,12 +701,15 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	// Get query span.
 	spans, err := base.GetQuerySpan(
 		ctx,
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(s.store, instance),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(s.store, instance),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(s.store, instance),
+		},
 		instance.Engine,
 		statement,
 		database.DatabaseName,
 		"",
-		BuildGetDatabaseMetadataFunc(s.store, instance),
-		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
 	if err != nil {
@@ -827,6 +833,73 @@ func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMess
 		return status.Errorf(codes.Internal, "Failed to create export history with error: %v", err)
 	}
 	return nil
+}
+
+func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, instance *store.InstanceMessage) base.GetLinkedDatabaseMetadataFunc {
+	if instance.Engine != storepb.Engine_ORACLE {
+		return nil
+	}
+	return func(ctx context.Context, linkedDatabaseName string) (string, *model.DatabaseMetadata, error) {
+		// Find the linked database metadata.
+		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID: &instance.ResourceID,
+		})
+		if err != nil {
+			return "", nil, err
+		}
+		var linkedMeta *model.LinkedDatabaseMetadata
+		for _, database := range databases {
+			meta, err := storeInstance.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return "", nil, err
+			}
+			if linkedMeta = meta.GetDatabaseMetadata().GetLinkedDatabase(linkedDatabaseName); linkedMeta != nil {
+				break
+			}
+		}
+		if linkedMeta == nil {
+			return "", nil, nil
+		}
+		// Find the linked database in Bytebase.
+		var linkedDatabase *store.DatabaseMessage
+		username := linkedMeta.GetUsername()
+		databaseList, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
+			DatabaseName: &username,
+			Engine:       &instance.Engine,
+		})
+		if err != nil {
+			return "", nil, err
+		}
+		for _, database := range databaseList {
+			instanceMeta, err := storeInstance.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+			if err != nil {
+				return "", nil, err
+			}
+			if instanceMeta != nil {
+				for _, dataSource := range instanceMeta.DataSources {
+					if dataSource.Host == linkedMeta.GetHost() {
+						linkedDatabase = database
+						break
+					}
+				}
+				if linkedDatabase != nil {
+					break
+				}
+			}
+		}
+		if linkedDatabase == nil {
+			return "", nil, nil
+		}
+		// Get the linked database metadata.
+		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, linkedDatabase.UID)
+		if err != nil {
+			return "", nil, err
+		}
+		if linkedDatabaseMetadata == nil {
+			return "", nil, nil
+		}
+		return linkedDatabaseName, linkedDatabaseMetadata.GetDatabaseMetadata(), nil
+	}
 }
 
 func BuildGetDatabaseMetadataFunc(storeInstance *store.Store, instance *store.InstanceMessage) base.GetDatabaseMetadataFunc {

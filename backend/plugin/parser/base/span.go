@@ -224,11 +224,19 @@ func (c ColumnResource) String() string {
 	return strings.Join(list, ".")
 }
 
+type GetQuerySpanContext struct {
+	GetDatabaseMetadataFunc       GetDatabaseMetadataFunc
+	ListDatabaseNamesFunc         ListDatabaseNamesFunc
+	GetLinkedDatabaseMetadataFunc GetLinkedDatabaseMetadataFunc
+}
+
 // GetDatabaseMetadataFunc is the function to get database metadata.
 type GetDatabaseMetadataFunc func(context.Context, string) (string, *model.DatabaseMetadata, error)
 
 // ListDatabaseNamesFunc is the function to list database names.
 type ListDatabaseNamesFunc func(context.Context) ([]string, error)
+
+type GetLinkedDatabaseMetadataFunc func(context.Context, string) (string, *model.DatabaseMetadata, error)
 
 func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 	y := &YamlQuerySpan{

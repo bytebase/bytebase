@@ -1390,12 +1390,14 @@ func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext
 		// User do not specify the column alias, we should use query span to get the column alias.
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: l.context.metadataGetter,
+				ListDatabaseNamesFunc:   l.context.databaseNamesLister,
+			},
 			storepb.Engine_MSSQL,
 			fmt.Sprintf("SELECT * FROM (%s);", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)),
 			l.context.defaultDatabase,
 			l.context.defaultSchema,
-			l.context.metadataGetter,
-			l.context.databaseNamesLister,
 			true,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
@@ -1533,12 +1535,14 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 		statement := fmt.Sprintf("WITH %s SELECT * FROM %s", cteBody, cteName)
 		if span, err := base.GetQuerySpan(
 			c.completer.ctx,
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: c.completer.metadataGetter,
+				ListDatabaseNamesFunc:   c.completer.databaseNamesLister,
+			},
 			storepb.Engine_MSSQL,
 			statement,
 			c.completer.defaultDatabase,
 			c.completer.defaultSchema,
-			c.completer.metadataGetter,
-			c.completer.databaseNamesLister,
 			true,
 		); err == nil && len(span) == 1 {
 			var columns []string

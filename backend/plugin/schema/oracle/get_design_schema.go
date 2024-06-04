@@ -106,7 +106,7 @@ func (g *designSchemaGenerator) EnterCreate_index(ctx *plsqlparser.Create_indexC
 		return
 	}
 
-	_, tableName := plsql.NormalizeTableViewName("", indexDefinition.Tableview_name())
+	_, _, tableName := plsql.NormalizeTableViewName("", indexDefinition.Tableview_name())
 	schemaName, indexName := plsql.NormalizeIndexName(ctx.Index_name())
 
 	if schemaName == "" {

@@ -8,19 +8,23 @@ import (
 // ResourceNotFoundError is returned when a resource is not found in the
 // processing the query.
 type ResourceNotFoundError struct {
-	Err      error
-	Server   *string
-	Database *string
-	Schema   *string
-	Table    *string
-	Column   *string
-	Function *string
+	Err          error
+	Server       *string
+	DatabaseLink *string
+	Database     *string
+	Schema       *string
+	Table        *string
+	Column       *string
+	Function     *string
 }
 
 func (e *ResourceNotFoundError) Error() string {
 	var resourceParts []string
 	if e.Server != nil {
 		resourceParts = append(resourceParts, fmt.Sprintf("server: %s", *e.Server))
+	}
+	if e.DatabaseLink != nil {
+		resourceParts = append(resourceParts, fmt.Sprintf("database link: %s", *e.DatabaseLink))
 	}
 	if e.Database != nil {
 		resourceParts = append(resourceParts, fmt.Sprintf("database: %s", *e.Database))
