@@ -4,6 +4,7 @@ package dynamodb
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"sort"
 	"time"
 
@@ -324,63 +325,43 @@ func convertAttributeValueToRowValue(attributeValue types.AttributeValue) (*v1pb
 	switch attributeValue := attributeValue.(type) {
 	case *types.AttributeValueMemberB:
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_BytesValue{BytesValue: attributeValue.Value},
+			Kind: &v1pb.RowValue_StringValue{StringValue: string(attributeValue.Value)},
 		}, nil
 	case *types.AttributeValueMemberBOOL:
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_BoolValue{BoolValue: attributeValue.Value},
 		}, nil
 	case *types.AttributeValueMemberBS:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
 		}
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_ValueValue{
-				ValueValue: &structpb.Value{
-					Kind: listValue,
-				},
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
 			},
 		}, nil
 	case *types.AttributeValueMemberL:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
-		}
-		for _, value := range attributeValue.Value {
-			rowValue, err := convertAttributeValueToStructPbValue(value)
-			if err != nil {
-				return nil, err
-			}
-			listValue.ListValue.Values = append(listValue.ListValue.Values, rowValue)
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
 		}
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_ValueValue{
-				ValueValue: &structpb.Value{
-					Kind: listValue,
-				},
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
 			},
 		}, nil
 	case *types.AttributeValueMemberM:
-		mapValue := &structpb.Value_StructValue{
-			StructValue: &structpb.Struct{
-				Fields: make(map[string]*structpb.Value),
-			},
-		}
-		for key, value := range attributeValue.Value {
-			rowValue, err := convertAttributeValueToStructPbValue(value)
-			if err != nil {
-				return nil, err
-			}
-			mapValue.StructValue.Fields[key] = rowValue
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
 		}
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_ValueValue{
-				ValueValue: &structpb.Value{
-					Kind: mapValue,
-				},
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
 			},
 		}, nil
 	case *types.AttributeValueMemberN:
@@ -390,21 +371,14 @@ func convertAttributeValueToRowValue(attributeValue types.AttributeValue) (*v1pb
 			},
 		}, nil
 	case *types.AttributeValueMemberNS:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
-		}
-		for _, value := range attributeValue.Value {
-			listValue.ListValue.Values = append(listValue.ListValue.Values, &structpb.Value{
-				Kind: &structpb.Value_StringValue{StringValue: value},
-			})
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
 		}
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_ValueValue{
-				ValueValue: &structpb.Value{
-					Kind: listValue,
-				},
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
 			},
 		}, nil
 	case *types.AttributeValueMemberNULL:
@@ -420,132 +394,15 @@ func convertAttributeValueToRowValue(attributeValue types.AttributeValue) (*v1pb
 			},
 		}, nil
 	case *types.AttributeValueMemberSS:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
-		}
-		for _, value := range attributeValue.Value {
-			listValue.ListValue.Values = append(listValue.ListValue.Values, &structpb.Value{
-				Kind: &structpb.Value_StringValue{StringValue: value},
-			})
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
 		}
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_ValueValue{
-				ValueValue: &structpb.Value{
-					Kind: listValue,
-				},
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
 			},
-		}, nil
-	}
-	return nil, errors.Errorf("unsupported attribute value type: %T", attributeValue)
-}
-
-func convertAttributeValueToStructPbValue(attributeValue types.AttributeValue) (*structpb.Value, error) {
-	switch attributeValue := attributeValue.(type) {
-	case *types.AttributeValueMemberB:
-		return &structpb.Value{
-			Kind: &structpb.Value_StringValue{
-				StringValue: string(attributeValue.Value),
-			},
-		}, nil
-	case *types.AttributeValueMemberBOOL:
-		return &structpb.Value{
-			Kind: &structpb.Value_BoolValue{
-				BoolValue: attributeValue.Value,
-			},
-		}, nil
-	case *types.AttributeValueMemberBS:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
-		}
-		for _, value := range attributeValue.Value {
-			listValue.ListValue.Values = append(listValue.ListValue.Values, &structpb.Value{
-				Kind: &structpb.Value_StringValue{StringValue: string(value)},
-			})
-		}
-		return &structpb.Value{
-			Kind: listValue,
-		}, nil
-	case *types.AttributeValueMemberL:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
-		}
-		for _, value := range attributeValue.Value {
-			rowValue, err := convertAttributeValueToStructPbValue(value)
-			if err != nil {
-				return nil, err
-			}
-			listValue.ListValue.Values = append(listValue.ListValue.Values, rowValue)
-		}
-		return &structpb.Value{
-			Kind: listValue,
-		}, nil
-	case *types.AttributeValueMemberM:
-		mapValue := &structpb.Value_StructValue{
-			StructValue: &structpb.Struct{
-				Fields: make(map[string]*structpb.Value),
-			},
-		}
-		for key, value := range attributeValue.Value {
-			rowValue, err := convertAttributeValueToStructPbValue(value)
-			if err != nil {
-				return nil, err
-			}
-			mapValue.StructValue.Fields[key] = rowValue
-		}
-		return &structpb.Value{
-			Kind: mapValue,
-		}, nil
-	case *types.AttributeValueMemberN:
-		return &structpb.Value{
-			Kind: &structpb.Value_StringValue{
-				StringValue: attributeValue.Value,
-			},
-		}, nil
-	case *types.AttributeValueMemberNS:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
-		}
-		for _, value := range attributeValue.Value {
-			listValue.ListValue.Values = append(listValue.ListValue.Values, &structpb.Value{
-				Kind: &structpb.Value_StringValue{StringValue: value},
-			})
-		}
-		return &structpb.Value{
-			Kind: listValue,
-		}, nil
-	case *types.AttributeValueMemberNULL:
-		return &structpb.Value{
-			Kind: &structpb.Value_NullValue{
-				NullValue: structpb.NullValue_NULL_VALUE,
-			},
-		}, nil
-	case *types.AttributeValueMemberS:
-		return &structpb.Value{
-			Kind: &structpb.Value_StringValue{
-				StringValue: attributeValue.Value,
-			},
-		}, nil
-	case *types.AttributeValueMemberSS:
-		listValue := &structpb.Value_ListValue{
-			ListValue: &structpb.ListValue{
-				Values: make([]*structpb.Value, 0, len(attributeValue.Value)),
-			},
-		}
-		for _, value := range attributeValue.Value {
-			listValue.ListValue.Values = append(listValue.ListValue.Values, &structpb.Value{
-				Kind: &structpb.Value_StringValue{StringValue: value},
-			})
-		}
-		return &structpb.Value{
-			Kind: listValue,
 		}, nil
 	}
 	return nil, errors.Errorf("unsupported attribute value type: %T", attributeValue)
@@ -554,4 +411,42 @@ func convertAttributeValueToStructPbValue(attributeValue types.AttributeValue) (
 // RunStatement executes a SQL statement.
 func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
 	panic("implement me")
+}
+
+func convertAttributeValueToGoPrimitives(av types.AttributeValue) any {
+	switch av := av.(type) {
+	case *types.AttributeValueMemberB:
+		return string(av.Value)
+	case *types.AttributeValueMemberBOOL:
+		return av.Value
+	case *types.AttributeValueMemberBS:
+		ss := make([]string, 0, len(av.Value))
+		for _, b := range av.Value {
+			ss = append(ss, string(b))
+		}
+		return ss
+	case *types.AttributeValueMemberL:
+		ss := make([]any, 0, len(av.Value))
+		for _, v := range av.Value {
+			ss = append(ss, convertAttributeValueToGoPrimitives(v))
+		}
+		return ss
+	case *types.AttributeValueMemberM:
+		m := make(map[string]any, len(av.Value))
+		for k, v := range av.Value {
+			m[k] = convertAttributeValueToGoPrimitives(v)
+		}
+		return m
+	case *types.AttributeValueMemberN:
+		return av.Value
+	case *types.AttributeValueMemberNS:
+		return av.Value
+	case *types.AttributeValueMemberNULL:
+		return nil
+	case *types.AttributeValueMemberS:
+		return av.Value
+	case *types.AttributeValueMemberSS:
+		return av.Value
+	}
+	return nil
 }
