@@ -298,7 +298,7 @@ func (l *migrationCompatibilityChecker) EnterExecute_body(ctx *parser.Execute_bo
 		Status:  l.level,
 		Code:    advisor.CompatibilityRenameTable,
 		Title:   l.title,
-		Content: fmt.Sprint("sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures."),
+		Content: "sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.",
 		Line:    ctx.GetStart().GetLine(),
 	})
 }
