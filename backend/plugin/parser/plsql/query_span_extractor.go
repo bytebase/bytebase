@@ -2,6 +2,7 @@ package plsql
 
 import (
 	"context"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -16,9 +17,10 @@ import (
 
 type querySpanExtractor struct {
 	ctx               context.Context
+	gCtx              base.GetQuerySpanContext
 	connectedDatabase string
 	metaCache         map[string]*model.DatabaseMetadata
-	f                 base.GetDatabaseMetadataFunc
+	linkedMetaCache   map[string]*model.DatabaseMetadata
 
 	ctes []*base.PseudoTable
 
@@ -26,12 +28,30 @@ type querySpanExtractor struct {
 	tableSourcesFrom  []base.TableSource
 }
 
-func newQuerySpanExtractor(connectionDatabase string, f base.GetDatabaseMetadataFunc) *querySpanExtractor {
+func newQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDatabase: connectionDatabase,
 		metaCache:         make(map[string]*model.DatabaseMetadata),
-		f:                 f,
+		linkedMetaCache:   make(map[string]*model.DatabaseMetadata),
+		gCtx:              gCtx,
 	}
+}
+
+func (q *querySpanExtractor) getLinkedDatabaseMetadata(name []string, schema string) (string, *model.DatabaseMetadata, error) {
+	if len(name) == 0 {
+		return "", nil, errors.New("empty linked database name")
+	}
+	// TODO: The last element may not be the name.
+	linkName := name[len(name)-1]
+	if meta, ok := q.linkedMetaCache[linkName]; ok {
+		return linkName, meta, nil
+	}
+	databaseName, meta, err := q.gCtx.GetLinkedDatabaseMetadataFunc(q.ctx, linkName)
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "failed to get linked database metadata for schema: %s", schema)
+	}
+	q.metaCache[databaseName] = meta
+	return databaseName, meta, nil
 }
 
 func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.DatabaseMetadata, error) {
@@ -42,7 +62,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.
 	if meta, ok := q.metaCache[schema]; ok {
 		return schema, meta, nil
 	}
-	databaseName, meta, err := q.f(q.ctx, schema)
+	databaseName, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, schema)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
 	}
@@ -310,7 +330,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 		selectListElements := selectedList.AllSelect_list_elements()
 		for _, element := range selectListElements {
 			if element.ASTERISK() != nil {
-				schemaName, tableName := NormalizeTableViewName(q.connectedDatabase, element.Tableview_name())
+				_, schemaName, tableName := NormalizeTableViewName(q.connectedDatabase, element.Tableview_name())
 				find := false
 				for _, tableSource := range fromTableSource {
 					if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
@@ -437,9 +457,9 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
+			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
 			metaCache:         q.metaCache,
-			f:                 q.f,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -461,9 +481,9 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
+			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
 			metaCache:         q.metaCache,
-			f:                 q.f,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -642,9 +662,9 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
+			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
 			metaCache:         q.metaCache,
-			f:                 q.f,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -1204,8 +1224,8 @@ func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml
 
 	tableViewName := ctx.Tableview_name()
 	if tableViewName != nil {
-		schema, table := NormalizeTableViewName(q.connectedDatabase, tableViewName)
-		return q.plsqlFindTableSchema(schema, table)
+		dbLink, schema, table := NormalizeTableViewName(q.connectedDatabase, tableViewName)
+		return q.plsqlFindTableSchema(dbLink, schema, table)
 	}
 
 	if ctx.Select_statement() != nil {
@@ -1216,12 +1236,25 @@ func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml
 	return nil, errors.Errorf("unsupported dml_table_expression_clause: %T", ctx)
 }
 
-func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, tableName string) (base.TableSource, error) {
 	if tableName == "DUAL" {
 		return &base.PseudoTable{
 			Name:    "DUAL",
 			Columns: []base.QuerySpanResult{},
 		}, nil
+	}
+	if len(dbLink) > 0 {
+		databaseName, linkedMeta, err := q.getLinkedDatabaseMetadata(dbLink, schemaName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get linked database metadata for: %s", dbLink)
+		}
+		if linkedMeta == nil {
+			linkName := strings.Join(dbLink, ".")
+			return nil, &parsererror.ResourceNotFoundError{
+				DatabaseLink: &linkName,
+			}
+		}
+		return q.findTableSchemaInMetadata(linkedMeta, databaseName, schemaName, tableName)
 	}
 
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
@@ -1251,6 +1284,11 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 			Database: &schemaName,
 		}
 	}
+
+	return q.findTableSchemaInMetadata(dbSchema, databaseName, schemaName, tableName)
+}
+
+func (q *querySpanExtractor) findTableSchemaInMetadata(dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string) (base.TableSource, error) {
 	schema := dbSchema.GetSchema(schemaName)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
@@ -1323,7 +1361,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDatabase, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
@@ -1332,7 +1370,7 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 }
 
 func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDatabase, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)

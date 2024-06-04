@@ -654,12 +654,14 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 	} else {
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: l.context.getMetadata,
+				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+			},
 			store.Engine_POSTGRES,
 			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Preparablestmt()),
 			l.context.defaultDatabase,
 			"",
-			l.context.getMetadata,
-			l.context.listDatabaseNames,
 			false,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
@@ -1018,12 +1020,14 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 				} else {
 					if span, err := base.GetQuerySpan(
 						l.context.ctx,
+						base.GetQuerySpanContext{
+							GetDatabaseMetadataFunc: l.context.getMetadata,
+							ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+						},
 						store.Engine_POSTGRES,
 						fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias),
 						l.context.defaultDatabase,
 						"",
-						l.context.getMetadata,
-						l.context.listDatabaseNames,
 						false,
 					); err == nil && len(span) == 1 {
 						for _, column := range span[0].Results {
