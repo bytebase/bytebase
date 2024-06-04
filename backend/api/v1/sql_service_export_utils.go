@@ -160,6 +160,9 @@ func exportSQL(engine storepb.Engine, statementPrefix string, result *v1pb.Query
 }
 
 func convertValueToBytesInSQL(engine storepb.Engine, value *v1pb.RowValue) []byte {
+	if value == nil || value.Kind == nil {
+		return []byte("")
+	}
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
 		return escapeSQLString(engine, []byte(value.GetStringValue()))
@@ -220,6 +223,9 @@ func escapeSQLBytes(engine storepb.Engine, v []byte) []byte {
 }
 
 func convertValueValueToBytes(value *structpb.Value) []byte {
+	if value == nil || value.Kind == nil {
+		return []byte("")
+	}
 	switch value.Kind.(type) {
 	case *structpb.Value_NullValue:
 		return []byte("")
