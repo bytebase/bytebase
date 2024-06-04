@@ -152,6 +152,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // QueryConn queries a SQL statement in a given connection.
+// The result.Rows.Values can be nil in DynamoDB, which means the column does not set in the row.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Explain {
 		return nil, errors.New("DynamoDB does not support EXPLAIN")
@@ -201,6 +202,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 	// TODO(zp): Our proto is not designed for NoSQL, whose data is not fixed. So we only use the last row to determine the column type.
 	columnTypeMap := make(map[string]string)
 	totalQueryTime := time.Duration(0)
+	totalRowCount := 0
 	for {
 		input.NextToken = nextToken
 		startTime := time.Now()
@@ -210,6 +212,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 			return nil, errors.Wrapf(err, "failed to execute statement: %s", statement.Text)
 		}
 		for _, item := range output.Items {
+			totalRowCount++
 			meta := convertAttributeValueMapToRow(item)
 			allKeySet := make(map[string]bool)
 			for key := range rowMap {
@@ -221,17 +224,26 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 				allKeySet[key] = true
 			}
 			for key := range allKeySet {
-				// Current row does not have this column, we append nil to the row.
-				if value, ok := curKeySet[key]; !ok {
-					rowMap[key] = append(rowMap[key], nil)
-				} else {
-					rowMap[key] = append(rowMap[key], value.value)
-					columnTypeMap[key] = value.columnType
+				_, inRowMap := rowMap[key]
+				_, inCurKeySet := curKeySet[key]
+				// 1. The key appears in the rowMap, and appears in the current row, we append the value to the row.
+				if inRowMap && inCurKeySet {
+					rowMap[key] = append(rowMap[key], curKeySet[key].value)
+					columnTypeMap[key] = curKeySet[key].columnType
 				}
-			}
-			for key, value := range meta {
-				rowMap[key] = append(rowMap[key], value.value)
-				columnTypeMap[key] = value.columnType
+				// 2.If the key appears in the row map, but does not appear in the current row, we append nil to the row.
+				if inRowMap && !inCurKeySet {
+					rowMap[key] = append(rowMap[key], nil)
+				}
+				// 3. If the key appears in the current row, but does not appear in the row map, it means that the current row has a new column, we should
+				// backfill the previous rows with nil.
+				if !inRowMap && inCurKeySet {
+					for i := 0; i < totalRowCount-1; i++ {
+						rowMap[key] = append(rowMap[key], nil)
+					}
+					rowMap[key] = append(rowMap[key], curKeySet[key].value)
+					columnTypeMap[key] = curKeySet[key].columnType
+				}
 			}
 		}
 		nextToken = output.NextToken
@@ -251,7 +263,8 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 	}
 	// Flatten the row map to rows.
 	if len(rowMap) > 0 {
-		for i := 0; i < len(rowMap[sortedColumnNames[0]]); i++ {
+		slog.Info("TotalRowCount", slog.Int("totalRowCount", totalRowCount), slog.Int("len(rowMap[sortedColumnNames[0]])", len(rowMap[sortedColumnNames[0]])))
+		for i := 0; i < totalRowCount; i++ {
 			row := &v1pb.QueryRow{}
 			for _, columnName := range sortedColumnNames {
 				row.Values = append(row.Values, rowMap[columnName][i])
