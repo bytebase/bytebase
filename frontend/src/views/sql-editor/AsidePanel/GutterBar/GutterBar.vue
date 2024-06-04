@@ -19,12 +19,17 @@
     </div>
 
     <OpenAIButton :size="size" />
+
+    <HideInStandaloneMode>
+      <SettingButton :style="buttonStyle" v-bind="buttonProps" />
+    </HideInStandaloneMode>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, toRef, watch } from "vue";
+import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
@@ -33,11 +38,12 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
+import { SettingButton } from "../../Setting";
 import OpenAIButton from "./OpenAIButton.vue";
 import TabItem from "./TabItem.vue";
-import type { Size } from "./common";
+import { useButton, type Size } from "./common";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     size?: Size;
   }>(),
@@ -50,6 +56,12 @@ const me = useCurrentUserV1();
 const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+
+const { props: buttonProps, style: buttonStyle } = useButton({
+  size: toRef(props, "size"),
+  active: false,
+  disabled: false,
+});
 
 const isSchemalessInstance = computed(() => {
   if (instance.value.uid === String(UNKNOWN_ID)) {
