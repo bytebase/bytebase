@@ -409,8 +409,27 @@ func convertAttributeValueToRowValue(attributeValue types.AttributeValue) (*v1pb
 }
 
 // RunStatement executes a SQL statement.
-func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
-	panic("implement me")
+func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	statements, err := base.SplitMultiSQL(d.GetType(), statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split multi statement")
+	}
+
+	var results []*v1pb.QueryResult
+	for _, statement := range statements {
+		if statement.Empty {
+			continue
+		}
+		result, err := d.querySinglePartiQL(ctx, statement, &db.QueryContext{})
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+	return results, nil
 }
 
 func convertAttributeValueToGoPrimitives(av types.AttributeValue) any {
