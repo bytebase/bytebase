@@ -58,6 +58,7 @@
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
+    - [SequenceMetadata](#bytebase-store-SequenceMetadata)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableConfig](#bytebase-store-TableConfig)
     - [TableMetadata](#bytebase-store-TableMetadata)
@@ -1073,6 +1074,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
+| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 
 
 
@@ -1105,6 +1107,22 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
+
+
+
+
+
+
+<a name="bytebase-store-SequenceMetadata"></a>
+
+### SequenceMetadata
+SequenceMetadata is the metadata for sequences.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a sequence. |
+| data_type | [string](#string) |  | The data type of a sequence. |
 
 
 
