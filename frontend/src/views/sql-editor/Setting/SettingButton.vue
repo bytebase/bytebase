@@ -1,5 +1,5 @@
 <template>
-  <NButton :style="buttonStyle" v-bind="buttonProps" @click="goSetting">
+  <NButton v-if="show" @click="goSetting">
     <template #icon>
       <SettingsIcon />
     </template>
@@ -8,21 +8,16 @@
 
 <script setup lang="ts">
 import { SettingsIcon } from "lucide-vue-next";
-import { toRef } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
-import { type Size, useButton } from "./common";
-
-const props = defineProps<{
-  size: Size;
-}>();
+import { useSidebarItems } from "./Sidebar";
 
 const router = useRouter();
+const { itemList } = useSidebarItems();
 
-const { props: buttonProps, style: buttonStyle } = useButton({
-  size: toRef(props, "size"),
-  active: false,
-  disabled: false,
+const show = computed(() => {
+  return itemList.value.length > 0;
 });
 
 const goSetting = () => {

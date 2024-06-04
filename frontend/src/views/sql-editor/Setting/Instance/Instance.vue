@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full flex flex-col gap-4 py-2 overflow-y-auto">
+  <div class="w-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
     <div
-      class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch px-2"
+      class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
     >
       <NButton @click="handleClickAddInstance">
         <template #icon>
@@ -20,7 +20,6 @@
     />
     <AdvancedSearch
       v-model:params="state.params"
-      class="px-2"
       :autofocus="false"
       :placeholder="$t('instance.filter-instance-name')"
       :scope-options="scopeOptions"
@@ -33,18 +32,27 @@
       :on-click="showInstanceDetail"
     />
 
-    <Drawer v-model:show="state.detail.show">
-      <DrawerContent
-        :title="
-          state.detail.instance
-            ? $t('common.instance')
-            : $t('quick-action.add-instance')
-        "
+    <Drawer
+      v-model:show="state.detail.show"
+      :close-on-esc="!!state.detail.instance"
+      :mask-closable="!!state.detail.instance"
+    >
+      <InstanceForm
+        :instance="state.detail.instance"
+        @dismiss="state.detail.show = false"
       >
-        <InstanceForm :instance="state.detail.instance">
-          <InstanceFormBody />
-        </InstanceForm>
-      </DrawerContent>
+        <DrawerContent
+          :title="detailTitle"
+          body-content-class="flex flex-col gap-2 overflow-hidden"
+        >
+          <InstanceFormBody class="flex-1 overflow-auto" />
+          <InstanceFormButtons
+            class="border-t border-block-border pt-4 pb-0"
+            :on-created="(instance) => (state.detail.instance = instance)"
+            :on-updated="(instance) => (state.detail.instance = instance)"
+          />
+        </DrawerContent>
+      </InstanceForm>
     </Drawer>
   </div>
 </template>
@@ -52,8 +60,9 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import {
@@ -63,7 +72,6 @@ import {
 } from "@/components/InstanceForm";
 import { Drawer, DrawerContent, InstanceV1Table } from "@/components/v2";
 import {
-  useUIStateStore,
   useSubscriptionV1Store,
   useEnvironmentV1List,
   useInstanceV1List,
@@ -86,10 +94,11 @@ interface LocalState {
   };
 }
 
+const route = useRoute();
+const router = useRouter();
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
-const uiStateStore = useUIStateStore();
 const environmentList = useEnvironmentV1List();
 const { instanceList: rawInstanceV1List, ready } = useInstanceV1List(
   /* showDeleted */ false,
@@ -120,12 +129,18 @@ const selectedEnvironment = computed(() => {
 });
 
 onMounted(() => {
-  if (!uiStateStore.getIntroStateByKey("instance.visit")) {
-    uiStateStore.saveIntroStateByKey({
-      key: "instance.visit",
-      newState: true,
-    });
+  if (route.hash === "#add") {
+    state.detail.show = true;
+    state.detail.instance = undefined;
   }
+  watch(
+    () => state.detail.show,
+    (show) => {
+      if (!show) {
+        router.replace({ hash: "" });
+      }
+    }
+  );
 });
 
 const filteredInstanceV1List = computed(() => {
@@ -171,6 +186,12 @@ const instanceCountAttention = computed((): string => {
   }
 
   return `${status} ${upgrade}`;
+});
+
+const detailTitle = computed(() => {
+  return state.detail.instance
+    ? `${t("common.instance")} - ${state.detail.instance.title}`
+    : t("quick-action.add-instance");
 });
 
 const handleClickAddInstance = () => {

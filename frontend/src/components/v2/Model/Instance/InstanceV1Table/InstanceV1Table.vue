@@ -94,6 +94,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
   const ENVIRONMENT: InstanceDataTableColumn = {
     key: "environment",
     title: t("common.environment"),
+    className: 'whitespace-nowrap',
     resizable: true,
     render: (instance) => (
       <EnvironmentV1Name
