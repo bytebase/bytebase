@@ -83,12 +83,15 @@ const getStatement = async () => {
   };
 };
 
-const handleToggleOnlineMigration = (on: boolean, confirm: Defer<boolean>) => {
+const handleToggleOnlineMigration = (
+  on: boolean,
+  confirm: Defer<boolean> | undefined
+) => {
   if (on) {
     events.emit("toggle-online-migration", {
       on: true,
     });
-    confirm.resolve(false);
+    confirm?.resolve(false);
   }
 };
 
