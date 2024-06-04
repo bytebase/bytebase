@@ -24,10 +24,7 @@
         {{ $t("issue.grant-request.expired-at") }}
       </span>
       <div>
-        {{
-          state.expiredAt ||
-          $t("settings.general.workspace.maximum-role-expiration.never-expires")
-        }}
+        {{ state.expiredAt }}
       </div>
     </div>
   </div>
