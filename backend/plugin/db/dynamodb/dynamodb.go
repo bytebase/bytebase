@@ -4,7 +4,6 @@ package dynamodb
 import (
 	"context"
 	"database/sql"
-	"log/slog"
 	"sort"
 	"time"
 
@@ -251,7 +250,6 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 			break
 		}
 	}
-	slog.Info("DynamoDB query result", slog.Int("row_count", len(rowMap)), slog.Int("column_count", len(columnTypeMap)), slog.Any("rowMap", rowMap), slog.Any("columnTypeMap", columnTypeMap))
 	sortedColumnNames := make([]string, 0, len(rowMap))
 	for key := range rowMap {
 		sortedColumnNames = append(sortedColumnNames, key)
@@ -263,7 +261,6 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 	}
 	// Flatten the row map to rows.
 	if len(rowMap) > 0 {
-		slog.Info("TotalRowCount", slog.Int("totalRowCount", totalRowCount), slog.Int("len(rowMap[sortedColumnNames[0]])", len(rowMap[sortedColumnNames[0]])))
 		for i := 0; i < totalRowCount; i++ {
 			row := &v1pb.QueryRow{}
 			for _, columnName := range sortedColumnNames {
@@ -273,6 +270,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 		}
 	}
 	result.ColumnTypeNames = columnTypes
+	result.ColumnNames = sortedColumnNames
 	result.Latency = durationpb.New(totalQueryTime)
 	return result, nil
 }
@@ -432,6 +430,13 @@ func convertAttributeValueToRowValue(attributeValue types.AttributeValue) (*v1pb
 				Kind: &structpb.Value_StringValue{StringValue: value},
 			})
 		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_ValueValue{
+				ValueValue: &structpb.Value{
+					Kind: listValue,
+				},
+			},
+		}, nil
 	}
 	return nil, errors.Errorf("unsupported attribute value type: %T", attributeValue)
 }
@@ -477,6 +482,9 @@ func convertAttributeValueToStructPbValue(attributeValue types.AttributeValue) (
 			}
 			listValue.ListValue.Values = append(listValue.ListValue.Values, rowValue)
 		}
+		return &structpb.Value{
+			Kind: listValue,
+		}, nil
 	case *types.AttributeValueMemberM:
 		mapValue := &structpb.Value_StructValue{
 			StructValue: &structpb.Struct{
@@ -490,6 +498,9 @@ func convertAttributeValueToStructPbValue(attributeValue types.AttributeValue) (
 			}
 			mapValue.StructValue.Fields[key] = rowValue
 		}
+		return &structpb.Value{
+			Kind: mapValue,
+		}, nil
 	case *types.AttributeValueMemberN:
 		return &structpb.Value{
 			Kind: &structpb.Value_StringValue{
