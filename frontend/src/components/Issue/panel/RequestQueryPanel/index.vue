@@ -96,7 +96,11 @@ import type { ComposedDatabase, DatabaseResource } from "@/types";
 import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import {
+  GrantRequest,
+  Issue,
+  Issue_Type,
+} from "@/types/proto/v1/issue_service";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 
 interface LocalState {
@@ -182,29 +186,34 @@ const doCreateIssue = async () => {
   const project = await useProjectV1Store().getOrFetchProjectByUID(
     state.projectId!
   );
-
   const expression: string[] = [];
-  const expireDays = state.expireDays;
-  expression.push(
-    `request.time < timestamp("${dayjs()
-      .add(expireDays, "days")
-      .toISOString()}")`
-  );
   if (state.databaseResourceCondition) {
     expression.push(state.databaseResourceCondition);
   }
+  const expireDays = state.expireDays;
+  if (expireDays > 0) {
+    expression.push(
+      `request.time < timestamp("${dayjs()
+        .add(expireDays, "days")
+        .toISOString()}")`
+    );
+  }
 
-  const celExpressionString = expression.join(" && ");
-  newIssue.grantRequest = {
+  newIssue.grantRequest = GrantRequest.fromPartial({
     role: PresetRoleType.PROJECT_QUERIER,
     user: `users/${currentUser.value.email}`,
-    condition: Expr.fromPartial({
+  });
+  if (expression.length > 0) {
+    const celExpressionString = expression.join(" && ");
+    newIssue.grantRequest.condition = Expr.fromPartial({
       expression: celExpressionString,
-    }),
-    expiration: Duration.fromPartial({
+    });
+  }
+  if (expireDays > 0) {
+    newIssue.grantRequest.expiration = Duration.fromPartial({
       seconds: expireDays * 24 * 60 * 60,
-    }),
-  };
+    });
+  }
 
   const createdIssue = await issueServiceClient.createIssue({
     parent: project.name,

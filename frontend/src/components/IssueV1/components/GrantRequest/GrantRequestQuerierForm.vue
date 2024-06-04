@@ -20,11 +20,14 @@
       </div>
     </div>
     <div class="w-full flex flex-col justify-start items-start">
-      <span class="flex w-full items-center textlabel mb-4">
+      <span class="flex w-full items-center textlabel mb-2">
         {{ $t("issue.grant-request.expired-at") }}
       </span>
       <div>
-        {{ state.expiredAt }}
+        {{
+          state.expiredAt ||
+          $t("settings.general.workspace.maximum-role-expiration.never-expires")
+        }}
       </div>
     </div>
   </div>
@@ -72,6 +75,8 @@ onMounted(async () => {
     state.expiredAt = dayjs(new Date(conditionExpression.expiredTime)).format(
       "LLL"
     );
+  } else {
+    state.expiredAt = "-";
   }
   if (
     conditionExpression.databaseResources !== undefined &&
