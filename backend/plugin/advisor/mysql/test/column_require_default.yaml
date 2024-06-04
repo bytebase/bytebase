@@ -97,7 +97,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(
-      id int
+      id int,
       PRIMARY KEY (id)
     )
   want:
