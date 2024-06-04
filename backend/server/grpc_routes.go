@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -31,6 +32,7 @@ func configureGrpcRouters(
 	mux *grpcruntime.ServeMux,
 	grpcServer *grpc.Server,
 	stores *store.Store,
+	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
 	licenseService enterprise.LicenseService,
 	profile *config.Profile,
@@ -78,14 +80,14 @@ func configureGrpcRouters(
 	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, profile, iamManager))
 	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
-	planService := apiv1.NewPlanService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, profile, iamManager)
+	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, planCheckScheduler, stateCfg, profile, iamManager)
 	v1pb.RegisterPlanServiceServer(grpcServer, planService)
 	issueService := apiv1.NewIssueService(stores, webhookManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
-	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
+	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
 	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, iamManager, licenseService))
-	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, licenseService, iamManager, profile))
+	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile))
 	v1pb.RegisterWorksheetServiceServer(grpcServer, apiv1.NewWorksheetService(stores))
 	v1pb.RegisterBranchServiceServer(grpcServer, apiv1.NewBranchService(stores, licenseService, profile, iamManager))
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())

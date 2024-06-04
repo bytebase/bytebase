@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -34,6 +35,7 @@ import (
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
 	store          *store.Store
+	sheetManager   *sheet.Manager
 	dbFactory      *dbfactory.DBFactory
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
@@ -42,9 +44,10 @@ type Runner struct {
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, relayRunner *relay.Runner, licenseService enterprise.LicenseService) *Runner {
+func NewRunner(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, relayRunner *relay.Runner, licenseService enterprise.LicenseService) *Runner {
 	return &Runner{
 		store:          store,
+		sheetManager:   sheetManager,
 		dbFactory:      dbFactory,
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
@@ -146,7 +149,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return nil, 0, true, nil
 		}
 
-		riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.licenseService, r.dbFactory, issue, risks)
+		riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, issue, risks)
 		if err != nil {
 			err = errors.Wrap(err, "failed to get issue risk level")
 			return nil, 0, false, err
@@ -320,20 +323,20 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	return nil, nil
 }
 
-func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func getIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	switch issue.Type {
 	case api.IssueGrantRequest:
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
 	case api.IssueDatabaseGeneral:
-		return getDatabaseGeneralIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
+		return getDatabaseGeneralIssueRisk(ctx, s, sheetManager, licenseService, dbFactory, issue, risks)
 	case api.IssueDatabaseDataExport:
-		return getDatabaseDataExportIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
+		return getDatabaseDataExportIssueRisk(ctx, s, sheetManager, licenseService, dbFactory, issue, risks)
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
 }
 
-func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
@@ -374,12 +377,13 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 		}
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
 	// Conclude risk source from task types.
+	// TODO(d): use type from statement.
 	seenTaskType := map[api.TaskType]bool{}
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
@@ -549,7 +553,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 	return maxRiskLevel, riskSource, true, nil
 }
 
-func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
@@ -561,7 +565,7 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, license
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
