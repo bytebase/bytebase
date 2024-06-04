@@ -14,7 +14,8 @@
       {{ editorStore.allowViewALLProjects }}
     </li>
   </teleport>
-  <slot />
+
+  <router-view />
 </template>
 
 <script lang="ts" setup>
@@ -23,7 +24,6 @@ import { debounce, head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
@@ -625,6 +625,4 @@ onMounted(async () => {
   await initializeConnectionFromQuery();
   syncURLWithConnection();
 });
-
-useEmitteryEventListener;
 </script>

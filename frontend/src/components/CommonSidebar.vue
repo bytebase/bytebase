@@ -99,7 +99,7 @@ const props = withDefaults(
   defineProps<{
     itemList: SidebarItem[];
     showLogo?: boolean;
-    getItemClass: (item: SidebarItem) => string[];
+    getItemClass?: (item: SidebarItem) => string[];
   }>(),
   {
     showLogo: true,
