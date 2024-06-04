@@ -35,7 +35,7 @@ import (
 type PlanService struct {
 	v1pb.UnimplementedPlanServiceServer
 	store              *store.Store
-	sheetManager       *sheet.SheetManager
+	sheetManager       *sheet.Manager
 	licenseService     enterprise.LicenseService
 	dbFactory          *dbfactory.DBFactory
 	planCheckScheduler *plancheck.Scheduler
@@ -45,7 +45,7 @@ type PlanService struct {
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, sheetManager *sheet.SheetManager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
+func NewPlanService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
 	return &PlanService{
 		store:              store,
 		sheetManager:       sheetManager,

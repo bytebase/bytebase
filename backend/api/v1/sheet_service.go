@@ -24,14 +24,14 @@ import (
 type SheetService struct {
 	v1pb.UnimplementedSheetServiceServer
 	store          *store.Store
-	sheetManager   *sheet.SheetManager
+	sheetManager   *sheet.Manager
 	licenseService enterprise.LicenseService
 	iamManager     *iam.Manager
 	profile        *config.Profile
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store, sheetManager *sheet.SheetManager, licenseService enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *SheetService {
+func NewSheetService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *SheetService {
 	return &SheetService{
 		store:          store,
 		sheetManager:   sheetManager,

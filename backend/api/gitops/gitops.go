@@ -19,7 +19,7 @@ type Service struct {
 	planService    *v1pb.PlanService
 	rolloutService *v1pb.RolloutService
 	issueService   *v1pb.IssueService
-	sheetManager   *sheet.SheetManager
+	sheetManager   *sheet.Manager
 }
 
 // NewService creates a GitOps service.
@@ -31,7 +31,7 @@ func NewService(
 	planService *v1pb.PlanService,
 	rolloutService *v1pb.RolloutService,
 	issueService *v1pb.IssueService,
-	sheetManager *sheet.SheetManager,
+	sheetManager *sheet.Manager,
 ) *Service {
 	return &Service{
 		store:          store,

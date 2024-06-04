@@ -35,7 +35,7 @@ import (
 type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
 	store          *store.Store
-	sheetManager   *sheet.SheetManager
+	sheetManager   *sheet.Manager
 	licenseService enterprise.LicenseService
 	dbFactory      *dbfactory.DBFactory
 	stateCfg       *state.State
@@ -45,7 +45,7 @@ type RolloutService struct {
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, sheetManager *sheet.SheetManager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
 		store:          store,
 		sheetManager:   sheetManager,
@@ -757,7 +757,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.SheetManager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	transformedSteps := steps
 	if len(steps) == 1 && len(steps[0].Specs) == 1 {
 		spec := steps[0].Specs[0]

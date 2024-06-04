@@ -87,7 +87,7 @@ type Server struct {
 	muxServer       cmux.CMux
 	lspServer       *lsp.Server
 	store           *store.Store
-	sheetManager    *sheet.SheetManager
+	sheetManager    *sheet.Manager
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
@@ -215,7 +215,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 	}
 	s.store = storeInstance
-	s.sheetManager = sheet.NewSheetManager(storeInstance)
+	s.sheetManager = sheet.NewManager(storeInstance)
 
 	s.stateCfg, err = state.New()
 	if err != nil {

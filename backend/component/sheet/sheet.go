@@ -15,19 +15,19 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// SheetManager is the coordinator for all sheets and SQL statements.
-type SheetManager struct {
+// Manager is the coordinator for all sheets and SQL statements.
+type Manager struct {
 	store *store.Store
 }
 
-// NewSheetManager creates a new sheet manager.
-func NewSheetManager(store *store.Store) *SheetManager {
-	return &SheetManager{
+// NewManager creates a new sheet manager.
+func NewManager(store *store.Store) *Manager {
+	return &Manager{
 		store: store,
 	}
 }
 
-func (sm *SheetManager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (*store.SheetMessage, error) {
+func (sm *Manager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (*store.SheetMessage, error) {
 	if sheet.Payload == nil {
 		sheet.Payload = &storepb.SheetPayload{}
 	}

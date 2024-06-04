@@ -32,7 +32,7 @@ func configureGrpcRouters(
 	mux *grpcruntime.ServeMux,
 	grpcServer *grpc.Server,
 	stores *store.Store,
-	sheetManager *sheet.SheetManager,
+	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
 	licenseService enterprise.LicenseService,
 	profile *config.Profile,
