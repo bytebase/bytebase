@@ -216,6 +216,7 @@ import {
   hasPermissionToCreateRequestGrantIssue,
   hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
+  isNullOrUndefined,
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
@@ -346,9 +347,13 @@ const data = computed(() => {
   let temp = data;
   if (search) {
     temp = data.filter((item) => {
-      return item.values.some((col) =>
-        String(extractSQLRowValue(col)).toLowerCase().includes(search)
-      );
+      return item.values.some((col) => {
+        const value = extractSQLRowValue(col);
+        if (isNullOrUndefined(value)) {
+          return false;
+        }
+        return String(value).toLowerCase().includes(search);
+      });
     });
   }
   return temp;

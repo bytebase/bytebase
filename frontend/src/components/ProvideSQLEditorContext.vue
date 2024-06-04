@@ -15,7 +15,9 @@
     </li>
   </teleport>
 
-  <router-view />
+  <Suspense>
+    <router-view />
+  </Suspense>
 </template>
 
 <script lang="ts" setup>
