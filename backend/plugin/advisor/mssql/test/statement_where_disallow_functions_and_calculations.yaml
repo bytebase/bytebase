@@ -5,35 +5,46 @@
     SELECT foo FROM pokes WHERE ~foo > 0;
   want:
     - status: WARN
-      title: statement.where.disallow-functions-and-calculations
       code: 234
+      title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
       line: 2
+      column: 0
+      details: ""
     - status: WARN
-      title: statement.where.disallow-functions-and-calculations
       code: 234
+      title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
       line: 4
+      column: 0
+      details: ""
 - statement: |-
     SELECT foo FROM pokes WHERE foo | -foo > 0;
     SELECT bar FROM pokes WHERE bar > AVG(bar);
   want:
     - status: WARN
-      title: statement.where.disallow-functions-and-calculations
       code: 234
+      title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
       line: 1
+      column: 0
+      details: ""
     - status: WARN
-      title: statement.where.disallow-functions-and-calculations
       code: 234
+      title: statement.where.disallow-functions-and-calculations
       content: Calling function 'AVG(bar)' in 'WHERE' clause is not allowed
       line: 2
-- statement: |-
-    SELECT bar FROM pokes WHERE bar > 1;
+      column: 0
+      details: ""
+- statement: SELECT bar FROM pokes WHERE bar > 1;
   want:
     - status: SUCCESS
+      code: 0
       title: OK
       content: ""
+      line: 0
+      column: 0
+      details: ""
 - statement: |-
     SELECT Department, AVG(Salary) AS AvgSalary
     FROM Employees
@@ -41,13 +52,18 @@
     HAVING AVG(Salary) * 3 + 1 > 50000;
   want:
     - status: SUCCESS
+      code: 0
       title: OK
       content: ""
-- statement: |-
-    select * from (select * from t where t.a > 1) t1 where a > AVG(a);
+      line: 0
+      column: 0
+      details: ""
+- statement: select * from (select * from t where t.a > 1) t1 where a > AVG(a);
   want:
     - status: WARN
-      title: statement.where.disallow-functions-and-calculations
       code: 234
+      title: statement.where.disallow-functions-and-calculations
       content: Calling function 'AVG(a)' in 'WHERE' clause is not allowed
       line: 1
+      column: 0
+      details: ""
