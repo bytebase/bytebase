@@ -929,8 +929,10 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 	for _, result := range results {
 		for _, row := range result.GetRows() {
 			for _, value := range row.GetValues() {
-				if value, ok := value.Kind.(*v1pb.RowValue_StringValue); ok {
-					value.StringValue = common.SanitizeUTF8String(value.StringValue)
+				if value != nil {
+					if value, ok := value.Kind.(*v1pb.RowValue_StringValue); ok {
+						value.StringValue = common.SanitizeUTF8String(value.StringValue)
+					}
 				}
 			}
 		}
