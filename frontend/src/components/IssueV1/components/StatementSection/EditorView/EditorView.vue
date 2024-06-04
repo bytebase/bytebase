@@ -207,7 +207,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep, head, uniq } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -258,6 +258,7 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
   getStatementSize,
+  sheetNameOfTaskV1,
 } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -480,6 +481,35 @@ const chooseUpdateStatementTarget = () => {
 
   if (targets.STAGE.length === 1 && targets.ALL.length === 1) {
     d.resolve({ target: "TASK", tasks: targets.TASK });
+    return d.promise;
+  }
+
+  const distinctSheetIds = uniq(
+    targets.ALL.map((task) => sheetNameOfTaskV1(task))
+  );
+  // For new multiple-database issues, one sheet is shared among multiple tasks
+  // So we should notice that the change will be applied to all tasks
+  if (distinctSheetIds.length === 1 && targets.ALL.length > 1) {
+    dialog.info({
+      title: t("issue.update-statement.self", { type: statementTitle.value }),
+      content: t(
+        "issue.update-statement.current-change-will-apply-to-all-tasks"
+      ),
+      type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      showIcon: false,
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      onPositiveClick: () => {
+        d.resolve({ target: "ALL", tasks: targets.ALL });
+      },
+      onNegativeClick: () => {
+        d.resolve({ target: "CANCELED", tasks: [] });
+      },
+    });
     return d.promise;
   }
 
