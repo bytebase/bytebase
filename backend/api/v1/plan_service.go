@@ -668,6 +668,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 			}
 
+			for _, taskPatch := range taskPatchList {
+				task := tasksMap[taskPatch.ID]
+				if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+				}
+			}
+
 			for _, taskDAGRebuild := range taskDAGRebuildList {
 				if err := s.store.RebuildTaskDAG(ctx, taskDAGRebuild.fromTaskIDs, taskDAGRebuild.toTaskID); err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to rebuild task dag: %v", err)
