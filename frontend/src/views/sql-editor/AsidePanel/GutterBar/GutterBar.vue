@@ -18,11 +18,13 @@
       <TabItem tab="HISTORY" :size="size" @click="handleClickTab('HISTORY')" />
     </div>
 
-    <OpenAIButton :size="size" />
+    <div class="flex flex-col justify-end items-center">
+      <OpenAIButton :size="size" />
 
-    <HideInStandaloneMode>
-      <SettingButton :style="buttonStyle" v-bind="buttonProps" />
-    </HideInStandaloneMode>
+      <HideInStandaloneMode>
+        <SettingButton :style="buttonStyle" v-bind="buttonProps" />
+      </HideInStandaloneMode>
+    </div>
   </div>
 </template>
 
@@ -37,8 +39,8 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
-import { useSQLEditorContext, type AsidePanelTab } from "../../context";
 import { SettingButton } from "../../Setting";
+import { useSQLEditorContext, type AsidePanelTab } from "../../context";
 import OpenAIButton from "./OpenAIButton.vue";
 import TabItem from "./TabItem.vue";
 import { useButton, type Size } from "./common";
