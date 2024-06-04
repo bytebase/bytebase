@@ -265,7 +265,7 @@ type tableExtractor struct {
 func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refContext) {
 	dmlTableExpr := ctx.Dml_table_expression_clause()
 	if dmlTableExpr != nil && dmlTableExpr.Tableview_name() != nil {
-		schemaName, tableName := NormalizeTableViewName(e.defaultSchema, dmlTableExpr.Tableview_name())
+		_, schemaName, tableName := NormalizeTableViewName(e.defaultSchema, dmlTableExpr.Tableview_name())
 		e.table = &TableReference{
 			Database: schemaName,
 			Schema:   schemaName,

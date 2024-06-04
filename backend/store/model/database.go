@@ -302,13 +302,15 @@ func (t *TableConfig) IsEmpty() bool {
 
 // DatabaseMetadata is the metadata for a database.
 type DatabaseMetadata struct {
-	internal map[string]*SchemaMetadata
+	internal       map[string]*SchemaMetadata
+	linkedDatabase map[string]*LinkedDatabaseMetadata
 }
 
 // NewDatabaseMetadata creates a new database metadata.
 func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMetadata {
 	databaseMetadata := &DatabaseMetadata{
-		internal: make(map[string]*SchemaMetadata),
+		internal:       make(map[string]*SchemaMetadata),
+		linkedDatabase: make(map[string]*LinkedDatabaseMetadata),
 	}
 	for _, schema := range metadata.Schemas {
 		schemaMetadata := &SchemaMetadata{
@@ -360,6 +362,13 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
 	}
+	for _, dbLink := range metadata.LinkedDatabases {
+		databaseMetadata.linkedDatabase[dbLink.Name] = &LinkedDatabaseMetadata{
+			name:     dbLink.Name,
+			username: dbLink.Username,
+			host:     dbLink.Host,
+		}
+	}
 	return databaseMetadata
 }
 
@@ -375,6 +384,29 @@ func (d *DatabaseMetadata) ListSchemaNames() []string {
 		result = append(result, schemaName)
 	}
 	return result
+}
+
+func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadata {
+	return d.linkedDatabase[name]
+}
+
+// LinkedDatabaseMetadata is the metadata for a linked database.
+type LinkedDatabaseMetadata struct {
+	name     string
+	username string
+	host     string
+}
+
+func (l *LinkedDatabaseMetadata) GetName() string {
+	return l.name
+}
+
+func (l *LinkedDatabaseMetadata) GetUsername() string {
+	return l.username
+}
+
+func (l *LinkedDatabaseMetadata) GetHost() string {
+	return l.host
 }
 
 // SchemaMetadata is the metadata for a schema.

@@ -392,6 +392,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.SequenceMetadata"><span class="badge">M</span>SequenceMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.StreamMetadata"><span class="badge">M</span>StreamMetadata</a>
                 </li>
               
@@ -3154,6 +3158,13 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><p>The materialized_views is the list of materialized views in a schema. </p></td>
                 </tr>
               
+                <tr>
+                  <td>sequences</td>
+                  <td><a href="#bytebase.store.SequenceMetadata">SequenceMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The sequences is the list of sequences in a schema. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3214,6 +3225,37 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.store.SecretItem">SecretItem</a></td>
                   <td>repeated</td>
                   <td><p>The list of secrets. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SequenceMetadata">SequenceMetadata</h3>
+        <p>SequenceMetadata is the metadata for sequences.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The data type of a sequence. </p></td>
                 </tr>
               
             </tbody>

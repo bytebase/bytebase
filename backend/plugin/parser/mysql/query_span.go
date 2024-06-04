@@ -18,12 +18,13 @@ func init() {
 // GetQuerySpan returns the query span for the given statement.
 func GetQuerySpan(
 	ctx context.Context,
+	gCtx base.GetQuerySpanContext,
 	statement, database, _ string,
-	getDatabaseMetadata base.GetDatabaseMetadataFunc,
-	listDatabaseFunc base.ListDatabaseNamesFunc,
+	// getDatabaseMetadata base.GetDatabaseMetadataFunc,
+	// listDatabaseFunc base.ListDatabaseNamesFunc,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
-	q := newQuerySpanExtractor(database, getDatabaseMetadata, listDatabaseFunc, ignoreCaseSensitive)
+	q := newQuerySpanExtractor(database, gCtx.GetDatabaseMetadataFunc, gCtx.ListDatabaseNamesFunc, ignoreCaseSensitive)
 	querySpan, err := q.getQuerySpan(ctx, statement)
 	if err != nil {
 		return nil, err
