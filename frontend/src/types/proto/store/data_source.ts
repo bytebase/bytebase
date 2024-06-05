@@ -246,6 +246,8 @@ export interface DataSourceOptions {
   directConnection: boolean;
   /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
   region: string;
+  /** account_id is used by Databricks. */
+  accountId: string;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -639,6 +641,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     replicaSet: "",
     directConnection: false,
     region: "",
+    accountId: "",
   };
 }
 
@@ -694,6 +697,9 @@ export const DataSourceOptions = {
     }
     if (message.region !== "") {
       writer.uint32(138).string(message.region);
+    }
+    if (message.accountId !== "") {
+      writer.uint32(146).string(message.accountId);
     }
     return writer;
   },
@@ -824,6 +830,13 @@ export const DataSourceOptions = {
 
           message.region = reader.string();
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.accountId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -864,6 +877,7 @@ export const DataSourceOptions = {
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
       region: isSet(object.region) ? globalThis.String(object.region) : "",
+      accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
     };
   },
 
@@ -920,6 +934,9 @@ export const DataSourceOptions = {
     if (message.region !== "") {
       obj.region = message.region;
     }
+    if (message.accountId !== "") {
+      obj.accountId = message.accountId;
+    }
     return obj;
   },
 
@@ -951,6 +968,7 @@ export const DataSourceOptions = {
     message.replicaSet = object.replicaSet ?? "";
     message.directConnection = object.directConnection ?? false;
     message.region = object.region ?? "";
+    message.accountId = object.accountId ?? "";
     return message;
   },
 };

@@ -12121,6 +12121,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 enabled:
@@ -12160,6 +12161,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 category:
@@ -12199,6 +12201,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 category:
