@@ -36,13 +36,13 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*store.DatabaseSchemaMetadat
 	}
 
 	dbSchemaMeta := store.DatabaseSchemaMetadata{}
-	schemaMap, ok := (*catalogMap)[d.curCatalog]
+	schemaMap, ok := (catalogMap)[d.curCatalog]
 	if !ok {
 		return nil, errors.Errorf("cannot find metadata for catalog '%s'", d.curCatalog)
 	}
 
 	dbSchemaMeta.Name = d.curCatalog
-	schemas := convertToStorepbSchemas(&schemaMap)
+	schemas := convertToStorepbSchemas(schemaMap)
 	dbSchemaMeta.Schemas = schemas
 
 	return &dbSchemaMeta, nil
@@ -57,9 +57,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
-	for catalogName, schemaMap := range *catalogMap {
+	for catalogName, schemaMap := range catalogMap {
 		dbSchemaMeta := store.DatabaseSchemaMetadata{}
-		schemas := convertToStorepbSchemas(&schemaMap)
+		schemas := convertToStorepbSchemas(schemaMap)
 		dbSchemaMeta.Name = catalogName
 		dbSchemaMeta.Schemas = schemas
 		instanceMetadata.Databases = append(instanceMetadata.Databases, &dbSchemaMeta)
@@ -72,13 +72,13 @@ func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*store.
 	return nil, nil
 }
 
-func (d *Driver) listTables(ctx context.Context) (*CatalogMap, error) {
+func (d *Driver) listTables(ctx context.Context) (CatalogMap, error) {
 	tablesInfo, err := d.client.Tables.ListAll(ctx, catalog.ListTablesRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	catalogMap := CatalogMap{}
+	catalogMap := make(CatalogMap)
 
 	for _, tableInfo := range tablesInfo {
 		table := Table{
@@ -126,7 +126,7 @@ func (d *Driver) listTables(ctx context.Context) (*CatalogMap, error) {
 		}
 	}
 
-	return &catalogMap, nil
+	return catalogMap, nil
 }
 
 func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*store.ColumnMetadata {
@@ -155,9 +155,9 @@ func convertToDependentColumns(schema, table string, columnInfo []catalog.Column
 	return columns
 }
 
-func convertToStorepbSchemas(schemaMap *SchemaMap) []*store.SchemaMetadata {
+func convertToStorepbSchemas(schemaMap SchemaMap) []*store.SchemaMetadata {
 	schemas := []*store.SchemaMetadata{}
-	for schemaName, tableList := range *schemaMap {
+	for schemaName, tableList := range schemaMap {
 		schemaMetadata := &store.SchemaMetadata{
 			Name: schemaName,
 		}
