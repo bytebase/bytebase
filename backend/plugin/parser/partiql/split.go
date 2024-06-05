@@ -28,7 +28,6 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	p.AddErrorListener(parserErrorListener)
 
 	p.BuildParseTrees = true
-	p.SetErrorHandler(antlr.NewBailErrorStrategy())
 
 	tree := p.Script()
 	if lexerErrorListener.Err != nil {
