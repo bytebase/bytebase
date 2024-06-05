@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
-	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func init() {
@@ -73,11 +73,11 @@ func (*Driver) GetType() store.Engine {
 	return store.Engine_DATABRICKS
 }
 
-func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1.QueryResult, error) {
+func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, nil
 }
 
-func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1.QueryResult, error) {
+func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
 	return nil, nil
 }
 
