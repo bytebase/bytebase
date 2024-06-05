@@ -29,7 +29,7 @@ type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 }
 
 // Check checks for primary key type allowlist.
-func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -62,9 +62,9 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string)
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -73,8 +73,8 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string)
 }
 
 type indexPrimaryKeyTypeAllowlistChecker struct {
-	adviceList       []advisor.Advice
-	level            advisor.Status
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
 	title            string
 	text             string
 	line             int
@@ -121,12 +121,14 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) Enter(in ast.Node) (ast.Node, bool
 		}
 	}
 	for _, pd := range pkDataList {
-		v.adviceList = append(v.adviceList, advisor.Advice{
+		v.adviceList = append(v.adviceList, &storepb.Advice{
 			Status:  v.level,
-			Code:    advisor.IndexPKType,
+			Code:    advisor.IndexPKType.Int32(),
 			Title:   v.title,
 			Content: fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", pd.column, pd.table, pd.columnType),
-			Line:    pd.line,
+			StartPosition: &storepb.Position{
+				Line: int32(pd.line),
+			},
 		})
 	}
 	return in, false

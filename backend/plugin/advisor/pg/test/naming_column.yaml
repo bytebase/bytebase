@@ -1,80 +1,78 @@
 - statement: CREATE TABLE book(id int, "creatorId" int)
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE book(id int, creator_Id int)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE book(id int, creator_id int)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creatorId" int
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creator" int
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creatorId"
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creator"
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

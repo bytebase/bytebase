@@ -24,7 +24,7 @@ type WhereRequirementAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*WhereRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*WhereRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -46,9 +46,9 @@ func (*WhereRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -57,8 +57,8 @@ func (*WhereRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 }
 
 type whereRequirementChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -87,12 +87,14 @@ func (checker *whereRequirementChecker) Visit(node ast.Node) ast.Visitor {
 	}
 
 	if code != advisor.Ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    code,
+			Code:    code.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
-			Line:    checker.line,
+			StartPosition: &storepb.Position{
+				Line: int32(checker.line),
+			},
 		})
 	}
 	return checker

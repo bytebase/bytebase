@@ -27,7 +27,7 @@ type WhereNoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*WhereNoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*WhereNoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -53,17 +53,17 @@ func (*WhereNoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) (
 type whereNoLeadingWildcardLikeListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *whereNoLeadingWildcardLikeListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *whereNoLeadingWildcardLikeListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -83,12 +83,14 @@ func (l *whereNoLeadingWildcardLikeListener) EnterCompound_expression(ctx *parse
 
 	text := ctx.Concatenation(1).GetText()
 	if strings.HasPrefix(text, "'%") && strings.HasSuffix(text, "'") {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.StatementLeadingWildcardLike,
+			Code:    advisor.StatementLeadingWildcardLike.Int32(),
 			Title:   l.title,
 			Content: "Avoid using leading wildcard LIKE.",
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

@@ -28,7 +28,7 @@ type NamingTableNoKeywordAdvisor struct {
 }
 
 // Check checks for table naming convention without keyword.
-func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -54,17 +54,17 @@ func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 type namingTableNoKeywordListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *namingTableNoKeywordListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *namingTableNoKeywordListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -76,12 +76,14 @@ func (l *namingTableNoKeywordListener) generateAdvice() ([]advisor.Advice, error
 func (l *namingTableNoKeywordListener) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	if plsqlparser.IsOracleKeyword(tableName) {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier,
+			Code:    advisor.NameIsKeywordIdentifier.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }
@@ -93,12 +95,14 @@ func (l *namingTableNoKeywordListener) EnterAlter_table_properties(ctx *parser.A
 	}
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
 	if plsqlparser.IsOracleKeyword(tableName) {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier,
+			Code:    advisor.NameIsKeywordIdentifier.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

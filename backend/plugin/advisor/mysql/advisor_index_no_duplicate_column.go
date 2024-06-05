@@ -30,7 +30,7 @@ type IndexNoDuplicateColumnAdvisor struct {
 }
 
 // Check checks for no duplicate columns in index.
-func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -51,9 +51,9 @@ func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,8 +65,8 @@ type indexNoDuplicateColumnChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
@@ -161,12 +161,14 @@ func (checker *indexNoDuplicateColumnChecker) EnterCreateIndex(ctx *mysql.Create
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
 	if column, duplicate := checker.hasDuplicateColumn(columnList); duplicate {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DuplicateColumnInIndex,
+			Code:    advisor.DuplicateColumnInIndex.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }
@@ -213,12 +215,14 @@ func (checker *indexNoDuplicateColumnChecker) handleConstraintDef(tableName stri
 		))
 	}
 	if column, duplicate := checker.hasDuplicateColumn(columnList); duplicate {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DuplicateColumnInIndex,
+			Code:    advisor.DuplicateColumnInIndex.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

@@ -24,7 +24,7 @@ type TableNoFKAdvisor struct {
 }
 
 // Check checks table disallow foreign key.
-func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -43,9 +43,9 @@ func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -55,8 +55,8 @@ func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 }
 
 type tableNoFKChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
@@ -66,24 +66,28 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
 			if constraint.Tp == ast.ConstraintForeignKey {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.TableHasFK,
+					Code:    advisor.TableHasFK.Int32(),
 					Title:   checker.title,
 					Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					Line:    constraint.OriginTextPosition(),
+					StartPosition: &storepb.Position{
+						Line: int32(constraint.OriginTextPosition()),
+					},
 				})
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableAddConstraint && spec.Constraint.Tp == ast.ConstraintForeignKey {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.TableHasFK,
+					Code:    advisor.TableHasFK.Int32(),
 					Title:   checker.title,
 					Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					Line:    in.OriginTextPosition(),
+					StartPosition: &storepb.Position{
+						Line: int32(in.OriginTextPosition()),
+					},
 				})
 			}
 		}

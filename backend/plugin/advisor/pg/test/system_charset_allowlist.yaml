@@ -1,36 +1,34 @@
 - statement: CREATE DATABASE test WITH ENCODING 'UTF8'
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE DATABASE test
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE DATABASE test WITH ENCODING 'LATIN1'
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
       content: '"" used disabled encoding ''latin1'''
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 0
+        column: 0
 - statement: /* this is a comment */
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

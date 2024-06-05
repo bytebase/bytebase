@@ -33,7 +33,7 @@ type InsertDisallowOrderByRandAdvisor struct {
 }
 
 // Check checks for to disallow order by rand in INSERT statements.
-func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -54,9 +54,9 @@ func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -69,8 +69,8 @@ type insertDisallowOrderByRandChecker struct {
 
 	isInsertStmt bool
 	baseLine     int
-	adviceList   []advisor.Advice
-	level        advisor.Status
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
 	title        string
 	text         string
 }
@@ -107,12 +107,14 @@ func (checker *insertDisallowOrderByRandChecker) EnterQueryExpression(ctx *mysql
 	for _, expr := range ctx.OrderClause().OrderList().AllOrderExpression() {
 		text := expr.GetText()
 		if strings.EqualFold(text, RandFn) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.InsertUseOrderByRand,
+				Code:    advisor.InsertUseOrderByRand.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", checker.text),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	}

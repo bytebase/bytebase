@@ -6,12 +6,12 @@
         POSITION      VARCHAR(100)
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -21,12 +21,12 @@
         CONSTRAINT    PK_CUSTOMER PRIMARY KEY (ID)
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -35,12 +35,14 @@
         POSITION      VARCHAR(100)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -50,12 +52,14 @@
     );
     ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
   want:
-    - status: WARN
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 7
-      details: ""
+      detail: ""
+      startposition:
+        line: 7
+        column: 0
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -65,12 +69,12 @@
     );
     ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -80,12 +84,12 @@
     );
     ALTER TABLE "PUBLIC"."CUSTOMER" ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -102,12 +106,14 @@
         POSITION      VARCHAR(100)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 9
-      details: ""
+      detail: ""
+      startposition:
+        line: 9
+        column: 0
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -135,15 +141,19 @@
     ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
     ALTER TABLE ORDERING DROP PRIMARY KEY(ORDER_ID);
   want:
-    - status: WARN
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 24
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 24
+        column: 0
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table ORDERING requires PRIMARY KEY.
-      line: 25
-      details: ""
+      detail: ""
+      startposition:
+        line: 25
+        column: 0

@@ -3,13 +3,14 @@
     CREATE TABLE techBook(id int, name varchar(255));
     COMMIT;
   want:
-    - status: WARN
+    - status: 2
       code: 206
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 3
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
 - statement: |-
     START TRANSACTION;
     CREATE TABLE techBook(id int, name varchar(255));
@@ -19,17 +20,19 @@
     INSERT INTO techBook(id, name) VALUES(1, "book");
     COMMIT;
   want:
-    - status: WARN
+    - status: 2
       code: 206
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 3
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
+    - status: 2
       code: 206
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 7
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 7
+        column: 0

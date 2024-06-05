@@ -28,7 +28,7 @@ type StatementAffectedRowLimitAdvisor struct {
 }
 
 // Check checks for UPDATE/DELETE affected row limit.
-func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -58,9 +58,9 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -69,8 +69,8 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type statementAffectedRowLimitChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	text       string
 	title      string
 	maxRow     int
@@ -86,22 +86,26 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 	case *ast.UpdateStmt, *ast.DeleteStmt:
 		res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.InsertTooManyRows,
+				Code:    advisor.InsertTooManyRows.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-				Line:    node.LastLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(node.LastLine()),
+				},
 			})
 		} else {
 			rowCount, err := getAffectedRows(res)
 			if err != nil {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.Internal,
+					Code:    advisor.Internal.Int32(),
 					Title:   checker.title,
 					Content: fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-					Line:    node.LastLine(),
+					StartPosition: &storepb.Position{
+						Line: int32(node.LastLine()),
+					},
 				})
 			} else if rowCount > int64(checker.maxRow) {
 				code = advisor.StatementAffectedRowExceedsLimit
@@ -111,12 +115,14 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 	}
 
 	if code != advisor.Ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    code,
+			Code:    code.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rows, checker.maxRow),
-			Line:    in.LastLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(in.LastLine()),
+			},
 		})
 	}
 	return checker

@@ -30,7 +30,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -56,8 +56,8 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Ad
 }
 
 type tableRequirePKChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	tables     tablePK
 	line       map[string]int
@@ -125,24 +125,26 @@ func (*tableRequirePKChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
+func (v *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 	tableList := v.tables.tableList()
 	for _, tableName := range tableList {
 		if len(v.tables[tableName]) == 0 {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.TableNoPK,
+				Code:    advisor.TableNoPK.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
-				Line:    v.line[tableName],
+				StartPosition: &storepb.Position{
+					Line: int32(v.line[tableName]),
+				},
 			})
 		}
 	}
 
 	if len(v.adviceList) == 0 {
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		v.adviceList = append(v.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

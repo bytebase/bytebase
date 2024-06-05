@@ -27,7 +27,7 @@ func init() {
 type StatementDisallowUsingFilesortAdvisor struct {
 }
 
-func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")
@@ -53,9 +53,9 @@ func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context, _ strin
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -67,8 +67,8 @@ type disallowUsingFilesortChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	driver     *sql.DB
 	ctx        context.Context
@@ -85,30 +85,36 @@ func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.Sel
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 	res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementExplainQueryFailed,
+			Code:    advisor.StatementExplainQueryFailed.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	} else {
 		hasUsingFilesort, tables, err := hasUsingFilesortInExtraColumn(res)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.Internal,
+				Code:    advisor.Internal.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		} else if hasUsingFilesort {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementHasUsingFilesort,
+				Code:    advisor.StatementHasUsingFilesort.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Using filesort detected on table(s): %s", tables),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	}

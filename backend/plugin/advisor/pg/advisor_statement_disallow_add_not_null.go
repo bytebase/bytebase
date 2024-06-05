@@ -26,7 +26,7 @@ type StatementDisallowAddNotNullAdvisor struct {
 }
 
 // Check checks for to disallow add not null.
-func (*StatementDisallowAddNotNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowAddNotNullAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -47,9 +47,9 @@ func (*StatementDisallowAddNotNullAdvisor) Check(ctx advisor.Context, _ string) 
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -58,8 +58,8 @@ func (*StatementDisallowAddNotNullAdvisor) Check(ctx advisor.Context, _ string) 
 }
 
 type statementDisallowAddNotNullChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	line       int
 }
@@ -67,12 +67,14 @@ type statementDisallowAddNotNullChecker struct {
 // Visit implements ast.Visitor interface.
 func (checker *statementDisallowAddNotNullChecker) Visit(in ast.Node) ast.Visitor {
 	if node, ok := in.(*ast.SetNotNullStmt); ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementAddNotNull,
+			Code:    advisor.StatementAddNotNull.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", node.ColumnName),
-			Line:    checker.line,
+			StartPosition: &storepb.Position{
+				Line: int32(checker.line),
+			},
 		})
 	}
 

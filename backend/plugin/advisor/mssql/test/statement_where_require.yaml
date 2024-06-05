@@ -1,82 +1,83 @@
 - statement: SELECT * FROM MyTable;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for query specification.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: SELECT * FROM MyTable WHERE a = 1;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: UPDATE MyTable SET a = 1;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for UPDATE statement.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: UPDATE MyTable SET a = 1 WHERE a = 1;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: DELETE FROM MyTable;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for DELETE statement.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: DELETE FROM MyTable WHERE a = 1;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     WITH CteA AS (SELECT * FROM TableA WHERE a = 1),
           CteB AS (SELECT * FROM TableB)
     SELECT * FROM CteA INNER JOIN CteB ON CteA.a = CteB.b;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for query specification.
-      line: 2
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for query specification.
-      line: 3
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
 - statement: SELECT 1;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

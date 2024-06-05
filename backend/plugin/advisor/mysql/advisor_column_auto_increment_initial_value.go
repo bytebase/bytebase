@@ -31,7 +31,7 @@ type ColumnAutoIncrementInitialValueAdvisor struct {
 }
 
 // Check checks for auto-increment column initial value.
-func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -57,9 +57,9 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, _ stri
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -71,8 +71,8 @@ type columnAutoIncrementInitialValueChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	value      int
 }
@@ -98,12 +98,14 @@ func (checker *columnAutoIncrementInitialValueChecker) EnterCreateTable(ctx *mys
 			continue
 		}
 		if value != uint64(checker.value) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.AutoIncrementColumnInitialValueNotMatch,
+				Code:    advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	}
@@ -145,12 +147,14 @@ func (checker *columnAutoIncrementInitialValueChecker) EnterAlterTable(ctx *mysq
 				continue
 			}
 			if value != uint64(checker.value) {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.AutoIncrementColumnInitialValueNotMatch,
+					Code:    advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
 					Title:   checker.title,
 					Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
-					Line:    checker.baseLine + ctx.GetStart().GetLine(),
+					StartPosition: &storepb.Position{
+						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+					},
 				})
 			}
 		}

@@ -27,7 +27,7 @@ type ColumnAddNotNullColumnRequireDefaultAdvisor struct {
 }
 
 // Check checks for adding not null column requires default.
-func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -53,19 +53,19 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _
 type columnAddNotNullColumnRequireDefaultListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	tableName       string
 	isNotNull       bool
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *columnAddNotNullColumnRequireDefaultListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *columnAddNotNullColumnRequireDefaultListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -102,12 +102,14 @@ func (l *columnAddNotNullColumnRequireDefaultListener) ExitColumn_definition(ctx
 	}
 
 	if ctx.DEFAULT() == nil {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NotNullColumnWithNoDefault,
+			Code:    advisor.NotNullColumnWithNoDefault.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

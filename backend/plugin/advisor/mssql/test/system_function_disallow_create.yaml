@@ -14,10 +14,11 @@
         RETURN @ret;
     END;
   want:
-    - status: WARN
+    - status: 2
       code: 1701
       title: system.function.disallow-create
       content: Creating or altering functions is prohibited
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

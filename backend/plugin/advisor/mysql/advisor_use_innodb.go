@@ -31,7 +31,7 @@ type UseInnoDBAdvisor struct {
 }
 
 // Check checks for using InnoDB engine.
-func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -53,9 +53,9 @@ func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -67,8 +67,8 @@ type useInnoDBChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
@@ -168,11 +168,13 @@ func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
 
 func (c *useInnoDBChecker) addAdvice(content string, lineNumber int) {
 	lineNumber += c.baseLine
-	c.adviceList = append(c.adviceList, advisor.Advice{
+	c.adviceList = append(c.adviceList, &storepb.Advice{
 		Status:  c.level,
-		Code:    advisor.NotInnoDBEngine,
+		Code:    advisor.NotInnoDBEngine.Int32(),
 		Title:   c.title,
 		Content: fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
-		Line:    lineNumber,
+		StartPosition: &storepb.Position{
+			Line: int32(lineNumber),
+		},
 	})
 }

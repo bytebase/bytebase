@@ -10,11 +10,11 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	advisor.Register(store.Engine_MSSQL, advisor.MSSQLStatementDisallowCrossDBQueries, &DisallowCrossDBQueriesAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLStatementDisallowCrossDBQueries, &DisallowCrossDBQueriesAdvisor{})
 }
 
 type DisallowCrossDBQueriesAdvisor struct{}
@@ -22,12 +22,12 @@ type DisallowCrossDBQueriesAdvisor struct{}
 type DisallowCrossDBQueriesChecker struct {
 	*parser.BaseTSqlParserListener
 	curDB      string
-	level      advisor.Status
+	level      storepb.Advice_Status
 	title      string
-	adviceList []advisor.Advice
+	adviceList []*storepb.Advice
 }
 
-func (*DisallowCrossDBQueriesAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*DisallowCrossDBQueriesAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -47,9 +47,9 @@ func (*DisallowCrossDBQueriesAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -62,12 +62,14 @@ func (checker *DisallowCrossDBQueriesChecker) EnterTable_source_item(ctx *parser
 	if fullTblnameCtx := ctx.Full_table_name(); fullTblnameCtx != nil {
 		// Case insensitive.
 		if fullTblName, err := tsql.NormalizeFullTableName(fullTblnameCtx); err == nil && fullTblName.Database != "" && !strings.EqualFold(fullTblName.Database, checker.curDB) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementDisallowCrossDBQueries,
+				Code:    advisor.StatementDisallowCrossDBQueries.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", fullTblName.Database, checker.curDB),
-				Line:    ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(ctx.GetStart().GetLine()),
+				},
 			})
 		}
 		// Ignore internal error...

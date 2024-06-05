@@ -6,11 +6,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	advisor.Register(store.Engine_MSSQL, advisor.MSSQLProcedureDisallowCreateOrAlter, &FunctionDisallowCreateOrAlterAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLProcedureDisallowCreateOrAlter, &FunctionDisallowCreateOrAlterAdvisor{})
 }
 
 type ProcedureDisallowCreateOrAlterAdvisor struct{}
@@ -18,12 +18,12 @@ type ProcedureDisallowCreateOrAlterAdvisor struct{}
 type ProcedureDisallowCreateOrAlterChecker struct {
 	*parser.BaseTSqlParserListener
 
-	level      advisor.Status
+	level      storepb.Advice_Status
 	title      string
-	adviceList []advisor.Advice
+	adviceList []*storepb.Advice
 }
 
-func (*ProcedureDisallowCreateOrAlterAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ProcedureDisallowCreateOrAlterAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -42,9 +42,9 @@ func (*ProcedureDisallowCreateOrAlterAdvisor) Check(ctx advisor.Context, _ strin
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -53,11 +53,13 @@ func (*ProcedureDisallowCreateOrAlterAdvisor) Check(ctx advisor.Context, _ strin
 }
 
 func (checker *FunctionDisallowCreateOrAlterChecker) EnterCreate_or_alter_procedure(ctx *parser.Create_or_alter_procedureContext) {
-	checker.adviceList = append(checker.adviceList, advisor.Advice{
+	checker.adviceList = append(checker.adviceList, &storepb.Advice{
 		Status:  checker.level,
-		Code:    advisor.DisallowCreateFunction,
+		Code:    advisor.DisallowCreateFunction.Int32(),
 		Title:   checker.title,
 		Content: "Creating or altering procedures is prohibited",
-		Line:    ctx.GetStart().GetLine(),
+		StartPosition: &storepb.Position{
+			Line: int32(ctx.GetStart().GetLine()),
+		},
 	})
 }

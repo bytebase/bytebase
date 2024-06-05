@@ -28,7 +28,7 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -62,18 +62,18 @@ type namingTableConventionChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 	maxLength  int
 }
 
-func (checker *namingTableConventionChecker) generateAdvice() ([]advisor.Advice, error) {
+func (checker *namingTableConventionChecker) generateAdvice() ([]*storepb.Advice, error) {
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -137,21 +137,25 @@ func (checker *namingTableConventionChecker) EnterRenameTableStatement(ctx *mysq
 func (checker *namingTableConventionChecker) handleTableName(tableName string, lineNumber int) {
 	lineNumber += checker.baseLine
 	if !checker.format.MatchString(tableName) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NamingTableConventionMismatch,
+			Code:    advisor.NamingTableConventionMismatch.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, checker.format),
-			Line:    lineNumber,
+			StartPosition: &storepb.Position{
+				Line: int32(lineNumber),
+			},
 		})
 	}
 	if checker.maxLength > 0 && len(tableName) > checker.maxLength {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NamingTableConventionMismatch,
+			Code:    advisor.NamingTableConventionMismatch.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, checker.maxLength),
-			Line:    lineNumber,
+			StartPosition: &storepb.Position{
+				Line: int32(lineNumber),
+			},
 		})
 	}
 }

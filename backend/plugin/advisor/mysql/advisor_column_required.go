@@ -29,7 +29,7 @@ type ColumnRequirementAdvisor struct {
 }
 
 // Check checks for the column requirement.
-func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -69,8 +69,8 @@ type columnRequirementChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine        int
-	adviceList      []advisor.Advice
-	level           advisor.Status
+	adviceList      []*storepb.Advice
+	level           storepb.Advice_Status
 	title           string
 	requiredColumns columnSet
 	tables          tableState
@@ -162,7 +162,7 @@ func (checker *columnRequirementChecker) EnterAlterTable(ctx *mysql.AlterTableCo
 	}
 }
 
-func (checker *columnRequirementChecker) generateAdviceList() []advisor.Advice {
+func (checker *columnRequirementChecker) generateAdviceList() []*storepb.Advice {
 	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 	tableList := checker.tables.tableList()
 	for _, tableName := range tableList {
@@ -177,20 +177,22 @@ func (checker *columnRequirementChecker) generateAdviceList() []advisor.Advice {
 		if len(missingColumns) > 0 {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			sort.Strings(missingColumns)
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NoRequiredColumn,
+				Code:    advisor.NoRequiredColumn.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-				Line:    checker.line[tableName],
+				StartPosition: &storepb.Position{
+					Line: int32(checker.line[tableName]),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

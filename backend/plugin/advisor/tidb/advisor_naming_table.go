@@ -25,7 +25,7 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -50,9 +50,9 @@ func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,8 +61,8 @@ func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 }
 
 type namingTableConventionChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 	maxLength  int
@@ -93,21 +93,25 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	for _, tableName := range tableNames {
 		if !v.format.MatchString(tableName) {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.NamingTableConventionMismatch,
+				Code:    advisor.NamingTableConventionMismatch.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
-				Line:    in.OriginTextPosition(),
+				StartPosition: &storepb.Position{
+					Line: int32(in.OriginTextPosition()),
+				},
 			})
 		}
 		if v.maxLength > 0 && len(tableName) > v.maxLength {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.NamingTableConventionMismatch,
+				Code:    advisor.NamingTableConventionMismatch.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, v.maxLength),
-				Line:    in.OriginTextPosition(),
+				StartPosition: &storepb.Position{
+					Line: int32(in.OriginTextPosition()),
+				},
 			})
 		}
 	}
