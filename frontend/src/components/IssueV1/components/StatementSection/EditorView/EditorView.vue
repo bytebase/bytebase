@@ -17,15 +17,6 @@
             🎈{{ $t("sql-review.unlock-full-feature") }}
           </NButton>
         </div>
-
-        <NButton
-          v-if="isCreating && allowApplyTaskStateToOthers"
-          :disabled="isEmpty(state.statement)"
-          size="tiny"
-          @click.prevent="applyTaskStateToOthers"
-        >
-          {{ $t("issue.apply-to-other-tasks") }}
-        </NButton>
       </div>
 
       <div
@@ -216,7 +207,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep, head, uniq } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -226,7 +217,6 @@ import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseForTask,
-  getLocalSheetByName,
   useIssueContext,
   allowUserToEditStatementForTask,
   stageForTask,
@@ -258,7 +248,6 @@ import {
   dialectOfEngineV1,
 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
@@ -267,9 +256,9 @@ import {
   flattenTaskV1List,
   getSheetStatement,
   setSheetStatement,
-  sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
   getStatementSize,
+  sheetNameOfTaskV1,
 } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -408,26 +397,6 @@ const shouldShowEditButton = computed(() => {
   return true;
 });
 
-const allowApplyTaskStateToOthers = computed(() => {
-  if (!isCreating.value) {
-    return false;
-  }
-  if (!rolloutMode.value) {
-    return false;
-  }
-  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    return !isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value);
-  }
-
-  const taskList = flattenTaskV1List(issue.value.rolloutEntity);
-  // Allowed when more than one tasks need SQL statement or sheet.
-  const count = taskList.filter((task) =>
-    TaskTypeListWithStatement.includes(task.type)
-  ).length;
-
-  return count > 1;
-});
-
 const allowSaveSQL = computed((): boolean => {
   if (state.statement === "") {
     // Not allowed if the statement is empty.
@@ -512,6 +481,35 @@ const chooseUpdateStatementTarget = () => {
 
   if (targets.STAGE.length === 1 && targets.ALL.length === 1) {
     d.resolve({ target: "TASK", tasks: targets.TASK });
+    return d.promise;
+  }
+
+  const distinctSheetIds = uniq(
+    targets.ALL.map((task) => sheetNameOfTaskV1(task))
+  );
+  // For new multiple-database issues, one sheet is shared among multiple tasks
+  // So we should notice that the change will be applied to all tasks
+  if (distinctSheetIds.length === 1 && targets.ALL.length > 1) {
+    dialog.info({
+      title: t("issue.update-statement.self", { type: statementTitle.value }),
+      content: t(
+        "issue.update-statement.current-change-will-apply-to-all-tasks"
+      ),
+      type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      showIcon: false,
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      onPositiveClick: () => {
+        d.resolve({ target: "ALL", tasks: targets.ALL });
+      },
+      onNegativeClick: () => {
+        d.resolve({ target: "CANCELED", tasks: [] });
+      },
+    });
     return d.promise;
   }
 
@@ -639,19 +637,6 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
     resetTempEditState();
   } finally {
     state.isUploadingFile = false;
-  }
-};
-
-const applyTaskStateToOthers = async () => {
-  const taskList = flattenTaskV1List(issue.value.rolloutEntity).filter((task) =>
-    TaskTypeListWithStatement.includes(task.type)
-  );
-  for (let i = 0; i < taskList.length; i++) {
-    const task = taskList[i];
-    const sheetName = sheetNameOfTaskV1(task);
-    if (!sheetName) continue;
-    const sheet = getLocalSheetByName(sheetName);
-    setSheetStatement(sheet, state.statement);
   }
 };
 
