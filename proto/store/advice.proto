@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "store/common.proto";
+
+option go_package = "generated-go/store";
+
+message Advice {
+  enum Status {
+    // Unspecified.
+    STATUS_UNSPECIFIED = 0;
+    SUCCESS = 1;
+    WARNING = 2;
+    ERROR = 3;
+  }
+  // The advice status.
+  Status status = 1;
+
+  // The advice code.
+  int32 code = 2;
+
+  // The advice title.
+  string title = 3;
+
+  // The advice content.
+  string content = 4;
+
+  // The advice detail.
+  string detail = 5;
+
+  Position start_position = 6;
+}
