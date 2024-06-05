@@ -292,6 +292,7 @@ const generateMultiDb = async (
     | "bb.issue.database.data.export"
 ) => {
   if (
+    props.databases.length === 1 &&
     type === "bb.issue.database.schema.update" &&
     allowUsingSchemaEditor(props.databases) &&
     !isStandaloneMode.value
