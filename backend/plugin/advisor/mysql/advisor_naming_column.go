@@ -26,7 +26,7 @@ type NamingColumnConventionAdvisor struct {
 }
 
 // Check checks for column naming convention.
-func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")
@@ -54,9 +54,9 @@ func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -69,8 +69,8 @@ type namingColumnConventionChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 	maxLength  int
@@ -164,21 +164,25 @@ func (checker *namingColumnConventionChecker) handleColumn(tableName string, col
 	// we need to accumulate line number for each statement and elements of statements.
 	lineNumber += checker.baseLine
 	if !checker.format.MatchString(columnName) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NamingColumnConventionMismatch,
+			Code:    advisor.NamingColumnConventionMismatch.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, columnName, checker.format),
-			Line:    lineNumber,
+			StartPosition: &storepb.Position{
+				Line: int32(lineNumber),
+			},
 		})
 	}
 	if checker.maxLength > 0 && len(columnName) > checker.maxLength {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NamingColumnConventionMismatch,
+			Code:    advisor.NamingColumnConventionMismatch.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
-			Line:    lineNumber,
+			StartPosition: &storepb.Position{
+				Line: int32(lineNumber),
+			},
 		})
 	}
 }

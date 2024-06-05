@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	"github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
@@ -27,15 +28,15 @@ type IndexNotRedundantAdvisor struct{}
 
 type IndexNotRedundantChecker struct {
 	*parser.BaseTSqlParserListener
-	level      advisor.Status
+	level      storepb.Advice_Status
 	title      string
 	curDB      string
 	indexMap   *IndexMap
-	adviceList []advisor.Advice
+	adviceList []*storepb.Advice
 }
 
 // TODO(zp): we currently don't have runtime checks for indexes created in the statements.
-func (IndexNotRedundantAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (IndexNotRedundantAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to AST tree")
@@ -56,9 +57,9 @@ func (IndexNotRedundantAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -102,11 +103,13 @@ func (checker *IndexNotRedundantChecker) EnterCreate_index(ctx *parser.Create_in
 	// Get ordered column list from statement.
 	statIdxColList := ctx.Column_name_list_with_order()
 	if metaIdxName := containRedundantPrefix(metaIdxList, &statIdxColList); metaIdxName != "" {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status: checker.level,
 			Title:  checker.title,
-			Line:   ctx.GetStart().GetLine(),
-			Code:   advisor.RedundantIndex,
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
+			Code: advisor.RedundantIndex.Int32(),
 			Content: fmt.Sprintf("Redundant indexes with the same prefix ('%s' and '%s') in '%s.%s' is not allowed",
 				metaIdxName, statIdxName, findIdxKey.schemaName, findIdxKey.tblName),
 		})

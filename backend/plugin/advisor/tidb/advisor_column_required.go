@@ -26,7 +26,7 @@ type ColumnRequirementAdvisor struct {
 }
 
 // Check checks for the column requirement.
-func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -60,8 +60,8 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 }
 
 type columnRequirementChecker struct {
-	adviceList      []advisor.Advice
-	level           advisor.Status
+	adviceList      []*storepb.Advice
+	level           storepb.Advice_Status
 	title           string
 	requiredColumns columnSet
 	tables          tableState
@@ -114,7 +114,7 @@ func (*columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (v *columnRequirementChecker) generateAdviceList() []advisor.Advice {
+func (v *columnRequirementChecker) generateAdviceList() []*storepb.Advice {
 	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 	tableList := v.tables.tableList()
 	for _, tableName := range tableList {
@@ -128,20 +128,22 @@ func (v *columnRequirementChecker) generateAdviceList() []advisor.Advice {
 		if len(missingColumns) > 0 {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			sort.Strings(missingColumns)
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.NoRequiredColumn,
+				Code:    advisor.NoRequiredColumn.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-				Line:    v.line[tableName],
+				StartPosition: &storepb.Position{
+					Line: int32(v.line[tableName]),
+				},
 			})
 		}
 	}
 
 	if len(v.adviceList) == 0 {
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		v.adviceList = append(v.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

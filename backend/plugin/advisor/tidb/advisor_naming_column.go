@@ -25,7 +25,7 @@ type NamingColumnConventionAdvisor struct {
 }
 
 // Check checks for column naming convention.
-func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -52,9 +52,9 @@ func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -64,8 +64,8 @@ func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 type namingColumnConventionChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 	maxLength  int
@@ -121,21 +121,25 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	for _, column := range columnList {
 		if !v.format.MatchString(column.name) {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.NamingColumnConventionMismatch,
+				Code:    advisor.NamingColumnConventionMismatch.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
-				Line:    column.line,
+				StartPosition: &storepb.Position{
+					Line: int32(column.line),
+				},
 			})
 		}
 		if v.maxLength > 0 && len(column.name) > v.maxLength {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.NamingColumnConventionMismatch,
+				Code:    advisor.NamingColumnConventionMismatch.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
-				Line:    column.line,
+				StartPosition: &storepb.Position{
+					Line: int32(column.line),
+				},
 			})
 		}
 	}

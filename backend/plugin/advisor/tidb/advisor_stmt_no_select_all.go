@@ -24,7 +24,7 @@ type NoSelectAllAdvisor struct {
 }
 
 // Check checks for no "select *".
-func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -45,9 +45,9 @@ func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -56,8 +56,8 @@ func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 }
 
 type noSelectAllChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -68,12 +68,14 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.SelectStmt); ok {
 		for _, field := range node.Fields.Fields {
 			if field.WildCard != nil {
-				v.adviceList = append(v.adviceList, advisor.Advice{
+				v.adviceList = append(v.adviceList, &storepb.Advice{
 					Status:  v.level,
-					Code:    advisor.StatementSelectAll,
+					Code:    advisor.StatementSelectAll.Int32(),
 					Title:   v.title,
 					Content: fmt.Sprintf("\"%s\" uses SELECT all", v.text),
-					Line:    v.line,
+					StartPosition: &storepb.Position{
+						Line: int32(v.line),
+					},
 				})
 				break
 			}

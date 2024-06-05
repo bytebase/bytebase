@@ -27,7 +27,7 @@ type NoSelectAllAdvisor struct {
 }
 
 // Check checks for no "select *".
-func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -47,9 +47,9 @@ func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,8 +61,8 @@ type noSelectAllChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 }
@@ -73,12 +73,14 @@ func (checker *noSelectAllChecker) EnterQuery(ctx *mysql.QueryContext) {
 
 func (checker *noSelectAllChecker) EnterSelectItemList(ctx *mysql.SelectItemListContext) {
 	if ctx.MULT_OPERATOR() != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementSelectAll,
+			Code:    advisor.StatementSelectAll.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("\"%s\" uses SELECT all", checker.text),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

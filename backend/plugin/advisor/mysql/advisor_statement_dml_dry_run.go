@@ -32,7 +32,7 @@ type StatementDmlDryRunAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -57,9 +57,9 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -71,8 +71,8 @@ type statementDmlDryRunChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	line       int
 	driver     *sql.DB
@@ -106,12 +106,14 @@ func (checker *statementDmlDryRunChecker) EnterInsertStatement(ctx *mysql.Insert
 // Enter implements the ast.Visitor interface.
 func (checker *statementDmlDryRunChecker) handleStmt(text string, lineNumber int) {
 	if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementDMLDryRunFailed,
+			Code:    advisor.StatementDMLDryRunFailed.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			Line:    checker.line + lineNumber,
+			StartPosition: &storepb.Position{
+				Line: int32(checker.line + lineNumber),
+			},
 		})
 	}
 }

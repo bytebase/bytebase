@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
@@ -22,8 +23,8 @@ func init() {
 type FullyQualifiedObjectNameAdvisor struct{}
 
 type FullyQualifiedObjectNameChecker struct {
-	adviceList   []advisor.Advice
-	status       advisor.Status
+	adviceList   []*storepb.Advice
+	status       storepb.Advice_Status
 	title        string
 	line         int
 	isSelectStmt bool
@@ -126,7 +127,7 @@ var (
 	_ ast.Visitor     = (*FullyQualifiedObjectNameChecker)(nil)
 )
 
-func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	checker := &FullyQualifiedObjectNameChecker{}
 	status, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
@@ -155,9 +156,9 @@ func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context, _ string) ([]
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -172,12 +173,14 @@ func (checker *FullyQualifiedObjectNameChecker) appendAdviceByObjName(objName st
 	}
 	re := regexp.MustCompile(`.+\..+`)
 	if !re.MatchString(objName) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.status,
 			Code:    advisor.NamingNotFullyQualifiedName,
 			Title:   checker.title,
 			Content: fmt.Sprintf("unqualified object name: '%s'", objName),
-			Line:    checker.line,
+			StartPosition: &storepb.Position{
+				Line: int32(checker.line),
+			},
 		})
 	}
 }

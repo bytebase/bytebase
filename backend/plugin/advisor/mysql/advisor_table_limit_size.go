@@ -10,6 +10,7 @@ import (
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
@@ -32,13 +33,13 @@ var (
 )
 
 // If table size > xx bytes, then warning/error.
-func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	var adviceList []advisor.Advice
+func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+	var adviceList []*storepb.Advice
 
 	if ctx.ChangeType != store.PlanCheckRunConfig_DDL && ctx.ChangeType != store.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
-		return []advisor.Advice{{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		return []*storepb.Advice{{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		}}, nil
@@ -74,12 +75,14 @@ func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 				for _, tabName := range tableSizeChecker.affectedTabNames {
 					tableRows := getTabRowsByName(tabName, ctx.DBSchema.Schemas[0].Tables)
 					if tableRows >= int64(payload.Number) {
-						adviceList = append(adviceList, advisor.Advice{
+						adviceList = append(adviceList, &storepb.Advice{
 							Status:  status,
-							Code:    advisor.TableExceedLimitSize,
+							Code:    advisor.TableExceedLimitSize.Int32(),
 							Title:   ctx.Rule.Type,
 							Content: fmt.Sprintf("Apply DDL on large table '%s' ( %d rows ) will lock table for a long time", tabName, tableRows),
-							Line:    statementBaseLine + tableSizeChecker.baseLine,
+							StartPosition: &storepb.Position{
+								Line: int32(statementBaseLine + tableSizeChecker.baseLine),
+							},
 						})
 					}
 				}
@@ -88,9 +91,9 @@ func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 	}
 
 	if len(adviceList) == 0 {
-		return []advisor.Advice{{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		return []*storepb.Advice{{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		}}, nil

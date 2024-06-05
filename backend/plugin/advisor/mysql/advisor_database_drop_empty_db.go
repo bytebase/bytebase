@@ -28,7 +28,7 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")
@@ -51,9 +51,9 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,8 +65,8 @@ type allowDropEmptyDBChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	catalog    *catalog.Finder
 }
@@ -82,20 +82,24 @@ func (checker *allowDropEmptyDBChecker) EnterDropDatabase(ctx *mysql.DropDatabas
 
 	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
 	if checker.catalog.Origin.DatabaseName() != dbName {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NotCurrentDatabase,
+			Code:    advisor.NotCurrentDatabase.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, checker.catalog.Origin.DatabaseName()),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	} else if !checker.catalog.Origin.HasNoTable() {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DatabaseNotEmpty,
+			Code:    advisor.DatabaseNotEmpty.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

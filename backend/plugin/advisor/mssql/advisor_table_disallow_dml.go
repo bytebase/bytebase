@@ -25,7 +25,7 @@ func init() {
 type TableDisallowDMLAdvisor struct {
 }
 
-func (*TableDisallowDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableDisallowDMLAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -48,9 +48,9 @@ func (*TableDisallowDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,9 +61,9 @@ func (*TableDisallowDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 type tableDisallowDMLChecker struct {
 	*parser.BaseTSqlParserListener
 
-	level      advisor.Status
+	level      storepb.Advice_Status
 	title      string
-	adviceList []advisor.Advice
+	adviceList []*storepb.Advice
 	// disallowList is the list of table names that disallow DML.
 	disallowList []string
 }
@@ -115,12 +115,14 @@ func (checker *tableDisallowDMLChecker) EnterSelect_statement_standalone(ctx *pa
 func (checker *tableDisallowDMLChecker) checkTableName(normalizedTableName string, line int) {
 	for _, disallow := range checker.disallowList {
 		if normalizedTableName == disallow {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.TableDisallowDML,
+				Code:    advisor.TableDisallowDML.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("DML is disallowed on table %s.", normalizedTableName),
-				Line:    line,
+				StartPosition: &storepb.Position{
+					Line: int32(line),
+				},
 			})
 			return
 		}

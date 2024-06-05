@@ -28,7 +28,7 @@ type NamingIdentifierNoKeywordAdvisor struct {
 }
 
 // Check checks for identifier naming convention without keyword.
-func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -54,17 +54,17 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([
 type namingIdentifierNoKeywordListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *namingIdentifierNoKeywordListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *namingIdentifierNoKeywordListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -76,12 +76,14 @@ func (l *namingIdentifierNoKeywordListener) generateAdvice() ([]advisor.Advice, 
 func (l *namingIdentifierNoKeywordListener) EnterId_expression(ctx *parser.Id_expressionContext) {
 	identifier := normalizeIDExpression(ctx)
 	if plsqlparser.IsOracleKeyword(identifier) {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier,
+			Code:    advisor.NameIsKeywordIdentifier.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

@@ -25,7 +25,7 @@ type TableDropNamingConventionAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -50,9 +50,9 @@ func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,8 +61,8 @@ func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type namingDropTableConventionChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 }
@@ -72,12 +72,14 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropTableStmt); ok {
 		for _, table := range node.Tables {
 			if !v.format.MatchString(table.Name.O) {
-				v.adviceList = append(v.adviceList, advisor.Advice{
+				v.adviceList = append(v.adviceList, &storepb.Advice{
 					Status:  v.level,
-					Code:    advisor.TableDropNamingConventionMismatch,
+					Code:    advisor.TableDropNamingConventionMismatch.Int32(),
 					Title:   v.title,
 					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name.O, v.format),
-					Line:    node.OriginTextPosition(),
+					StartPosition: &storepb.Position{
+						Line: int32(node.OriginTextPosition()),
+					},
 				})
 			}
 		}
