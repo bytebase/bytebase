@@ -639,7 +639,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			SpecID:        spec.Id,
 			SheetID:       0,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
