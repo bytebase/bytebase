@@ -44,7 +44,14 @@
       :environment-tier="defaultEnvironmentTier"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
-    />
+    >
+      <DrawerContent :title="$t('environment.create')">
+        <EnvironmentFormBody class="w-[36rem]" />
+        <template #footer>
+          <EnvironmentFormButtons />
+        </template>
+      </DrawerContent>
+    </EnvironmentForm>
   </Drawer>
 
   <FeatureModal
@@ -59,8 +66,15 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-vue-next";
 import { NTabs, NTabPane } from "naive-ui";
 import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRouter } from "vue-router";
+import type { BBTabItem } from "@/bbkit/types";
+import {
+  EnvironmentForm,
+  Form as EnvironmentFormBody,
+  Buttons as EnvironmentFormButtons,
+} from "@/components/EnvironmentForm";
 import { Drawer } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useRegisterCommand,
@@ -81,10 +95,8 @@ import type {
 } from "@/types/proto/v1/environment_service";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
-import type { BBTabItem } from "../bbkit/types";
-import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { arraySwap, extractEnvironmentResourceName } from "../utils";
-import EnvironmentDetail from "../views/EnvironmentDetail.vue";
+import { arraySwap, extractEnvironmentResourceName } from "@/utils";
+import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
   "",
@@ -106,6 +118,9 @@ const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
 const policyV1Store = usePolicyV1Store();
 const router = useRouter();
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+overrideMainContainerClass("!pb-0");
 
 const state = reactive<LocalState>({
   selectedId: "",
@@ -192,11 +207,12 @@ const createEnvironment = () => {
   state.showCreateModal = true;
 };
 
-const doCreate = async (
-  newEnvironment: Environment,
-  rolloutPolicy: Policy,
-  environmentTier: EnvironmentTier
-) => {
+const doCreate = async (params: {
+  environment: Partial<Environment>;
+  rolloutPolicy: Policy;
+  environmentTier: EnvironmentTier;
+}) => {
+  const { environment, rolloutPolicy, environmentTier } = params;
   const rp = rolloutPolicy.rolloutPolicy;
   if (rp?.automatic === false) {
     if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
@@ -211,9 +227,9 @@ const doCreate = async (
     }
   }
 
-  const environment = await environmentV1Store.createEnvironment({
-    name: newEnvironment.name,
-    title: newEnvironment.title,
+  const createdEnvironment = await environmentV1Store.createEnvironment({
+    name: environment.name,
+    title: environment.title,
     order: environmentList.value.length,
     tier: environmentTier,
   });
@@ -221,14 +237,14 @@ const doCreate = async (
 
   const requests = [
     policyV1Store.upsertPolicy({
-      parentPath: environment.name,
+      parentPath: createdEnvironment.name,
       updateMask: ["payload"],
       policy: rolloutPolicy,
     }),
   ];
   await Promise.all(requests);
   state.showCreateModal = false;
-  selectEnvironment(environment.order);
+  selectEnvironment(createdEnvironment.order);
 };
 
 const startReorder = () => {
@@ -304,7 +320,9 @@ const renderTab = (env: Environment, index: number) => {
           {
             onClick: () => reorderEnvironment(index, index - 1),
           },
-          h(ChevronLeftIcon, { class: "w-4 h-4" })
+          {
+            default: () => h(ChevronLeftIcon, { class: "w-4 h-4" }),
+          }
         )
       );
     }
@@ -315,7 +333,9 @@ const renderTab = (env: Environment, index: number) => {
           {
             onClick: () => reorderEnvironment(index, index + 1),
           },
-          h(ChevronRightIcon, { class: "w-4 h-4" })
+          {
+            default: () => h(ChevronRightIcon, { class: "w-4 h-4" }),
+          }
         )
       );
     }
