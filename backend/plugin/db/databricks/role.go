@@ -6,22 +6,22 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func (d *DatabricksDriver) CreateRole(ctx context.Context, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	panic("unimplemented")
 }
 
-func (d *DatabricksDriver) DeleteRole(ctx context.Context, roleName string) error {
+func (*Driver) DeleteRole(_ context.Context, _ string) error {
 	panic("unimplemented")
 }
 
-func (d *DatabricksDriver) FindRole(ctx context.Context, roleName string) (*db.DatabaseRoleMessage, error) {
+func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
 	panic("unimplemented")
 }
 
-func (d *DatabricksDriver) UpdateRole(ctx context.Context, roleName string, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	panic("unimplemented")
 }
 
-func (d *DatabricksDriver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
+func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
 	panic("unimplemented")
 }

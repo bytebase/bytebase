@@ -17,19 +17,19 @@ func init() {
 	db.Register(store.Engine_DATABRICKS, NewDatabricksDriver)
 }
 
-var _ db.Driver = (*DatabricksDriver)(nil)
+var _ db.Driver = (*Driver)(nil)
 
-type DatabricksDriver struct {
+type Driver struct {
 	curCatalog string
 	client     *databricks.WorkspaceClient
 }
 
 func NewDatabricksDriver(db.DriverConfig) db.Driver {
-	return &DatabricksDriver{}
+	return &Driver{}
 }
 
 // Each Databricks driver is associated with a single Databricks Workspace (Workspace -> catalog -> schema -> table).
-func (d *DatabricksDriver) Open(ctx context.Context, dbType store.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, dbType store.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	databricksConfig := &databricks.Config{
 		Host: config.Host,
 	}
@@ -53,11 +53,11 @@ func (d *DatabricksDriver) Open(ctx context.Context, dbType store.Engine, config
 	return d, nil
 }
 
-func (d *DatabricksDriver) Close(ctx context.Context) error {
+func (*Driver) Close(_ context.Context) error {
 	return nil
 }
 
-func (d *DatabricksDriver) Ping(ctx context.Context) error {
+func (d *Driver) Ping(ctx context.Context) error {
 	_, err := d.client.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to ping instance")
@@ -65,26 +65,26 @@ func (d *DatabricksDriver) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (d *DatabricksDriver) GetDB() *sql.DB {
+func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (d *DatabricksDriver) GetType() store.Engine {
+func (*Driver) GetType() store.Engine {
 	return store.Engine_DATABRICKS
 }
 
-func (d *DatabricksDriver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1.QueryResult, error) {
+func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1.QueryResult, error) {
 	return nil, nil
 }
 
-func (d *DatabricksDriver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1.QueryResult, error) {
+func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1.QueryResult, error) {
 	return nil, nil
 }
 
-func (d *DatabricksDriver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
 	return 0, nil
 }
 
-func (d *DatabricksDriver) CheckSlowQueryLogEnabled(ctx context.Context) error {
+func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 	return nil
 }

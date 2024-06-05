@@ -23,7 +23,7 @@ type SchemaMap = map[string][]*Table
 type CatalogMap = map[string]SchemaMap
 
 // sync catalog.
-func (d *DatabricksDriver) SyncDBSchema(ctx context.Context) (*store.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*store.DatabaseSchemaMetadata, error) {
 	// return nothing if no catalogs are specified.
 	if d.curCatalog == "" {
 		return nil, nil
@@ -36,18 +36,19 @@ func (d *DatabricksDriver) SyncDBSchema(ctx context.Context) (*store.DatabaseSch
 	}
 
 	dbSchemaMeta := store.DatabaseSchemaMetadata{}
-	if schemaMap, ok := (*catalogMap)[d.curCatalog]; !ok {
+	schemaMap, ok := (*catalogMap)[d.curCatalog]
+	if !ok {
 		return nil, errors.Errorf("cannot find metadata for catalog '%s'", d.curCatalog)
-	} else {
-		dbSchemaMeta.Name = d.curCatalog
-		schemas := convertToStorepbSchemas(&schemaMap)
-		dbSchemaMeta.Schemas = schemas
 	}
+
+	dbSchemaMeta.Name = d.curCatalog
+	schemas := convertToStorepbSchemas(&schemaMap)
+	dbSchemaMeta.Schemas = schemas
 
 	return &dbSchemaMeta, nil
 }
 
-func (d *DatabricksDriver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	instanceMetadata := &db.InstanceMetadata{}
 
 	// fetch table data from databricks.
@@ -67,11 +68,11 @@ func (d *DatabricksDriver) SyncInstance(ctx context.Context) (*db.InstanceMetada
 	return instanceMetadata, nil
 }
 
-func (d *DatabricksDriver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*store.SlowQueryStatistics, error) {
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*store.SlowQueryStatistics, error) {
 	return nil, nil
 }
 
-func (d *DatabricksDriver) listTables(ctx context.Context) (*CatalogMap, error) {
+func (d *Driver) listTables(ctx context.Context) (*CatalogMap, error) {
 	tablesInfo, err := d.client.Tables.ListAll(ctx, catalog.ListTablesRequest{})
 	if err != nil {
 		return nil, err
@@ -118,6 +119,7 @@ func (d *DatabricksDriver) listTables(ctx context.Context) (*CatalogMap, error) 
 		} else {
 			if tableList, ok := schemaMap[tableInfo.SchemaName]; ok {
 				tableList = append(tableList, &table)
+				schemaMap[tableInfo.SchemaName] = tableList
 			} else {
 				schemaMap[tableInfo.SchemaName] = []*Table{&table}
 			}
@@ -173,6 +175,7 @@ func convertToStorepbSchemas(schemaMap *SchemaMap) []*store.SchemaMetadata {
 				schemaMetadata.Tables = append(schemaMetadata.Tables, table.table)
 			}
 		}
+		schemas = append(schemas, schemaMetadata)
 	}
 	return schemas
 }
