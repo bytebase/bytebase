@@ -185,9 +185,10 @@ type ConnectionConfig struct {
 	// AuthenticationDatabase is only supported for MongoDB now.
 	AuthenticationDatabase string
 	// SID and ServiceName are Oracle only.
-	SID                      string
-	ServiceName              string
-	SSHConfig                SSHConfig
+	SID         string
+	ServiceName string
+	SSHConfig   SSHConfig
+	// AuthenticationPrivateKey is used by Snowflake and Databricks (databricks access token).
 	AuthenticationPrivateKey string
 
 	ConnectionContext ConnectionContext
@@ -202,6 +203,9 @@ type ConnectionConfig struct {
 
 	// Region is the location of where the DB is, works for AWS RDS.
 	Region string
+
+	// AccountID is used by Databricks.
+	AccountID string
 }
 
 // SSHConfig is the configuration for connection over SSH.
