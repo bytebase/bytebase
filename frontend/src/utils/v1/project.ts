@@ -80,6 +80,7 @@ export const isViewerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
 
 export const getUserEmailListInBinding = (binding: Binding): string[] => {
   const groupStore = useUserGroupStore();
+  const userStore = useUserStore();
   const emailList = [];
 
   for (const member of binding.members) {
@@ -91,24 +92,46 @@ export const getUserEmailListInBinding = (binding: Binding): string[] => {
 
       emailList.push(...group.members.map((m) => extractUserEmail(m.member)));
     } else {
-      emailList.push(extractUserEmail(member));
+      const email = extractUserEmail(member);
+      if (email === ALL_USERS_USER_EMAIL) {
+        emailList.push(...userStore.activeUserList.map((user) => user.email));
+      } else {
+        emailList.push(email);
+      }
     }
   }
-  return emailList;
+  return uniq(emailList);
 };
 
 export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
   const userStore = useUserStore();
 
   const emailList = [];
-  const usersByRole: { role: string; emailList: Set<string> }[] = [];
+  // rolesMapByEmail is Map<email, role list>
+  const rolesMapByEmail = new Map<string, Set<string>>();
   for (const binding of iamPolicy.bindings) {
     const emails = getUserEmailListInBinding(binding);
-    usersByRole.push({
-      role: binding.role,
-      emailList: new Set(emails),
-    });
+
+    for (const email of emails) {
+      if (!rolesMapByEmail.has(email)) {
+        rolesMapByEmail.set(email, new Set());
+      }
+      rolesMapByEmail.get(email)?.add(binding.role);
+    }
     emailList.push(...emails);
+  }
+
+  for (const workspaceLevelProjectMember of userStore.workspaceLevelProjectMembers) {
+    emailList.push(workspaceLevelProjectMember.email);
+    if (!rolesMapByEmail.has(workspaceLevelProjectMember.email)) {
+      rolesMapByEmail.set(workspaceLevelProjectMember.email, new Set());
+    }
+    for (const role of workspaceLevelProjectMember.roles) {
+      if (PRESET_WORKSPACE_ROLES.includes(role)) {
+        continue;
+      }
+      rolesMapByEmail.get(workspaceLevelProjectMember.email)?.add(role);
+    }
   }
 
   const distinctEmailList = uniq(emailList);
@@ -124,10 +147,8 @@ export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
   });
 
   const composedUserList = userList.map((user) => {
-    const roleList = usersByRole
-      .filter((binding) => binding.emailList.has(user.email))
-      .map((binding) => binding.role);
-    return { user, roleList };
+    const roleList = rolesMapByEmail.get(user.email) ?? new Set<string>();
+    return { user, roleList: [...roleList] };
   });
 
   return orderBy(

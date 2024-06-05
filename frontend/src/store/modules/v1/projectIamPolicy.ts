@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import type { ComposedDatabase, MaybeRef } from "@/types";
-import { ALL_USERS_USER_EMAIL, PresetRoleType } from "@/types";
+import { PresetRoleType } from "@/types";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV2,
@@ -11,7 +11,7 @@ import {
   isOwnerOfProjectV1,
   isViewerOfProjectV1,
 } from "@/utils";
-import { getUserEmailListInBinding } from "@/utils";
+import { getUserEmailListInBinding, memberListInProjectV1 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
 import { useProjectV1Store } from "./project";
@@ -195,48 +195,63 @@ export const useCurrentUserIamPolicy = () => {
       return true;
     }
 
-    // Check if the user has the permission to query the database.
-    const policy = database.projectEntity.iamPolicy;
-    for (const binding of policy.bindings) {
-      const userEmailList = getUserEmailListInBinding(binding);
-      const userExist = userEmailList.some(
-        (email) =>
-          email === ALL_USERS_USER_EMAIL || email === currentUser.value.email
-      );
+    const policy = iamPolicyStore.getProjectIamPolicy(database.project);
+    if (!policy) {
+      return false;
+    }
 
-      if (binding.role === PresetRoleType.PROJECT_OWNER && userExist) {
-        return true;
+    const member = memberListInProjectV1(policy).find(
+      (member) => member.user.email === currentUser.value.email
+    );
+    if (!member) {
+      return false;
+    }
+    if (member.roleList.includes(PresetRoleType.PROJECT_OWNER)) {
+      return true;
+    }
+    if (member.user.roles.includes(PresetRoleType.PROJECT_QUERIER)) {
+      return true;
+    }
+
+    // Check if the user has the permission to query the database.
+    for (const binding of policy.bindings) {
+      if (binding.role !== PresetRoleType.PROJECT_QUERIER) {
+        continue;
       }
-      if (binding.role === PresetRoleType.PROJECT_QUERIER && userExist) {
-        if (binding.parsedExpr?.expr) {
-          const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
-          if (
-            conditionExpr.databaseResources &&
-            conditionExpr.databaseResources.length > 0
-          ) {
-            for (const databaseResource of conditionExpr.databaseResources) {
-              if (databaseResource.databaseName === database.name) {
-                if (isUndefined(schema) && isUndefined(table)) {
+
+      const userEmailList = getUserEmailListInBinding(binding);
+      if (!userEmailList.includes(currentUser.value.email)) {
+        continue;
+      }
+
+      if (binding.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
+        if (
+          conditionExpr.databaseResources &&
+          conditionExpr.databaseResources.length > 0
+        ) {
+          for (const databaseResource of conditionExpr.databaseResources) {
+            if (databaseResource.databaseName === database.name) {
+              if (isUndefined(schema) && isUndefined(table)) {
+                return true;
+              } else {
+                if (
+                  isUndefined(databaseResource.schema) ||
+                  (isUndefined(databaseResource.schema) &&
+                    isUndefined(databaseResource.table)) ||
+                  (databaseResource.schema === schema &&
+                    databaseResource.table === table)
+                ) {
                   return true;
-                } else {
-                  if (
-                    isUndefined(databaseResource.schema) ||
-                    (isUndefined(databaseResource.schema) &&
-                      isUndefined(databaseResource.table)) ||
-                    (databaseResource.schema === schema &&
-                      databaseResource.table === table)
-                  ) {
-                    return true;
-                  }
                 }
               }
             }
-          } else {
-            return true;
           }
         } else {
           return true;
         }
+      } else {
+        return true;
       }
     }
 
@@ -254,41 +269,47 @@ export const useCurrentUserIamPolicy = () => {
       return false;
     }
 
-    const iamPolicyCheckResult = policy.bindings.map((binding) => {
-      const userEmailList = getUserEmailListInBinding(binding);
-      const userExist = userEmailList.some(
-        (email) =>
-          email === ALL_USERS_USER_EMAIL || email === currentUser.value.email
-      );
+    const member = memberListInProjectV1(policy).find(
+      (member) => member.user.email === currentUser.value.email
+    );
+    if (!member) {
+      return false;
+    }
+    if (member.roleList.includes(PresetRoleType.PROJECT_OWNER)) {
+      return true;
+    }
+    if (member.user.roles.includes(PresetRoleType.PROJECT_EXPORTER)) {
+      return true;
+    }
 
-      if (binding.role === PresetRoleType.PROJECT_OWNER && userExist) {
-        return true;
+    for (const binding of policy.bindings) {
+      if (binding.role !== PresetRoleType.PROJECT_EXPORTER) {
+        continue;
       }
-      if (binding.role === PresetRoleType.PROJECT_EXPORTER && userExist) {
-        if (binding.parsedExpr?.expr) {
-          const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
-          if (
-            conditionExpr.databaseResources &&
-            conditionExpr.databaseResources.length > 0
-          ) {
-            const hasDatabaseField =
-              conditionExpr.databaseResources.find(
-                (item) => item.databaseName === database.name
-              ) !== undefined;
-            if (hasDatabaseField) {
-              return true;
-            }
-          } else {
+      const userEmailList = getUserEmailListInBinding(binding);
+      if (!userEmailList.includes(currentUser.value.email)) {
+        continue;
+      }
+
+      if (binding.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
+        if (
+          conditionExpr.databaseResources &&
+          conditionExpr.databaseResources.length > 0
+        ) {
+          const hasDatabaseField =
+            conditionExpr.databaseResources.find(
+              (item) => item.databaseName === database.name
+            ) !== undefined;
+          if (hasDatabaseField) {
             return true;
           }
         } else {
           return true;
         }
+      } else {
+        return true;
       }
-    });
-    // If one of the binding is true, then the user is allowed to export the database.
-    if (iamPolicyCheckResult.includes(true)) {
-      return true;
     }
 
     return false;

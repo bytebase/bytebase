@@ -7,7 +7,6 @@ import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
 import { PresetRoleType, UNKNOWN_PROJECT_NAME } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
-import type { User } from "@/types/proto/v1/auth_service";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
@@ -149,22 +148,9 @@ export const candidatesOfApprovalStepV1 = (
     (user) => user.userType === UserType.USER
   );
   const project = issue.projectEntity;
-  const projectMemberMap = memberListInProjectV1(project.iamPolicy)
-    .filter((member) => member.user.userType === UserType.USER)
-    .reduce((map, member) => {
-      map.set(member.user.email, member);
-      return map;
-    }, new Map<string, { roleList: string[]; user: User }>());
-
-  for (const member of userStore.workspaceLevelProjectMembers) {
-    if (projectMemberMap.has(member.email)) {
-      continue;
-    }
-    projectMemberMap.set(member.email, {
-      roleList: [],
-      user: member,
-    });
-  }
+  const projectMemberList = memberListInProjectV1(project.iamPolicy).filter(
+    (member) => member.user.userType === UserType.USER
+  );
 
   const candidates = step.nodes.flatMap((node) => {
     const {
@@ -180,7 +166,7 @@ export const candidatesOfApprovalStepV1 = (
         groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
       ) {
         const targetRole = convertApprovalNodeGroupToRole(groupValue);
-        return [...projectMemberMap.values()]
+        return projectMemberList
           .filter(
             (member) =>
               member.roleList.includes(targetRole) ||
