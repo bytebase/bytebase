@@ -277,6 +277,60 @@
         
           
           <li>
+            <a href="#store%2fcommon.proto">store/common.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.PageToken"><span class="badge">M</span>PageToken</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Position"><span class="badge">M</span>Position</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.Engine"><span class="badge">E</span>Engine</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ExportFormat"><span class="badge">E</span>ExportFormat</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.MaskingLevel"><span class="badge">E</span>MaskingLevel</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.VCSType"><span class="badge">E</span>VCSType</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2fadvice.proto">store/advice.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.Advice"><span class="badge">M</span>Advice</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.Advice.Status"><span class="badge">E</span>Advice.Status</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2faudit_log.proto">store/audit_log.proto</a>
             <ul>
               
@@ -477,37 +531,6 @@
                   <a href="#bytebase.store.Changelist.Change"><span class="badge">M</span>Changelist.Change</a>
                 </li>
               
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fcommon.proto">store/common.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.PageToken"><span class="badge">M</span>PageToken</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.Engine"><span class="badge">E</span>Engine</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ExportFormat"><span class="badge">E</span>ExportFormat</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingLevel"><span class="badge">E</span>MaskingLevel</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.VCSType"><span class="badge">E</span>VCSType</a>
-                </li>
               
               
               
@@ -1977,6 +2000,462 @@ If `true`, other fields are available. </p></td>
               <tr>
                 <td>TYPE_FEISHU</td>
                 <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/common.proto">store/common.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.PageToken">PageToken</h3>
+        <p>Used internally for obfuscating the page token.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>limit</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>offset</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Position">Position</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>line</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.Engine">Engine</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ENGINE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLICKHOUSE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MYSQL</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>POSTGRES</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SNOWFLAKE</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SQLITE</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TIDB</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MONGODB</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REDIS</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ORACLE</td>
+                <td>9</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SPANNER</td>
+                <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MSSQL</td>
+                <td>11</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REDSHIFT</td>
+                <td>12</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MARIADB</td>
+                <td>13</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OCEANBASE</td>
+                <td>14</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DM</td>
+                <td>15</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RISINGWAVE</td>
+                <td>16</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OCEANBASE_ORACLE</td>
+                <td>17</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STARROCKS</td>
+                <td>18</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DORIS</td>
+                <td>19</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HIVE</td>
+                <td>20</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ELASTICSEARCH</td>
+                <td>21</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BIGQUERY</td>
+                <td>22</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DYNAMODB</td>
+                <td>23</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ExportFormat">ExportFormat</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>FORMAT_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CSV</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>JSON</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SQL</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>XLSX</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.MaskingLevel">MaskingLevel</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MASKING_LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PARTIAL</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FULL</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.VCSType">VCSType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>VCS_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GITHUB</td>
+                <td>1</td>
+                <td><p>GitHub type. Using for GitHub community edition(ce).</p></td>
+              </tr>
+            
+              <tr>
+                <td>GITLAB</td>
+                <td>2</td>
+                <td><p>GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).</p></td>
+              </tr>
+            
+              <tr>
+                <td>BITBUCKET</td>
+                <td>3</td>
+                <td><p>BitBucket type. Using for BitBucket cloud or BitBucket server.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_DEVOPS</td>
+                <td>4</td>
+                <td><p>Azure DevOps. Using for Azure DevOps GitOps workflow.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/advice.proto">store/advice.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.Advice">Advice</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.store.Advice.Status">Advice.Status</a></td>
+                  <td></td>
+                  <td><p>The advice status. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The advice code. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The advice title. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The advice content. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>detail</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The advice detail. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.Advice.Status">Advice.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SUCCESS</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>3</td>
                 <td><p></p></td>
               </tr>
             
@@ -4084,323 +4563,6 @@ Example: projects/project-id/branches/branch-id. </p></td>
         
       
 
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/common.proto">store/common.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.PageToken">PageToken</h3>
-        <p>Used internally for obfuscating the page token.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>limit</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>offset</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.Engine">Engine</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ENGINE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CLICKHOUSE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MYSQL</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>POSTGRES</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SNOWFLAKE</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SQLITE</td>
-                <td>5</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TIDB</td>
-                <td>6</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MONGODB</td>
-                <td>7</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>REDIS</td>
-                <td>8</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ORACLE</td>
-                <td>9</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SPANNER</td>
-                <td>10</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MSSQL</td>
-                <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>REDSHIFT</td>
-                <td>12</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MARIADB</td>
-                <td>13</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OCEANBASE</td>
-                <td>14</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DM</td>
-                <td>15</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RISINGWAVE</td>
-                <td>16</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OCEANBASE_ORACLE</td>
-                <td>17</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>STARROCKS</td>
-                <td>18</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DORIS</td>
-                <td>19</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>HIVE</td>
-                <td>20</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ELASTICSEARCH</td>
-                <td>21</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BIGQUERY</td>
-                <td>22</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DYNAMODB</td>
-                <td>23</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ExportFormat">ExportFormat</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>FORMAT_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CSV</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>JSON</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SQL</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>XLSX</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.MaskingLevel">MaskingLevel</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MASKING_LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>NONE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PARTIAL</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FULL</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.VCSType">VCSType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>VCS_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GITHUB</td>
-                <td>1</td>
-                <td><p>GitHub type. Using for GitHub community edition(ce).</p></td>
-              </tr>
-            
-              <tr>
-                <td>GITLAB</td>
-                <td>2</td>
-                <td><p>GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).</p></td>
-              </tr>
-            
-              <tr>
-                <td>BITBUCKET</td>
-                <td>3</td>
-                <td><p>BitBucket type. Using for BitBucket cloud or BitBucket server.</p></td>
-              </tr>
-            
-              <tr>
-                <td>AZURE_DEVOPS</td>
-                <td>4</td>
-                <td><p>Azure DevOps. Using for Azure DevOps GitOps workflow.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       
