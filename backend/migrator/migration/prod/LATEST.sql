@@ -249,7 +249,8 @@ CREATE TABLE project_webhook (
     type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
     url TEXT NOT NULL,
-    activity_list TEXT ARRAY NOT NULL
+    activity_list TEXT ARRAY NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
