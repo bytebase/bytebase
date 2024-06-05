@@ -105,7 +105,7 @@ const gotoSQLEditor = () => {
   if (database.project === DEFAULT_PROJECT_V1_NAME) {
     if (
       !hasProjectPermissionV2(
-        defaultProject,
+        defaultProject(),
         currentUserV1.value,
         "bb.databases.query"
       )

@@ -167,8 +167,7 @@
                 <AdvancedSearch
                   v-model:params="state.params"
                   :autofocus="false"
-                  :placeholder="$t('database.filter-database')"
-                  :scope-options="scopeOptions"
+                  :placeholder="$t('database.filter-database-group')"
                 />
                 <DatabaseGroupDataTable
                   :database-group-list="filteredDatabaseGroupList"
@@ -194,19 +193,29 @@
     <template #footer>
       <div class="flex-1 flex items-center justify-between">
         <div>
-          <div
+          <NTooltip
             v-if="
               flattenSelectedDatabaseUidList.length > 0 &&
               state.alterType === 'MULTI_DB'
             "
-            class="textinfolabel"
           >
-            {{
-              $t("database.selected-n-databases", {
-                n: flattenSelectedDatabaseUidList.length,
-              })
-            }}
-          </div>
+            <template #trigger>
+              <div class="textinfolabel">
+                {{
+                  $t("database.selected-n-databases", {
+                    n: flattenSelectedDatabaseUidList.length,
+                  })
+                }}
+              </div>
+            </template>
+            <div class="mx-2">
+              <ul class="list-disc">
+                <li v-for="db in flattenSelectedDatabaseList" :key="db.name">
+                  {{ db.databaseName }}
+                </li>
+              </ul>
+            </div>
+          </NTooltip>
         </div>
 
         <div class="flex items-center justify-end gap-x-3">
@@ -291,6 +300,7 @@ import {
   useEnvironmentV1List,
   useProjectV1Store,
   useDBGroupStore,
+  usePageMode,
 } from "@/store";
 import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -356,6 +366,9 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
+const pageMode = usePageMode();
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const featureModalContext = ref<{
   feature?: FeatureType;
@@ -489,34 +502,36 @@ const rawDatabaseList = computed(() => {
 });
 
 const filteredDatabaseList = computed(() => {
-  let list = [...rawDatabaseList.value];
-
-  list = list.filter((db) => {
-    if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-      return (
-        extractEnvironmentResourceName(db.effectiveEnvironment) ===
+  const list = rawDatabaseList.value.filter((db) => {
+    if (
+      selectedEnvironment.value !== `${UNKNOWN_ID}` &&
+      extractEnvironmentResourceName(db.effectiveEnvironment) !==
         selectedEnvironment.value
-      );
+    ) {
+      return false;
     }
-    if (selectedInstance.value !== `${UNKNOWN_ID}`) {
-      return (
-        extractInstanceResourceName(db.instance) === selectedInstance.value
-      );
+    if (
+      selectedInstance.value !== `${UNKNOWN_ID}` &&
+      extractInstanceResourceName(db.instance) !== selectedInstance.value
+    ) {
+      return false;
     }
-    return filterDatabaseV1ByKeyword(db, state.params.query.trim(), [
-      "name",
-      "environment",
-      "instance",
-      "project",
-    ]);
-  });
 
-  const labels = state.selectedLabels;
-  if (labels.length > 0) {
-    list = list.filter((db) => {
-      return labels.some((kv) => db.labels[kv.key] === kv.value);
-    });
-  }
+    const filterByKeyword = filterDatabaseV1ByKeyword(
+      db,
+      state.params.query.trim(),
+      ["name", "environment", "instance", "project"]
+    );
+    if (!filterByKeyword) {
+      return false;
+    }
+
+    if (state.selectedLabels.length > 0) {
+      return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
+    }
+
+    return true;
+  });
 
   return sortDatabaseV1List(list);
 });
@@ -601,6 +616,12 @@ const previewDatabaseGroupIssue = () => {
   );
 };
 
+const flattenSelectedDatabaseList = computed(() =>
+  flattenSelectedDatabaseUidList.value.map(
+    (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
+  )
+);
+
 // Also works when single db selected.
 const generateMultiDb = async () => {
   if (
@@ -611,11 +632,12 @@ const generateMultiDb = async () => {
     return;
   }
 
-  const selectedDatabaseList = flattenSelectedDatabaseUidList.value.map(
-    (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
-  );
-
-  if (isEditSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {
+  if (
+    flattenSelectedDatabaseList.value.length === 1 &&
+    isEditSchema.value &&
+    allowUsingSchemaEditor(flattenSelectedDatabaseList.value) &&
+    !isStandaloneMode.value
+  ) {
     schemaEditorContext.value.databaseIdList = [
       ...flattenSelectedDatabaseUidList.value,
     ];
@@ -632,9 +654,11 @@ const generateMultiDb = async () => {
     template: props.type,
     name: generateIssueName(
       props.type,
-      selectedDatabaseList.map((db) => db.databaseName)
+      flattenSelectedDatabaseList.value.map((db) => db.databaseName)
     ),
-    databaseList: selectedDatabaseList.map((db) => db.name).join(","),
+    databaseList: flattenSelectedDatabaseList.value
+      .map((db) => db.name)
+      .join(","),
   };
 
   router.push({

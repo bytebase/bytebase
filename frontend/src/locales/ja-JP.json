@@ -1166,7 +1166,8 @@
         "selected-stage": "選択したステージ",
         "all-tasks": "すべてのタスク"
       },
-      "current-change-will-apply-to-all-tasks-in-batch-mode": "バッチ モードでは、現在の変更がすべてのタスクに適用されます。"
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "バッチ モードでは、現在の変更がすべてのタスクに適用されます。",
+      "current-change-will-apply-to-all-tasks": "現在の変更はすべてのタスクに適用されます。"
     },
     "not-editable-legacy-issue": "このチケットは古いバージョンの Bytebase で作成されたため編集できません。",
     "action-anyway": "まだ {action} が必要です",
@@ -1623,6 +1624,7 @@
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後に成功した同期",
     "filter-database": "フィルターデータベース",
+    "filter-database-group": "データベースグループをフィルタリングする",
     "transfer-project": "転送アイテム",
     "unassign": "割り当てを解除する",
     "unassign-alert-title": "データベースの割り当てを解除する",

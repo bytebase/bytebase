@@ -320,6 +320,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
 			internalFunctions:        make(map[string]*FunctionMetadata),
 			internalProcedures:       make(map[string]*ProcedureMetadata),
+			internalSequences:        make(map[string]*SequenceMetadata),
 		}
 		for _, table := range schema.Tables {
 			tables, names := buildTablesMetadata(table)
@@ -358,6 +359,11 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			schemaMetadata.internalProcedures[procedure.Name] = &ProcedureMetadata{
 				Definition: procedure.Definition,
 				proto:      procedure,
+			}
+		}
+		for _, sequence := range schema.Sequences {
+			schemaMetadata.internalSequences[sequence.Name] = &SequenceMetadata{
+				proto: sequence,
 			}
 		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
@@ -417,6 +423,7 @@ type SchemaMetadata struct {
 	internalMaterializedView map[string]*MaterializedViewMetadata
 	internalFunctions        map[string]*FunctionMetadata
 	internalProcedures       map[string]*ProcedureMetadata
+	internalSequences        map[string]*SequenceMetadata
 }
 
 // GetTable gets the schema by name.
@@ -446,6 +453,11 @@ func (s *SchemaMetadata) GetExternalTable(name string) *ExternalTableMetadata {
 // GetFunction gets the function by name.
 func (s *SchemaMetadata) GetFunction(name string) *FunctionMetadata {
 	return s.internalFunctions[name]
+}
+
+// GetSequence gets the sequence by name.
+func (s *SchemaMetadata) GetSequence(name string) *SequenceMetadata {
+	return s.internalSequences[name]
 }
 
 // ListTableNames lists the table names.
@@ -622,5 +634,13 @@ type ProcedureMetadata struct {
 }
 
 func (p *ProcedureMetadata) GetProto() *storepb.ProcedureMetadata {
+	return p.proto
+}
+
+type SequenceMetadata struct {
+	proto *storepb.SequenceMetadata
+}
+
+func (p *SequenceMetadata) GetProto() *storepb.SequenceMetadata {
 	return p.proto
 }
