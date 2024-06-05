@@ -29,6 +29,12 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
+- [store/advice.proto](#store_advice-proto)
+    - [Advice](#bytebase-store-Advice)
+    - [Advice.Position](#bytebase-store-Advice-Position)
+  
+    - [Advice.Status](#bytebase-store-Advice-Status)
+  
 - [store/audit_log.proto](#store_audit_log-proto)
     - [AuditLog](#bytebase-store-AuditLog)
   
@@ -620,6 +626,72 @@ convert to the expected struct there.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_FEISHU | 1 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_advice-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/advice.proto
+
+
+
+<a name="bytebase-store-Advice"></a>
+
+### Advice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Advice.Status](#bytebase-store-Advice-Status) |  | The advice status. |
+| code | [int32](#int32) |  | The advice code. |
+| title | [string](#string) |  | The advice title. |
+| content | [string](#string) |  | The advice content. |
+| detail | [string](#string) |  | The advice detail. |
+| start_position | [Advice.Position](#bytebase-store-Advice-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Advice-Position"></a>
+
+### Advice.Position
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Advice-Status"></a>
+
+### Advice.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| SUCCESS | 1 |  |
+| WARNING | 2 |  |
+| ERROR | 3 |  |
 
 
  
