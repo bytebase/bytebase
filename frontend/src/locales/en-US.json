@@ -1624,6 +1624,7 @@
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
     "filter-database": "Filter database",
+    "filter-database-group": "Filter database group",
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-title": "Unassign databases",

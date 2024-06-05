@@ -1624,6 +1624,7 @@
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後に成功した同期",
     "filter-database": "フィルターデータベース",
+    "filter-database-group": "データベースグループをフィルタリングする",
     "transfer-project": "転送アイテム",
     "unassign": "割り当てを解除する",
     "unassign-alert-title": "データベースの割り当てを解除する",

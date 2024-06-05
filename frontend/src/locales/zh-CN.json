@@ -1624,6 +1624,7 @@
     "sync-status": "同步状态",
     "last-successful-sync": "最后一次成功的同步",
     "filter-database": "过滤数据库",
+    "filter-database-group": "过滤数据库分组",
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-title": "取消分配数据库",
