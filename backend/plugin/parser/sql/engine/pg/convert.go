@@ -843,6 +843,25 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			Args:    args,
 			IsLocal: in.VariableSetStmt.IsLocal,
 		}, nil
+	case *pgquery.Node_ViewStmt:
+		viewStmt := &ast.CreateViewStmt{
+			Replace: in.ViewStmt.Replace,
+			Name:    convertRangeVarToTableName(in.ViewStmt.View, ast.TableTypeView),
+		}
+
+		if query, ok := in.ViewStmt.Query.Node.(*pgquery.Node_SelectStmt); ok {
+			if viewStmt.Select, err = convertSelectStmt(query.SelectStmt); err != nil {
+				return nil, err
+			}
+		}
+
+		for _, alias := range in.ViewStmt.Aliases {
+			if alias, ok := alias.Node.(*pgquery.Node_String_); ok {
+				viewStmt.Aliases = append(viewStmt.Aliases, alias.String_.Sval)
+			}
+		}
+
+		return viewStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
