@@ -60,6 +60,9 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version) (*db.MigrationInfo, error) {
+	if schemaVersion.Version == "" {
+		return nil, errors.Errorf("empty schema version")
+	}
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err
