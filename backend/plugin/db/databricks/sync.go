@@ -8,22 +8,22 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type storepbTable struct {
-	externalTable *store.ExternalTableMetadata
-	table         *store.TableMetadata
-	view          *store.ViewMetadata
-	materialView  *store.MaterializedViewMetadata
+type tableUnion struct {
+	externalTable *storepb.ExternalTableMetadata
+	table         *storepb.TableMetadata
+	view          *storepb.ViewMetadata
+	materialView  *storepb.MaterializedViewMetadata
 	typeName      catalog.TableType
 }
 
-type databricksSchemaMap = map[string][]*storepbTable
+type databricksSchemaMap = map[string][]*tableUnion
 type databricksCatalogMap = map[string]databricksSchemaMap
 
 // sync catalog.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*store.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	// return nothing if no catalogs are specified.
 	if d.curCatalog == "" {
 		return nil, nil
@@ -35,7 +35,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*store.DatabaseSchemaMetadat
 		return nil, err
 	}
 
-	dbSchemaMeta := store.DatabaseSchemaMetadata{}
+	dbSchemaMeta := storepb.DatabaseSchemaMetadata{}
 	schemaMap, ok := (catalogMap)[d.curCatalog]
 	if !ok {
 		return nil, errors.Errorf("cannot find metadata for catalog '%s'", d.curCatalog)
@@ -58,7 +58,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	for catalogName, schemaMap := range catalogMap {
-		dbSchemaMeta := store.DatabaseSchemaMetadata{}
+		dbSchemaMeta := storepb.DatabaseSchemaMetadata{}
 		schemas := convertToStorepbSchemas(schemaMap)
 		dbSchemaMeta.Name = catalogName
 		dbSchemaMeta.Schemas = schemas
@@ -68,7 +68,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	return instanceMetadata, nil
 }
 
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*store.SlowQueryStatistics, error) {
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, nil
 }
 
@@ -81,31 +81,31 @@ func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
 	catalogMap := make(databricksCatalogMap)
 
 	for _, tableInfo := range tablesInfo {
-		table := storepbTable{
+		table := tableUnion{
 			typeName: tableInfo.TableType,
 		}
 
 		switch tableInfo.TableType {
 		case catalog.TableTypeView:
-			table.view = &store.ViewMetadata{
+			table.view = &storepb.ViewMetadata{
 				Name:             tableInfo.Name,
 				Definition:       tableInfo.ViewDefinition,
 				Comment:          tableInfo.Comment,
 				DependentColumns: convertToDependentColumns(tableInfo.SchemaName, tableInfo.Name, tableInfo.Columns),
 			}
 		case catalog.TableTypeMaterializedView:
-			table.materialView = &store.MaterializedViewMetadata{
+			table.materialView = &storepb.MaterializedViewMetadata{
 				Name:       tableInfo.Name,
 				Definition: tableInfo.ViewDefinition,
 				Comment:    tableInfo.Comment,
 			}
 		case catalog.TableTypeExternal:
-			table.externalTable = &store.ExternalTableMetadata{
+			table.externalTable = &storepb.ExternalTableMetadata{
 				Name: tableInfo.Name,
 			}
 			// TODO(tommy): find the responding string for the normal table type.
 		default:
-			table.table = &store.TableMetadata{
+			table.table = &storepb.TableMetadata{
 				Name:    tableInfo.Name,
 				Columns: convertToColumnMetadata(tableInfo.Columns),
 				Comment: tableInfo.Comment,
@@ -114,14 +114,14 @@ func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
 
 		if schemaMap, ok := catalogMap[tableInfo.CatalogName]; !ok {
 			catalogMap[tableInfo.CatalogName] = databricksSchemaMap{
-				tableInfo.SchemaName: []*storepbTable{&table},
+				tableInfo.SchemaName: []*tableUnion{&table},
 			}
 		} else {
 			if tableList, ok := schemaMap[tableInfo.SchemaName]; ok {
 				tableList = append(tableList, &table)
 				schemaMap[tableInfo.SchemaName] = tableList
 			} else {
-				schemaMap[tableInfo.SchemaName] = []*storepbTable{&table}
+				schemaMap[tableInfo.SchemaName] = []*tableUnion{&table}
 			}
 		}
 	}
@@ -129,10 +129,10 @@ func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
 	return catalogMap, nil
 }
 
-func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*store.ColumnMetadata {
-	columns := []*store.ColumnMetadata{}
+func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnMetadata {
+	columns := []*storepb.ColumnMetadata{}
 	for _, col := range columnInfo {
-		columns = append(columns, &store.ColumnMetadata{
+		columns = append(columns, &storepb.ColumnMetadata{
 			Name:     col.Name,
 			Position: int32(col.Position),
 			Nullable: col.Nullable,
@@ -143,10 +143,10 @@ func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*store.ColumnMet
 	return columns
 }
 
-func convertToDependentColumns(schema, table string, columnInfo []catalog.ColumnInfo) []*store.DependentColumn {
-	columns := []*store.DependentColumn{}
+func convertToDependentColumns(schema, table string, columnInfo []catalog.ColumnInfo) []*storepb.DependentColumn {
+	columns := []*storepb.DependentColumn{}
 	for _, col := range columnInfo {
-		columns = append(columns, &store.DependentColumn{
+		columns = append(columns, &storepb.DependentColumn{
 			Schema: schema,
 			Table:  table,
 			Column: col.Name,
@@ -155,10 +155,10 @@ func convertToDependentColumns(schema, table string, columnInfo []catalog.Column
 	return columns
 }
 
-func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*store.SchemaMetadata {
-	schemas := []*store.SchemaMetadata{}
+func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*storepb.SchemaMetadata {
+	schemas := []*storepb.SchemaMetadata{}
 	for schemaName, tableList := range schemaMap {
-		schemaMetadata := &store.SchemaMetadata{
+		schemaMetadata := &storepb.SchemaMetadata{
 			Name: schemaName,
 		}
 

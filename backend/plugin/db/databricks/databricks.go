@@ -9,12 +9,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func init() {
-	db.Register(store.Engine_DATABRICKS, NewDatabricksDriver)
+	db.Register(storepb.Engine_DATABRICKS, NewDatabricksDriver)
 }
 
 var _ db.Driver = (*Driver)(nil)
@@ -29,7 +30,7 @@ func NewDatabricksDriver(db.DriverConfig) db.Driver {
 }
 
 // Each Databricks driver is associated with a single Databricks Workspace (Workspace -> catalog -> schema -> table).
-func (d *Driver) Open(_ context.Context, _ store.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	databricksConfig := &databricks.Config{
 		Host: config.Host,
 	}
@@ -69,8 +70,8 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (*Driver) GetType() store.Engine {
-	return store.Engine_DATABRICKS
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_DATABRICKS
 }
 
 func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
