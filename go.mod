@@ -78,6 +78,7 @@ require (
 	github.com/vjeantet/ldapserver v1.0.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xuri/excelize/v2 v2.8.1
+	github.com/zeebo/xxh3 v1.0.2
 	go.mongodb.org/mongo-driver v1.15.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.23.0
@@ -175,7 +176,6 @@ require (
 	github.com/vcaesar/cedar v0.20.1 // indirect
 	github.com/xuri/efp v0.0.0-20231025114914-d1ff6096ae53 // indirect
 	github.com/xuri/nfp v0.0.0-20230919160717-d98342af3f05 // indirect
-	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.10 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.10 // indirect

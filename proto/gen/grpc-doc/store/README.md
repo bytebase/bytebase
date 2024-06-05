@@ -193,6 +193,9 @@
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
+- [store/project_webhook.proto](#store_project_webhook-proto)
+    - [ProjectWebhookPayload](#bytebase-store-ProjectWebhookPayload)
+  
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
   
@@ -3021,6 +3024,37 @@ The type of target.
 | BRANCH | 1 |  |
 | CHANGELIST | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_project_webhook-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/project_webhook.proto
+
+
+
+<a name="bytebase-store-ProjectWebhookPayload"></a>
+
+### ProjectWebhookPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
+
+
+
+
+
+ 
 
  
 
