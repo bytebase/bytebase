@@ -29,7 +29,7 @@ func NewDatabricksDriver(db.DriverConfig) db.Driver {
 }
 
 // Each Databricks driver is associated with a single Databricks Workspace (Workspace -> catalog -> schema -> table).
-func (d *Driver) Open(_ context.Context, dbType store.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ store.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	databricksConfig := &databricks.Config{
 		Host: config.Host,
 	}
