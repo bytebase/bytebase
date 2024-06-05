@@ -1,5 +1,3 @@
-//go:build !minimal
-
 package server
 
 import (

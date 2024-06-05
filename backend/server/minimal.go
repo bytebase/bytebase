@@ -1,3 +1,5 @@
+//go:build !minidemo
+
 package server
 
 import (
