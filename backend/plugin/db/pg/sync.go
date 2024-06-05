@@ -775,17 +775,16 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	return extensions, nil
 }
 
-var listSequenceQuery = `SELECT sequence_schema, sequence_name, data_type FROM information_schema.sequences;`
-
 // getSequences gets all sequences of a database.
 func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
-
-	rows, err := txn.Query(listSequenceQuery)
+	query := `SELECT sequence_schema, sequence_name, data_type FROM information_schema.sequences;`
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
+	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
 	for rows.Next() {
 		sequence := &storepb.SequenceMetadata{}
 		var schemaName string
