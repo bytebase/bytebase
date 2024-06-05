@@ -123,20 +123,34 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
   };
 });
 
+const convertApprovalNodeGroupToRole = (
+  group: ApprovalNode_GroupValue
+): string => {
+  switch (group) {
+    case ApprovalNode_GroupValue.PROJECT_MEMBER:
+      return PresetRoleType.PROJECT_DEVELOPER;
+    case ApprovalNode_GroupValue.PROJECT_OWNER:
+      return PresetRoleType.PROJECT_OWNER;
+    case ApprovalNode_GroupValue.WORKSPACE_DBA:
+      return PresetRoleType.WORKSPACE_DBA;
+    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
+      return PresetRoleType.WORKSPACE_ADMIN;
+  }
+  return "";
+};
+
 export const candidatesOfApprovalStepV1 = (
   issue: ComposedIssue,
   step: ApprovalStep
 ) => {
-  const workspaceMemberList = useUserStore().activeUserList.filter(
+  const userStore = useUserStore();
+  const workspaceMemberList = userStore.activeUserList.filter(
     (user) => user.userType === UserType.USER
   );
   const project = issue.projectEntity;
-  const projectMemberList = memberListInProjectV1(project.iamPolicy)
-    .filter((member) => member.user.userType === UserType.USER)
-    .map((member) => ({
-      ...member,
-      user: member.user,
-    }));
+  const projectMemberList = memberListInProjectV1(project.iamPolicy).filter(
+    (member) => member.user.userType === UserType.USER
+  );
 
   const candidates = step.nodes.flatMap((node) => {
     const {
@@ -147,28 +161,25 @@ export const candidatesOfApprovalStepV1 = (
     if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
 
     const candidatesForSystemRoles = (groupValue: ApprovalNode_GroupValue) => {
-      if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
+      if (
+        groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER ||
+        groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
+      ) {
+        const targetRole = convertApprovalNodeGroupToRole(groupValue);
         return projectMemberList
-          .filter((member) =>
-            member.roleList.includes(PresetRoleType.PROJECT_DEVELOPER)
+          .filter(
+            (member) =>
+              member.roleList.includes(targetRole) ||
+              member.user.roles.includes(targetRole)
           )
           .map((member) => member.user);
       }
-      if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
-        return projectMemberList
-          .filter((member) =>
-            member.roleList.includes(PresetRoleType.PROJECT_OWNER)
-          )
-          .map((member) => member.user);
-      }
-      if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
+      if (
+        groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
+        groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
+      ) {
         return workspaceMemberList.filter((member) =>
-          member.roles.includes(PresetRoleType.WORKSPACE_DBA)
-        );
-      }
-      if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
-        return workspaceMemberList.filter((member) =>
-          member.roles.includes(PresetRoleType.WORKSPACE_ADMIN)
+          member.roles.includes(convertApprovalNodeGroupToRole(groupValue))
         );
       }
       return [];
