@@ -1624,6 +1624,7 @@
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
     "filter-database": "Filtrar base de datos",
+    "filter-database-group": "Filtrar grupo de bases de datos",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-title": "Desasignar bases de datos",
