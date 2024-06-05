@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -34,6 +35,7 @@ import (
 type PlanService struct {
 	v1pb.UnimplementedPlanServiceServer
 	store              *store.Store
+	sheetManager       *sheet.Manager
 	licenseService     enterprise.LicenseService
 	dbFactory          *dbfactory.DBFactory
 	planCheckScheduler *plancheck.Scheduler
@@ -43,9 +45,10 @@ type PlanService struct {
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
+func NewPlanService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
 	return &PlanService{
 		store:              store,
+		sheetManager:       sheetManager,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
 		planCheckScheduler: planCheckScheduler,
@@ -236,7 +239,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		}
 	}
 
-	if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), project); err != nil {
+	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), project); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
@@ -325,7 +328,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				Steps: convertPlanSteps(request.Plan.Steps),
 			}
 
-			if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, convertPlanSteps(request.Plan.GetSteps()), project); err != nil {
+			if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, convertPlanSteps(request.Plan.GetSteps()), project); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
 
@@ -442,28 +445,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 								},
 							},
 						})
-					}
-
-					// RollbackEnabled
-					if err := func() error {
-						if task.Type != api.TaskDatabaseDataUpdate {
-							return nil
-						}
-						payload := &api.TaskDatabaseDataUpdatePayload{}
-						if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-						}
-						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-						if !ok {
-							return nil
-						}
-						if config.ChangeDatabaseConfig.RollbackEnabled != payload.RollbackEnabled {
-							taskPatch.RollbackEnabled = &config.ChangeDatabaseConfig.RollbackEnabled
-							doUpdate = true
-						}
-						return nil
-					}(); err != nil {
-						return nil, err
 					}
 
 					// PreUpdateBackupDetail
@@ -694,27 +675,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				task := tasksMap[taskPatch.ID]
 				if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
-				}
-
-				taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
-				}
-
-				// enqueue or cancel after it's written to the database.
-				if taskPatch.RollbackEnabled != nil {
-					// Enqueue the rollback sql generation if the task done.
-					if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
-						s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
-					} else if !*taskPatch.RollbackEnabled {
-						// Cancel running rollback sql generation.
-						if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
-							if cancel, ok := v.(context.CancelFunc); ok {
-								cancel()
-							}
-							// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
-						}
-					}
 				}
 			}
 

@@ -4,13 +4,20 @@ package dynamodb
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"sort"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -81,16 +88,384 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement.
-func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
-	panic("implement me")
+// Execute is usually used for DDL/DML statements without read-operation. The dynamodb driver supports three types of execute:
+//
+// BatchExecuteStatement: This operation allows you to perform batch reads or writes on data stored in DynamoDB, using PartiQL. Each read statement in a BatchExecuteStatement must specify an equality condition on all key attributes. This enforces that each SELECT statement in a batch returns at most a single item.
+//
+// ExecuteStatement: This operation allows you to perform reads and singleton writes on data stored in DynamoDB, using PartiQL.
+// For PartiQL reads ( SELECT statement), if the total number of processed items exceeds the maximum dataset size limit of 1 MB, the read stops and results are returned to the user as a LastEvaluatedKey value to continue the read in a subsequent operation. If the filter criteria in WHERE clause does not match any data, the read will return an empty result set.
+// A single SELECT statement response can return up to the maximum number of items (if using the Limit parameter) or a maximum of 1 MB of data (and then apply any filtering to the results using WHERE clause).
+//
+// ExecuteTransaction: This operation allows you to perform transactional reads or writes on data stored in DynamoDB, using PartiQL.
+// The entire transaction must consist of either read statements or write statements, you cannot mix both in one transaction. The EXISTS function is an exception and can be used to check the condition of specific attributes of the item in a similar manner to ConditionCheck in the TransactWriteItems API.
+//
+// NOTE: Each api contains some constraints which do not be described in api docs. For example, in ExecuteTransaction, cannot include multiple operations on one item.
+// So we use a simple solution here, use parser to split the statement and execute them one by one, unfortunately, we lose the transaction feature.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	statements, err := base.SplitMultiSQL(d.GetType(), statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to split multi statement")
+	}
+	nonEmptyStatements, idxMap := base.FilterEmptySQLWithIndexes(statements)
+	commandsTotal := len(nonEmptyStatements)
+
+	for currentIndex, statement := range nonEmptyStatements {
+		if opts.UpdateExecutionStatus != nil {
+			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+				CommandsTotal:     int32(commandsTotal),
+				CommandsCompleted: int32(idxMap[currentIndex]),
+				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line:   int32(statement.FirstStatementLine),
+					Column: int32(statement.FirstStatementColumn),
+				},
+				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line:   int32(statement.LastLine),
+					Column: int32(statement.LastColumn),
+				},
+			})
+		}
+		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])})
+		_, err := d.client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
+			TransactStatements: []types.ParameterizedStatement{
+				{
+					Statement: &statement.Text,
+				},
+			},
+		})
+		if err != nil {
+			return 0, &db.ErrorWithPosition{
+				Err: errors.Wrapf(err, "failed to execute statement: %s", statement.Text),
+				Start: &storepb.TaskRunResult_Position{
+					Line:   int32(statement.FirstStatementLine),
+					Column: int32(statement.FirstStatementColumn),
+				},
+				End: &storepb.TaskRunResult_Position{
+					Line:   int32(statement.LastLine),
+					Column: int32(statement.LastColumn),
+				},
+			}
+		}
+		opts.LogCommandResponse([]int32{int32(currentIndex)}, 0, []int32{}, "")
+	}
+
+	return 0, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	panic("implement me")
+// The result.Rows.Values can be nil in DynamoDB, which means the column is not set in the row.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext.Explain {
+		return nil, errors.New("DynamoDB does not support EXPLAIN")
+	}
+
+	statements, err := base.SplitMultiSQL(d.GetType(), statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split multi statement")
+	}
+
+	var results []*v1pb.QueryResult
+	for _, statement := range statements {
+		if statement.Empty {
+			continue
+		}
+		result, err := d.querySinglePartiQL(ctx, statement, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+	return results, nil
+}
+
+type dynamodbQueryResultMeta struct {
+	columnType string
+	value      *v1pb.RowValue
+}
+
+func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	result := &v1pb.QueryResult{
+		Statement: statement.Text,
+	}
+	input := &dynamodb.ExecuteStatementInput{
+		Statement: &statement.Text,
+	}
+	if queryContext.Limit > 0 {
+		limit := int32(queryContext.Limit)
+		input.Limit = &limit
+	}
+
+	var nextToken *string
+	rowMap := make(map[string][]*v1pb.RowValue)
+	// TODO(zp): Our proto is not designed for NoSQL, whose data is not fixed. So we only use the last row to determine the column type.
+	columnTypeMap := make(map[string]string)
+	totalQueryTime := time.Duration(0)
+	totalRowCount := 0
+	for {
+		input.NextToken = nextToken
+		startTime := time.Now()
+		output, err := d.client.ExecuteStatement(ctx, input)
+		totalQueryTime += time.Since(startTime)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to execute statement: %s", statement.Text)
+		}
+		for _, item := range output.Items {
+			totalRowCount++
+			meta := convertAttributeValueMapToRow(item)
+			allKeySet := make(map[string]bool)
+			for key := range rowMap {
+				allKeySet[key] = true
+			}
+			curKeySet := make(map[string]*dynamodbQueryResultMeta, len(meta))
+			for key, value := range meta {
+				curKeySet[key] = value
+				allKeySet[key] = true
+			}
+			for key := range allKeySet {
+				_, inRowMap := rowMap[key]
+				_, inCurKeySet := curKeySet[key]
+				// 1. The key appears in the rowMap, and appears in the current row, we append the value to the row.
+				if inRowMap && inCurKeySet {
+					rowMap[key] = append(rowMap[key], curKeySet[key].value)
+					columnTypeMap[key] = curKeySet[key].columnType
+				}
+				// 2.If the key appears in the row map, but does not appear in the current row, we append nil to the row.
+				if inRowMap && !inCurKeySet {
+					rowMap[key] = append(rowMap[key], nil)
+				}
+				// 3. If the key appears in the current row, but does not appear in the row map, it means that the current row has a new column, we should
+				// backfill the previous rows with nil.
+				if !inRowMap && inCurKeySet {
+					for i := 0; i < totalRowCount-1; i++ {
+						rowMap[key] = append(rowMap[key], nil)
+					}
+					rowMap[key] = append(rowMap[key], curKeySet[key].value)
+					columnTypeMap[key] = curKeySet[key].columnType
+				}
+			}
+		}
+		nextToken = output.NextToken
+		if nextToken == nil {
+			break
+		}
+	}
+	sortedColumnNames := make([]string, 0, len(rowMap))
+	for key := range rowMap {
+		sortedColumnNames = append(sortedColumnNames, key)
+	}
+	sort.StringSlice(sortedColumnNames).Sort()
+	columnTypes := make([]string, 0, len(sortedColumnNames))
+	for _, key := range sortedColumnNames {
+		columnTypes = append(columnTypes, columnTypeMap[key])
+	}
+	// Flatten the row map to rows.
+	if len(rowMap) > 0 {
+		for i := 0; i < totalRowCount; i++ {
+			row := &v1pb.QueryRow{}
+			for _, columnName := range sortedColumnNames {
+				row.Values = append(row.Values, rowMap[columnName][i])
+			}
+			result.Rows = append(result.Rows, row)
+		}
+	}
+	result.ColumnTypeNames = columnTypes
+	result.ColumnNames = sortedColumnNames
+	result.Latency = durationpb.New(totalQueryTime)
+	return result, nil
+}
+
+func convertAttributeValueMapToRow(items map[string]types.AttributeValue) map[string]*dynamodbQueryResultMeta {
+	result := make(map[string]*dynamodbQueryResultMeta, len(items))
+	var columnType string
+	for item, attributeValue := range items {
+		switch attributeValue.(type) {
+		case *types.AttributeValueMemberB:
+			columnType = "Binary"
+		case *types.AttributeValueMemberBOOL:
+			columnType = "Boolean"
+		case *types.AttributeValueMemberBS:
+			columnType = "BinarySet"
+		case *types.AttributeValueMemberL:
+			columnType = "List"
+		case *types.AttributeValueMemberM:
+			columnType = "Map"
+		case *types.AttributeValueMemberN:
+			columnType = "Number"
+		case *types.AttributeValueMemberNS:
+			columnType = "NumberSet"
+		case *types.AttributeValueMemberNULL:
+			columnType = "Null"
+		case *types.AttributeValueMemberS:
+			columnType = "String"
+		case *types.AttributeValueMemberSS:
+			columnType = "StringSet"
+		default:
+			columnType = "Unknown"
+		}
+		value, err := convertAttributeValueToRowValue(attributeValue)
+		var r *v1pb.RowValue
+		if err != nil {
+			r = &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: err.Error()},
+			}
+		} else {
+			r = value
+		}
+		result[item] = &dynamodbQueryResultMeta{
+			columnType: columnType,
+			value:      r,
+		}
+	}
+	return result
+}
+
+func convertAttributeValueToRowValue(attributeValue types.AttributeValue) (*v1pb.RowValue, error) {
+	switch attributeValue := attributeValue.(type) {
+	case *types.AttributeValueMemberB:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{StringValue: string(attributeValue.Value)},
+		}, nil
+	case *types.AttributeValueMemberBOOL:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_BoolValue{BoolValue: attributeValue.Value},
+		}, nil
+	case *types.AttributeValueMemberBS:
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
+			},
+		}, nil
+	case *types.AttributeValueMemberL:
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
+			},
+		}, nil
+	case *types.AttributeValueMemberM:
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
+			},
+		}, nil
+	case *types.AttributeValueMemberN:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: attributeValue.Value,
+			},
+		}, nil
+	case *types.AttributeValueMemberNS:
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
+			},
+		}, nil
+	case *types.AttributeValueMemberNULL:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_NullValue{
+				NullValue: structpb.NullValue_NULL_VALUE,
+			},
+		}, nil
+	case *types.AttributeValueMemberS:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: attributeValue.Value,
+			},
+		}, nil
+	case *types.AttributeValueMemberSS:
+		a := convertAttributeValueToGoPrimitives(attributeValue)
+		b, err := json.Marshal(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal attribute value")
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(b),
+			},
+		}, nil
+	}
+	return nil, errors.Errorf("unsupported attribute value type: %T", attributeValue)
 }
 
 // RunStatement executes a SQL statement.
-func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
-	panic("implement me")
+func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	statements, err := base.SplitMultiSQL(d.GetType(), statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split multi statement")
+	}
+
+	var results []*v1pb.QueryResult
+	for _, statement := range statements {
+		if statement.Empty {
+			continue
+		}
+		result, err := d.querySinglePartiQL(ctx, statement, &db.QueryContext{})
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+	return results, nil
+}
+
+func convertAttributeValueToGoPrimitives(av types.AttributeValue) any {
+	switch av := av.(type) {
+	case *types.AttributeValueMemberB:
+		return string(av.Value)
+	case *types.AttributeValueMemberBOOL:
+		return av.Value
+	case *types.AttributeValueMemberBS:
+		ss := make([]string, 0, len(av.Value))
+		for _, b := range av.Value {
+			ss = append(ss, string(b))
+		}
+		return ss
+	case *types.AttributeValueMemberL:
+		ss := make([]any, 0, len(av.Value))
+		for _, v := range av.Value {
+			ss = append(ss, convertAttributeValueToGoPrimitives(v))
+		}
+		return ss
+	case *types.AttributeValueMemberM:
+		m := make(map[string]any, len(av.Value))
+		for k, v := range av.Value {
+			m[k] = convertAttributeValueToGoPrimitives(v)
+		}
+		return m
+	case *types.AttributeValueMemberN:
+		return av.Value
+	case *types.AttributeValueMemberNS:
+		return av.Value
+	case *types.AttributeValueMemberNULL:
+		return nil
+	case *types.AttributeValueMemberS:
+		return av.Value
+	case *types.AttributeValueMemberSS:
+		return av.Value
+	}
+	return nil
 }

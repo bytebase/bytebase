@@ -429,96 +429,6 @@ export interface Task_DatabaseDataUpdate {
   /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   schemaVersion: string;
-  /** Build the rollback SQL if rollback_enabled. */
-  rollbackEnabled: boolean;
-  /** The status of the rollback SQL generation. */
-  rollbackSqlStatus: Task_DatabaseDataUpdate_RollbackSqlStatus;
-  rollbackError: string;
-  /**
-   * rollback_sheet is the resource name of
-   * the sheet that stores the generated rollback SQL statement.
-   * Format: projects/{project}/sheets/{sheet}
-   */
-  rollbackSheet: string;
-  /**
-   * rollback_from_issue is the resource name of the issue that
-   * the rollback SQL statement is generated from.
-   * Format: projects/{project}/issues/{issue}
-   */
-  rollbackFromIssue: string;
-  /**
-   * rollback_from_task is the resource name of the task that
-   * the rollback SQL statement is generated from.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-   */
-  rollbackFromTask: string;
-}
-
-export enum Task_DatabaseDataUpdate_RollbackSqlStatus {
-  ROLLBACK_SQL_STATUS_UNSPECIFIED = "ROLLBACK_SQL_STATUS_UNSPECIFIED",
-  PENDING = "PENDING",
-  DONE = "DONE",
-  FAILED = "FAILED",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(
-  object: any,
-): Task_DatabaseDataUpdate_RollbackSqlStatus {
-  switch (object) {
-    case 0:
-    case "ROLLBACK_SQL_STATUS_UNSPECIFIED":
-      return Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED;
-    case 1:
-    case "PENDING":
-      return Task_DatabaseDataUpdate_RollbackSqlStatus.PENDING;
-    case 2:
-    case "DONE":
-      return Task_DatabaseDataUpdate_RollbackSqlStatus.DONE;
-    case 3:
-    case "FAILED":
-      return Task_DatabaseDataUpdate_RollbackSqlStatus.FAILED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Task_DatabaseDataUpdate_RollbackSqlStatus.UNRECOGNIZED;
-  }
-}
-
-export function task_DatabaseDataUpdate_RollbackSqlStatusToJSON(
-  object: Task_DatabaseDataUpdate_RollbackSqlStatus,
-): string {
-  switch (object) {
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED:
-      return "ROLLBACK_SQL_STATUS_UNSPECIFIED";
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.PENDING:
-      return "PENDING";
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.DONE:
-      return "DONE";
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.FAILED:
-      return "FAILED";
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function task_DatabaseDataUpdate_RollbackSqlStatusToNumber(
-  object: Task_DatabaseDataUpdate_RollbackSqlStatus,
-): number {
-  switch (object) {
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED:
-      return 0;
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.PENDING:
-      return 1;
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.DONE:
-      return 2;
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.FAILED:
-      return 3;
-    case Task_DatabaseDataUpdate_RollbackSqlStatus.UNRECOGNIZED:
-    default:
-      return -1;
-  }
 }
 
 export interface Task_DatabaseDataExport {
@@ -2601,16 +2511,7 @@ export const Task_DatabaseSchemaUpdate = {
 };
 
 function createBaseTask_DatabaseDataUpdate(): Task_DatabaseDataUpdate {
-  return {
-    sheet: "",
-    schemaVersion: "",
-    rollbackEnabled: false,
-    rollbackSqlStatus: Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED,
-    rollbackError: "",
-    rollbackSheet: "",
-    rollbackFromIssue: "",
-    rollbackFromTask: "",
-  };
+  return { sheet: "", schemaVersion: "" };
 }
 
 export const Task_DatabaseDataUpdate = {
@@ -2620,24 +2521,6 @@ export const Task_DatabaseDataUpdate = {
     }
     if (message.schemaVersion !== "") {
       writer.uint32(18).string(message.schemaVersion);
-    }
-    if (message.rollbackEnabled === true) {
-      writer.uint32(24).bool(message.rollbackEnabled);
-    }
-    if (message.rollbackSqlStatus !== Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED) {
-      writer.uint32(32).int32(task_DatabaseDataUpdate_RollbackSqlStatusToNumber(message.rollbackSqlStatus));
-    }
-    if (message.rollbackError !== "") {
-      writer.uint32(42).string(message.rollbackError);
-    }
-    if (message.rollbackSheet !== "") {
-      writer.uint32(50).string(message.rollbackSheet);
-    }
-    if (message.rollbackFromIssue !== "") {
-      writer.uint32(58).string(message.rollbackFromIssue);
-    }
-    if (message.rollbackFromTask !== "") {
-      writer.uint32(66).string(message.rollbackFromTask);
     }
     return writer;
   },
@@ -2663,48 +2546,6 @@ export const Task_DatabaseDataUpdate = {
 
           message.schemaVersion = reader.string();
           continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.rollbackEnabled = reader.bool();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(reader.int32());
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.rollbackError = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.rollbackSheet = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.rollbackFromIssue = reader.string();
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.rollbackFromTask = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2718,14 +2559,6 @@ export const Task_DatabaseDataUpdate = {
     return {
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      rollbackEnabled: isSet(object.rollbackEnabled) ? globalThis.Boolean(object.rollbackEnabled) : false,
-      rollbackSqlStatus: isSet(object.rollbackSqlStatus)
-        ? task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(object.rollbackSqlStatus)
-        : Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED,
-      rollbackError: isSet(object.rollbackError) ? globalThis.String(object.rollbackError) : "",
-      rollbackSheet: isSet(object.rollbackSheet) ? globalThis.String(object.rollbackSheet) : "",
-      rollbackFromIssue: isSet(object.rollbackFromIssue) ? globalThis.String(object.rollbackFromIssue) : "",
-      rollbackFromTask: isSet(object.rollbackFromTask) ? globalThis.String(object.rollbackFromTask) : "",
     };
   },
 
@@ -2737,24 +2570,6 @@ export const Task_DatabaseDataUpdate = {
     if (message.schemaVersion !== "") {
       obj.schemaVersion = message.schemaVersion;
     }
-    if (message.rollbackEnabled === true) {
-      obj.rollbackEnabled = message.rollbackEnabled;
-    }
-    if (message.rollbackSqlStatus !== Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED) {
-      obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus);
-    }
-    if (message.rollbackError !== "") {
-      obj.rollbackError = message.rollbackError;
-    }
-    if (message.rollbackSheet !== "") {
-      obj.rollbackSheet = message.rollbackSheet;
-    }
-    if (message.rollbackFromIssue !== "") {
-      obj.rollbackFromIssue = message.rollbackFromIssue;
-    }
-    if (message.rollbackFromTask !== "") {
-      obj.rollbackFromTask = message.rollbackFromTask;
-    }
     return obj;
   },
 
@@ -2765,13 +2580,6 @@ export const Task_DatabaseDataUpdate = {
     const message = createBaseTask_DatabaseDataUpdate();
     message.sheet = object.sheet ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
-    message.rollbackEnabled = object.rollbackEnabled ?? false;
-    message.rollbackSqlStatus = object.rollbackSqlStatus ??
-      Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED;
-    message.rollbackError = object.rollbackError ?? "";
-    message.rollbackSheet = object.rollbackSheet ?? "";
-    message.rollbackFromIssue = object.rollbackFromIssue ?? "";
-    message.rollbackFromTask = object.rollbackFromTask ?? "";
     return message;
   },
 };

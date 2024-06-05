@@ -1539,10 +1539,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail"><span class="badge">M</span>Plan.ChangeDatabaseConfig.RollbackDetail</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Plan.CreateDatabaseConfig"><span class="badge">M</span>Plan.CreateDatabaseConfig</a>
                 </li>
               
@@ -2050,10 +2046,6 @@
                   <a href="#bytebase.v1.TaskRunLogEntry.SchemaDump"><span class="badge">M</span>TaskRunLogEntry.SchemaDump</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus"><span class="badge">E</span>Task.DatabaseDataUpdate.RollbackSqlStatus</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.v1.Task.Status"><span class="badge">E</span>Task.Status</a>
@@ -17238,20 +17230,6 @@ It is automatically generated in the UI workflow. </p></td>
                 </tr>
               
                 <tr>
-                  <td>rollback_enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_detail</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail">Plan.ChangeDatabaseConfig.RollbackDetail</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -17319,39 +17297,6 @@ It is automatically generated in the UI workflow. </p></td>
                   <td></td>
                   <td><p>The database for keeping the backup data.
 Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail">Plan.ChangeDatabaseConfig.RollbackDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>rollback_from_task</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_task is the task from which the rollback SQL statement is generated for this task.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_from_issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
-Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
             </tbody>
@@ -22053,54 +21998,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>rollback_enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Build the rollback SQL if rollback_enabled. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_sql_status</td>
-                  <td><a href="#bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus">Task.DatabaseDataUpdate.RollbackSqlStatus</a></td>
-                  <td></td>
-                  <td><p>The status of the rollback SQL generation. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_sheet is the resource name of
-the sheet that stores the generated rollback SQL statement.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_from_issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_issue is the resource name of the issue that
-the rollback SQL statement is generated from.
-Format: projects/{project}/issues/{issue} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_from_task</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_task is the resource name of the task that
-the rollback SQL statement is generated from.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -22561,41 +22458,6 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
         
       
 
-      
-        <h3 id="bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus">Task.DatabaseDataUpdate.RollbackSqlStatus</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ROLLBACK_SQL_STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.Task.Status">Task.Status</h3>
         <p></p>

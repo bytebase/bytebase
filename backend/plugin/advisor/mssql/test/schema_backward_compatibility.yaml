@@ -1,3 +1,12 @@
+- statement: EXEC sp_rename N'Phone', N'Telephone', N'USERDATATYPE';
+  want:
+    - status: WARN
+      code: 102
+      title: schema.backward-compatibility
+      content: sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.
+      line: 1
+      column: 0
+      details: ""
 - statement: DROP TABLE MyTable;
   want:
     - status: WARN
@@ -123,16 +132,16 @@
     - status: WARN
       code: 102
       title: schema.backward-compatibility
-      content: Rename Table 'Sales.SalesTerritory' WITH may cause incompatibility with the existing data and code
+      content: sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.
       line: 1
       column: 0
       details: ""
 - statement: EXEC sp_rename 'dbo.ErrorLog.ErrorTime', 'ErrorDateTime', 'COLUMN';
   want:
     - status: WARN
-      code: 104
+      code: 102
       title: schema.backward-compatibility
-      content: Rename COLUMN 'dbo.ErrorLog.ErrorTime' may cause incompatibility with the existing data and code
+      content: sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.
       line: 1
       column: 0
       details: ""

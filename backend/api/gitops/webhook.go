@@ -25,8 +25,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 
-	sc "github.com/bytebase/bytebase/backend/component/sheet"
-
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -204,7 +202,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 
 	var sheets []int
 	for _, change := range prInfo.changes {
-		sheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
+		sheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  creatorID,
 			ProjectUID: project.UID,
 			Title:      change.path,

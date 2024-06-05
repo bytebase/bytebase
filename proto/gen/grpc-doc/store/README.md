@@ -58,6 +58,7 @@
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
+    - [SequenceMetadata](#bytebase-store-SequenceMetadata)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableConfig](#bytebase-store-TableConfig)
     - [TableMetadata](#bytebase-store-TableMetadata)
@@ -147,7 +148,6 @@
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
     - [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry)
     - [PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-PreUpdateBackupDetail)
-    - [PlanConfig.ChangeDatabaseConfig.RollbackDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
@@ -1074,6 +1074,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
+| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 
 
 
@@ -1106,6 +1107,22 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
+
+
+
+
+
+
+<a name="bytebase-store-SequenceMetadata"></a>
+
+### SequenceMetadata
+SequenceMetadata is the metadata for sequences.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a sequence. |
+| data_type | [string](#string) |  | The data type of a sequence. |
 
 
 
@@ -2346,8 +2363,6 @@ InstanceOptions is the option for instances.
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
-| rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. |
-| rollback_detail | [PlanConfig.ChangeDatabaseConfig.RollbackDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail) | optional |  |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | pre_update_backup_detail | [PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -2381,22 +2396,6 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail"></a>
-
-### PlanConfig.ChangeDatabaseConfig.RollbackDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rollback_from_task | [string](#string) |  | rollback_from_task is the task from which the rollback SQL statement is generated for this task. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| rollback_from_issue | [string](#string) |  | rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task. Format: projects/{project}/issues/{issue} |
 
 
 

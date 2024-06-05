@@ -98,7 +98,7 @@ const options = computed((): ExpirationOption[] => {
   ];
   if (maximumRoleExpiration.value) {
     options = options.filter(
-      (option) => option.value <= maximumRoleExpiration.value!
+      (option) => option.value < maximumRoleExpiration.value!
     );
     options.push({
       value: maximumRoleExpiration.value,

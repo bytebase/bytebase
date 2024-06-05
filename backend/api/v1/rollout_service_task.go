@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
-	sc "github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -200,7 +200,7 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 	return steps, nil
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
 			return nil, nil, errors.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -209,7 +209,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, licenseService 
 
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, licenseService, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, licenseService, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
@@ -219,7 +219,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, licenseService 
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
@@ -317,7 +317,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := sc.CreateSheet(ctx, s, &store.SheetMessage{
+		sheet, err := sheetManager.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: project.UID,
 			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
@@ -611,21 +611,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecID:                spec.Id,
 			SheetID:               sheetUID,
 			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
-			RollbackEnabled:       c.RollbackEnabled,
-			RollbackSQLStatus:     api.RollbackSQLStatusPending,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
-		}
-		if c.RollbackDetail != nil {
-			issueID, err := common.GetIssueID(c.RollbackDetail.RollbackFromIssue)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get issue id from issue %q", c.RollbackDetail.RollbackFromIssue)
-			}
-			payload.RollbackFromIssueID = issueID
-			taskID, err := common.GetTaskID(c.RollbackDetail.RollbackFromTask)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get task id from task %q", c.RollbackDetail.RollbackFromTask)
-			}
-			payload.RollbackFromTaskID = taskID
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -681,8 +667,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 			SpecID:                spec.Id,
 			SheetID:               0,
 			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
-			RollbackEnabled:       c.RollbackEnabled,
-			RollbackSQLStatus:     api.RollbackSQLStatusPending,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		}
 

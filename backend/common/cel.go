@@ -202,8 +202,12 @@ type QueryExportFactors struct {
 
 // GetQueryExportFactors is used to get risk factors from query and export expressions.
 func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
-	factors := &QueryExportFactors{}
+	// If the expression is empty, return an empty struct.
+	if expression == "" {
+		return &QueryExportFactors{}, nil
+	}
 
+	factors := &QueryExportFactors{}
 	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
 	if err != nil {
 		return nil, err

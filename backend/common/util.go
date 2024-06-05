@@ -49,6 +49,7 @@ var (
 		storepb.Engine_OCEANBASE:        true,
 		storepb.Engine_SNOWFLAKE:        true,
 		storepb.Engine_MSSQL:            true,
+		storepb.Engine_DYNAMODB:         true,
 	}
 	StatementReportEngines = map[storepb.Engine]bool{
 		storepb.Engine_POSTGRES:         true,
