@@ -291,6 +291,7 @@ import {
   useEnvironmentV1List,
   useProjectV1Store,
   useDBGroupStore,
+  usePageMode,
 } from "@/store";
 import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -356,6 +357,9 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
+const pageMode = usePageMode();
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const featureModalContext = ref<{
   feature?: FeatureType;
@@ -615,7 +619,12 @@ const generateMultiDb = async () => {
     (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
   );
 
-  if (isEditSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {
+  if (
+    selectedDatabaseList.length === 1 &&
+    isEditSchema.value &&
+    allowUsingSchemaEditor(selectedDatabaseList) &&
+    !isStandaloneMode.value
+  ) {
     schemaEditorContext.value.databaseIdList = [
       ...flattenSelectedDatabaseUidList.value,
     ];
