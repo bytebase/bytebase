@@ -10,7 +10,7 @@
         <BBSpin />
       </div>
       <div v-else class="space-y-4">
-        <div>
+        <div class="space-y-4">
           <span class="text-main">
             {{ $t("database.transfer.select-databases") }}
             <span class="text-red-500">*</span>

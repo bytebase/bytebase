@@ -199,7 +199,7 @@ const instanceEngine = computed(() => {
 const allowQuery = computed(() => {
   if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
     return hasProjectPermissionV2(
-      defaultProject,
+      defaultProject(),
       currentUserV1.value,
       "bb.databases.query"
     );

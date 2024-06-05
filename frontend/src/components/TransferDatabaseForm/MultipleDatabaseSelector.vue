@@ -86,11 +86,14 @@
             <div v-if="showProjectColumn" class="bb-grid-cell">
               <ProjectNameCell :project="database.projectEntity" />
             </div>
-            <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
+            <div class="bb-grid-cell justify-end">
               <InstanceV1Name
                 :instance="database.instanceEntity"
                 :link="false"
               />
+            </div>
+            <div class="bb-grid-cell textinfolabel justify-end">
+              {{ hostPortOfInstanceV1(database.instanceEntity) }}
             </div>
           </template>
         </BBGrid>
@@ -108,6 +111,7 @@ import { useEnvironmentV1List } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
+import { hostPortOfInstanceV1 } from "@/utils";
 import { InstanceV1Name, ProductionEnvironmentV1Icon } from "../v2";
 import type { TransferSource } from "./utils";
 
@@ -190,18 +194,21 @@ const showProjectColumn = computed(() => {
 });
 
 const gridColumnList = computed((): BBGridColumn[] => {
-  const DB_NAME: BBGridColumn = {
-    width: "1fr",
-  };
-  const PROJECT: BBGridColumn = {
-    width: "8rem",
-  };
-  const INSTANCE: BBGridColumn = {
-    width: "20rem",
-  };
-  return showProjectColumn.value
-    ? [DB_NAME, PROJECT, INSTANCE]
-    : [DB_NAME, INSTANCE];
+  return [
+    {
+      width: "1fr",
+    },
+    {
+      width: "8rem",
+      hide: !showProjectColumn.value,
+    },
+    {
+      width: "20rem",
+    },
+    {
+      width: "10rem",
+    },
+  ].filter((col) => !col.hide);
 });
 
 const databaseListGroupByEnvironment = computed(() => {
