@@ -1,0 +1,22 @@
+- description: Tricky
+  input: -|
+    SELECT * FROM Music
+    SELECT * FROM |
+- description: Simple Select Complete Table
+  input: SELECT * FROM |
+  want:
+    - text: Music
+      type: TABLE
+      definition: ""
+      comment: ""
+- description: Simple Select Complete Item
+  input: SELECT | FROM Music
+  want:
+    - text: Artist
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: SongTitle
+      type: COLUMN
+      definition: ""
+      comment: ""
