@@ -35,6 +35,7 @@ enum Engine {
   ELASTICSEARCH = 21;
   BIGQUERY = 22;
   DYNAMODB = 23;
+  DATABRICKS = 24;
 }
 
 enum VCSType {

@@ -708,6 +708,7 @@ Used internally for obfuscating the page token.
 | ELASTICSEARCH | 21 |  |
 | BIGQUERY | 22 |  |
 | DYNAMODB | 23 |  |
+| DATABRICKS | 24 |  |
 
 
 
@@ -1702,6 +1703,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
+| account_id | [string](#string) |  | account_id is used by Databricks. |
 
 
 
