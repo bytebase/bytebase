@@ -10,6 +10,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dynamodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
@@ -24,6 +25,7 @@ import (
 
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
