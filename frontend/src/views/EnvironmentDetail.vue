@@ -13,9 +13,15 @@
     @restore="doRestore"
     @update-policy="updatePolicy"
   >
-    <EnvironmentFormBody class="w-full px-4 pb-2" />
+    <EnvironmentFormBody
+      :simple="simple"
+      :hide-archive-restore="hideArchiveRestore"
+      class="w-full px-4 pb-2"
+      :class="bodyClass"
+    />
     <EnvironmentFormButtons
       class="sticky bottom-0 bg-white py-2 px-4 border-t border-block-border"
+      :class="buttonsClass"
     />
   </EnvironmentForm>
 
@@ -32,6 +38,11 @@ import { reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import {
+  EnvironmentForm,
+  Form as EnvironmentFormBody,
+  Buttons as EnvironmentFormButtons,
+} from "@/components/EnvironmentForm";
 import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { hasFeature, pushNotification } from "@/store";
@@ -55,12 +66,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { extractEnvironmentResourceName } from "@/utils";
-import {
-  EnvironmentForm,
-  Form as EnvironmentFormBody,
-  Buttons as EnvironmentFormButtons,
-} from "@/components/EnvironmentForm";
+import { extractEnvironmentResourceName, type VueClass } from "@/utils";
 
 interface LocalState {
   environment: Environment;
@@ -73,12 +79,13 @@ interface LocalState {
     | "bb.feature.environment-tier-policy";
 }
 
-const props = defineProps({
-  environmentId: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  environmentId: string;
+  simple?: boolean;
+  hideArchiveRestore?: boolean;
+  bodyClass?: VueClass;
+  buttonsClass?: VueClass;
+}>();
 
 const emit = defineEmits(["archive"]);
 

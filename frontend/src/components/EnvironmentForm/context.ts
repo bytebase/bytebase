@@ -12,7 +12,7 @@ import type {
 } from "@/types/proto/v1/environment_service";
 import { PolicyType, type Policy } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import type { ResourceIdField } from "../v2";
+import type { ResourceIdField } from "@/components/v2";
 
 export type LocalState = {
   environment: Environment;
