@@ -130,7 +130,6 @@ import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { databaseServiceClient } from "@/grpcweb";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -139,6 +138,7 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useNotificationStore,
+  useDBSchemaV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -214,6 +214,7 @@ const state = reactive<LocalState>({
 });
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const { runSQLCheck } = provideSQLCheckContext();
 const $dialog = useDialog();
 
@@ -267,9 +268,10 @@ const prepareDatabaseMetadata = async () => {
   }[] = [];
   for (let i = 0; i < databaseList.value.length; i++) {
     const database = databaseList.value[i];
-    const metadata = await databaseServiceClient.getDatabaseMetadata({
-      name: `${database.name}/metadata`,
+    const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.name,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      skipCache: true,
     });
     targets.push({ database, metadata });
   }

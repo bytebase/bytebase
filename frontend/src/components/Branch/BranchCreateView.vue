@@ -100,12 +100,12 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
-import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
   useCurrentUserV1,
+  useDBSchemaV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import type { ComposedProject } from "@/types";
@@ -133,6 +133,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const me = useCurrentUserV1();
 const source = ref<Source>("PARENT");
 const databaseId = ref<string>();
@@ -177,9 +178,10 @@ const prepareBranchFromDatabaseHead = async (uid: string) => {
 
   console.time("--fetch metadata");
   const database = databaseStore.getDatabaseByUID(uid);
-  const metadata = await databaseServiceClient.getDatabaseMetadata({
-    name: `${database.name}/metadata`,
+  const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database: database.name,
     view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    skipCache: true,
   });
   console.timeEnd("--fetch metadata");
 
