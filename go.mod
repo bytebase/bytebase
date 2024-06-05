@@ -29,6 +29,7 @@ require (
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/databricks/databricks-sdk-go v0.12.0
 	github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4
 	github.com/github/gh-ost v1.1.6
 	github.com/go-ego/gse v0.80.2
@@ -85,7 +86,6 @@ require (
 	golang.org/x/oauth2 v0.20.0
 	golang.org/x/text v0.15.0
 	google.golang.org/api v0.182.0
-	google.golang.org/api v0.182.0
 	google.golang.org/genproto v0.0.0-20240528184218-531527333157
 	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157
@@ -121,7 +121,6 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/danieljoos/wincred v1.2.1 // indirect
-	github.com/databricks/databricks-sdk-go v0.12.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.5.0 // indirect
