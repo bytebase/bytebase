@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type Table struct {
+type storepbTable struct {
 	externalTable *store.ExternalTableMetadata
 	table         *store.TableMetadata
 	view          *store.ViewMetadata
@@ -19,8 +19,8 @@ type Table struct {
 	typeName      catalog.TableType
 }
 
-type SchemaMap = map[string][]*Table
-type CatalogMap = map[string]SchemaMap
+type databricksSchemaMap = map[string][]*storepbTable
+type databricksCatalogMap = map[string]databricksSchemaMap
 
 // sync catalog.
 func (d *Driver) SyncDBSchema(ctx context.Context) (*store.DatabaseSchemaMetadata, error) {
@@ -72,16 +72,16 @@ func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*store.
 	return nil, nil
 }
 
-func (d *Driver) listTables(ctx context.Context) (CatalogMap, error) {
+func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
 	tablesInfo, err := d.client.Tables.ListAll(ctx, catalog.ListTablesRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	catalogMap := make(CatalogMap)
+	catalogMap := make(databricksCatalogMap)
 
 	for _, tableInfo := range tablesInfo {
-		table := Table{
+		table := storepbTable{
 			typeName: tableInfo.TableType,
 		}
 
@@ -113,15 +113,15 @@ func (d *Driver) listTables(ctx context.Context) (CatalogMap, error) {
 		}
 
 		if schemaMap, ok := catalogMap[tableInfo.CatalogName]; !ok {
-			catalogMap[tableInfo.CatalogName] = SchemaMap{
-				tableInfo.SchemaName: []*Table{&table},
+			catalogMap[tableInfo.CatalogName] = databricksSchemaMap{
+				tableInfo.SchemaName: []*storepbTable{&table},
 			}
 		} else {
 			if tableList, ok := schemaMap[tableInfo.SchemaName]; ok {
 				tableList = append(tableList, &table)
 				schemaMap[tableInfo.SchemaName] = tableList
 			} else {
-				schemaMap[tableInfo.SchemaName] = []*Table{&table}
+				schemaMap[tableInfo.SchemaName] = []*storepbTable{&table}
 			}
 		}
 	}
@@ -155,7 +155,7 @@ func convertToDependentColumns(schema, table string, columnInfo []catalog.Column
 	return columns
 }
 
-func convertToStorepbSchemas(schemaMap SchemaMap) []*store.SchemaMetadata {
+func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*store.SchemaMetadata {
 	schemas := []*store.SchemaMetadata{}
 	for schemaName, tableList := range schemaMap {
 		schemaMetadata := &store.SchemaMetadata{
