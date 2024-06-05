@@ -56,6 +56,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		// Nothing.
 	case storepb.Engine_MSSQL:
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_SNOWFLAKE:
+	case storepb.Engine_DYNAMODB:
 	default:
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
