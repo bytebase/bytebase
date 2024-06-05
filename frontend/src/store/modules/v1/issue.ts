@@ -7,6 +7,7 @@ import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
 import { PresetRoleType, UNKNOWN_PROJECT_NAME } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
@@ -123,20 +124,47 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
   };
 });
 
+const convertApprovalNodeGroupToRole = (
+  group: ApprovalNode_GroupValue
+): string => {
+  switch (group) {
+    case ApprovalNode_GroupValue.PROJECT_MEMBER:
+      return PresetRoleType.PROJECT_DEVELOPER;
+    case ApprovalNode_GroupValue.PROJECT_OWNER:
+      return PresetRoleType.PROJECT_OWNER;
+    case ApprovalNode_GroupValue.WORKSPACE_DBA:
+      return PresetRoleType.WORKSPACE_DBA;
+    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
+      return PresetRoleType.WORKSPACE_ADMIN;
+  }
+  return "";
+};
+
 export const candidatesOfApprovalStepV1 = (
   issue: ComposedIssue,
   step: ApprovalStep
 ) => {
-  const workspaceMemberList = useUserStore().activeUserList.filter(
+  const userStore = useUserStore();
+  const workspaceMemberList = userStore.activeUserList.filter(
     (user) => user.userType === UserType.USER
   );
   const project = issue.projectEntity;
-  const projectMemberList = memberListInProjectV1(project.iamPolicy)
+  const projectMemberMap = memberListInProjectV1(project.iamPolicy)
     .filter((member) => member.user.userType === UserType.USER)
-    .map((member) => ({
-      ...member,
-      user: member.user,
-    }));
+    .reduce((map, member) => {
+      map.set(member.user.email, member);
+      return map;
+    }, new Map<string, { roleList: string[]; user: User }>());
+
+  for (const member of userStore.workspaceLevelProjectMembers) {
+    if (projectMemberMap.has(member.email)) {
+      continue;
+    }
+    projectMemberMap.set(member.email, {
+      roleList: [],
+      user: member,
+    });
+  }
 
   const candidates = step.nodes.flatMap((node) => {
     const {
@@ -147,28 +175,25 @@ export const candidatesOfApprovalStepV1 = (
     if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
 
     const candidatesForSystemRoles = (groupValue: ApprovalNode_GroupValue) => {
-      if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
-        return projectMemberList
-          .filter((member) =>
-            member.roleList.includes(PresetRoleType.PROJECT_DEVELOPER)
+      if (
+        groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER ||
+        groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
+      ) {
+        const targetRole = convertApprovalNodeGroupToRole(groupValue);
+        return [...projectMemberMap.values()]
+          .filter(
+            (member) =>
+              member.roleList.includes(targetRole) ||
+              member.user.roles.includes(targetRole)
           )
           .map((member) => member.user);
       }
-      if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
-        return projectMemberList
-          .filter((member) =>
-            member.roleList.includes(PresetRoleType.PROJECT_OWNER)
-          )
-          .map((member) => member.user);
-      }
-      if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
+      if (
+        groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
+        groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
+      ) {
         return workspaceMemberList.filter((member) =>
-          member.roles.includes(PresetRoleType.WORKSPACE_DBA)
-        );
-      }
-      if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
-        return workspaceMemberList.filter((member) =>
-          member.roles.includes(PresetRoleType.WORKSPACE_ADMIN)
+          member.roles.includes(convertApprovalNodeGroupToRole(groupValue))
         );
       }
       return [];

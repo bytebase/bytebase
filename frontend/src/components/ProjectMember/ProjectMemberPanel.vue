@@ -90,7 +90,6 @@ import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
   unknownUser,
-  ALL_USERS_USER_EMAIL,
   PRESET_WORKSPACE_ROLES,
   groupBindingPrefix,
 } from "@/types";
@@ -140,15 +139,6 @@ const projectIAMPolicyBindings = computed(() => {
 });
 
 const activeUserList = computed(() => {
-  const workspaceLevelProjectMembers = userStore.userList
-    .filter(
-      (user) =>
-        user.state === State.ACTIVE && user.email !== ALL_USERS_USER_EMAIL
-    )
-    .filter((user) =>
-      user.roles.some((role) => !PRESET_WORKSPACE_ROLES.includes(role))
-    );
-
   const projectMembers = uniq(
     projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
   )
@@ -165,7 +155,7 @@ const activeUserList = computed(() => {
     });
 
   const combinedMembers = uniqBy(
-    [...workspaceLevelProjectMembers, ...projectMembers],
+    [...userStore.workspaceLevelProjectMembers, ...projectMembers],
     "email"
   ).filter((user) => user.state === State.ACTIVE);
 

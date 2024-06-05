@@ -8,6 +8,7 @@ import {
   PresetRoleType,
   groupBindingPrefix,
   getUserEmailInBinding,
+  PRESET_WORKSPACE_ROLES,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -23,7 +24,11 @@ export const extractProjectResourceName = (name: string) => {
 export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   const groupStore = useUserGroupStore();
 
-  return iamPolicy.bindings
+  const workspaceLevelProjectRoles = user.roles.filter(
+    (role) => !PRESET_WORKSPACE_ROLES.includes(role)
+  );
+
+  const projectBindingRoles = iamPolicy.bindings
     .filter((binding) => {
       for (const member of binding.members) {
         if (member === getUserEmailInBinding(ALL_USERS_USER_EMAIL)) {
@@ -47,6 +52,8 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
       return false;
     })
     .map((binding) => binding.role);
+
+  return uniq([...projectBindingRoles, ...workspaceLevelProjectRoles]);
 };
 
 export const isMemberOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
