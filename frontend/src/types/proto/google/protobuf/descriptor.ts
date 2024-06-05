@@ -171,8 +171,6 @@ export interface FileDescriptorProto {
   syntax: string;
   /** The edition of the proto file. */
   edition: Edition;
-  /** The edition of the proto file. */
-  edition: Edition;
 }
 
 /** Describes a message type. */
@@ -216,98 +214,6 @@ export interface DescriptorProto_ReservedRange {
 export interface ExtensionRangeOptions {
   /** The parser stores options it doesn't recognize here. See above. */
   uninterpretedOption: UninterpretedOption[];
-  /**
-   * For external users: DO NOT USE. We are in the process of open sourcing
-   * extension declaration and executing internal cleanups before it can be
-   * used externally.
-   */
-  declaration: ExtensionRangeOptions_Declaration[];
-  /** Any features defined in the specific edition. */
-  features:
-    | FeatureSet
-    | undefined;
-  /**
-   * The verification state of the range.
-   * TODO: flip the default to DECLARATION once all empty ranges
-   * are marked as UNVERIFIED.
-   */
-  verification: ExtensionRangeOptions_VerificationState;
-}
-
-/** The verification state of the extension range. */
-export enum ExtensionRangeOptions_VerificationState {
-  /** DECLARATION - All the extensions of the range must be declared. */
-  DECLARATION = "DECLARATION",
-  UNVERIFIED = "UNVERIFIED",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function extensionRangeOptions_VerificationStateFromJSON(object: any): ExtensionRangeOptions_VerificationState {
-  switch (object) {
-    case 0:
-    case "DECLARATION":
-      return ExtensionRangeOptions_VerificationState.DECLARATION;
-    case 1:
-    case "UNVERIFIED":
-      return ExtensionRangeOptions_VerificationState.UNVERIFIED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ExtensionRangeOptions_VerificationState.UNRECOGNIZED;
-  }
-}
-
-export function extensionRangeOptions_VerificationStateToJSON(object: ExtensionRangeOptions_VerificationState): string {
-  switch (object) {
-    case ExtensionRangeOptions_VerificationState.DECLARATION:
-      return "DECLARATION";
-    case ExtensionRangeOptions_VerificationState.UNVERIFIED:
-      return "UNVERIFIED";
-    case ExtensionRangeOptions_VerificationState.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function extensionRangeOptions_VerificationStateToNumber(
-  object: ExtensionRangeOptions_VerificationState,
-): number {
-  switch (object) {
-    case ExtensionRangeOptions_VerificationState.DECLARATION:
-      return 0;
-    case ExtensionRangeOptions_VerificationState.UNVERIFIED:
-      return 1;
-    case ExtensionRangeOptions_VerificationState.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export interface ExtensionRangeOptions_Declaration {
-  /** The extension number declared within the extension range. */
-  number: number;
-  /**
-   * The fully-qualified name of the extension field. There must be a leading
-   * dot in front of the full name.
-   */
-  fullName: string;
-  /**
-   * The fully-qualified type name of the extension field. Unlike
-   * Metadata.type, Declaration.type must have a leading dot for messages
-   * and enums.
-   */
-  type: string;
-  /**
-   * If true, indicates that the number is reserved in the extension range,
-   * and any extension field with the number will fail to compile. Set this
-   * when a declared extension field is deleted.
-   */
-  reserved: boolean;
-  /**
-   * If true, indicates that the extension must be defined as repeated.
-   * Otherwise the extension must be defined as optional.
-   */
-  repeated: boolean;
   /**
    * For external users: DO NOT USE. We are in the process of open sourcing
    * extension declaration and executing internal cleanups before it can be
@@ -1051,7 +957,6 @@ export interface MessageOptions {
    * This should only be used as a temporary measure against broken builds due
    * to the change in behavior for JSON field name conflicts.
    *
-   * TODO This is legacy behavior we plan to remove once downstream
    * TODO This is legacy behavior we plan to remove once downstream
    * teams have had time to migrate.
    *
@@ -4093,7 +3998,6 @@ function createBaseFileOptions(): FileOptions {
     phpMetadataNamespace: "",
     rubyPackage: "",
     features: undefined,
-    features: undefined,
     uninterpretedOption: [],
   };
 }
@@ -4366,7 +4270,6 @@ export const FileOptions = {
       phpMetadataNamespace: isSet(object.phpMetadataNamespace) ? globalThis.String(object.phpMetadataNamespace) : "",
       rubyPackage: isSet(object.rubyPackage) ? globalThis.String(object.rubyPackage) : "",
       features: isSet(object.features) ? FeatureSet.fromJSON(object.features) : undefined,
-      features: isSet(object.features) ? FeatureSet.fromJSON(object.features) : undefined,
       uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
         ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
         : [],
@@ -4469,9 +4372,6 @@ export const FileOptions = {
     message.phpNamespace = object.phpNamespace ?? "";
     message.phpMetadataNamespace = object.phpMetadataNamespace ?? "";
     message.rubyPackage = object.rubyPackage ?? "";
-    message.features = (object.features !== undefined && object.features !== null)
-      ? FeatureSet.fromPartial(object.features)
-      : undefined;
     message.features = (object.features !== undefined && object.features !== null)
       ? FeatureSet.fromPartial(object.features)
       : undefined;
