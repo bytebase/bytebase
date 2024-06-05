@@ -6,36 +6,46 @@
     CREATE TABLE t4(id INT, creator_id INT, created_ts timestamp, updater_id INT);
     CREATE TABLE t5(id INT, creator_id INT, created_ts timestamp, updater_id INT, updated_ts timestamp);
   want:
-    - status: WARN
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `t1` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
-      line: 1
-      details: ""
-    - status: WARN
+      content: 'Table `t1` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id"
-      line: 2
-      details: ""
-    - status: WARN
+      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `t2` requires columns: created_ts, updated_ts, updater_id"
-      line: 3
-      details: ""
-    - status: WARN
+      content: 'Table `t2` requires columns: created_ts, updated_ts, updater_id'
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `t3` requires columns: updated_ts, updater_id"
-      line: 4
-      details: ""
-    - status: WARN
+      content: 'Table `t3` requires columns: updated_ts, updater_id'
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `t4` requires columns: updated_ts"
-      line: 5
-      details: ""
+      content: 'Table `t4` requires columns: updated_ts'
+      detail: ""
+      startposition:
+        line: 5
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -45,12 +55,12 @@
       updated_ts timestamp
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -61,12 +71,14 @@
     );
     ALTER TABLE book RENAME COLUMN creator_id TO creator;
   want:
-    - status: WARN
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
-      line: 8
-      details: ""
+      content: 'Table `book` requires columns: creator_id'
+      detail: ""
+      startposition:
+        line: 8
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -77,12 +89,12 @@
     );
     ALTER TABLE book RENAME COLUMN creator TO creator_id;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -93,12 +105,14 @@
     );
     ALTER TABLE book CHANGE COLUMN creator_id creator int;
   want:
-    - status: WARN
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
-      line: 8
-      details: ""
+      content: 'Table `book` requires columns: creator_id'
+      detail: ""
+      startposition:
+        line: 8
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -109,12 +123,12 @@
     );
     ALTER TABLE book CHANGE COLUMN creator creator_id int;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -125,12 +139,14 @@
     );
     ALTER TABLE book DROP COLUMN creator_id;
   want:
-    - status: WARN
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
-      line: 8
-      details: ""
+      content: 'Table `book` requires columns: creator_id'
+      detail: ""
+      startposition:
+        line: 8
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -142,12 +158,12 @@
     );
     ALTER TABLE book DROP COLUMN content;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -157,12 +173,14 @@
     );
     ALTER TABLE book ADD COLUMN content varchar(255);
   want:
-    - status: WARN
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `book` requires columns: updater_id"
-      line: 1
-      details: ""
+      content: 'Table `book` requires columns: updater_id'
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -173,12 +191,12 @@
     );
     ALTER TABLE book ADD COLUMN creator_id int;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -192,18 +210,22 @@
       updated_ts timestamp
     );
   want:
-    - status: WARN
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
-      line: 1
-      details: ""
-    - status: WARN
+      content: 'Table `book` requires columns: creator_id'
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 401
       title: column.required
-      content: "Table `student` requires columns: creator_id, updater_id"
-      line: 7
-      details: ""
+      content: 'Table `student` requires columns: creator_id, updater_id'
+      detail: ""
+      startposition:
+        line: 7
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -214,12 +236,12 @@
     );
     DROP TABLE book;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(
       id int
@@ -231,9 +253,9 @@
       updated_ts timestamp
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

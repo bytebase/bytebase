@@ -25,7 +25,7 @@ type InsertMustSpecifyColumnAdvisor struct {
 }
 
 // Check checks for to enforce column specified.
-func (*InsertMustSpecifyColumnAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*InsertMustSpecifyColumnAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -51,17 +51,17 @@ func (*InsertMustSpecifyColumnAdvisor) Check(ctx advisor.Context, _ string) ([]a
 type insertMustSpecifyColumnListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *insertMustSpecifyColumnListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *insertMustSpecifyColumnListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -72,12 +72,14 @@ func (l *insertMustSpecifyColumnListener) generateAdvice() ([]advisor.Advice, er
 // EnterInsert_into_clause is called when production insert_into_clause is entered.
 func (l *insertMustSpecifyColumnListener) EnterInsert_into_clause(ctx *parser.Insert_into_clauseContext) {
 	if ctx.Paren_column_list() == nil {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.InsertNotSpecifyColumn,
+			Code:    advisor.InsertNotSpecifyColumn.Int32(),
 			Title:   l.title,
 			Content: "INSERT statement should specify column name.",
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

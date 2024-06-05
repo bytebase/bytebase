@@ -27,7 +27,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -55,7 +55,7 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Ad
 type TableRequirePKListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	tableName       string
@@ -63,24 +63,26 @@ type TableRequirePKListener struct {
 	tableLine       map[string]int
 }
 
-func (l *TableRequirePKListener) generateAdvice() ([]advisor.Advice, error) {
-	advice := []advisor.Advice{}
+func (l *TableRequirePKListener) generateAdvice() ([]*storepb.Advice, error) {
+	advice := []*storepb.Advice{}
 	for tableName, hasPK := range l.tableWitPK {
 		if !hasPK {
-			advice = append(advice, advisor.Advice{
+			advice = append(advice, &storepb.Advice{
 				Status:  l.level,
-				Code:    advisor.TableNoPK,
+				Code:    advisor.TableNoPK.Int32(),
 				Title:   l.title,
 				Content: fmt.Sprintf("Table %s requires PRIMARY KEY.", normalizeTableName(tableName)),
-				Line:    l.tableLine[tableName],
+				StartPosition: &storepb.Position{
+					Line: int32(l.tableLine[tableName]),
+				},
 			})
 		}
 	}
 
 	if len(advice) == 0 {
-		advice = append(advice, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		advice = append(advice, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

@@ -1,19 +1,18 @@
 - statement: CREATE TABLE t(a int)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(a int) PARTITION BY RANGE (a) (
             PARTITION p0 VALUES LESS THAN (6),
             PARTITION p1 VALUES LESS THAN (11)
           )
   want:
-    - status: WARN
+    - status: 2
       code: 608
       title: table.disallow-partition
       content: |-
@@ -21,16 +20,17 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
-      line: 4
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
 - statement: |-
     ALTER TABLE tech_book PARTITION BY RANGE (a) (
             PARTITION p0 VALUES LESS THAN (6),
             PARTITION p1 VALUES LESS THAN (11)
           )
   want:
-    - status: WARN
+    - status: 2
       code: 608
       title: table.disallow-partition
       content: |-
@@ -38,6 +38,7 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
-      line: 4
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 4
+        column: 0

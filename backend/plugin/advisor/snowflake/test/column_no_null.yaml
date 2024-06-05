@@ -6,18 +6,22 @@
       address VARCHAR
     );
   want:
-    - status: WARN
+    - status: 2
       code: 402
       title: column.no-null
       content: Column AGE is nullable, which is not allowed.
-      line: 4
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
+    - status: 2
       code: 402
       title: column.no-null
       content: Column ADDRESS is nullable, which is not allowed.
-      line: 5
-      details: ""
+      detail: ""
+      startposition:
+        line: 5
+        column: 0
 - statement: |-
     CREATE TABLE t (
       id INT,
@@ -27,12 +31,14 @@
       PRIMARY KEY (id, age)
     )
   want:
-    - status: WARN
+    - status: 2
       code: 402
       title: column.no-null
       content: Column ADDRESS is nullable, which is not allowed.
-      line: 5
-      details: ""
+      detail: ""
+      startposition:
+        line: 5
+        column: 0
 - statement: |-
     CREATE TABLE t (
       id INT NOT NULL,
@@ -41,33 +47,37 @@
       address VARCHAR NOT NULL
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE a ADD COLUMN age INT;
   want:
-    - status: WARN
+    - status: 2
       code: 402
       title: column.no-null
       content: Column AGE is nullable, which is not allowed.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE a ADD COLUMN age INT NOT NULL;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE a ALTER COLUMN age DROP NOT NULL;
   want:
-    - status: WARN
+    - status: 2
       code: 402
       title: column.no-null
       content: After dropping NOT NULL of column AGE, it will be nullable, which is not allowed.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

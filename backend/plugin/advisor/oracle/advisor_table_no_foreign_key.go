@@ -27,7 +27,7 @@ type TableNoForeignKeyAdvisor struct {
 }
 
 // Check checks for table disallow foreign key.
-func (*TableNoForeignKeyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableNoForeignKeyAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -55,7 +55,7 @@ func (*TableNoForeignKeyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 type tableNoForeignKeyListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	tableName       string
@@ -63,24 +63,26 @@ type tableNoForeignKeyListener struct {
 	tableLine       map[string]int
 }
 
-func (l *tableNoForeignKeyListener) generateAdvice() ([]advisor.Advice, error) {
-	advice := []advisor.Advice{}
+func (l *tableNoForeignKeyListener) generateAdvice() ([]*storepb.Advice, error) {
+	advice := []*storepb.Advice{}
 	for tableName, hasFK := range l.tableWithFK {
 		if hasFK {
-			advice = append(advice, advisor.Advice{
+			advice = append(advice, &storepb.Advice{
 				Status:  l.level,
-				Code:    advisor.TableHasFK,
+				Code:    advisor.TableHasFK.Int32(),
 				Title:   l.title,
 				Content: fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeTableName(tableName)),
-				Line:    l.tableLine[tableName],
+				StartPosition: &storepb.Position{
+					Line: int32(l.tableLine[tableName]),
+				},
 			})
 		}
 	}
 
 	if len(advice) == 0 {
-		advice = append(advice, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		advice = append(advice, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

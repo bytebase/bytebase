@@ -25,7 +25,7 @@ type SelectNoSelectAllAdvisor struct {
 }
 
 // Check checks for no select all.
-func (*SelectNoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*SelectNoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -51,17 +51,17 @@ func (*SelectNoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 type selectNoSelectAllListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *selectNoSelectAllListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *selectNoSelectAllListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -72,12 +72,14 @@ func (l *selectNoSelectAllListener) generateAdvice() ([]advisor.Advice, error) {
 // EnterSelected_list is called when production selected_list is entered.
 func (l *selectNoSelectAllListener) EnterSelected_list(ctx *parser.Selected_listContext) {
 	if ctx.ASTERISK() != nil {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.StatementSelectAll,
+			Code:    advisor.StatementSelectAll.Int32(),
 			Title:   l.title,
 			Content: "Avoid using SELECT *.",
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

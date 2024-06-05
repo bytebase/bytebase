@@ -1,79 +1,82 @@
 - statement: CREATE TABLE techBook(id int, name varchar(255))
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: '`techBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE tech_book_copy(id int, name varchar(255))
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde(id int, name varchar(255))
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: '`cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde` mismatches table naming convention, its length should be within 64 characters'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book RENAME TO TechBook
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book RENAME TO tech_book_copy
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: RENAME TABLE tech_book TO tech_book_copy, tech_book_copy TO LiteraryBook
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO TechBook, literary_book TO LiteraryBook
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 301
       title: naming.table
       content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

@@ -24,7 +24,7 @@ type StatementAddFKNotValidAdvisor struct {
 }
 
 // Check checks for to add check not valid.
-func (*StatementAddFKNotValidAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementAddFKNotValidAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -45,9 +45,9 @@ func (*StatementAddFKNotValidAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -56,8 +56,8 @@ func (*StatementAddFKNotValidAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 type statementAddFKNotValidChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	line       int
 }
@@ -66,12 +66,14 @@ type statementAddFKNotValidChecker struct {
 func (checker *statementAddFKNotValidChecker) Visit(in ast.Node) ast.Visitor {
 	if node, ok := in.(*ast.AddConstraintStmt); ok {
 		if node.Constraint.Type == ast.ConstraintTypeForeign && !node.Constraint.SkipValidation {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementAddFKWithValidation,
+				Code:    advisor.StatementAddFKWithValidation.Int32(),
 				Title:   checker.title,
 				Content: "Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately",
-				Line:    checker.line,
+				StartPosition: &storepb.Position{
+					Line: int32(checker.line),
+				},
 			})
 		}
 	}

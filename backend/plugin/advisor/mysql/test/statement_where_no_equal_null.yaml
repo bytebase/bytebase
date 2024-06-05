@@ -1,19 +1,29 @@
 - statement: |
     SELECT * FROM employee WHERE name = 'Jack' AND id IS NULL;
   want:
-    - status: SUCCESS
+    - status: 1
+      code: 0
       title: OK
+      content: ""
+      detail: ""
+      startposition: null
 - statement: |
     UPDATE employee SET name = NULL;
   want:
-    - status: SUCCESS
+    - status: 1
+      code: 0
       title: OK
+      content: ""
+      detail: ""
+      startposition: null
 - statement: |
     SELECT * FROM t WHERE name = 'test' AND id = NULL;
   want:
-    - status: WARN
+    - status: 2
       code: 221
       title: statement.where.no-equal-null
-      content: |-
-        WHERE clause contains equal null: SELECT * FROM t WHERE name = 'test' AND id = NULL;
-      line: 1
+      content: 'WHERE clause contains equal null: SELECT * FROM t WHERE name = ''test'' AND id = NULL;'
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

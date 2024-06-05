@@ -30,7 +30,7 @@ type DisallowOrderByAdvisor struct {
 }
 
 // Check checks for no ORDER BY clause in DELETE/UPDATE statements.
-func (*DisallowOrderByAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*DisallowOrderByAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -51,9 +51,9 @@ func (*DisallowOrderByAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,8 +65,8 @@ type disallowOrderByChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -91,11 +91,13 @@ func (checker *disallowOrderByChecker) EnterUpdateStatement(ctx *mysql.UpdateSta
 }
 
 func (checker *disallowOrderByChecker) handleOrderByClause(code advisor.Code, lineNumber int) {
-	checker.adviceList = append(checker.adviceList, advisor.Advice{
+	checker.adviceList = append(checker.adviceList, &storepb.Advice{
 		Status:  checker.level,
-		Code:    code,
+		Code:    code.Int32(),
 		Title:   checker.title,
 		Content: fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", checker.text),
-		Line:    checker.line + lineNumber,
+		StartPosition: &storepb.Position{
+			Line: int32(checker.line + lineNumber),
+		},
 	})
 }

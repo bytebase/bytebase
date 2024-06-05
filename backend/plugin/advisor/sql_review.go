@@ -493,7 +493,7 @@ type SQLReviewCheckContext struct {
 	CurrentDatabase string
 }
 
-func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
+func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []*storepb.Advice) {
 	switch checkContext.DbType {
 	case storepb.Engine_TIDB:
 		return tidbSyntaxCheck(statement)
@@ -510,39 +510,45 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 	case storepb.Engine_DYNAMODB:
 		return partiqlSyntaxCheck(statement)
 	}
-	return nil, []Advice{
+	return nil, []*storepb.Advice{
 		{
-			Status:  Error,
-			Code:    Unsupported,
+			Status:  storepb.Advice_ERROR,
+			Code:    Unsupported.Int32(),
 			Title:   "Unsupported database type",
 			Content: fmt.Sprintf("Unsupported database type %s", checkContext.DbType),
-			Line:    1,
+			StartPosition: &storepb.Position{
+				Line: 1,
+			},
 		},
 	}
 }
 
-func partiqlSyntaxCheck(statement string) (any, []Advice) {
+func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	result, err := partiqlparser.ParsePartiQL(statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
-			return nil, []Advice{
+			return nil, []*storepb.Advice{
 				{
-					Status:  Warn,
-					Code:    StatementSyntaxError,
+					Status:  storepb.Advice_WARNING,
+					Code:    StatementSyntaxError.Int32(),
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
-					Line:    syntaxErr.Line,
-					Column:  syntaxErr.Column,
+					StartPosition: &storepb.Position{
+						Line:   int32(syntaxErr.Line),
+						Column: int32(syntaxErr.Column),
+					},
 				},
 			}
 		}
-		return nil, []Advice{
+		return nil, []*storepb.Advice{
 			{
-				Status:  Warn,
-				Code:    Internal,
+				Status:  storepb.Advice_WARNING,
+				Code:    Internal.Int32(),
 				Title:   "Parse error",
 				Content: err.Error(),
-				Line:    1,
+				StartPosition: &storepb.Position{
+					Line: 1,
+				},
 			},
 		}
 	}
@@ -554,28 +560,32 @@ func partiqlSyntaxCheck(statement string) (any, []Advice) {
 	return result.Tree, nil
 }
 
-func mssqlSyntaxCheck(statement string) (any, []Advice) {
+func mssqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	result, err := tsqlparser.ParseTSQL(statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
-			return nil, []Advice{
+			return nil, []*storepb.Advice{
 				{
-					Status:  Warn,
-					Code:    StatementSyntaxError,
+					Status:  storepb.Advice_WARNING,
+					Code:    StatementSyntaxError.Int32(),
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
-					Line:    syntaxErr.Line,
-					Column:  syntaxErr.Column,
+					StartPosition: &storepb.Position{
+						Line:   int32(syntaxErr.Line),
+						Column: int32(syntaxErr.Column),
+					},
 				},
 			}
 		}
-		return nil, []Advice{
+		return nil, []*storepb.Advice{
 			{
-				Status:  Warn,
-				Code:    Internal,
+				Status:  storepb.Advice_WARNING,
+				Code:    Internal.Int32(),
 				Title:   "Parse error",
 				Content: err.Error(),
-				Line:    1,
+				StartPosition: &storepb.Position{
+					Line: 1,
+				},
 			},
 		}
 	}
@@ -587,28 +597,32 @@ func mssqlSyntaxCheck(statement string) (any, []Advice) {
 	return result.Tree, nil
 }
 
-func snowflakeSyntaxCheck(statement string) (any, []Advice) {
+func snowflakeSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	result, err := snowsqlparser.ParseSnowSQL(statement + ";")
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
-			return nil, []Advice{
+			return nil, []*storepb.Advice{
 				{
-					Status:  Warn,
-					Code:    StatementSyntaxError,
+					Status:  storepb.Advice_WARNING,
+					Code:    StatementSyntaxError.Int32(),
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
-					Line:    syntaxErr.Line,
-					Column:  syntaxErr.Column,
+					StartPosition: &storepb.Position{
+						Line:   int32(syntaxErr.Line),
+						Column: int32(syntaxErr.Column),
+					},
 				},
 			}
 		}
-		return nil, []Advice{
+		return nil, []*storepb.Advice{
 			{
-				Status:  Warn,
-				Code:    Internal,
+				Status:  storepb.Advice_WARNING,
+				Code:    Internal.Int32(),
 				Title:   "Parse error",
 				Content: err.Error(),
-				Line:    1,
+				StartPosition: &storepb.Position{
+					Line: 1,
+				},
 			},
 		}
 	}
@@ -619,28 +633,32 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 	return result.Tree, nil
 }
 
-func oracleSyntaxCheck(statement string) (any, []Advice) {
+func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	tree, _, err := plsqlparser.ParsePLSQL(statement + ";")
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
-			return nil, []Advice{
+			return nil, []*storepb.Advice{
 				{
-					Status:  Warn,
-					Code:    StatementSyntaxError,
+					Status:  storepb.Advice_WARNING,
+					Code:    StatementSyntaxError.Int32(),
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
-					Line:    syntaxErr.Line,
-					Column:  syntaxErr.Column,
+					StartPosition: &storepb.Position{
+						Line:   int32(syntaxErr.Line),
+						Column: int32(syntaxErr.Column),
+					},
 				},
 			}
 		}
-		return nil, []Advice{
+		return nil, []*storepb.Advice{
 			{
-				Status:  Warn,
-				Code:    Internal,
+				Status:  storepb.Advice_WARNING,
+				Code:    Internal.Int32(),
 				Title:   "Parse error",
 				Content: err.Error(),
-				Line:    1,
+				StartPosition: &storepb.Position{
+					Line: 1,
+				},
 			},
 		}
 	}
@@ -648,27 +666,31 @@ func oracleSyntaxCheck(statement string) (any, []Advice) {
 	return tree, nil
 }
 
-func postgresSyntaxCheck(statement string) (any, []Advice) {
+func postgresSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		if _, ok := err.(*pgrawparser.ConvertError); ok {
-			return nil, []Advice{
+			return nil, []*storepb.Advice{
 				{
-					Status:  Error,
-					Code:    Internal,
+					Status:  storepb.Advice_ERROR,
+					Code:    Internal.Int32(),
 					Title:   "Parser conversion error",
 					Content: err.Error(),
-					Line:    calculatePostgresErrorLine(statement),
+					StartPosition: &storepb.Position{
+						Line: int32(calculatePostgresErrorLine(statement)),
+					},
 				},
 			}
 		}
-		return nil, []Advice{
+		return nil, []*storepb.Advice{
 			{
-				Status:  Error,
-				Code:    StatementSyntaxError,
+				Status:  storepb.Advice_ERROR,
+				Code:    StatementSyntaxError.Int32(),
 				Title:   SyntaxErrorTitle,
 				Content: err.Error(),
-				Line:    calculatePostgresErrorLine(statement),
+				StartPosition: &storepb.Position{
+					Line: int32(calculatePostgresErrorLine(statement)),
+				},
 			},
 		}
 	}
@@ -707,28 +729,32 @@ func newTiDBParser() *tidbparser.Parser {
 	return p
 }
 
-func mysqlSyntaxCheck(statement string) (any, []Advice) {
+func mysqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	res, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
-			return nil, []Advice{
+			return nil, []*storepb.Advice{
 				{
-					Status:  Error,
-					Code:    StatementSyntaxError,
+					Status:  storepb.Advice_ERROR,
+					Code:    StatementSyntaxError.Int32(),
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
-					Line:    syntaxErr.Line,
-					Column:  syntaxErr.Column,
+					StartPosition: &storepb.Position{
+						Line:   int32(syntaxErr.Line),
+						Column: int32(syntaxErr.Column),
+					},
 				},
 			}
 		}
-		return nil, []Advice{
+		return nil, []*storepb.Advice{
 			{
-				Status:  Error,
-				Code:    Internal,
+				Status:  storepb.Advice_ERROR,
+				Code:    Internal.Int32(),
 				Title:   "Parse error",
 				Content: err.Error(),
-				Line:    1,
+				StartPosition: &storepb.Position{
+					Line: 1,
+				},
 			},
 		}
 	}
@@ -754,34 +780,38 @@ func relocationTiDBErrorLine(errorMessage string, baseLine int) string {
 	return modified
 }
 
-func tidbSyntaxCheck(statement string) (any, []Advice) {
+func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
-		return nil, []Advice{
+		return nil, []*storepb.Advice{
 			{
-				Status:  Warn,
-				Code:    Internal,
+				Status:  storepb.Advice_WARNING,
+				Code:    Internal.Int32(),
 				Title:   "Syntax error",
 				Content: err.Error(),
-				Line:    1,
+				StartPosition: &storepb.Position{
+					Line: 1,
+				},
 			},
 		}
 	}
 
 	p := newTiDBParser()
 	var returnNodes []tidbast.StmtNode
-	var adviceList []Advice
+	var adviceList []*storepb.Advice
 	baseLine := 0
 	for _, singleSQL := range singleSQLs {
 		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
-			return nil, []Advice{
+			return nil, []*storepb.Advice{
 				{
-					Status:  Warn,
-					Code:    Internal,
+					Status:  storepb.Advice_WARNING,
+					Code:    Internal.Int32(),
 					Title:   "Parse error",
 					Content: relocationTiDBErrorLine(err.Error(), baseLine),
-					Line:    1 + baseLine,
+					StartPosition: &storepb.Position{
+						Line: int32(baseLine + 1),
+					},
 				},
 			}
 		}
@@ -795,12 +825,14 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 		node.SetOriginTextPosition(singleSQL.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, append(adviceList, Advice{
-					Status:  Error,
-					Code:    Internal,
+				return nil, append(adviceList, &storepb.Advice{
+					Status:  storepb.Advice_ERROR,
+					Code:    Internal.Int32(),
 					Title:   "Set line error",
 					Content: err.Error(),
-					Line:    singleSQL.LastLine,
+					StartPosition: &storepb.Position{
+						Line: int32(singleSQL.LastLine),
+					},
 				})
 			}
 		}
@@ -812,7 +844,7 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
-func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
+func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkContext SQLReviewCheckContext) ([]*storepb.Advice, error) {
 	ast, result := syntaxCheck(statements, checkContext)
 	if ast == nil || len(ruleList) == 0 {
 		return result, nil
@@ -874,12 +906,12 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 	}
 	sort.SliceStable(result, func(i, j int) bool {
 		// Error is 2, warning is 1. So the error (value 2) should come first.
-		return result[i].Status.GetPriority() > result[j].Status.GetPriority()
+		return result[i].Status.Number() > result[j].Status.Number()
 	})
 	if len(result) == 0 {
-		result = append(result, Advice{
-			Status:  Success,
-			Code:    Ok,
+		result = append(result, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -887,148 +919,180 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 	return result, nil
 }
 
-func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err error) ([]Advice, error) {
+func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err error) ([]*storepb.Advice, error) {
 	walkThroughError, ok := err.(*catalog.WalkThroughError)
 	if !ok {
 		return nil, err
 	}
 
-	var res []Advice
+	var res []*storepb.Advice
 	switch walkThroughError.Type {
 	case catalog.ErrorTypeUnsupported:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    Unsupported,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    Unsupported.Int32(),
 			Title:   walkThroughError.Content,
 			Content: "",
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeParseError:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    StatementSyntaxError,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    StatementSyntaxError.Int32(),
 			Title:   SyntaxErrorTitle,
 			Content: walkThroughError.Content,
 		})
 	case catalog.ErrorTypeDeparseError:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    Internal,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    Internal.Int32(),
 			Title:   "Internal error for walk-through",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeAccessOtherDatabase:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    NotCurrentDatabase,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    NotCurrentDatabase.Int32(),
 			Title:   "Access other database",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeDatabaseIsDeleted:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    DatabaseIsDeleted,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    DatabaseIsDeleted.Int32(),
 			Title:   "Access deleted database",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeTableExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    TableExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    TableExists.Int32(),
 			Title:   "Table already exists",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeTableNotExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    TableNotExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    TableNotExists.Int32(),
 			Title:   "Table does not exist",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeColumnExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    ColumnExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    ColumnExists.Int32(),
 			Title:   "Column already exists",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeColumnNotExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    ColumnNotExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    ColumnNotExists.Int32(),
 			Title:   "Column does not exist",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeDropAllColumns:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    DropAllColumns,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    DropAllColumns.Int32(),
 			Title:   "Drop all columns",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypePrimaryKeyExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    PrimaryKeyExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    PrimaryKeyExists.Int32(),
 			Title:   "Primary key exists",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeIndexExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    IndexExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    IndexExists.Int32(),
 			Title:   "Index exists",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeIndexEmptyKeys:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    IndexEmptyKeys,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    IndexEmptyKeys.Int32(),
 			Title:   "Index empty keys",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypePrimaryKeyNotExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    PrimaryKeyNotExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    PrimaryKeyNotExists.Int32(),
 			Title:   "Primary key does not exist",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeIndexNotExists:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    IndexNotExists,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    IndexNotExists.Int32(),
 			Title:   "Index does not exist",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeIncorrectIndexName:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    IncorrectIndexName,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    IncorrectIndexName.Int32(),
 			Title:   "Incorrect index name",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeSpatialIndexKeyNullable:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    SpatialIndexKeyNullable,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    SpatialIndexKeyNullable.Int32(),
 			Title:   "Spatial index key must be NOT NULL",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	case catalog.ErrorTypeColumnIsReferencedByView:
 		details := ""
@@ -1044,13 +1108,15 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			}
 		}
 
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    ColumnIsReferencedByView,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    ColumnIsReferencedByView.Int32(),
 			Title:   "Column is referenced by view",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
-			Details: details,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
+			Detail: details,
 		})
 	case catalog.ErrorTypeTableIsReferencedByView:
 		details := ""
@@ -1066,29 +1132,35 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			}
 		}
 
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    TableIsReferencedByView,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    TableIsReferencedByView.Int32(),
 			Title:   "Table is referenced by view",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
-			Details: details,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
+			Detail: details,
 		})
 	case catalog.ErrorTypeInvalidColumnTypeForDefaultValue:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    InvalidColumnDefault,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    InvalidColumnDefault.Int32(),
 			Title:   "Invalid column default value",
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	default:
-		res = append(res, Advice{
-			Status:  Error,
-			Code:    Internal,
+		res = append(res, &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    Internal.Int32(),
 			Title:   fmt.Sprintf("Failed to walk-through with code %d", walkThroughError.Type),
 			Content: walkThroughError.Content,
-			Line:    walkThroughError.Line,
+			StartPosition: &storepb.Position{
+				Line: int32(walkThroughError.Line),
+			},
 		})
 	}
 

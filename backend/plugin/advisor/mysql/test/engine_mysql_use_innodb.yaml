@@ -12,7 +12,7 @@
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: |-
@@ -28,9 +28,10 @@
           UNIQUE KEY uk1(id, name),
           FOREIGN KEY fk1(roomId) REFERENCES room(id),
           INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" doesn't use InnoDB engine
-      line: 12
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 12
+        column: 0
 - statement: |
     CREATE TABLE user(
       id INT PRIMARY KEY COMMENT 'comment',
@@ -44,38 +45,35 @@
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE book(id int) ENGINE = INNODB;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE book(id int);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE TABLE book(
       id INT,
       price INT
     ) ENGINE = CSV;
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: |-
@@ -83,9 +81,10 @@
           id INT,
           price INT
         ) ENGINE = CSV;" doesn't use InnoDB engine
-      line: 4
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
 - statement: |
     CREATE TABLE teck_book(a INT);
     CREATE TABLE book(
@@ -93,7 +92,7 @@
       price INT
     ) ENGINE = CSV;
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: |-
@@ -101,57 +100,57 @@
           id INT,
           price INT
         ) ENGINE = CSV;" doesn't use InnoDB engine
-      line: 5
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 5
+        column: 0
 - statement: ALTER TABLE tech_book ENGINE = INNODB;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE TABLE teck_book(a INT);
     CREATE TABLE book(a INT);
     ALTER TABLE tech_book ENGINE = CSV;
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: '"ALTER TABLE tech_book ENGINE = CSV;" doesn''t use InnoDB engine'
-      line: 3
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
 - statement: SET default_storage_engine=INNODB;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE TABLE book(a INT);
     SET default_storage_engine=CSV;
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: '"SET default_storage_engine=CSV;" doesn''t use InnoDB engine'
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |
     SET foreign_key_checks=0;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

@@ -24,7 +24,7 @@ type IndexCreateConcurrentlyAdvisor struct {
 }
 
 // Check checks for to create index concurrently.
-func (*IndexCreateConcurrentlyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexCreateConcurrentlyAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -44,9 +44,9 @@ func (*IndexCreateConcurrentlyAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -55,8 +55,8 @@ func (*IndexCreateConcurrentlyAdvisor) Check(ctx advisor.Context, _ string) ([]a
 }
 
 type indexCreateConcurrentlyChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
@@ -64,12 +64,14 @@ type indexCreateConcurrentlyChecker struct {
 func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 	if node, ok := in.(*ast.CreateIndexStmt); ok {
 		if !node.Concurrently {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.CreateIndexUnconcurrently,
+				Code:    advisor.CreateIndexUnconcurrently.Int32(),
 				Title:   checker.title,
 				Content: "Creating indexes will block writes on the table, unless use CONCURRENTLY",
-				Line:    in.LastLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(in.LastLine()),
+				},
 			})
 		}
 	}

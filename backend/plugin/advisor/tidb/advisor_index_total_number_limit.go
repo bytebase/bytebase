@@ -28,7 +28,7 @@ type IndexTotalNumberLimitAdvisor struct {
 }
 
 // Check checks for index total number limit.
-func (*IndexTotalNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexTotalNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -60,8 +60,8 @@ func (*IndexTotalNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 }
 
 type indexTotalNumberLimitChecker struct {
-	adviceList   []advisor.Advice
-	level        advisor.Status
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
 	title        string
 	text         string
 	line         int
@@ -70,7 +70,7 @@ type indexTotalNumberLimitChecker struct {
 	catalog      *catalog.Finder
 }
 
-func (checker *indexTotalNumberLimitChecker) generateAdvice() []advisor.Advice {
+func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice {
 	type tableName struct {
 		name string
 		line int
@@ -90,20 +90,22 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []advisor.Advice {
 	for _, table := range tableList {
 		tableInfo := checker.catalog.Final.FindTable(&catalog.TableFind{TableName: table.name})
 		if tableInfo != nil && tableInfo.CountIndex() > checker.max {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.IndexCountExceedsLimit,
+				Code:    advisor.IndexCountExceedsLimit.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, checker.max, tableInfo.CountIndex()),
-				Line:    table.line,
+				StartPosition: &storepb.Position{
+					Line: int32(table.line),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

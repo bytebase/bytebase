@@ -1,90 +1,91 @@
 - statement: CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
     CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name);
   want:
-    - status: WARN
+    - status: 2
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |
     CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
     CREATE UNIQUE INDEX qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy ON tech_book(id, name)
   want:
-    - status: WARN
+    - status: 2
       code: 304
       title: naming.index.uk
       content: Unique key `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
-      line: 2
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy`
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE TABLE t1(a INT);
     ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name);
   want:
-    - status: WARN
+    - status: 2
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book_id_name;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE TABLE t1(a INT);
     ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book;
   want:
-    - status: WARN
+    - status: 2
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_book_name (name));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE TABLE book(
       id INT PRIMARY KEY,
@@ -92,13 +93,12 @@
       UNIQUE KEY (name)
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     CREATE TABLE book(
       id INT PRIMARY KEY,
@@ -106,10 +106,9 @@
       UNIQUE INDEX (name)
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

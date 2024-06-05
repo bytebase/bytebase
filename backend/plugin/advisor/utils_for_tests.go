@@ -147,8 +147,8 @@ var (
 
 // TestCase is the data struct for test.
 type TestCase struct {
-	Statement string   `yaml:"statement"`
-	Want      []Advice `yaml:"want"`
+	Statement string            `yaml:"statement"`
+	Want      []*storepb.Advice `yaml:"want"`
 }
 
 type testCatalog struct {
@@ -228,8 +228,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
 		// Sort adviceList by (line, content)
 		sort.Slice(adviceList, func(i, j int) bool {
-			if adviceList[i].Line != adviceList[j].Line {
-				return adviceList[i].Line < adviceList[j].Line
+			if adviceList[i].GetStartPosition().Line != adviceList[j].GetStartPosition().Line {
+				return adviceList[i].GetStartPosition().Line < adviceList[j].GetStartPosition().Line
 			}
 			return adviceList[i].Content < adviceList[j].Content
 		})

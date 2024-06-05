@@ -1,12 +1,11 @@
 - statement: TRUNCATE TABLE issues CASCADE;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE users (
         tenant_id integer REFERENCES tenants ON DELETE CASCADE,
@@ -14,13 +13,14 @@
         PRIMARY KEY (tenant_id, user_id)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 213
       title: statement.disallow-on-del-cascade
       content: The CASCADE option is not permitted for ON DELETE clauses
-      line: 1
-      column: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 1
 - statement: |-
     CREATE TABLE users (
       tenant_id integer,
@@ -29,13 +29,12 @@
     );
     COMMENT ON TABLE users IS 'CASCADE COMMENT';
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     TRUNCATE TABLE tech_book CASCADE;
     DROP TABLE tech_book CASCADE;
@@ -45,10 +44,11 @@
       PRIMARY KEY (tenant_id, user_id)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 213
       title: statement.disallow-on-del-cascade
       content: The CASCADE option is not permitted for ON DELETE clauses
-      line: 3
-      column: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 3
+        column: 1

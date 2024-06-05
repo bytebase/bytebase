@@ -30,7 +30,7 @@ type ColumnAutoIncrementMustUnsignedAdvisor struct {
 }
 
 // Check checks for unsigned auto-increment column.
-func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -51,9 +51,9 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(ctx advisor.Context, _ stri
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,8 +65,8 @@ type columnAutoIncrementMustUnsignedChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
@@ -152,12 +152,14 @@ func (checker *columnAutoIncrementMustUnsignedChecker) EnterAlterTable(ctx *mysq
 
 func (checker *columnAutoIncrementMustUnsignedChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
 	if !checker.isAutoIncrementColumnIsInteger(ctx) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.AutoIncrementColumnSigned,
+			Code:    advisor.AutoIncrementColumnSigned.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, columnName),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

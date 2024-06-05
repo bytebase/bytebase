@@ -27,7 +27,7 @@ type WhereRequireAdvisor struct {
 }
 
 // Check checks for WHERE clause requirement.
-func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -53,17 +53,17 @@ func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 type whereRequireListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *whereRequireListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *whereRequireListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -74,12 +74,14 @@ func (l *whereRequireListener) generateAdvice() ([]advisor.Advice, error) {
 // EnterUpdate_statement is called when production update_statement is entered.
 func (l *whereRequireListener) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if ctx.Where_clause() == nil {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.StatementNoWhere,
+			Code:    advisor.StatementNoWhere.Int32(),
 			Title:   l.title,
 			Content: "WHERE clause is required for UPDATE statement.",
-			Line:    ctx.GetStop().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStop().GetLine()),
+			},
 		})
 	}
 }
@@ -87,12 +89,14 @@ func (l *whereRequireListener) EnterUpdate_statement(ctx *parser.Update_statemen
 // EnterDelete_statement is called when production delete_statement is entered.
 func (l *whereRequireListener) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	if ctx.Where_clause() == nil {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.StatementNoWhere,
+			Code:    advisor.StatementNoWhere.Int32(),
 			Title:   l.title,
 			Content: "WHERE clause is required for DELETE statement.",
-			Line:    ctx.GetStop().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStop().GetLine()),
+			},
 		})
 	}
 }
@@ -107,12 +111,14 @@ func (l *whereRequireListener) EnterQuery_block(ctx *parser.Query_blockContext) 
 		return
 	}
 	if ctx.Where_clause() == nil {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.StatementNoWhere,
+			Code:    advisor.StatementNoWhere.Int32(),
 			Title:   l.title,
 			Content: "WHERE clause is required for SELECT statement.",
-			Line:    ctx.GetStop().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStop().GetLine()),
+			},
 		})
 	}
 }

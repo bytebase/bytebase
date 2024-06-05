@@ -20,7 +20,7 @@ type ColumnTypeDisallowListAdvisor struct {
 }
 
 // Check checks for column type restriction.
-func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -51,9 +51,9 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -62,8 +62,8 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 type columnTypeDisallowListChecker struct {
-	adviceList      []advisor.Advice
-	level           advisor.Status
+	adviceList      []*storepb.Advice
+	level           storepb.Advice_Status
 	title           string
 	text            string
 	line            int
@@ -143,12 +143,14 @@ func (checker *columnTypeDisallowListChecker) Visit(in ast.Node) ast.Visitor {
 	}
 
 	for _, column := range columnList {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DisabledColumnType,
+			Code:    advisor.DisabledColumnType.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Disallow column type %s but column \"%s\".\"%s\" is", column.tp, column.table, column.column),
-			Line:    column.line,
+			StartPosition: &storepb.Position{
+				Line: int32(column.line),
+			},
 		})
 	}
 	return checker

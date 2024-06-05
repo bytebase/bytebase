@@ -25,7 +25,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check parses the given statement and checks for errors.
-func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -48,9 +48,9 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -59,8 +59,8 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Ad
 }
 
 type tableRequirePKChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	catalog    *catalog.Finder
 	text       string
@@ -110,16 +110,18 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 	}
 
 	if missingPK != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status: checker.level,
-			Code:   advisor.TableNoPK,
+			Code:   advisor.TableNoPK.Int32(),
 			Title:  checker.title,
 			Content: fmt.Sprintf("Table %q.%q requires PRIMARY KEY, related statement: %q",
 				normalizeSchemaName(missingPK.Schema),
 				missingPK.Name,
 				checker.text,
 			),
-			Line: node.LastLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(node.LastLine()),
+			},
 		})
 	}
 

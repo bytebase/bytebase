@@ -28,7 +28,7 @@ type ColumnRequireDefaultAdvisor struct {
 }
 
 // Check checks for column default requirement.
-func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -55,15 +55,15 @@ func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 type columnRequireDefaultListener struct {
 	*parser.BasePlSqlParserListener
 
-	level            advisor.Status
+	level            storepb.Advice_Status
 	title            string
 	currentDatabase  string
 	noDefaultColumns columnMap
 	tableName        string
 }
 
-func (l *columnRequireDefaultListener) generateAdvice() ([]advisor.Advice, error) {
-	advice := []advisor.Advice{}
+func (l *columnRequireDefaultListener) generateAdvice() ([]*storepb.Advice, error) {
+	advice := []*storepb.Advice{}
 
 	var columnIDs []string
 	for columnID := range l.noDefaultColumns {
@@ -72,19 +72,21 @@ func (l *columnRequireDefaultListener) generateAdvice() ([]advisor.Advice, error
 	sort.Strings(columnIDs)
 	for _, columnID := range columnIDs {
 		line := l.noDefaultColumns[columnID]
-		advice = append(advice, advisor.Advice{
+		advice = append(advice, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NoDefault,
+			Code:    advisor.NoDefault.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Column %q doesn't have default value", lastIdentifier(columnID)),
-			Line:    line,
+			StartPosition: &storepb.Position{
+				Line: int32(line),
+			},
 		})
 	}
 
 	if len(advice) == 0 {
-		advice = append(advice, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		advice = append(advice, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

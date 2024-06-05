@@ -31,7 +31,7 @@ type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 }
 
 // Check checks for primary key type allowlist.
-func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -63,9 +63,9 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string)
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -77,8 +77,8 @@ type indexPrimaryKeyTypeAllowlistChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine         int
-	adviceList       []advisor.Advice
-	level            advisor.Status
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
 	title            string
 	allowlist        map[string]bool
 	catalog          *catalog.Finder
@@ -180,12 +180,14 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) checkFieldDefinition(tableNa
 	for _, attribute := range ctx.AllColumnAttribute() {
 		if attribute.PRIMARY_SYMBOL() != nil {
 			if _, exists := checker.allowlist[columnType]; !exists {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.IndexPKType,
+					Code:    advisor.IndexPKType.Int32(),
 					Title:   checker.title,
 					Content: fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-					Line:    checker.baseLine + ctx.GetStart().GetLine(),
+					StartPosition: &storepb.Position{
+						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+					},
 				})
 			}
 		}
@@ -209,12 +211,14 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) checkConstraintDef(tableName
 		}
 		columnType = strings.ToLower(columnType)
 		if _, exists := checker.allowlist[columnType]; !exists {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.IndexPKType,
+				Code:    advisor.IndexPKType.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	}

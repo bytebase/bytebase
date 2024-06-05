@@ -25,13 +25,13 @@ type StatementDisallowRemoveTblCascadeAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDisallowRemoveTblCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowRemoveTblCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmt := ctx.Statements
 	if stmt == "" {
-		return []advisor.Advice{
+		return []*storepb.Advice{
 			{
-				Status:  advisor.Success,
-				Code:    advisor.Ok,
+				Status:  storepb.Advice_SUCCESS,
+				Code:    advisor.Ok.Int32(),
 				Title:   "OK",
 				Content: "",
 			},
@@ -56,21 +56,23 @@ func (*StatementDisallowRemoveTblCascadeAdvisor) Check(ctx advisor.Context, _ st
 	cascadeLocations := cascadeNumRecursive(jsonData, 0, isDropCascade)
 	cascadePositions := convertLocationsToPositions(stmt, cascadeLocations)
 
-	var adviceList []advisor.Advice
+	var adviceList []*storepb.Advice
 	for _, p := range cascadePositions {
-		adviceList = append(adviceList, advisor.Advice{
+		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   string(ctx.Rule.Type),
 			Content: "The use of CASCADE is not permitted when removing a table",
-			Code:    advisor.StatementDisallowCascade,
-			Line:    p.line + 1,
-			Column:  p.column + 1,
+			Code:    advisor.StatementDisallowCascade.Int32(),
+			StartPosition: &storepb.Position{
+				Line:   int32(p.line + 1),
+				Column: int32(p.column + 1),
+			},
 		})
 	}
 	if len(adviceList) == 0 {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

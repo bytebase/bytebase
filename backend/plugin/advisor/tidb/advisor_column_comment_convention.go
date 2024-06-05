@@ -27,7 +27,7 @@ type ColumnCommentConventionAdvisor struct {
 }
 
 // Check checks for column comment convention.
-func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -55,9 +55,9 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -66,8 +66,8 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]a
 }
 
 type columnCommentConventionChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -128,21 +128,25 @@ func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, boo
 
 	for _, column := range columnList {
 		if checker.required && !column.exist {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NoColumnComment,
+				Code:    advisor.NoColumnComment.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Column `%s`.`%s` requires comments", column.table, column.column),
-				Line:    column.line,
+				StartPosition: &storepb.Position{
+					Line: int32(column.line),
+				},
 			})
 		}
 		if checker.maxLength >= 0 && len(column.comment) > checker.maxLength {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.ColumnCommentTooLong,
+				Code:    advisor.ColumnCommentTooLong.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", column.table, column.column, checker.maxLength),
-				Line:    column.line,
+				StartPosition: &storepb.Position{
+					Line: int32(column.line),
+				},
 			})
 		}
 	}
@@ -161,9 +165,9 @@ func (checker *columnCommentConventionChecker) columnComment(column *ast.ColumnD
 			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 			if err != nil {
 				comment = ""
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.Internal,
+					Code:    advisor.Internal.Int32(),
 					Title:   "Internal error for parsing column comment",
 					Content: fmt.Sprintf("\"%q\" meet internal error %s", checker.text, err),
 				})

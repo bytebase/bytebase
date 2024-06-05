@@ -26,7 +26,7 @@ type TableCommentConventionAdvisor struct {
 }
 
 // Check checks for table comment convention.
-func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -54,9 +54,9 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,8 +65,8 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 type tableCommentConventionChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -79,21 +79,25 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 	if node, ok := in.(*ast.CreateTableStmt); ok {
 		exist, comment := tableComment(node.Options)
 		if checker.required && !exist {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NoTableComment,
+				Code:    advisor.NoTableComment.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Table `%s` requires comments", node.Table.Name.O),
-				Line:    checker.line,
+				StartPosition: &storepb.Position{
+					Line: int32(checker.line),
+				},
 			})
 		}
 		if checker.maxLength >= 0 && len(comment) > checker.maxLength {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.TableCommentTooLong,
+				Code:    advisor.TableCommentTooLong.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.maxLength),
-				Line:    checker.line,
+				StartPosition: &storepb.Position{
+					Line: int32(checker.line),
+				},
 			})
 		}
 	}

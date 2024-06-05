@@ -1,27 +1,28 @@
 - statement: DROP TABLE IF EXISTS foo_delete
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: DROP TABLE IF EXISTS foo
   want:
-    - status: WARN
+    - status: 2
       code: 603
       title: table.drop-naming-convention
       content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: DROP TABLE IF EXISTS foo_delete, bar
   want:
-    - status: WARN
+    - status: 2
       code: 603
       title: table.drop-naming-convention
       content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

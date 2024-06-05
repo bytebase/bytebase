@@ -1,18 +1,18 @@
 - statement: ALTER TABLE tech_book ADD COLUMN c int;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN c int DEFAULT 0;
   want:
-    - status: WARN
+    - status: 2
       code: 210
       title: statement.disallow-add-column-with-default
       content: Adding column with DEFAULT will locked the whole table and rewriting each rows
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

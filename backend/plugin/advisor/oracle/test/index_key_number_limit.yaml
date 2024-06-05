@@ -1,70 +1,80 @@
 - statement: CREATE TABLE t(name char(20));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(name varchar(225));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(name char(225), PRIMARY KEY (name));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(id int, name char(225), c1 int, c2 int, c3 int, c4 int, CONSTRAINT t_id_name PRIMARY KEY (id, name, c1, c2, c3, c4));
   want:
-    - status: WARN
+    - status: 2
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE t(id int, name char(225), c1 int, c2 int, c3 int, c4 int, CONSTRAINT t_id_name UNIQUE (id, name, c1, c2, c3, c4));
   want:
-    - status: WARN
+    - status: 2
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
     CREATE INDEX idx_address_phone ON address(id, phone, c1, c2, c3, c4);
   want:
-    - status: WARN
+    - status: 2
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
     CREATE UNIQUE INDEX idx_address_phone ON address(id, phone, c2, c1, c3, c4);
   want:
-    - status: WARN
+    - status: 2
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
     ALTER TABLE address ADD CONSTRAINT address_id_name UNIQUE (id, phone, c1, c2, c3, c4);
   want:
-    - status: WARN
+    - status: 2
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

@@ -32,14 +32,14 @@ const (
 )
 
 // NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
-func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (Status, error) {
+func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (storepb.Advice_Status, error) {
 	switch level {
 	case storepb.SQLReviewRuleLevel_ERROR:
-		return Error, nil
+		return storepb.Advice_ERROR, nil
 	case storepb.SQLReviewRuleLevel_WARNING:
-		return Warn, nil
+		return storepb.Advice_WARNING, nil
 	}
-	return "", errors.Errorf("unexpected rule level type: %s", level)
+	return storepb.Advice_STATUS_UNSPECIFIED, errors.Errorf("unexpected rule level type: %s", level)
 }
 
 // GetPriority returns the priority of status.
@@ -673,7 +673,7 @@ type Context struct {
 
 // Advisor is the interface for advisor.
 type Advisor interface {
-	Check(ctx Context, statement string) ([]Advice, error)
+	Check(ctx Context, statement string) ([]*storepb.Advice, error)
 }
 
 var (
@@ -704,7 +704,7 @@ func Register(dbType storepb.Engine, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
+func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []*storepb.Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			panicErr, ok := panicErr.(error)

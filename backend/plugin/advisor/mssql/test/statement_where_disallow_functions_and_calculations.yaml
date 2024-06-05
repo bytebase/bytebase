@@ -4,66 +4,69 @@
     INSERT INTO pokes VALUES(1);
     SELECT foo FROM pokes WHERE ~foo > 0;
   want:
-    - status: WARN
+    - status: 2
       code: 234
       title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
-      line: 2
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 234
       title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
-      line: 4
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
 - statement: |-
     SELECT foo FROM pokes WHERE foo | -foo > 0;
     SELECT bar FROM pokes WHERE bar > AVG(bar);
   want:
-    - status: WARN
+    - status: 2
       code: 234
       title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
-      line: 1
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 234
       title: statement.where.disallow-functions-and-calculations
       content: Calling function 'AVG(bar)' in 'WHERE' clause is not allowed
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: SELECT bar FROM pokes WHERE bar > 1;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     SELECT Department, AVG(Salary) AS AvgSalary
     FROM Employees
     GROUP BY Department
     HAVING AVG(Salary) * 3 + 1 > 50000;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: select * from (select * from t where t.a > 1) t1 where a > AVG(a);
   want:
-    - status: WARN
+    - status: 2
       code: 234
       title: statement.where.disallow-functions-and-calculations
       content: Calling function 'AVG(a)' in 'WHERE' clause is not allowed
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

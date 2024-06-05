@@ -1,54 +1,58 @@
 - statement: CREATE TABLE abc.t(id INT PRIMARY KEY);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE "TEST_DB".t(id INT)
   want:
-    - status: WARN
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table "TEST_DB"."T" requires PRIMARY KEY.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE t(id INT);
                 DROP TABLE t
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(id INT);
     ALTER TABLE t ADD CONSTRAINT tpk PRIMARY KEY (id)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
     ALTER TABLE t DROP PRIMARY KEY
   want:
-    - status: WARN
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table "TEST_DB"."T" requires PRIMARY KEY.
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

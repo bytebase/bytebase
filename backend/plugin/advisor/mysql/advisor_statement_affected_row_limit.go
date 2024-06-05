@@ -31,7 +31,7 @@ type StatementAffectedRowLimitAdvisor struct {
 }
 
 // Check checks for UPDATE/DELETE affected row limit.
-func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -61,9 +61,9 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -75,8 +75,8 @@ type statementAffectedRowLimitChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	maxRow     int
@@ -108,30 +108,36 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 	lineNumber += checker.baseLine
 	res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", checker.text))
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementAffectedRowExceedsLimit,
+			Code:    advisor.StatementAffectedRowExceedsLimit.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-			Line:    lineNumber,
+			StartPosition: &storepb.Position{
+				Line: int32(lineNumber),
+			},
 		})
 	} else {
 		rowCount, err := getRows(res)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.Internal,
+				Code:    advisor.Internal.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-				Line:    lineNumber,
+				StartPosition: &storepb.Position{
+					Line: int32(lineNumber),
+				},
 			})
 		} else if rowCount > int64(checker.maxRow) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementAffectedRowExceedsLimit,
+				Code:    advisor.StatementAffectedRowExceedsLimit.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rowCount, checker.maxRow),
-				Line:    lineNumber,
+				StartPosition: &storepb.Position{
+					Line: int32(lineNumber),
+				},
 			})
 		}
 	}
