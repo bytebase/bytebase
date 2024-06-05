@@ -1,101 +1,110 @@
 - statement: CREATE TABLE t(a int COMMENT 'comments')
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(
             a int COMMENT 'some comments',
             b int,
             c int)
   want:
-    - status: WARN
+    - status: 2
       code: 409
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      line: 2
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
+    - status: 2
       code: 408
       title: column.comment
       content: Column `t`.`c` requires comments
-      line: 4
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
 - statement: |-
     CREATE TABLE t(a int COMMENT 'comment');
     ALTER TABLE t ADD COLUMN b int
   want:
-    - status: WARN
+    - status: 2
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
     ALTER TABLE t CHANGE COLUMN a b int
   want:
-    - status: WARN
+    - status: 2
       code: 409
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      line: 1
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is comment');
     ALTER TABLE t MODIFY COLUMN b int
   want:
-    - status: WARN
+    - status: 2
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 1
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is COMMENT');
     ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf'
   want:
-    - status: WARN
+    - status: 2
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 1
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

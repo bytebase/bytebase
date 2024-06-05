@@ -28,7 +28,7 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -50,20 +50,22 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 		ast.Walk(checker, stmt)
 
 		if checker.leadingWildcardLike {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementLeadingWildcardLike,
+				Code:    advisor.StatementLeadingWildcardLike.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
-				Line:    stmt.LastLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(stmt.LastLine()),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -72,8 +74,8 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 }
 
 type noLeadingWildcardLikeChecker struct {
-	adviceList          []advisor.Advice
-	level               advisor.Status
+	adviceList          []*storepb.Advice
+	level               storepb.Advice_Status
 	title               string
 	text                string
 	leadingWildcardLike bool

@@ -2,20 +2,20 @@
     -- The rule should be friendly with engine behavior(i.e. stored and resolved as uppercase characters if not quoted)
     CREATE TABLE t(id INT);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(ID INT);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(
       name  VARCHAR,
@@ -23,12 +23,14 @@
       "address" VARCHAR
     );
   want:
-    - status: WARN
+    - status: 2
       code: 309
       title: naming.identifier.case
       content: Identifier "address" should be upper case
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE mytable_copy (
       name      INT,
@@ -36,12 +38,14 @@
       "address" VARCHAR
     ) AS SELECT a + 1, b + 2 FROM mytable;
   want:
-    - status: WARN
+    - status: 2
       code: 309
       title: naming.identifier.case
       content: Identifier "address" should be upper case
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE mytable_copy (
       name INT,
@@ -49,25 +53,27 @@
       address VARCHAR
     ) AS SELECT a + 1, b + 2 FROM mytable;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO "address";
   want:
-    - status: WARN
+    - status: 2
       code: 309
       title: naming.identifier.case
       content: Identifier "address" should be upper case
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE mytable RENAME COLUMN name TO address;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

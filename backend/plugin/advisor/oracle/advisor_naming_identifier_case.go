@@ -28,7 +28,7 @@ type NamingIdentifierCaseAdvisor struct {
 }
 
 // Check checks for identifier case.
-func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -59,18 +59,18 @@ func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 type namingIdentifierCaseListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 	upper           bool
 }
 
-func (l *namingIdentifierCaseListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *namingIdentifierCaseListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -83,22 +83,26 @@ func (l *namingIdentifierCaseListener) EnterId_expression(ctx *parser.Id_express
 	identifier := normalizeIDExpression(ctx)
 	if l.upper {
 		if identifier != strings.ToUpper(identifier) {
-			l.adviceList = append(l.adviceList, advisor.Advice{
+			l.adviceList = append(l.adviceList, &storepb.Advice{
 				Status:  l.level,
-				Code:    advisor.NamingCaseMismatch,
+				Code:    advisor.NamingCaseMismatch.Int32(),
 				Title:   l.title,
 				Content: fmt.Sprintf("Identifier %q should be upper case", identifier),
-				Line:    ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	} else {
 		if identifier != strings.ToLower(identifier) {
-			l.adviceList = append(l.adviceList, advisor.Advice{
+			l.adviceList = append(l.adviceList, &storepb.Advice{
 				Status:  l.level,
-				Code:    advisor.NamingCaseMismatch,
+				Code:    advisor.NamingCaseMismatch.Int32(),
 				Title:   l.title,
 				Content: fmt.Sprintf("Identifier %q should be lower case", identifier),
-				Line:    ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	}

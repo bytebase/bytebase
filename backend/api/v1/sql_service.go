@@ -188,7 +188,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	}
 
 	var results []*v1pb.QueryResult
-	if adviceStatus != advisor.Error {
+	if adviceStatus != storepb.Advice_ERROR {
 		var queryErr error
 		results, _, queryErr = s.doExecute(ctx, instance, database, request)
 		if queryErr != nil {
@@ -731,7 +731,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	var results []*v1pb.QueryResult
 	var queryErr error
 	var durationNs int64
-	if adviceStatus != advisor.Error {
+	if adviceStatus != storepb.Advice_ERROR {
 		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database)
 		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			masker := NewQueryResultMasker(s.store)
@@ -1226,27 +1226,27 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 // sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
-func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (advisor.Status, []*v1pb.Advice, error) {
+func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
-		return advisor.Success, nil, nil
+		return storepb.Advice_SUCCESS, nil, nil
 	}
 
 	dbMetadata := overrideMetadata
 	if dbMetadata == nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
 		if dbSchema == nil {
 			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-				return advisor.Error, nil, status.Errorf(codes.Internal, "failed to sync database schema: %v", err)
+				return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to sync database schema: %v", err)
 			}
 			dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
 			if err != nil {
-				return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+				return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 			}
 			if dbSchema == nil {
-				return advisor.Error, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
+				return storepb.Advice_ERROR, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
 			}
 		}
 		dbMetadata = dbSchema.GetMetadata()
@@ -1254,12 +1254,12 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 
 	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata, advisor.SyntaxModeNormal)
 	if err != nil {
-		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
 	if err != nil {
-		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
 	}
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
@@ -1275,13 +1275,13 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		database.DatabaseName,
 	)
 	if err != nil {
-		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
 	}
 
 	return adviceLevel, convertAdviceList(adviceList), nil
 }
 
-func convertAdviceList(list []advisor.Advice) []*v1pb.Advice {
+func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 	var result []*v1pb.Advice
 	for _, advice := range list {
 		result = append(result, &v1pb.Advice{
@@ -1289,21 +1289,21 @@ func convertAdviceList(list []advisor.Advice) []*v1pb.Advice {
 			Code:    int32(advice.Code),
 			Title:   advice.Title,
 			Content: advice.Content,
-			Line:    int32(advice.Line),
-			Column:  int32(advice.Column),
-			Detail:  advice.Details,
+			Line:    int32(advice.GetStartPosition().Line),
+			Column:  int32(advice.GetStartPosition().Column),
+			Detail:  advice.Detail,
 		})
 	}
 	return result
 }
 
-func convertAdviceStatus(status advisor.Status) v1pb.Advice_Status {
+func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 	switch status {
-	case advisor.Success:
+	case storepb.Advice_SUCCESS:
 		return v1pb.Advice_SUCCESS
-	case advisor.Warn:
+	case storepb.Advice_WARNING:
 		return v1pb.Advice_WARNING
-	case advisor.Error:
+	case storepb.Advice_ERROR:
 		return v1pb.Advice_ERROR
 	default:
 		return v1pb.Advice_STATUS_UNSPECIFIED
@@ -1320,14 +1320,14 @@ func (s *SQLService) sqlCheck(
 	catalog catalog.Catalog,
 	driver *sql.DB,
 	currentDatabase string,
-) (advisor.Status, []advisor.Advice, error) {
-	var adviceList []advisor.Advice
+) (storepb.Advice_Status, []*storepb.Advice, error) {
+	var adviceList []*storepb.Advice
 	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			return advisor.Success, nil, nil
+			return storepb.Advice_SUCCESS, nil, nil
 		}
-		return advisor.Error, nil, err
+		return storepb.Advice_ERROR, nil, err
 	}
 
 	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
@@ -1342,19 +1342,19 @@ func (s *SQLService) sqlCheck(
 		CurrentDatabase: currentDatabase,
 	})
 	if err != nil {
-		return advisor.Error, nil, err
+		return storepb.Advice_ERROR, nil, err
 	}
 
-	adviceLevel := advisor.Success
+	adviceLevel := storepb.Advice_SUCCESS
 	for _, advice := range res {
 		switch advice.Status {
-		case advisor.Warn:
-			if adviceLevel != advisor.Error {
-				adviceLevel = advisor.Warn
+		case storepb.Advice_WARNING:
+			if adviceLevel != storepb.Advice_ERROR {
+				adviceLevel = storepb.Advice_WARNING
 			}
-		case advisor.Error:
-			adviceLevel = advisor.Error
-		case advisor.Success:
+		case storepb.Advice_ERROR:
+			adviceLevel = storepb.Advice_ERROR
+		case storepb.Advice_SUCCESS:
 			continue
 		}
 

@@ -25,7 +25,7 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -46,9 +46,9 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -57,8 +57,8 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]
 }
 
 type allowDropEmptyDBChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	catalog    *catalog.Finder
 }
@@ -67,20 +67,24 @@ type allowDropEmptyDBChecker struct {
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
 		if v.catalog.Origin.DatabaseName() != node.Name.O {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.NotCurrentDatabase,
+				Code:    advisor.NotCurrentDatabase.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.catalog.Origin.DatabaseName()),
-				Line:    node.OriginTextPosition(),
+				StartPosition: &storepb.Position{
+					Line: int32(node.OriginTextPosition()),
+				},
 			})
 		} else if !v.catalog.Origin.HasNoTable() {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.DatabaseNotEmpty,
+				Code:    advisor.DatabaseNotEmpty.Int32(),
 				Title:   v.title,
 				Content: fmt.Sprintf("Database `%s` is not allowed to drop if not empty", node.Name),
-				Line:    node.OriginTextPosition(),
+				StartPosition: &storepb.Position{
+					Line: int32(node.OriginTextPosition()),
+				},
 			})
 		}
 	}

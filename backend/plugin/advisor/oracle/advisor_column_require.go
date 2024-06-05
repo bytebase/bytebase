@@ -29,7 +29,7 @@ type ColumnRequireAdvisor struct {
 }
 
 // Check checks for column requirement.
-func (*ColumnRequireAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnRequireAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -66,19 +66,19 @@ type columnSet map[string]bool
 type columnRequireListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	requiredColumns columnSet
 	missingColumns  columnSet
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *columnRequireListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *columnRequireListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -108,12 +108,14 @@ func (l *columnRequireListener) ExitCreate_table(ctx *parser.Create_tableContext
 
 	sort.Strings(missingColumns)
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
-	l.adviceList = append(l.adviceList, advisor.Advice{
+	l.adviceList = append(l.adviceList, &storepb.Advice{
 		Status:  l.level,
-		Code:    advisor.NoRequiredColumn,
+		Code:    advisor.NoRequiredColumn.Int32(),
 		Title:   l.title,
 		Content: fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		Line:    ctx.GetStop().GetLine(),
+		StartPosition: &storepb.Position{
+			Line: int32(ctx.GetStop().GetLine()),
+		},
 	})
 }
 
@@ -145,12 +147,14 @@ func (l *columnRequireListener) ExitAlter_table(ctx *parser.Alter_tableContext) 
 
 	sort.Strings(missingColumns)
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
-	l.adviceList = append(l.adviceList, advisor.Advice{
+	l.adviceList = append(l.adviceList, &storepb.Advice{
 		Status:  l.level,
-		Code:    advisor.NoRequiredColumn,
+		Code:    advisor.NoRequiredColumn.Int32(),
 		Title:   l.title,
 		Content: fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		Line:    ctx.GetStop().GetLine(),
+		StartPosition: &storepb.Position{
+			Line: int32(ctx.GetStop().GetLine()),
+		},
 	})
 }
 

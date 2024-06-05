@@ -180,11 +180,11 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	for _, advice := range adviceList {
 		status := storepb.PlanCheckRunResult_Result_SUCCESS
 		switch advice.Status {
-		case advisor.Success:
+		case storepb.Advice_SUCCESS:
 			continue
-		case advisor.Warn:
+		case storepb.Advice_WARNING:
 			status = storepb.PlanCheckRunResult_Result_WARNING
-		case advisor.Error:
+		case storepb.Advice_ERROR:
 			status = storepb.PlanCheckRunResult_Result_ERROR
 		}
 
@@ -195,10 +195,10 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 			Code:    0,
 			Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 				SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-					Line:   int32(advice.Line),
-					Column: int32(advice.Column),
-					Code:   advice.Code.Int32(),
-					Detail: advice.Details,
+					Line:   advice.GetStartPosition().Line,
+					Column: advice.GetStartPosition().Column,
+					Code:   advice.Code,
+					Detail: advice.Detail,
 				},
 			},
 		})
@@ -370,11 +370,11 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			for _, advice := range adviceList {
 				status := storepb.PlanCheckRunResult_Result_SUCCESS
 				switch advice.Status {
-				case advisor.Success:
+				case storepb.Advice_SUCCESS:
 					continue
-				case advisor.Warn:
+				case storepb.Advice_WARNING:
 					status = storepb.PlanCheckRunResult_Result_WARNING
-				case advisor.Error:
+				case storepb.Advice_ERROR:
 					status = storepb.PlanCheckRunResult_Result_ERROR
 				}
 
@@ -385,10 +385,10 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					Code:    0,
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int32(advice.Line),
-							Column: int32(advice.Column),
-							Code:   advice.Code.Int32(),
-							Detail: advice.Details,
+							Line:   advice.GetStartPosition().Line,
+							Column: advice.GetStartPosition().Column,
+							Code:   advice.Code,
+							Detail: advice.Detail,
 						},
 					},
 				})

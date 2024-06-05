@@ -26,7 +26,7 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -52,14 +52,14 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 }
 
 type columnNoNullChecker struct {
-	adviceList      []advisor.Advice
-	level           advisor.Status
+	adviceList      []*storepb.Advice
+	level           storepb.Advice_Status
 	title           string
 	catalog         *catalog.Finder
 	nullableColumns columnMap
 }
 
-func (checker *columnNoNullChecker) generateAdviceList() []advisor.Advice {
+func (checker *columnNoNullChecker) generateAdviceList() []*storepb.Advice {
 	var columnList []columnName
 	for column := range checker.nullableColumns {
 		columnList = append(columnList, column)
@@ -77,19 +77,21 @@ func (checker *columnNoNullChecker) generateAdviceList() []advisor.Advice {
 		})
 	}
 	for _, column := range columnList {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.ColumnCannotNull,
+			Code:    advisor.ColumnCannotNull.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf(`Column "%s" in %s cannot have NULL value`, column.column, column.normalizeTableName()),
-			Line:    checker.nullableColumns[column],
+			StartPosition: &storepb.Position{
+				Line: int32(checker.nullableColumns[column]),
+			},
 		})
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

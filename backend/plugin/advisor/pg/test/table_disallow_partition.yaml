@@ -1,27 +1,28 @@
 - statement: CREATE TABLE t(a int)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(a int) PARTITION BY RANGE (a);
   want:
-    - status: WARN
+    - status: 2
       code: 608
       title: table.disallow-partition
       content: Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a);" creates
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT;
   want:
-    - status: WARN
+    - status: 2
       code: 608
       title: table.disallow-partition
       content: Table partition is forbidden, but "ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT;" creates
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

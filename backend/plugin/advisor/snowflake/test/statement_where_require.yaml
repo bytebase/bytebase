@@ -1,59 +1,67 @@
 - statement: SELECT * FROM (SELECT * FROM TARGET_TABLE) AS a WHERE a.id = 1;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for SELECT statement.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: UPDATE t SET a = 1;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for UPDATE statement.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: UPDATE t SET a = 1 WHERE b = 2;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: DELETE FROM t;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for DELETE statement.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: DELETE FROM t WHERE a = 1;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: SELECT * FROM t;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for SELECT statement.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: SELECT * FROM t WHERE b = 2;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     with
        album_info_1976 as (select m.album_ID, m.album_name, b.band_name
@@ -65,18 +73,22 @@
     select album_name, band_name
        from Journey_album_info_1976;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for SELECT statement.
-      line: 1
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for SELECT statement.
-      line: 5
-      details: ""
+      detail: ""
+      startposition:
+        line: 5
+        column: 0
 - statement: |-
     MERGE INTO target_table USING (
       SELECT id, description FROM source_table
@@ -84,17 +96,19 @@
     ON target_table.id = filtered_source_table.id
     WHEN MATCHED THEN UPDATE SET target_table.a = filtered_source_table.b;
   want:
-    - status: WARN
+    - status: 2
       code: 202
       title: statement.where.require
       content: WHERE clause is required for SELECT statement.
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: SELECT 1;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

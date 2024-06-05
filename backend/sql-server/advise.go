@@ -59,7 +59,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Param  databaseType  body  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB, OCEANBASE, SNOWFLAKE, MSSQL)
 // @Param  templateId    body  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.prod, bb.sql-review.dev)
 // @Param  override      body  string  false  "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/backend/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified."
-// @Success  200  {array}   advisor.Advice
+// @Success  200  {array}   storepb.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /advise  [post].
@@ -139,8 +139,8 @@ func sqlCheck(
 	statement string,
 	ruleList []*storepb.SQLReviewRule,
 	catalog catalog.Catalog,
-) ([]advisor.Advice, error) {
-	var adviceList []advisor.Advice
+) ([]*storepb.Advice, error) {
+	var adviceList []*storepb.Advice
 
 	res, err := advisor.SQLReviewCheck(statement, ruleList, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
@@ -154,16 +154,16 @@ func sqlCheck(
 		return nil, err
 	}
 
-	adviceLevel := advisor.Success
+	adviceLevel := storepb.Advice_SUCCESS
 	for _, advice := range res {
 		switch advice.Status {
-		case advisor.Warn:
-			if adviceLevel != advisor.Error {
-				adviceLevel = advisor.Warn
+		case storepb.Advice_WARNING:
+			if adviceLevel != storepb.Advice_ERROR {
+				adviceLevel = storepb.Advice_WARNING
 			}
-		case advisor.Error:
-			adviceLevel = advisor.Error
-		case advisor.Success:
+		case storepb.Advice_ERROR:
+			adviceLevel = storepb.Advice_ERROR
+		case storepb.Advice_SUCCESS:
 			continue
 		}
 
@@ -171,9 +171,9 @@ func sqlCheck(
 	}
 
 	if len(adviceList) == 0 {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

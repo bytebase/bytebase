@@ -28,7 +28,7 @@ type ColumnRequireDefaultAdvisor struct {
 }
 
 // Check checks for column default requirement.
-func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -55,8 +55,8 @@ func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 }
 
 type columnRequireDefaultChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	columnSet  map[string]columnData
 	catalog    *catalog.Finder
@@ -69,7 +69,7 @@ type columnData struct {
 	line   int
 }
 
-func (checker *columnRequireDefaultChecker) generateAdvice() []advisor.Advice {
+func (checker *columnRequireDefaultChecker) generateAdvice() []*storepb.Advice {
 	var columnList []columnData
 	for _, column := range checker.columnSet {
 		columnList = append(columnList, column)
@@ -85,20 +85,22 @@ func (checker *columnRequireDefaultChecker) generateAdvice() []advisor.Advice {
 			ColumnName: column.name,
 		})
 		if columnInfo != nil && !columnInfo.HasDefault() {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NoDefault,
+				Code:    advisor.NoDefault.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", column.table, column.name, column.schema),
-				Line:    column.line,
+				StartPosition: &storepb.Position{
+					Line: int32(column.line),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

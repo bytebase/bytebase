@@ -25,7 +25,7 @@ type CompatibilityAdvisor struct {
 }
 
 // Check checks schema backward compatibility.
-func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -45,9 +45,9 @@ func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 	}
 
 	if len(c.adviceList) == 0 {
-		c.adviceList = append(c.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -56,8 +56,8 @@ func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 }
 
 type compatibilityChecker struct {
-	adviceList      []advisor.Advice
-	level           advisor.Status
+	adviceList      []*storepb.Advice
+	level           storepb.Advice_Status
 	title           string
 	lastCreateTable string
 }
@@ -157,12 +157,14 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	if code != advisor.Ok {
-		v.adviceList = append(v.adviceList, advisor.Advice{
+		v.adviceList = append(v.adviceList, &storepb.Advice{
 			Status:  v.level,
-			Code:    code,
+			Code:    code.Int32(),
 			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", in.Text()),
-			Line:    in.OriginTextPosition(),
+			StartPosition: &storepb.Position{
+				Line: int32(in.OriginTextPosition()),
+			},
 		})
 	}
 	return in, false

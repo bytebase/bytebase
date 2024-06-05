@@ -1,6 +1,6 @@
 - statement: CREATE TABLE book(id int) ENGINE = INNODB
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
@@ -8,7 +8,7 @@
       details: ""
 - statement: CREATE TABLE book(id int)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
@@ -16,7 +16,7 @@
       details: ""
 - statement: CREATE TABLE book(id int) ENGINE = CSV
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: |-
@@ -26,7 +26,7 @@
       details: ""
 - statement: ALTER TABLE tech_book ENGINE = INNODB
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
@@ -34,7 +34,7 @@
       details: ""
 - statement: ALTER TABLE tech_book ENGINE = CSV
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: |-
@@ -44,7 +44,7 @@
       details: ""
 - statement: SET default_storage_engine=INNODB
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
@@ -52,7 +52,7 @@
       details: ""
 - statement: SET default_storage_engine=CSV
   want:
-    - status: WARN
+    - status: 2
       code: 501
       title: engine.mysql.use-innodb
       content: |-

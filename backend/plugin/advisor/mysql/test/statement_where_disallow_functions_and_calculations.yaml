@@ -1,9 +1,10 @@
 - statement: SELECT * FROM employee WHERE id = RAND();
   want:
-    - status: WARN
+    - status: 2
       code: 1702
       title: statement.where.disallow-functions-and-calculations
-      content: |-
-        Function is disallowed in where clause, but "SELECT * FROM employee WHERE id = RAND();" uses
-      line: 1
-      details: ""
+      content: Function is disallowed in where clause, but "SELECT * FROM employee WHERE id = RAND();" uses
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

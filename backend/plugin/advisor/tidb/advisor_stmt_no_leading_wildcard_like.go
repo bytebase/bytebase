@@ -29,7 +29,7 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -47,20 +47,22 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 		(stmtNode).Accept(checker)
 
 		if checker.leadingWildcardLike {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementLeadingWildcardLike,
+				Code:    advisor.StatementLeadingWildcardLike.Int32(),
 				Title:   string(ctx.Rule.Type),
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
-				Line:    stmtNode.OriginTextPosition(),
+				StartPosition: &storepb.Position{
+					Line: int32(stmtNode.OriginTextPosition()),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -69,8 +71,8 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 }
 
 type noLeadingWildcardLikeChecker struct {
-	adviceList          []advisor.Advice
-	level               advisor.Status
+	adviceList          []*storepb.Advice
+	level               storepb.Advice_Status
 	text                string
 	leadingWildcardLike bool
 }
@@ -80,9 +82,9 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.PatternLikeOrIlikeExpr); !v.leadingWildcardLike && ok {
 		pattern, err := restoreNode(node.Pattern, format.RestoreStringWithoutCharset)
 		if err != nil {
-			v.adviceList = append(v.adviceList, advisor.Advice{
+			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:  v.level,
-				Code:    advisor.Internal,
+				Code:    advisor.Internal.Int32(),
 				Title:   "Internal error for no leading wildcard LIKE rule",
 				Content: fmt.Sprintf("\"%s\" meet internal error %q", v.text, err.Error()),
 			})

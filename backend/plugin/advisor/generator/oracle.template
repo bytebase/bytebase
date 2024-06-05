@@ -24,7 +24,7 @@ type %AdvisorName struct {
 }
 
 // Check checks for %AdvisorComment
-func (*%AdvisorName) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*%AdvisorName) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -50,18 +50,18 @@ func (*%AdvisorName) Check(ctx advisor.Context, _ string) ([]advisor.Advice, err
 type %CheckerName struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
+	level         storepb.Advice_Status
 	title         string
 	currentSchema string
 }
 
-func (l *%CheckerName) generateAdvice() ([]advisor.Advice, error) {
-	advice := []advisor.Advice{}
+func (l *%CheckerName) generateAdvice() ([]*storepb.Advice, error) {
+	advice := []*storepb.Advice{}
 
 	if len(advice) == 0 {
-		advice = append(advice, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		advice = append(advice, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

@@ -26,12 +26,12 @@ type StatementPriorBackupCheckAdvisor struct {
 }
 
 // Check checks for no mixed DDL and DML.
-func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	var adviceList []advisor.Advice
+func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+	var adviceList []*storepb.Advice
 	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -56,23 +56,27 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		}
 
 		if isDDL {
-			adviceList = append(adviceList, advisor.Advice{
+			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
 				Title:   title,
 				Content: "Prior backup cannot deal with mixed DDL and DML statements",
-				Code:    advisor.StatementPriorBackupCheck,
-				Line:    stmtNode.OriginTextPosition(),
+				Code:    advisor.StatementPriorBackupCheck.Int32(),
+				StartPosition: &storepb.Position{
+					Line: int32(stmtNode.OriginTextPosition()),
+				},
 			})
 		}
 	}
 
 	if !databaseExists(ctx.Context, ctx.Driver, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
-		adviceList = append(adviceList, advisor.Advice{
+		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
 			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", ctx.PreUpdateBackupDetail.Database),
-			Code:    advisor.DatabaseNotExists,
-			Line:    0,
+			Code:    advisor.DatabaseNotExists.Int32(),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
 		})
 	}
 
@@ -85,12 +89,14 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		checker.text = stmtNode.Text()
 		checker.line = stmtNode.OriginTextPosition()
 		if err := checker.extractNode(stmtNode); err != nil {
-			adviceList = append(adviceList, advisor.Advice{
+			adviceList = append(adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.Internal,
+				Code:    advisor.Internal.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Failed to extract node, error: %s", err),
-				Line:    checker.line,
+				StartPosition: &storepb.Position{
+					Line: int32(checker.line),
+				},
 			})
 		}
 	}
@@ -106,9 +112,9 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			}
 			content = strings.TrimSuffix(content, ",")
 			content += fmt.Sprintf(" on table `%s`.`%s`, disallow mixing different types of DML statements", table.database, table.table)
-			adviceList = append(adviceList, advisor.Advice{
+			adviceList = append(adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementPriorBackupCheck,
+				Code:    advisor.StatementPriorBackupCheck.Int32(),
 				Title:   checker.title,
 				Content: content,
 			})
@@ -116,9 +122,9 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(adviceList) == 0 {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -144,7 +150,7 @@ func databaseExists(ctx context.Context, driver *sql.DB, database string) bool {
 }
 
 type statementDisallowMixDMLChecker struct {
-	level advisor.Status
+	level storepb.Advice_Status
 	title string
 	text  string
 	line  int

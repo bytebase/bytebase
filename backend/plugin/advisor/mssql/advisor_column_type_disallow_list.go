@@ -25,7 +25,7 @@ func init() {
 type ColumnTypeDisallowListAdvisor struct {
 }
 
-func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -51,9 +51,9 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,21 +65,23 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 type columnTypeDisallowListChecker struct {
 	*parser.BaseTSqlParserListener
 
-	level         advisor.Status
+	level         storepb.Advice_Status
 	title         string
-	adviceList    []advisor.Advice
+	adviceList    []*storepb.Advice
 	disallowTypes []string
 }
 
 func (checker *columnTypeDisallowListChecker) EnterData_type(ctx *parser.Data_typeContext) {
 	formatedDataType := strings.ToUpper(ctx.GetText())
 	if slices.Contains(checker.disallowTypes, formatedDataType) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DisabledColumnType,
+			Code:    advisor.DisabledColumnType.Int32(),
 			Title:   checker.title,
 			Content: "Column type " + formatedDataType + " is disallowed",
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

@@ -28,7 +28,7 @@ type StatementDmlDryRunAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -52,9 +52,9 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -63,8 +63,8 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 }
 
 type statementDmlDryRunChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	driver     *sql.DB
 	ctx        context.Context
@@ -75,12 +75,14 @@ func (checker *statementDmlDryRunChecker) Visit(in ast.Node) ast.Visitor {
 	switch node := in.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
 		if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementDMLDryRunFailed,
+				Code:    advisor.StatementDMLDryRunFailed.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
-				Line:    node.LastLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(node.LastLine()),
+				},
 			})
 		}
 	}

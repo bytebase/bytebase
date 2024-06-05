@@ -27,7 +27,7 @@ func init() {
 type StatementQueryMinumumPlanLevelAdvisor struct {
 }
 
-func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -58,9 +58,9 @@ func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx advisor.Context, _ strin
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -72,8 +72,8 @@ type statementQueryMinumumPlanLevelChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine    int
-	adviceList  []advisor.Advice
-	level       advisor.Status
+	adviceList  []*storepb.Advice
+	level       storepb.Advice_Status
 	title       string
 	text        string
 	driver      *sql.DB
@@ -146,22 +146,26 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 	res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementExplainQueryFailed,
+			Code:    advisor.StatementExplainQueryFailed.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	} else {
 		explainTypes, err := getQueryExplainTypes(res)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.Internal,
+				Code:    advisor.Internal.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Failed to check explain type column: %s, with error: %s", query, err),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		} else if len(explainTypes) > 0 {
 			overused, overusedType := false, ExplainTypeAll
@@ -173,12 +177,14 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 				}
 			}
 			if overused {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.StatementUnwantedQueryPlanLevel,
+					Code:    advisor.StatementUnwantedQueryPlanLevel.Int32(),
 					Title:   checker.title,
 					Content: fmt.Sprintf("Overused query plan level detected %s, minimum plan level: %s", overusedType.String(), checker.explainType.String()),
-					Line:    checker.baseLine + ctx.GetStart().GetLine(),
+					StartPosition: &storepb.Position{
+						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+					},
 				})
 			}
 		}

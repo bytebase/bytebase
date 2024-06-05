@@ -1,21 +1,21 @@
 - statement: ALTER TABLE tech_book ADD COLUMN a int
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE tech_book ADD COLUMN a int;
     ALTER TABLE t ADD COLUMN b int;
   want:
-    - status: WARN
+    - status: 2
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
-      line: 3
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 3
+        column: 0

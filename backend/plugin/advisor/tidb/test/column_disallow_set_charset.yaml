@@ -2,55 +2,57 @@
     CREATE TABLE dt_relation_temp(objto int);
     ALTER TABLE dt_relation_temp ADD COLUMN infos json null comment'关系信息点'AFTER`objto`;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(a varchar(20))
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(a varchar(20) CHARSET ascii)
   want:
-    - status: WARN
+    - status: 2
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "CREATE TABLE t(a varchar(20) CHARSET ascii)" does
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book ADD COLUMN a varchar(20) CHARSET ascii
   want:
-    - status: WARN
+    - status: 2
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book ADD COLUMN a varchar(20) CHARSET ascii" does
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii
   want:
-    - status: WARN
+    - status: 2
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii" does
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii
   want:
-    - status: WARN
+    - status: 2
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii" does
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

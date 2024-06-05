@@ -1,32 +1,32 @@
 - statement: CREATE TABLE "CONNECT"(ID INT);
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.table.no-keyword
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE "DB_NAME"."SCHEMA_NAME"."CONNECT"(ID INT);
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.table.no-keyword
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE "DB_NAME"."SCHEMA_NAME"."TABLE_NAME"(ID INT);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE "DB_NAME"."SCHEMA_NAME"."TABLE_NAME" RENAME TO "CONNECT";
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.table.no-keyword
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

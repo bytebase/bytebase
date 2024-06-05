@@ -2,21 +2,21 @@
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a int
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a int
   want:
-    - status: WARN
+    - status: 2
       code: 406
       title: column.disallow-change
       content: '"ALTER TABLE t CHANGE COLUMN b a int" contains CHANGE COLUMN statement'
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

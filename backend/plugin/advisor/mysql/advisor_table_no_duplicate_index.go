@@ -29,7 +29,7 @@ type TableNoDuplicateIndexAdvisor struct {
 }
 
 // Check checks for no duplicate index in table.
-func (*TableNoDuplicateIndexAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableNoDuplicateIndexAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -51,9 +51,9 @@ func (*TableNoDuplicateIndexAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,8 +65,8 @@ type tableNoDuplicateIndexChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	indexList  []duplicateIndex
 }
@@ -105,12 +105,14 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateT
 	}
 	// Check for duplicate index.
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DuplicateIndexInTable,
+			Code:    advisor.DuplicateIndexInTable.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			Line:    index.line,
+			StartPosition: &storepb.Position{
+				Line: int32(index.line),
+			},
 		})
 	}
 }
@@ -136,12 +138,14 @@ func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTab
 		}
 	}
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DuplicateIndexInTable,
+			Code:    advisor.DuplicateIndexInTable.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			Line:    index.line,
+			StartPosition: &storepb.Position{
+				Line: int32(index.line),
+			},
 		})
 	}
 }
@@ -218,12 +222,14 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 	index.columns = mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
 	checker.indexList = append(checker.indexList, index)
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DuplicateIndexInTable,
+			Code:    advisor.DuplicateIndexInTable.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			Line:    index.line,
+			StartPosition: &storepb.Position{
+				Line: int32(index.line),
+			},
 		})
 	}
 }

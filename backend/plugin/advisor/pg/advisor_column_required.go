@@ -28,7 +28,7 @@ type ColumnRequirementAdvisor struct {
 }
 
 // Check checks for the column requirement.
-func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -58,9 +58,9 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -69,8 +69,8 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 }
 
 type columnRequirementChecker struct {
-	adviceList      []advisor.Advice
-	level           advisor.Status
+	adviceList      []*storepb.Advice
+	level           storepb.Advice_Status
 	title           string
 	requiredColumns columnSet
 }
@@ -108,12 +108,14 @@ func (checker *columnRequirementChecker) Visit(node ast.Node) ast.Visitor {
 	if len(missingColumns) > 0 {
 		// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 		sort.Strings(missingColumns)
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NoRequiredColumn,
+			Code:    advisor.NoRequiredColumn.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Table %q requires columns: %s", table.Name, strings.Join(missingColumns, ", ")),
-			Line:    node.LastLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(node.LastLine()),
+			},
 		})
 	}
 

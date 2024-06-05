@@ -34,7 +34,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -64,8 +64,8 @@ type tableRequirePKChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	tables     tablePK
 	line       map[string]int
@@ -196,24 +196,26 @@ func (checker *tableRequirePKChecker) EnterAlterTable(ctx *mysql.AlterTableConte
 	}
 }
 
-func (checker *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
+func (checker *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 	tableList := checker.tables.tableList()
 	for _, tableName := range tableList {
 		if len(checker.tables[tableName]) == 0 {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.TableNoPK,
+				Code:    advisor.TableNoPK.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
-				Line:    checker.line[tableName],
+				StartPosition: &storepb.Position{
+					Line: int32(checker.line[tableName]),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

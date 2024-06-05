@@ -5,10 +5,11 @@
       payload JSON
     );
   want:
-    - status: WARN
+    - status: 2
       code: 411
       title: column.type-disallow-list
       content: Column type JSON is disallowed
-      line: 4
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 4
+        column: 0

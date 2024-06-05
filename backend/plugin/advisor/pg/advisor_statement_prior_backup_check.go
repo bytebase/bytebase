@@ -28,12 +28,12 @@ type StatementPriorBackupCheckAdvisor struct {
 }
 
 // Check checks for disallow mix DDL and DML.
-func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	var adviceList []advisor.Advice
+func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+	var adviceList []*storepb.Advice
 	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -56,30 +56,34 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			isDDL = true
 		}
 		if isDDL {
-			adviceList = append(adviceList, advisor.Advice{
+			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
 				Title:   title,
 				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmt.Text()),
-				Code:    advisor.StatementPriorBackupCheck,
-				Line:    stmt.LastLine(),
+				Code:    advisor.StatementPriorBackupCheck.Int32(),
+				StartPosition: &storepb.Position{
+					Line: int32(stmt.LastLine()),
+				},
 			})
 		}
 	}
 
 	if !databaseExists(ctx.Context, ctx.Driver, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
-		adviceList = append(adviceList, advisor.Advice{
+		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
 			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", ctx.PreUpdateBackupDetail.Database),
-			Code:    advisor.DatabaseNotExists,
-			Line:    0,
+			Code:    advisor.DatabaseNotExists.Int32(),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
 		})
 	}
 
 	if len(adviceList) == 0 {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

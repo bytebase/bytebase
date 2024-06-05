@@ -27,7 +27,7 @@ type IndexKeyNumberLimitAdvisor struct {
 }
 
 // Check checks for index key number limit.
-func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -60,18 +60,18 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 type indexKeyNumberLimitListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	max             int
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *indexKeyNumberLimitListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *indexKeyNumberLimitListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -83,12 +83,14 @@ func (l *indexKeyNumberLimitListener) generateAdvice() ([]advisor.Advice, error)
 func (l *indexKeyNumberLimitListener) EnterTable_index_clause(ctx *parser.Table_index_clauseContext) {
 	keys := len(ctx.AllIndex_expr_option())
 	if keys > l.max {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit,
+			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Index key number should be less than or equal to %d", l.max),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }
@@ -97,12 +99,14 @@ func (l *indexKeyNumberLimitListener) EnterTable_index_clause(ctx *parser.Table_
 func (l *indexKeyNumberLimitListener) EnterOut_of_line_constraint(ctx *parser.Out_of_line_constraintContext) {
 	keys := len(ctx.AllColumn_name())
 	if keys > l.max {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit,
+			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Index key number should be less than or equal to %d", l.max),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

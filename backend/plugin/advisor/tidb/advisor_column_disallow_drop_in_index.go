@@ -27,7 +27,7 @@ type ColumnDisallowDropInIndexAdvisor struct {
 }
 
 // Check checks for disallow Drop COLUMN in index statement.
-func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -52,9 +52,9 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -64,8 +64,8 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type columnDisallowDropInIndexChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	tables     tableState // the variable mean whether the column in index.
@@ -112,12 +112,14 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 
 				colName := spec.OldColumnName.Name.String()
 				if !checker.canDrop(table, colName) {
-					checker.adviceList = append(checker.adviceList, advisor.Advice{
+					checker.adviceList = append(checker.adviceList, &storepb.Advice{
 						Status:  checker.level,
-						Code:    advisor.DropIndexColumn,
+						Code:    advisor.DropIndexColumn.Int32(),
 						Title:   checker.title,
 						Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
-						Line:    checker.line,
+						StartPosition: &storepb.Position{
+							Line: int32(checker.line),
+						},
 					})
 				}
 			}
