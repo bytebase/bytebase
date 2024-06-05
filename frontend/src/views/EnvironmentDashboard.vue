@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div class="w-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
     <NTabs
       type="line"
       :bar-width="200"
@@ -72,7 +72,7 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
-import { Drawer } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";

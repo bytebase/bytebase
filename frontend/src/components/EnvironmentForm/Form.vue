@@ -55,83 +55,90 @@
         </NCheckbox>
       </div>
 
-      <div class="flex flex-col gap-y-2">
-        <label class="textlabel">
-          {{ $t("policy.rollout.name") }}
-        </label>
-        <span
-          v-show="!create && valueChanged('rolloutPolicy')"
-          class="textlabeltip !ml-0"
-          >{{ $t("policy.rollout.tip") }}</span
-        >
-        <div class="textinfolabel">
-          {{ $t("policy.rollout.info") }}
-          <a
-            class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-            href="https://www.bytebase.com/docs/administration/environment-policy/rollout-policy"
-            target="_blank"
-            >{{ $t("common.learn-more")
-            }}<heroicons-outline:external-link class="w-4 h-4"
-          /></a>
-        </div>
-        <RolloutPolicyConfig
-          v-model:policy="state.rolloutPolicy"
-          :disabled="!allowEdit"
-        />
-      </div>
-
-      <div v-if="!create" class="flex flex-col gap-y-2">
-        <label class="textlabel">
-          {{ $t("sql-review.title") }}
-        </label>
-        <div>
-          <div v-if="sqlReviewPolicy" class="inline-flex items-center gap-x-2">
-            <Switch
-              v-if="allowEditSQLReviewPolicy"
-              :value="sqlReviewPolicy.enforce"
-              :text="true"
-              @update:value="toggleSQLReviewPolicy"
-            />
-            <span
-              class="textlabel normal-link !text-accent"
-              @click="onSQLReviewPolicyClick"
-              >{{ sqlReviewPolicy.name }}</span
-            >
-          </div>
-          <NButton
-            v-else-if="hasPermission('bb.policies.update')"
-            @click.prevent="onSQLReviewPolicyClick"
+      <template v-if="!simple">
+        <div class="flex flex-col gap-y-2">
+          <label class="textlabel">
+            {{ $t("policy.rollout.name") }}
+          </label>
+          <span
+            v-show="!create && valueChanged('rolloutPolicy')"
+            class="textlabeltip !ml-0"
+            >{{ $t("policy.rollout.tip") }}</span
           >
-            {{ $t("sql-review.configure-policy") }}
-          </NButton>
-          <span v-else class="textinfolabel">
-            {{ $t("sql-review.no-policy-set") }}
-          </span>
+          <div class="textinfolabel">
+            {{ $t("policy.rollout.info") }}
+            <a
+              class="inline-flex items-center text-blue-600 ml-1 hover:underline"
+              href="https://www.bytebase.com/docs/administration/environment-policy/rollout-policy"
+              target="_blank"
+              >{{ $t("common.learn-more")
+              }}<heroicons-outline:external-link class="w-4 h-4"
+            /></a>
+          </div>
+          <RolloutPolicyConfig
+            v-model:policy="state.rolloutPolicy"
+            :disabled="!allowEdit"
+          />
         </div>
-      </div>
 
-      <div v-if="!create" class="flex flex-col gap-y-2">
-        <label class="textlabel flex items-center">
-          {{ $t("environment.access-control.title") }}
-          <FeatureBadge feature="bb.feature.access-control" />
-        </label>
-        <div>
-          <div class="inline-flex items-center gap-x-2">
-            <Switch
-              :value="disableCopyDataPolicy"
-              :text="true"
-              :disabled="!allowEditDisableCopyData"
-              @update:value="upsertPolicy"
-            />
-            <span class="textlabel">{{
-              $t("environment.access-control.disable-copy-data-from-sql-editor")
-            }}</span>
+        <div v-if="!create" class="flex flex-col gap-y-2">
+          <label class="textlabel">
+            {{ $t("sql-review.title") }}
+          </label>
+          <div>
+            <div
+              v-if="sqlReviewPolicy"
+              class="inline-flex items-center gap-x-2"
+            >
+              <Switch
+                v-if="allowEditSQLReviewPolicy"
+                :value="sqlReviewPolicy.enforce"
+                :text="true"
+                @update:value="toggleSQLReviewPolicy"
+              />
+              <span
+                class="textlabel normal-link !text-accent"
+                @click="onSQLReviewPolicyClick"
+                >{{ sqlReviewPolicy.name }}</span
+              >
+            </div>
+            <NButton
+              v-else-if="hasPermission('bb.policies.update')"
+              @click.prevent="onSQLReviewPolicyClick"
+            >
+              {{ $t("sql-review.configure-policy") }}
+            </NButton>
+            <span v-else class="textinfolabel">
+              {{ $t("sql-review.no-policy-set") }}
+            </span>
           </div>
         </div>
-      </div>
+
+        <div v-if="!create" class="flex flex-col gap-y-2">
+          <label class="textlabel flex items-center">
+            {{ $t("environment.access-control.title") }}
+            <FeatureBadge feature="bb.feature.access-control" />
+          </label>
+          <div>
+            <div class="inline-flex items-center gap-x-2">
+              <Switch
+                :value="disableCopyDataPolicy"
+                :text="true"
+                :disabled="!allowEditDisableCopyData"
+                @update:value="upsertPolicy"
+              />
+              <span class="textlabel">{{
+                $t(
+                  "environment.access-control.disable-copy-data-from-sql-editor"
+                )
+              }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
-    <div v-if="!create" class="mt-6 flex justify-between items-center pt-5">
+    <div v-if="!create && !hideArchiveRestore" class="mt-6 flex justify-between items-center pt-5">
       <template v-if="state.environment.state === State.ACTIVE">
         <BBButtonConfirm
           v-if="allowArchive"
@@ -166,6 +173,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -194,7 +202,11 @@ import {
 import { extractEnvironmentResourceName, sqlReviewPolicySlug } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { useEnvironmentFormContext } from "./context";
-import { NCheckbox } from "naive-ui";
+
+defineProps<{
+  simple?: boolean;
+  hideArchiveRestore?: boolean;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();
