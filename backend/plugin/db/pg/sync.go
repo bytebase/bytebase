@@ -111,6 +111,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
 	}
+	sequenceMap, err := getSequences(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sequences from database %q", driver.databaseName)
+	}
 
 	extensions, err := getExtensions(txn)
 	if err != nil {
@@ -127,6 +131,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		var views []*storepb.ViewMetadata
 		var materializedViews []*storepb.MaterializedViewMetadata
 		var functions []*storepb.FunctionMetadata
+		var sequences []*storepb.SequenceMetadata
 		var exists bool
 		if tables, exists = tableMap[schemaName]; !exists {
 			tables = []*storepb.TableMetadata{}
@@ -148,12 +153,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if functions, exists = functionMap[schemaName]; !exists {
 			functions = []*storepb.FunctionMetadata{}
 		}
+		if sequences, exists = sequenceMap[schemaName]; !exists {
+			sequences = []*storepb.SequenceMetadata{}
+		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:              schemaName,
 			Tables:            tables,
 			ExternalTables:    externalTables,
 			Views:             views,
 			Functions:         functions,
+			Sequences:         sequences,
 			MaterializedViews: materializedViews,
 		})
 	}
@@ -764,6 +773,31 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	}
 
 	return extensions, nil
+}
+
+// getSequences gets all sequences of a database.
+func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
+	query := `SELECT sequence_schema, sequence_name, data_type FROM information_schema.sequences;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	for rows.Next() {
+		sequence := &storepb.SequenceMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &sequence.Name, &sequence.DataType); err != nil {
+			return nil, err
+		}
+		sequenceMap[schemaName] = append(sequenceMap[schemaName], sequence)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return sequenceMap, nil
 }
 
 var listIndexQuery = `
