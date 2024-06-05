@@ -4,26 +4,26 @@
       Name VARCHAR(50) NOT NULL
     );
   want:
-    - status: WARN
+    - status: 2
       code: 601
       title: table.require-pk
       content: Table MySchema.MyTable requires PRIMARY KEY.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE MySchema.MyTable (
       Id INT NOT NULL PRIMARY KEY,
       Name VARCHAR(50) NOT NULL
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE MySchema.MyTable (
       Id INT NOT NULL,
@@ -31,19 +31,17 @@
       PRIMARY KEY (Id)
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE MySchema.MyTable ADD CONSTRAINT PK_MyTable PRIMARY KEY (Id);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

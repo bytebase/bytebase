@@ -1,54 +1,54 @@
 - statement: CREATE TABLE ALL_UPPERCASE(ID INT);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE [\\](ID INT);
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: '[\\] mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"'
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE all_lowercase(ID INT);
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: all_lowercase mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE PascalCase(ID INT);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: execute sp_rename 'Sales.SalesTerritory', 'SALESTERR';
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: execute sp_rename 'Sales.SalesTerritory', 'salesTerr';
   want:
-    - status: WARN
+    - status: 2
       code: 301
       title: naming.table
       content: salesTerr mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

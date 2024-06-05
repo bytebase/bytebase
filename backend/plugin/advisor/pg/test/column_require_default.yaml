@@ -1,40 +1,42 @@
 - statement: CREATE TABLE t(a serial primary key, b int default 1)
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(
       a int,
       b int default 1
     )
   want:
-    - status: WARN
+    - status: 2
       code: 420
       title: column.require-default
       content: Column "t"."a" in schema "public" doesn't have DEFAULT
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a BLOB;
     ALTER TABLE tech_book ADD COLUMN b timestamp;
   want:
-    - status: WARN
+    - status: 2
       code: 420
       title: column.require-default
       content: Column "tech_book"."a" in schema "public" doesn't have DEFAULT
-      line: 1
-      column: 0
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+    - status: 2
       code: 420
       title: column.require-default
       content: Column "tech_book"."b" in schema "public" doesn't have DEFAULT
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

@@ -3,48 +3,53 @@
     WHEN MATCHED THEN UPDATE SET Identifier.Name = MyTable.Name
     WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (MyTable.Id, MyTable.Name);
   want:
-    - status: WARN
+    - status: 2
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     INSERT INTO MySchema.MyTable (Id, Name) VALUES (1, 'Alice');
     INSERT INTO MySchema.Identifier (Id, Name) VALUES (1, 'Alice');
   want:
-    - status: WARN
+    - status: 2
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      line: 2
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: DELETE FROM MySchema.Identifier WHERE Id = 1;
   want:
-    - status: WARN
+    - status: 2
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: UPDATE MySchema.Identifier SET Name = 'Bob' WHERE Id = 1;
   want:
-    - status: WARN
+    - status: 2
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: SELECT * INTO MySchema.Identifier FROM MySchema.MyTable;
   want:
-    - status: WARN
+    - status: 2
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

@@ -1,95 +1,102 @@
 - statement: CREATE TABLE t(a int) CHARSET utf8mb4;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(a varchar(255));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(a int) CHARSET ascii;
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
-      content: |-
-        "CREATE TABLE t(a int) CHARSET ascii;" used disabled charset 'ascii'
-      line: 1
-      details: ""
+      content: '"CREATE TABLE t(a int) CHARSET ascii;" used disabled charset ''ascii'''
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t CHARSET ascii;
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
-      content: |-
-        "ALTER TABLE t CHARSET ascii;" used disabled charset 'ascii'
-      line: 2
-      details: ""
+      content: '"ALTER TABLE t CHARSET ascii;" used disabled charset ''ascii'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: ALTER DATABASE test CHARSET ascii;
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
-      content: |-
-        "ALTER DATABASE test CHARSET ascii;" used disabled charset 'ascii'
-      line: 1
-      details: ""
+      content: '"ALTER DATABASE test CHARSET ascii;" used disabled charset ''ascii'''
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE t(a varchar(255) CHARSET ascii);
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
-      content: |-
-        "CREATE TABLE t(a varchar(255) CHARSET ascii);" used disabled charset 'ascii'
-      line: 1
-      details: ""
+      content: '"CREATE TABLE t(a varchar(255) CHARSET ascii);" used disabled charset ''ascii'''
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii;
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
-      content: |-
-        "ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii;" used disabled charset 'ascii'
-      line: 2
-      details: ""
+      content: '"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii;" used disabled charset ''ascii'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii;
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
-      content: |-
-        "ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii;" used disabled charset 'ascii'
-      line: 2
-      details: ""
+      content: '"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii;" used disabled charset ''ascii'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii;
   want:
-    - status: WARN
+    - status: 2
       code: 1001
       title: system.charset.allowlist
-      content: |-
-        "ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii;" used disabled charset 'ascii'
-      line: 2
-      details: ""
+      content: '"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii;" used disabled charset ''ascii'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: /* this is a comment */
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

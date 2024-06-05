@@ -8,10 +8,11 @@
       Name VARCHAR(50) NOT NULL
     );
   want:
-    - status: WARN
+    - status: 2
       code: 613
       title: table.disallow-ddl
       content: DDL is disallowed on table MySchema.Identifier.
-      line: 5
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 5
+        column: 0
