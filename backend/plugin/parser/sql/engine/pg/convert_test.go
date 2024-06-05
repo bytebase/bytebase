@@ -64,6 +64,41 @@ func newExpression(expression ast.ExpressionNode, text string) ast.ExpressionNod
 	return expression
 }
 
+func TestPGConvertCreateViewStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `CREATE VIEW tech_book(a, b) AS SELECT * FROM book`,
+			want: []ast.Node{
+				&ast.CreateViewStmt{
+					Name: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "tech_book",
+					},
+					Aliases: []string{"a", "b"},
+					Select: &ast.SelectStmt{
+						FieldList: []ast.ExpressionNode{
+							newExpression(
+								&ast.ColumnNameDef{
+									Table:      &ast.TableDef{},
+									ColumnName: "*",
+								}, "*"),
+						},
+					},
+					Replace: false,
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     `CREATE VIEW tech_book(a, b) AS SELECT * FROM book`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
