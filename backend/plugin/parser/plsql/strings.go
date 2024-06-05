@@ -554,7 +554,7 @@ func (r *rewriter) EnterCreate_index(ctx *parser.Create_indexContext) {
 
 	indexDefinition := ctx.Table_index_clause()
 	schema, indexName := NormalizeIndexName(ctx.Index_name())
-	_, table := NormalizeTableViewName("", indexDefinition.Tableview_name())
+	_, _, table := NormalizeTableViewName("", indexDefinition.Tableview_name())
 	indexID := indexID{
 		schema: schema,
 		table:  table,

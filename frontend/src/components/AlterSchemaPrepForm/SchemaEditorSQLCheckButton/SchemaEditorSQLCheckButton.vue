@@ -7,19 +7,11 @@
       size: 'small',
     }"
     class="justify-end"
-  >
-    <template #result="{ advices, isRunning }">
-      <SQLCheckSummary
-        v-if="advices !== undefined && !isRunning"
-        :database="database"
-        :advices="advices"
-      />
-    </template>
-  </SQLCheckButton>
+  />
 </template>
 <script lang="ts" setup>
 import { toRef } from "vue";
-import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
+import { SQLCheckButton } from "@/components/SQLCheck";
 import type { ComposedDatabase } from "@/types";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 

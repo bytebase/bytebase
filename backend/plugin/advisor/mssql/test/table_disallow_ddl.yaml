@@ -13,3 +13,5 @@
       title: table.disallow-ddl
       content: DDL is disallowed on table MySchema.Identifier.
       line: 5
+      column: 0
+      details: ""
