@@ -5,6 +5,11 @@ import (
 	"io"
 	"log/slog"
 	"strings"
+	"sync"
+	"time"
+
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/zeebo/xxh3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/mssql"
@@ -17,13 +22,17 @@ import (
 
 // Manager is the coordinator for all sheets and SQL statements.
 type Manager struct {
-	store *store.Store
+	sync.Mutex
+
+	store    *store.Store
+	astCache *lru.LRU[uint64, *Result]
 }
 
 // NewManager creates a new sheet manager.
 func NewManager(store *store.Store) *Manager {
 	return &Manager{
-		store: store,
+		store:    store,
+		astCache: lru.NewLRU[uint64, *Result](8, nil, 3*time.Minute),
 	}
 }
 
@@ -135,4 +144,32 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 		}
 	}
 	return sheetCommands
+}
+
+type Result struct {
+	sync.Mutex
+	ast any
+	err error
+}
+
+func (sm *Manager) GetAST(_ storepb.Engine, statement string) (any, error) {
+	var result *Result
+	hashKey := xxh3.HashString(statement)
+	sm.Lock()
+	if v, ok := sm.astCache.Get(hashKey); ok {
+		result = v
+	} else {
+		result = &Result{}
+		sm.astCache.Add(hashKey, result)
+	}
+	sm.Unlock()
+
+	result.Lock()
+	defer result.Unlock()
+	if result.ast != nil {
+		return result.ast, result.err
+	}
+	// TODO(d): do something.
+	result.ast = 1
+	return result.ast, result.err
 }
