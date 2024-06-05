@@ -12,12 +12,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	advisor.Register(store.Engine_POSTGRES, advisor.PostgreSQLNamingFullyQualifiedObjectName, &FullyQualifiedObjectNameAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNamingFullyQualifiedObjectName, &FullyQualifiedObjectNameAdvisor{})
 }
 
 type FullyQualifiedObjectNameAdvisor struct{}
@@ -252,7 +251,7 @@ func getFullyQualiufiedObjectName(nodeDef ast.Node) string {
 }
 
 // Used for select statement.
-func findAllTables(statement string, schemaMetadata *store.DatabaseSchemaMetadata) []base.ColumnResource {
+func findAllTables(statement string, schemaMetadata *storepb.DatabaseSchemaMetadata) []base.ColumnResource {
 	jsonText, err := pgquery.ParseToJSON(statement)
 	if err != nil {
 		return nil
@@ -276,7 +275,7 @@ func findAllTables(statement string, schemaMetadata *store.DatabaseSchemaMetadat
 	return resourceArray
 }
 
-func getSchemaNameMapFromPublic(schemaMetadata *store.DatabaseSchemaMetadata) map[string]bool {
+func getSchemaNameMapFromPublic(schemaMetadata *storepb.DatabaseSchemaMetadata) map[string]bool {
 	if schemaMetadata.Schemas == nil {
 		return nil
 	}

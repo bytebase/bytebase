@@ -9,14 +9,13 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 func init() {
-	advisor.Register(store.Engine_MYSQL, advisor.MySQLTableLimitSize, &MaximumTableSizeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableLimitSize, &MaximumTableSizeAdvisor{})
 }
 
 type MaximumTableSizeAdvisor struct {
@@ -36,7 +35,7 @@ var (
 func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
 
-	if ctx.ChangeType != store.PlanCheckRunConfig_DDL && ctx.ChangeType != store.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
+	if ctx.ChangeType != storepb.PlanCheckRunConfig_DDL && ctx.ChangeType != storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return []*storepb.Advice{{
 			Status:  storepb.Advice_SUCCESS,
 			Code:    advisor.Ok.Int32(),
@@ -121,7 +120,7 @@ func (checker *MaximumTableSizeChecker) EnterDropTable(ctx *mysql.DropTableConte
 	}
 }
 
-func getTabRowsByName(targetTabName string, tables []*store.TableMetadata) int64 {
+func getTabRowsByName(targetTabName string, tables []*storepb.TableMetadata) int64 {
 	for _, table := range tables {
 		if table.Name == targetTabName {
 			return table.RowCount

@@ -8,12 +8,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	advisor.Register(store.Engine_MSSQL, advisor.MSSQLStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
 }
 
 type DisallowFuncAndCalculationsAdvisor struct{}

@@ -10,12 +10,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
-	"github.com/bytebase/bytebase/proto/generated-go/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	advisor.Register(store.Engine_MSSQL, advisor.MSSQLIndexNotRedundant, IndexNotRedundantAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLIndexNotRedundant, IndexNotRedundantAdvisor{})
 }
 
 var dftMSSQLSchemaName = "dbo"
@@ -122,10 +121,10 @@ type FindIndexesKey struct {
 }
 
 // The value in the map represents the column list of a certain index.
-type IndexMap = map[FindIndexesKey][]*store.IndexMetadata
+type IndexMap = map[FindIndexesKey][]*storepb.IndexMetadata
 
 // Return the name of the index if redundant prefixes are found.
-func containRedundantPrefix(metaIdxList []*store.IndexMetadata, statColumnList *parser.IColumn_name_list_with_orderContext) string {
+func containRedundantPrefix(metaIdxList []*storepb.IndexMetadata, statColumnList *parser.IColumn_name_list_with_orderContext) string {
 	for _, metaIndex := range metaIdxList {
 		if statColumnList != nil && len((*statColumnList).AllId_()) != 0 && len(metaIdxList) != 0 {
 			statIdxCol, _ := tsql.NormalizeTSQLIdentifier((*statColumnList).AllId_()[0])
@@ -137,7 +136,7 @@ func containRedundantPrefix(metaIdxList []*store.IndexMetadata, statColumnList *
 	return ""
 }
 
-func getIndexMapFromMetadata(dbMetadata *store.DatabaseSchemaMetadata) *IndexMap {
+func getIndexMapFromMetadata(dbMetadata *storepb.DatabaseSchemaMetadata) *IndexMap {
 	indexMap := IndexMap{}
 	if dbMetadata == nil {
 		return &indexMap
