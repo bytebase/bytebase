@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import type { PrincipalType } from "@/types";
-import { PresetRoleType } from "@/types";
+import { PresetRoleType, PRESET_WORKSPACE_ROLES } from "@/types";
 import { ALL_USERS_USER_EMAIL, allUsersUser } from "@/types";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
@@ -34,6 +34,12 @@ export const useUserStore = defineStore("user", () => {
     return userList.value.filter(
       (user) =>
         user.state === State.ACTIVE && user.email !== ALL_USERS_USER_EMAIL
+    );
+  });
+
+  const workspaceLevelProjectMembers = computed(() => {
+    return activeUserList.value.filter((user) =>
+      user.roles.some((role) => !PRESET_WORKSPACE_ROLES.includes(role))
     );
   });
 
@@ -123,6 +129,7 @@ export const useUserStore = defineStore("user", () => {
     userMapByName,
     userList,
     activeUserList,
+    workspaceLevelProjectMembers,
     fetchUserList,
     fetchUser,
     createUser,
