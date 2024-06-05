@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
+
 option go_package = "generated-go/store";
 
 message Advice {
@@ -27,9 +29,5 @@ message Advice {
   // The advice detail.
   string detail = 5;
 
-  message Position {
-    int32 line = 1;
-    int32 column = 2;
-  }
   Position start_position = 6;
 }

@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Position } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
@@ -15,7 +16,7 @@ export interface Advice {
   content: string;
   /** The advice detail. */
   detail: string;
-  startPosition: Advice_Position | undefined;
+  startPosition: Position | undefined;
 }
 
 export enum Advice_Status {
@@ -80,11 +81,6 @@ export function advice_StatusToNumber(object: Advice_Status): number {
   }
 }
 
-export interface Advice_Position {
-  line: number;
-  column: number;
-}
-
 function createBaseAdvice(): Advice {
   return {
     status: Advice_Status.STATUS_UNSPECIFIED,
@@ -114,7 +110,7 @@ export const Advice = {
       writer.uint32(42).string(message.detail);
     }
     if (message.startPosition !== undefined) {
-      Advice_Position.encode(message.startPosition, writer.uint32(50).fork()).ldelim();
+      Position.encode(message.startPosition, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -166,7 +162,7 @@ export const Advice = {
             break;
           }
 
-          message.startPosition = Advice_Position.decode(reader, reader.uint32());
+          message.startPosition = Position.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -184,7 +180,7 @@ export const Advice = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
-      startPosition: isSet(object.startPosition) ? Advice_Position.fromJSON(object.startPosition) : undefined,
+      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
     };
   },
 
@@ -206,7 +202,7 @@ export const Advice = {
       obj.detail = message.detail;
     }
     if (message.startPosition !== undefined) {
-      obj.startPosition = Advice_Position.toJSON(message.startPosition);
+      obj.startPosition = Position.toJSON(message.startPosition);
     }
     return obj;
   },
@@ -222,82 +218,8 @@ export const Advice = {
     message.content = object.content ?? "";
     message.detail = object.detail ?? "";
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
-      ? Advice_Position.fromPartial(object.startPosition)
+      ? Position.fromPartial(object.startPosition)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseAdvice_Position(): Advice_Position {
-  return { line: 0, column: 0 };
-}
-
-export const Advice_Position = {
-  encode(message: Advice_Position, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.line !== 0) {
-      writer.uint32(8).int32(message.line);
-    }
-    if (message.column !== 0) {
-      writer.uint32(16).int32(message.column);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Advice_Position {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAdvice_Position();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.line = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.column = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Advice_Position {
-    return {
-      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
-      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
-    };
-  },
-
-  toJSON(message: Advice_Position): unknown {
-    const obj: any = {};
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.column !== 0) {
-      obj.column = Math.round(message.column);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Advice_Position>): Advice_Position {
-    return Advice_Position.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Advice_Position>): Advice_Position {
-    const message = createBaseAdvice_Position();
-    message.line = object.line ?? 0;
-    message.column = object.column ?? 0;
     return message;
   },
 };

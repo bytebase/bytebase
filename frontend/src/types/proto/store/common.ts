@@ -434,6 +434,11 @@ export interface PageToken {
   offset: number;
 }
 
+export interface Position {
+  line: number;
+  column: number;
+}
+
 function createBasePageToken(): PageToken {
   return { limit: 0, offset: 0 };
 }
@@ -504,6 +509,80 @@ export const PageToken = {
     const message = createBasePageToken();
     message.limit = object.limit ?? 0;
     message.offset = object.offset ?? 0;
+    return message;
+  },
+};
+
+function createBasePosition(): Position {
+  return { line: 0, column: 0 };
+}
+
+export const Position = {
+  encode(message: Position, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.line !== 0) {
+      writer.uint32(8).int32(message.line);
+    }
+    if (message.column !== 0) {
+      writer.uint32(16).int32(message.column);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Position {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePosition();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.line = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.column = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Position {
+    return {
+      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
+      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
+    };
+  },
+
+  toJSON(message: Position): unknown {
+    const obj: any = {};
+    if (message.line !== 0) {
+      obj.line = Math.round(message.line);
+    }
+    if (message.column !== 0) {
+      obj.column = Math.round(message.column);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Position>): Position {
+    return Position.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Position>): Position {
+    const message = createBasePosition();
+    message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     return message;
   },
 };
