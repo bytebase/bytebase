@@ -575,6 +575,10 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, "notification types should not be empty")
 			}
 			update.ActivityList = types
+		case "direct_message":
+			update.Payload = &storepb.ProjectWebhookPayload{
+				DirectMessage: request.Webhook.DirectMessage,
+			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid field %q", path)
 		}
@@ -1109,6 +1113,9 @@ func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectW
 		URL:          webhook.Url,
 		Title:        webhook.Title,
 		ActivityList: activityTypes,
+		Payload: &storepb.ProjectWebhookPayload{
+			DirectMessage: webhook.DirectMessage,
+		},
 	}, nil
 }
 
@@ -1454,6 +1461,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 			Title:             webhook.Title,
 			Url:               webhook.URL,
 			NotificationTypes: convertNotificationTypeStrings(webhook.ActivityList),
+			DirectMessage:     webhook.Payload.GetDirectMessage(),
 		})
 	}
 
