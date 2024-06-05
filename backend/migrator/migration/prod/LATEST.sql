@@ -219,24 +219,6 @@ VALUES
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
--- Project member
-CREATE TABLE project_member (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    project_id INTEGER NOT NULL REFERENCES project (id),
-    role TEXT NOT NULL,
-    principal_id INTEGER NOT NULL REFERENCES principal (id),
-    condition JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_project_member_project_id ON project_member(project_id);
-
-ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
-
 -- Project Hook
 CREATE TABLE project_webhook (
     id SERIAL PRIMARY KEY,
