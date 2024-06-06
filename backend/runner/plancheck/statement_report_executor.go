@@ -463,13 +463,16 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 	var changedResources []base.SchemaResource
 
 	for _, node := range nodes {
-		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", node)
+		var resources []base.SchemaResource
+		sqlType, v := getStatementTypeAndResourcesFromAstNode(database, "public", node)
 		if sqlType == "COMMENT" {
-			v, err := postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
+			v2, err := postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
 			if err != nil {
 				slog.Error("failed to extract resources from comment statement", slog.String("statement", node.Text()), log.BBError(err))
-				resources = nil
+			} else {
+				resources = v2
 			}
+		} else {
 			resources = v
 		}
 		sqlTypeSet[sqlType] = struct{}{}
