@@ -1,4 +1,4 @@
-//go:build !minimal
+//go:build !minidemo
 
 package server
 

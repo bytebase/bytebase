@@ -11,8 +11,8 @@ cmd = """
   CGO_ENABLED=1 \
   go build \
   -p=8 \
-  -ldflags="-debugtextsize=1073741824 -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
-  --tags "minimal" \
+  -ldflags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
+  --tags "" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500
 exclude_dir = [
