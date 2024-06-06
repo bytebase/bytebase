@@ -861,6 +861,7 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			}
 		}
 
+		viewStmt.SetOriginalNode(in)
 		return viewStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
@@ -1291,6 +1292,7 @@ func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
 
 func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 	selectStmt := &ast.SelectStmt{}
+	selectStmt.SetOriginalNode(in)
 
 	setOperation, err := convertSetOperation(in.Op)
 	if err != nil {
