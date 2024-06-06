@@ -24,118 +24,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func getPipelineCreateFromDatabaseGroupTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	switch c.Type {
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-	default:
-		return nil, errors.Errorf("unsupported change database config type %q for database group target", c.Type)
-	}
-
-	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", c.Target)
-	}
-	if projectID != project.ResourceID {
-		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
-	}
-	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
-	}
-	if databaseGroup == nil {
-		return nil, errors.Errorf("database group %q not found", databaseGroupID)
-	}
-	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-	}
-
-	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
-	}
-	if len(matchedDatabases) == 0 {
-		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
-	}
-
-	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list environments")
-	}
-
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-	}
-	sheetStatement, err := s.GetSheetStatementByID(ctx, sheetUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %q", sheetUID)
-	}
-
-	taskCreatesMatrixByEnv := map[string][][]*store.TaskMessage{}
-	taskIndexDAGsMatrixByEnv := map[string][][]store.TaskIndexDAG{}
-
-	for _, db := range matchedDatabases {
-		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &db.InstanceID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %q", db.InstanceID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance %q not found", db.InstanceID)
-		}
-
-		taskCreates, err := getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db, instance, spec, c, sheetStatement)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
-		}
-		var taskIndexDAGs []store.TaskIndexDAG
-		for i := 1; i < len(taskCreates); i++ {
-			taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
-				FromIndex: i - 1,
-				ToIndex:   i,
-			})
-		}
-
-		if len(taskCreates) == 0 {
-			continue
-		}
-
-		taskCreatesMatrixByEnv[db.EffectiveEnvironmentID] = append(taskCreatesMatrixByEnv[db.EffectiveEnvironmentID], taskCreates)
-		taskIndexDAGsMatrixByEnv[db.EffectiveEnvironmentID] = append(taskIndexDAGsMatrixByEnv[db.EffectiveEnvironmentID], taskIndexDAGs)
-	}
-
-	pipelineCreate := &store.PipelineMessage{
-		Name: "Rollout Pipeline",
-	}
-
-	for _, env := range environments {
-		taskCreatesMatrix := taskCreatesMatrixByEnv[env.ResourceID]
-		taskIndexDAGsMatrix := taskIndexDAGsMatrixByEnv[env.ResourceID]
-		if len(taskCreatesMatrix) == 0 {
-			continue
-		}
-		creates, dags, err := utils.MergeTaskCreateLists(taskCreatesMatrix, taskIndexDAGsMatrix)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to merge task create lists")
-		}
-
-		stageCreate := &store.StageMessage{
-			EnvironmentID:    env.UID,
-			Name:             fmt.Sprintf("%s Stage", env.Title),
-			TaskList:         creates,
-			TaskIndexDAGList: dags,
-		}
-		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
-	}
-
-	if len(pipelineCreate.Stages) == 0 {
-		return nil, errors.Errorf("get no tasks from the database group target, hint: your database group or schema group may not match anything")
-	}
-
-	return pipelineCreate, nil
-}
-
 func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Step, error) {
 	projectID, _, err := common.GetProjectIDDeploymentConfigID(c.Target)
 	if err != nil {
@@ -180,6 +68,73 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 
 		step := &storepb.PlanConfig_Step{
 			Title: deploymentConfig.Schedule.Deployments[i].Name,
+		}
+		for _, database := range databases {
+			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+			if !ok {
+				return nil, errors.Errorf("failed to clone, got %T", s)
+			}
+			proto.Merge(s, &storepb.PlanConfig_Spec{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+					},
+				},
+			})
+			step.Specs = append(step.Specs, s)
+		}
+		steps = append(steps, step)
+	}
+	return steps, nil
+}
+
+func transformDatabaseGroupTargetToSteps(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Step, error) {
+	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project and deployment id from target %q", c.Target)
+	}
+	if project.ResourceID != projectID {
+		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
+	}
+
+	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
+	}
+	if databaseGroup == nil {
+		return nil, errors.Errorf("database group %q not found", databaseGroupID)
+	}
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+	}
+
+	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
+	}
+	if len(matchedDatabases) == 0 {
+		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
+	}
+
+	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list environments")
+	}
+
+	dbByEnv := map[string][]*store.DatabaseMessage{}
+	for _, db := range matchedDatabases {
+		dbByEnv[db.EffectiveEnvironmentID] = append(dbByEnv[db.EffectiveEnvironmentID], db)
+	}
+
+	var steps []*storepb.PlanConfig_Step
+	for _, env := range environments {
+		databases := dbByEnv[env.ResourceID]
+		if len(databases) == 0 {
+			continue
+		}
+		step := &storepb.PlanConfig_Step{
+			Title: env.Title,
 		}
 		for _, database := range databases {
 			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
@@ -630,64 +585,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 	default:
 		return nil, nil, errors.Errorf("unsupported change database config type %q", c.Type)
 	}
-}
-
-func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.DatabaseMessage, instance *store.InstanceMessage, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, statement string) ([]*store.TaskMessage, error) {
-	var creates []*store.TaskMessage
-	switch c.Type {
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		payload := api.TaskDatabaseSchemaUpdatePayload{
-			SpecID:        spec.Id,
-			SheetID:       0,
-			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
-		}
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
-		}
-		payloadString := string(bytes)
-		taskCreate := &store.TaskMessage{
-			Name:              fmt.Sprintf("DDL(schema) for database %q", db.DatabaseName),
-			InstanceID:        instance.UID,
-			DatabaseID:        &db.UID,
-			Type:              api.TaskDatabaseSchemaUpdate,
-			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
-			Payload:           payloadString,
-			Statement:         statement,
-		}
-		creates = append(creates, taskCreate)
-
-	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-		preUpdateBackupDetail := api.PreUpdateBackupDetail{}
-		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
-			preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
-		}
-
-		payload := api.TaskDatabaseDataUpdatePayload{
-			SpecID:                spec.Id,
-			SheetID:               0,
-			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
-			PreUpdateBackupDetail: preUpdateBackupDetail,
-		}
-
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal database data update payload")
-		}
-		payloadString := string(bytes)
-		taskCreate := &store.TaskMessage{
-			Name:              fmt.Sprintf("DML(data) for database %q", db.DatabaseName),
-			InstanceID:        instance.UID,
-			DatabaseID:        &db.UID,
-			Type:              api.TaskDatabaseDataUpdate,
-			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
-			Payload:           payloadString,
-			Statement:         statement,
-		}
-		creates = append(creates, taskCreate)
-	}
-
-	return creates, nil
 }
 
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.

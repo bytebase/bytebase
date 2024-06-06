@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -770,7 +769,11 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				transformedSteps = stepsFromDeploymentConfig
 			}
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
-				return getPipelineCreateFromDatabaseGroupTarget(ctx, s, spec, config, project)
+				stepsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
+				}
+				transformedSteps = stepsFromDatabaseGroup
 			}
 		}
 	}
@@ -885,56 +888,6 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 			c.CreatorID = creatorID
 			c.PipelineID = pipelineCreated.ID
 			c.StageID = createdStage.ID
-
-			// HACK: statement is present because the task came from a database group target plan spec.
-			// we need to create the sheet and update payload.SheetID.
-			if c.Statement != "" {
-				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &c.InstanceID})
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get instance %v", c.InstanceID)
-				}
-				if instance == nil {
-					return nil, errors.Errorf("instance not found, id %v", c.InstanceID)
-				}
-				sheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
-					CreatorID:  api.SystemBotID,
-					ProjectUID: project.UID,
-					Title:      fmt.Sprintf("Sheet for task %v", c.Name),
-					Statement:  c.Statement,
-
-					Payload: &storepb.SheetPayload{
-						Engine: instance.Engine,
-					},
-				})
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to create sheet for task %v", c.Name)
-				}
-				switch c.Type {
-				case api.TaskDatabaseSchemaUpdate:
-					payload := &api.TaskDatabaseSchemaUpdatePayload{}
-					if err := json.Unmarshal([]byte(c.Payload), payload); err != nil {
-						return nil, errors.Wrapf(err, "failed to unmarshal payload for task %v", c.Name)
-					}
-					payload.SheetID = sheet.UID
-					payloadBytes, err := json.Marshal(payload)
-					if err != nil {
-						return nil, errors.Wrapf(err, "failed to marshal payload for task %v", c.Name)
-					}
-					c.Payload = string(payloadBytes)
-				case api.TaskDatabaseDataUpdate:
-					payload := &api.TaskDatabaseDataUpdatePayload{}
-					if err := json.Unmarshal([]byte(c.Payload), payload); err != nil {
-						return nil, errors.Wrapf(err, "failed to unmarshal payload for task %v", c.Name)
-					}
-					payload.SheetID = sheet.UID
-					payloadBytes, err := json.Marshal(payload)
-					if err != nil {
-						return nil, errors.Wrapf(err, "failed to marshal payload for task %v", c.Name)
-					}
-					c.Payload = string(payloadBytes)
-				}
-			}
-
 			taskCreateList = append(taskCreateList, c)
 		}
 		tasks, err := s.store.CreateTasksV2(ctx, taskCreateList...)
