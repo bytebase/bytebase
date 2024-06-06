@@ -7,7 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 var (
@@ -17,8 +20,8 @@ var (
 	timeout = 3 * time.Second
 )
 
-// meta is the webhook metadata.
-type meta struct {
+// Meta is the webhook metadata.
+type Meta struct {
 	Name  string
 	Value string
 }
@@ -78,26 +81,30 @@ type Context struct {
 	Issue               *Issue
 	Project             *Project
 	TaskResult          *TaskResult
+	MentionUsers        []*store.UserMessage
 	MentionUsersByPhone []string
+
+	DirectMessage bool
+	IMSetting     *storepb.AppIMSetting
 }
 
 // Receiver is the webhook receiver.
 type Receiver interface {
-	post(context Context) error
+	Post(context Context) error
 }
 
-func (c *Context) getMetaList() []meta {
-	m := []meta{}
+func (c *Context) GetMetaList() []Meta {
+	m := []Meta{}
 
 	if c.Project != nil {
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "Project",
 			Value: c.Project.Name,
 		})
 	}
 
 	if c.Issue != nil {
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "Issue",
 			Value: c.Issue.Name,
 		})
@@ -105,29 +112,29 @@ func (c *Context) getMetaList() []meta {
 		// So the description could be long, which is hard to display if merged into the issue name.
 		// We also trim it to 200 bytes to limit the message size in the webhook body, so that users can
 		// view it easily in the corresponding webhook client.
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "Issue Description",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
 	}
 
 	if c.TaskResult != nil {
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "Task",
 			Value: c.TaskResult.Name,
 		})
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "Status",
 			Value: c.TaskResult.Status,
 		})
 		if c.TaskResult.Detail != "" {
-			m = append(m, meta{
+			m = append(m, Meta{
 				Name:  "Result Detail",
 				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
 			})
 		}
 		if c.TaskResult.SkippedReason != "" {
-			m = append(m, meta{
+			m = append(m, Meta{
 				Name:  "Skipped Reason",
 				Value: c.TaskResult.SkippedReason,
 			})
@@ -137,18 +144,18 @@ func (c *Context) getMetaList() []meta {
 	return m
 }
 
-func (c *Context) getMetaListZh() []meta {
-	m := []meta{}
+func (c *Context) GetMetaListZh() []Meta {
+	m := []Meta{}
 
 	if c.Project != nil {
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "项目",
 			Value: c.Project.Name,
 		})
 	}
 
 	if c.Issue != nil {
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "工单",
 			Value: c.Issue.Name,
 		})
@@ -156,29 +163,29 @@ func (c *Context) getMetaListZh() []meta {
 		// So the description could be long, which is hard to display if merged into the issue name.
 		// We also trim it to 200 bytes to limit the message size in the webhook body, so that users can
 		// view it easily in the corresponding webhook client.
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "工单描述",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
 	}
 
 	if c.TaskResult != nil {
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "任务",
 			Value: c.TaskResult.Name,
 		})
-		m = append(m, meta{
+		m = append(m, Meta{
 			Name:  "状态",
 			Value: c.TaskResult.Status,
 		})
 		if c.TaskResult.Detail != "" {
-			m = append(m, meta{
+			m = append(m, Meta{
 				Name:  "结果详情",
 				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
 			})
 		}
 		if c.TaskResult.SkippedReason != "" {
-			m = append(m, meta{
+			m = append(m, Meta{
 				Name:  "跳过原因",
 				Value: c.TaskResult.SkippedReason,
 			})
@@ -191,7 +198,7 @@ func (c *Context) getMetaListZh() []meta {
 // Register makes a receiver available by the url host
 // If Register is called twice with the same url host or if receiver is nil,
 // it panics.
-func register(host string, r Receiver) {
+func Register(host string, r Receiver) {
 	receiverMu.Lock()
 	defer receiverMu.Unlock()
 	if r == nil {
@@ -211,5 +218,5 @@ func Post(webhookType string, context Context) error {
 	if !ok {
 		return errors.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
-	return r.post(context)
+	return r.Post(context)
 }

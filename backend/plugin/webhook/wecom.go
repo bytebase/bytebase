@@ -29,16 +29,16 @@ type WeComWebhook struct {
 }
 
 func init() {
-	register("bb.plugin.webhook.wecom", &WeComReceiver{})
+	Register("bb.plugin.webhook.wecom", &WeComReceiver{})
 }
 
 // WeComReceiver is the receiver for WeCom.
 type WeComReceiver struct {
 }
 
-func (*WeComReceiver) post(context Context) error {
+func (*WeComReceiver) Post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.getMetaList() {
+	for _, meta := range context.GetMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("By: <font color=\"comment\">%s (%s)</font>", context.CreatorName, context.CreatorEmail))

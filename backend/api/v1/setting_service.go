@@ -329,8 +329,30 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingAppIM:
-		// TODO(p0ny): impl
-		return nil, status.Errorf(codes.Unimplemented, "not implemented")
+		payload := new(storepb.AppIMSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetAppImSettingValue(), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s, error: %v", apiSettingName, err)
+		}
+		setting, err := s.store.GetAppIMSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get old app im setting")
+		}
+		for _, path := range request.UpdateMask.Paths {
+			switch path {
+			case "value.app_im_setting_value.slack":
+				setting.Slack = payload.Slack
+			case "value.app_im_setting_value.feishu":
+				setting.Feishu = payload.Feishu
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
+			}
+		}
+
+		bytes, err := protojson.Marshal(setting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s, error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceExternalApproval:
 		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
 		if err != nil {
@@ -537,7 +559,6 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		})
 	case api.SettingAppIM:
-		// TODO(p0ny): impl
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
