@@ -61,6 +61,7 @@ import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
+  extractDatabaseGroupName,
   extractDeploymentConfigName,
   extractProjectResourceName,
   extractSheetUID,
@@ -219,8 +220,11 @@ const createSheets = async () => {
   const sheetNameMap = new Map<string, string>();
   for (let i = 0; i < pendingCreateSheetList.length; i++) {
     const sheet = pendingCreateSheetList[i];
-    if (extractDeploymentConfigName(sheet.database)) {
-      // If a sheet's target is a deploymentConfig, it should be unset
+    if (
+      extractDeploymentConfigName(sheet.database) ||
+      extractDatabaseGroupName(sheet.database)
+    ) {
+      // If a sheet's target is a deploymentConfig or a db group, it should be unset
       // since it actually doesn't belongs to any exact database.
       sheet.database = "";
     }
