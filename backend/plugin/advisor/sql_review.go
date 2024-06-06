@@ -491,7 +491,7 @@ func SQLReviewCheck(sm *sheet.Manager, statements string, ruleList []*storepb.SQ
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
 	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-		if err := finder.WalkThrough(statements); err != nil {
+		if err := finder.WalkThrough(ast); err != nil {
 			return convertWalkThroughErrorToAdvice(checkContext, err)
 		}
 	}

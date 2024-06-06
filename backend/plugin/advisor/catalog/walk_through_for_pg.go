@@ -15,12 +15,11 @@ const (
 	publicSchemaName = "public"
 )
 
-func (d *DatabaseState) pgWalkThrough(stmt string) error {
-	nodeList, err := pgParse(stmt)
-	if err != nil {
-		return NewParseError(err.Error())
+func (d *DatabaseState) pgWalkThrough(pgAst any) error {
+	nodeList, ok := pgAst.([]ast.Node)
+	if !ok {
+		return errors.Errorf("invalid ast type %T", pgAst)
 	}
-
 	for _, node := range nodeList {
 		if err := d.pgChangeState(node); err != nil {
 			return err
@@ -1062,10 +1061,6 @@ func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughErr
 		}
 	}
 	return column, nil
-}
-
-func pgParse(stmt string) ([]ast.Node, error) {
-	return pgrawparser.Parse(pgrawparser.ParseContext{}, stmt)
 }
 
 func normalizeCollation(collation *ast.CollationNameDef) string {

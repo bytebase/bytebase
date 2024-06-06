@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	tidbparser "github.com/pingcap/tidb/pkg/parser"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
+	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -213,16 +211,16 @@ func (e *WalkThroughError) Error() string {
 }
 
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
-func (d *DatabaseState) WalkThrough(stmt string) error {
+func (d *DatabaseState) WalkThrough(ast any) error {
 	switch d.dbType {
 	case storepb.Engine_TIDB:
-		err := d.tidbWalkThrough(stmt)
+		err := d.tidbWalkThrough(ast)
 		return err
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		err := d.mysqlWalkThrough(stmt)
+		err := d.mysqlWalkThrough(ast)
 		return err
 	case storepb.Engine_POSTGRES:
-		if err := d.pgWalkThrough(stmt); err != nil {
+		if err := d.pgWalkThrough(ast); err != nil {
 			if d.ctx.CheckIntegrity {
 				return err
 			}
@@ -240,7 +238,7 @@ func (d *DatabaseState) WalkThrough(stmt string) error {
 	}
 }
 
-func (d *DatabaseState) tidbWalkThrough(stmt string) error {
+func (d *DatabaseState) tidbWalkThrough(ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -248,11 +246,10 @@ func (d *DatabaseState) tidbWalkThrough(stmt string) error {
 		d.createSchema("")
 	}
 
-	nodeList, err := d.parse(stmt)
-	if err != nil {
-		return err
+	nodeList, ok := ast.([]tidbast.StmtNode)
+	if !ok {
+		return errors.Errorf("invalid ast type %T", ast)
 	}
-
 	for _, node := range nodeList {
 		// change state
 		if err := d.changeState(node); err != nil {
@@ -1354,42 +1351,6 @@ func (d *DatabaseState) createSchema(name string) *SchemaState {
 
 	d.schemaSet[name] = schema
 	return schema
-}
-
-func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughError) {
-	p := tidbparser.New()
-	// To support MySQL8 window function syntax.
-	// See https://github.com/bytebase/bytebase/issues/175.
-	p.EnableWindowFunc(true)
-
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
-	if err != nil {
-		return nil, NewSetLineError(err.Error())
-	}
-
-	var returnNodes []tidbast.StmtNode
-	for _, singleSQL := range singleSQLs {
-		nodes, _, err := p.Parse(singleSQL.Text, "", "")
-		if err != nil {
-			return nil, NewSetLineError(err.Error())
-		}
-
-		if len(nodes) != 1 {
-			continue
-		}
-
-		node := nodes[0]
-		node.SetText(nil, singleSQL.Text)
-		node.SetOriginTextPosition(singleSQL.LastLine)
-		if n, ok := node.(*tidbast.CreateTableStmt); ok {
-			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, NewSetLineError(err.Error())
-			}
-		}
-		returnNodes = append(returnNodes, node)
-	}
-
-	return returnNodes, nil
 }
 
 func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThroughError) {
