@@ -1,7 +1,8 @@
-package webhook
+package slack
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
@@ -119,6 +121,9 @@ func GetBlocks(context webhook.Context) []SlackWebhookBlock {
 }
 
 func (*SlackReceiver) Post(context webhook.Context) error {
+	if len(context.MentionUsers) > 0 {
+		return postDirectMessage(context)
+	}
 	return postMessage(context)
 }
 
@@ -165,6 +170,33 @@ func postMessage(context webhook.Context) error {
 	return nil
 }
 
-func postDirectMessage(context webhook.Context) error {
-	return nil
+func postDirectMessage(webhookCtx webhook.Context) error {
+	ctx := context.Background()
+	t := webhookCtx.IMSetting.GetSlack().GetToken()
+	if t == "" {
+		return errors.Errorf("slack token not set")
+	}
+	p := newProvider(t)
+	var errs error
+	for _, u := range webhookCtx.MentionUsers {
+		err := func() error {
+			userID, err := p.lookupByEmail(ctx, u.Email)
+			if err != nil {
+				return errors.Wrapf(err, "failed to lookup user")
+			}
+			channelID, err := p.openConversation(ctx, userID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to open conversation")
+			}
+			if err := p.chatPostMessage(ctx, channelID, webhookCtx); err != nil {
+				return errors.Wrapf(err, "failed to post message")
+			}
+			return nil
+		}()
+		if err != nil {
+			err = errors.Wrapf(err, "failed to send direct message to user %v", u.Email)
+			multierr.AppendInto(&errs, err)
+		}
+	}
+	return errs
 }
