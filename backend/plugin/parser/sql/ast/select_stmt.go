@@ -51,6 +51,16 @@ type SelectStmt struct {
 	SubqueryList []*SubqueryDef
 	// fromClause is the raw pgquery from clause nodes.
 	fromClause []*pgquery.Node
+
+	originalNode *pgquery.SelectStmt
+}
+
+func (ss *SelectStmt) SetOriginalNode(node *pgquery.SelectStmt) {
+	ss.originalNode = node
+}
+
+func (ss *SelectStmt) GetOriginalNode() *pgquery.SelectStmt {
+	return ss.originalNode
 }
 
 // SetFromClause sets the from clause for select statement.

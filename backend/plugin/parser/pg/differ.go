@@ -5,10 +5,15 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/slog"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
+	pgquery "github.com/pganalyze/pg_query_go/v5"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -29,6 +34,7 @@ type diffNode struct {
 	dropIndexList              []ast.Node
 	dropDefaultList            []ast.Node
 	dropSequenceOwnedByList    []ast.Node
+	dropViewList               []*ast.TableDef
 	dropColumnList             []ast.Node
 	dropTableList              []ast.Node
 	dropSequenceList           []ast.Node
@@ -42,6 +48,7 @@ type diffNode struct {
 	createTypeList                 []ast.Node
 	alterTypeList                  []ast.Node
 	createExtensionList            []ast.Node
+	createTempViewList             []string
 	createFunctionList             []ast.Node
 	createSequenceList             []ast.Node
 	alterSequenceExceptOwnedByList []ast.Node
@@ -54,11 +61,13 @@ type diffNode struct {
 	createTriggerList              []ast.Node
 	createConstraintExceptFkList   []ast.Node
 	createForeignKeyList           []ast.Node
+	createViewList                 []*ast.CreateViewStmt
 	setCommentList                 []ast.Node
 }
 
 type schemaMap map[string]*schemaInfo
 type tableMap map[string]*tableInfo
+type viewMap map[string]*viewInfo
 type constraintMap map[string]*constraintInfo
 type indexMap map[string]*indexInfo
 type sequenceMap map[string]*sequenceInfo
@@ -72,6 +81,7 @@ type schemaInfo struct {
 	existsInNew  bool
 	createSchema *ast.CreateSchemaStmt
 	tableMap     tableMap
+	viewMap      viewMap
 	indexMap     indexMap
 	sequenceMap  sequenceMap
 	extensionMap extensionMap
@@ -85,6 +95,7 @@ func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 		existsInNew:  false,
 		createSchema: createSchema,
 		tableMap:     make(tableMap),
+		viewMap:      make(viewMap),
 		indexMap:     make(indexMap),
 		sequenceMap:  make(sequenceMap),
 		extensionMap: make(extensionMap),
@@ -112,6 +123,22 @@ func newTableInfo(id int, createTable *ast.CreateTableStmt) *tableInfo {
 		triggerMap:       make(triggerMap),
 		comment:          "",
 		columnCommentMap: make(map[string]string),
+	}
+}
+
+type viewInfo struct {
+	id          int
+	existsInNew bool
+	createView  *ast.CreateViewStmt
+	comment     string
+}
+
+func newViewInfo(id int, createView *ast.CreateViewStmt) *viewInfo {
+	return &viewInfo{
+		id:          id,
+		existsInNew: false,
+		createView:  createView,
+		comment:     "",
 	}
 }
 
@@ -226,6 +253,26 @@ func newTypeInfo(id int, createType *ast.CreateTypeStmt) *typeInfo {
 		existsInNew: false,
 		createType:  createType,
 	}
+}
+
+func (m schemaMap) addView(id int, view *ast.CreateViewStmt) error {
+	if IsSystemSchema(view.Name.Schema) {
+		return nil
+	}
+	schema, exists := m[view.Name.Schema]
+	if !exists {
+		return errors.Errorf("failed to add view: schema %s not found", view.Name.Schema)
+	}
+	schema.viewMap[view.Name.Name] = newViewInfo(id, view)
+	return nil
+}
+
+func (m schemaMap) getView(schemaName string, viewName string) *viewInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.viewMap[viewName]
 }
 
 func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
@@ -652,6 +699,10 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if err := oldSchemaMap.addTable(i, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateViewStmt:
+			if err := oldSchemaMap.addView(i, stmt); err != nil {
+				return "", err
+			}
 		case *ast.AlterTableStmt:
 			// ignore partition table
 			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
@@ -753,6 +804,25 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				continue
 			}
 			schema.existsInNew = true
+		case *ast.CreateViewStmt:
+			if IsSystemSchema(stmt.Name.Schema) {
+				continue
+			}
+			oldView := oldSchemaMap.getView(stmt.Name.Schema, stmt.Name.Name)
+			// Add the new view.
+			if oldView == nil {
+				tempView, err := getTempView(stmt)
+				if err != nil {
+					return "", err
+				}
+				diff.createTempViewList = append(diff.createTempViewList, tempView)
+				diff.createViewList = append(diff.createViewList, stmt)
+				continue
+			}
+			oldView.existsInNew = true
+			if err := diff.ModifyView(oldView, stmt); err != nil {
+				return "", err
+			}
 		case *ast.AlterTableStmt:
 			// ignore partition table
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
@@ -946,6 +1016,69 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	return diff.deparse()
 }
 
+func getTempView(view *ast.CreateViewStmt) (string, error) {
+	fields, err := extractFieldNameFromSelect(view.Select.GetOriginalNode())
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to extract field name from select %v", view.Name.Name)
+	}
+
+	var buf strings.Builder
+	if _, err := fmt.Fprintf(&buf, `CREATE VIEW "%s"."%s" AS SELECT `, view.Name.Schema, view.Name.Name); err != nil {
+		return "", err
+	}
+
+	for i, column := range fields {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return "", err
+			}
+		}
+		if _, err := fmt.Fprintf(&buf, `1 AS "%s"`, column); err != nil {
+			return "", err
+		}
+	}
+	if _, err := fmt.Fprintf(&buf, ";"); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func extractFieldNameFromSelect(node *pgquery.SelectStmt) ([]string, error) {
+	var result []string
+	for _, field := range node.TargetList {
+		resTarget, ok := field.Node.(*pgquery.Node_ResTarget)
+		if !ok {
+			return nil, errors.Errorf("expect ResTarget, but found %v", field.Node)
+		}
+		switch fieldNode := resTarget.ResTarget.Val.Node.(type) {
+		case *pgquery.Node_ColumnRef:
+			columnRef, err := pgrawparser.ConvertNodeListToColumnNameDef(fieldNode.ColumnRef.Fields)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to convert node list to column name def %v", fieldNode.ColumnRef.Fields)
+			}
+			if columnRef.ColumnName == "*" {
+				return nil, errors.Errorf("start in select is not expected for create view")
+			}
+			columnName := columnRef.ColumnName
+			if resTarget.ResTarget.Name != "" {
+				columnName = resTarget.ResTarget.Name
+			}
+			result = append(result, columnName)
+		default:
+			if resTarget.ResTarget.Name == "" {
+				columnName, err := pgExtractFieldName(resTarget.ResTarget.Val)
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, columnName)
+			} else {
+				result = append(result, resTarget.ResTarget.Name)
+			}
+		}
+	}
+	return result, nil
+}
+
 func (diff *diffNode) appendDropConstraint(table *ast.TableDef, constraintList []*ast.ConstraintDef) {
 	dropConstraintExceptFkStmt := &ast.AlterTableStmt{Table: table}
 	dropForeignStmt := &ast.AlterTableStmt{Table: table}
@@ -1013,6 +1146,11 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 	// Drop the remaining old table.
 	if dropTableStmt := dropTable(oldSchemaMap); dropTableStmt != nil {
 		diff.dropTableList = append(diff.dropTableList, dropTableStmt)
+	}
+
+	// Drop the remaining old view.
+	if dropViewStmt := dropView(oldSchemaMap); dropViewStmt != nil {
+		diff.dropViewList = append(diff.dropViewList, dropViewStmt...)
 	}
 
 	// Drop the remaining old constraints.
@@ -1143,6 +1281,59 @@ func (diff *diffNode) modifyTableByConstraint(oldTable *ast.CreateTableStmt, new
 	diff.appendAddConstraint(tableName, addConstraintList)
 	diff.appendDropConstraint(tableName, dropConstraintList)
 	return nil
+}
+
+func (diff *diffNode) ModifyView(oldView *viewInfo, newView *ast.CreateViewStmt) error {
+	if !equalView(oldView.createView, newView) {
+		diff.dropViewList = append(diff.dropViewList, oldView.createView.Name)
+		tempView, err := getTempView(newView)
+		if err != nil {
+			return err
+		}
+		diff.createTempViewList = append(diff.createTempViewList, tempView)
+		diff.createViewList = append(diff.createViewList, newView)
+	}
+	return nil
+}
+
+func equalView(oldView *ast.CreateViewStmt, newView *ast.CreateViewStmt) bool {
+	// oldText, err := pgquery.Deparse(oldView.ParseResult)
+	// if err != nil {
+	// 	slog.Debug("failed to deparse old view", log.BBError(err))
+	// 	return false
+	// }
+	// newText, err := pgquery.Deparse(newView.ParseResult)
+	// if err != nil {
+	// 	slog.Debug("failed to deparse new view", log.BBError(err))
+	// 	return false
+	// }
+	oldText, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{
+					Node: oldView.GetOriginalNode(),
+				},
+			},
+		},
+	})
+	if err != nil {
+		slog.Debug("failed to deparse old view", log.BBError(err))
+		return false
+	}
+	newText, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{
+					Node: newView.GetOriginalNode(),
+				},
+			},
+		},
+	})
+	if err != nil {
+		slog.Debug("failed to deparse new view", log.BBError(err))
+		return false
+	}
+	return oldText == newText
 }
 
 func (diff *diffNode) modifyTable(oldTable *tableInfo, newTable *ast.CreateTableStmt) error {
@@ -1603,6 +1794,50 @@ func printStmtSlice(buf io.Writer, nodeList []ast.Node) error {
 	return nil
 }
 
+func printDropView(buf io.Writer, viewList []*ast.TableDef) error {
+	if len(viewList) == 0 {
+		return nil
+	}
+	if _, err := fmt.Fprintf(buf, "DROP VIEW "); err != nil {
+		return err
+	}
+	for i, view := range viewList {
+		if i != 0 {
+			if _, err := fmt.Fprintf(buf, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintf(buf, `"%s"."%s"`, view.Schema, view.Name); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(buf, ";\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func printCreateViewStmt(buf io.Writer, viewList []*ast.CreateViewStmt) error {
+	for _, view := range viewList {
+		node := view.GetOriginalNode()
+		node.ViewStmt.Replace = true
+		text, err := pgquery.Deparse(&pgquery.ParseResult{
+			Stmts: []*pgquery.RawStmt{
+				{
+					Stmt: &pgquery.Node{Node: node},
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if err := writeStringWithNewLine(buf, text+";"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // deparse statements as the safe change order.
 func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
@@ -1624,6 +1859,9 @@ func (diff *diffNode) deparse() (string, error) {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.dropSequenceOwnedByList); err != nil {
+		return "", err
+	}
+	if err := printDropView(&buf, diff.dropViewList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.dropColumnList); err != nil {
@@ -1661,6 +1899,11 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSliceByText(&buf, diff.createExtensionList); err != nil {
 		return "", err
 	}
+	for _, tempView := range diff.createTempViewList {
+		if _, err := fmt.Fprintf(&buf, "%s;\n", tempView); err != nil {
+			return "", err
+		}
+	}
 	if err := printStmtSliceByText(&buf, diff.createFunctionList); err != nil {
 		return "", err
 	}
@@ -1697,6 +1940,9 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.createForeignKeyList); err != nil {
 		return "", err
 	}
+	if err := printCreateViewStmt(&buf, diff.createViewList); err != nil {
+		return "", err
+	}
 	if err := printStmtSlice(&buf, diff.setCommentList); err != nil {
 		return "", err
 	}
@@ -1724,6 +1970,31 @@ func (diff *diffNode) dropConstraint(m schemaMap) {
 			diff.appendDropConstraint(tableInfo.createTable.Name, dropConstraintList)
 		}
 	}
+}
+
+func dropView(m schemaMap) []*ast.TableDef {
+	var viewList []*viewInfo
+	for _, schema := range m {
+		for _, view := range schema.viewMap {
+			if view.existsInNew {
+				// no need to drop
+				continue
+			}
+			viewList = append(viewList, view)
+		}
+	}
+	if len(viewList) == 0 {
+		return nil
+	}
+	sort.Slice(viewList, func(i, j int) bool {
+		return viewList[i].id < viewList[j].id
+	})
+
+	var viewDefList []*ast.TableDef
+	for _, view := range viewList {
+		viewDefList = append(viewDefList, view.createView.Name)
+	}
+	return viewDefList
 }
 
 func dropTable(m schemaMap) *ast.DropTableStmt {
