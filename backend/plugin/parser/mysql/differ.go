@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -2351,68 +2353,30 @@ func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
 	}
 }
 
-func (t *mysqlTransformer) ExitCreateView(ctx *mysql.CreateViewContext) {
+func (t *mysqlTransformer) ExitCreateView(_ *mysql.CreateViewContext) {
 	if t.err != nil {
 		return
 	}
 
 	view := t.db.schemas[""].views[t.currView]
 
-	var tableSchemaList []base.TableSchema
-	for _, table := range t.db.schemas[""].tables {
-		var columnList []base.ColumnInfo
-		for _, col := range table.columns {
-			columnInfo := base.ColumnInfo{
-				Name: col.name,
-			}
-			columnList = append(columnList, columnInfo)
-		}
-		tableSchema := base.TableSchema{
-			Name:       table.name,
-			ColumnList: columnList,
-		}
-		tableSchemaList = append(tableSchemaList, tableSchema)
-	}
-	var viewSchemaList []base.ViewSchema
-	for _, view := range t.db.schemas[""].views {
-		viewSchema := base.ViewSchema{
-			Name:       view.name,
-			Definition: fmt.Sprintf("CREATE %s;", view.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(view.ctx.GetRuleContext())),
-		}
-		viewSchemaList = append(viewSchemaList, viewSchema)
-	}
-	schemaList := []base.SchemaSchema{
-		{
-			Name:      "",
-			TableList: tableSchemaList,
-			ViewList:  viewSchemaList,
-		},
-	}
-
-	schemaInfo := &base.SensitiveSchemaInfo{
-		DatabaseList: []base.DatabaseSchema{
-			{
-				Name:       t.db.name,
-				SchemaList: schemaList,
-			},
-		},
-	}
-
-	extractor := &fieldExtractor{
-		currentDatabase: view.dbName,
-		schemaInfo:      schemaInfo,
-	}
-
-	fields, err := extractor.mysqlExtractCreateView(ctx)
+	getter, lister := t.buildDBSchemaMetadataGetterAndLister()
+	querySpanExtractor := newQuerySpanExtractor(t.db.name, getter, lister, t.ignoreCaseSensitive)
+	viewDef := view.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(view.ctx.ViewTail().ViewSelect())
+	fields, err := querySpanExtractor.getColumnsForView(viewDef)
 	if err != nil {
 		t.err = err
 		return
 	}
-
+	if len(fields) == 0 {
+		t.err = errors.Errorf("no columns found for view %s, def: %s", view.name, viewDef)
+		return
+	}
 	var result []string
 	for _, field := range fields {
 		result = append(result, field.Name)
 	}
+
 	// the column order of createView is decided by createView statement.
 	// we get columns here only for create temp view.
 	// only for test-case.
@@ -2420,6 +2384,57 @@ func (t *mysqlTransformer) ExitCreateView(ctx *mysql.CreateViewContext) {
 		return result[i] < result[j]
 	})
 	view.columns = result
+}
+
+func (t *mysqlTransformer) buildDBSchemaMetadataGetterAndLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+	databaseSchema := &storepb.DatabaseSchemaMetadata{
+		Name:    t.db.name,
+		Schemas: make([]*storepb.SchemaMetadata, 0, len(t.db.schemas)),
+	}
+
+	schemaSchema := &storepb.SchemaMetadata{
+		Name:   "",
+		Tables: make([]*storepb.TableMetadata, 0, len(t.db.schemas[""].tables)),
+	}
+
+	for _, table := range t.db.schemas[""].tables {
+		var columnList []*storepb.ColumnMetadata
+		for _, column := range table.columns {
+			columnMetadata := &storepb.ColumnMetadata{
+				Name: column.name,
+				Type: column.tp,
+			}
+			columnList = append(columnList, columnMetadata)
+		}
+		tableMetadata := &storepb.TableMetadata{
+			Name:    table.name,
+			Columns: columnList,
+		}
+		schemaSchema.Tables = append(schemaSchema.Tables, tableMetadata)
+	}
+
+	for _, view := range t.db.schemas[""].views {
+		viewMetadata := &storepb.ViewMetadata{
+			Name:       view.name,
+			Definition: view.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(view.ctx.ViewTail().ViewSelect()),
+		}
+		schemaSchema.Views = append(schemaSchema.Views, viewMetadata)
+	}
+
+	databaseSchema.Schemas = append(databaseSchema.Schemas, schemaSchema)
+
+	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+			m := make(map[string]*model.DatabaseMetadata)
+			m[databaseSchema.Name] = model.NewDatabaseMetadata(databaseSchema)
+
+			if databaseMetadata, ok := m[databaseName]; ok {
+				return "", databaseMetadata, nil
+			}
+
+			return "", nil, errors.Errorf("database %q not found", databaseName)
+		}, func(_ context.Context) ([]string, error) {
+			return []string{databaseSchema.Name}, nil
+		}
 }
 
 // EnterCreateEvent is called when production createEvent is entered.
