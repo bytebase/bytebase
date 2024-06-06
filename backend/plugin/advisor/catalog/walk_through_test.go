@@ -17,6 +17,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register postgresql parser driver.
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
@@ -139,6 +140,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	require.NoError(t, err)
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err)
+	sm := sheet.NewManager(nil)
 
 	for i, test := range tests {
 		var state *DatabaseState
@@ -149,7 +151,8 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 			state = finder.Origin
 		}
 
-		err := state.WalkThrough(test.Statement)
+		ast, _ := sm.GetAST(engineType, test.Statement)
+		err := state.WalkThrough(ast)
 		if err != nil {
 			if record {
 				walkThroughError, ok := err.(*WalkThroughError)

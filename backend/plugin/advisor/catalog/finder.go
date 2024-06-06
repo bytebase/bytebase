@@ -58,6 +58,6 @@ func NewEmptyFinder(ctx *FinderContext) *Finder {
 }
 
 // WalkThrough does the walk through.
-func (f *Finder) WalkThrough(statements string) error {
-	return f.Final.WalkThrough(statements)
+func (f *Finder) WalkThrough(ast any) error {
+	return f.Final.WalkThrough(ast)
 }

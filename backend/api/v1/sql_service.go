@@ -1256,7 +1256,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		dbMetadata = dbSchema.GetMetadata()
 	}
 
-	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
+	catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
@@ -1321,7 +1321,7 @@ func (s *SQLService) sqlCheck(
 	environmentID int,
 	statement string,
 	changeType v1pb.CheckRequest_ChangeType,
-	catalog catalog.Catalog,
+	catalog *catalog.Catalog,
 	driver *sql.DB,
 	currentDatabase string,
 ) (storepb.Advice_Status, []*storepb.Advice, error) {
