@@ -21,6 +21,14 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  extractIssueUID,
+  extractProjectResourceName,
+  issueSlug,
+} from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
   HeaderSection,
@@ -33,9 +41,26 @@ import {
 } from "./components";
 import { usePlanContext, usePollPlan } from "./logic";
 
-const { isCreating } = usePlanContext();
+const router = useRouter();
+const { isCreating, plan } = usePlanContext();
 
 usePollPlan();
 
 provideSQLCheckContext();
+
+onMounted(() => {
+  if (!plan.value.issue) {
+    return;
+  }
+
+  // If the plan has an issue, redirect to the issue detail page.
+  const relatedIssueUID = extractIssueUID(plan.value.issue);
+  router.replace({
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(plan.value.project),
+      issueSlug: issueSlug(plan.value.title, relatedIssueUID),
+    },
+  });
+});
 </script>
