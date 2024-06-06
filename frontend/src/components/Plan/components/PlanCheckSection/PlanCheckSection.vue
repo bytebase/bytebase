@@ -10,6 +10,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import {
+  isDatabaseChangeSpec,
   planCheckRunListForSpec,
   planSpecHasPlanChecks,
   usePlanContext,
@@ -49,11 +50,16 @@ const allowRunChecks = computed(() => {
 });
 
 const planCheckRunList = computed(() => {
-  // If a spec is selected, show plan checks for the spec.
-  if (selectedSpec.value && selectedSpec.value.id !== String(EMPTY_ID)) {
+  // If a spec is database change spec, show plan checks for the spec.
+  if (
+    selectedSpec.value &&
+    selectedSpec.value.id !== String(EMPTY_ID) &&
+    isDatabaseChangeSpec(selectedSpec.value)
+  ) {
     return planCheckRunListForSpec(plan.value, selectedSpec.value);
   }
   // Otherwise, show plan checks for the plan.
+  // TODO(steven): update plan check runs display for db group and deployment config.
   return plan.value.planCheckRunList;
 });
 </script>
