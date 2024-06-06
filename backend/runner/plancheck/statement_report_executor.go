@@ -436,7 +436,7 @@ func convertToChangedResources(dbMetadata *model.DBSchema, resources []base.Sche
 }
 
 func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	pgAst, advices := sm.GetAST(storepb.Engine_ORACLE, statement)
+	pgAst, advices := sm.GetAST(storepb.Engine_POSTGRES, statement)
 	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{

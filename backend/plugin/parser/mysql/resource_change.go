@@ -22,7 +22,7 @@ func init() {
 func extractChangedResources(currentDatabase string, _ string, ast any) ([]base.SchemaResource, error) {
 	tree, ok := ast.(*ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
+		return nil, errors.Errorf("failed to convert ast %T to ParseResult", ast)
 	}
 	if tree.Tree == nil {
 		return nil, nil
