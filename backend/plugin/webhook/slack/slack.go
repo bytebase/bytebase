@@ -15,48 +15,48 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
-// SlackWebhookBlockMarkdown is the API message for Slack webhook block markdown.
-type SlackWebhookBlockMarkdown struct {
+// BlockMarkdown is the API message for Slack webhook block markdown.
+type BlockMarkdown struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
 }
 
-// SlackWebhookElementButton is the API message for Slack webhook element button.
-type SlackWebhookElementButton struct {
+// ElementButton is the API message for Slack webhook element button.
+type ElementButton struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
 }
 
-// SlackWebhookElement is the API message for Slack webhook element.
-type SlackWebhookElement struct {
-	Type   string                    `json:"type"`
-	Button SlackWebhookElementButton `json:"text,omitempty"`
-	URL    string                    `json:"url,omitempty"`
+// Element is the API message for Slack webhook element.
+type Element struct {
+	Type   string        `json:"type"`
+	Button ElementButton `json:"text,omitempty"`
+	URL    string        `json:"url,omitempty"`
 }
 
-// SlackWebhookBlock is the API message for Slack webhook block.
-type SlackWebhookBlock struct {
-	Type        string                     `json:"type"`
-	Text        *SlackWebhookBlockMarkdown `json:"text,omitempty"`
-	ElementList []SlackWebhookElement      `json:"elements,omitempty"`
+// Block is the API message for Slack webhook block.
+type Block struct {
+	Type        string         `json:"type"`
+	Text        *BlockMarkdown `json:"text,omitempty"`
+	ElementList []Element      `json:"elements,omitempty"`
 }
 
-// SlackWebhook is the API message for Slack webhook.
-type SlackWebhook struct {
-	Text      string              `json:"text"`
-	BlockList []SlackWebhookBlock `json:"blocks"`
+// MessagePayload is the API message for Slack webhook.
+type MessagePayload struct {
+	Text      string  `json:"text"`
+	BlockList []Block `json:"blocks"`
 }
 
 func init() {
-	webhook.Register("bb.plugin.webhook.slack", &SlackReceiver{})
+	webhook.Register("bb.plugin.webhook.slack", &Receiver{})
 }
 
-// SlackReceiver is the receiver for Slack.
-type SlackReceiver struct {
+// Receiver is the receiver for Slack.
+type Receiver struct {
 }
 
-func GetBlocks(context webhook.Context) []SlackWebhookBlock {
-	blockList := []SlackWebhookBlock{}
+func GetBlocks(context webhook.Context) []Block {
+	blockList := []Block{}
 
 	status := ""
 	switch context.Level {
@@ -67,18 +67,18 @@ func GetBlocks(context webhook.Context) []SlackWebhookBlock {
 	case webhook.WebhookError:
 		status = ":exclamation: "
 	}
-	blockList = append(blockList, SlackWebhookBlock{
+	blockList = append(blockList, Block{
 		Type: "section",
-		Text: &SlackWebhookBlockMarkdown{
+		Text: &BlockMarkdown{
 			Type: "mrkdwn",
 			Text: fmt.Sprintf("*%s%s*", status, context.Title),
 		},
 	})
 
 	if context.Description != "" {
-		blockList = append(blockList, SlackWebhookBlock{
+		blockList = append(blockList, Block{
 			Type: "section",
-			Text: &SlackWebhookBlockMarkdown{
+			Text: &BlockMarkdown{
 				Type: "mrkdwn",
 				Text: fmt.Sprintf("```%s```", context.Description),
 			},
@@ -86,29 +86,29 @@ func GetBlocks(context webhook.Context) []SlackWebhookBlock {
 	}
 
 	for _, meta := range context.GetMetaList() {
-		blockList = append(blockList, SlackWebhookBlock{
+		blockList = append(blockList, Block{
 			Type: "section",
-			Text: &SlackWebhookBlockMarkdown{
+			Text: &BlockMarkdown{
 				Type: "mrkdwn",
 				Text: fmt.Sprintf("*%s:* %s", meta.Name, meta.Value),
 			},
 		})
 	}
 
-	blockList = append(blockList, SlackWebhookBlock{
+	blockList = append(blockList, Block{
 		Type: "section",
-		Text: &SlackWebhookBlockMarkdown{
+		Text: &BlockMarkdown{
 			Type: "mrkdwn",
 			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
 		},
 	})
 
-	blockList = append(blockList, SlackWebhookBlock{
+	blockList = append(blockList, Block{
 		Type: "actions",
-		ElementList: []SlackWebhookElement{
+		ElementList: []Element{
 			{
 				Type: "button",
-				Button: SlackWebhookElementButton{
+				Button: ElementButton{
 					Type: "plain_text",
 					Text: "View in Bytebase",
 				},
@@ -120,7 +120,7 @@ func GetBlocks(context webhook.Context) []SlackWebhookBlock {
 	return blockList
 }
 
-func (*SlackReceiver) Post(context webhook.Context) error {
+func (*Receiver) Post(context webhook.Context) error {
 	if len(context.MentionUsers) > 0 {
 		return postDirectMessage(context)
 	}
@@ -130,7 +130,7 @@ func (*SlackReceiver) Post(context webhook.Context) error {
 func postMessage(context webhook.Context) error {
 	blockList := GetBlocks(context)
 
-	post := SlackWebhook{
+	post := MessagePayload{
 		Text:      context.Title,
 		BlockList: blockList,
 	}
