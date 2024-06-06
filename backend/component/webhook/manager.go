@@ -85,13 +85,14 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 		return
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go postWebhookList(ctx, webhookCtx, webhookList)
+	go m.postWebhookList(ctx, webhookCtx, webhookList)
 }
 
 func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, activityType api.ActivityType) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
 	var mentions []string
+	var mentionUsers []*store.UserMessage
 
 	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
@@ -183,6 +184,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		title = "Issue approved - " + e.Issue.Title
 		titleZh = "工单审批通过 - " + e.Issue.Title
 
+		mentionUsers = append(mentionUsers, e.Issue.Creator)
 		phone, err := maybeGetPhoneFromUser(e.Issue.Creator)
 		if err != nil {
 			slog.Warn("failed to parse phone number", slog.String("issue_title", e.Issue.Title), log.BBError(err))
@@ -229,6 +231,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 					continue
 				}
 				mentionedUser[user.ID] = true
+				mentionUsers = append(mentionUsers, user)
 				phone, err := maybeGetPhoneFromUser(user)
 				if err != nil {
 					slog.Warn("failed to parse phone number",
@@ -292,6 +295,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			return nil, err
 		}
 		for _, user := range users {
+			mentionUsers = append(mentionUsers, user)
 			phone, err := maybeGetPhoneFromUser(user)
 			if err != nil {
 				slog.Warn("failed to parse phone number",
@@ -327,16 +331,25 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		CreatorID:           e.Actor.ID,
 		CreatorName:         e.Actor.Name,
 		CreatorEmail:        e.Actor.Email,
+		MentionUsers:        mentionUsers,
 		MentionUsersByPhone: mentions,
 	}
 	return &webhookCtx, nil
 }
 
-func postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookList []*store.ProjectWebhookMessage) {
+func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookList []*store.ProjectWebhookMessage) {
+	setting, err := m.store.GetAppIMSetting(ctx)
+	if err != nil {
+		slog.Error("failed to get app im setting", log.BBError(err))
+	} else {
+		webhookCtx.IMSetting = setting
+	}
+
 	for _, hook := range webhookList {
 		webhookCtx := *webhookCtx
 		webhookCtx.URL = hook.URL
 		webhookCtx.CreatedTs = time.Now().Unix()
+		webhookCtx.DirectMessage = hook.Payload.GetDirectMessage()
 		go func(webhookCtx *webhook.Context, hook *store.ProjectWebhookMessage) {
 			if err := common.Retry(ctx, func() error {
 				return webhook.Post(hook.Type, *webhookCtx)

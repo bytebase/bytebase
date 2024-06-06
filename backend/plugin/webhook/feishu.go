@@ -88,14 +88,14 @@ type FeishuWebhook struct {
 }
 
 func init() {
-	register("bb.plugin.webhook.feishu", &FeishuReceiver{})
+	Register("bb.plugin.webhook.feishu", &FeishuReceiver{})
 }
 
 // FeishuReceiver is the receiver for Feishu.
 type FeishuReceiver struct {
 }
 
-func (*FeishuReceiver) post(context Context) error {
+func (*FeishuReceiver) Post(context Context) error {
 	var markdownBuf strings.Builder
 
 	if context.Description != "" {
@@ -104,7 +104,7 @@ func (*FeishuReceiver) post(context Context) error {
 		}
 	}
 
-	for _, meta := range context.getMetaList() {
+	for _, meta := range context.GetMetaList() {
 		if _, err := markdownBuf.WriteString(fmt.Sprintf("**%s**: %s\n", meta.Name, meta.Value)); err != nil {
 			return err
 		}

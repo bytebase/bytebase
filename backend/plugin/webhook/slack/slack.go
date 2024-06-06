@@ -1,0 +1,202 @@
+package slack
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
+
+	"github.com/bytebase/bytebase/backend/plugin/webhook"
+)
+
+// BlockMarkdown is the API message for Slack webhook block markdown.
+type BlockMarkdown struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+// ElementButton is the API message for Slack webhook element button.
+type ElementButton struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+}
+
+// Element is the API message for Slack webhook element.
+type Element struct {
+	Type   string        `json:"type"`
+	Button ElementButton `json:"text,omitempty"`
+	URL    string        `json:"url,omitempty"`
+}
+
+// Block is the API message for Slack webhook block.
+type Block struct {
+	Type        string         `json:"type"`
+	Text        *BlockMarkdown `json:"text,omitempty"`
+	ElementList []Element      `json:"elements,omitempty"`
+}
+
+// MessagePayload is the API message for Slack webhook.
+type MessagePayload struct {
+	Text      string  `json:"text"`
+	BlockList []Block `json:"blocks"`
+}
+
+func init() {
+	webhook.Register("bb.plugin.webhook.slack", &Receiver{})
+}
+
+// Receiver is the receiver for Slack.
+type Receiver struct {
+}
+
+func GetBlocks(context webhook.Context) []Block {
+	blockList := []Block{}
+
+	status := ""
+	switch context.Level {
+	case webhook.WebhookSuccess:
+		status = ":white_check_mark: "
+	case webhook.WebhookWarn:
+		status = ":warning: "
+	case webhook.WebhookError:
+		status = ":exclamation: "
+	}
+	blockList = append(blockList, Block{
+		Type: "section",
+		Text: &BlockMarkdown{
+			Type: "mrkdwn",
+			Text: fmt.Sprintf("*%s%s*", status, context.Title),
+		},
+	})
+
+	if context.Description != "" {
+		blockList = append(blockList, Block{
+			Type: "section",
+			Text: &BlockMarkdown{
+				Type: "mrkdwn",
+				Text: fmt.Sprintf("```%s```", context.Description),
+			},
+		})
+	}
+
+	for _, meta := range context.GetMetaList() {
+		blockList = append(blockList, Block{
+			Type: "section",
+			Text: &BlockMarkdown{
+				Type: "mrkdwn",
+				Text: fmt.Sprintf("*%s:* %s", meta.Name, meta.Value),
+			},
+		})
+	}
+
+	blockList = append(blockList, Block{
+		Type: "section",
+		Text: &BlockMarkdown{
+			Type: "mrkdwn",
+			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
+		},
+	})
+
+	blockList = append(blockList, Block{
+		Type: "actions",
+		ElementList: []Element{
+			{
+				Type: "button",
+				Button: ElementButton{
+					Type: "plain_text",
+					Text: "View in Bytebase",
+				},
+				URL: context.Link,
+			},
+		},
+	})
+
+	return blockList
+}
+
+func (*Receiver) Post(context webhook.Context) error {
+	if len(context.MentionUsers) > 0 {
+		return postDirectMessage(context)
+	}
+	return postMessage(context)
+}
+
+func postMessage(context webhook.Context) error {
+	blockList := GetBlocks(context)
+
+	post := MessagePayload{
+		Text:      context.Title,
+		BlockList: blockList,
+	}
+	body, err := json.Marshal(post)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", context.URL)
+	}
+	req, err := http.NewRequest("POST",
+		context.URL, bytes.NewBuffer(body))
+	if err != nil {
+		return errors.Wrapf(err, "failed to construct webhook POST request to %s", context.URL)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to POST webhook to %s", context.URL)
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read POST webhook response from %s", context.URL)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("failed to POST webhook to %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
+	}
+
+	if string(b) != "ok" {
+		return errors.Errorf("%.100s", string(b))
+	}
+
+	return nil
+}
+
+func postDirectMessage(webhookCtx webhook.Context) error {
+	ctx := context.Background()
+	t := webhookCtx.IMSetting.GetSlack().GetToken()
+	if t == "" {
+		return errors.Errorf("slack token not set")
+	}
+	p := newProvider(t)
+	var errs error
+	for _, u := range webhookCtx.MentionUsers {
+		err := func() error {
+			userID, err := p.lookupByEmail(ctx, u.Email)
+			if err != nil {
+				return errors.Wrapf(err, "failed to lookup user")
+			}
+			channelID, err := p.openConversation(ctx, userID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to open conversation")
+			}
+			if err := p.chatPostMessage(ctx, channelID, webhookCtx); err != nil {
+				return errors.Wrapf(err, "failed to post message")
+			}
+			return nil
+		}()
+		if err != nil {
+			err = errors.Wrapf(err, "failed to send direct message to user %v", u.Email)
+			multierr.AppendInto(&errs, err)
+		}
+	}
+	return errs
+}
