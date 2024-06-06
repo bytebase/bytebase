@@ -1,51 +1,26 @@
 <template>
-  <div
-    ref="containerRef"
-    class="overflow-x-hidden flex flex-col gap-y-4"
-    :data-width="containerWidth"
-  >
-    <div
-      v-for="(section, i) in historySectionList"
-      :key="i"
-      class="flex flex-col gap-y-1"
-    >
-      <router-link v-if="section.link" :to="section.link" class="normal-link">
-        {{ section.title }}
-      </router-link>
-      <h1 v-else>
-        {{ section.title }}
-      </h1>
-      <NDataTable
-        :columns="columnList"
-        :data="section.list"
-        :row-key="(history: ChangeHistory) => history.name"
-        :striped="true"
-        :scroll-x="containerWidth - 2"
-        :scrollbar-props="{
-          trigger: 'none',
-        }"
-        :row-props="rowProps"
-        :checked-row-keys="selectedChangeHistoryNames"
-        row-class-name="cursor-pointer"
-        style="--n-td-padding: 0.375rem 0.5rem; --n-th-padding: 0.375rem 0.5rem"
-        @update:checked-row-keys="
-        (keys: string[]) => $emit('update:selected-change-history-names', keys)"
-      />
-    </div>
-  </div>
+  <NDataTable
+    size="small"
+    :columns="columnList"
+    :data="changeHistories"
+    :row-key="(history: ChangeHistory) => history.name"
+    :striped="true"
+    :row-props="rowProps"
+    :checked-row-keys="selectedChangeHistoryNames"
+    @update:checked-row-keys="
+        (keys) => $emit('update:selected-change-history-names', keys as string[])
+      "
+  />
 </template>
 
 <script lang="tsx" setup>
-import { useElementSize } from "@vueuse/core";
-import { type DataTableColumn } from "naive-ui";
-import { computed, ref } from "vue";
+import { type DataTableColumn, NDataTable } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
-import type { BBTableSectionDataSource } from "@/bbkit/types";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { useUserStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory_Status,
@@ -64,14 +39,11 @@ import {
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 
-type Mode = "DATABASE" | "PROJECT";
-
 const props = defineProps<{
-  mode?: Mode;
-  databaseSectionList: ComposedDatabase[];
-  historySectionList: BBTableSectionDataSource<ChangeHistory>[];
+  changeHistories: ChangeHistory[];
   selectedChangeHistoryNames?: string[];
   customClick?: boolean;
+  showSelection?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -79,16 +51,14 @@ const emit = defineEmits<{
   (event: "row-click", id: string): void;
 }>();
 
-const containerRef = ref<HTMLDivElement>();
 const router = useRouter();
 const { t } = useI18n();
-const { width: containerWidth } = useElementSize(containerRef);
 
 const columnList = computed(() => {
   const columns: (DataTableColumn<ChangeHistory> & { hide?: boolean })[] = [
     {
       type: "selection",
-      hide: props.mode !== "DATABASE",
+      hide: !props.showSelection,
       width: "2rem",
       disabled: (history) => {
         return !allowToSelectChangeHistory(history);
@@ -112,7 +82,6 @@ const columnList = computed(() => {
     },
     {
       key: "type",
-      hide: props.mode !== "DATABASE",
       title: t("change-history.change-type"),
       width: "4rem",
       render: (history) => {
@@ -176,21 +145,20 @@ const columnList = computed(() => {
     },
     {
       key: "tables",
-      hide: props.mode !== "DATABASE",
       title: t("db.tables"),
       width: "15rem",
       resizable: true,
       ellipsis: true,
       render: (history) => {
         const tables = getAffectedTablesOfChangeHistory(history);
-        const content = tables.map(getAffectedTableDisplayName).join(", ");
         return (
-          <TextOverflowPopover
-            content={content}
-            maxLength={100}
-            placement="bottom"
-            class="inline-flex items-center truncate max-w-full"
-          />
+          <p class="space-x-2 truncate">
+            {tables.map((table) => (
+              <span class={table.dropped ? "text-gray-400 italic" : ""}>
+                {getAffectedTableDisplayName(table)}
+              </span>
+            ))}
+          </p>
         );
       },
     },
@@ -252,6 +220,7 @@ const rowProps = (history: ChangeHistory) => {
         emit("row-click", history.uid);
         return;
       }
+
       const url = changeHistoryLink(history);
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");

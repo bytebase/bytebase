@@ -4,11 +4,21 @@
       <div class="text-left textinfolabel">
         {{ $t("change-history.list-limit") }}
       </div>
-      <ChangeHistoryTable
-        :mode="'PROJECT'"
-        :database-section-list="state.databaseSectionList"
-        :history-section-list="state.changeHistorySectionList"
-      />
+      <div v-for="(section, i) in state.changeHistorySectionList" :key="i">
+        <div class="mb-2">
+          <router-link
+            v-if="section.link"
+            :to="section.link"
+            class="normal-link"
+          >
+            {{ section.title }}
+          </router-link>
+          <h1 v-else>
+            {{ section.title }}
+          </h1>
+        </div>
+        <ChangeHistoryDataTable :change-histories="section.list" />
+      </div>
     </template>
     <NoDataPlaceholder v-else>
       <div class="text-center">
@@ -27,7 +37,7 @@
 import type { PropType } from "vue";
 import { reactive, watchEffect } from "vue";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
-import { ChangeHistoryTable } from "@/components/ChangeHistory";
+import { ChangeHistoryDataTable } from "@/components/ChangeHistory";
 import { useChangeHistoryStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
