@@ -465,6 +465,11 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 	return &ncr, nil
 }
 
+// Catalog is the service for catalog.
+type catalogInterface interface {
+	GetFinder() *catalog.Finder
+}
+
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
 	Charset               string
@@ -472,7 +477,7 @@ type SQLReviewCheckContext struct {
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	DbType                storepb.Engine
-	Catalog               catalog.Catalog
+	Catalog               catalogInterface
 	Driver                *sql.DB
 	Context               context.Context
 	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
