@@ -2,12 +2,14 @@
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int
   want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
+    - status: 2
+      code: 407
+      title: column.disallow-changing-order
+      content: '"ALTER TABLE t MODIFY COLUMN a int" changes column order'
       detail: ""
-      startposition: null
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int FIRST
