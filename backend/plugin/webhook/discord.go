@@ -44,18 +44,18 @@ type DiscordWebhook struct {
 }
 
 func init() {
-	register("bb.plugin.webhook.discord", &DiscordReceiver{})
+	Register("bb.plugin.webhook.discord", &DiscordReceiver{})
 }
 
 // DiscordReceiver is the receiver for Discord.
 type DiscordReceiver struct {
 }
 
-func (*DiscordReceiver) post(context Context) error {
+func (*DiscordReceiver) Post(context Context) error {
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}
-	for _, meta := range context.getMetaList() {
+	for _, meta := range context.GetMetaList() {
 		fieldList = append(fieldList, DiscordWebhookEmbedField(meta))
 	}
 
