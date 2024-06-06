@@ -686,13 +686,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		return nil, errors.Errorf("database not found")
 	}
 
-	// HACK: task.Statement is not empty means that the statement comes from a database group target.
-	// we don't want to create new sheets every time so we pass the statement as sheet.
-	sheet := getResourceNameForSheet(project, payload.SheetID)
-	if task.Statement != "" {
-		sheet = task.Statement
-	}
-
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -705,7 +698,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
-				Sheet:         sheet,
+				Sheet:         getResourceNameForSheet(project, payload.SheetID),
 				SchemaVersion: payload.SchemaVersion,
 			},
 		},
@@ -759,13 +752,6 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		return nil, errors.Errorf("database not found")
 	}
 
-	// HACK: task.Statement is not empty means that the statement comes from a database group target.
-	// we don't want to create new sheets every time so we pass the statement as sheet.
-	sheet := getResourceNameForSheet(project, payload.SheetID)
-	if task.Statement != "" {
-		sheet = task.Statement
-	}
-
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -780,7 +766,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:         sheet,
+			Sheet:         getResourceNameForSheet(project, payload.SheetID),
 			SchemaVersion: payload.SchemaVersion,
 		},
 	}

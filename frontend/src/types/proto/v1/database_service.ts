@@ -167,7 +167,7 @@ export interface ListDatabasesRequest {
   pageToken: string;
   /**
    * Filter is used to filter databases returned in the list.
-   * For example, "project = projects/{project}" can be used to list databases in a project.
+   * For example, `project == "projects/{project}"` can be used to list databases in a project.
    * Note: the project filter will be moved to parent.
    */
   filter: string;
