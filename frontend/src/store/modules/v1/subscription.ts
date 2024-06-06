@@ -71,7 +71,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         return "";
       }
 
-      return dayjs(state.subscription.expiresTime).format("L");
+      return dayjs(state.subscription.expiresTime).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
     },
     isTrialing(state): boolean {
       return !!state.subscription?.trialing;
