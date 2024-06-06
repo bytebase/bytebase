@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -51,6 +52,7 @@ const (
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
 	store          *store.Store
+	sheetManager   *sheet.Manager
 	schemaSyncer   *schemasync.Syncer
 	dbFactory      *dbfactory.DBFactory
 	licenseService enterprise.LicenseService
@@ -61,6 +63,7 @@ type SQLService struct {
 // NewSQLService creates a SQLService.
 func NewSQLService(
 	store *store.Store,
+	sheetManager *sheet.Manager,
 	schemaSyncer *schemasync.Syncer,
 	dbFactory *dbfactory.DBFactory,
 	licenseService enterprise.LicenseService,
@@ -69,6 +72,7 @@ func NewSQLService(
 ) *SQLService {
 	return &SQLService{
 		store:          store,
+		sheetManager:   sheetManager,
 		schemaSyncer:   schemaSyncer,
 		dbFactory:      dbFactory,
 		licenseService: licenseService,
@@ -1252,7 +1256,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		dbMetadata = dbSchema.GetMetadata()
 	}
 
-	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata, advisor.SyntaxModeNormal)
+	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
@@ -1330,7 +1334,7 @@ func (s *SQLService) sqlCheck(
 		return storepb.Advice_ERROR, nil, err
 	}
 
-	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
+	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:         dbSchema.CharacterSet,
 		Collation:       dbSchema.Collation,
 		ChangeType:      convertChangeType(changeType),
