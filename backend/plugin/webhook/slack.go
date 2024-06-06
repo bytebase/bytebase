@@ -50,7 +50,7 @@ func init() {
 type SlackReceiver struct {
 }
 
-func (*SlackReceiver) post(context Context) error {
+func GetBlocks(context Context) []SlackWebhookBlock {
 	blockList := []SlackWebhookBlock{}
 
 	status := ""
@@ -112,6 +112,16 @@ func (*SlackReceiver) post(context Context) error {
 		},
 	})
 
+	return blockList
+}
+
+func (*SlackReceiver) post(context Context) error {
+	return postMessage(context)
+}
+
+func postMessage(context Context) error {
+	blockList := GetBlocks(context)
+
 	post := SlackWebhook{
 		Text:      context.Title,
 		BlockList: blockList,
@@ -149,5 +159,9 @@ func (*SlackReceiver) post(context Context) error {
 		return errors.Errorf("%.100s", string(b))
 	}
 
+	return nil
+}
+
+func postDirectMessage(context Context) error {
 	return nil
 }
