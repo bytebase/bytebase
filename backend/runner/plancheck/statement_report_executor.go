@@ -13,12 +13,12 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -26,17 +26,19 @@ import (
 )
 
 // NewStatementReportExecutor creates a statement report executor.
-func NewStatementReportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
+func NewStatementReportExecutor(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory) Executor {
 	return &StatementReportExecutor{
-		store:     store,
-		dbFactory: dbFactory,
+		store:        store,
+		sheetManager: sheetManager,
+		dbFactory:    dbFactory,
 	}
 }
 
 // StatementReportExecutor is the statement report executor.
 type StatementReportExecutor struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
+	store        *store.Store
+	sheetManager *sheet.Manager
+	dbFactory    *dbfactory.DBFactory
 }
 
 // Run runs the statement report executor.
@@ -124,7 +126,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
+		return reportForPostgres(ctx, e.sheetManager, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
 	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
@@ -133,9 +135,9 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
+		return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		return reportForOracle(database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
+		return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
 	default:
 		return []*storepb.PlanCheckRunResult_Result{
 			{
@@ -251,7 +253,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				defer driver.Close(ctx)
 				sqlDB := driver.GetDB()
 
-				return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
+				return reportForPostgres(ctx, e.sheetManager, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
 			case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 				if err != nil {
@@ -260,9 +262,9 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				defer driver.Close(ctx)
 				sqlDB := driver.GetDB()
 
-				return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
+				return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 			case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-				return reportForOracle(database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
+				return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
 			default:
 				return nil, nil
 			}
@@ -295,15 +297,15 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	return results, nil
 }
 
-func reportForOracle(databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_ORACLE, statement)
-	if err != nil {
+func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
+	ast, advices := sm.GetAST(storepb.Engine_ORACLE, statement)
+	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
 				Title:   "Syntax error",
-				Content: err.Error(),
+				Content: advices[0].Content,
 				Code:    0,
 				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
@@ -313,17 +315,16 @@ func reportForOracle(databaseName string, schemaName string, statement string, d
 			},
 		}, nil
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	nodes, ok := ast.([]any)
+	if !ok {
+		return nil, errors.Errorf("invalid ast type %T", ast)
+	}
 
 	var changedResources []base.SchemaResource
-
-	for _, stmt := range singleSQLs {
-		if stmt.Text == "" {
-			continue
-		}
-		resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, stmt.Text)
+	for _, node := range nodes {
+		resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, node)
 		if err != nil {
-			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
+			slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
 		} else {
 			changedResources = append(changedResources, resources...)
 		}
@@ -345,15 +346,15 @@ func reportForOracle(databaseName string, schemaName string, statement string, d
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	singleSQLs, err := base.SplitMultiSQL(engine, statement)
-	if err != nil {
+func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
+	ast, advices := sm.GetAST(storepb.Engine_MYSQL, statement)
+	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
 				Title:   "Syntax error",
-				Content: err.Error(),
+				Content: advices[0].Content,
 				Code:    0,
 				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
@@ -363,38 +364,26 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 			},
 		}, nil
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	nodes, ok := ast.([]*mysqlparser.ParseResult)
+	if !ok {
+		return nil, errors.Errorf("invalid ast type %T", ast)
+	}
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
 	var changedResources []base.SchemaResource
 
-	for _, stmt := range singleSQLs {
-		if stmt.Text == "" {
-			continue
-		}
-
-		stmts, err := mysqlparser.ParseMySQL(stmt.Text)
-		if err != nil {
-			slog.Error("failed to parse statement", slog.String("statement", stmt.Text), log.BBError(err))
-			continue
-		}
-
-		if len(stmts) != 1 {
-			slog.Debug("failed to parse statement, expect to get one node from parser", slog.String("statement", stmt.Text))
-			continue
-		}
-
-		sqlType := mysqlparser.GetStatementType(stmts[0])
+	for _, node := range nodes {
+		sqlType := mysqlparser.GetStatementType(node)
 		sqlTypeSet[sqlType] = struct{}{}
-		resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
+		resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, node)
 		if err != nil {
-			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
+			slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
 		} else {
 			changedResources = append(changedResources, resources...)
 		}
 
-		affectedRows, err := base.GetAffectedRows(ctx, engine, stmts[0], buildGetRowsCountByQueryForMySQL(sqlDB, engine), buildGetTableDataSizeFuncForMySQL(dbMetadata))
+		affectedRows, err := base.GetAffectedRows(ctx, engine, node, buildGetRowsCountByQueryForMySQL(sqlDB, engine), buildGetTableDataSizeFuncForMySQL(dbMetadata))
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {
@@ -446,15 +435,15 @@ func convertToChangedResources(dbMetadata *model.DBSchema, resources []base.Sche
 	return meta
 }
 
-func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	stmts, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
-	if err != nil {
+func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
+	pgAst, advices := sm.GetAST(storepb.Engine_POSTGRES, statement)
+	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
 				Title:   "Syntax error",
-				Content: err.Error(),
+				Content: advices[0].Content,
 				Code:    0,
 				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
@@ -464,24 +453,32 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 			},
 		}, nil
 	}
+	nodes, ok := pgAst.([]ast.Node)
+	if !ok {
+		return nil, errors.Errorf("invalid ast type %T", pgAst)
+	}
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
 	var changedResources []base.SchemaResource
 
-	for _, stmt := range stmts {
-		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", stmt)
+	for _, node := range nodes {
+		var resources []base.SchemaResource
+		sqlType, v := getStatementTypeAndResourcesFromAstNode(database, "public", node)
 		if sqlType == "COMMENT" {
-			resources, err = postgresExtractResourcesFromCommentStatement(database, "public", stmt.Text())
+			v2, err := postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
 			if err != nil {
-				slog.Error("failed to extract resources from comment statement", slog.String("statement", stmt.Text()), log.BBError(err))
-				resources = nil
+				slog.Error("failed to extract resources from comment statement", slog.String("statement", node.Text()), log.BBError(err))
+			} else {
+				resources = v2
 			}
+		} else {
+			resources = v
 		}
 		sqlTypeSet[sqlType] = struct{}{}
 		changedResources = append(changedResources, resources...)
 
-		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata.GetMetadata(), stmt)
+		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata.GetMetadata(), node)
 		if err != nil {
 			slog.Error("failed to get affected rows for postgres", slog.String("database", database), log.BBError(err))
 		} else {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -18,10 +19,13 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _, statement string) ([]base.SchemaResource, error) {
-	treeList, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, err
+func extractChangedResources(currentDatabase string, _ string, ast any) ([]base.SchemaResource, error) {
+	tree, ok := ast.(*ParseResult)
+	if !ok {
+		return nil, errors.Errorf("failed to convert ast %T to ParseResult", ast)
+	}
+	if tree.Tree == nil {
+		return nil, nil
 	}
 
 	l := &resourceChangedListener{
@@ -30,12 +34,7 @@ func extractChangedResources(currentDatabase string, _, statement string) ([]bas
 	}
 
 	var result []base.SchemaResource
-	for _, tree := range treeList {
-		if tree.Tree == nil {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
-	}
+	antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
 
 	for _, resource := range l.resourceMap {
 		result = append(result, resource)
