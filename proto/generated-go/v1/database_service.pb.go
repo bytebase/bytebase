@@ -583,7 +583,7 @@ type ListDatabasesRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter is used to filter databases returned in the list.
-	// For example, "project = projects/{project}" can be used to list databases in a project.
+	// For example, `project == "projects/{project}"` can be used to list databases in a project.
 	// Note: the project filter will be moved to parent.
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 }
