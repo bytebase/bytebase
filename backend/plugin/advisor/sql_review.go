@@ -465,6 +465,11 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 	return &ncr, nil
 }
 
+// Catalog is the service for catalog.
+type catalogInterface interface {
+	GetFinder() *catalog.Finder
+}
+
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
 	Charset               string
@@ -472,7 +477,7 @@ type SQLReviewCheckContext struct {
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	DbType                storepb.Engine
-	Catalog               catalog.Catalog
+	Catalog               catalogInterface
 	Driver                *sql.DB
 	Context               context.Context
 	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
@@ -491,7 +496,7 @@ func SQLReviewCheck(sm *sheet.Manager, statements string, ruleList []*storepb.SQ
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
 	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-		if err := finder.WalkThrough(statements); err != nil {
+		if err := finder.WalkThrough(ast); err != nil {
 			return convertWalkThroughErrorToAdvice(checkContext, err)
 		}
 	}

@@ -7,12 +7,13 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pkg/errors"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
-func (d *DatabaseState) mysqlWalkThrough(stmt string) error {
+func (d *DatabaseState) mysqlWalkThrough(ast any) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -20,9 +21,9 @@ func (d *DatabaseState) mysqlWalkThrough(stmt string) error {
 		d.createSchema("")
 	}
 
-	nodeList, err := mysqlparser.ParseMySQL(stmt + ";")
-	if err != nil {
-		return NewParseError(err.Error())
+	nodeList, ok := ast.([]*mysqlparser.ParseResult)
+	if !ok {
+		return errors.Errorf("invalid ast type %T", ast)
 	}
 	for _, node := range nodeList {
 		if err := d.mysqlChangeState(node); err != nil {
