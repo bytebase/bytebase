@@ -37,16 +37,16 @@ type DingTalkWebhook struct {
 }
 
 func init() {
-	register("bb.plugin.webhook.dingtalk", &DingTalkReceiver{})
+	Register("bb.plugin.webhook.dingtalk", &DingTalkReceiver{})
 }
 
 // DingTalkReceiver is the receiver for DingTalk.
 type DingTalkReceiver struct {
 }
 
-func (*DingTalkReceiver) post(context Context) error {
+func (*DingTalkReceiver) Post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.getMetaListZh() {
+	for _, meta := range context.GetMetaListZh() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.CreatorName, context.CreatorEmail))

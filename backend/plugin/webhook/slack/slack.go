@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
 // SlackWebhookBlockMarkdown is the API message for Slack webhook block markdown.
@@ -43,23 +46,23 @@ type SlackWebhook struct {
 }
 
 func init() {
-	register("bb.plugin.webhook.slack", &SlackReceiver{})
+	webhook.Register("bb.plugin.webhook.slack", &SlackReceiver{})
 }
 
 // SlackReceiver is the receiver for Slack.
 type SlackReceiver struct {
 }
 
-func GetBlocks(context Context) []SlackWebhookBlock {
+func GetBlocks(context webhook.Context) []SlackWebhookBlock {
 	blockList := []SlackWebhookBlock{}
 
 	status := ""
 	switch context.Level {
-	case WebhookSuccess:
+	case webhook.WebhookSuccess:
 		status = ":white_check_mark: "
-	case WebhookWarn:
+	case webhook.WebhookWarn:
 		status = ":warning: "
-	case WebhookError:
+	case webhook.WebhookError:
 		status = ":exclamation: "
 	}
 	blockList = append(blockList, SlackWebhookBlock{
@@ -80,7 +83,7 @@ func GetBlocks(context Context) []SlackWebhookBlock {
 		})
 	}
 
-	for _, meta := range context.getMetaList() {
+	for _, meta := range context.GetMetaList() {
 		blockList = append(blockList, SlackWebhookBlock{
 			Type: "section",
 			Text: &SlackWebhookBlockMarkdown{
@@ -115,11 +118,11 @@ func GetBlocks(context Context) []SlackWebhookBlock {
 	return blockList
 }
 
-func (*SlackReceiver) post(context Context) error {
+func (*SlackReceiver) Post(context webhook.Context) error {
 	return postMessage(context)
 }
 
-func postMessage(context Context) error {
+func postMessage(context webhook.Context) error {
 	blockList := GetBlocks(context)
 
 	post := SlackWebhook{
@@ -138,7 +141,7 @@ func postMessage(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout: 3 * time.Second,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -162,6 +165,6 @@ func postMessage(context Context) error {
 	return nil
 }
 
-func postDirectMessage(context Context) error {
+func postDirectMessage(context webhook.Context) error {
 	return nil
 }
