@@ -74,14 +74,13 @@
       </div>
     </div>
 
-    <ChangeHistoryTable
+    <ChangeHistoryDataTable
       v-model:selected-change-history-names="
         state.selectedChangeHistoryNameList
       "
-      :mode="'DATABASE'"
-      :database-section-list="[database]"
-      :history-section-list="changeHistorySectionList"
+      :change-histories="shownChangeHistoryList"
       :custom-click="true"
+      :show-selection="true"
       @row-click="(id: string) => (state.selectedChangeHistoryId = id)"
     />
   </div>
@@ -125,10 +124,9 @@ import { NCheckbox } from "naive-ui";
 import { computed, onBeforeMount, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   AffectedTableSelect,
-  ChangeHistoryTable,
+  ChangeHistoryDataTable,
   ChangeHistoryDetail,
 } from "@/components/ChangeHistory";
 import { useDatabaseDetailContext } from "@/components/Database/context";
@@ -140,7 +138,6 @@ import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import type { AffectedTable } from "@/types/changeHistory";
 import { EmptyAffectedTable } from "@/types/changeHistory";
-import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory_Status,
   ChangeHistory_Type,
@@ -229,17 +226,6 @@ const shownChangeHistoryList = computed(() => {
     return true;
   });
 });
-
-const changeHistorySectionList = computed(
-  (): BBTableSectionDataSource<ChangeHistory>[] => {
-    return [
-      {
-        title: "",
-        list: shownChangeHistoryList.value,
-      },
-    ];
-  }
-);
 
 const handleExportChangeHistory = async () => {
   if (state.isExporting) {
