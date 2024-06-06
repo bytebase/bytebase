@@ -338,10 +338,18 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 }
 
 func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookList []*store.ProjectWebhookMessage) {
+	setting, err := m.store.GetAppIMSetting(ctx)
+	if err != nil {
+		slog.Error("failed to get app im setting", log.BBError(err))
+	} else {
+		webhookCtx.IMSetting = setting
+	}
+
 	for _, hook := range webhookList {
 		webhookCtx := *webhookCtx
 		webhookCtx.URL = hook.URL
 		webhookCtx.CreatedTs = time.Now().Unix()
+		webhookCtx.DirectMessage = hook.Payload.GetDirectMessage()
 		go func(webhookCtx *webhook.Context, hook *store.ProjectWebhookMessage) {
 			if err := common.Retry(ctx, func() error {
 				return webhook.Post(hook.Type, *webhookCtx)

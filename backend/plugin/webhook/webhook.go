@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -81,6 +83,9 @@ type Context struct {
 	TaskResult          *TaskResult
 	MentionUsers        []*store.UserMessage
 	MentionUsersByPhone []string
+
+	DirectMessage bool
+	IMSetting     *storepb.AppIMSetting
 }
 
 // Receiver is the webhook receiver.
