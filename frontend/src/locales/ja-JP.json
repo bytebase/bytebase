@@ -1199,7 +1199,7 @@
     "unfinished-resolved-issue-tips": "作業指示書は「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "preview": "作業指示のプレビュー",
-    "missing-sql-statement": "SQL ステートメントが欠落しています。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックします。",
+    "missing-sql-statement": "SQL ステートメントが欠落しています。",
     "task-summary-tooltip": "{failed} 個のタスクが失敗しました",
     "data-export": {
       "options": "設定項目",

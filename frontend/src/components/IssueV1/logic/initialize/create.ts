@@ -28,20 +28,19 @@ import {
 } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
-import { Sheet, SheetPayload } from "@/types/proto/v1/sheet_service";
+import { SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,
   extractSheetUID,
   generateSQLForChangeToDatabase,
   getSheetStatement,
   hasProjectPermissionV2,
-  setSheetNameForTask,
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
 import { nextUID } from "../base";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
-import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
+import { getLocalSheetByName } from "../sheet";
 
 export type InitialSQL = {
   sqlList?: string[];
@@ -211,18 +210,14 @@ export const buildStepsForDatabaseGroup = async (
   params: CreateIssueParams,
   databaseGroupName: string
 ) => {
-  // Create sheet from SQL template in URL query
-  // The sheet will be used when previewing rollout
+  // Create a local sheet for editing during preview
+  // apply sql from URL if needed
   const sql = params.initialSQL.sql ?? "";
-  const sheetCreate = Sheet.fromPartial({
-    ...createEmptyLocalSheet(),
-    engine: await databaseEngineForSpec(params.project, databaseGroupName),
-  });
-  setSheetStatement(sheetCreate, sql);
-  const sheet = await useSheetV1Store().createSheet(
-    params.project.name,
-    sheetCreate
-  );
+  const sheetUID = nextUID();
+  const sheetName = `${params.project.name}/sheets/${sheetUID}`;
+  const sheet = getLocalSheetByName(sheetName);
+  sheet.engine = await databaseEngineForSpec(params.project, databaseGroupName);
+  setSheetStatement(sheet, sql);
 
   const spec = await buildSpecForTarget(
     databaseGroupName,
@@ -418,33 +413,7 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
     });
   });
 
-  await maybeWrapStatementsAsSheets(plan, rollout, params);
-
   return reactive(rollout);
-};
-
-const maybeWrapStatementsAsSheets = (
-  plan: Plan,
-  rollout: Rollout,
-  params: CreateIssueParams
-) => {
-  const { query } = params;
-  if (!query.databaseGroupName) {
-    return;
-  }
-  const { stages } = rollout;
-  for (let i = 0; i < stages.length; i++) {
-    const stage = stages[i];
-    const { tasks } = stage;
-    for (let j = 0; j < tasks.length; j++) {
-      const task = tasks[j];
-      const sheetName = `${params.project.name}/sheets/${nextUID()}`;
-      const sheet = getLocalSheetByName(sheetName);
-      sheet.database = task.target;
-      setSheetStatement(sheet, getSheetStatement(sheet));
-      setSheetNameForTask(task, sheetName);
-    }
-  }
 };
 
 const maybeSetInitialSQLForSpec = (
