@@ -27,7 +27,7 @@ var (
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
 type GetMaskedFieldsFunc func(string, string, *SensitiveSchemaInfo) ([]SensitiveField, error)
-type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource, error)
+type ExtractChangedResourcesFunc func(string, string, any) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
@@ -93,12 +93,12 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, ast any) ([]SchemaResource, error) {
 	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(currentDatabase, currentSchema, sql)
+	return f(currentDatabase, currentSchema, ast)
 }
 
 func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {

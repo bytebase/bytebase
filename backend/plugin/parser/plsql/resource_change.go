@@ -5,6 +5,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -16,10 +17,10 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
-	tree, _, err := ParsePLSQL(statement)
-	if err != nil {
-		return nil, err
+func extractChangedResources(currentDatabase string, currentSchema string, ast any) ([]base.SchemaResource, error) {
+	tree, ok := ast.(antlr.Tree)
+	if !ok {
+		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
 	}
 
 	l := &plsqlChangedResourceExtractListener{
