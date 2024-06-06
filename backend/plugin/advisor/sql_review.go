@@ -1835,5 +1835,5 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLDisallowOfflineDDL, nil
 		}
 	}
-	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
+	return "", errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
 }
