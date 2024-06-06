@@ -1329,6 +1329,10 @@ func equalView(oldView *ast.CreateViewStmt, newView *ast.CreateViewStmt) bool {
 			},
 		},
 	})
+	if err != nil {
+		slog.Debug("failed to deparse new view", log.BBError(err))
+		return false
+	}
 	return oldText == newText
 }
 
