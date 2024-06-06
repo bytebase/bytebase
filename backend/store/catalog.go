@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -18,12 +17,8 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType storepb.Engine, ignoreCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
+func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType storepb.Engine, ignoreCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (catalog.Catalog, error) {
 	c := &Catalog{}
-
-	if syntaxMode == advisor.SyntaxModeSDL {
-		return NewEmptyCatalog(engineType)
-	}
 
 	dbMetadata := overrideDatabaseMetadata
 	if dbMetadata == nil {

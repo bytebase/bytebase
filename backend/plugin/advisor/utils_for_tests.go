@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	database "github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -181,6 +182,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err, rule)
 
+	sm := sheet.NewManager(nil)
 	for i, tc := range tests {
 		// Add engine types here for mocked database metadata.
 		var schemaMetadata *storepb.DatabaseSchemaMetadata
@@ -225,7 +227,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			DBSchema:        schemaMetadata,
 		}
 
-		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
+		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)
 		// Sort adviceList by (line, content)
 		sort.Slice(adviceList, func(i, j int) bool {
 			if adviceList[i].GetStartPosition().Line != adviceList[j].GetStartPosition().Line {
