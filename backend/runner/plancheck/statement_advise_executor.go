@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,11 +21,13 @@ import (
 // NewStatementAdviseExecutor creates a plan check statement advise executor.
 func NewStatementAdviseExecutor(
 	store *store.Store,
+	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
 	licenseService enterprise.LicenseService,
 ) Executor {
 	return &StatementAdviseExecutor{
 		store:          store,
+		sheetManager:   sheetManager,
 		dbFactory:      dbFactory,
 		licenseService: licenseService,
 	}
@@ -33,6 +36,7 @@ func NewStatementAdviseExecutor(
 // StatementAdviseExecutor is the plan check statement advise executor.
 type StatementAdviseExecutor struct {
 	store          *store.Store
+	sheetManager   *sheet.Manager
 	dbFactory      *dbfactory.DBFactory
 	licenseService enterprise.LicenseService
 }
@@ -146,7 +150,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		}
 	}
 
-	catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
+	catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
@@ -161,7 +165,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
-	adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
+	adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:               dbSchema.GetMetadata().CharacterSet,
 		Collation:             dbSchema.GetMetadata().Collation,
 		DBSchema:              dbSchema.GetMetadata(),
@@ -336,7 +340,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			}
 		}
 
-		catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
+		catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */)
 		if err != nil {
 			return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 		}
@@ -352,7 +356,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			materials := utils.GetSecretMapFromDatabaseMessage(database)
 			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 			renderedStatement := utils.RenderStatement(sheetStatement, materials)
-			adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
+			adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 				Charset:    dbSchema.GetMetadata().CharacterSet,
 				Collation:  dbSchema.GetMetadata().Collation,
 				DBSchema:   dbSchema.GetMetadata(),
@@ -421,11 +425,4 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	}
 
 	return results, nil
-}
-
-func getSyntaxMode(t storepb.PlanCheckRunConfig_ChangeDatabaseType) advisor.SyntaxMode {
-	if t == storepb.PlanCheckRunConfig_SDL {
-		return advisor.SyntaxModeSDL
-	}
-	return advisor.SyntaxModeNormal
 }
