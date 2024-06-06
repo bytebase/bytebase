@@ -25,6 +25,27 @@ func newProvider(token string) *provider {
 	}
 }
 
+type lookupByEmailResponse struct {
+	OK    bool   `json:"ok"`
+	Error string `json:"error"`
+	User  struct {
+		ID string `json:"id"`
+	} `json:"user"`
+}
+
+type conversationsOpenResponse struct {
+	OK      bool   `json:"ok"`
+	Error   string `json:"error"`
+	Channel struct {
+		ID string `json:"id"`
+	} `json:"channel"`
+}
+
+type chatPostMessageResponse struct {
+	OK    bool   `json:"ok"`
+	Error string `json:"error"`
+}
+
 // https://api.slack.com/methods/users.lookupByEmail
 func (p *provider) lookupByEmail(ctx context.Context, email string) (string, error) {
 	q := url.Values{}
@@ -60,27 +81,6 @@ func (p *provider) lookupByEmail(ctx context.Context, email string) (string, err
 	}
 
 	return res.User.ID, nil
-}
-
-type lookupByEmailResponse struct {
-	OK    bool   `json:"ok"`
-	Error string `json:"error"`
-	User  struct {
-		ID string `json:"id"`
-	} `json:"user"`
-}
-
-type conversationsOpenResponse struct {
-	OK      bool   `json:"ok"`
-	Error   string `json:"error"`
-	Channel struct {
-		ID string `json:"id"`
-	} `json:"channel"`
-}
-
-type chatPostMessageResponse struct {
-	OK    bool   `json:"ok"`
-	Error string `json:"error"`
 }
 
 // https://api.slack.com/methods/conversations.open
