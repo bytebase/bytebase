@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 var (
@@ -78,6 +79,7 @@ type Context struct {
 	Issue               *Issue
 	Project             *Project
 	TaskResult          *TaskResult
+	MentionUsers        []*store.UserMessage
 	MentionUsersByPhone []string
 }
 
