@@ -319,6 +319,7 @@ import {
   toClipboard,
   getStatementSize,
   hasProjectPermissionV2,
+  getAffectedTableDisplayName,
 } from "@/utils";
 
 interface LocalState {
@@ -409,18 +410,6 @@ watch(
 const switchShowDiff = async (showDiff: boolean) => {
   await fetchFullHistory();
   state.showDiff = showDiff;
-};
-
-const getAffectedTableDisplayName = (affectedTable: AffectedTable): string => {
-  const { schema, table, dropped } = affectedTable;
-  let name = table;
-  if (schema !== "") {
-    name = `${schema}.${table}`;
-  }
-  if (dropped) {
-    name = `${name} (deleted)`;
-  }
-  return name;
 };
 
 const handleAffectedTableClick = (affectedTable: AffectedTable): void => {
