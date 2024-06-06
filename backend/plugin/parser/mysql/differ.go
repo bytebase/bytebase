@@ -2370,6 +2370,7 @@ func (t *mysqlTransformer) ExitCreateView(_ *mysql.CreateViewContext) {
 	}
 	if len(fields) == 0 {
 		t.err = errors.Errorf("no columns found for view %s, def: %s", view.name, viewDef)
+		return
 	}
 	var result []string
 	for _, field := range fields {
