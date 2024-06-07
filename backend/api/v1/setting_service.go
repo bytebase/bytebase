@@ -346,9 +346,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "token doesn't pass validation, error: %v", err)
 				}
-
 			case "value.app_im_setting_value.feishu":
 				setting.Feishu = payload.Feishu
+			case "value.app_im_setting_value.wecom":
+				setting.Wecom = payload.Wecom
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
 			}
