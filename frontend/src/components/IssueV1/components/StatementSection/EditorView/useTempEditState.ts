@@ -1,7 +1,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { UNKNOWN_ID } from "@/types";
 import { useIssueContext } from "../../../logic";
-import { useEditSheet } from "../useEditSheet";
+import { useTaskSheet } from "../useTaskSheet";
 
 export type EditState = {
   isEditing: boolean;
@@ -10,7 +10,7 @@ export type EditState = {
 
 export const useTempEditState = (state: EditState) => {
   const { isCreating, issue, selectedTask } = useIssueContext();
-  const { sheet, sheetName, sheetReady, sheetStatement } = useEditSheet();
+  const { sheet, sheetName, sheetReady, sheetStatement } = useTaskSheet();
   const rolloutMode = computed(() => !!issue.value.rollout);
 
   let stopWatching = () => {
