@@ -45,8 +45,9 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
 			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
 		},
-		CreateTime: timestamppb.New(time.Unix(plan.CreatedTs, 0)),
-		UpdateTime: timestamppb.New(time.Unix(plan.UpdatedTs, 0)),
+		CreateTime:              timestamppb.New(time.Unix(plan.CreatedTs, 0)),
+		UpdateTime:              timestamppb.New(time.Unix(plan.UpdatedTs, 0)),
+		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
 	}
 
 	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
