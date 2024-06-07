@@ -2295,6 +2295,7 @@
       "description": "{project} の下にある {count} データベースをバッチクエリします。"
     },
     "executing-query": "クエリの実行",
+    "request-query": "リクエストクエリ",
     "grouping": "グループ",
     "previous-row": "前の行",
     "next-row": "次の行",

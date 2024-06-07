@@ -179,7 +179,6 @@ const prepareDatabases = async () => {
   const databaseList = (
     await databaseStore.searchDatabases({
       filter: filters.join(" && "),
-      permission: "bb.databases.query",
     })
   ).filter((db) => db.syncState === State.ACTIVE);
 

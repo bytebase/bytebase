@@ -2,6 +2,7 @@
   <Drawer
     :show="true"
     width="auto"
+    :placement="placement"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <DrawerContent
@@ -115,10 +116,18 @@ defineOptions({
   name: "RequestQueryPanel",
 });
 
-const props = defineProps<{
-  projectId?: string;
-  database?: ComposedDatabase;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectId?: string;
+    database?: ComposedDatabase;
+    placement: "left" | "right";
+  }>(),
+  {
+    projectId: undefined,
+    database: undefined,
+    placement: "right",
+  }
+);
 
 defineEmits<{
   (event: "close"): void;
