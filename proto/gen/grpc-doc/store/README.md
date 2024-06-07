@@ -214,6 +214,7 @@
     - [AppIMSetting](#bytebase-store-AppIMSetting)
     - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
     - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
+    - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-store-DataClassificationSetting-DataClassificationConfig)
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
@@ -3251,6 +3252,7 @@ The type of target.
 | ----- | ---- | ----- | ----------- |
 | slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
 | feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
+| wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
 
 
 
@@ -3282,6 +3284,22 @@ The type of target.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Wecom"></a>
+
+### AppIMSetting.Wecom
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| secret | [string](#string) |  |  |
 
 
 
