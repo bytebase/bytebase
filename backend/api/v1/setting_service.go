@@ -25,6 +25,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -328,6 +329,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+
 	case api.SettingAppIM:
 		payload := new(storepb.AppIMSetting)
 		if err := convertV1PbToStorePb(request.Setting.Value.GetAppImSettingValue(), payload); err != nil {
@@ -341,11 +343,25 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			switch path {
 			case "value.app_im_setting_value.slack":
 				setting.Slack = payload.Slack
+				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "token doesn't pass validation, error: %v", err)
+				}
+
 			case "value.app_im_setting_value.feishu":
 				setting.Feishu = payload.Feishu
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
 			}
+		}
+		if request.ValidateOnly {
+			return &v1pb.Setting{
+				Name: request.Setting.Name,
+				Value: &v1pb.Value{
+					Value: &v1pb.Value_AppImSettingValue{
+						AppImSettingValue: &v1pb.AppIMSetting{},
+					},
+				},
+			}, nil
 		}
 
 		bytes, err := protojson.Marshal(setting)
@@ -353,6 +369,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s, error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+
 	case api.SettingWorkspaceExternalApproval:
 		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
 		if err != nil {
