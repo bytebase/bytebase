@@ -1,6 +1,9 @@
 <template>
   <Drawer :show="showCreatePanel" @close="showCreatePanel = false">
-    <DrawerContent :title="$t('changelist.new')" class="w-[40rem] relative">
+    <DrawerContent
+      :title="$t('changelist.new')"
+      class="w-[40rem] max-w-[100vw] relative"
+    >
       <template #default>
         <div
           class="grid items-center gap-y-4 gap-x-4"

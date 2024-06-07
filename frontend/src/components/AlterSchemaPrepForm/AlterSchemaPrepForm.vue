@@ -1,5 +1,5 @@
 <template>
-  <DrawerContent>
+  <DrawerContent class="max-w-[100vw]">
     <template #header>
       <div class="flex flex-col gap-y-1">
         <span>
