@@ -2295,6 +2295,7 @@
       "description": "Batch query {count} additional databases under {project}."
     },
     "executing-query": "Executing query",
+    "request-query": "Request query",
     "grouping": "Grouping",
     "previous-row": "Previous row",
     "next-row": "Next row",
