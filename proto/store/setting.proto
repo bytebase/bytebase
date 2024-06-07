@@ -298,7 +298,12 @@ message AppIMSetting {
     string app_id = 1;
     string app_secret = 2;
   }
+  message Wecom {
+    string id = 1;
+    string secret = 2;
+  }
 
   Slack slack = 1;
   Feishu feishu = 2;
+  Wecom wecom = 3;
 }
