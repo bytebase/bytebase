@@ -8264,6 +8264,8 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Slack'
                 feishu:
                     $ref: '#/components/schemas/AppIMSetting_Feishu'
+                wecom:
+                    $ref: '#/components/schemas/AppIMSetting_Wecom'
         AppIMSetting_Feishu:
             type: object
             properties:
@@ -8275,6 +8277,13 @@ components:
             type: object
             properties:
                 token:
+                    type: string
+        AppIMSetting_Wecom:
+            type: object
+            properties:
+                id:
+                    type: string
+                secret:
                     type: string
         ApprovalFlow:
             type: object

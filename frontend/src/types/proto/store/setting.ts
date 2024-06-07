@@ -516,6 +516,7 @@ export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeToNumbe
 export interface AppIMSetting {
   slack: AppIMSetting_Slack | undefined;
   feishu: AppIMSetting_Feishu | undefined;
+  wecom: AppIMSetting_Wecom | undefined;
 }
 
 export interface AppIMSetting_Slack {
@@ -525,6 +526,11 @@ export interface AppIMSetting_Slack {
 export interface AppIMSetting_Feishu {
   appId: string;
   appSecret: string;
+}
+
+export interface AppIMSetting_Wecom {
+  id: string;
+  secret: string;
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -3159,7 +3165,7 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
 };
 
 function createBaseAppIMSetting(): AppIMSetting {
-  return { slack: undefined, feishu: undefined };
+  return { slack: undefined, feishu: undefined, wecom: undefined };
 }
 
 export const AppIMSetting = {
@@ -3169,6 +3175,9 @@ export const AppIMSetting = {
     }
     if (message.feishu !== undefined) {
       AppIMSetting_Feishu.encode(message.feishu, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.wecom !== undefined) {
+      AppIMSetting_Wecom.encode(message.wecom, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -3194,6 +3203,13 @@ export const AppIMSetting = {
 
           message.feishu = AppIMSetting_Feishu.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.wecom = AppIMSetting_Wecom.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3207,6 +3223,7 @@ export const AppIMSetting = {
     return {
       slack: isSet(object.slack) ? AppIMSetting_Slack.fromJSON(object.slack) : undefined,
       feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
+      wecom: isSet(object.wecom) ? AppIMSetting_Wecom.fromJSON(object.wecom) : undefined,
     };
   },
 
@@ -3217,6 +3234,9 @@ export const AppIMSetting = {
     }
     if (message.feishu !== undefined) {
       obj.feishu = AppIMSetting_Feishu.toJSON(message.feishu);
+    }
+    if (message.wecom !== undefined) {
+      obj.wecom = AppIMSetting_Wecom.toJSON(message.wecom);
     }
     return obj;
   },
@@ -3231,6 +3251,9 @@ export const AppIMSetting = {
       : undefined;
     message.feishu = (object.feishu !== undefined && object.feishu !== null)
       ? AppIMSetting_Feishu.fromPartial(object.feishu)
+      : undefined;
+    message.wecom = (object.wecom !== undefined && object.wecom !== null)
+      ? AppIMSetting_Wecom.fromPartial(object.wecom)
       : undefined;
     return message;
   },
@@ -3363,6 +3386,80 @@ export const AppIMSetting_Feishu = {
     const message = createBaseAppIMSetting_Feishu();
     message.appId = object.appId ?? "";
     message.appSecret = object.appSecret ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Wecom(): AppIMSetting_Wecom {
+  return { id: "", secret: "" };
+}
+
+export const AppIMSetting_Wecom = {
+  encode(message: AppIMSetting_Wecom, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.secret !== "") {
+      writer.uint32(18).string(message.secret);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Wecom {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Wecom();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.secret = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Wecom {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_Wecom): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.secret !== "") {
+      obj.secret = message.secret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
+    return AppIMSetting_Wecom.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
+    const message = createBaseAppIMSetting_Wecom();
+    message.id = object.id ?? "";
+    message.secret = object.secret ?? "";
     return message;
   },
 };
