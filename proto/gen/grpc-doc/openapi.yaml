@@ -11100,6 +11100,18 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                planCheckRunStatusCount:
+                    readOnly: true
+                    type: object
+                    additionalProperties:
+                        type: integer
+                        format: int32
+                    description: |-
+                        The status count of the latest plan check runs.
+                         Keys are:
+                         - SUCCESS
+                         - WARNING
+                         - ERROR
         PlanCheckRun:
             type: object
             properties:
