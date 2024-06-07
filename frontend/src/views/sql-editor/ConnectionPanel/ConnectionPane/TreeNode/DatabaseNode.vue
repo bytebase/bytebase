@@ -24,9 +24,16 @@
     <span class="flex-1 truncate">
       <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
       <span v-if="!hasInstanceContext" class="text-control-light">
-        ({{ database.instanceEntity.title }})</span
-      >
+        ({{ database.instanceEntity.title }})
+      </span>
     </span>
+    <HideInStandaloneMode>
+      <RequestQueryButton
+        v-if="!canQuery"
+        :database="database"
+        :panel-placement="'left'"
+      />
+    </HideInStandaloneMode>
   </div>
 </template>
 
@@ -34,10 +41,13 @@
 import { computed } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { useCurrentUserV1 } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";
+import { isDatabaseV1Queryable } from "@/utils";
+import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = defineProps<{
@@ -46,8 +56,14 @@ const props = defineProps<{
   keyword: string;
 }>();
 
+const me = useCurrentUserV1();
+
 const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
+);
+
+const canQuery = computed(() =>
+  isDatabaseV1Queryable(database.value, me.value)
 );
 
 const hasInstanceContext = computed(() => {

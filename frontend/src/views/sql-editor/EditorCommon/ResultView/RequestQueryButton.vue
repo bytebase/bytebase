@@ -1,13 +1,14 @@
 <template>
   <div v-if="available">
-    <NButton text type="primary" @click="showPanel = true">
-      {{ $t("custom-approval.risk-rule.risk.namespace.request_query") }}
+    <NButton text type="primary" @click="onClick">
+      {{ $t("sql-editor.request-query") }}
     </NButton>
 
     <RequestQueryPanel
       :show="showPanel"
       :project-id="database?.projectEntity.uid"
       :database="database"
+      :placement="panelPlacement"
       @close="showPanel = false"
     />
   </div>
@@ -16,19 +17,34 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import { useConnectionOfCurrentSQLEditorTab, useCurrentUserV1 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { useCurrentUserV1 } from "@/store";
+import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
+
+const props = withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    panelPlacement: "left" | "right";
+  }>(),
+  {
+    panelPlacement: "right",
+  }
+);
 
 const me = useCurrentUserV1();
 const showPanel = ref(false);
-const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const available = computed(() => {
-  if (database.value.uid === String(UNKNOWN_ID)) {
+  if (props.database.uid === String(UNKNOWN_ID)) {
     return false;
   }
 
-  return hasPermissionToCreateRequestGrantIssue(database.value, me.value);
+  return hasPermissionToCreateRequestGrantIssue(props.database, me.value);
 });
+
+const onClick = (e: MouseEvent) => {
+  e.stopPropagation();
+  e.preventDefault();
+  showPanel.value = true;
+};
 </script>
