@@ -96,7 +96,10 @@
     :show="!!state.selectedChangeHistoryId"
     @close="state.selectedChangeHistoryId = ''"
   >
-    <DrawerContent class="w-[80vw] relative" :title="$t('change-history.self')">
+    <DrawerContent
+      class="w-[80vw] max-w-[100vw] relative"
+      :title="$t('change-history.self')"
+    >
       <ChangeHistoryDetail
         :instance="database.instance"
         :database="database.name"

@@ -1,5 +1,8 @@
 <template>
-  <DrawerContent :title="$t('quick-action.create-project')">
+  <DrawerContent
+    :title="$t('quick-action.create-project')"
+    class="max-w-[100vw]"
+  >
     <form class="w-96 space-y-6 divide-y divide-block-border">
       <div class="grid gap-y-6 gap-x-4 grid-cols-1">
         <div class="col-span-1">
