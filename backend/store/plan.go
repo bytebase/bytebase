@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -26,6 +27,8 @@ type PlanMessage struct {
 	CreatedTs  int64
 	UpdaterUID int
 	UpdatedTs  int64
+
+	PlanCheckRunStatusCount map[string]int32
 }
 
 // FindPlanMessage is the message to find a plan.
@@ -218,7 +221,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		plan := PlanMessage{
 			Config: &storepb.PlanConfig{},
 		}
-		var config []byte
+		var config, statusCount []byte
 		if err := rows.Scan(
 			&plan.UID,
 			&plan.CreatorUID,
@@ -230,11 +233,15 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			&plan.Name,
 			&plan.Description,
 			&config,
+			&statusCount,
 		); err != nil {
 			return nil, errors.Wrap(err, "failed to scan plan")
 		}
 		if err := protojson.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
+		}
+		if err := json.Unmarshal(statusCount, &plan.PlanCheckRunStatusCount); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal plan check run status count")
 		}
 		plans = append(plans, &plan)
 	}
