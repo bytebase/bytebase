@@ -15,9 +15,13 @@ const (
 
 // Retry uses exponential backoff with timeout.
 func Retry(ctx context.Context, fn func() error) error {
-	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = timeout
-	b.InitialInterval = initialInterval
+	b := backoff.WithMaxRetries(
+		backoff.NewExponentialBackOff(
+			backoff.WithMaxElapsedTime(timeout),
+			backoff.WithInitialInterval(initialInterval),
+		),
+		3,
+	)
 	b.Reset()
 	bWithContext := backoff.WithContext(b, ctx)
 	return backoff.Retry(fn, bWithContext)
