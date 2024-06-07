@@ -182,10 +182,11 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 					e->>'status' AS status,
 					count(*) AS count
 				FROM (
-					SELECT
+					SELECT DISTINCT ON (plan_check_run.type)
 						jsonb_array_elements(plan_check_run.result->'results') e
 					FROM plan_check_run
 					WHERE plan_check_run.plan_id = plan.id
+					ORDER BY plan_check_run.type, plan_check_run.id DESC
 				) r
 				GROUP BY e->>'status'
 			) a
