@@ -27,11 +27,13 @@
         ({{ database.instanceEntity.title }})
       </span>
     </span>
-    <RequestQueryButton
-      v-if="!canQuery"
-      :database="database"
-      :panel-placement="'left'"
-    />
+    <HideInStandaloneMode>
+      <RequestQueryButton
+        v-if="!canQuery"
+        :database="database"
+        :panel-placement="'left'"
+      />
+    </HideInStandaloneMode>
   </div>
 </template>
 
