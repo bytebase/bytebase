@@ -61,14 +61,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NEllipsis } from "naive-ui";
-import {
-  type Ref,
-  computed,
-  onMounted,
-  reactive,
-  watch,
-  watchEffect,
-} from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -88,10 +81,11 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import type { SearchParams } from "@/utils";
 import {
+  type SearchParams,
   sortInstanceV1ListByEnvironmentV1,
   extractEnvironmentResourceName,
+  wrapRefAsPromise,
 } from "@/utils";
 
 interface LocalState {
@@ -135,16 +129,6 @@ const selectedEnvironment = computed(() => {
     `${UNKNOWN_ID}`
   );
 });
-
-const wrapRefAsPromise = <T,>(r: Ref<T>, expectedValue: T) => {
-  return new Promise<void>((resolve) => {
-    watchEffect(() => {
-      if (r.value === expectedValue) {
-        resolve();
-      }
-    });
-  });
-};
 
 onMounted(() => {
   if (route.hash === "#add") {
