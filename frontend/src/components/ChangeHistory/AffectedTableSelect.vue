@@ -29,11 +29,11 @@ type AffectedTableSelectOption = SelectOption & {
 };
 
 const props = defineProps<{
-  affectedTable: AffectedTable;
   changeHistoryList: ChangeHistory[];
+  affectedTable?: AffectedTable;
 }>();
 const emit = defineEmits<{
-  (event: "update:affected-table", affectedTable: AffectedTable): void;
+  (event: "update:affected-table", affectedTable?: AffectedTable): void;
 }>();
 
 const { t } = useI18n();
@@ -63,7 +63,7 @@ const filterByTitle = (pattern: string, option: SelectOption) => {
 
 const affectedTableOptions = computed(() => {
   return affectedTables.value.map<AffectedTableSelectOption>((item) => {
-    const key = JSON.stringify(item);
+    const key = isEqual(item, EmptyAffectedTable) ? "" : JSON.stringify(item);
     return {
       value: key,
       affectedTable: item,
@@ -89,10 +89,15 @@ const renderLabel = (option: SelectOption) => {
 };
 
 const selectedKey = computed(() => {
-  return JSON.stringify(props.affectedTable);
+  return props.affectedTable ? JSON.stringify(props.affectedTable) : "";
 });
 
-const updateSelectedKey = (key: string, opt: AffectedTableSelectOption) => {
-  emit("update:affected-table", opt.affectedTable);
+const updateSelectedKey = (_: string, opt: AffectedTableSelectOption) => {
+  emit(
+    "update:affected-table",
+    isEqual(opt.affectedTable, EmptyAffectedTable)
+      ? undefined
+      : opt.affectedTable
+  );
 };
 </script>

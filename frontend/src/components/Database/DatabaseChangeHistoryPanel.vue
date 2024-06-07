@@ -10,19 +10,11 @@
             :change-history-list="changeHistoryList"
           />
         </div>
-        <div class="flex items-center">
-          <label
-            v-for="item in CHANGE_TYPES"
-            :key="item"
-            class="text-sm text-gray-600"
-          >
-            <NCheckbox
-              :checked="state.selectedChangeType.has(item)"
-              @update:checked="toggleChangeType(item, $event)"
-            >
-              {{ item }}
-            </NCheckbox>
-          </label>
+        <div class="w-44">
+          <ChangeTypeSelect
+            v-model:change-type="state.selectedChangeType"
+            :change-history-list="changeHistoryList"
+          />
         </div>
       </div>
       <div class="flex flex-row justify-end items-center grow space-x-2">
@@ -74,15 +66,30 @@
       </div>
     </div>
 
-    <ChangeHistoryDataTable
-      v-model:selected-change-history-names="
-        state.selectedChangeHistoryNameList
-      "
-      :change-histories="shownChangeHistoryList"
-      :custom-click="true"
-      :show-selection="true"
-      @row-click="(id: string) => (state.selectedChangeHistoryId = id)"
-    />
+    <PagedChangeHistoryTable
+      :database="database"
+      :search-change-histories="{
+        tables: state.selectedAffectedTable
+          ? [state.selectedAffectedTable]
+          : undefined,
+        types: state.selectedChangeType
+          ? [state.selectedChangeType]
+          : undefined,
+      }"
+      session-key="bb.paged-change-history-table"
+    >
+      <template #table="{ list }">
+        <ChangeHistoryDataTable
+          v-model:selected-change-history-names="
+            state.selectedChangeHistoryNameList
+          "
+          :change-histories="list"
+          :custom-click="true"
+          :show-selection="true"
+          @row-click="(id: string) => (state.selectedChangeHistoryId = id)"
+        />
+      </template>
+    </PagedChangeHistoryTable>
   </div>
 
   <Drawer
@@ -119,15 +126,15 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { isEqual } from "lodash-es";
-import { NCheckbox } from "naive-ui";
-import { computed, onBeforeMount, reactive, watch } from "vue";
+import { computed, onBeforeMount, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
   AffectedTableSelect,
   ChangeHistoryDataTable,
   ChangeHistoryDetail,
+  PagedChangeHistoryTable,
+  ChangeTypeSelect,
 } from "@/components/ChangeHistory";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
@@ -137,25 +144,20 @@ import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import type { AffectedTable } from "@/types/changeHistory";
-import { EmptyAffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory_Status,
   ChangeHistory_Type,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import {
-  getAffectedTablesOfChangeHistory,
-  getHistoryChangeType,
-  extractProjectResourceName,
-} from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {
   showBaselineModal: boolean;
   loading: boolean;
   selectedChangeHistoryNameList: string[];
   isExporting: boolean;
-  selectedAffectedTable: AffectedTable;
-  selectedChangeType: Set<string>;
+  selectedAffectedTable?: AffectedTable;
+  selectedChangeType?: string;
   selectedChangeHistoryId: string;
 }
 
@@ -167,15 +169,12 @@ const { t } = useI18n();
 
 const changeHistoryStore = useChangeHistoryStore();
 const router = useRouter();
-const CHANGE_TYPES = ["DDL", "DML"];
 
 const state = reactive<LocalState>({
   showBaselineModal: false,
   loading: false,
   selectedChangeHistoryNameList: [],
   isExporting: false,
-  selectedAffectedTable: EmptyAffectedTable,
-  selectedChangeType: new Set(CHANGE_TYPES),
   selectedChangeHistoryId: "",
 });
 
@@ -206,25 +205,6 @@ const allowEstablishBaseline = computed(() => {
 
 const changeHistoryList = computed(() => {
   return changeHistoryStore.changeHistoryListByDatabase(props.database.name);
-});
-
-const shownChangeHistoryList = computed(() => {
-  return changeHistoryList.value.filter((changeHistory) => {
-    const type = getHistoryChangeType(changeHistory.type);
-    if (!state.selectedChangeType.has(type)) {
-      return false;
-    }
-    if (
-      state.selectedAffectedTable &&
-      !isEqual(state.selectedAffectedTable, EmptyAffectedTable)
-    ) {
-      const affectedTables = getAffectedTablesOfChangeHistory(changeHistory);
-      return affectedTables.find((item) =>
-        isEqual(item, state.selectedAffectedTable)
-      );
-    }
-    return true;
-  });
 });
 
 const handleExportChangeHistory = async () => {
@@ -291,17 +271,4 @@ const doCreateBaseline = () => {
     },
   });
 };
-
-const toggleChangeType = (type: string, checked: boolean) => {
-  if (checked) state.selectedChangeType.add(type);
-  else state.selectedChangeType.delete(type);
-};
-
-watch(
-  changeHistoryList,
-  () => {
-    state.selectedAffectedTable = EmptyAffectedTable;
-  },
-  { immediate: true }
-);
 </script>
