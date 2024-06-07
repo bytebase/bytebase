@@ -1,7 +1,7 @@
 <template>
   <Drawer @close="$emit('close')">
     <DrawerContent
-      class="w-96 max-w-full"
+      class="w-96 max-w-[100vw]"
       :title="
         isCreating
           ? $t('settings.members.add-member')
