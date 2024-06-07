@@ -16,3 +16,8 @@ export const EmptyAffectedTable: AffectedTable = {
 export interface ComposedChangeHistory extends ChangeHistory {
   issueEntity?: Issue;
 }
+
+export interface SearchChangeHistoriesParams {
+  tables?: AffectedTable[];
+  types?: string[];
+}

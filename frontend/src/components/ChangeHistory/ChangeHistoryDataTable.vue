@@ -19,7 +19,6 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
-import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { useUserStore } from "@/store";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
@@ -169,14 +168,7 @@ const columnList = computed(() => {
       minWidth: "13rem",
       ellipsis: true,
       render: (history) => {
-        return (
-          <TextOverflowPopover
-            content={history.statement}
-            maxLength={100}
-            placement="bottom"
-            class="inline-flex items-center truncate max-w-full"
-          />
-        );
+        return <p class="truncate whitespace-nowrap">{history.statement}</p>;
       },
     },
     {
