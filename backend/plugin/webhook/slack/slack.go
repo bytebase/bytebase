@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
@@ -122,7 +125,8 @@ func GetBlocks(context webhook.Context) []Block {
 
 func (*Receiver) Post(context webhook.Context) error {
 	if len(context.MentionUsers) > 0 {
-		return postDirectMessage(context)
+		postDirectMessage(context)
+		return nil
 	}
 	return postMessage(context)
 }
@@ -170,33 +174,42 @@ func postMessage(context webhook.Context) error {
 	return nil
 }
 
-func postDirectMessage(webhookCtx webhook.Context) error {
+func postDirectMessage(webhookCtx webhook.Context) {
 	ctx := context.Background()
 	t := webhookCtx.IMSetting.GetSlack().GetToken()
 	if t == "" {
-		return errors.Errorf("slack token not set")
+		return
 	}
 	p := newProvider(t)
-	var errs error
-	for _, u := range webhookCtx.MentionUsers {
-		err := func() error {
-			userID, err := p.lookupByEmail(ctx, u.Email)
-			if err != nil {
-				return errors.Wrapf(err, "failed to lookup user")
+	sent := map[string]bool{}
+	if err := common.Retry(ctx, func() error {
+		var errs error
+		for _, u := range webhookCtx.MentionUsers {
+			if sent[u.Email] {
+				continue
 			}
-			channelID, err := p.openConversation(ctx, userID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to open conversation")
-			}
-			if err := p.chatPostMessage(ctx, channelID, webhookCtx); err != nil {
-				return errors.Wrapf(err, "failed to post message")
-			}
-			return nil
-		}()
-		if err != nil {
-			err = errors.Wrapf(err, "failed to send direct message to user %v", u.Email)
-			multierr.AppendInto(&errs, err)
+			err := func() error {
+				userID, err := p.lookupByEmail(ctx, u.Email)
+				if err != nil {
+					if err.Error() == "user_not_found" {
+						return nil
+					}
+					return errors.Wrapf(err, "failed to lookup user")
+				}
+				channelID, err := p.openConversation(ctx, userID)
+				if err != nil {
+					return errors.Wrapf(err, "failed to open conversation")
+				}
+				if err := p.chatPostMessage(ctx, channelID, webhookCtx); err != nil {
+					return errors.Wrapf(err, "failed to post message")
+				}
+				sent[u.Email] = true
+				return nil
+			}()
+			multierr.AppendInto(&errs, errors.Wrapf(err, "failed to send message to user %v", u.Email))
 		}
+		return errs
+	}); err != nil {
+		slog.Warn("failed to send direct message to user", log.BBError(err))
 	}
-	return errs
 }
