@@ -169,10 +169,27 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.pipeline_id,
 			plan.name,
 			plan.description,
-			plan.config
+			plan.config,
+			COALESCE(plan_check_runs_status_count.status_count, '{}'::jsonb)
 		FROM plan
 		LEFT JOIN project on plan.project_id = project.id
 		LEFT JOIN issue on plan.id = issue.plan_id
+		LEFT JOIN LATERAL (
+			SELECT
+				jsonb_object_agg(a.status, a.count) AS status_count
+			FROM (
+				SELECT
+					e->>'status' AS status,
+					count(*) AS count
+				FROM (
+					SELECT
+						jsonb_array_elements(plan_check_run.result->'results') e
+					FROM plan_check_run
+					WHERE plan_check_run.plan_id = plan.id
+				) r
+				GROUP BY e->>'status'
+			) a
+		) plan_check_runs_status_count ON TRUE
 		WHERE %s
 		ORDER BY id DESC
 	`, strings.Join(where, " AND "))
