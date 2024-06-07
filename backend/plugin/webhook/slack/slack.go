@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -191,7 +192,7 @@ func postDirectMessage(webhookCtx webhook.Context) {
 			err := func() error {
 				userID, err := p.lookupByEmail(ctx, u.Email)
 				if err != nil {
-					if err.Error() == "user_not_found" {
+					if strings.Contains(err.Error(), "users_not_found") {
 						return nil
 					}
 					return errors.Wrapf(err, "failed to lookup user")
