@@ -1,6 +1,6 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="title" class="w-[40rem]">
+    <DrawerContent :title="title" class="w-[40rem] max-w-[100vw]">
       <BBAttention v-if="showWarning" class="mb-5" type="warning">
         {{ $t("database.mixed-label-values-warning") }}
       </BBAttention>

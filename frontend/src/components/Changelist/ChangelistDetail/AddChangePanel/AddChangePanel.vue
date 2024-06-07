@@ -6,7 +6,7 @@
   >
     <DrawerContent
       :title="$t('changelist.add-change.self')"
-      class="w-[80vw] relative"
+      class="w-[80vw] max-w-[100vw] relative"
       style="max-width: calc(100vw - 8rem)"
     >
       <template #default>
