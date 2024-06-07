@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -25,6 +26,15 @@ func newProvider(token string) *provider {
 	}
 }
 
+func ValidateToken(ctx context.Context, token string) error {
+	return newProvider(token).listUsers(ctx, 1)
+}
+
+type listUsersResponse struct {
+	OK    bool   `json:"ok"`
+	Error string `json:"error"`
+}
+
 type lookupByEmailResponse struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error"`
@@ -44,6 +54,43 @@ type conversationsOpenResponse struct {
 type chatPostMessageResponse struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error"`
+}
+
+// https://api.slack.com/methods/users.list
+func (p *provider) listUsers(ctx context.Context, limit int) error {
+	q := url.Values{}
+	q.Set("limit", fmt.Sprintf("%d", limit))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://slack.com/api/users.list", nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to new request")
+	}
+	req.URL.RawQuery = q.Encode()
+	req.Header.Add("Authorization", "Bearer "+p.token)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := p.c.Do(req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to send GET request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received non-200 status code %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read body")
+	}
+	var res listUsersResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal")
+	}
+	if !res.OK {
+		return errors.Errorf("failed to list users, error: %v", res.Error)
+	}
+
+	return nil
 }
 
 // https://api.slack.com/methods/users.lookupByEmail
