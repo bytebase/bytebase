@@ -407,7 +407,7 @@
     </div>
 
     <InstanceArchiveRestoreButton
-      v-if="!isCreating && instance"
+      v-if="!hideArchiveRestore && !isCreating && instance"
       :instance="instance as ComposedInstance"
     />
   </div>
@@ -464,6 +464,10 @@ import {
   EngineList,
 } from "./constants";
 import { useInstanceFormContext } from "./context";
+
+defineProps<{
+  hideArchiveRestore?: boolean;
+}>();
 
 const context = useInstanceFormContext();
 const {
