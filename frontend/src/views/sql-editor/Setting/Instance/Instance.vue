@@ -1,8 +1,6 @@
 <template>
   <div class="w-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
-    <div
-      class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
-    >
+    <div class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch">
       <NButton @click="handleClickAddInstance">
         <template #icon>
           <PlusIcon class="h-4 w-4" />
@@ -45,7 +43,10 @@
           :title="detailTitle"
           body-content-class="flex flex-col gap-2 overflow-hidden"
         >
-          <InstanceFormBody class="flex-1 overflow-auto" />
+          <InstanceFormBody
+            :hide-archive-restore="true"
+            class="flex-1 overflow-auto"
+          />
           <InstanceFormButtons
             class="border-t border-block-border pt-4 pb-0"
             :on-created="(instance) => (state.detail.instance = instance)"
@@ -80,10 +81,11 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import type { SearchParams } from "@/utils";
 import {
+  type SearchParams,
   sortInstanceV1ListByEnvironmentV1,
   extractEnvironmentResourceName,
+  wrapRefAsPromise,
 } from "@/utils";
 
 interface LocalState {
@@ -133,14 +135,29 @@ onMounted(() => {
     state.detail.show = true;
     state.detail.instance = undefined;
   }
-  watch(
-    () => state.detail.show,
-    (show) => {
-      if (!show) {
-        router.replace({ hash: "" });
+  wrapRefAsPromise(ready, true).then(() => {
+    const maybeInstanceName = route.hash.replace(/^#*/g, "");
+    if (maybeInstanceName) {
+      const instance = rawInstanceV1List.value.find(
+        (inst) => inst.name === maybeInstanceName
+      );
+      if (instance) {
+        state.detail.show = true;
+        state.detail.instance = instance;
       }
     }
-  );
+
+    watch(
+      [() => state.detail.show, () => state.detail.instance?.name],
+      ([show, instanceName]) => {
+        if (show) {
+          router.replace({ hash: instanceName ? `#${instanceName}` : "#add" });
+        } else {
+          router.replace({ hash: "" });
+        }
+      }
+    );
+  });
 });
 
 const filteredInstanceV1List = computed(() => {
