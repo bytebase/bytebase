@@ -691,6 +691,18 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			default:
 				return nil, errors.Errorf("expect to get a list node but got %T", node)
 			}
+		case pgquery.ObjectType_OBJECT_VIEW:
+			commentStmt.Type = ast.ObjectTypeView
+			switch node := in.CommentStmt.Object.Node.(type) {
+			case *pgquery.Node_List:
+				tableDef, err := convertNodeListToTableDef(node.List.Items)
+				if err != nil {
+					return nil, err
+				}
+				commentStmt.Object = tableDef
+			default:
+				return nil, errors.Errorf("expect to get a list node but got %T", node)
+			}
 		}
 
 		return &commentStmt, nil
