@@ -127,18 +127,20 @@ func newTableInfo(id int, createTable *ast.CreateTableStmt) *tableInfo {
 }
 
 type viewInfo struct {
-	id          int
-	existsInNew bool
-	createView  *ast.CreateViewStmt
-	comment     string
+	id               int
+	existsInNew      bool
+	createView       *ast.CreateViewStmt
+	comment          string
+	columnCommentMap map[string]string
 }
 
 func newViewInfo(id int, createView *ast.CreateViewStmt) *viewInfo {
 	return &viewInfo{
-		id:          id,
-		existsInNew: false,
-		createView:  createView,
-		comment:     "",
+		id:               id,
+		existsInNew:      false,
+		createView:       createView,
+		comment:          "",
+		columnCommentMap: make(map[string]string),
 	}
 }
 
@@ -476,6 +478,21 @@ func (m schemaMap) addComment(comment *ast.CommentStmt) error {
 		}
 		table.comment = comment.Comment
 		return nil
+	case ast.ObjectTypeView:
+		tableDef, ok := comment.Object.(*ast.TableDef)
+		if !ok {
+			return errors.Errorf("failed to add comment: expect view def, but found %v", comment.Object)
+		}
+		schema, exists := m[tableDef.Schema]
+		if !exists {
+			return errors.Errorf("failed to add comment: schema %s not found", tableDef.Schema)
+		}
+		view, exists := schema.viewMap[tableDef.Name]
+		if !exists {
+			return errors.Errorf("failed to add comment: view %s not found", tableDef.Name)
+		}
+		view.comment = comment.Comment
+		return nil
 	case ast.ObjectTypeColumn:
 		columnNameDef, ok := comment.Object.(*ast.ColumnNameDef)
 		if !ok {
@@ -483,13 +500,20 @@ func (m schemaMap) addComment(comment *ast.CommentStmt) error {
 		}
 		schema, exists := m[columnNameDef.Table.Schema]
 		if !exists {
-			return errors.Errorf("failed to add comment: schema %s not found", columnNameDef.Table.Schema)
+			slog.Debug("failed to add comment", slog.String("schema", columnNameDef.Table.Schema))
+			return nil
 		}
 		table, exists := schema.tableMap[columnNameDef.Table.Name]
-		if !exists {
-			return errors.Errorf("failed to add comment: table %s not found", columnNameDef.Table.Name)
+		if exists {
+			table.columnCommentMap[columnNameDef.ColumnName] = comment.Comment
+			return nil
 		}
-		table.columnCommentMap[columnNameDef.ColumnName] = comment.Comment
+		view, exists := schema.viewMap[columnNameDef.Table.Name]
+		if exists {
+			view.columnCommentMap[columnNameDef.ColumnName] = comment.Comment
+			return nil
+		}
+		slog.Debug("failed to add comment", slog.String("table or view", columnNameDef.Table.Name))
 		return nil
 	default:
 		// We only support table and column comment.
@@ -509,6 +533,18 @@ func (m schemaMap) getTableComment(schemaName string, tableName string) string {
 	return table.comment
 }
 
+func (m schemaMap) getViewComment(schemaName string, viewName string) string {
+	schema, exists := m[schemaName]
+	if !exists {
+		return ""
+	}
+	view, exists := schema.viewMap[viewName]
+	if !exists {
+		return ""
+	}
+	return view.comment
+}
+
 func (m schemaMap) removeTableComment(schemaName string, tableName string) {
 	schema, exists := m[schemaName]
 	if !exists {
@@ -521,20 +557,38 @@ func (m schemaMap) removeTableComment(schemaName string, tableName string) {
 	table.comment = ""
 }
 
+func (m schemaMap) removeViewComment(schemaName string, viewName string) {
+	schema, exists := m[schemaName]
+	if !exists {
+		return
+	}
+	view, exists := schema.viewMap[viewName]
+	if !exists {
+		return
+	}
+	view.comment = ""
+}
+
 func (m schemaMap) getColumnComment(schemaName string, tableName string, columnName string) string {
 	schema, exists := m[schemaName]
 	if !exists {
 		return ""
 	}
 	table, exists := schema.tableMap[tableName]
-	if !exists {
-		return ""
+	if exists {
+		columnComment, exists := table.columnCommentMap[columnName]
+		if exists {
+			return columnComment
+		}
 	}
-	columnComment, exists := table.columnCommentMap[columnName]
-	if !exists {
-		return ""
+	view, exists := schema.viewMap[tableName]
+	if exists {
+		columnComment, exists := view.columnCommentMap[columnName]
+		if exists {
+			return columnComment
+		}
 	}
-	return columnComment
+	return ""
 }
 
 func (m schemaMap) removeColumnComment(schemaName string, tableName string, columnName string) {
@@ -543,10 +597,14 @@ func (m schemaMap) removeColumnComment(schemaName string, tableName string, colu
 		return
 	}
 	table, exists := schema.tableMap[tableName]
-	if !exists {
+	if exists {
+		delete(table.columnCommentMap, columnName)
 		return
 	}
-	delete(table.columnCommentMap, columnName)
+	view, exists := schema.viewMap[tableName]
+	if exists {
+		delete(view.columnCommentMap, columnName)
+	}
 }
 
 func onlySetOwnedBy(sequence *ast.AlterSequenceStmt) bool {
@@ -991,6 +1049,16 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 					diff.setCommentList = append(diff.setCommentList, stmt)
 				}
 				oldSchemaMap.removeTableComment(tableDef.Schema, tableDef.Name)
+			case ast.ObjectTypeView:
+				viewDef, ok := stmt.Object.(*ast.TableDef)
+				if !ok {
+					return "", errors.Errorf("failed to add comment: expect view def, but found %v", stmt.Object)
+				}
+				oldComment := oldSchemaMap.getViewComment(viewDef.Schema, viewDef.Name)
+				if oldComment == "" || oldComment != stmt.Comment {
+					diff.setCommentList = append(diff.setCommentList, stmt)
+				}
+				oldSchemaMap.removeViewComment(viewDef.Schema, viewDef.Name)
 			case ast.ObjectTypeColumn:
 				columnNameDef, ok := stmt.Object.(*ast.ColumnNameDef)
 				if !ok {
@@ -1286,6 +1354,9 @@ func (diff *diffNode) modifyTableByConstraint(oldTable *ast.CreateTableStmt, new
 func (diff *diffNode) ModifyView(oldView *viewInfo, newView *ast.CreateViewStmt) error {
 	if !equalView(oldView.createView, newView) {
 		diff.dropViewList = append(diff.dropViewList, oldView.createView.Name)
+		// drop the comments of the view
+		oldView.comment = ""
+		oldView.columnCommentMap = make(map[string]string)
 		tempView, err := getTempView(newView)
 		if err != nil {
 			return err
@@ -2102,6 +2173,7 @@ func dropFunction(m schemaMap) *ast.DropFunctionStmt {
 
 func (diff *diffNode) dropComment(m schemaMap) {
 	var tables []*tableInfo
+	var views []*viewInfo
 	for _, schema := range m {
 		for _, table := range schema.tableMap {
 			if !table.existsInNew {
@@ -2110,9 +2182,13 @@ func (diff *diffNode) dropComment(m schemaMap) {
 			}
 			tables = append(tables, table)
 		}
-	}
-	if len(tables) == 0 {
-		return
+		for _, view := range schema.viewMap {
+			if !view.existsInNew {
+				// no need to drop, because the comments are dropped when drop view
+				continue
+			}
+			views = append(views, view)
+		}
 	}
 	sort.Slice(tables, func(i, j int) bool {
 		return tables[i].id < tables[j].id
@@ -2146,6 +2222,45 @@ func (diff *diffNode) dropComment(m schemaMap) {
 				Comment: "",
 				Object: &ast.ColumnNameDef{
 					Table:      &ast.TableDef{Schema: table.createTable.Name.Schema, Name: table.createTable.Name.Name},
+					ColumnName: columnComment.column,
+				},
+				Type: ast.ObjectTypeColumn,
+			})
+		}
+	}
+
+	sort.Slice(views, func(i, j int) bool {
+		return views[i].id < views[j].id
+	})
+
+	for _, view := range views {
+		if view.comment != "" {
+			diff.setCommentList = append(diff.setCommentList, &ast.CommentStmt{
+				Comment: "",
+				Object:  &ast.TableDef{Schema: view.createView.Name.Schema, Name: view.createView.Name.Name},
+				Type:    ast.ObjectTypeView,
+			})
+		}
+
+		type commentInfo struct {
+			column  string
+			comment string
+		}
+		var columnCommentList []commentInfo
+		for k, v := range view.columnCommentMap {
+			columnCommentList = append(columnCommentList, commentInfo{
+				column:  k,
+				comment: v,
+			})
+		}
+		sort.Slice(columnCommentList, func(i, j int) bool {
+			return columnCommentList[i].column < columnCommentList[j].column
+		})
+		for _, columnComment := range columnCommentList {
+			diff.setCommentList = append(diff.setCommentList, &ast.CommentStmt{
+				Comment: "",
+				Object: &ast.ColumnNameDef{
+					Table:      &ast.TableDef{Schema: view.createView.Name.Schema, Name: view.createView.Name.Name},
 					ColumnName: columnComment.column,
 				},
 				Type: ast.ObjectTypeColumn,
