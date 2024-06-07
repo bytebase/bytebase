@@ -142,7 +142,17 @@ export interface Plan {
   /** Format: users/hello@world.com */
   creator: string;
   createTime: Date | undefined;
-  updateTime: Date | undefined;
+  updateTime:
+    | Date
+    | undefined;
+  /**
+   * The status count of the latest plan check runs.
+   * Keys are:
+   * - SUCCESS
+   * - WARNING
+   * - ERROR
+   */
+  planCheckRunStatusCount: { [key: string]: number };
 }
 
 export interface Plan_Step {
@@ -165,6 +175,11 @@ export interface Plan_Spec {
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   exportDataConfig?: Plan_ExportDataConfig | undefined;
+}
+
+export interface Plan_PlanCheckRunStatusCountEntry {
+  key: string;
+  value: number;
 }
 
 export interface Plan_CreateDatabaseConfig {
@@ -1209,6 +1224,7 @@ function createBasePlan(): Plan {
     creator: "",
     createTime: undefined,
     updateTime: undefined,
+    planCheckRunStatusCount: {},
   };
 }
 
@@ -1244,6 +1260,9 @@ export const Plan = {
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(82).fork()).ldelim();
     }
+    Object.entries(message.planCheckRunStatusCount).forEach(([key, value]) => {
+      Plan_PlanCheckRunStatusCountEntry.encode({ key: key as any, value }, writer.uint32(90).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -1324,6 +1343,16 @@ export const Plan = {
 
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          const entry11 = Plan_PlanCheckRunStatusCountEntry.decode(reader, reader.uint32());
+          if (entry11.value !== undefined) {
+            message.planCheckRunStatusCount[entry11.key] = entry11.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1345,6 +1374,12 @@ export const Plan = {
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      planCheckRunStatusCount: isObject(object.planCheckRunStatusCount)
+        ? Object.entries(object.planCheckRunStatusCount).reduce<{ [key: string]: number }>((acc, [key, value]) => {
+          acc[key] = Number(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -1380,6 +1415,15 @@ export const Plan = {
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
     }
+    if (message.planCheckRunStatusCount) {
+      const entries = Object.entries(message.planCheckRunStatusCount);
+      if (entries.length > 0) {
+        obj.planCheckRunStatusCount = {};
+        entries.forEach(([k, v]) => {
+          obj.planCheckRunStatusCount[k] = Math.round(v);
+        });
+      }
+    }
     return obj;
   },
 
@@ -1400,6 +1444,14 @@ export const Plan = {
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
+    message.planCheckRunStatusCount = Object.entries(object.planCheckRunStatusCount ?? {}).reduce<
+      { [key: string]: number }
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.Number(value);
+      }
+      return acc;
+    }, {});
     return message;
   },
 };
@@ -1631,6 +1683,80 @@ export const Plan_Spec = {
     message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
       ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
       : undefined;
+    return message;
+  },
+};
+
+function createBasePlan_PlanCheckRunStatusCountEntry(): Plan_PlanCheckRunStatusCountEntry {
+  return { key: "", value: 0 };
+}
+
+export const Plan_PlanCheckRunStatusCountEntry = {
+  encode(message: Plan_PlanCheckRunStatusCountEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== 0) {
+      writer.uint32(16).int32(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_PlanCheckRunStatusCountEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_PlanCheckRunStatusCountEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_PlanCheckRunStatusCountEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: Plan_PlanCheckRunStatusCountEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_PlanCheckRunStatusCountEntry>): Plan_PlanCheckRunStatusCountEntry {
+    return Plan_PlanCheckRunStatusCountEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Plan_PlanCheckRunStatusCountEntry>): Plan_PlanCheckRunStatusCountEntry {
+    const message = createBasePlan_PlanCheckRunStatusCountEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? 0;
     return message;
   },
 };
