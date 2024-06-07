@@ -58,6 +58,7 @@ import { onMounted } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
+  useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1Store,
   useIsLoggedIn,
@@ -78,7 +79,7 @@ import {
   ExpandableTreeNodeTypes,
   UNKNOWN_ID,
 } from "@/types";
-import { findAncestor, isDescendantOf } from "@/utils";
+import { findAncestor, isDescendantOf, isDatabaseV1Queryable } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   DatabaseHoverPanel,
@@ -95,6 +96,8 @@ const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const instanceStore = useInstanceV1Store();
 const isLoggedIn = useIsLoggedIn();
+const me = useCurrentUserV1();
+
 const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
 const searchHistory = useSearchHistory();
 const {
@@ -190,6 +193,10 @@ const expandNodesByType = <T extends SQLEditorTreeNodeType>(
   return nodes;
 };
 
+const canQueryDatabase = (database: ComposedDatabase): boolean => {
+  return isDatabaseV1Queryable(database, me.value);
+};
+
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as any as SQLEditorTreeNode;
@@ -211,11 +218,13 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
         if (type === "database") {
-          setConnection(node, {
-            worksheet: tabStore.currentTab?.worksheet ?? "",
-            mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-          });
-          showConnectionPanel.value = false;
+          if (canQueryDatabase(node.meta.target as ComposedDatabase)) {
+            setConnection(node, {
+              worksheet: tabStore.currentTab?.worksheet ?? "",
+              mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+            });
+            showConnectionPanel.value = false;
+          }
         }
 
         // If the search pattern is not empty, append the selected database name to
