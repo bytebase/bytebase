@@ -1,8 +1,21 @@
 <template>
   <div
-    class="flex-1 relative overflow-auto"
+    class="flex-1 flex flex-col gap-2 relative overflow-auto"
     style="width: calc(100vw - 8rem); max-width: 50rem"
   >
+    <div
+      class="flex flex-col items-start gap-2 sm:flex-row sm:justify-between sm:items-center"
+    >
+      <div class="flex justify-start items-center">
+        <NButton>
+          <template #icon>
+            <ChevronsDownIcon class="w-4 h-4" />
+          </template>
+          {{ $t("quick-action.transfer-in-db") }}
+        </NButton>
+      </div>
+    </div>
+
     <DatabaseV1Table
       v-if="ready"
       mode="PROJECT_SHORT"
@@ -17,6 +30,8 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronsDownIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { ref, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
