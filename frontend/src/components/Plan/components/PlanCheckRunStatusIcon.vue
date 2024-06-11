@@ -1,41 +1,32 @@
 <template>
-  <NTooltip :disabled="!isUnfinishedPlanCheckRuns">
-    <template #trigger>
+  <span
+    class="flex items-center justify-center rounded-full select-none overflow-hidden"
+    :class="iconClass()"
+  >
+    <template v-if="planCheckRunStatus === PlanCheckRun_Result_Status.ERROR">
       <span
-        class="flex items-center justify-center rounded-full select-none overflow-hidden"
-        :class="iconClass()"
+        class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
+        aria-hidden="true"
+        >!</span
       >
-        <template
-          v-if="planCheckRunStatus === PlanCheckRun_Result_Status.ERROR"
-        >
-          <span
-            class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
-            aria-hidden="true"
-            >!</span
-          >
-        </template>
-        <template
-          v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.WARNING"
-        >
-          <span class="h-3 w-3 bg-white rounded-full" aria-hidden="true"></span>
-        </template>
-        <template
-          v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.SUCCESS"
-        >
-          <heroicons-solid:check class="w-4 h-4" />
-        </template>
-      </span>
     </template>
-    <template #default>
-      <div v-if="isUnfinishedPlanCheckRuns" class="max-w-[24rem]">
-        {{ $t("issue.unfinished-resolved-issue-tips") }}
-      </div>
+    <template
+      v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.WARNING"
+    >
+      <span class="h-3 w-3 bg-white rounded-full" aria-hidden="true"></span>
     </template>
-  </NTooltip>
+    <template
+      v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.SUCCESS"
+    >
+      <heroicons-solid:check class="w-4 h-4" />
+    </template>
+    <template v-else>
+      <span class="h-3 w-3 bg-white rounded-full" aria-hidden="true"></span>
+    </template>
+  </span>
 </template>
 
 <script lang="ts" setup>
-import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
@@ -54,18 +45,16 @@ const props = defineProps({
   },
 });
 
-const isUnfinishedPlanCheckRuns = computed(() => {
-  return Object.keys(props.plan.planCheckRunStatusCount).length === 0;
-});
-
 const planCheckRunStatus = computed(() => {
   const { planCheckRunStatusCount } = props.plan;
   if (planCheckRunStatusCount["ERROR"] > 0) {
     return PlanCheckRun_Result_Status.ERROR;
   } else if (planCheckRunStatusCount["WARNING"] > 0) {
     return PlanCheckRun_Result_Status.WARNING;
+  } else if (planCheckRunStatusCount["SUCCESS"] > 0) {
+    return PlanCheckRun_Result_Status.SUCCESS;
   }
-  return PlanCheckRun_Result_Status.SUCCESS;
+  return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
 });
 
 const iconClass = () => {
@@ -75,8 +64,10 @@ const iconClass = () => {
       return iconClass + " bg-error text-white";
     case PlanCheckRun_Result_Status.WARNING:
       return iconClass + " bg-warning text-white";
-    default:
+    case PlanCheckRun_Result_Status.SUCCESS:
       return iconClass + " bg-success text-white";
+    default:
+      return iconClass + " bg-accent text-white";
   }
 };
 </script>
