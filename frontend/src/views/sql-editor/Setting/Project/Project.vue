@@ -106,6 +106,5 @@ const showProjectDetail = (project: ComposedProject) => {
 
 const hideDrawer = () => {
   state.detail.show = false;
-  state.detail.project = undefined;
 };
 </script>
