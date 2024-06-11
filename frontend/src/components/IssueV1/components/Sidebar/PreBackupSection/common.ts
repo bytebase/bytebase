@@ -41,7 +41,8 @@ export const usePreBackupContext = () => {
       engine !== Engine.MYSQL &&
       engine !== Engine.TIDB &&
       engine !== Engine.MSSQL &&
-      engine !== Engine.ORACLE
+      engine !== Engine.ORACLE &&
+      engine !== Engine.POSTGRES
     ) {
       return false;
     }
