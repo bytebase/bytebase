@@ -3,7 +3,6 @@ package slack
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -27,10 +26,10 @@ func newProvider(token string) *provider {
 }
 
 func ValidateToken(ctx context.Context, token string) error {
-	return newProvider(token).listUsers(ctx, 1)
+	return newProvider(token).authTest(ctx)
 }
 
-type listUsersResponse struct {
+type authTestResponse struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error"`
 }
@@ -56,21 +55,18 @@ type chatPostMessageResponse struct {
 	Error string `json:"error"`
 }
 
-// https://api.slack.com/methods/users.list
-func (p *provider) listUsers(ctx context.Context, limit int) error {
-	q := url.Values{}
-	q.Set("limit", fmt.Sprintf("%d", limit))
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://slack.com/api/users.list", nil)
+// https://api.slack.com/methods/auth.test
+func (p *provider) authTest(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://slack.com/api/auth.test", nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to new request")
 	}
-	req.URL.RawQuery = q.Encode()
 	req.Header.Add("Authorization", "Bearer "+p.token)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := p.c.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "failed to send GET request")
+		return errors.Wrapf(err, "failed to send request")
 	}
 	defer resp.Body.Close()
 
@@ -82,12 +78,27 @@ func (p *provider) listUsers(ctx context.Context, limit int) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to read body")
 	}
-	var res listUsersResponse
+	var res authTestResponse
 	if err := json.Unmarshal(body, &res); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal")
 	}
 	if !res.OK {
-		return errors.Errorf("failed to list users, error: %v", res.Error)
+		return errors.Errorf("failed to test auth, error: %v", res.Error)
+	}
+
+	scopes := resp.Header.Get("x-oauth-scopes")
+	hasScope := map[string]bool{}
+	for _, s := range strings.Split(scopes, ",") {
+		hasScope[s] = true
+	}
+	var missScope []string
+	for _, s := range []string{"users:read", "users:read.email", "channels:manage", "groups:write", "im:write", "chat:write", "mpim:write"} {
+		if !hasScope[s] {
+			missScope = append(missScope, s)
+		}
+	}
+	if len(missScope) > 0 {
+		return errors.Errorf("missing the following scopes: %s", strings.Join(missScope, ","))
 	}
 
 	return nil
