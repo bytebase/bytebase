@@ -192,6 +192,7 @@ const prepareChangeHistoryList = async () => {
   // prepare database metadata for getting affected tables.
   await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
     database: props.database.name,
+    skipCache: true, // Skip cache to get the latest metadata.
   });
   state.loading = false;
 };

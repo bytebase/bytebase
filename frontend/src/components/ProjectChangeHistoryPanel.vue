@@ -47,7 +47,6 @@ import { databaseV1Url } from "@/utils";
 const MAX_MIGRATION_HISTORY_COUNT = 5;
 
 interface LocalState {
-  databaseSectionList: ComposedDatabase[];
   changeHistorySectionList: BBTableSectionDataSource<ChangeHistory>[];
 }
 
@@ -61,12 +60,10 @@ const props = defineProps({
 const changeHistoryStore = useChangeHistoryStore();
 
 const state = reactive<LocalState>({
-  databaseSectionList: [],
   changeHistorySectionList: [],
 });
 
 const fetchChangeHistory = async (databaseList: ComposedDatabase[]) => {
-  state.databaseSectionList = [];
   state.changeHistorySectionList = [];
   for (const database of databaseList) {
     const changeHistoryList = await changeHistoryStore.fetchChangeHistoryList({
@@ -74,8 +71,6 @@ const fetchChangeHistory = async (databaseList: ComposedDatabase[]) => {
       pageSize: MAX_MIGRATION_HISTORY_COUNT,
     });
     if (changeHistoryList.length > 0) {
-      state.databaseSectionList.push(database);
-
       const title = `${database.databaseName} (${database.effectiveEnvironmentEntity.title})`;
       const index = state.changeHistorySectionList.findIndex(
         (item: BBTableSectionDataSource<ChangeHistory>) => {
