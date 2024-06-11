@@ -8,7 +8,6 @@ import type { Environment } from "@/types/proto/v1/environment_service";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { isDev } from "../util";
 
 export function instanceV1Name(instance: Instance) {
   const { t } = useI18n();
