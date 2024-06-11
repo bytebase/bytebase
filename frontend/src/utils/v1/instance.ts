@@ -96,13 +96,11 @@ export const supportedEngineV1List = () => {
     Engine.HIVE,
     Engine.ELASTICSEARCH,
     Engine.BIGQUERY,
+    Engine.DYNAMODB,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
     engines.push(Engine.DORIS);
-  }
-  if (isDev()) {
-    engines.push(Engine.DYNAMODB);
   }
   return engines;
 };
