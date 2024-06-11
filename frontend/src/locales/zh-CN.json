@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "至少选择一个工作空间级别的角色"
     },
     "im-integration": {
-      "enable": "启用",
-      "description": "可以让用户在 IM 里直接审批工单。",
-      "feishu-updated-tip": "飞书配置更新成功"
+      "description": "针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
     },
     "sso": {
       "create": "创建 SSO",
@@ -1878,7 +1876,7 @@
       "create-webhook": "创建 webhook",
       "last-updated-by": "最后修改人",
       "destination": "外部应用",
-      "webhook-url": "Webhook url",
+      "webhook-url": "Webhook URL",
       "triggering-activity": "触发事件",
       "test-webhook": "测试 Webhook",
       "no-webhook": {
@@ -1895,6 +1893,10 @@
         "btn-text": "删除这个 webhook",
         "confirm-title": "删除 webhook '{title}' 以及所有的执行历史?"
       },
+      "direct-messages": "私信通知",
+      "enable-direct-messages": "启用私信通知",
+      "direct-messages-tip": "启用后，Bytebase 将向相关用户（通过电子邮件匹配）发送特定事件的私信通知。您需要配置 {im} 才能使其正常工作。",
+      "activity-support-direct-message": "支持向相关用户发送私信通知",
       "activity-item": {
         "issue-creation": {
           "title": "创建@:common.issue",

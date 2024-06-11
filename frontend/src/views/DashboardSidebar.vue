@@ -52,6 +52,7 @@ import {
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_USER_PROFILE,
+  WORKSPACE_ROUTE_IM,
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import type { WorkspacePermission } from "@/types";
@@ -310,6 +311,11 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
         {
           title: t("settings.sidebar.mail-delivery"),
           name: WORKSPACE_ROUTE_MAIL_DELIVERY,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.im-integration"),
+          name: WORKSPACE_ROUTE_IM,
           type: "route",
         },
       ],
