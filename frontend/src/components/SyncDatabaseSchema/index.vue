@@ -237,16 +237,6 @@ const tryFinishSetup = async () => {
   }
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
-  const targetDatabaseDiffList = targetDatabaseList
-    .map((db) => {
-      const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.uid];
-      return {
-        id: db.uid,
-        diff: diff.edited,
-      };
-    })
-    .filter((item) => item.diff !== "");
-  const statementList = targetDatabaseDiffList.map((item) => item.diff);
   const project = await projectStore.getOrFetchProjectByUID(projectId.value!);
 
   const query: Record<string, any> = {
@@ -255,7 +245,12 @@ const tryFinishSetup = async () => {
     ghost: undefined,
   };
   query.databaseList = targetDatabaseList.map((db) => db.name).join(",");
-  query.sqlList = JSON.stringify(statementList);
+  const sqlMap: Record<string, string> = {};
+  targetDatabaseList.forEach((db) => {
+    const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.uid];
+    sqlMap[db.name] = diff.edited;
+  });
+  query.sqlMap = JSON.stringify(sqlMap);
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)
   );

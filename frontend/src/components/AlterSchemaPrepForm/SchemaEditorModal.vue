@@ -489,7 +489,13 @@ const handlePreviewIssue = async () => {
       );
     } else {
       query.databaseList = databaseList.value.map((db) => db.name).join(",");
-      query.sqlList = JSON.stringify(statementList);
+
+      const sqlMap: Record<string, string> = {};
+      databaseList.value.forEach((db, i) => {
+        const sql = statementList[i];
+        sqlMap[db.name] = sql;
+      });
+      query.sqlMap = JSON.stringify(sqlMap);
       const databaseNameList = databaseList.value.map((db) => db.databaseName);
       query.name = generateIssueName(databaseNameList, !!query.ghost);
     }
