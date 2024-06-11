@@ -31,6 +31,7 @@ import {
   WORKSPACE_ROUTE_REVIEW_CENTER,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
+  WORKSPACE_ROUTE_IM,
 } from "./workspaceRoutes";
 
 const workspaceRoutes: RouteRecordRaw[] = [
@@ -433,6 +434,16 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.roles.list"],
         },
         component: () => import("@/views/SettingWorkspaceRole.vue"),
+        props: true,
+      },
+      {
+        path: "im",
+        name: WORKSPACE_ROUTE_IM,
+        meta: {
+          title: () => t("settings.sidebar.im-integration"),
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+        },
+        component: () => import("@/views/SettingWorkspaceIM.vue"),
         props: true,
       },
     ],
