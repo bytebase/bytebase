@@ -863,6 +863,10 @@ func IsSystemDatabase(database string) bool {
 	return ok
 }
 
+func IsBackupSchema(schema string) bool {
+	return schema == "bbdataarchive"
+}
+
 func IsSystemSchema(schema string) bool {
 	_, ok := systemSchemas[schema]
 	if ok {
