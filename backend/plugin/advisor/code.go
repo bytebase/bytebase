@@ -188,6 +188,9 @@ const (
 
 	// 1801 ~ 1899 advice error code.
 	AdviseOnlineMigration Code = 1801
+
+	// 1901 ~ 1999 schema error code.
+	SchemaNotExists Code = 1901
 )
 
 // Int returns the int type of code.
