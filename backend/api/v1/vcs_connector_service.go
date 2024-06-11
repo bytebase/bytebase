@@ -108,6 +108,9 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	if !strings.HasPrefix(baseDirectory, "/") {
 		return nil, status.Errorf(codes.InvalidArgument, `base directory should start with "/"`)
 	}
+	if strings.HasSuffix(baseDirectory, "/") {
+		return nil, status.Errorf(codes.InvalidArgument, `base directory should not end with "/"`)
+	}
 
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
