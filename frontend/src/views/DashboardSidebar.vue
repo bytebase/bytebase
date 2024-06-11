@@ -56,11 +56,7 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import type { WorkspacePermission } from "@/types";
-import {
-  hasWorkspacePermissionV2,
-  hasProjectPermissionV2,
-  isDev,
-} from "@/utils";
+import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
 
 interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;

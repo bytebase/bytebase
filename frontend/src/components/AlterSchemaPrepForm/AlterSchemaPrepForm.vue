@@ -313,7 +313,6 @@ import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
-  isDev,
 } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import AdvancedSearch from "../AdvancedSearch";
