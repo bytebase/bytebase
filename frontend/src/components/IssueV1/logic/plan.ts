@@ -110,13 +110,8 @@ export const databaseEngineForSpec = async (
   if (extractDatabaseGroupName(target)) {
     const dbGroupStore = useDBGroupStore();
     const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(target);
-    const { matchedDatabaseList } =
-      await dbGroupStore.fetchDatabaseGroupMatchList({
-        projectName: project.name,
-        expr: dbGroup.simpleExpr,
-      });
     // Might be flaky: use the first database in the db group
-    const dbName = head(matchedDatabaseList)?.name;
+    const dbName = head(dbGroup.matchedDatabases)?.name;
     if (dbName) {
       const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
         dbName,
