@@ -94,7 +94,7 @@
         </template>
       </div>
       <div class="flex justify-end items-center space-x-3">
-        <NCheckbox v-if="isDev()" v-model:checked="state.planOnly">
+        <NCheckbox v-model:checked="state.planOnly">
           {{ $t("issue.sql-review-only") }}
         </NCheckbox>
         <NButton @click="dismissModal">

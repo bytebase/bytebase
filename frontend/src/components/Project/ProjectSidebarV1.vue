@@ -209,7 +209,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(SearchCodeIcon),
       path: PROJECT_V1_ROUTE_REVIEW_CENTER,
       type: "div",
-      hide: isDefaultProject.value || !isDev(),
+      hide: isDefaultProject.value,
     },
     {
       title: t("export-center.self"),

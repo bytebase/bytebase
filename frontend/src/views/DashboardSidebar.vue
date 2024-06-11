@@ -211,12 +211,11 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: WORKSPACE_ROUTE_REVIEW_CENTER,
       type: "route",
       shortcuts: ["g", "r", "c"],
-      hide:
-        !hasProjectPermissionV2(
-          undefined,
-          currentUserV1.value,
-          "bb.projects.getIamPolicy"
-        ) || !isDev(),
+      hide: !hasProjectPermissionV2(
+        undefined,
+        currentUserV1.value,
+        "bb.projects.getIamPolicy"
+      ),
     },
     {
       navigationId: "bb.navigation.export-center",
