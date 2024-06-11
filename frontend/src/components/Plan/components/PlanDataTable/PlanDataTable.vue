@@ -24,12 +24,20 @@ import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import { extractProjectResourceName, humanizeTs, planSlug } from "@/utils";
+import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
 const { t } = useI18n();
 
 const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
   const columns: (DataTableColumn<ComposedPlan> & { hide?: boolean })[] = [
-    // TODO(steven): show latest plan check run status.
+    {
+      key: "status",
+      title: "",
+      width: "36px",
+      render: (plan) => {
+        return <PlanCheckRunStatusIcon plan={plan} />;
+      },
+    },
     {
       key: "title",
       title: t("issue.table.name"),
