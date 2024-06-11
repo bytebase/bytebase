@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador"
     },
     "im-integration": {
-      "enable": "Habilitar",
-      "description": "Permitir a los usuarios aprobar incidencias directamente desde IM.",
-      "feishu-updated-tip": "Integración con Feishu actualizada correctamente"
+      "description": "Envíe mensajes directos a los usuarios para eventos de problemas específicos. Funciona con el webhook del proyecto."
     },
     "sso": {
       "create": "Crear SSO",
@@ -1895,6 +1893,10 @@
         "btn-text": "Eliminar este webhook",
         "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
       },
+      "direct-messages": "Mensajes directos",
+      "enable-direct-messages": "Habilitar mensajes directos",
+      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos para actividades específicas a usuarios relacionados (vinculados por correo electrónico). Debes configurar {im} para que funcione.",
+      "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
       "activity-item": {
         "issue-creation": {
           "title": "Creación de incidencia",
