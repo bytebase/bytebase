@@ -1444,9 +1444,71 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 		return nil, err
 	}
 
+	if request.Engine == v1pb.Engine_ORACLE {
+		schema, err = appendComments(schema, storeSchemaMetadata)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to append comments: %v", err)
+		}
+	}
+
 	return &v1pb.StringifyMetadataResponse{
 		Schema: schema,
 	}, nil
+}
+
+func appendComments(schema string, storeSchemaMetadata *storepb.DatabaseSchemaMetadata) (string, error) {
+	if !isSingleTable(storeSchemaMetadata) {
+		return schema, nil
+	}
+
+	schemaName := storeSchemaMetadata.Schemas[0].Name
+	table := storeSchemaMetadata.Schemas[0].Tables[0]
+	// Append comments to the schema.
+	comments, err := getComments(schemaName, table)
+	if err != nil {
+		return "", err
+	}
+	return schema + comments, nil
+}
+
+func getComments(schemaName string, table *storepb.TableMetadata) (string, error) {
+	var buf strings.Builder
+	if table.Comment != "" {
+		if _, err := fmt.Fprintf(&buf, "COMMENT ON TABLE \"%s\".\"%s\" IS '%s';\n", schemaName, table.Name, table.Comment); err != nil {
+			return "", err
+		}
+	}
+	for _, column := range table.Columns {
+		if column.Comment != "" {
+			if _, err := fmt.Fprintf(&buf, "COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';\n", schemaName, table.Name, column.Name, column.Comment); err != nil {
+				return "", err
+			}
+		}
+	}
+	return buf.String(), nil
+}
+
+func isSingleTable(storeSchemaMetadata *storepb.DatabaseSchemaMetadata) bool {
+	if len(storeSchemaMetadata.Schemas) != 1 {
+		return false
+	}
+
+	if len(storeSchemaMetadata.Schemas[0].Tables) != 1 {
+		return false
+	}
+
+	if len(storeSchemaMetadata.Schemas[0].ExternalTables)+
+		len(storeSchemaMetadata.Schemas[0].Views)+
+		len(storeSchemaMetadata.Schemas[0].MaterializedViews)+
+		len(storeSchemaMetadata.Schemas[0].Functions)+
+		len(storeSchemaMetadata.Schemas[0].Procedures)+
+		len(storeSchemaMetadata.Schemas[0].Sequences)+
+		len(storeSchemaMetadata.Schemas[0].Streams)+
+		len(storeSchemaMetadata.Schemas[0].Tasks) != 0 {
+		return false
+	}
+
+	return true
 }
 
 // Pretty returns pretty format SDL.
