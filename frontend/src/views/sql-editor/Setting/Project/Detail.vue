@@ -7,7 +7,7 @@
       class="flex flex-col items-start gap-2 sm:flex-row sm:justify-between sm:items-center"
     >
       <div class="flex justify-start items-center">
-        <NButton>
+        <NButton @click="handleClickTransfer">
           <template #icon>
             <ChevronsDownIcon class="w-4 h-4" />
           </template>
@@ -28,6 +28,14 @@
       />
     </div>
     <MaskSpinner v-if="!ready || refreshing" />
+
+    <Drawer v-model:show="showTransfer">
+      <TransferDatabaseForm
+        :project-id="project.uid"
+        :on-success="handleTransferSuccess"
+        @dismiss="showTransfer = false"
+      />
+    </Drawer>
   </div>
 </template>
 
@@ -35,7 +43,9 @@
 import { ChevronsDownIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { ref, watch } from "vue";
+import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { Drawer } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { databaseServiceClient } from "@/grpcweb";
 import { DEFAULT_DATABASE_PAGE_SIZE, batchComposeDatabase } from "@/store";
@@ -49,6 +59,7 @@ const props = defineProps<{
 const ready = ref(false);
 const refreshing = ref(false);
 const databaseList = ref<ComposedDatabase[]>([]);
+const showTransfer = ref(false);
 
 const fetchDatabaseList = async (force: boolean) => {
   refreshing.value = true;
@@ -67,6 +78,15 @@ const fetchDatabaseList = async (force: boolean) => {
 
   refreshing.value = false;
   ready.value = true;
+};
+
+const handleClickTransfer = () => {
+  showTransfer.value = true;
+};
+
+const handleTransferSuccess = () => {
+  showTransfer.value = false;
+  fetchDatabaseList(/* !force */ false);
 };
 
 watch(

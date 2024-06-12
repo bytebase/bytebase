@@ -64,7 +64,7 @@ import {
   ProjectV1Table,
   SearchBox,
 } from "@/components/v2";
-import { useProjectV1List } from "@/store";
+import { useDatabaseV1Store, useProjectV1List } from "@/store";
 import type { Project } from "@/types/proto/v1/project_service";
 import { filterProjectV1ListByKeyword, wrapRefAsPromise } from "@/utils";
 import Detail from "./Detail.vue";
@@ -111,6 +111,9 @@ const hideDrawer = () => {
 };
 
 onMounted(() => {
+  // prepare for transferring databases
+  useDatabaseV1Store().searchDatabases({});
+
   if (route.hash === "#add") {
     state.detail.show = true;
     state.detail.project = undefined;
