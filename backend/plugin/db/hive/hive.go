@@ -162,10 +162,12 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementsStr st
 		statementStr := strings.TrimRight(statement.Text, ";")
 
 		result, err := runSingleStatement(ctx, d.conn, statementStr)
-		if err != nil && result == nil {
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
 			return results, err
 		}
-
 		results = append(results, result)
 	}
 	return results, nil
@@ -288,7 +290,10 @@ func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, sta
 		}
 
 		result, err := runSingleStatement(ctx, conn, statementStr)
-		if err != nil && result == nil {
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
 			return results, err
 		}
 
