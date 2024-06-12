@@ -50,5 +50,6 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql"
 
 	// IM webhooks.
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 )
