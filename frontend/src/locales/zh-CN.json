@@ -1895,7 +1895,7 @@
       },
       "direct-messages": "私信通知",
       "enable-direct-messages": "启用私信通知",
-      "direct-messages-tip": "启用后，Bytebase 将向相关用户（通过电子邮件匹配）发送特定事件的私信通知。您需要配置 {im} 才能使其正常工作。",
+      "direct-messages-tip": "启用后，Bytebase 将私信通知相关用户（通过电子邮件匹配）。您需要配置 {im} 才能使其正常工作。",
       "activity-support-direct-message": "支持向相关用户发送私信通知",
       "activity-item": {
         "issue-creation": {
