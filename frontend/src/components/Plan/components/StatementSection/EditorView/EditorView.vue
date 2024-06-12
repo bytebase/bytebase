@@ -17,15 +17,6 @@
             🎈{{ $t("sql-review.unlock-full-feature") }}
           </NButton>
         </div>
-
-        <NButton
-          v-if="isCreating && allowApplySpecStateToOthers"
-          :disabled="isEmpty(state.statement)"
-          size="tiny"
-          @click.prevent="applySpecStateToOthers"
-        >
-          {{ $t("issue.apply-to-other-tasks") }}
-        </NButton>
       </div>
 
       <div class="flex items-center justify-end gap-x-2">
@@ -199,7 +190,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep, head, uniq } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -209,7 +200,6 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import { ErrorList } from "@/components/Plan/components/common";
 import {
-  getLocalSheetByName,
   createEmptyLocalSheet,
   databaseEngineForSpec,
   databaseForSpec,
@@ -225,7 +215,6 @@ import { hasFeature, pushNotification, useSheetV1Store } from "@/store";
 import type { SQLDialect } from "@/types";
 import { EMPTY_ID, dialectOfEngineV1 } from "@/types";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   defer,
@@ -247,7 +236,7 @@ type LocalState = EditState & {
 };
 
 const { t } = useI18n();
-const { isCreating, plan, selectedSpec, selectedStep, formatOnSave, events } =
+const { isCreating, plan, selectedSpec, formatOnSave, events } =
   usePlanContext();
 const project = computed(() => plan.value.projectEntity);
 const dialog = useDialog();
@@ -335,17 +324,6 @@ const shouldShowEditButton = computed(() => {
   return true;
 });
 
-const allowApplySpecStateToOthers = computed(() => {
-  if (!isCreating.value) {
-    return false;
-  }
-  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    return !isDeploymentConfigChangeSpec(selectedSpec.value);
-  }
-
-  return selectedStep.value && selectedStep.value?.specs.length > 1;
-});
-
 const allowSaveSQL = computed((): boolean => {
   if (state.statement === "") {
     // Not allowed if the statement is empty.
@@ -420,6 +398,35 @@ const chooseUpdateStatementTarget = () => {
 
   if (targets.STEP.length === 1 && targets.ALL.length === 1) {
     d.resolve({ target: "SPEC", specs: targets.SPEC });
+    return d.promise;
+  }
+
+  const distinctSheetIds = uniq(
+    targets.ALL.map((spec) => sheetNameForSpec(spec))
+  );
+  // For new multiple-database issues, one sheet is shared among multiple tasks
+  // So we should notice that the change will be applied to all tasks
+  if (distinctSheetIds.length === 1 && targets.ALL.length > 1) {
+    dialog.info({
+      title: t("issue.update-statement.self", { type: statementTitle.value }),
+      content: t(
+        "issue.update-statement.current-change-will-apply-to-all-tasks"
+      ),
+      type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      showIcon: false,
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      onPositiveClick: () => {
+        d.resolve({ target: "ALL", specs: targets.ALL });
+      },
+      onNegativeClick: () => {
+        d.resolve({ target: "CANCELED", specs: [] });
+      },
+    });
     return d.promise;
   }
 
@@ -547,20 +554,6 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
     resetTempEditState();
   } finally {
     state.isUploadingFile = false;
-  }
-};
-
-const applySpecStateToOthers = async () => {
-  if (!selectedStep.value) {
-    return;
-  }
-
-  // Apply current statement to all other specs in the same step.
-  for (const spec of selectedStep.value.specs) {
-    const sheetName = sheetNameForSpec(spec);
-    if (!sheetName) continue;
-    const sheet = getLocalSheetByName(sheetName);
-    setSheetStatement(sheet, state.statement);
   }
 };
 
