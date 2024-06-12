@@ -17,7 +17,7 @@ var (
 	receiverMu sync.RWMutex
 	receivers  = make(map[string]Receiver)
 	// Based on the local test, Teams sometimes cannot finish the request in 1 second, so use 3s.
-	timeout = 3 * time.Second
+	Timeout = 3 * time.Second
 )
 
 // Meta is the webhook metadata.

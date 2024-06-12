@@ -86,7 +86,7 @@ func (*DingTalkReceiver) Post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout: Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
