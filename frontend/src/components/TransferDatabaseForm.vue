@@ -86,7 +86,7 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedInstance } from "@/types";
+import type { ComposedDatabase, ComposedInstance } from "@/types";
 import {
   DEFAULT_PROJECT_ID,
   DEFAULT_PROJECT_V1_NAME,
@@ -112,6 +112,7 @@ interface LocalState {
 
 const props = defineProps<{
   projectId: string;
+  onSuccess?: (databases: ComposedDatabase[]) => void;
 }>();
 
 const emit = defineEmits<{
@@ -222,7 +223,7 @@ const transferDatabase = async () => {
         updateMask,
       } as UpdateDatabaseRequest;
     });
-    await databaseStore.batchUpdateDatabases({
+    const updated = await databaseStore.batchUpdateDatabases({
       parent: "-",
       requests: updates,
     });
@@ -231,12 +232,17 @@ const transferDatabase = async () => {
         ? `${selectedDatabaseList.value.length} databases`
         : `'${selectedDatabaseList.value[0].databaseName}'`;
 
+    if (props.onSuccess) {
+      props.onSuccess(updated);
+    } else {
+      emit("dismiss");
+    }
+
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: `Successfully transferred ${displayDatabaseName} to project '${project.value.title}'.`,
     });
-    emit("dismiss");
   } finally {
     state.loading = false;
   }
