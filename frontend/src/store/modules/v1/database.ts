@@ -271,7 +271,7 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   };
 };
 
-const batchComposeDatabase = async (databaseList: Database[]) => {
+export const batchComposeDatabase = async (databaseList: Database[]) => {
   const projectV1Store = useProjectV1Store();
   const instanceV1Store = useInstanceV1Store();
   const environmentV1Store = useEnvironmentV1Store();
