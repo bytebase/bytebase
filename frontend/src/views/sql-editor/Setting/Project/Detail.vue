@@ -16,15 +16,17 @@
       </div>
     </div>
 
-    <DatabaseV1Table
-      v-if="ready"
-      mode="PROJECT_SHORT"
-      :database-list="databaseList"
-      :custom-click="true"
-      :show-selection="false"
-      :show-sql-editor-button="false"
-      :row-clickable="false"
-    />
+    <div class="relative">
+      <DatabaseV1Table
+        v-if="ready"
+        mode="PROJECT_SHORT"
+        :database-list="databaseList"
+        :custom-click="true"
+        :show-selection="false"
+        :show-sql-editor-button="false"
+        :row-clickable="false"
+      />
+    </div>
     <MaskSpinner v-if="!ready || refreshing" />
   </div>
 </template>
@@ -37,10 +39,11 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { databaseServiceClient } from "@/grpcweb";
 import { DEFAULT_DATABASE_PAGE_SIZE, batchComposeDatabase } from "@/store";
-import type { ComposedDatabase, ComposedProject } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
 }>();
 
 const ready = ref(false);
