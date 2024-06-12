@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/pkg/errors"
 
@@ -88,4 +89,16 @@ func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64,
 
 func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 	return nil
+}
+
+func (d *Driver) execSqlSync(ctx context.Context, command string) (*compute.CommandStatusResponse, error) {
+	promise, err := d.client.CommandExecution.Execute(ctx, compute.Command{
+		ClusterId: d.client.Config.ClusterID,
+		Command:   command,
+		Language:  compute.LanguageSql,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return promise.Get()
 }

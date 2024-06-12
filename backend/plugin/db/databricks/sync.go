@@ -29,6 +29,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, nil
 	}
 
+	// fetch version.
+	verResp, err := d.execSqlSync(ctx, "", "SELECT VERSION()")
+	if err != nil {
+		return nil, err
+	}
+
+
+	verResp.Results
+
 	// fetch table data from databricks.
 	catalogMap, err := d.listTables(ctx)
 	if err != nil {
@@ -103,13 +112,15 @@ func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
 			table.externalTable = &storepb.ExternalTableMetadata{
 				Name: tableInfo.Name,
 			}
-			// TODO(tommy): find the responding string for the normal table type.
-		default:
+		case catalog.TableTypeManaged:
 			table.table = &storepb.TableMetadata{
 				Name:    tableInfo.Name,
 				Columns: convertToColumnMetadata(tableInfo.Columns),
 				Comment: tableInfo.Comment,
 			}
+		default:
+			// we do not sync streaming table.
+			continue
 		}
 
 		if schemaMap, ok := catalogMap[tableInfo.CatalogName]; !ok {
@@ -170,9 +181,10 @@ func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*storepb.SchemaMet
 				schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, table.materialView)
 			case catalog.TableTypeExternal:
 				schemaMetadata.ExternalTables = append(schemaMetadata.ExternalTables, table.externalTable)
-			default:
-				// TODO(tommy): find the responding string for the normal table type.
+			case catalog.TableTypeManaged:
 				schemaMetadata.Tables = append(schemaMetadata.Tables, table.table)
+			default:
+				// we do not sync streaming table.
 			}
 		}
 		schemas = append(schemas, schemaMetadata)
