@@ -90,14 +90,14 @@ type Webhook struct {
 }
 
 func init() {
-	webhook.Register("bb.plugin.webhook.feishu", &FeishuReceiver{})
+	webhook.Register("bb.plugin.webhook.feishu", &feishuReceiver{})
 }
 
-// FeishuReceiver is the receiver for Feishu.
-type FeishuReceiver struct {
+// feishuReceiver is the receiver for Feishu.
+type feishuReceiver struct {
 }
 
-func (*FeishuReceiver) Post(context webhook.Context) error {
+func (*feishuReceiver) Post(context webhook.Context) error {
 	var markdownBuf strings.Builder
 
 	if context.Description != "" {
