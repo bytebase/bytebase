@@ -115,21 +115,28 @@
       <div class="text-md leading-6 font-medium text-main">
         {{ $t("project.webhook.direct-messages") }}
       </div>
-      <i18n-t
-        class="mt-1 textinfolabel"
-        tag="div"
-        keypath="project.webhook.direct-messages-tip"
-      >
-        <template #im>
-          <router-link
-            target="_blank"
-            class="normal-link"
-            :to="{ name: WORKSPACE_ROUTE_IM }"
+      <span class="mt-1 textinfolabel">
+        {{ $t("project.webhook.direct-messages-tip") }}
+      </span>
+      <BBAttention v-if="!imApp?.enabled" class="mt-2 mb-4" type="warning">
+        <template #default>
+          <i18n-t
+            class="textinfolabel"
+            tag="div"
+            keypath="project.webhook.direct-messages-warning"
           >
-            {{ $t("settings.sidebar.im-integration") }}
-          </router-link>
+            <template #im>
+              <router-link
+                target="_blank"
+                class="normal-link"
+                :to="{ name: WORKSPACE_ROUTE_IM }"
+              >
+                {{ $t("settings.sidebar.im-integration") }}
+              </router-link>
+            </template>
+          </i18n-t>
         </template>
-      </i18n-t>
+      </BBAttention>
       <div class="flex items-center mt-2">
         <NCheckbox
           v-model:checked="state.webhook.directMessage"
@@ -202,15 +209,17 @@ import {
   pushNotification,
   useProjectWebhookV1Store,
   useGracefulRequest,
+  useSettingV1Store,
 } from "@/store";
 import {
   projectWebhookV1ActivityItemList,
   projectWebhookV1TypeItemList,
 } from "@/types";
-import type {
-  Activity_Type,
-  Project,
-  Webhook,
+import {
+  Webhook_Type,
+  type Activity_Type,
+  type Project,
+  type Webhook,
 } from "@/types/proto/v1/project_service";
 import { projectWebhookV1Slug } from "../utils";
 
@@ -240,7 +249,9 @@ const props = defineProps({
 const router = useRouter();
 const { t } = useI18n();
 
+const settingStore = useSettingV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
+
 const state = reactive<LocalState>({
   webhook: cloneDeep(props.webhook),
 });
@@ -282,6 +293,25 @@ const selectedWebhook = computed(() => {
   return webhookTypeItemList.value.find(
     (item) => item.type === state.webhook.type
   );
+});
+
+const imSetting = computed(
+  () => settingStore.getSettingByName("bb.app.im")?.value?.appImSettingValue
+);
+
+const imApp = computed(() => {
+  if (!selectedWebhook.value?.supportDirectMessage) {
+    return undefined;
+  }
+  switch (selectedWebhook.value.type) {
+    case Webhook_Type.TYPE_SLACK:
+      return imSetting.value?.slack;
+    case Webhook_Type.TYPE_FEISHU:
+      return imSetting.value?.feishu;
+    case Webhook_Type.TYPE_WECOM:
+      return imSetting.value?.wecom;
+  }
+  return undefined;
 });
 
 const webhookSupportDirectMessage = computed(
