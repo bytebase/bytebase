@@ -279,14 +279,13 @@ func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, sta
 
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")
-		if queryCtx.Explain {
+		if queryCtx != nil && queryCtx.Explain {
 			statementStr = fmt.Sprintf("EXPLAIN %s", statementStr)
 		}
 
 		result, err := runSingleStatement(ctx, conn, statementStr)
-		if err != nil {
-			result.Error = err.Error()
-			return nil, err
+		if err != nil && result == nil {
+			return results, err
 		}
 
 		results = append(results, result)
