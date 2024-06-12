@@ -56,6 +56,7 @@ import {
   AppIMSetting_Slack,
   AppIMSetting_Wecom,
 } from "@/types/proto/v1/setting_service";
+import { isDev } from "@/utils";
 
 interface LocalState {
   selectedTab: Webhook_Type;
@@ -85,8 +86,6 @@ const imSetting = computed(
 watch(
   () => imSetting.value,
   (setting) => {
-    console.log("setting change");
-    console.log(setting);
     state.setting = cloneDeep(setting);
   },
   { once: true, immediate: true }
@@ -140,6 +139,7 @@ const imList = computed(() => {
     {
       name: t("common.feishu"),
       type: Webhook_Type.TYPE_DINGTALK,
+      hide: !isDev(),
       render: () => {
         return (
           <div class="space-y-4">
@@ -172,6 +172,7 @@ const imList = computed(() => {
     {
       name: t("common.wecom"),
       type: Webhook_Type.TYPE_WECOM,
+      hide: !isDev(),
       render: () => {
         return (
           <div class="space-y-4">
@@ -201,7 +202,7 @@ const imList = computed(() => {
         );
       },
     },
-  ];
+  ].filter((item) => !item.hide);
 });
 
 const dataChanged = computed(() => {
