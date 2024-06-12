@@ -119,7 +119,7 @@ export const buildPlan = async (params: CreatePlanParams) => {
     }
   } else {
     // build standard plan
-    plan.steps = await buildSteps(databaseUIDList, params, undefined);
+    plan.steps = await buildSteps(databaseUIDList, params, nextUID());
   }
   return await composePlan(plan);
 };
