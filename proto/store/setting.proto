@@ -292,15 +292,18 @@ message MaskingAlgorithmSetting {
 
 message AppIMSetting {
   message Slack {
-    string token = 1;
+    bool enabled = 1;
+    string token = 2;
   }
   message Feishu {
-    string app_id = 1;
-    string app_secret = 2;
+    bool enabled = 1;
+    string app_id = 2;
+    string app_secret = 3;
   }
   message Wecom {
-    string id = 1;
-    string secret = 2;
+    bool enabled = 1;
+    string id = 2;
+    string secret = 3;
   }
 
   Slack slack = 1;
