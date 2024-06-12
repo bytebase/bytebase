@@ -80,6 +80,7 @@ const batchComposeDatabaseGroup = async (
 };
 
 export const useDBGroupStore = defineStore("db-group", () => {
+  // TODO(steven): update cache key with view.
   const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
 
@@ -101,13 +102,31 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return Array.from(dbGroupMapByName.value.values());
   };
 
-  const getOrFetchDBGroupByName = async (name: string, silent = false) => {
-    const cached = dbGroupMapByName.value.get(name);
-    if (cached) return cached;
+  const getOrFetchDBGroupByName = async (
+    name: string,
+    options?: Partial<{
+      skipCache: boolean;
+      silent: boolean;
+      view: DatabaseGroupView;
+    }>
+  ) => {
+    const { skipCache, silent, view } = {
+      ...{
+        skipCache: false,
+        silent: false,
+        view: DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
+      },
+      ...options,
+    };
+    if (!skipCache) {
+      const cached = dbGroupMapByName.value.get(name);
+      if (cached) return cached;
+    }
 
     const databaseGroup = await projectServiceClient.getDatabaseGroup(
       {
-        name: name,
+        name,
+        view,
       },
       { silent }
     );
