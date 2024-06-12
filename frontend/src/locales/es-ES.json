@@ -1895,7 +1895,7 @@
       },
       "direct-messages": "Mensajes directos",
       "enable-direct-messages": "Habilitar mensajes directos",
-      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos para actividades específicas a usuarios relacionados (vinculados por correo electrónico). Debes configurar {im} para que funcione.",
+      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos a los usuarios relacionados (emparejados por correo electrónico). \nDebes configurar {im} para que funcione.",
       "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
       "activity-item": {
         "issue-creation": {
