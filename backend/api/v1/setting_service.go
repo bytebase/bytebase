@@ -577,11 +577,25 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		})
 	case api.SettingAppIM:
+		storeValue := new(storepb.AppIMSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: &v1pb.AppIMSetting{},
+					AppImSettingValue: &v1pb.AppIMSetting{
+						Slack: &v1pb.AppIMSetting_Slack{
+							Enabled: storeValue.Slack != nil && storeValue.Slack.Enabled,
+						},
+						Feishu: &v1pb.AppIMSetting_Feishu{
+							Enabled: storeValue.Feishu != nil && storeValue.Feishu.Enabled,
+						},
+						Wecom: &v1pb.AppIMSetting_Wecom{
+							Enabled: storeValue.Wecom != nil && storeValue.Wecom.Enabled,
+						},
+					},
 				},
 			},
 		}, nil
