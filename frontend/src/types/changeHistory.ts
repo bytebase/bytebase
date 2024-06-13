@@ -1,9 +1,12 @@
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { Issue } from "@/types/proto/v1/issue_service";
 
-export interface AffectedTable {
+export interface Table {
   schema: string;
   table: string;
+}
+
+export interface AffectedTable extends Table {
   dropped: boolean;
 }
 
@@ -18,6 +21,6 @@ export interface ComposedChangeHistory extends ChangeHistory {
 }
 
 export interface SearchChangeHistoriesParams {
-  tables?: AffectedTable[];
+  tables?: Table[];
   types?: string[];
 }
