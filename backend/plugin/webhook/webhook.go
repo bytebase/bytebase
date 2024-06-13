@@ -17,7 +17,7 @@ var (
 	receiverMu sync.RWMutex
 	receivers  = make(map[string]Receiver)
 	// Based on the local test, Teams sometimes cannot finish the request in 1 second, so use 3s.
-	timeout = 3 * time.Second
+	Timeout = 3 * time.Second
 )
 
 // Meta is the webhook metadata.
@@ -47,6 +47,10 @@ type Issue struct {
 	Status      string `json:"status"`
 	Type        string `json:"type"`
 	Description string `json:"description"`
+}
+
+type Stage struct {
+	Name string `json:"name"`
 }
 
 // TaskResult is the latest result of a task.
@@ -79,6 +83,7 @@ type Context struct {
 	CreatorEmail        string
 	CreatedTs           int64
 	Issue               *Issue
+	Stage               *Stage
 	Project             *Project
 	TaskResult          *TaskResult
 	MentionUsers        []*store.UserMessage
@@ -115,6 +120,13 @@ func (c *Context) GetMetaList() []Meta {
 		m = append(m, Meta{
 			Name:  "Issue Description",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
+		})
+	}
+
+	if c.Stage != nil {
+		m = append(m, Meta{
+			Name:  "Stage",
+			Value: c.Stage.Name,
 		})
 	}
 
@@ -166,6 +178,13 @@ func (c *Context) GetMetaListZh() []Meta {
 		m = append(m, Meta{
 			Name:  "工单描述",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
+		})
+	}
+
+	if c.Stage != nil {
+		m = append(m, Meta{
+			Name:  "阶段",
+			Value: c.Stage.Name,
 		})
 	}
 

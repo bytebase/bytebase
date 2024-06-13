@@ -8269,6 +8269,8 @@ components:
         AppIMSetting_Feishu:
             type: object
             properties:
+                enabled:
+                    type: boolean
                 appId:
                     type: string
                 appSecret:
@@ -8276,11 +8278,15 @@ components:
         AppIMSetting_Slack:
             type: object
             properties:
+                enabled:
+                    type: boolean
                 token:
                     type: string
         AppIMSetting_Wecom:
             type: object
             properties:
+                enabled:
+                    type: boolean
                 id:
                     type: string
                 secret:

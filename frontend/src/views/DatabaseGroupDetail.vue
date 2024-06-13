@@ -120,13 +120,17 @@ import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useCurrentUserV1,
   useDBGroupStore,
+  useDatabaseV1Store,
   useProjectV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
-import type { DatabaseGroup } from "@/types/proto/v1/project_service";
+import {
+  DatabaseGroupView,
+  type DatabaseGroup,
+} from "@/types/proto/v1/project_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
@@ -150,6 +154,7 @@ const props = defineProps<{
 const router = useRouter();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
+const databaseStore = useDatabaseV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
 const me = useCurrentUserV1();
 
@@ -180,7 +185,10 @@ const hasPermissionToCreateIssue = computed(() => {
 });
 
 onMounted(async () => {
-  await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value);
+  await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value, {
+    skipCache: true,
+    view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+  });
 });
 
 const handleEditDatabaseGroup = () => {
@@ -216,24 +224,23 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
   if (!state.isLoaded) {
     return;
   }
-  if (!project.value) {
-    return;
-  }
-  if (!state.expr) {
-    return;
-  }
 
-  const result = await dbGroupStore.fetchDatabaseGroupMatchList({
-    projectName: project.value.name,
-    expr: state.expr,
-  });
-
-  matchedDatabaseList.value = result.matchedDatabaseList;
-  unmatchedDatabaseList.value = result.unmatchedDatabaseList;
+  const matched = await Promise.all(
+    databaseGroup.value.matchedDatabases.map((db) =>
+      databaseStore.getOrFetchDatabaseByName(db.name)
+    )
+  );
+  const unmatched = await Promise.all(
+    databaseGroup.value.unmatchedDatabases.map((db) =>
+      databaseStore.getOrFetchDatabaseByName(db.name)
+    )
+  );
+  matchedDatabaseList.value = matched;
+  unmatchedDatabaseList.value = unmatched;
 }, 500);
 
 watch(
-  [() => state.isLoaded, () => project.value, () => state.expr],
+  [() => state.isLoaded, () => project.value, () => databaseGroup.value],
   updateDatabaseMatchingState,
   {
     immediate: true,

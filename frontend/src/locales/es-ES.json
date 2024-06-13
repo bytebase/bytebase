@@ -1612,6 +1612,7 @@
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
     "affected-tables": "Tablas afectadas",
+    "select-affection-tables": "Seleccionar tablas afectadas",
     "view-full": "Ver completo"
   },
   "database": {
@@ -1895,7 +1896,8 @@
       },
       "direct-messages": "Mensajes directos",
       "enable-direct-messages": "Habilitar mensajes directos",
-      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos para actividades específicas a usuarios relacionados (vinculados por correo electrónico). Debes configurar {im} para que funcione.",
+      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos a los usuarios relacionados (emparejados por correo electrónico).",
+      "direct-messages-warning": "Debes configurar {im} para que funcione.",
       "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
       "activity-item": {
         "issue-creation": {

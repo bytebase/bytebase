@@ -23,7 +23,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/bq-parser v0.0.0-20240529032606-614a0230b8f7
 	github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a
-	github.com/bytebase/plsql-parser v0.0.0-20240523082029-22d555243c06
+	github.com/bytebase/plsql-parser v0.0.0-20240612072132-2400507c2e76
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
@@ -38,6 +38,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/cel-go v0.20.1
 	github.com/google/go-cmp v0.6.0
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/gosimple/slug v1.14.0
@@ -296,7 +297,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
-	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
+	github.com/youmark/pkcs8 v0.0.0-20240424034433-3c2c7870ae76
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
@@ -336,3 +337,5 @@ replace (
 )
 
 replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240530043406-8d83e82c0231
+
+replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94

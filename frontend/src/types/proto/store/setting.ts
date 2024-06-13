@@ -520,15 +520,18 @@ export interface AppIMSetting {
 }
 
 export interface AppIMSetting_Slack {
+  enabled: boolean;
   token: string;
 }
 
 export interface AppIMSetting_Feishu {
+  enabled: boolean;
   appId: string;
   appSecret: string;
 }
 
 export interface AppIMSetting_Wecom {
+  enabled: boolean;
   id: string;
   secret: string;
 }
@@ -3260,13 +3263,16 @@ export const AppIMSetting = {
 };
 
 function createBaseAppIMSetting_Slack(): AppIMSetting_Slack {
-  return { token: "" };
+  return { enabled: false, token: "" };
 }
 
 export const AppIMSetting_Slack = {
   encode(message: AppIMSetting_Slack, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
     if (message.token !== "") {
-      writer.uint32(10).string(message.token);
+      writer.uint32(18).string(message.token);
     }
     return writer;
   },
@@ -3279,7 +3285,14 @@ export const AppIMSetting_Slack = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
@@ -3295,11 +3308,17 @@ export const AppIMSetting_Slack = {
   },
 
   fromJSON(object: any): AppIMSetting_Slack {
-    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
+    return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
+    };
   },
 
   toJSON(message: AppIMSetting_Slack): unknown {
     const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
     if (message.token !== "") {
       obj.token = message.token;
     }
@@ -3311,22 +3330,26 @@ export const AppIMSetting_Slack = {
   },
   fromPartial(object: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
     const message = createBaseAppIMSetting_Slack();
+    message.enabled = object.enabled ?? false;
     message.token = object.token ?? "";
     return message;
   },
 };
 
 function createBaseAppIMSetting_Feishu(): AppIMSetting_Feishu {
-  return { appId: "", appSecret: "" };
+  return { enabled: false, appId: "", appSecret: "" };
 }
 
 export const AppIMSetting_Feishu = {
   encode(message: AppIMSetting_Feishu, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
     if (message.appId !== "") {
-      writer.uint32(10).string(message.appId);
+      writer.uint32(18).string(message.appId);
     }
     if (message.appSecret !== "") {
-      writer.uint32(18).string(message.appSecret);
+      writer.uint32(26).string(message.appSecret);
     }
     return writer;
   },
@@ -3339,14 +3362,21 @@ export const AppIMSetting_Feishu = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.appId = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -3363,6 +3393,7 @@ export const AppIMSetting_Feishu = {
 
   fromJSON(object: any): AppIMSetting_Feishu {
     return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
       appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
       appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
     };
@@ -3370,6 +3401,9 @@ export const AppIMSetting_Feishu = {
 
   toJSON(message: AppIMSetting_Feishu): unknown {
     const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
     if (message.appId !== "") {
       obj.appId = message.appId;
     }
@@ -3384,6 +3418,7 @@ export const AppIMSetting_Feishu = {
   },
   fromPartial(object: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
     const message = createBaseAppIMSetting_Feishu();
+    message.enabled = object.enabled ?? false;
     message.appId = object.appId ?? "";
     message.appSecret = object.appSecret ?? "";
     return message;
@@ -3391,16 +3426,19 @@ export const AppIMSetting_Feishu = {
 };
 
 function createBaseAppIMSetting_Wecom(): AppIMSetting_Wecom {
-  return { id: "", secret: "" };
+  return { enabled: false, id: "", secret: "" };
 }
 
 export const AppIMSetting_Wecom = {
   encode(message: AppIMSetting_Wecom, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
     if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+      writer.uint32(18).string(message.id);
     }
     if (message.secret !== "") {
-      writer.uint32(18).string(message.secret);
+      writer.uint32(26).string(message.secret);
     }
     return writer;
   },
@@ -3413,14 +3451,21 @@ export const AppIMSetting_Wecom = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.id = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -3437,6 +3482,7 @@ export const AppIMSetting_Wecom = {
 
   fromJSON(object: any): AppIMSetting_Wecom {
     return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
     };
@@ -3444,6 +3490,9 @@ export const AppIMSetting_Wecom = {
 
   toJSON(message: AppIMSetting_Wecom): unknown {
     const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
     if (message.id !== "") {
       obj.id = message.id;
     }
@@ -3458,6 +3507,7 @@ export const AppIMSetting_Wecom = {
   },
   fromPartial(object: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
     const message = createBaseAppIMSetting_Wecom();
+    message.enabled = object.enabled ?? false;
     message.id = object.id ?? "";
     message.secret = object.secret ?? "";
     return message;

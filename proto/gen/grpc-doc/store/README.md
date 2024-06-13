@@ -3267,6 +3267,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | app_id | [string](#string) |  |  |
 | app_secret | [string](#string) |  |  |
 
@@ -3283,6 +3284,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | token | [string](#string) |  |  |
 
 
@@ -3298,6 +3300,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | id | [string](#string) |  |  |
 | secret | [string](#string) |  |  |
 

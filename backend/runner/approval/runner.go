@@ -325,6 +325,11 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 }
 
 func getIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+	// sort by level DESC, higher risks go first.
+	sort.Slice(risks, func(i, j int) bool {
+		return risks[i].Level > risks[j].Level
+	})
+
 	switch issue.Type {
 	case api.IssueGrantRequest:
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
@@ -335,6 +340,24 @@ func getIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manag
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
+}
+
+func getRiskSourceByTaskType(pipeline *store.PipelineMessage) store.RiskSource {
+	for _, stage := range pipeline.Stages {
+		for _, task := range stage.TaskList {
+			switch task.Type {
+			case api.TaskDatabaseCreate:
+				return store.RiskSourceDatabaseCreate
+			case api.TaskDatabaseSchemaUpdate,
+				api.TaskDatabaseSchemaUpdateSDL,
+				api.TaskDatabaseSchemaUpdateGhostSync:
+				return store.RiskSourceDatabaseSchemaUpdate
+			case api.TaskDatabaseDataUpdate:
+				return store.RiskSourceDatabaseDataUpdate
+			}
+		}
+	}
+	return store.RiskSourceUnknown
 }
 
 func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
@@ -385,25 +408,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 
 	// Conclude risk source from task types.
 	// TODO(d): use type from statement.
-	seenTaskType := map[api.TaskType]bool{}
-	for _, stage := range pipelineCreate.Stages {
-		for _, task := range stage.TaskList {
-			seenTaskType[task.Type] = true
-		}
-	}
-	riskSource := func() store.RiskSource {
-		if seenTaskType[api.TaskDatabaseCreate] {
-			return store.RiskSourceDatabaseCreate
-		}
-		if seenTaskType[api.TaskDatabaseSchemaUpdate] || seenTaskType[api.TaskDatabaseSchemaUpdateSDL] || seenTaskType[api.TaskDatabaseSchemaUpdateGhostSync] {
-			return store.RiskSourceDatabaseSchemaUpdate
-		}
-		if seenTaskType[api.TaskDatabaseDataUpdate] {
-			return store.RiskSourceDatabaseDataUpdate
-		}
-		return store.RiskSourceUnknown
-	}()
-
+	riskSource := getRiskSourceByTaskType(pipelineCreate)
 	// cannot conclude risk source
 	if riskSource == store.RiskSourceUnknown {
 		return 0, store.RiskSourceUnknown, true, nil
@@ -414,16 +419,17 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 	for _, run := range latestPlanCheckRun {
 		for _, result := range run.Result.GetResults() {
 			if result.GetCode() == common.SizeExceeded.Int32() {
-				var maxRiskLevel int32
+				// risks is sorted by level DESC, so we just need to return the 1st matched risk.
 				for _, risk := range risks {
+					if !risk.Active {
+						continue
+					}
 					if risk.Source != riskSource {
 						continue
 					}
-					if risk.Level > maxRiskLevel {
-						maxRiskLevel = risk.Level
-					}
+					return risk.Level, riskSource, true, nil
 				}
-				return maxRiskLevel, riskSource, true, nil
+				return 0, riskSource, true, nil
 			}
 		}
 	}
@@ -548,6 +554,9 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 			if maxRiskLevel < risk {
 				maxRiskLevel = risk
 			}
+			if level, _ := convertRiskLevel(maxRiskLevel); level == storepb.IssuePayloadApproval_HIGH {
+				return maxRiskLevel, riskSource, true, nil
+			}
 		}
 	}
 
@@ -655,6 +664,9 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, sheetMa
 			if maxRiskLevel < risk {
 				maxRiskLevel = risk
 			}
+			if level, _ := convertRiskLevel(maxRiskLevel); level == storepb.IssuePayloadApproval_HIGH {
+				return maxRiskLevel, riskSource, true, nil
+			}
 		}
 	}
 
@@ -681,11 +693,6 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 	if len(risks) == 0 {
 		return 0, riskSource, true, nil
 	}
-
-	// higher risks go first
-	sort.Slice(risks, func(i, j int) bool {
-		return risks[i].Level > risks[j].Level
-	})
 
 	e, err := cel.NewEnv(common.RiskFactors...)
 	if err != nil {
@@ -780,9 +787,10 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-					if risk.Level > maxRisk {
-						maxRisk = risk.Level
-					}
+					maxRisk = risk.Level
+				}
+				if maxRisk > 0 {
+					break
 				}
 			}
 		} else if riskSource == store.RiskRequestQuery {
@@ -806,11 +814,16 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-					if risk.Level > maxRisk {
-						maxRisk = risk.Level
-					}
+					maxRisk = risk.Level
+				}
+				if maxRisk > 0 {
+					break
 				}
 			}
+		}
+		// We can stop the loop because the risk list is sorted by level DESC.
+		if maxRisk > 0 {
+			break
 		}
 	}
 

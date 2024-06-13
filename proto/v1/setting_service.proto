@@ -162,15 +162,18 @@ message SMTPMailDeliverySettingValue {
 
 message AppIMSetting {
   message Slack {
-    string token = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    bool enabled = 1;
+    string token = 2 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Feishu {
-    string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    bool enabled = 1;
+    string app_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Wecom {
-    string id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    bool enabled = 1;
+    string id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
 
   Slack slack = 1;

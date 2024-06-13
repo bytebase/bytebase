@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -151,7 +150,7 @@ func postMessage(context webhook.Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: 3 * time.Second,
+		Timeout: webhook.Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
