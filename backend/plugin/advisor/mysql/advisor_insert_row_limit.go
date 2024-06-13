@@ -108,7 +108,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 		return
 	}
 
-	res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", checker.text))
+	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", checker.text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
