@@ -108,7 +108,7 @@ import {
   usePageMode,
 } from "@/store";
 import type { ComposedDatabase, ProjectPermission } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, DEFAULT_PROJECT_UID } from "@/types";
 import {
   Database,
   DatabaseMetadataView,
@@ -392,6 +392,10 @@ const unAssignDatabases = async () => {
 
 const operationsInProjectDetail = computed(() => !!props.projectUid);
 
+const isInDefaultProject = computed(
+  () => props.projectUid === `${DEFAULT_PROJECT_UID}`
+);
+
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   if (!isStandaloneMode.value) {
@@ -450,7 +454,7 @@ const actions = computed((): DatabaseAction[] => {
           return getDisabledTooltip(action);
         },
       });
-    } else {
+    } else if (!isInDefaultProject.value) {
       resp.push({
         icon: h(UnlinkIcon),
         text: t("database.unassign"),
