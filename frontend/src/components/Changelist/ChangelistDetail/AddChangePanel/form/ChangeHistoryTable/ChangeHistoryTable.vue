@@ -59,7 +59,7 @@ const dataTableColumns = computed(() => {
     {
       key: "version",
       title: t("common.version"),
-      width: "20rem",
+      width: "14rem",
       resizable: true,
       render: (changeHistory) => {
         return (
@@ -73,6 +73,7 @@ const dataTableColumns = computed(() => {
     {
       key: "issueId",
       title: t("common.issue"),
+      minWidth: "10rem",
       resizable: true,
       render: (changeHistory) => {
         return (
@@ -83,7 +84,9 @@ const dataTableColumns = computed(() => {
     {
       key: "tables",
       title: t("changelist.change-source.change-history.tables"),
-      width: "minmax(auto, 1fr)",
+      minWidth: "10rem",
+      maxWidth: "30rem",
+      className: "truncate",
       resizable: true,
       render: (changeHistory) => {
         return <Tables changeHistory={changeHistory} />;
@@ -92,7 +95,9 @@ const dataTableColumns = computed(() => {
     {
       key: "sql",
       title: t("common.sql"),
-      width: "3fr",
+      minWidth: "10rem",
+      maxWidth: "30rem",
+      className: "truncate",
       resizable: true,
       render: (changeHistory) => {
         return <SQL changeHistory={changeHistory} />;
