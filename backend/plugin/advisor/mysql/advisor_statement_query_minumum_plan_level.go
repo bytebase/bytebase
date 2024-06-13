@@ -144,7 +144,7 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 	}
 
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-	res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", query))
+	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
