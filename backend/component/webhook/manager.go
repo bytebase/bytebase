@@ -174,8 +174,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		}
 
 	case EventTypeIssueApprovalPass:
-		title = "Issue approved - " + e.Issue.Title
-		titleZh = "工单审批通过 - " + e.Issue.Title
+		title = "Issue approved"
+		titleZh = "工单审批通过"
 
 		mentionUsers = append(mentionUsers, e.Issue.Creator)
 		phone, err := maybeGetPhoneFromUser(e.Issue.Creator)
