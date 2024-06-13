@@ -319,6 +319,8 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
 			c.takeReferencesSnapshot()
+			c.collectInsertTableReferences(caretIndex)
+			c.takeReferencesSnapshot()
 			break
 		} else if ruleName == mysql.MySQLParserRULE_columnInternalRef {
 			c.collectLeadingTableReferences(caretIndex, true /* forTableAlter */)
@@ -889,6 +891,45 @@ func (c *Completer) takeReferencesSnapshot() {
 	}
 }
 
+func (c *Completer) collectInsertTableReferences(caretIndex int) {
+	c.scanner.Push()
+
+	c.scanner.SeekIndex(0)
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == mysql.MySQLLexerINSERT_SYMBOL || c.scanner.GetTokenType() == mysql.MySQLLexerINTO_SYMBOL
+		for !found {
+			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case mysql.MySQLLexerOPEN_PAR_SYMBOL:
+				level++
+			case mysql.MySQLLexerCLOSE_PAR_SYMBOL:
+				if level == 0 {
+					c.scanner.PopAndRestore()
+					return
+				}
+
+				level--
+			case mysql.MySQLLexerINSERT_SYMBOL, mysql.MySQLLexerINTO_SYMBOL:
+				found = true
+			}
+		}
+
+		if !found {
+			c.scanner.PopAndRestore()
+			return // No more INSERT clause found.
+		}
+
+		c.parseInsertTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == mysql.MySQLLexerINSERT_SYMBOL || c.scanner.GetTokenType() == mysql.MySQLLexerINTO_SYMBOL {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
 func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter bool) {
 	c.scanner.Push()
 
@@ -949,6 +990,44 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 				c.scanner.Forward(false /* skipHidden */)
 			}
 		}
+	}
+}
+
+func (c *Completer) parseInsertTableReferences(text string) {
+	input := antlr.NewInputStream(text)
+	lexer := mysql.NewMySQLLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, 0)
+	parser := mysql.NewMySQLParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.InsertStatement()
+
+	listener := &insertTableRefListener{
+		context: c,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+}
+
+type insertTableRefListener struct {
+	*mysql.BaseMySQLParserListener
+
+	context *Completer
+}
+
+func (l *insertTableRefListener) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if ctx.TableRef() != nil {
+		reference := &base.PhysicalTableReference{}
+		if ctx.TableRef().QualifiedIdentifier() != nil {
+			reference.Table = unquote(ctx.TableRef().QualifiedIdentifier().Identifier().GetText())
+			if ctx.TableRef().QualifiedIdentifier().DotIdentifier() != nil {
+				reference.Database = reference.Table
+				reference.Table = unquote(ctx.TableRef().QualifiedIdentifier().DotIdentifier().Identifier().GetText())
+			}
+		} else {
+			reference.Table = unquote(ctx.TableRef().DotIdentifier().Identifier().GetText())
+		}
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
 	}
 }
 
