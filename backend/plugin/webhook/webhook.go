@@ -123,6 +123,13 @@ func (c *Context) GetMetaList() []Meta {
 		})
 	}
 
+	if c.Stage != nil {
+		m = append(m, Meta{
+			Name:  "Stage",
+			Value: c.Stage.Name,
+		})
+	}
+
 	if c.TaskResult != nil {
 		m = append(m, Meta{
 			Name:  "Task",
@@ -171,6 +178,13 @@ func (c *Context) GetMetaListZh() []Meta {
 		m = append(m, Meta{
 			Name:  "工单描述",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
+		})
+	}
+
+	if c.Stage != nil {
+		m = append(m, Meta{
+			Name:  "阶段",
+			Value: c.Stage.Name,
 		})
 	}
 
