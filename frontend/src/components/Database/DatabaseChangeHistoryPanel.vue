@@ -4,10 +4,10 @@
       class="w-full flex flex-row justify-between items-center text-lg leading-6 font-medium text-main space-x-2"
     >
       <div class="flex flex-row justify-start items-center space-x-4">
-        <div class="w-44">
-          <AffectedTableSelect
-            v-model:affected-table="state.selectedAffectedTable"
-            :change-history-list="changeHistoryList"
+        <div class="w-56">
+          <AffectedTablesSelect
+            v-model:tables="state.selectedAffectedTables"
+            :database="database"
           />
         </div>
         <div class="w-44">
@@ -69,9 +69,7 @@
     <PagedChangeHistoryTable
       :database="database"
       :search-change-histories="{
-        tables: state.selectedAffectedTable
-          ? [state.selectedAffectedTable]
-          : undefined,
+        tables: state.selectedAffectedTables,
         types: state.selectedChangeType
           ? [state.selectedChangeType]
           : undefined,
@@ -133,11 +131,11 @@ import { computed, onBeforeMount, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
-  AffectedTableSelect,
   ChangeHistoryDataTable,
   ChangeHistoryDetail,
   PagedChangeHistoryTable,
   ChangeTypeSelect,
+  AffectedTablesSelect,
 } from "@/components/ChangeHistory";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
@@ -146,7 +144,7 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import type { AffectedTable } from "@/types/changeHistory";
+import type { Table } from "@/types/changeHistory";
 import {
   ChangeHistory_Status,
   ChangeHistory_Type,
@@ -159,7 +157,7 @@ interface LocalState {
   loading: boolean;
   selectedChangeHistoryNameList: string[];
   isExporting: boolean;
-  selectedAffectedTable?: AffectedTable;
+  selectedAffectedTables: Table[];
   selectedChangeType?: string;
   selectedChangeHistoryId: string;
 }
@@ -178,6 +176,7 @@ const state = reactive<LocalState>({
   loading: false,
   selectedChangeHistoryNameList: [],
   isExporting: false,
+  selectedAffectedTables: [],
   selectedChangeHistoryId: "",
 });
 
