@@ -1612,6 +1612,7 @@
     "need-to-select-first": "Need to select change history first",
     "all-tables": "All tables",
     "affected-tables": "Affected Tables",
+    "select-affection-tables": "Select affected tables",
     "view-full": "View full"
   },
   "database": {

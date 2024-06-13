@@ -1612,6 +1612,7 @@
     "need-to-select-first": "最初に変更履歴を選択する必要があります",
     "all-tables": "すべてのテーブル",
     "affected-tables": "影響を受けるテーブル",
+    "select-affection-tables": "影響を受けるテーブルを選択",
     "view-full": "すべて見る"
   },
   "database": {

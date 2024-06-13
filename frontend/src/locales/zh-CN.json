@@ -1612,6 +1612,7 @@
     "need-to-select-first": "需要先选择变更历史",
     "all-tables": "所有表",
     "affected-tables": "受影响的表",
+    "select-affection-tables": "选择受影响的表",
     "view-full": "查看全部"
   },
   "database": {

@@ -1612,6 +1612,7 @@
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
     "affected-tables": "Tablas afectadas",
+    "select-affection-tables": "Seleccionar tablas afectadas",
     "view-full": "Ver completo"
   },
   "database": {
