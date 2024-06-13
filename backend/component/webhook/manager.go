@@ -90,7 +90,6 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 
 func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, activityType api.ActivityType) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
-	var webhookTaskResult *webhook.TaskResult
 	var mentions []string
 	var mentionUsers []*store.UserMessage
 
@@ -148,10 +147,6 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 
 	case EventTypeTaskRunStatusUpdate:
 		u := e.TaskRunStatusUpdate
-		webhookTaskResult = &webhook.TaskResult{
-			Name:   u.Title,
-			Status: u.Status,
-		}
 		switch u.Status {
 		case api.TaskRunPending.String():
 			title = "Task run started - " + u.Title
@@ -167,14 +162,12 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			level = webhook.WebhookError
 			title = "Task run failed - " + u.Title
 			titleZh = "任务失败 - " + u.Title
-			webhookTaskResult.Detail = u.Detail
 		case api.TaskRunCanceled.String():
 			title = "Task run is canceled - " + u.Title
 			titleZh = "任务取消 - " + u.Title
 		case api.TaskRunSkipped.String():
 			title = "Task is skipped - " + u.Title
 			titleZh = "任务跳过 - " + u.Title
-			webhookTaskResult.SkippedReason = u.SkippedReason
 		default:
 			title = "Task run status changed - " + u.Title
 			titleZh = "任务状态变更 - " + u.Title
@@ -325,7 +318,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			ID:   e.Project.UID,
 			Name: e.Project.Title,
 		},
-		TaskResult:          webhookTaskResult,
+		Stage:               nil,
+		TaskResult:          nil,
 		Description:         e.Comment,
 		Link:                link,
 		CreatorID:           e.Actor.ID,
@@ -334,6 +328,20 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		MentionUsers:        mentionUsers,
 		MentionUsersByPhone: mentions,
 	}
+	if u := e.TaskRunStatusUpdate; u != nil {
+		webhookCtx.TaskResult = &webhook.TaskResult{
+			Name:          u.Title,
+			Status:        u.Status,
+			Detail:        u.Detail,
+			SkippedReason: u.SkippedReason,
+		}
+	}
+	if u := e.StageStatusUpdate; u != nil {
+		webhookCtx.Stage = &webhook.Stage{
+			Name: u.StageTitle,
+		}
+	}
+
 	return &webhookCtx, nil
 }
 
