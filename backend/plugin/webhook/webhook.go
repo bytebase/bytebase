@@ -49,6 +49,10 @@ type Issue struct {
 	Description string `json:"description"`
 }
 
+type Stage struct {
+	Name string `json:"name"`
+}
+
 // TaskResult is the latest result of a task.
 // The `detail` field is only present if the status is TaskFailed.
 // The `SkippedReason` field is only present if the task is skipped.
@@ -79,6 +83,7 @@ type Context struct {
 	CreatorEmail        string
 	CreatedTs           int64
 	Issue               *Issue
+	Stage               *Stage
 	Project             *Project
 	TaskResult          *TaskResult
 	MentionUsers        []*store.UserMessage
@@ -115,6 +120,13 @@ func (c *Context) GetMetaList() []Meta {
 		m = append(m, Meta{
 			Name:  "Issue Description",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
+		})
+	}
+
+	if c.Stage != nil {
+		m = append(m, Meta{
+			Name:  "Stage",
+			Value: c.Stage.Name,
 		})
 	}
 
@@ -166,6 +178,13 @@ func (c *Context) GetMetaListZh() []Meta {
 		m = append(m, Meta{
 			Name:  "工单描述",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
+		})
+	}
+
+	if c.Stage != nil {
+		m = append(m, Meta{
+			Name:  "阶段",
+			Value: c.Stage.Name,
 		})
 	}
 
