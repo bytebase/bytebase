@@ -105,7 +105,7 @@ func (checker *statementDmlDryRunChecker) EnterInsertStatement(ctx *mysql.Insert
 
 // Enter implements the ast.Visitor interface.
 func (checker *statementDmlDryRunChecker) handleStmt(text string, lineNumber int) {
-	if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
+	if _, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
 			Code:    advisor.StatementDMLDryRunFailed.Int32(),

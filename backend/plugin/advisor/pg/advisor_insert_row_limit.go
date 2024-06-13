@@ -95,7 +95,7 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 			}
 		} else if checker.driver != nil {
 			// For INSERT INTO ... SELECT statements, use EXPLAIN.
-			res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
+			res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
 			if err != nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
