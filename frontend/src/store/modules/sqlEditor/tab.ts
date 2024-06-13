@@ -1,5 +1,5 @@
 import type { MaybeRef } from "@vueuse/core";
-import { useLocalStorage, watchThrottled } from "@vueuse/core";
+import { watchThrottled } from "@vueuse/core";
 import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, unref } from "vue";
@@ -14,19 +14,17 @@ import {
   WebStorageHelper,
   defaultSQLEditorTab,
   emptySQLEditorConnection,
+  extractUserUID,
   isDisconnectedSQLEditorTab,
   isSimilarSQLEditorTab,
+  useDynamicLocalStorage,
 } from "@/utils";
+import { useCurrentUserV1 } from "../auth";
 import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
 import { useSQLEditorStore } from "./editor";
 import { useWebTerminalStore } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
-const KEYS = {
-  tabIdList: "tab-id-list",
-  currentTabId: "current-tab-id",
-  tab: (id: string) => `tab.${id}`,
-};
 
 // Only store the core fields of a tab.
 // Don't store anything which might be too large.
@@ -50,11 +48,21 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const { project } = storeToRefs(useSQLEditorStore());
 
   // states
-  const storage = new WebStorageHelper(LOCAL_STORAGE_KEY_PREFIX);
+  const me = useCurrentUserV1();
+  const userUID = computed(() => extractUserUID(me.value.name));
+  const keyNamespace = computed(
+    () => `${LOCAL_STORAGE_KEY_PREFIX}.${userUID.value}`
+  );
+  const getStorage = () => {
+    return new WebStorageHelper(keyNamespace.value);
+  };
+  const keyForTab = (id: string) => {
+    return `tab.${id}`;
+  };
 
   const loadStoredTab = (id: string) => {
-    const stored = storage.load<PersistentTab | undefined>(
-      KEYS.tab(id),
+    const stored = getStorage().load<PersistentTab | undefined>(
+      keyForTab(id),
       undefined
     );
     if (!stored) {
@@ -70,13 +78,16 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     return tab;
   };
 
-  const tabIdListMapByProject = useLocalStorage<Record<string, string[]>>(
-    `${LOCAL_STORAGE_KEY_PREFIX}.${KEYS.tabIdList}`,
-    {}
-  );
-  const currentTabIdMapByProject = useLocalStorage<
+  const tabIdListKey = computed(() => `${keyNamespace.value}.tab-id-list`);
+  const tabIdListMapByProject = useDynamicLocalStorage<
+    Record<string, string[]>
+  >(tabIdListKey, {});
+
+  const currentTabIdKey = computed(() => `${keyNamespace.value}.current-tab-id`);
+  const currentTabIdMapByProject = useDynamicLocalStorage<
     Record<string, string | undefined>
-  >(`${LOCAL_STORAGE_KEY_PREFIX}.${KEYS.currentTabId}`, {});
+  >(currentTabIdKey, {});
+
   const initializedProjects = new Set<string>();
   const maybeInitProject = (project: string) => {
     if (initializedProjects.has(project)) {
@@ -178,7 +189,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     if (position < 0) return;
     tabIdList.value.splice(position, 1);
     tabsById.delete(id);
-    storage.remove(KEYS.tab(id));
+    getStorage().remove(keyForTab(id));
 
     if (tab.mode === "ADMIN") {
       useWebTerminalStore().clearQueryStateByTab(id);
@@ -235,7 +246,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // clean persistent tabs that are not in the `tabIdList` anymore
   const _cleanup = () => {
     const prefix = `${LOCAL_STORAGE_KEY_PREFIX}.tab.`;
-    const keys = storage.keys().filter((key) => key.startsWith(prefix));
+    const keys = getStorage()
+      .keys()
+      .filter((key) => key.startsWith(prefix));
     const flattenTabIdSet = new Set(
       Object.keys(tabIdListMapByProject.value).flatMap(
         (project) => tabIdListMapByProject.value[project]
@@ -244,7 +257,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     keys.forEach((key) => {
       const id = key.substring(prefix.length);
       if (!flattenTabIdSet.has(id)) {
-        storage.remove(KEYS.tab(id));
+        getStorage().remove(keyForTab(id));
       }
     });
   };
@@ -255,7 +268,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     watchThrottled(
       () => pick(tab, ...PERSISTENT_TAB_FIELDS) as PersistentTab,
       (persistentTab) => {
-        storage.save<PersistentTab>(KEYS.tab(persistentTab.id), persistentTab);
+        getStorage().save<PersistentTab>(
+          keyForTab(persistentTab.id),
+          persistentTab
+        );
       },
       { deep: true, immediate, throttle: 100, trailing: true }
     );
@@ -276,7 +292,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   initAll();
 
   const reset = () => {
-    storage.clear();
     tabIdListMapByProject.value = {};
     currentTabIdMapByProject.value = {};
     initAll();
