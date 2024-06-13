@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/shlex"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/multierr"
@@ -153,7 +154,10 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	lines := strings.Split(statement, "\n")
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, line := range lines {
-			fields := strings.Fields(line)
+			fields, err := shlex.Split(line)
+			if err != nil {
+				return errors.Wrapf(err, "failed to split command %s", line)
+			}
 			if len(fields) == 0 {
 				continue
 			}
@@ -192,7 +196,10 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	var cmds []*redis.Cmd
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, line := range lines {
-			fields := strings.Fields(line)
+			fields, err := shlex.Split(line)
+			if err != nil {
+				return errors.Wrapf(err, "failed to split command %s", line)
+			}
 			if len(fields) == 0 {
 				continue
 			}
