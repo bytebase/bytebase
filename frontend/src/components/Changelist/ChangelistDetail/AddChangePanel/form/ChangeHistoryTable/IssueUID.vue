@@ -1,5 +1,8 @@
 <template>
-  <div v-if="changeHistory.issueEntity" class="flex items-center space-x-1">
+  <div
+    v-if="changeHistory.issueEntity"
+    class="flex items-center overflow-hidden space-x-1"
+  >
     <router-link
       :to="{
         path: `/${changeHistory.issueEntity.name}`,
@@ -10,14 +13,17 @@
     >
       #{{ changeHistory.issueEntity.uid }}
     </router-link>
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <span class="textinfo" v-html="issueTitle" />
+    <NPerformantEllipsis class="flex-1 truncate">
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <span class="textinfo" v-html="issueTitle" />
+    </NPerformantEllipsis>
   </div>
   <span v-else>-</span>
 </template>
 
 <script setup lang="ts">
 import { escape } from "lodash-es";
+import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { type ComposedChangeHistory } from "@/types";
 import { getHighlightHTMLByRegExp } from "@/utils";
