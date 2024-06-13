@@ -30,13 +30,13 @@ type CustomWebhookRequest struct {
 }
 
 func init() {
-	register("bb.plugin.webhook.custom", &CustomReceiver{})
+	Register("bb.plugin.webhook.custom", &CustomReceiver{})
 }
 
 // CustomReceiver is the receiver for custom.
 type CustomReceiver struct{}
 
-func (*CustomReceiver) post(context Context) error {
+func (*CustomReceiver) Post(context Context) error {
 	// TODO(p0ny): handle context.Task
 	payload := CustomWebhookRequest{
 		Level:        context.Level,
@@ -63,7 +63,7 @@ func (*CustomReceiver) post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout: Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {

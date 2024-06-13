@@ -24,7 +24,7 @@ type StatementDisallowAddColumnWithDefaultAdvisor struct {
 }
 
 // Check checks for to disallow add column with default.
-func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -45,9 +45,9 @@ func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(ctx advisor.Context, 
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -56,8 +56,8 @@ func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(ctx advisor.Context, 
 }
 
 type statementDisallowAddColumnWithDefaultChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	line       int
 }
@@ -67,12 +67,14 @@ func (checker *statementDisallowAddColumnWithDefaultChecker) Visit(in ast.Node) 
 	if node, ok := in.(*ast.AddColumnListStmt); ok {
 		for _, column := range node.ColumnList {
 			if setDefault(column) {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.StatementAddColumnWithDefault,
+					Code:    advisor.StatementAddColumnWithDefault.Int32(),
 					Title:   checker.title,
 					Content: "Adding column with DEFAULT will locked the whole table and rewriting each rows",
-					Line:    checker.line,
+					StartPosition: &storepb.Position{
+						Line: int32(checker.line),
+					},
 				})
 			}
 		}

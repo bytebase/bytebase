@@ -32,7 +32,7 @@ type IndexTypeNoBlobAdvisor struct {
 }
 
 // Check checks for index type no blob.
-func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -55,9 +55,9 @@ func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -69,8 +69,8 @@ type indexTypeNoBlobChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine         int
-	adviceList       []advisor.Advice
-	level            advisor.Status
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
 	title            string
 	catalog          *catalog.Finder
 	tablesNewColumns tableColumnTypes
@@ -242,12 +242,14 @@ func (checker *indexTypeNoBlobChecker) checkConstraintDef(tableName string, ctx 
 
 func (checker *indexTypeNoBlobChecker) addAdvice(tableName, columnName, columnType string, lineNumber int) {
 	if checker.isBlob(columnType) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.IndexTypeNoBlob,
+			Code:    advisor.IndexTypeNoBlob.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", tableName, columnName, columnType),
-			Line:    checker.baseLine + lineNumber,
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + lineNumber),
+			},
 		})
 	}
 }

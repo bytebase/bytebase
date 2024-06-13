@@ -30,7 +30,7 @@ type IndexKeyNumberLimitAdvisor struct {
 }
 
 // Check checks for index key number limit.
-func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -56,9 +56,9 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -70,8 +70,8 @@ type indexKeyNumberLimitChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	max        int
 }
@@ -125,12 +125,14 @@ func (checker *indexKeyNumberLimitChecker) handleConstraintDef(tableName string,
 	}
 
 	if checker.max > 0 && len(columnList) > checker.max {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit,
+			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, checker.max),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }
@@ -158,12 +160,14 @@ func (checker *indexKeyNumberLimitChecker) EnterCreateIndex(ctx *mysql.CreateInd
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
 	if checker.max > 0 && len(columnList) > checker.max {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit,
+			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, checker.max),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

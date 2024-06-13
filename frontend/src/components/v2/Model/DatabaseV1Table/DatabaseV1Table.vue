@@ -54,12 +54,14 @@ const props = withDefaults(
     schemaless?: boolean;
     customClick?: boolean;
     showSqlEditorButton?: boolean;
+    rowClickable?: boolean;
   }>(),
   {
     mode: "ALL",
     bordered: true,
     showSelection: true,
     showSqlEditorButton: true,
+    rowClickable: true,
   }
 );
 
@@ -102,6 +104,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   const ENVIRONMENT: DatabaseDataTableColumn = {
     key: "environment",
     title: t("common.environment"),
+    minWidth: 120,
     resizable: true,
     render: (data) => (
       <EnvironmentV1Name
@@ -174,8 +177,12 @@ const data = computed(() => {
 
 const rowProps = (database: ComposedDatabase) => {
   return {
-    style: "cursor: pointer;",
+    style: props.rowClickable ? "cursor: pointer;" : "",
     onClick: (e: MouseEvent) => {
+      if (!props.rowClickable) {
+        return;
+      }
+
       if (props.customClick) {
         emit("row-click", e, database);
         return;

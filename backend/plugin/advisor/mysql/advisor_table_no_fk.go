@@ -29,7 +29,7 @@ type TableNoFKAdvisor struct {
 }
 
 // Check checks table disallow foreign key.
-func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -49,9 +49,9 @@ func (*TableNoFKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -64,8 +64,8 @@ type tableNoFKChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
@@ -118,12 +118,14 @@ func (checker *tableNoFKChecker) handleTableConstraintDef(tableName string, ctx 
 	if ctx.GetType_() != nil {
 		switch strings.ToUpper(ctx.GetType_().GetText()) {
 		case "FOREIGN":
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.TableHasFK,
+				Code:    advisor.TableHasFK.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", tableName),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		default:
 		}

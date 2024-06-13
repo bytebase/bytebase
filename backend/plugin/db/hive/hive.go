@@ -162,9 +162,8 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementsStr st
 		statementStr := strings.TrimRight(statement.Text, ";")
 
 		result, err := runSingleStatement(ctx, d.conn, statementStr)
-		if err != nil {
-			result.Error = err.Error()
-			return nil, err
+		if err != nil && result == nil {
+			return results, err
 		}
 
 		results = append(results, result)
@@ -220,35 +219,40 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	result := &v1pb.QueryResult{
 		Statement: statement,
 	}
+
+	// We will get an error when a certain statement doesn't need returned results.
 	columnNamesAndTypes := cursor.Description()
-	for _, row := range columnNamesAndTypes {
-		result.ColumnNames = append(result.ColumnNames, row[0])
-	}
+	if cursor.Err == nil {
+		for _, row := range columnNamesAndTypes {
+			result.ColumnNames = append(result.ColumnNames, row[0])
+		}
 
-	// process query results.
-	for cursor.HasMore(ctx) {
-		var queryRow v1pb.QueryRow
-		rowMap := cursor.RowMap(ctx)
-		for idx, columnName := range result.ColumnNames {
-			gohiveTypeStr := columnNamesAndTypes[idx][1]
-			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
-			if err != nil {
-				return result, err
+		// process query results.
+		for cursor.HasMore(ctx) {
+			var queryRow v1pb.QueryRow
+			rowMap := cursor.RowMap(ctx)
+			for idx, columnName := range result.ColumnNames {
+				gohiveTypeStr := columnNamesAndTypes[idx][1]
+				val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
+				if err != nil {
+					return result, err
+				}
+				queryRow.Values = append(queryRow.Values, val)
 			}
-			queryRow.Values = append(queryRow.Values, val)
-		}
 
-		// Rows.
-		result.Rows = append(result.Rows, &queryRow)
-		n := len(result.Rows)
-		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-			result.Error = common.MaximumSQLResultSizeExceeded
-			result.Latency = durationpb.New(time.Since(startTime))
-			return result, nil
+			// Rows.
+			result.Rows = append(result.Rows, &queryRow)
+			n := len(result.Rows)
+			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
+				result.Error = common.MaximumSQLResultSizeExceeded
+				result.Latency = durationpb.New(time.Since(startTime))
+				return result, nil
+			}
 		}
+		result.Latency = durationpb.New(time.Since(startTime))
+		return result, nil
 	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	return result, nil
+	return nil, nil
 }
 
 func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
@@ -279,14 +283,13 @@ func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, sta
 
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")
-		if queryCtx.Explain {
+		if queryCtx != nil && queryCtx.Explain {
 			statementStr = fmt.Sprintf("EXPLAIN %s", statementStr)
 		}
 
 		result, err := runSingleStatement(ctx, conn, statementStr)
-		if err != nil {
-			result.Error = err.Error()
-			return nil, err
+		if err != nil && result == nil {
+			return results, err
 		}
 
 		results = append(results, result)

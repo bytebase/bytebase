@@ -4,73 +4,81 @@
       "CONNECT" VARCHAR
     );
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "CONNECT" is a keyword and should be avoided
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(
       name      VARCHAR,
       "connect" VARCHAR
     );
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "connect" is a keyword and should be avoided
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(
       name  VARCHAR,
       age   INT
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE mytable_copy (
       name      INT,
       "connect" INT
     ) AS SELECT a + 1, b + 2 FROM mytable;
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "connect" is a keyword and should be avoided
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE mytable_copy (
       name INT,
       age  INT
     ) AS SELECT a + 1, b + 2 FROM mytable;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO "connect";
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "connect" is a keyword and should be avoided
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE mytable RENAME COLUMN name TO age;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

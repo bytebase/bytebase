@@ -24,7 +24,7 @@ type IndexKeyNumberLimitAdvisor struct {
 }
 
 // Check checks for index key number limit.
-func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -50,9 +50,9 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,8 +61,8 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 }
 
 type indexKeyNumberLimitChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	max        int
 }
@@ -106,12 +106,14 @@ func (checker *indexKeyNumberLimitChecker) Visit(node ast.Node) ast.Visitor {
 	indexDataList := checker.getMetaDataList(node)
 
 	for _, index := range indexDataList {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit,
+			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", index.indexName, index.tableName, checker.max),
-			Line:    index.line,
+			StartPosition: &storepb.Position{
+				Line: int32(index.line),
+			},
 		})
 	}
 	return checker

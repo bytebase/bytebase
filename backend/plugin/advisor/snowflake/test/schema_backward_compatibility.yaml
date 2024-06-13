@@ -1,52 +1,62 @@
 - statement: DROP DATABASE DB;
   want:
-    - status: WARN
+    - status: 2
       code: 101
       title: schema.backward-compatibility
       content: Drop database "DB" may cause incompatibility with the existing data and code
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: DROP SCHEMA SCHEMA1;
   want:
-    - status: WARN
+    - status: 2
       code: 112
       title: schema.backward-compatibility
       content: Drop schema "TEST_DB.SCHEMA1" may cause incompatibility with the existing data and code
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: DROP TABLE T;
   want:
-    - status: WARN
+    - status: 2
       code: 103
       title: schema.backward-compatibility
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE T DROP COLUMN COL1;
   want:
-    - status: WARN
+    - status: 2
       code: 105
       title: schema.backward-compatibility
       content: Drop column "COL1" may cause incompatibility with the existing data and code
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE IF NOT EXISTS T(ID INT);
     DROP TABLE T;
   want:
-    - status: WARN
+    - status: 2
       code: 103
       title: schema.backward-compatibility
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE T(ID INT);
     DROP TABLE T;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

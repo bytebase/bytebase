@@ -26,7 +26,7 @@ type ViewDisallowCreateAdvisor struct {
 }
 
 // Check checks for disallow creating view.
-func (*ViewDisallowCreateAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ViewDisallowCreateAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -47,9 +47,9 @@ func (*ViewDisallowCreateAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,8 +61,8 @@ type viewDisallowCreateChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 }
@@ -81,12 +81,14 @@ func (checker *viewDisallowCreateChecker) EnterCreateView(ctx *mysql.CreateViewC
 	}
 
 	if code != advisor.Ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    code,
+			Code:    code.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("View is forbidden, but \"%s\" creates", checker.text),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

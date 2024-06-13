@@ -4,23 +4,27 @@
     CREATE TABLE public.pokes (foo int);
     CREATE TABLE pokesv2 (foo int, bar varchar);
   want:
-    - status: WARN
+    - status: 2
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'pokesv2'"
-      line: 4
-
+      content: 'unqualified object name: ''pokesv2'''
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
 - statement: |-
     CREATE SEQUENCE public.seq;
     CREATE SEQUENCE seq;
     DROP SEQUENCE public.seq
   want:
-    - status: WARN
+    - status: 2
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'seq'"
-      line: 2
-
+      content: 'unqualified object name: ''seq'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TRIGGER test_trigger
     AFTER INSERT ON pokesv1
@@ -28,39 +32,47 @@
     EXECUTE PROCEDURE trigger_function();
     INSERT INTO bbdev.public.pokesv1 VALUES (1, '1');
   want:
-    - status: WARN
+    - status: 2
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'pokesv1'"
-      line: 4
-
+      content: 'unqualified object name: ''pokesv1'''
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
 - statement: DROP TRIGGER test_trigger ON public.pokes;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
-      title: "OK"
-
+      title: OK
+      content: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE public.pokesv1 (foo int, bar varchar);
     ALTER TABLE pokesv1 RENAME TO pokesv2;
   want:
-    - status: WARN
+    - status: 2
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'pokesv1'"
-      line: 2
-
+      content: 'unqualified object name: ''pokesv1'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE public.pokesv1 (foo int);
     INSERT INTO pokesv1(foo) VALUES (1);
     INSERT INTO public.pokesv1 VALUES (2);
   want:
-    - status: WARN
+    - status: 2
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'pokesv1'"
-      line: 2
-
+      content: 'unqualified object name: ''pokesv1'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE public.pokesv1 (foo int);
     UPDATE public.pokesv1 SET foo = 1 WHERE 1=1;
@@ -68,27 +80,29 @@
     UPDATE pokesv1 SET foo = 1 WHERE 1=1;
     UPDATE public.pokesv1 SET foo = 1 WHERE 1 > 1;
   want:
-    - status: WARN
+    - status: 2
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'pokesv1'"
-      line: 4
-
-- statement: |-
-    CREATE TABLE public.pokes (foo int); 
-    SELECT * FROM (SELECT (id) FROM tech_book) AS foo;
+      content: 'unqualified object name: ''pokesv1'''
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
+- statement: "CREATE TABLE public.pokes (foo int); \nSELECT * FROM (SELECT (id) FROM tech_book) AS foo;"
   want:
-    - status: WARN
+    - status: 2
       code: 310
       title: naming.fully-qualified
-      content: "unqualified object name: 'tech_book'"
-      line: 2
-
-- statement: |-
-    CREATE TABLE public.pokes (foo int);
-    WITH foo1 AS (SELECT * FROM public.tech_book) 
-    SELECT * FROM foo1;
+      content: 'unqualified object name: ''tech_book'''
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+- statement: "CREATE TABLE public.pokes (foo int);\nWITH foo1 AS (SELECT * FROM public.tech_book) \nSELECT * FROM foo1;"
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
+      content: ""
+      detail: ""
+      startposition: null

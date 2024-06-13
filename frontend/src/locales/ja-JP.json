@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "少なくとも 1 つのワークスペースレベルの役割を選択してください"
     },
     "im-integration": {
-      "enable": "有効にする",
-      "description": "ユーザーが IM で作業指示書を直接承認できるようにします。",
-      "feishu-updated-tip": "フェイシュの設定が正常に更新されました"
+      "description": "特定の作業指示イベントについて、プライベート メッセージをユーザーにプッシュします。プロジェクト Webhook で使用する必要があります。"
     },
     "sso": {
       "create": "SSOの作成",
@@ -1199,7 +1197,7 @@
     "unfinished-resolved-issue-tips": "作業指示書は「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "preview": "作業指示のプレビュー",
-    "missing-sql-statement": "SQL ステートメントが欠落しています。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックします。",
+    "missing-sql-statement": "SQL ステートメントが欠落しています。",
     "task-summary-tooltip": "{failed} 個のタスクが失敗しました",
     "data-export": {
       "options": "設定項目",
@@ -1614,6 +1612,7 @@
     "need-to-select-first": "最初に変更履歴を選択する必要があります",
     "all-tables": "すべてのテーブル",
     "affected-tables": "影響を受けるテーブル",
+    "select-affection-tables": "影響を受けるテーブルを選択",
     "view-full": "すべて見る"
   },
   "database": {
@@ -1895,6 +1894,11 @@
         "btn-text": "この Webhook を削除します",
         "confirm-title": "Webhook '{title}' とすべての実行履歴を削除しますか?"
       },
+      "direct-messages": "プライベートメッセージ通知",
+      "enable-direct-messages": "プライベートメッセージ通知を有効にする",
+      "direct-messages-tip": "有効にすると、Bytebase は関連ユーザー (電子メールで一致) にダイレクト メッセージを送信します。",
+      "direct-messages-warning": "これを機能させるには、{im} を構成する必要があります。",
+      "activity-support-direct-message": "関連するユーザーへのプライベート メッセージ通知の送信のサポート",
       "activity-item": {
         "issue-creation": {
           "title": "@:common.issue を作成する",
@@ -2295,6 +2299,7 @@
       "description": "{project} の下にある {count} データベースをバッチクエリします。"
     },
     "executing-query": "クエリの実行",
+    "request-query": "リクエストクエリ",
     "grouping": "グループ",
     "previous-row": "前の行",
     "next-row": "次の行",

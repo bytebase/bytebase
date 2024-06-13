@@ -8,9 +8,11 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -20,11 +22,13 @@ import (
 // NewStatementAdviseExecutor creates a plan check statement advise executor.
 func NewStatementAdviseExecutor(
 	store *store.Store,
+	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
 	licenseService enterprise.LicenseService,
 ) Executor {
 	return &StatementAdviseExecutor{
 		store:          store,
+		sheetManager:   sheetManager,
 		dbFactory:      dbFactory,
 		licenseService: licenseService,
 	}
@@ -33,6 +37,7 @@ func NewStatementAdviseExecutor(
 // StatementAdviseExecutor is the plan check statement advise executor.
 type StatementAdviseExecutor struct {
 	store          *store.Store
+	sheetManager   *sheet.Manager
 	dbFactory      *dbfactory.DBFactory
 	licenseService enterprise.LicenseService
 }
@@ -146,7 +151,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		}
 	}
 
-	catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
+	catalog, err := catalog.NewCatalog(ctx, e.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
@@ -161,7 +166,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
-	adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
+	adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:               dbSchema.GetMetadata().CharacterSet,
 		Collation:             dbSchema.GetMetadata().Collation,
 		DBSchema:              dbSchema.GetMetadata(),
@@ -180,11 +185,11 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	for _, advice := range adviceList {
 		status := storepb.PlanCheckRunResult_Result_SUCCESS
 		switch advice.Status {
-		case advisor.Success:
+		case storepb.Advice_SUCCESS:
 			continue
-		case advisor.Warn:
+		case storepb.Advice_WARNING:
 			status = storepb.PlanCheckRunResult_Result_WARNING
-		case advisor.Error:
+		case storepb.Advice_ERROR:
 			status = storepb.PlanCheckRunResult_Result_ERROR
 		}
 
@@ -195,10 +200,10 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 			Code:    0,
 			Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 				SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-					Line:   int32(advice.Line),
-					Column: int32(advice.Column),
-					Code:   advice.Code.Int32(),
-					Detail: advice.Details,
+					Line:   advice.GetStartPosition().Line,
+					Column: advice.GetStartPosition().Column,
+					Code:   advice.Code,
+					Detail: advice.Detail,
 				},
 			},
 		})
@@ -336,7 +341,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			}
 		}
 
-		catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
+		catalog, err := catalog.NewCatalog(ctx, e.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */)
 		if err != nil {
 			return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 		}
@@ -352,7 +357,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			materials := utils.GetSecretMapFromDatabaseMessage(database)
 			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 			renderedStatement := utils.RenderStatement(sheetStatement, materials)
-			adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
+			adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 				Charset:    dbSchema.GetMetadata().CharacterSet,
 				Collation:  dbSchema.GetMetadata().Collation,
 				DBSchema:   dbSchema.GetMetadata(),
@@ -370,11 +375,11 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			for _, advice := range adviceList {
 				status := storepb.PlanCheckRunResult_Result_SUCCESS
 				switch advice.Status {
-				case advisor.Success:
+				case storepb.Advice_SUCCESS:
 					continue
-				case advisor.Warn:
+				case storepb.Advice_WARNING:
 					status = storepb.PlanCheckRunResult_Result_WARNING
-				case advisor.Error:
+				case storepb.Advice_ERROR:
 					status = storepb.PlanCheckRunResult_Result_ERROR
 				}
 
@@ -385,10 +390,10 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					Code:    0,
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int32(advice.Line),
-							Column: int32(advice.Column),
-							Code:   advice.Code.Int32(),
-							Detail: advice.Details,
+							Line:   advice.GetStartPosition().Line,
+							Column: advice.GetStartPosition().Column,
+							Code:   advice.Code,
+							Detail: advice.Detail,
 						},
 					},
 				})
@@ -421,11 +426,4 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	}
 
 	return results, nil
-}
-
-func getSyntaxMode(t storepb.PlanCheckRunConfig_ChangeDatabaseType) advisor.SyntaxMode {
-	if t == storepb.PlanCheckRunConfig_SDL {
-		return advisor.SyntaxModeSDL
-	}
-	return advisor.SyntaxModeNormal
 }

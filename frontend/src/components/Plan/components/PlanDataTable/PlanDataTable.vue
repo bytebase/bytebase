@@ -20,17 +20,24 @@ import { NPerformantEllipsis, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAvatar } from "@/bbkit";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import { extractProjectResourceName, humanizeTs, planSlug } from "@/utils";
+import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
 const { t } = useI18n();
 
 const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
   const columns: (DataTableColumn<ComposedPlan> & { hide?: boolean })[] = [
-    // TODO(steven): show latest plan check run status.
+    {
+      key: "status",
+      title: "",
+      width: "36px",
+      render: (plan) => {
+        return <PlanCheckRunStatusIcon plan={plan} />;
+      },
+    },
     {
       key: "title",
       title: t("issue.table.name"),
@@ -63,19 +70,6 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
       hide: !props.showProject,
       render: (plan) => (
         <ProjectNameCell project={plan.projectEntity} mode={"ALL_SHORT"} />
-      ),
-    },
-    {
-      key: "creator",
-      resizable: true,
-      width: 150,
-      title: t("issue.table.creator"),
-      hide: !showExtendedColumns.value,
-      render: (plan) => (
-        <div class="flex flex-row items-center overflow-hidden gap-x-2">
-          <BBAvatar size="SMALL" username={plan.creatorEntity.title} />
-          <span class="truncate">{plan.creatorEntity.title}</span>
-        </div>
       ),
     },
     {

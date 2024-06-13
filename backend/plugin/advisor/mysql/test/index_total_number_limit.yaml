@@ -1,19 +1,19 @@
 - statement: CREATE TABLE t(a int, b int, c int, unique key(a, b, c));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE INDEX idx_id_name on tech_book(id, name);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE INDEX idx_id_name_1 on tech_book(id, name);
     CREATE INDEX idx_id_name_2 on tech_book(id, name);
@@ -21,12 +21,14 @@
     CREATE INDEX idx_id_name_4 on tech_book(id, name);
     CREATE INDEX idx_id_name_5 on tech_book(id, name);
   want:
-    - status: WARN
+    - status: 2
       code: 813
       title: index.total-number-limit
       content: The count of index in table `tech_book` should be no more than 5, but found 8
-      line: 5
-      details: ""
+      detail: ""
+      startposition:
+        line: 5
+        column: 0
 - statement: |-
     CREATE TABLE t(a int PRIMARY KEY, b int, c int);
     CREATE INDEX idx_a_b_1 on t(a, b);
@@ -35,12 +37,14 @@
     CREATE INDEX idx_a_b_4 on t(a, b);
     CREATE INDEX idx_a_b_5 on t(a, b);
   want:
-    - status: WARN
+    - status: 2
       code: 813
       title: index.total-number-limit
       content: The count of index in table `t` should be no more than 5, but found 6
-      line: 6
-      details: ""
+      detail: ""
+      startposition:
+        line: 6
+        column: 0
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY,
@@ -52,12 +56,14 @@
       INDEX idx_a_b_4 (a, b),
       INDEX idx_a_b_5 (a, b));
   want:
-    - status: WARN
+    - status: 2
       code: 813
       title: index.total-number-limit
       content: The count of index in table `t` should be no more than 5, but found 6
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE t (
       a int PRIMARY KEY,
@@ -70,9 +76,11 @@
     ALTER TABLE t ADD INDEX idx_a_b_4 (a, b);
     ALTER TABLE t ADD INDEX idx_a_b_5 (a, b);
   want:
-    - status: WARN
+    - status: 2
       code: 813
       title: index.total-number-limit
       content: The count of index in table `t` should be no more than 5, but found 6
-      line: 10
-      details: ""
+      detail: ""
+      startposition:
+        line: 10
+        column: 0

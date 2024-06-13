@@ -1,42 +1,48 @@
 - statement: CREATE TABLE "table"(id int, name varchar(255))
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.table.no-keyword
       content: Table name "table" is a keyword identifier and should be avoided.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE avg(id int, name varchar(255))
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.table.no-keyword
       content: Table name "AVG" is a keyword identifier and should be avoided.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book RENAME TO avg
   want:
-    - status: WARN
+    - status: 2
       code: 308
       title: naming.table.no-keyword
       content: Table name "AVG" is a keyword identifier and should be avoided.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     create table techBook(id int);
     ALTER TABLE techBook RENAME TO tech_book_tmp;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null

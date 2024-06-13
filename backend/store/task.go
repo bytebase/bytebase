@@ -43,8 +43,6 @@ type TaskMessage struct {
 	DependsOn         []int
 
 	DatabaseName string
-	// Statement used by grouping batch change, Bytebase use it to render.
-	Statement string
 
 	LatestTaskRunStatus api.TaskRunStatus
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/youmark/pkcs8"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -79,19 +80,11 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 		Password: config.Password,
 	}
 	if config.AuthenticationPrivateKey != "" {
-		block, _ := pem.Decode([]byte(config.AuthenticationPrivateKey))
-		if block == nil || block.Type != "PRIVATE KEY" {
-			return "", "", errors.Errorf("failed to get private key PEM block")
-		}
-		privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		rsaPrivKey, err := decodeRSAPrivateKey(config.AuthenticationPrivateKey)
 		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to parse pkcs 8 private key")
+			return "", "", errors.Wrapf(err, "failed to decode rsa private key")
 		}
-		rsaKey, ok := privateKey.(*rsa.PrivateKey)
-		if !ok {
-			return "", "", errors.Errorf("expected RSA private key, got %T", privateKey)
-		}
-		snowConfig.PrivateKey = rsaKey
+		snowConfig.PrivateKey = rsaPrivKey
 		snowConfig.Authenticator = snow.AuthTypeJwt
 	}
 
@@ -329,4 +322,35 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_SNOWFLAKE, conn, statement)
+}
+
+func decodeRSAPrivateKey(key string) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(key))
+	if block == nil {
+		return nil, errors.Errorf("failed to get private key PEM block from key")
+	}
+	switch block.Type {
+	case "PRIVATE KEY":
+		privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse pkcs8 private key")
+		}
+		rsaKey, ok := privateKey.(*rsa.PrivateKey)
+		if !ok {
+			return nil, errors.Errorf("expected RSA private key, got %T", privateKey)
+		}
+		return rsaKey, nil
+	case "ENCRYPTED PRIVATE KEY":
+		// NOTE: As of Jun 2024, Golang's official library does not support passcode-encrypted PKCS8 private key. And
+		// Snowflake do not introduce an external library to achieve this due to the security purposes.
+		// We introduce https://pkg.go.dev/github.com/youmark/pkcs8 to help us to achieve this goal.
+		// TODO(zp): Assume the passphrase is empty because we do not have input area in frontend.
+		pk, err := pkcs8.ParsePKCS8PrivateKeyRSA([]byte(block.Bytes), []byte(""))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse pkcs8 private key to rsa private key with passphrase")
+		}
+		return pk, nil
+	default:
+		return nil, errors.Errorf("unsupported pem block type: %s", block.Type)
+	}
 }

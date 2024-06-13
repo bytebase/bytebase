@@ -6,13 +6,14 @@
         POSITION      VARCHAR(100)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table MyTable.
-      line: 3
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
 - statement: |-
     CREATE TABLE Customer
     (
@@ -22,13 +23,14 @@
         FOREIGN KEY (Id) REFERENCES PERSON(Id)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table Customer.
-      line: 6
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 6
+        column: 0
 - statement: |-
     CREATE TABLE Customer
     (
@@ -38,13 +40,14 @@
     );
     ALTER TABLE Customer ADD FOREIGN KEY (Id) REFERENCES Person(Id);
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table Customer.
-      line: 7
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 7
+        column: 0
 - statement: |-
     CREATE TABLE Customer
     (
@@ -59,10 +62,9 @@
         Position      VARCHAR(100)
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

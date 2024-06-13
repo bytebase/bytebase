@@ -28,7 +28,7 @@ type NamingTableAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (*NamingTableAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingTableAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -60,20 +60,20 @@ func (*NamingTableAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 type namingTableListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	format          *regexp.Regexp
 	maxLength       int
 
-	adviceList []advisor.Advice
+	adviceList []*storepb.Advice
 }
 
-func (l *namingTableListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *namingTableListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -85,21 +85,25 @@ func (l *namingTableListener) generateAdvice() ([]advisor.Advice, error) {
 func (l *namingTableListener) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	if !l.format.MatchString(tableName) {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch,
+			Code:    advisor.NamingTableConventionMismatch.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, l.format),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 	if l.maxLength > 0 && len(tableName) > l.maxLength {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch,
+			Code:    advisor.NamingTableConventionMismatch.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, l.maxLength),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }
@@ -114,21 +118,25 @@ func (l *namingTableListener) EnterAlter_table_properties(ctx *parser.Alter_tabl
 		return
 	}
 	if !l.format.MatchString(tableName) {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch,
+			Code:    advisor.NamingTableConventionMismatch.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, l.format),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 	if l.maxLength > 0 && len(tableName) > l.maxLength {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch,
+			Code:    advisor.NamingTableConventionMismatch.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, l.maxLength),
-			Line:    ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

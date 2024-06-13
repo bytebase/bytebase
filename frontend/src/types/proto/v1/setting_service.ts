@@ -265,15 +265,24 @@ export function sMTPMailDeliverySettingValue_AuthenticationToNumber(
 export interface AppIMSetting {
   slack: AppIMSetting_Slack | undefined;
   feishu: AppIMSetting_Feishu | undefined;
+  wecom: AppIMSetting_Wecom | undefined;
 }
 
 export interface AppIMSetting_Slack {
+  enabled: boolean;
   token: string;
 }
 
 export interface AppIMSetting_Feishu {
+  enabled: boolean;
   appId: string;
   appSecret: string;
+}
+
+export interface AppIMSetting_Wecom {
+  enabled: boolean;
+  id: string;
+  secret: string;
 }
 
 export interface AgentPluginSetting {
@@ -1582,7 +1591,7 @@ export const SMTPMailDeliverySettingValue = {
 };
 
 function createBaseAppIMSetting(): AppIMSetting {
-  return { slack: undefined, feishu: undefined };
+  return { slack: undefined, feishu: undefined, wecom: undefined };
 }
 
 export const AppIMSetting = {
@@ -1592,6 +1601,9 @@ export const AppIMSetting = {
     }
     if (message.feishu !== undefined) {
       AppIMSetting_Feishu.encode(message.feishu, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.wecom !== undefined) {
+      AppIMSetting_Wecom.encode(message.wecom, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1617,6 +1629,13 @@ export const AppIMSetting = {
 
           message.feishu = AppIMSetting_Feishu.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.wecom = AppIMSetting_Wecom.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1630,6 +1649,7 @@ export const AppIMSetting = {
     return {
       slack: isSet(object.slack) ? AppIMSetting_Slack.fromJSON(object.slack) : undefined,
       feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
+      wecom: isSet(object.wecom) ? AppIMSetting_Wecom.fromJSON(object.wecom) : undefined,
     };
   },
 
@@ -1640,6 +1660,9 @@ export const AppIMSetting = {
     }
     if (message.feishu !== undefined) {
       obj.feishu = AppIMSetting_Feishu.toJSON(message.feishu);
+    }
+    if (message.wecom !== undefined) {
+      obj.wecom = AppIMSetting_Wecom.toJSON(message.wecom);
     }
     return obj;
   },
@@ -1655,18 +1678,24 @@ export const AppIMSetting = {
     message.feishu = (object.feishu !== undefined && object.feishu !== null)
       ? AppIMSetting_Feishu.fromPartial(object.feishu)
       : undefined;
+    message.wecom = (object.wecom !== undefined && object.wecom !== null)
+      ? AppIMSetting_Wecom.fromPartial(object.wecom)
+      : undefined;
     return message;
   },
 };
 
 function createBaseAppIMSetting_Slack(): AppIMSetting_Slack {
-  return { token: "" };
+  return { enabled: false, token: "" };
 }
 
 export const AppIMSetting_Slack = {
   encode(message: AppIMSetting_Slack, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
     if (message.token !== "") {
-      writer.uint32(10).string(message.token);
+      writer.uint32(18).string(message.token);
     }
     return writer;
   },
@@ -1679,7 +1708,14 @@ export const AppIMSetting_Slack = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
@@ -1695,11 +1731,17 @@ export const AppIMSetting_Slack = {
   },
 
   fromJSON(object: any): AppIMSetting_Slack {
-    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
+    return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
+    };
   },
 
   toJSON(message: AppIMSetting_Slack): unknown {
     const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
     if (message.token !== "") {
       obj.token = message.token;
     }
@@ -1711,22 +1753,26 @@ export const AppIMSetting_Slack = {
   },
   fromPartial(object: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
     const message = createBaseAppIMSetting_Slack();
+    message.enabled = object.enabled ?? false;
     message.token = object.token ?? "";
     return message;
   },
 };
 
 function createBaseAppIMSetting_Feishu(): AppIMSetting_Feishu {
-  return { appId: "", appSecret: "" };
+  return { enabled: false, appId: "", appSecret: "" };
 }
 
 export const AppIMSetting_Feishu = {
   encode(message: AppIMSetting_Feishu, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
     if (message.appId !== "") {
-      writer.uint32(10).string(message.appId);
+      writer.uint32(18).string(message.appId);
     }
     if (message.appSecret !== "") {
-      writer.uint32(18).string(message.appSecret);
+      writer.uint32(26).string(message.appSecret);
     }
     return writer;
   },
@@ -1739,14 +1785,21 @@ export const AppIMSetting_Feishu = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.appId = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -1763,6 +1816,7 @@ export const AppIMSetting_Feishu = {
 
   fromJSON(object: any): AppIMSetting_Feishu {
     return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
       appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
       appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
     };
@@ -1770,6 +1824,9 @@ export const AppIMSetting_Feishu = {
 
   toJSON(message: AppIMSetting_Feishu): unknown {
     const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
     if (message.appId !== "") {
       obj.appId = message.appId;
     }
@@ -1784,8 +1841,98 @@ export const AppIMSetting_Feishu = {
   },
   fromPartial(object: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
     const message = createBaseAppIMSetting_Feishu();
+    message.enabled = object.enabled ?? false;
     message.appId = object.appId ?? "";
     message.appSecret = object.appSecret ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Wecom(): AppIMSetting_Wecom {
+  return { enabled: false, id: "", secret: "" };
+}
+
+export const AppIMSetting_Wecom = {
+  encode(message: AppIMSetting_Wecom, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    if (message.secret !== "") {
+      writer.uint32(26).string(message.secret);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Wecom {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Wecom();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.secret = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Wecom {
+    return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_Wecom): unknown {
+    const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.secret !== "") {
+      obj.secret = message.secret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
+    return AppIMSetting_Wecom.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
+    const message = createBaseAppIMSetting_Wecom();
+    message.enabled = object.enabled ?? false;
+    message.id = object.id ?? "";
+    message.secret = object.secret ?? "";
     return message;
   },
 };

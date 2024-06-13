@@ -28,7 +28,7 @@ func init() {
 type IndexTypeAllowListAdvisor struct {
 }
 
-func (*IndexTypeAllowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexTypeAllowListAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -55,9 +55,9 @@ func (*IndexTypeAllowListAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -69,8 +69,8 @@ type indexTypeAllowListChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	allowList  []string
 }
@@ -162,11 +162,13 @@ func (checker *indexTypeAllowListChecker) validateIndexType(indexType string, li
 		return
 	}
 
-	checker.adviceList = append(checker.adviceList, advisor.Advice{
+	checker.adviceList = append(checker.adviceList, &storepb.Advice{
 		Status:  checker.level,
-		Code:    advisor.IndexTypeNotAllowed,
+		Code:    advisor.IndexTypeNotAllowed.Int32(),
 		Title:   checker.title,
 		Content: fmt.Sprintf("Index type `%s` is not allowed", indexType),
-		Line:    checker.baseLine + line,
+		StartPosition: &storepb.Position{
+			Line: int32(checker.baseLine + line),
+		},
 	})
 }

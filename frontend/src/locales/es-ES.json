@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador"
     },
     "im-integration": {
-      "enable": "Habilitar",
-      "description": "Permitir a los usuarios aprobar incidencias directamente desde IM.",
-      "feishu-updated-tip": "Integración con Feishu actualizada correctamente"
+      "description": "Envíe mensajes directos a los usuarios para eventos de problemas específicos. Funciona con el webhook del proyecto."
     },
     "sso": {
       "create": "Crear SSO",
@@ -1199,7 +1197,7 @@
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
-    "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
+    "missing-sql-statement": "Sentencia SQL faltante.",
     "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
     "data-export": {
       "options": "Opciones de exportación",
@@ -1614,6 +1612,7 @@
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
     "affected-tables": "Tablas afectadas",
+    "select-affection-tables": "Seleccionar tablas afectadas",
     "view-full": "Ver completo"
   },
   "database": {
@@ -1895,6 +1894,11 @@
         "btn-text": "Eliminar este webhook",
         "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
       },
+      "direct-messages": "Mensajes directos",
+      "enable-direct-messages": "Habilitar mensajes directos",
+      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos a los usuarios relacionados (emparejados por correo electrónico).",
+      "direct-messages-warning": "Debes configurar {im} para que funcione.",
+      "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
       "activity-item": {
         "issue-creation": {
           "title": "Creación de incidencia",
@@ -2295,6 +2299,7 @@
       "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
     },
     "executing-query": "Ejecutando consulta",
+    "request-query": "Solicitar consulta",
     "grouping": "Agrupamiento",
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",

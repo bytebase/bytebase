@@ -76,6 +76,7 @@ import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
 } from "@/types/proto/v1/plan_service";
+import { DatabaseGroupView } from "@/types/proto/v1/project_service";
 import {
   databaseForSpec,
   isDatabaseChangeSpec,
@@ -140,7 +141,11 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
 onMounted(async () => {
   if (isGroupingChangeSpec(props.spec)) {
     await dbGroupStore.getOrFetchDBGroupByName(
-      props.spec.changeDatabaseConfig!.target
+      props.spec.changeDatabaseConfig!.target,
+      {
+        skipCache: true,
+        view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+      }
     );
   }
 });

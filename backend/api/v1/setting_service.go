@@ -25,6 +25,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -328,9 +329,48 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+
 	case api.SettingAppIM:
-		// TODO(p0ny): impl
-		return nil, status.Errorf(codes.Unimplemented, "not implemented")
+		payload := new(storepb.AppIMSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetAppImSettingValue(), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s, error: %v", apiSettingName, err)
+		}
+		setting, err := s.store.GetAppIMSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get old app im setting")
+		}
+		for _, path := range request.UpdateMask.Paths {
+			switch path {
+			case "value.app_im_setting_value.slack":
+				setting.Slack = payload.Slack
+				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "token doesn't pass validation, error: %v", err)
+				}
+			case "value.app_im_setting_value.feishu":
+				setting.Feishu = payload.Feishu
+			case "value.app_im_setting_value.wecom":
+				setting.Wecom = payload.Wecom
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
+			}
+		}
+		if request.ValidateOnly {
+			return &v1pb.Setting{
+				Name: request.Setting.Name,
+				Value: &v1pb.Value{
+					Value: &v1pb.Value_AppImSettingValue{
+						AppImSettingValue: &v1pb.AppIMSetting{},
+					},
+				},
+			}, nil
+		}
+
+		bytes, err := protojson.Marshal(setting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s, error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
+
 	case api.SettingWorkspaceExternalApproval:
 		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
 		if err != nil {
@@ -537,12 +577,25 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		})
 	case api.SettingAppIM:
-		// TODO(p0ny): impl
+		storeValue := new(storepb.AppIMSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: &v1pb.AppIMSetting{},
+					AppImSettingValue: &v1pb.AppIMSetting{
+						Slack: &v1pb.AppIMSetting_Slack{
+							Enabled: storeValue.Slack != nil && storeValue.Slack.Enabled,
+						},
+						Feishu: &v1pb.AppIMSetting_Feishu{
+							Enabled: storeValue.Feishu != nil && storeValue.Feishu.Enabled,
+						},
+						Wecom: &v1pb.AppIMSetting_Wecom{
+							Enabled: storeValue.Wecom != nil && storeValue.Wecom.Enabled,
+						},
+					},
 				},
 			},
 		}, nil

@@ -1,0 +1,73 @@
+<template>
+  <span
+    class="flex items-center justify-center rounded-full select-none overflow-hidden"
+    :class="iconClass()"
+  >
+    <template v-if="planCheckRunStatus === PlanCheckRun_Result_Status.ERROR">
+      <span
+        class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
+        aria-hidden="true"
+        >!</span
+      >
+    </template>
+    <template
+      v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.WARNING"
+    >
+      <span class="h-3 w-3 bg-white rounded-full" aria-hidden="true"></span>
+    </template>
+    <template
+      v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.SUCCESS"
+    >
+      <heroicons-solid:check class="w-4 h-4" />
+    </template>
+    <template v-else>
+      <span class="h-3 w-3 bg-white rounded-full" aria-hidden="true"></span>
+    </template>
+  </span>
+</template>
+
+<script lang="ts" setup>
+import type { PropType } from "vue";
+import { computed } from "vue";
+import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
+import type { ComposedPlan } from "@/types/v1/issue/plan";
+
+export type SizeType = "small" | "normal";
+
+const props = defineProps({
+  plan: {
+    required: true,
+    type: Object as PropType<ComposedPlan>,
+  },
+  size: {
+    type: String as PropType<SizeType>,
+    default: "normal",
+  },
+});
+
+const planCheckRunStatus = computed(() => {
+  const { planCheckRunStatusCount } = props.plan;
+  if (planCheckRunStatusCount["ERROR"] > 0) {
+    return PlanCheckRun_Result_Status.ERROR;
+  } else if (planCheckRunStatusCount["WARNING"] > 0) {
+    return PlanCheckRun_Result_Status.WARNING;
+  } else if (planCheckRunStatusCount["SUCCESS"] > 0) {
+    return PlanCheckRun_Result_Status.SUCCESS;
+  }
+  return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+});
+
+const iconClass = () => {
+  const iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
+  switch (planCheckRunStatus.value) {
+    case PlanCheckRun_Result_Status.ERROR:
+      return iconClass + " bg-error text-white";
+    case PlanCheckRun_Result_Status.WARNING:
+      return iconClass + " bg-warning text-white";
+    case PlanCheckRun_Result_Status.SUCCESS:
+      return iconClass + " bg-success text-white";
+    default:
+      return iconClass + " bg-accent text-white";
+  }
+};
+</script>

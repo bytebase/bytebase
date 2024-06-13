@@ -2,19 +2,23 @@
     CREATE TABLE book(id INT);
     ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `tech_book`
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t1 (id INT);
     CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id));
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `book`
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

@@ -18,7 +18,7 @@ func TestContext_getMetaList(t *testing.T) {
 				Status: "PENDING_APPROVAL",
 			},
 		}
-		want := []meta{
+		want := []Meta{
 			{
 				Name:  "Task",
 				Value: "task name",
@@ -28,7 +28,7 @@ func TestContext_getMetaList(t *testing.T) {
 				Value: "PENDING_APPROVAL",
 			},
 		}
-		a.Equal(want, context.getMetaList())
+		a.Equal(want, context.GetMetaList())
 	})
 	t.Run("task2", func(t *testing.T) {
 		a := require.New(t)
@@ -39,7 +39,7 @@ func TestContext_getMetaList(t *testing.T) {
 				Detail: "SQL STATE",
 			},
 		}
-		want := []meta{
+		want := []Meta{
 			{
 				Name:  "Task",
 				Value: "task name",
@@ -53,7 +53,7 @@ func TestContext_getMetaList(t *testing.T) {
 				Value: "SQL STATE",
 			},
 		}
-		a.Equal(want, context.getMetaList())
+		a.Equal(want, context.GetMetaList())
 	})
 	t.Run("task3", func(t *testing.T) {
 		a := require.New(t)
@@ -72,7 +72,7 @@ func TestContext_getMetaList(t *testing.T) {
 				Detail: detail,
 			},
 		}
-		want := []meta{
+		want := []Meta{
 			{
 				Name:  "Task",
 				Value: "task name",
@@ -86,7 +86,7 @@ func TestContext_getMetaList(t *testing.T) {
 				Value: common.TruncateStringWithDescription(detail),
 			},
 		}
-		a.Equal(want, context.getMetaList())
+		a.Equal(want, context.GetMetaList())
 	})
 	t.Run("task4", func(t *testing.T) {
 		a := require.New(t)
@@ -105,7 +105,7 @@ func TestContext_getMetaList(t *testing.T) {
 				Detail: detail,
 			},
 		}
-		want := []meta{
+		want := []Meta{
 			{
 				Name:  "Task",
 				Value: "task name",
@@ -119,6 +119,6 @@ func TestContext_getMetaList(t *testing.T) {
 				Value: common.TruncateStringWithDescription(detail),
 			},
 		}
-		a.Equal(want, context.getMetaList())
+		a.Equal(want, context.GetMetaList())
 	})
 }

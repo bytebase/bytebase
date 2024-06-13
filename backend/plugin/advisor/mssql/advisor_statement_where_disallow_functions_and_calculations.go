@@ -8,18 +8,18 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	advisor.Register(store.Engine_MSSQL, advisor.MSSQLStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
 }
 
 type DisallowFuncAndCalculationsAdvisor struct{}
 
 type DisallowFuncAndCalculationsChecker struct {
 	*parser.BaseTSqlParserListener
-	level advisor.Status
+	level storepb.Advice_Status
 	title string
 
 	// We only check the 'WHERE' clause in a 'SELECT' statement.
@@ -29,12 +29,12 @@ type DisallowFuncAndCalculationsChecker struct {
 	havingCnt     int
 	// Each statement can only trigger the rule once.
 	hasTriggeredRule bool
-	adviceList       []advisor.Advice
+	adviceList       []*storepb.Advice
 }
 
 var _ advisor.Advisor = (*DisallowFuncAndCalculationsAdvisor)(nil)
 
-func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to AST tree")
@@ -57,9 +57,9 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context, _ string) 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -68,31 +68,35 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context, _ string) 
 	return checker.adviceList, nil
 }
 
-func generateAdviceOnFunctionUsing(c *DisallowFuncAndCalculationsChecker, ctx antlr.BaseParserRuleContext) *advisor.Advice {
+func generateAdviceOnFunctionUsing(c *DisallowFuncAndCalculationsChecker, ctx antlr.BaseParserRuleContext) *storepb.Advice {
 	if c.whereCnt == 0 || c.hasTriggeredRule {
 		return nil
 	}
 	c.hasTriggeredRule = true
-	return &advisor.Advice{
+	return &storepb.Advice{
 		Status:  c.level,
-		Code:    advisor.StatementDisallowFunctionsAndCalculations,
+		Code:    advisor.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:   c.title,
 		Content: fmt.Sprintf("Calling function '%s' in 'WHERE' clause is not allowed", ctx.GetText()),
-		Line:    ctx.GetStart().GetLine(),
+		StartPosition: &storepb.Position{
+			Line: int32(ctx.GetStart().GetLine()),
+		},
 	}
 }
 
-func generateAdviceOnPerformingCalculations(c *DisallowFuncAndCalculationsChecker, ctx antlr.BaseParserRuleContext) *advisor.Advice {
+func generateAdviceOnPerformingCalculations(c *DisallowFuncAndCalculationsChecker, ctx antlr.BaseParserRuleContext) *storepb.Advice {
 	if c.whereCnt == 0 || c.hasTriggeredRule {
 		return nil
 	}
 	c.hasTriggeredRule = true
-	return &advisor.Advice{
+	return &storepb.Advice{
 		Status:  c.level,
-		Code:    advisor.StatementDisallowFunctionsAndCalculations,
+		Code:    advisor.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:   c.title,
 		Content: "Performing calculations in 'WHERE' clause is not allowed",
-		Line:    ctx.GetStart().GetLine(),
+		StartPosition: &storepb.Position{
+			Line: int32(ctx.GetStart().GetLine()),
+		},
 	}
 }
 
@@ -126,49 +130,49 @@ func (c *DisallowFuncAndCalculationsChecker) ExitSearch_condition(_ *parser.Sear
 // Calling functions.
 func (c *DisallowFuncAndCalculationsChecker) EnterBUILT_IN_FUNC(ctx *parser.BUILT_IN_FUNCContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterRANKING_WINDOWED_FUNC(ctx *parser.RANKING_WINDOWED_FUNCContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterAGGREGATE_WINDOWED_FUNC(ctx *parser.AGGREGATE_WINDOWED_FUNCContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterANALYTIC_WINDOWED_FUNC(ctx *parser.ANALYTIC_WINDOWED_FUNCContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterSCALAR_FUNCTION(ctx *parser.SCALAR_FUNCTIONContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterFREE_TEXT(ctx *parser.FREE_TEXTContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterPARTITION_FUNC(ctx *parser.PARTITION_FUNCContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterHIERARCHYID_METHOD(ctx *parser.HIERARCHYID_METHODContext) {
 	if advice := generateAdviceOnFunctionUsing(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }
 
@@ -176,13 +180,13 @@ func (c *DisallowFuncAndCalculationsChecker) EnterHIERARCHYID_METHOD(ctx *parser
 func (c *DisallowFuncAndCalculationsChecker) EnterExpression(ctx *parser.ExpressionContext) {
 	if ctx.GetOp() != nil {
 		if advice := generateAdviceOnPerformingCalculations(c, ctx.BaseParserRuleContext); advice != nil {
-			c.adviceList = append(c.adviceList, *advice)
+			c.adviceList = append(c.adviceList, advice)
 		}
 	}
 }
 
 func (c *DisallowFuncAndCalculationsChecker) EnterUnary_operator_expression(ctx *parser.Unary_operator_expressionContext) {
 	if advice := generateAdviceOnPerformingCalculations(c, ctx.BaseParserRuleContext); advice != nil {
-		c.adviceList = append(c.adviceList, *advice)
+		c.adviceList = append(c.adviceList, advice)
 	}
 }

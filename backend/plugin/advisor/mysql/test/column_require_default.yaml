@@ -8,12 +8,12 @@
       f geometry
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(
       a geometry,
@@ -26,12 +26,12 @@
       h geometrycollection
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t1(
       a int primary key
@@ -40,71 +40,79 @@
       a int auto_increment primary key
     );
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE t(
       a int,
       b int default 1
     )
   want:
-    - status: WARN
+    - status: 2
       code: 420
       title: column.require-default
       content: Column `t`.`a` doesn't have DEFAULT.
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a BLOB;
     ALTER TABLE tech_book ADD COLUMN b timestamp;
     ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
   want:
-    - status: WARN
+    - status: 2
       code: 420
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
-      line: 2
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 420
       title: column.require-default
       content: Column `tech_book`.`a` doesn't have DEFAULT.
-      line: 3
-      details: ""
-- statement: |-
-    ALTER TABLE tech_book ADD COLUMN (a BLOB, b timestamp);
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
+- statement: ALTER TABLE tech_book ADD COLUMN (a BLOB, b timestamp);
   want:
-    - status: WARN
+    - status: 2
       code: 420
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a VARCHAR(255) DEFAULT 'default value';
     ALTER TABLE tech_book MODIFY COLUMN a char(25) DEFAULT 'default';
     ALTER TABLE tech_book CHANGE COLUMN a b int;
   want:
-    - status: WARN
+    - status: 2
       code: 420
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
-      line: 3
-      details: ""
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
 - statement: |-
     CREATE TABLE t(
       id int,
       PRIMARY KEY (id)
     )
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

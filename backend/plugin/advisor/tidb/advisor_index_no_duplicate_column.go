@@ -26,7 +26,7 @@ type IndexNoDuplicateColumnAdvisor struct {
 }
 
 // Check checks for no duplicate columns in index.
-func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -48,9 +48,9 @@ func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -59,8 +59,8 @@ func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 type indexNoDuplicateColumnChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -130,12 +130,14 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 	}
 
 	for _, column := range columnList {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.DuplicateColumnInIndex,
+			Code:    advisor.DuplicateColumnInIndex.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", column.tp, column.index, column.table, column.column),
-			Line:    column.line,
+			StartPosition: &storepb.Position{
+				Line: int32(column.line),
+			},
 		})
 	}
 

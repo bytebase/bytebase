@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -64,7 +65,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	return &storepb.DatabaseSchemaMetadata{
-		Name: formatDatabaseName(d.config.Database, d.awsConfig.Region),
+		Name: d.config.Database,
 		Schemas: []*storepb.SchemaMetadata{
 			schemaMetadata,
 		},
@@ -106,6 +107,24 @@ func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.Tabl
 			Expressions: append([]string{}, rangeKeyAttributes...),
 			Type:        "RANGE",
 		})
+		columnsMap := make(map[string]bool)
+		for _, key := range hashKeyAttributes {
+			columnsMap[key] = true
+		}
+		for _, key := range rangeKeyAttributes {
+			columnsMap[key] = true
+		}
+		sortedColumns := make([]string, 0, len(columnsMap))
+		for key := range columnsMap {
+			sortedColumns = append(sortedColumns, key)
+		}
+		sort.Strings(sortedColumns)
+		tableMetadata.Columns = make([]*storepb.ColumnMetadata, 0, len(sortedColumns))
+		for _, key := range sortedColumns {
+			tableMetadata.Columns = append(tableMetadata.Columns, &storepb.ColumnMetadata{
+				Name: key,
+			})
+		}
 	}
 	if out.Table.TableName != nil {
 		tableMetadata.Name = *out.Table.TableName

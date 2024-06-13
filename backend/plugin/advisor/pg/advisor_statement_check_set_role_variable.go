@@ -19,7 +19,7 @@ func init() {
 type StatementCheckSetRoleVariable struct {
 }
 
-func (*StatementCheckSetRoleVariable) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementCheckSetRoleVariable) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -46,18 +46,20 @@ func (*StatementCheckSetRoleVariable) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	if !hasSetRole {
-		return []advisor.Advice{{
+		return []*storepb.Advice{{
 			Status:  level,
-			Code:    advisor.StatementCheckSetRoleVariable,
+			Code:    advisor.StatementCheckSetRoleVariable.Int32(),
 			Title:   string(ctx.Rule.Type),
 			Content: "No SET ROLE statement found.",
-			Line:    1,
+			StartPosition: &storepb.Position{
+				Line: 1,
+			},
 		}}, nil
 	}
 
-	return []advisor.Advice{{
-		Status:  advisor.Success,
-		Code:    advisor.Ok,
+	return []*storepb.Advice{{
+		Status:  storepb.Advice_SUCCESS,
+		Code:    advisor.Ok.Int32(),
 		Title:   "OK",
 		Content: "",
 	}}, nil

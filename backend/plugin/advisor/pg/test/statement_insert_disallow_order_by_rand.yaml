@@ -1,18 +1,18 @@
 - statement: INSERT INTO tech_book VALUES(1, "a")
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: INSERT INTO tech_book SELECT * FROM tech_book ORDER BY random()
   want:
-    - status: WARN
+    - status: 2
       code: 1108
       title: statement.insert.disallow-order-by-rand
       content: The INSERT statement uses ORDER BY random() or random_between(), related statement "INSERT INTO tech_book SELECT * FROM tech_book ORDER BY random()"
-      line: 1
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

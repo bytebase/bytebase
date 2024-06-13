@@ -24,7 +24,7 @@ func init() {
 type StatementWhereMaximumLogicalOperatorCountAdvisor struct {
 }
 
-func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -49,20 +49,22 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Conte
 		checker.reported = false
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 		if checker.maxOrCount > checker.maximum {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementWhereMaximumLogicalOperatorCount,
+				Code:    advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", checker.maxOrCount, checker.maximum, checker.text),
-				Line:    checker.maxOrCountLine,
+				StartPosition: &storepb.Position{
+					Line: int32(checker.maxOrCountLine),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -74,8 +76,8 @@ type statementWhereMaximumLogicalOperatorCountChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine          int
-	adviceList        []advisor.Advice
-	level             advisor.Status
+	adviceList        []*storepb.Advice
+	level             storepb.Advice_Status
 	title             string
 	text              string
 	maximum           int
@@ -108,12 +110,14 @@ func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterExprList(c
 
 	count := len(ctx.AllExpr())
 	if count > checker.maximum {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementWhereMaximumLogicalOperatorCount,
+			Code:    advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Number of tokens (%d) in IN predicate operation exceeds limit (%d) in statement %q.", count, checker.maximum, checker.text),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
 		})
 	}
 }

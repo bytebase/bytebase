@@ -198,6 +198,11 @@ func (d *DatabaseState) HasNoTable() bool {
 	return true
 }
 
+func (d *DatabaseState) HasSchema(name string) bool {
+	_, exists := d.schemaSet[name]
+	return exists
+}
+
 // DatabaseName returns the database name.
 func (d *DatabaseState) DatabaseName() string {
 	return d.name

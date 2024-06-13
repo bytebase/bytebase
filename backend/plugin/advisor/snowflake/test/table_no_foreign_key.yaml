@@ -6,12 +6,14 @@
         POSITION      VARCHAR(100)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -21,12 +23,14 @@
         (ID) REFERENCES PERSON(ID)
     );
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
-      line: 6
-      details: ""
+      detail: ""
+      startposition:
+        line: 6
+        column: 0
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -36,12 +40,14 @@
     );
     ALTER TABLE CUSTOMER ADD (ID) REFERENCES PERSON(ID);
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
-      line: 7
-      details: ""
+      detail: ""
+      startposition:
+        line: 7
+        column: 0
 - statement: |-
     CREATE TABLE "ANOTHER_SCHEMA"."CUSTOMER"
     (
@@ -51,12 +57,14 @@
     );
     ALTER TABLE CUSTOMER DROP FOREIGN KEY (ID);
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table "ANOTHER_SCHEMA"."CUSTOMER".
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -66,12 +74,12 @@
     );
     ALTER TABLE CUSTOMER DROP FOREIGN KEY (ID);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -87,9 +95,11 @@
     );
     ALTER TABLE CUSTOMER ADD CONSTRAINT FK_CUSTOMER_PERSON FOREIGN KEY (ID) REFERENCES PERSON(ID);
   want:
-    - status: WARN
+    - status: 2
       code: 602
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
-      line: 13
-      details: ""
+      detail: ""
+      startposition:
+        line: 13
+        column: 0

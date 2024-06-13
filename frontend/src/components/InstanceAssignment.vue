@@ -2,6 +2,7 @@
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent
       :title="$t('subscription.instance-assignment.manage-license')"
+      class="max-w-[100vw]"
     >
       <div class="divide-block-border space-y-5 w-[40rem] h-full">
         <div>

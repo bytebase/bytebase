@@ -1,54 +1,64 @@
 - statement: CREATE TABLE book(id int, creatorId int);
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int);
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
-      content: "`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters"
-      line: 1
-      details: ""
+      content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE book(id int, creator_id int);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
     ALTER TABLE book RENAME COLUMN creator_id TO creatorId;
     ALTER TABLE book CHANGE COLUMN creatorId gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int;
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 2
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 302
       title: naming.column
-      content: "`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters"
-      line: 3
-      details: ""
+      content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
 - statement: |
     ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
     ALTER TABLE tech_book RENAME COLUMN creator_id TO gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx;
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
-      content: "`tech_book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters"
-      line: 2
-      details: ""
+      content: '`tech_book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -58,30 +68,32 @@
       updated_ts timestamp);
     ALTER TABLE book CHANGE COLUMN creator_id creatorId int;
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 7
-      details: ""
+      detail: ""
+      startposition:
+        line: 7
+        column: 0
 - statement: |-
     CREATE TABLE book (id INT);
     ALTER TABLE book CHANGE COLUMN id creator_id int;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE tech_book DROP COLUMN id;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -90,12 +102,14 @@
       updated_ts timestamp);
     ALTER TABLE book ADD COLUMN contentString varchar(255);
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 6
-      details: ""
+      detail: ""
+      startposition:
+        line: 6
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -104,18 +118,22 @@
       updated_ts timestamp);
     ALTER TABLE book ADD COLUMN (personAge INT, contentString varchar(255));
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 6
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 6
+        column: 0
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`personAge` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 6
-      details: ""
+      detail: ""
+      startposition:
+        line: 6
+        column: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -127,27 +145,35 @@
       createdTs timestamp,
       updatedTs timestamp);
   want:
-    - status: WARN
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 3
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 3
+        column: 0
+    - status: 2
       code: 302
       title: naming.column
       content: '`book`.`updaterId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 4
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 4
+        column: 0
+    - status: 2
       code: 302
       title: naming.column
       content: '`student`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 8
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 8
+        column: 0
+    - status: 2
       code: 302
       title: naming.column
       content: '`student`.`updatedTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 9
-      details: ""
+      detail: ""
+      startposition:
+        line: 9
+        column: 0

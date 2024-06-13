@@ -29,7 +29,7 @@ type IndexPkTypeAdvisor struct {
 }
 
 // Check checks for correct type of PK.
-func (*IndexPkTypeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*IndexPkTypeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -52,9 +52,9 @@ func (*IndexPkTypeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -88,8 +88,8 @@ func (t tableNewColumn) delete(tableName string, columnName string) {
 }
 
 type indexPkTypeChecker struct {
-	adviceList       []advisor.Advice
-	level            advisor.Status
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
 	title            string
 	line             map[string]int
 	catalog          *catalog.Finder
@@ -141,12 +141,14 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 	for _, pd := range pkDataList {
-		v.adviceList = append(v.adviceList, advisor.Advice{
+		v.adviceList = append(v.adviceList, &storepb.Advice{
 			Status:  v.level,
-			Code:    advisor.IndexPKType,
+			Code:    advisor.IndexPKType.Int32(),
 			Title:   v.title,
 			Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", pd.table, pd.column, pd.columnType),
-			Line:    pd.line,
+			StartPosition: &storepb.Position{
+				Line: int32(pd.line),
+			},
 		})
 	}
 	return in, false

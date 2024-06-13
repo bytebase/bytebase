@@ -29,7 +29,7 @@ type ColumnMaximumVarcharLengthAdvisor struct {
 }
 
 // Check checks for maximum varchar length.
-func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -55,9 +55,9 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) (
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -68,8 +68,8 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) (
 type columnMaximumVarcharLengthChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	baseLine   int
 	maximum    int
@@ -100,12 +100,14 @@ func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.Cr
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 		length := getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
 		if checker.maximum > 0 && length > checker.maximum {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.VarcharLengthExceedsLimit,
+				Code:    advisor.VarcharLengthExceedsLimit.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-				Line:    checker.baseLine + tableElement.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + tableElement.GetStart().GetLine()),
+				},
 			})
 		}
 	}
@@ -185,12 +187,14 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 		}
 		for _, columnName := range columnList {
 			if length, ok := varcharLengthMap[columnName]; ok && checker.maximum > 0 && length > checker.maximum {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,
-					Code:    advisor.VarcharLengthExceedsLimit,
+					Code:    advisor.VarcharLengthExceedsLimit.Int32(),
 					Title:   checker.title,
 					Content: fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-					Line:    checker.baseLine + ctx.GetStart().GetLine(),
+					StartPosition: &storepb.Position{
+						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+					},
 				})
 			}
 		}

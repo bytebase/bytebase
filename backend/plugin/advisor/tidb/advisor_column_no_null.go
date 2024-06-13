@@ -26,7 +26,7 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -51,14 +51,14 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 }
 
 type columnNoNullChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	columnSet  map[string]columnName
 	catalog    *catalog.Finder
 }
 
-func (checker *columnNoNullChecker) generateAdvice() []advisor.Advice {
+func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	var columnList []columnName
 	for _, column := range checker.columnSet {
 		columnList = append(columnList, column)
@@ -76,20 +76,22 @@ func (checker *columnNoNullChecker) generateAdvice() []advisor.Advice {
 			ColumnName: column.columnName,
 		})
 		if col != nil && col.Nullable() {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.ColumnCannotNull,
+				Code:    advisor.ColumnCannotNull.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				Line:    column.line,
+				StartPosition: &storepb.Position{
+					Line: int32(column.line),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

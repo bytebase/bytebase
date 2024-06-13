@@ -29,7 +29,7 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -50,9 +50,9 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -65,8 +65,8 @@ type noLeadingWildcardLikeChecker struct {
 
 	baseLine   int
 	title      string
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	text       string
 }
 
@@ -83,12 +83,14 @@ func (checker *noLeadingWildcardLikeChecker) EnterPredicateExprLike(ctx *mysql.P
 	for _, expr := range ctx.AllSimpleExpr() {
 		pattern := expr.GetText()
 		if (strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'")) || (strings.HasPrefix(pattern, "\"%") && strings.HasSuffix(pattern, "\"")) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementLeadingWildcardLike,
+				Code:    advisor.StatementLeadingWildcardLike.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	}

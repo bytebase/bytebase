@@ -98,7 +98,7 @@ export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
 
   let name = stringifyAffectedTable(affectedTable);
   if (affectedTable.dropped) {
-    name = `${name} (deleted)`;
+    name = `${name}(deleted)`;
   }
   return name;
 };

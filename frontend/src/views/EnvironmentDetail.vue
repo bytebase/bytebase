@@ -1,7 +1,8 @@
 <template>
-  <div class="py-2">
-    <ArchiveBanner v-if="state.environment.state == State.DELETED" />
+  <div v-if="state.environment.state == State.DELETED" class="mb-2 -mt-4">
+    <ArchiveBanner />
   </div>
+
   <EnvironmentForm
     v-if="state.rolloutPolicy && state.environmentTier"
     :environment="state.environment"
@@ -11,7 +12,19 @@
     @archive="doArchive"
     @restore="doRestore"
     @update-policy="updatePolicy"
-  />
+  >
+    <EnvironmentFormBody
+      :simple="simple"
+      :hide-archive-restore="hideArchiveRestore"
+      class="w-full px-4 pb-2"
+      :class="bodyClass"
+    />
+    <EnvironmentFormButtons
+      class="sticky bottom-0 bg-white py-2 px-4 border-t border-block-border"
+      :class="buttonsClass"
+    />
+  </EnvironmentForm>
+
   <FeatureModal
     :open="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
@@ -25,7 +38,11 @@ import { reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
-import EnvironmentForm from "@/components/EnvironmentForm.vue";
+import {
+  EnvironmentForm,
+  Form as EnvironmentFormBody,
+  Buttons as EnvironmentFormButtons,
+} from "@/components/EnvironmentForm";
 import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { hasFeature, pushNotification } from "@/store";
@@ -44,17 +61,17 @@ import type {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import type { Policy as PolicyV1 } from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
-  PolicyType as PolicyTypeV1,
+  PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { extractEnvironmentResourceName } from "@/utils";
+import { extractEnvironmentResourceName, type VueClass } from "@/utils";
 
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
-  rolloutPolicy?: PolicyV1;
+  rolloutPolicy?: Policy;
   environmentTier?: EnvironmentTier;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
@@ -62,17 +79,18 @@ interface LocalState {
     | "bb.feature.environment-tier-policy";
 }
 
-const props = defineProps({
-  environmentId: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  environmentId: string;
+  simple?: boolean;
+  hideArchiveRestore?: boolean;
+  bodyClass?: VueClass;
+  buttonsClass?: VueClass;
+}>();
 
 const emit = defineEmits(["archive"]);
 
-const router = useRouter();
 const { t } = useI18n();
+const router = useRouter();
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
 
@@ -102,7 +120,7 @@ const preparePolicy = () => {
     })
     .then((policies) => {
       const rolloutPolicy = policies.find(
-        (policy) => policy.type === PolicyTypeV1.ROLLOUT_POLICY
+        (policy) => policy.type === PolicyType.ROLLOUT_POLICY
       );
       state.rolloutPolicy =
         rolloutPolicy ||
@@ -190,12 +208,13 @@ const success = () => {
   });
 };
 
-const updatePolicy = async (
-  environment: Environment,
-  policyType: PolicyTypeV1,
-  policy: PolicyV1
-) => {
-  if (policyType === PolicyTypeV1.ROLLOUT_POLICY) {
+const updatePolicy = async (params: {
+  environment: Environment;
+  policyType: PolicyType;
+  policy: Policy;
+}) => {
+  const { environment, policyType, policy } = params;
+  if (policyType === PolicyType.ROLLOUT_POLICY) {
     const rp = policy.rolloutPolicy;
     if (rp?.automatic === false) {
       if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
@@ -217,7 +236,7 @@ const updatePolicy = async (
     policy,
   });
   switch (policyType) {
-    case PolicyTypeV1.ROLLOUT_POLICY:
+    case PolicyType.ROLLOUT_POLICY:
       state.rolloutPolicy = updatedPolicy;
       break;
   }

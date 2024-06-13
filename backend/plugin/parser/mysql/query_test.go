@@ -205,7 +205,8 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := extractChangedResources("db", "", test.statement)
+		ast, _ := ParseMySQL(test.statement)
+		resources, err := extractChangedResources("db", "", ast[0])
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}

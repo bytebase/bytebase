@@ -691,6 +691,18 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			default:
 				return nil, errors.Errorf("expect to get a list node but got %T", node)
 			}
+		case pgquery.ObjectType_OBJECT_VIEW:
+			commentStmt.Type = ast.ObjectTypeView
+			switch node := in.CommentStmt.Object.Node.(type) {
+			case *pgquery.Node_List:
+				tableDef, err := convertNodeListToTableDef(node.List.Items)
+				if err != nil {
+					return nil, err
+				}
+				commentStmt.Object = tableDef
+			default:
+				return nil, errors.Errorf("expect to get a list node but got %T", node)
+			}
 		}
 
 		return &commentStmt, nil
@@ -843,6 +855,26 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			Args:    args,
 			IsLocal: in.VariableSetStmt.IsLocal,
 		}, nil
+	case *pgquery.Node_ViewStmt:
+		viewStmt := &ast.CreateViewStmt{
+			Replace: in.ViewStmt.Replace,
+			Name:    convertRangeVarToTableName(in.ViewStmt.View, ast.TableTypeView),
+		}
+
+		if query, ok := in.ViewStmt.Query.Node.(*pgquery.Node_SelectStmt); ok {
+			if viewStmt.Select, err = convertSelectStmt(query.SelectStmt); err != nil {
+				return nil, err
+			}
+		}
+
+		for _, alias := range in.ViewStmt.Aliases {
+			if alias, ok := alias.Node.(*pgquery.Node_String_); ok {
+				viewStmt.Aliases = append(viewStmt.Aliases, alias.String_.Sval)
+			}
+		}
+
+		viewStmt.SetOriginalNode(in)
+		return viewStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
@@ -1272,6 +1304,7 @@ func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
 
 func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 	selectStmt := &ast.SelectStmt{}
+	selectStmt.SetOriginalNode(in)
 
 	setOperation, err := convertSetOperation(in.Op)
 	if err != nil {

@@ -29,7 +29,7 @@ type NamingFKConventionAdvisor struct {
 }
 
 // Check checks for foreign key naming convention.
-func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -57,9 +57,9 @@ func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -73,8 +73,8 @@ type namingFKConventionChecker struct {
 
 	baseLine     int
 	text         string
-	adviceList   []advisor.Advice
-	level        advisor.Status
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
 	title        string
 	format       string
 	maxLength    int
@@ -151,30 +151,34 @@ func (checker *namingFKConventionChecker) handleIndexList(indexDataList []*index
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.Internal,
+				Code:    advisor.Internal.Int32(),
 				Title:   "Internal error for foreign key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", checker.text, err.Error()),
 			})
 			continue
 		}
 		if !regex.MatchString(indexData.indexName) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NamingFKConventionMismatch,
+				Code:    advisor.NamingFKConventionMismatch.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
-				Line:    indexData.line,
+				StartPosition: &storepb.Position{
+					Line: int32(indexData.line),
+				},
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NamingFKConventionMismatch,
+				Code:    advisor.NamingFKConventionMismatch.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
-				Line:    indexData.line,
+				StartPosition: &storepb.Position{
+					Line: int32(indexData.line),
+				},
 			})
 		}
 	}

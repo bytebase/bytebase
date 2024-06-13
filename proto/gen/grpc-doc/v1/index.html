@@ -1551,6 +1551,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Plan.PlanCheckRunStatusCountEntry"><span class="badge">M</span>Plan.PlanCheckRunStatusCountEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Plan.Spec"><span class="badge">M</span>Plan.Spec</a>
                 </li>
               
@@ -2154,6 +2158,10 @@
               
                 <li>
                   <a href="#bytebase.v1.AppIMSetting.Slack"><span class="badge">M</span>AppIMSetting.Slack</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AppIMSetting.Wecom"><span class="badge">M</span>AppIMSetting.Wecom</a>
                 </li>
               
                 <li>
@@ -8217,7 +8225,7 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Filter is used to filter databases returned in the list.
-For example, &#34;project = projects/{project}&#34; can be used to list databases in a project.
+For example, `project == &#34;projects/{project}&#34;` can be used to list databases in a project.
 Note: the project filter will be moved to parent. </p></td>
                 </tr>
               
@@ -17178,6 +17186,17 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>plan_check_run_status_count</td>
+                  <td><a href="#bytebase.v1.Plan.PlanCheckRunStatusCountEntry">Plan.PlanCheckRunStatusCountEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The status count of the latest plan check runs.
+Keys are:
+- SUCCESS
+- WARNING
+- ERROR </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -17459,6 +17478,37 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>optional</td>
                   <td><p>The zip password provide by users.
 Leave it empty if no needs to encrypt the zip file. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.PlanCheckRunStatusCountEntry">Plan.PlanCheckRunStatusCountEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -23344,6 +23394,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>wecom</td>
+                  <td><a href="#bytebase.v1.AppIMSetting.Wecom">AppIMSetting.Wecom</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23360,6 +23417,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
               
                 <tr>
                   <td>app_id</td>
@@ -23393,7 +23457,52 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
             <tbody>
               
                 <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AppIMSetting.Wecom">AppIMSetting.Wecom</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>

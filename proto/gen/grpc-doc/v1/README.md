@@ -359,6 +359,7 @@
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
+    - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [Plan.Step](#bytebase-v1-Plan-Step)
     - [Plan.VCSSource](#bytebase-v1-Plan-VCSSource)
@@ -517,6 +518,7 @@
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu)
     - [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack)
+    - [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-v1-DataClassificationSetting-DataClassificationConfig)
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
@@ -2721,7 +2723,7 @@ Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST u
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter databases returned in the list. For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. Note: the project filter will be moved to parent. |
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. For example, `project == &#34;projects/{project}&#34;` can be used to list databases in a project. Note: the project filter will be moved to parent. |
 
 
 
@@ -5990,6 +5992,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR |
 
 
 
@@ -6098,6 +6101,22 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-PlanCheckRunStatusCountEntry"></a>
+
+### Plan.PlanCheckRunStatusCountEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [int32](#int32) |  |  |
 
 
 
@@ -8399,6 +8418,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | slack | [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack) |  |  |
 | feishu | [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu) |  |  |
+| wecom | [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom) |  |  |
 
 
 
@@ -8413,6 +8433,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | app_id | [string](#string) |  |  |
 | app_secret | [string](#string) |  |  |
 
@@ -8429,7 +8450,25 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Wecom"></a>
+
+### AppIMSetting.Wecom
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| id | [string](#string) |  |  |
+| secret | [string](#string) |  |  |
 
 
 

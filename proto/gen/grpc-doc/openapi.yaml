@@ -1442,7 +1442,7 @@ paths:
                   in: query
                   description: |-
                     Filter is used to filter databases returned in the list.
-                     For example, "project = projects/{project}" can be used to list databases in a project.
+                     For example, `project == "projects/{project}"` can be used to list databases in a project.
                      Note: the project filter will be moved to parent.
                   schema:
                     type: string
@@ -4524,7 +4524,7 @@ paths:
                   in: query
                   description: |-
                     Filter is used to filter databases returned in the list.
-                     For example, "project = projects/{project}" can be used to list databases in a project.
+                     For example, `project == "projects/{project}"` can be used to list databases in a project.
                      Note: the project filter will be moved to parent.
                   schema:
                     type: string
@@ -8264,9 +8264,13 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Slack'
                 feishu:
                     $ref: '#/components/schemas/AppIMSetting_Feishu'
+                wecom:
+                    $ref: '#/components/schemas/AppIMSetting_Wecom'
         AppIMSetting_Feishu:
             type: object
             properties:
+                enabled:
+                    type: boolean
                 appId:
                     type: string
                 appSecret:
@@ -8274,7 +8278,18 @@ components:
         AppIMSetting_Slack:
             type: object
             properties:
+                enabled:
+                    type: boolean
                 token:
+                    type: string
+        AppIMSetting_Wecom:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                id:
+                    type: string
+                secret:
                     type: string
         ApprovalFlow:
             type: object
@@ -11091,6 +11106,18 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                planCheckRunStatusCount:
+                    readOnly: true
+                    type: object
+                    additionalProperties:
+                        type: integer
+                        format: int32
+                    description: |-
+                        The status count of the latest plan check runs.
+                         Keys are:
+                         - SUCCESS
+                         - WARNING
+                         - ERROR
         PlanCheckRun:
             type: object
             properties:

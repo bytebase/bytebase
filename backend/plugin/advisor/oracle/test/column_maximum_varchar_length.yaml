@@ -1,40 +1,46 @@
 - statement: CREATE TABLE t(name varchar(20));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(name varchar(3000));
   want:
-    - status: WARN
+    - status: 2
       code: 422
       title: column.maximum-varchar-length
       content: The maximum varchar length is 2560.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: CREATE TABLE t(name varchar(225));
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: ALTER TABLE public.tech_book ADD name_2 varchar(22225)
   want:
-    - status: WARN
+    - status: 2
       code: 422
       title: column.maximum-varchar-length
       content: The maximum varchar length is 2560.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: ALTER TABLE tech_book MODIFY name varchar(22225)
   want:
-    - status: WARN
+    - status: 2
       code: 422
       title: column.maximum-varchar-length
       content: The maximum varchar length is 2560.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

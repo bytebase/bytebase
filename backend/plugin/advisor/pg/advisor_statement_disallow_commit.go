@@ -26,7 +26,7 @@ type StatementDisallowCommitAdvisor struct {
 }
 
 // Check checks for to disallow commit.
-func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -46,9 +46,9 @@ func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -57,20 +57,22 @@ func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]a
 }
 
 type statementDisallowCommitChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
 // Visit implements ast.Visitor interface.
 func (checker *statementDisallowCommitChecker) Visit(in ast.Node) ast.Visitor {
 	if _, ok := in.(*ast.CommitStmt); ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.StatementDisallowCommit,
+			Code:    advisor.StatementDisallowCommit.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", in.Text()),
-			Line:    in.LastLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(in.LastLine()),
+			},
 		})
 	}
 
