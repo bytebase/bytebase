@@ -78,7 +78,7 @@ type statementDmlDryRunChecker struct {
 func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
+		if _, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementDMLDryRunFailed.Int32(),
