@@ -73,7 +73,7 @@ const affectedTableOptions = computed(() => {
 
 const renderLabel = (option: SelectOption) => {
   const { affectedTable } = option as AffectedTableSelectOption;
-  if (isEqual(affectedTable, EmptyAffectedTable)) {
+  if (!affectedTable || isEqual(affectedTable, EmptyAffectedTable)) {
     return t("change-history.all-tables");
   }
   const name = stringifyAffectedTable(affectedTable);
