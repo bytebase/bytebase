@@ -33,17 +33,26 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
   const databaseMapByUID = reactive(new Map<string, ComposedDatabase>());
 
-  const reset = () => {
-    databaseMapByName.clear();
-    databaseMapByUID.clear();
-  };
-
   // Getters
   const databaseList = computed(() => {
     return Array.from(databaseMapByName.values());
   });
 
   // Actions
+  const reset = () => {
+    databaseMapByName.clear();
+    databaseMapByUID.clear();
+  };
+
+  const removeCacheByInstance = (instance: string) => {
+    for (const db of databaseList.value) {
+      if (db.instance === instance) {
+        databaseMapByName.delete(db.name);
+        databaseMapByUID.delete(db.uid);
+      }
+    }
+  };
+
   const upsertDatabaseMap = async (databaseList: Database[]) => {
     const composedDatabaseList = await batchComposeDatabase(databaseList);
     composedDatabaseList.forEach((database) => {
@@ -206,6 +215,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
   return {
     reset,
+    removeCacheByInstance,
     databaseList,
     searchDatabases,
     syncDatabase,
