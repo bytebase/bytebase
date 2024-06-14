@@ -1458,7 +1458,7 @@
     "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
     "used-for-testing-connection": "テスト接続のみ",
     "all": "すべてのインスタンス",
-    "force-archive-description": "アーカイブを強制します。関連するすべての作業指示書は完了としてマークされ、関連するすべてのワークシートが削除されます。",
+    "force-archive-description": "アーカイブを強制します。すべてのデータベースの割り当てが解除されます。",
     "sync-mode": {
       "self": "同期モード",
       "database": {

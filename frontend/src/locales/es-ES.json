@@ -1458,7 +1458,7 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
     "all": "Todas las instancias",
-    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
+    "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
     "sync-mode": {
       "self": "Modo de sincronización",
       "database": {
