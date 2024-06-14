@@ -268,6 +268,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		Collation:    column.Collation,
 		Comment:      column.Comment,
 		UserComment:  column.UserComment,
+		Generation:   convertStoreGenerationMetadata(column.Generation),
 	}
 	if metadata.HasDefault {
 		switch value := column.DefaultValue.(type) {
@@ -284,6 +285,24 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		}
 	}
 	return metadata
+}
+
+func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1pb.GenerationMetadata {
+	if generation == nil {
+		return nil
+	}
+	meta := &v1pb.GenerationMetadata{
+		Expression: generation.Expression,
+	}
+	switch generation.Type {
+	case storepb.GenerationMetadata_TYPE_VIRTUAL:
+		meta.Type = v1pb.GenerationMetadata_TYPE_VIRTUAL
+	case storepb.GenerationMetadata_TYPE_STORED:
+		meta.Type = v1pb.GenerationMetadata_TYPE_STORED
+	default:
+		meta.Type = v1pb.GenerationMetadata_TYPE_UNSPECIFIED
+	}
+	return meta
 }
 
 func convertStoreDatabaseConfig(ctx context.Context, config *storepb.DatabaseConfig, filter *metadataFilter, optionalStores *store.Store) *v1pb.DatabaseConfig {
@@ -630,6 +649,7 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		Comment:      column.Comment,
 		UserComment:  column.UserComment,
 		OnUpdate:     column.OnUpdate,
+		Generation:   convertV1GenerationMetadata(column.Generation),
 	}
 
 	if column.HasDefault {
@@ -643,6 +663,24 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		}
 	}
 	return metadata
+}
+
+func convertV1GenerationMetadata(generation *v1pb.GenerationMetadata) *storepb.GenerationMetadata {
+	if generation == nil {
+		return nil
+	}
+	meta := &storepb.GenerationMetadata{
+		Expression: generation.Expression,
+	}
+	switch generation.Type {
+	case v1pb.GenerationMetadata_TYPE_VIRTUAL:
+		meta.Type = storepb.GenerationMetadata_TYPE_VIRTUAL
+	case v1pb.GenerationMetadata_TYPE_STORED:
+		meta.Type = storepb.GenerationMetadata_TYPE_STORED
+	default:
+		meta.Type = storepb.GenerationMetadata_TYPE_UNSPECIFIED
+	}
+	return meta
 }
 
 func convertV1DatabaseConfig(ctx context.Context, databaseConfig *v1pb.DatabaseConfig, optionalStores *store.Store) *storepb.DatabaseConfig {

@@ -665,6 +665,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GenerationMetadata"><span class="badge">M</span>GenerationMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetChangeHistoryRequest"><span class="badge">M</span>GetChangeHistoryRequest</a>
                 </li>
               
@@ -827,6 +831,10 @@
               
                 <li>
                   <a href="#bytebase.v1.DatabaseMetadataView"><span class="badge">E</span>DatabaseMetadataView</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
                 </li>
               
                 <li>
@@ -7192,6 +7200,13 @@ classification and user_comment is parsed from the comment. </p></td>
 column masking data and global masking rules. </p></td>
                 </tr>
               
+                <tr>
+                  <td>generation</td>
+                  <td><a href="#bytebase.v1.GenerationMetadata">GenerationMetadata</a></td>
+                  <td></td>
+                  <td><p>The generation is the generation of a column. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7818,6 +7833,37 @@ Format: users/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition is the definition of a function. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GenerationMetadata">GenerationMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.GenerationMetadata.Type">GenerationMetadata.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9823,6 +9869,35 @@ The API will default to the BASIC view.</p></td>
                 <td>DATABASE_METADATA_VIEW_FULL</td>
                 <td>2</td>
                 <td><p>Include everything such as columns and column masking level.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.GenerationMetadata.Type">GenerationMetadata.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_VIRTUAL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_STORED</td>
+                <td>2</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>

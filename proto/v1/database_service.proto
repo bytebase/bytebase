@@ -556,6 +556,20 @@ message ColumnMetadata {
   // The effective_masking_level is the effective masking level of the column, evaluate from the
   // column masking data and global masking rules.
   MaskingLevel effective_masking_level = 14;
+
+  // The generation is the generation of a column.
+  GenerationMetadata generation = 16;
+}
+
+message GenerationMetadata {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_VIRTUAL = 1;
+    TYPE_STORED = 2;
+  }
+
+  Type type = 1;
+  string expression = 2;
 }
 
 // ViewMetadata is the metadata for views.

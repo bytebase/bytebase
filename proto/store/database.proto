@@ -298,6 +298,20 @@ message ColumnMetadata {
 
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 12;
+
+  // The generation is for generated columns.
+  GenerationMetadata generation = 14;
+}
+
+message GenerationMetadata {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_VIRTUAL = 1;
+    TYPE_STORED = 2;
+  }
+
+  Type type = 1;
+  string expression = 2;
 }
 
 // ViewMetadata is the metadata for views.
