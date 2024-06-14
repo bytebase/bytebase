@@ -62,6 +62,7 @@
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
     - [FunctionConfig](#bytebase-store-FunctionConfig)
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
+    - [GenerationMetadata](#bytebase-store-GenerationMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
@@ -81,6 +82,7 @@
     - [ViewConfig](#bytebase-store-ViewConfig)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
+    - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
@@ -932,6 +934,7 @@ ColumnMetadata is the metadata for columns.
 | collation | [string](#string) |  | The collation is the collation of a column. |
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+| generation | [GenerationMetadata](#bytebase-store-GenerationMetadata) |  | The generation is for generated columns. |
 
 
 
@@ -1111,6 +1114,22 @@ FunctionMetadata is the metadata for functions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a function. |
 | definition | [string](#string) |  | The definition is the definition of a function. |
+
+
+
+
+
+
+<a name="bytebase-store-GenerationMetadata"></a>
+
+### GenerationMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type) |  |  |
+| expression | [string](#string) |  |  |
 
 
 
@@ -1464,6 +1483,19 @@ ViewMetadata is the metadata for views.
 
 
  
+
+
+<a name="bytebase-store-GenerationMetadata-Type"></a>
+
+### GenerationMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_VIRTUAL | 1 |  |
+| TYPE_STORED | 2 |  |
+
 
 
 <a name="bytebase-store-StreamMetadata-Mode"></a>

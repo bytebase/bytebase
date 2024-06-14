@@ -8951,6 +8951,10 @@ components:
                         The effective_masking_level is the effective masking level of the column, evaluate from the
                          column masking data and global masking rules.
                     format: enum
+                generation:
+                    allOf:
+                        - $ref: '#/components/schemas/GenerationMetadata'
+                    description: The generation is the generation of a column.
             description: ColumnMetadata is the metadata for columns.
         DataClassificationConfig_DataClassification:
             type: object
@@ -9818,6 +9822,18 @@ components:
                 statement:
                     type: string
                     description: The restore SQL statement.
+        GenerationMetadata:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - TYPE_VIRTUAL
+                        - TYPE_STORED
+                    type: string
+                    format: enum
+                expression:
+                    type: string
         GoogleProtobufAny:
             type: object
             properties:

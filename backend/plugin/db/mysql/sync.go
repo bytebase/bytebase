@@ -32,6 +32,8 @@ const (
 	autoIncrementSymbol    = "AUTO_INCREMENT"
 	autoRandSymbol         = "AUTO_RANDOM"
 	pkAutoRandomBitsSymbol = "PK_AUTO_RANDOM_BITS"
+	virtualGenerated       = "VIRTUAL GENERATED"
+	storedGenerated        = "STORED GENERATED"
 )
 
 var (
@@ -261,6 +263,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
 			COLUMN_COMMENT,
+			GENERATION_EXPRESSION,
 			EXTRA
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
@@ -274,6 +277,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		column := &storepb.ColumnMetadata{}
 		var tableName, nullable, extra string
 		var defaultStr sql.NullString
+		var generationExpr sql.NullString
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
@@ -284,6 +288,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&column.CharacterSet,
 			&column.Collation,
 			&column.Comment,
+			&generationExpr,
 			&extra,
 		); err != nil {
 			return nil, err
@@ -296,6 +301,17 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
+		if extra != "" && strings.Contains(strings.ToUpper(extra), virtualGenerated) && generationExpr.Valid && generationExpr.String != "" {
+			column.Generation = &storepb.GenerationMetadata{
+				Type:       storepb.GenerationMetadata_TYPE_VIRTUAL,
+				Expression: generationExpr.String,
+			}
+		} else if extra != "" && strings.Contains(strings.ToUpper(extra), storedGenerated) && generationExpr.Valid && generationExpr.String != "" {
+			column.Generation = &storepb.GenerationMetadata{
+				Type:       storepb.GenerationMetadata_TYPE_STORED,
+				Expression: generationExpr.String,
+			}
+		}
 	}
 	if err := columnRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
