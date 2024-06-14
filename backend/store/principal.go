@@ -16,6 +16,7 @@ import (
 
 var SystemBotUser = &UserMessage{
 	ID:    api.SystemBotID,
+	Name:  "Bytebase",
 	Email: api.SystemBotEmail,
 	Type:  api.SystemBot,
 	Role:  api.WorkspaceAdmin,
