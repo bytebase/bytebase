@@ -406,6 +406,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.GenerationMetadata"><span class="badge">M</span>GenerationMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.IndexMetadata"><span class="badge">M</span>IndexMetadata</a>
                 </li>
               
@@ -477,6 +481,10 @@
                   <a href="#bytebase.store.ViewMetadata"><span class="badge">M</span>ViewMetadata</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.StreamMetadata.Mode"><span class="badge">E</span>StreamMetadata.Mode</a>
@@ -2813,6 +2821,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p>The user_comment is the user comment of a table parsed from the comment. </p></td>
                 </tr>
               
+                <tr>
+                  <td>generation</td>
+                  <td><a href="#bytebase.store.GenerationMetadata">GenerationMetadata</a></td>
+                  <td></td>
+                  <td><p>The generation is for generated columns. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3260,6 +3275,37 @@ Format: users/{userUID}. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition is the definition of a function. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.GenerationMetadata">GenerationMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.GenerationMetadata.Type">GenerationMetadata.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -4255,6 +4301,35 @@ Format: users/{userUID}. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.GenerationMetadata.Type">GenerationMetadata.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_VIRTUAL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_STORED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.StreamMetadata.Mode">StreamMetadata.Mode</h3>
         <p></p>
