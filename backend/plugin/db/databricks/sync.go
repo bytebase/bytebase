@@ -2,6 +2,7 @@ package databricks
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -30,7 +31,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// fetch table data from databricks.
-	catalogMap, err := d.listTables(ctx)
+	catalogMap, err := d.listAllTables(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +52,22 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	instanceMetadata := &db.InstanceMetadata{}
 
+	// fetch version.
+	versionData, err := d.execSQLSync(ctx, "SELECT VERSION()")
+	if err != nil {
+		return nil, err
+	}
+	if len(versionData) != 1 || len(versionData[0]) != 1 {
+		return nil, errors.New("invalid version format")
+	}
+	splitVersion := strings.Split(versionData[0][0], " ")
+	if len(splitVersion) != 2 {
+		return nil, errors.New("invalid version format")
+	}
+	instanceMetadata.Version = splitVersion[0]
+
 	// fetch table data from databricks.
-	catalogMap, err := d.listTables(ctx)
+	catalogMap, err := d.listAllTables(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +80,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		instanceMetadata.Databases = append(instanceMetadata.Databases, &dbSchemaMeta)
 	}
 
+	// fetch workspace users.
+	// TODO(tommy): complete this part when Permissions API for Golang is implemented.
+
 	return instanceMetadata, nil
 }
 
@@ -72,14 +90,38 @@ func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storep
 	return nil, nil
 }
 
-func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
-	tablesInfo, err := d.client.Tables.ListAll(ctx, catalog.ListTablesRequest{})
+func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error) {
+	catalogMap := make(databricksCatalogMap)
+
+	catalogsInfo, err := d.Client.Catalogs.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	catalogMap := make(databricksCatalogMap)
+	for _, catalogInfo := range catalogsInfo {
+		schemasInfo, err := d.Client.Schemas.ListAll(ctx, catalog.ListSchemasRequest{
+			CatalogName: catalogInfo.Name,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, schemaInfo := range schemasInfo {
+			tablesInfo, err := d.Client.Tables.ListAll(ctx, catalog.ListTablesRequest{
+				CatalogName: catalogInfo.Name,
+				SchemaName:  schemaInfo.Name,
+			})
+			if err != nil {
+				return nil, err
+			}
+			appendSchemaTables(catalogMap, tablesInfo)
+		}
+	}
 
+	return catalogMap, nil
+}
+
+// extract tables' metadata from 'tablesInfo' and store it in 'catalogMap'.
+func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.TableInfo) {
 	for _, tableInfo := range tablesInfo {
 		table := tableUnion{
 			typeName: tableInfo.TableType,
@@ -103,13 +145,15 @@ func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
 			table.externalTable = &storepb.ExternalTableMetadata{
 				Name: tableInfo.Name,
 			}
-			// TODO(tommy): find the responding string for the normal table type.
-		default:
+		case catalog.TableTypeManaged:
 			table.table = &storepb.TableMetadata{
 				Name:    tableInfo.Name,
 				Columns: convertToColumnMetadata(tableInfo.Columns),
 				Comment: tableInfo.Comment,
 			}
+		default:
+			// we do not sync streaming table.
+			continue
 		}
 
 		if schemaMap, ok := catalogMap[tableInfo.CatalogName]; !ok {
@@ -125,8 +169,6 @@ func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
 			}
 		}
 	}
-
-	return catalogMap, nil
 }
 
 func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnMetadata {
@@ -170,9 +212,10 @@ func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*storepb.SchemaMet
 				schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, table.materialView)
 			case catalog.TableTypeExternal:
 				schemaMetadata.ExternalTables = append(schemaMetadata.ExternalTables, table.externalTable)
-			default:
-				// TODO(tommy): find the responding string for the normal table type.
+			case catalog.TableTypeManaged:
 				schemaMetadata.Tables = append(schemaMetadata.Tables, table.table)
+			default:
+				// we do not sync streaming table.
 			}
 		}
 		schemas = append(schemas, schemaMetadata)
