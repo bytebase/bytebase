@@ -25,6 +25,7 @@ func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role ap
 
 		for _, member := range binding.Members {
 			if member == api.AllUsers {
+				// TODO(d): make it more efficient.
 				allUsers, err := stores.ListUsers(ctx, &store.FindUserMessage{
 					ShowDeleted: false,
 				})
