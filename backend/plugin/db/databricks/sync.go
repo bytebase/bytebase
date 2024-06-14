@@ -169,7 +169,6 @@ func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.Ta
 			}
 		}
 	}
-
 }
 
 func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnMetadata {
