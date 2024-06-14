@@ -8,6 +8,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/pkg/errors"
 
+	// Databricks SQL.
+	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
+
 	"github.com/bytebase/bytebase/backend/plugin/db"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -21,8 +24,9 @@ func init() {
 var _ db.Driver = (*Driver)(nil)
 
 type Driver struct {
-	curCatalog string
-	client     *databricks.WorkspaceClient
+	curCatalog  string
+	WarehouseID string
+	Client      *databricks.WorkspaceClient
 }
 
 func NewDatabricksDriver(db.DriverConfig) db.Driver {
@@ -49,7 +53,9 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	d.client = client
+
+	d.Client = client
+	d.WarehouseID = config.WarehouseID
 	d.curCatalog = config.Database
 	return d, nil
 }
@@ -59,7 +65,9 @@ func (*Driver) Close(_ context.Context) error {
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	_, err := d.client.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{})
+	_, err := d.Client.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		Path: "/",
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to ping instance")
 	}
@@ -88,4 +96,19 @@ func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64,
 
 func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 	return nil
+}
+
+// Execute SQL statement synchronously and return row data or error.
+func (d *Driver) execSQLSync(ctx context.Context, statement string) ([][]string, error) {
+	resp, err := d.Client.StatementExecution.ExecuteAndWait(ctx, dbsql.ExecuteStatementRequest{
+		Statement:   statement,
+		WarehouseId: d.WarehouseID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp.Result == nil {
+		return nil, errors.New("no response")
+	}
+	return resp.Result.DataArray, nil
 }
