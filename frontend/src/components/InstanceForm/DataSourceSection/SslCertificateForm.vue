@@ -168,7 +168,7 @@ function guessSslType(value: WithSslOptions): SslType {
 }
 
 function sslTypeCandidatesOfEngine(engineType: Engine): SslType[] {
-  if (engineType === Engine.MONGODB) {
+  if (engineType === Engine.MONGODB || engineType === Engine.MSSQL) {
     return ["NONE", "CA"];
   }
   return ["NONE", "CA", "CA+KEY+CERT"];
