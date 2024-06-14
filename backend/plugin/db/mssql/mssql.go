@@ -8,10 +8,11 @@ import (
 	"io"
 	"log/slog"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
-	// Import go-ora Oracle driver.
+	// Import MSSQL driver.
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"github.com/pkg/errors"
@@ -39,6 +40,9 @@ func init() {
 type Driver struct {
 	db           *sql.DB
 	databaseName string
+
+	// certificate file path should be deleted if calling closed.
+	certFilePath string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -56,13 +60,48 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	// In order to be compatible with db servers that only support old versions of tls.
 	// See: https://github.com/microsoft/go-mssqldb/issues/33
 	query.Add("tlsmin", "1.0")
+	// We should not TrustServerCertificate in production environment, otherwise, TLS is susceptible
+	// to man-in-the middle attacks. TrustServerCertificate makes driver accepts any certificate presented by the server
+	// and any host name in that certificate.
+	// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead' if
+	// TrustServerCertificate is false.
+	query.Add("TrustServerCertificate", "false")
+
+	var err error
+	if config.TLSConfig.SslCA != "" {
+		// Driver reads the certificate from file instead of regarding it as certificate content.
+		// https://github.com/microsoft/go-mssqldb/blob/main/msdsn/conn_str.go#L159
+		// TODO(zp): Driver supports .der format also.
+		const pattern string = "cert-*.pem"
+		file, err := os.CreateTemp(os.TempDir(), pattern)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create temporary file with pattern %s", pattern)
+		}
+		fName := file.Name()
+		defer func() {
+			if err != nil {
+				_ = os.Remove(fName)
+			} else {
+				driver.certFilePath = fName
+			}
+		}()
+		_, err = file.WriteString(config.TLSConfig.SslCA)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to write certificate to file %s", fName)
+		}
+		if err = file.Close(); err != nil {
+			return nil, errors.Wrapf(err, "failed to close file %s", fName)
+		}
+		query.Add("certificate", fName)
+	}
 	u := &url.URL{
 		Scheme:   "sqlserver",
 		User:     url.UserPassword(config.Username, config.Password),
 		Host:     fmt.Sprintf("%s:%s", config.Host, config.Port),
 		RawQuery: query.Encode(),
 	}
-	db, err := sql.Open("sqlserver", u.String())
+	var db *sql.DB
+	db, err = sql.Open("sqlserver", u.String())
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +112,12 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 
 // Close closes the driver.
 func (driver *Driver) Close(_ context.Context) error {
-	return driver.db.Close()
+	if driver.certFilePath != "" {
+		if err := os.Remove(driver.certFilePath); err != nil {
+			slog.Warn("failed to delete temporary file", slog.String("path", driver.certFilePath), slog.Any("error", err))
+		}
+	}
+	return nil
 }
 
 // Ping pings the database.
