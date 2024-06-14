@@ -90,6 +90,9 @@ func (m *Manager) GetPermissions(ctx context.Context, roleName string) ([]Permis
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get role %q", roleID)
 	}
+	if role == nil {
+		return nil, nil
+	}
 	var permissions []Permission
 	for _, permission := range role.Permissions.GetPermissions() {
 		permissions = append(permissions, NewPermission(permission))
