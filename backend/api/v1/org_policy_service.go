@@ -1004,9 +1004,11 @@ func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx con
 				return nil, status.Errorf(codes.NotFound, "user %q not found", member)
 			}
 			member = common.FormatUserUID(user.ID)
-		} else {
+		} else if strings.HasPrefix(exception.Member, "group:") {
 			email := strings.TrimPrefix(member, "group:")
 			member = common.FormatGroupEmail(email)
+		} else {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid member %s", exception.Member)
 		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToStorePBAction(exception.Action),

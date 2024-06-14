@@ -710,8 +710,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 
 		hasUser := false
 		for _, member := range binding.Members {
-			// TODO: only support AllUsers or users/{AllUsersID}
-			if member == api.AllUsers || member == common.FormatUserUID(api.AllUsersID) {
+			if member == api.AllUsers {
 				hasUser = true
 				break
 			}
