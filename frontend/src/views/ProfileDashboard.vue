@@ -166,7 +166,7 @@
 
     <!-- 2FA setting section -->
     <div
-      v-if="showMFAConfig"
+      v-if="allowEdit"
       class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 border-t mt-16 pt-8 pb-4"
     >
       <div class="w-full flex flex-row justify-between items-center">
@@ -260,7 +260,7 @@ import {
   useCurrentUserV1,
   useUserStore,
 } from "@/store";
-import { unknownUser } from "@/types";
+import { unknownUser, SYSTEM_BOT_EMAIL, ALL_USERS_USER_EMAIL } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
@@ -333,15 +333,6 @@ const user = computed(() => {
   return currentUserV1.value;
 });
 
-// User can change her MFA config.
-// Besides, owner can also change anyone's MFA config.
-const showMFAConfig = computed(() => {
-  return (
-    user.value.name === currentUserV1.value.name ||
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
-  );
-});
-
 const passwordMismatch = computed(() => {
   return (
     !isEmpty(state.editingUser?.password) &&
@@ -352,6 +343,12 @@ const passwordMismatch = computed(() => {
 // User can change her own info.
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
 const allowEdit = computed(() => {
+  if (
+    user.value.email === SYSTEM_BOT_EMAIL ||
+    user.value.email === ALL_USERS_USER_EMAIL
+  ) {
+    return false;
+  }
   return (
     currentUserV1.value.name === user.value.name ||
     hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
