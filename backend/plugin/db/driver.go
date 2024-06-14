@@ -206,6 +206,9 @@ type ConnectionConfig struct {
 
 	// AccountID is used by Databricks.
 	AccountID string
+
+	// WarehouseID is used by Databricks.
+	WarehouseID string
 }
 
 // SSHConfig is the configuration for connection over SSH.
