@@ -3258,7 +3258,9 @@
         "pattern": "{resource} can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
         "max-length": "{resource} can contain up to {length} characters"
       },
-      "delete": "Delete role"
+      "delete": "Delete role",
+      "delete-warning": "The role \"{name}\" will be deleted. This action cannot be undone.",
+      "delete-warning-with-resources": "The role \"{name}\" is assigned to following users:"
     },
     "select": "Select role",
     "select-roles": "Select roles",
