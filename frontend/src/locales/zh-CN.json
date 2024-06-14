@@ -3258,7 +3258,9 @@
         "pattern": "{resource}只能包含小写字母、数字和连字符，并以小写字母开头。",
         "max-length": "{resource}至多包含 {length} 个字符"
       },
-      "delete": "删除角色"
+      "delete": "删除角色",
+      "delete-warning": "角色“{name}”将被删除。此操作无法撤消。",
+      "delete-warning-with-resources": "角色“{name}”已分配给以下用户："
     },
     "select": "选择角色",
     "select-roles": "选择角色",
