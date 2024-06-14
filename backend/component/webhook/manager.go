@@ -383,7 +383,6 @@ func getUsersFromWorkspaceRole(s *store.Store, role api.Role) func(context.Conte
 	}
 }
 
-// TODO(p0ny): renovate this function to respect allUsers and CEL.
 func getUsersFromProjectRole(s *store.Store, role api.Role, projectUID int) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
 		iamPolicy, err := s.GetProjectIamPolicy(ctx, projectUID)

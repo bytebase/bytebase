@@ -1367,6 +1367,7 @@ func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *st
 				}
 				members = append(members, fmt.Sprintf("group:%s", email))
 			} else {
+				// handle allUsers.
 				members = append(members, member)
 			}
 		}
@@ -1407,7 +1408,7 @@ func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy 
 	for _, binding := range iamPolicy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
-			if strings.HasPrefix(member, "user:") || member == api.AllUsers {
+			if strings.HasPrefix(member, "user:") {
 				email := strings.TrimPrefix(member, "user:")
 				user, err := s.store.GetUserByEmail(ctx, email)
 				if err != nil {
@@ -1420,6 +1421,8 @@ func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy 
 			} else if strings.HasPrefix(member, "group:") {
 				email := strings.TrimPrefix(member, "group:")
 				members = append(members, common.FormatGroupEmail(email))
+			} else if member == api.AllUsers {
+				members = append(members, member)
 			} else {
 				return nil, status.Errorf(codes.InvalidArgument, "unsupport member %s", member)
 			}

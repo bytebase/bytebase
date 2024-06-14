@@ -209,7 +209,6 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			continue
 		}
 
-		// TODO(p0ny): renovate this function to respect allUsers and CEL.
 		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, projectPolicy)
 		for _, user := range users {
 			apiValue.SMTPTo = user.Email
