@@ -7,19 +7,27 @@
     >
       {{ $t("common.edit") }}
     </NButton>
-    <SpinnerButton
+
+    <NButton
+      v-if="hasPermission('bb.roles.delete')"
       size="tiny"
-      :disabled="!hasPermission('bb.roles.delete')"
-      :tooltip="$t('role.setting.delete')"
-      :on-confirm="deleteRole"
+      @click="handleDeleteRole"
     >
       {{ $t("common.delete") }}
-    </SpinnerButton>
+    </NButton>
   </div>
 </template>
 
-<script lang="ts" setup>
-import { useCurrentUserV1, useRoleStore } from "@/store";
+<script lang="tsx" setup>
+import { useDialog } from "naive-ui";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import {
+  useCurrentUserV1,
+  useRoleStore,
+  useUserStore,
+  pushNotification,
+} from "@/store";
 import type { WorkspacePermission } from "@/types";
 import type { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
@@ -36,17 +44,65 @@ defineEmits<{
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const currentUser = useCurrentUserV1();
+const userStore = useUserStore();
+const $dialog = useDialog();
+const { t } = useI18n();
 
 const hasPermission = (permission: WorkspacePermission) => {
   return hasWorkspacePermissionV2(currentUser.value, permission);
 };
 
-const deleteRole = async () => {
+const usersWithRole = computed(() => {
+  return userStore.activeUserList.filter((user) => {
+    return user.roles.includes(props.role.name);
+  });
+});
+
+const handleDeleteRole = async () => {
   if (!hasCustomRoleFeature.value) {
     showFeatureModal.value = true;
     return;
   }
 
-  await useRoleStore().deleteRole(props.role);
+  $dialog.warning({
+    title: t("common.warning"),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.continue-anyway"),
+    content: () => {
+      if (usersWithRole.value.length === 0) {
+        return t("role.setting.delete-warning", {
+          name: props.role.title,
+        });
+      }
+      return (
+        <div class="space-y-2">
+          <p>
+            {t("role.setting.delete-warning-with-resources", {
+              name: props.role.title,
+            })}
+          </p>
+          <ul class="list-disc ml-4 textinfolabel">
+            {usersWithRole.value.map((user) => (
+              <li>
+                {user.title} ({user.email})
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    },
+    onPositiveClick: () => {
+      useRoleStore()
+        .deleteRole(props.role)
+        .then(() => {
+          pushNotification({
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("common.deleted"),
+          });
+        });
+    },
+  });
 };
 </script>
