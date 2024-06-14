@@ -52,15 +52,6 @@ const hasPermission = (permission: WorkspacePermission) => {
   return hasWorkspacePermissionV2(currentUser.value, permission);
 };
 
-const deleteRole = async () => {
-  if (!hasCustomRoleFeature.value) {
-    showFeatureModal.value = true;
-    return;
-  }
-
-  await useRoleStore().deleteRole(props.role);
-};
-
 const usersWithRole = computed(() => {
   return userStore.activeUserList.filter((user) => {
     return user.roles.includes(props.role.name);
