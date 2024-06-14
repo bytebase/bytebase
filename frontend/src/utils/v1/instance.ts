@@ -173,6 +173,7 @@ export const instanceV1HasSSL = (
     Engine.DORIS,
     Engine.MONGODB,
     Engine.ELASTICSEARCH,
+    Engine.MSSQL,
   ].includes(engine);
 };
 
