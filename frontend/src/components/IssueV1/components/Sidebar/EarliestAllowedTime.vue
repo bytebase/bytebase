@@ -61,7 +61,6 @@ import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import {
   isDeploymentConfigChangeTaskV1,
-  isGroupingChangeTaskV1,
   isTaskEditable,
   latestTaskRunForTask,
   notifyNotEditableLegacyIssue,
@@ -103,9 +102,6 @@ const shouldShowEarliestAllowedTime = computed(() => {
     return false;
   }
   if (isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value)) {
-    return false;
-  }
-  if (isGroupingChangeTaskV1(issue.value, selectedTask.value)) {
     return false;
   }
   return true;
