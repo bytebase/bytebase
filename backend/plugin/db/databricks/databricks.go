@@ -55,6 +55,9 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	}
 
 	d.Client = client
+	if config.WarehouseID == "" {
+		return nil, errors.New("Warehouse ID must be set")
+	}
 	d.WarehouseID = config.WarehouseID
 	d.curCatalog = config.Database
 	return d, nil

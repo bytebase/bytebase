@@ -10,9 +10,9 @@
       class="w-[72rem] max-w-[100vw] relative"
     >
       <div class="w-full flex flex-row justify-end items-center">
-        <NButton type="primary" @click="state.showAddMemberPanel = true">{{
-          $t("project.members.grant-access")
-        }}</NButton>
+        <NButton type="primary" @click="state.showAddMemberPanel = true">
+          {{ $t("project.members.grant-access") }}
+        </NButton>
       </div>
       <div v-if="binding.type === 'groups'" class="mb-6">
         <div class="text-lg px-1 pb-1 w-full border-b mb-3">
@@ -208,6 +208,8 @@ import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
+  extractGroupEmail,
+  extractUserEmail,
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
@@ -273,8 +275,14 @@ const roleList = ref<
 const editingBinding = ref<Binding | null>(null);
 
 const panelTitle = computed(() => {
+  let email = props.binding.binding;
+  if (props.binding.type === "users") {
+    email = extractUserEmail(email);
+  } else {
+    email = extractGroupEmail(email);
+  }
   return t("project.members.edit", {
-    member: `${props.binding.title}(${props.binding.binding})`,
+    member: `${props.binding.title} (${email})`,
   });
 });
 

@@ -13,7 +13,7 @@ import (
 )
 
 // GetUsersByRoleInIAMPolicy gets users in the iam policy.
-// TODO(p0ny): renovate this function to respect allUsers and CEL.
+// TODO(p0ny): renovate this function to respect CEL.
 func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role api.Role, policy *storepb.ProjectIamPolicy) []*store.UserMessage {
 	roleFullName := common.FormatRole(role.String())
 	var users []*store.UserMessage
@@ -24,7 +24,17 @@ func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role ap
 		}
 
 		for _, member := range binding.Members {
-			// TODO(p0ny): support all user
+			if member == api.AllUsers {
+				// TODO(d): make it more efficient.
+				allUsers, err := stores.ListUsers(ctx, &store.FindUserMessage{
+					ShowDeleted: false,
+				})
+				if err != nil {
+					slog.Error("failed to list all users for role", slog.String("role", role.String()), log.BBError(err))
+					continue
+				}
+				return allUsers
+			}
 			userMessages := GetUsersByMember(ctx, stores, member)
 			users = append(users, userMessages...)
 		}

@@ -84,7 +84,7 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 	rows := int64(0)
 	switch node := in.(type) {
 	case *ast.UpdateStmt, *ast.DeleteStmt:
-		res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
+		res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,

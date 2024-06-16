@@ -1458,7 +1458,7 @@
     "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
     "used-for-testing-connection": "テスト接続のみ",
     "all": "すべてのインスタンス",
-    "force-archive-description": "アーカイブを強制します。関連するすべての作業指示書は完了としてマークされ、関連するすべてのワークシートが削除されます。",
+    "force-archive-description": "アーカイブを強制します。すべてのデータベースの割り当てが解除されます。",
     "sync-mode": {
       "self": "同期モード",
       "database": {
@@ -3258,7 +3258,9 @@
         "pattern": "{resource} には小文字、数字、ハイフンのみを含めることができ、小文字で始まります。",
         "max-length": "{resource} には最大で {length} 文字が含まれます"
       },
-      "delete": "役割の削除"
+      "delete": "役割の削除",
+      "delete-warning": "ロール「{name}」は削除されます。この操作は元に戻すことができません。",
+      "delete-warning-with-resources": "ロール「{name}」は次のユーザーに割り当てられています:"
     },
     "select": "役割の選択",
     "select-roles": "役割の選択",

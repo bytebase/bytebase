@@ -3,7 +3,10 @@ package advisor
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NormalizeStatement limit the max length of the statements.
@@ -16,12 +19,30 @@ func NormalizeStatement(statement string) string {
 }
 
 // Query runs the EXPLAIN or SELECT statements for advisors.
-func Query(ctx context.Context, connection *sql.DB, statement string) ([]any, error) {
+func Query(ctx context.Context, connection *sql.DB, engine storepb.Engine, statement string) ([]any, error) {
 	tx, err := connection.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
+
+	if engine == storepb.Engine_POSTGRES {
+		const query = `
+		SELECT
+			u.rolname
+		FROM
+			pg_roles AS u JOIN pg_database AS d ON (d.datdba = u.oid)
+		WHERE
+			d.datname = current_database();
+		`
+		var owner string
+		if err := tx.QueryRowContext(ctx, query).Scan(&owner); err != nil {
+			return nil, err
+		}
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s';", owner)); err != nil {
+			return nil, err
+		}
+	}
 
 	rows, err := tx.QueryContext(ctx, statement)
 	if err != nil {

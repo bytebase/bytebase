@@ -149,33 +149,33 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		u := e.TaskRunStatusUpdate
 		switch u.Status {
 		case api.TaskRunPending.String():
-			title = "Task run started - " + u.Title
-			titleZh = "任务开始 - " + u.Title
+			title = "Task run started"
+			titleZh = "任务开始"
 		case api.TaskRunRunning.String():
-			title = "Task run is running - " + u.Title
-			titleZh = "任务运行中 - " + u.Title
+			title = "Task run is running"
+			titleZh = "任务运行中"
 		case api.TaskRunDone.String():
 			level = webhook.WebhookSuccess
-			title = "Task run completed - " + u.Title
-			titleZh = "任务完成 - " + u.Title
+			title = "Task run completed"
+			titleZh = "任务完成"
 		case api.TaskRunFailed.String():
 			level = webhook.WebhookError
-			title = "Task run failed - " + u.Title
-			titleZh = "任务失败 - " + u.Title
+			title = "Task run failed"
+			titleZh = "任务失败"
 		case api.TaskRunCanceled.String():
-			title = "Task run is canceled - " + u.Title
-			titleZh = "任务取消 - " + u.Title
+			title = "Task run is canceled"
+			titleZh = "任务取消"
 		case api.TaskRunSkipped.String():
-			title = "Task is skipped - " + u.Title
-			titleZh = "任务跳过 - " + u.Title
+			title = "Task is skipped"
+			titleZh = "任务跳过"
 		default:
-			title = "Task run status changed - " + u.Title
-			titleZh = "任务状态变更 - " + u.Title
+			title = "Task run status changed"
+			titleZh = "任务状态变更"
 		}
 
 	case EventTypeIssueApprovalPass:
-		title = "Issue approved - " + e.Issue.Title
-		titleZh = "工单审批通过 - " + e.Issue.Title
+		title = "Issue approved"
+		titleZh = "工单审批通过"
 
 		mentionUsers = append(mentionUsers, e.Issue.Creator)
 		phone, err := maybeGetPhoneFromUser(e.Issue.Creator)
@@ -188,7 +188,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 	case EventTypeIssueRolloutReady:
 		u := e.IssueRolloutReady
 		title = "Issue is waiting for rollout"
-		titleZh = "工单待发布)"
+		titleZh = "工单待发布"
 		var usersGetters []func(context.Context) ([]*store.UserMessage, error)
 		if u.RolloutPolicy.GetAutomatic() {
 			usersGetters = append(usersGetters, getUsersFromUsers(e.Issue.Creator))
@@ -241,8 +241,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 	case EventTypeIssueApprovalCreate:
 		pendingStep := e.IssueApprovalCreate.ApprovalStep
 
-		title = "Issue approval needed - " + e.Issue.Title
-		titleZh = "工单待审批 - " + e.Issue.Title
+		title = "Issue approval needed"
+		titleZh = "工单待审批"
 
 		if len(pendingStep.Nodes) != 1 {
 			slog.Warn("Failed to post webhook event after changing the issue approval node status, pending step nodes length is not 1")
@@ -383,7 +383,6 @@ func getUsersFromWorkspaceRole(s *store.Store, role api.Role) func(context.Conte
 	}
 }
 
-// TODO(p0ny): renovate this function to respect allUsers and CEL.
 func getUsersFromProjectRole(s *store.Store, role api.Role, projectUID int) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
 		iamPolicy, err := s.GetProjectIamPolicy(ctx, projectUID)

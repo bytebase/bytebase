@@ -248,6 +248,8 @@ export interface DataSourceOptions {
   region: string;
   /** account_id is used by Databricks. */
   accountId: string;
+  /** warehouse_id is used by Databricks. */
+  warehouseId: string;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -642,6 +644,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     directConnection: false,
     region: "",
     accountId: "",
+    warehouseId: "",
   };
 }
 
@@ -700,6 +703,9 @@ export const DataSourceOptions = {
     }
     if (message.accountId !== "") {
       writer.uint32(146).string(message.accountId);
+    }
+    if (message.warehouseId !== "") {
+      writer.uint32(154).string(message.warehouseId);
     }
     return writer;
   },
@@ -837,6 +843,13 @@ export const DataSourceOptions = {
 
           message.accountId = reader.string();
           continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.warehouseId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -878,6 +891,7 @@ export const DataSourceOptions = {
       directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
       region: isSet(object.region) ? globalThis.String(object.region) : "",
       accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
+      warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
     };
   },
 
@@ -937,6 +951,9 @@ export const DataSourceOptions = {
     if (message.accountId !== "") {
       obj.accountId = message.accountId;
     }
+    if (message.warehouseId !== "") {
+      obj.warehouseId = message.warehouseId;
+    }
     return obj;
   },
 
@@ -969,6 +986,7 @@ export const DataSourceOptions = {
     message.directConnection = object.directConnection ?? false;
     message.region = object.region ?? "";
     message.accountId = object.accountId ?? "";
+    message.warehouseId = object.warehouseId ?? "";
     return message;
   },
 };

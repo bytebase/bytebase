@@ -23,6 +23,7 @@ export const extractProjectResourceName = (name: string) => {
 
 export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   const groupStore = useUserGroupStore();
+  const userInBinding = getUserEmailInBinding(user.email);
 
   const workspaceLevelProjectRoles = user.roles.filter(
     (role) => !PRESET_WORKSPACE_ROLES.includes(role)
@@ -31,10 +32,10 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   const projectBindingRoles = iamPolicy.bindings
     .filter((binding) => {
       for (const member of binding.members) {
-        if (member === getUserEmailInBinding(ALL_USERS_USER_EMAIL)) {
+        if (member === ALL_USERS_USER_EMAIL) {
           return true;
         }
-        if (member === getUserEmailInBinding(user.email)) {
+        if (member === userInBinding) {
           return true;
         }
 
@@ -94,7 +95,7 @@ export const getUserEmailListInBinding = (binding: Binding): string[] => {
     } else {
       const email = extractUserEmail(member);
       if (email === ALL_USERS_USER_EMAIL) {
-        emailList.push(...userStore.activeUserList.map((user) => user.email));
+        return userStore.activeUserList.map((user) => user.email);
       } else {
         emailList.push(email);
       }

@@ -11,7 +11,7 @@
       </div>
       <div v-else class="space-y-4">
         <div class="space-y-4">
-          <span class="text-main">
+          <span class="text-main text-base">
             {{ $t("database.transfer.select-databases") }}
             <span class="text-red-500">*</span>
           </span>
@@ -22,17 +22,23 @@
           />
         </div>
         <NDivider class="w-full py-2" />
-        <div class="space-y-4">
-          <span class="text-main">
-            {{ $t("database.transfer.select-target-project") }}
-            <span class="text-red-500">*</span>
-          </span>
-          <ProjectSelect
-            v-model:project="targetProjectId"
-            :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
-            :include-default-project="true"
-          />
-        </div>
+        <NRadioGroup v-model:value="transfer">
+          <NRadio value="project">
+            <span class="text-main text-base">
+              {{ $t("database.transfer.select-target-project") }}
+            </span>
+          </NRadio>
+          <NRadio v-if="!allUnassigned" value="unassign">
+            <span class="text-main text-base">
+              {{ $t("database.unassign") }}
+            </span>
+          </NRadio>
+        </NRadioGroup>
+        <ProjectSelect
+          v-if="transfer === 'project'"
+          v-model:project="targetProjectId"
+          :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
+        />
       </div>
     </div>
 
@@ -62,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NTooltip, NDivider } from "naive-ui";
+import { NButton, NTooltip, NDivider, NRadioGroup, NRadio } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -74,7 +80,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID, PresetRoleType } from "@/types";
+import { UNKNOWN_ID, PresetRoleType, DEFAULT_PROJECT_ID } from "@/types";
 import { extractProjectResourceName } from "@/utils";
 
 const props = defineProps<{
@@ -90,6 +96,7 @@ const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const loading = ref(false);
+const transfer = ref<"project" | "unassign">("project");
 const router = useRouter();
 
 const selectedUidList = ref<string[]>(props.selectedDatabaseUidList ?? []);
@@ -106,7 +113,25 @@ const selectedDatabaseList = computed(() => {
   });
 });
 
+const allUnassigned = computed(() => {
+  return selectedDatabaseList.value.every(
+    (db) => db.projectEntity.uid === `${DEFAULT_PROJECT_ID}`
+  );
+});
+
 const targetProjectId = ref<string>();
+
+watch(
+  () => transfer.value,
+  (transfer) => {
+    if (transfer === "unassign") {
+      targetProjectId.value = `${DEFAULT_PROJECT_ID}`;
+    } else {
+      targetProjectId.value = undefined;
+    }
+  }
+);
+
 const targetProject = computed(() => {
   const id = targetProjectId.value;
   if (!id || id === String(UNKNOWN_ID)) return undefined;

@@ -663,6 +663,66 @@ export interface ColumnMetadata {
    * column masking data and global masking rules.
    */
   effectiveMaskingLevel: MaskingLevel;
+  /** The generation is the generation of a column. */
+  generation: GenerationMetadata | undefined;
+}
+
+export interface GenerationMetadata {
+  type: GenerationMetadata_Type;
+  expression: string;
+}
+
+export enum GenerationMetadata_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  TYPE_VIRTUAL = "TYPE_VIRTUAL",
+  TYPE_STORED = "TYPE_STORED",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function generationMetadata_TypeFromJSON(object: any): GenerationMetadata_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return GenerationMetadata_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "TYPE_VIRTUAL":
+      return GenerationMetadata_Type.TYPE_VIRTUAL;
+    case 2:
+    case "TYPE_STORED":
+      return GenerationMetadata_Type.TYPE_STORED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return GenerationMetadata_Type.UNRECOGNIZED;
+  }
+}
+
+export function generationMetadata_TypeToJSON(object: GenerationMetadata_Type): string {
+  switch (object) {
+    case GenerationMetadata_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case GenerationMetadata_Type.TYPE_VIRTUAL:
+      return "TYPE_VIRTUAL";
+    case GenerationMetadata_Type.TYPE_STORED:
+      return "TYPE_STORED";
+    case GenerationMetadata_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function generationMetadata_TypeToNumber(object: GenerationMetadata_Type): number {
+  switch (object) {
+    case GenerationMetadata_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case GenerationMetadata_Type.TYPE_VIRTUAL:
+      return 1;
+    case GenerationMetadata_Type.TYPE_STORED:
+      return 2;
+    case GenerationMetadata_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 /** ViewMetadata is the metadata for views. */
@@ -3989,6 +4049,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     comment: "",
     userComment: "",
     effectiveMaskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+    generation: undefined,
   };
 }
 
@@ -4035,6 +4096,9 @@ export const ColumnMetadata = {
     }
     if (message.effectiveMaskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
       writer.uint32(112).int32(maskingLevelToNumber(message.effectiveMaskingLevel));
+    }
+    if (message.generation !== undefined) {
+      GenerationMetadata.encode(message.generation, writer.uint32(130).fork()).ldelim();
     }
     return writer;
   },
@@ -4144,6 +4208,13 @@ export const ColumnMetadata = {
 
           message.effectiveMaskingLevel = maskingLevelFromJSON(reader.int32());
           continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.generation = GenerationMetadata.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4171,6 +4242,7 @@ export const ColumnMetadata = {
       effectiveMaskingLevel: isSet(object.effectiveMaskingLevel)
         ? maskingLevelFromJSON(object.effectiveMaskingLevel)
         : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      generation: isSet(object.generation) ? GenerationMetadata.fromJSON(object.generation) : undefined,
     };
   },
 
@@ -4218,6 +4290,9 @@ export const ColumnMetadata = {
     if (message.effectiveMaskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
       obj.effectiveMaskingLevel = maskingLevelToJSON(message.effectiveMaskingLevel);
     }
+    if (message.generation !== undefined) {
+      obj.generation = GenerationMetadata.toJSON(message.generation);
+    }
     return obj;
   },
 
@@ -4240,6 +4315,85 @@ export const ColumnMetadata = {
     message.comment = object.comment ?? "";
     message.userComment = object.userComment ?? "";
     message.effectiveMaskingLevel = object.effectiveMaskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
+    message.generation = (object.generation !== undefined && object.generation !== null)
+      ? GenerationMetadata.fromPartial(object.generation)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGenerationMetadata(): GenerationMetadata {
+  return { type: GenerationMetadata_Type.TYPE_UNSPECIFIED, expression: "" };
+}
+
+export const GenerationMetadata = {
+  encode(message: GenerationMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== GenerationMetadata_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(generationMetadata_TypeToNumber(message.type));
+    }
+    if (message.expression !== "") {
+      writer.uint32(18).string(message.expression);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GenerationMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGenerationMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = generationMetadata_TypeFromJSON(reader.int32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.expression = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GenerationMetadata {
+    return {
+      type: isSet(object.type)
+        ? generationMetadata_TypeFromJSON(object.type)
+        : GenerationMetadata_Type.TYPE_UNSPECIFIED,
+      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
+    };
+  },
+
+  toJSON(message: GenerationMetadata): unknown {
+    const obj: any = {};
+    if (message.type !== GenerationMetadata_Type.TYPE_UNSPECIFIED) {
+      obj.type = generationMetadata_TypeToJSON(message.type);
+    }
+    if (message.expression !== "") {
+      obj.expression = message.expression;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GenerationMetadata>): GenerationMetadata {
+    return GenerationMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GenerationMetadata>): GenerationMetadata {
+    const message = createBaseGenerationMetadata();
+    message.type = object.type ?? GenerationMetadata_Type.TYPE_UNSPECIFIED;
+    message.expression = object.expression ?? "";
     return message;
   },
 };
