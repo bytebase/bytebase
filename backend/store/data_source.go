@@ -50,6 +50,8 @@ type DataSourceMessage struct {
 	ReplicaSet          string
 	DirectConnection    bool
 	Region              string
+	AccountID           string
+	WarehouseID         string
 }
 
 // Copy returns a copy of the data source message.
@@ -193,6 +195,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.ReplicaSet = dataSourceOptions.ReplicaSet
 		dataSourceMessage.DirectConnection = dataSourceOptions.DirectConnection
 		dataSourceMessage.Region = dataSourceOptions.Region
+		dataSourceMessage.AccountID = dataSourceOptions.AccountId
+		dataSourceMessage.WarehouseID = dataSourceOptions.WarehouseId
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -413,6 +417,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		ReplicaSet:                         dataSource.ReplicaSet,
 		DirectConnection:                   dataSource.DirectConnection,
 		Region:                             dataSource.Region,
+		WarehouseId:                        dataSource.WarehouseID,
+		AccountId:                          dataSource.AccountID,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

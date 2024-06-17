@@ -18,7 +18,7 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:query"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*}:query"
         body: "*"
       }
@@ -30,7 +30,7 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:execute"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*}:execute"
         body: "*"
       }
@@ -50,11 +50,11 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*}:export"
         body: "*"
       }
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=projects/*/issues/*}:export"
         body: "*"
       }

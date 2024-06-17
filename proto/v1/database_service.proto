@@ -23,7 +23,7 @@ service DatabaseService {
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=instances/*}/databases"
-      additional_bindings {get: "/v1/{parent=projects/*}/databases"}
+      additional_bindings: {get: "/v1/{parent=projects/*}/databases"}
     };
     option (google.api.method_signature) = "";
   }
@@ -76,7 +76,7 @@ service DatabaseService {
       post: "/v1/{name=instances/*/databases/*}:diffSchema"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"
         body: "*"
       }
@@ -95,8 +95,8 @@ service DatabaseService {
 
   rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
     option (google.api.http) = {
-      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}";
-      body: "secret";
+      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}"
+      body: "secret"
     };
   }
 
