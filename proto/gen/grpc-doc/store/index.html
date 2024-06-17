@@ -354,6 +354,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.CheckConstraintMetadata"><span class="badge">M</span>CheckConstraintMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ColumnConfig"><span class="badge">M</span>ColumnConfig</a>
                 </li>
               
@@ -2649,6 +2653,37 @@ Some fields are omitted because they are too large or contain sensitive informat
       <p></p>
 
       
+        <h3 id="bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a check constraint. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expression is the expression of a check constraint. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ColumnConfig">ColumnConfig</h3>
         <p></p>
 
@@ -4055,6 +4090,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#bytebase.store.TablePartitionMetadata">TablePartitionMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The partitions is the list of partitions in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>check_constraints</td>
+                  <td><a href="#bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The check_constraints is the list of check constraints in a table. </p></td>
                 </tr>
               
             </tbody>
