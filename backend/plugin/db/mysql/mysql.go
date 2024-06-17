@@ -42,6 +42,9 @@ var (
 	viewTableType = "VIEW"
 
 	_ db.Driver = (*Driver)(nil)
+
+	variableSetStmtRegexp  = regexp.MustCompile(`(?i)^SET\s+?`)
+	variableShowStmtRegexp = regexp.MustCompile(`(?i)^SHOW\s+?`)
 )
 
 func init() {
@@ -501,8 +504,9 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 
 func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
-	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
-	if !isSet {
+	isSet := variableSetStmtRegexp.MatchString(statement)
+	isShow := variableShowStmtRegexp.MatchString(statement)
+	if !isSet && !isShow {
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {

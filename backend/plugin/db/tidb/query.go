@@ -68,10 +68,9 @@ func getStatementWithResultLimitForTiDB(singleStatement string, limitCount int) 
 				return "", err
 			}
 			return buffer.String(), nil
-
 		default:
 			continue
 		}
 	}
-	return "", nil
+	return singleStatement, nil
 }
