@@ -210,6 +210,6 @@ func postDirectMessage(webhookCtx webhook.Context) {
 		}
 		return errs
 	}); err != nil {
-		slog.Warn("failed to send direct message to user", log.BBError(err))
+		slog.Warn("failed to send direct message to slack user", log.BBError(err))
 	}
 }
