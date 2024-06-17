@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row items-center flex-wrap gap-2">
-    <NTag v-for="role in sortRoles(user.roles)" :key="role">
+    <NTag v-for="role in sortRoles(roles)" :key="role">
       {{ displayRoleTitle(role) }}
     </NTag>
   </div>
@@ -8,10 +8,9 @@
 
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
-import type { User } from "@/types/proto/v1/auth_service";
 import { displayRoleTitle, sortRoles } from "@/utils";
 
 defineProps<{
-  user: User;
+  roles: string[];
 }>();
 </script>

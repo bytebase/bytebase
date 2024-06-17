@@ -38,7 +38,13 @@ export interface WorkspaceProfileSetting {
     | Announcement
     | undefined;
   /** The max duration for role expired. */
-  maximumRoleExpiration: Duration | undefined;
+  maximumRoleExpiration:
+    | Duration
+    | undefined;
+  /** The workspace domain, e.g. bytebase.com. */
+  domains: string[];
+  /** Only user and group from the domains can be created and login. */
+  enforceIdentityDomain: boolean;
 }
 
 export interface Announcement {
@@ -546,6 +552,8 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     tokenDuration: undefined,
     announcement: undefined,
     maximumRoleExpiration: undefined,
+    domains: [],
+    enforceIdentityDomain: false,
   };
 }
 
@@ -574,6 +582,12 @@ export const WorkspaceProfileSetting = {
     }
     if (message.maximumRoleExpiration !== undefined) {
       Duration.encode(message.maximumRoleExpiration, writer.uint32(66).fork()).ldelim();
+    }
+    for (const v of message.domains) {
+      writer.uint32(74).string(v!);
+    }
+    if (message.enforceIdentityDomain === true) {
+      writer.uint32(80).bool(message.enforceIdentityDomain);
     }
     return writer;
   },
@@ -641,6 +655,20 @@ export const WorkspaceProfileSetting = {
 
           message.maximumRoleExpiration = Duration.decode(reader, reader.uint32());
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.domains.push(reader.string());
+          continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.enforceIdentityDomain = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -664,6 +692,10 @@ export const WorkspaceProfileSetting = {
       maximumRoleExpiration: isSet(object.maximumRoleExpiration)
         ? Duration.fromJSON(object.maximumRoleExpiration)
         : undefined,
+      domains: globalThis.Array.isArray(object?.domains) ? object.domains.map((e: any) => globalThis.String(e)) : [],
+      enforceIdentityDomain: isSet(object.enforceIdentityDomain)
+        ? globalThis.Boolean(object.enforceIdentityDomain)
+        : false,
     };
   },
 
@@ -693,6 +725,12 @@ export const WorkspaceProfileSetting = {
     if (message.maximumRoleExpiration !== undefined) {
       obj.maximumRoleExpiration = Duration.toJSON(message.maximumRoleExpiration);
     }
+    if (message.domains?.length) {
+      obj.domains = message.domains;
+    }
+    if (message.enforceIdentityDomain === true) {
+      obj.enforceIdentityDomain = message.enforceIdentityDomain;
+    }
     return obj;
   },
 
@@ -716,6 +754,8 @@ export const WorkspaceProfileSetting = {
       (object.maximumRoleExpiration !== undefined && object.maximumRoleExpiration !== null)
         ? Duration.fromPartial(object.maximumRoleExpiration)
         : undefined;
+    message.domains = object.domains?.map((e) => e) || [];
+    message.enforceIdentityDomain = object.enforceIdentityDomain ?? false;
     return message;
   },
 };

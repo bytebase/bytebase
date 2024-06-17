@@ -1458,7 +1458,7 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
     "all": "Todas las instancias",
-    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
+    "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
     "sync-mode": {
       "self": "Modo de sincronización",
       "database": {
@@ -3258,7 +3258,9 @@
         "pattern": "{recurso} solo puede contener letras minúsculas, números y guiones. Debe comenzar con una letra minúscula.",
         "max-length": "{recurso} puede contener hasta {length} caracteres"
       },
-      "delete": "Eliminar rol"
+      "delete": "Eliminar rol",
+      "delete-warning": "Se eliminará el rol \"{name}\". Esta acción no se puede deshacer.",
+      "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:"
     },
     "select": "Seleccionar rol",
     "select-roles": "Seleccionar roles",

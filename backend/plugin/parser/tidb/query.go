@@ -26,14 +26,11 @@ func validateQuery(statement string) (bool, error) {
 		return false, err
 	}
 	for _, stmt := range stmtList {
-		switch stmt := stmt.(type) {
+		switch stmt.(type) {
 		case *tidbast.SelectStmt:
 		case *tidbast.SetOprStmt:
+		case *tidbast.ShowStmt:
 		case *tidbast.ExplainStmt:
-			// Disable DESC command.
-			if _, ok := stmt.Stmt.(*tidbast.ShowStmt); ok {
-				return false, nil
-			}
 		default:
 			return false, nil
 		}

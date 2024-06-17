@@ -138,7 +138,10 @@
       </template>
     </div>
 
-    <div v-if="!create && !hideArchiveRestore" class="mt-6 flex justify-between items-center pt-5">
+    <div
+      v-if="!create && !hideArchiveRestore"
+      class="mt-6 flex justify-between items-center pt-5"
+    >
       <template v-if="state.environment.state === State.ACTIVE">
         <BBButtonConfirm
           v-if="allowArchive"
@@ -218,6 +221,7 @@ const {
   valueChanged,
   hasPermission,
   events,
+  resourceIdField,
 } = useEnvironmentFormContext();
 const policyStore = usePolicyV1Store();
 const environmentList = useEnvironmentV1List();

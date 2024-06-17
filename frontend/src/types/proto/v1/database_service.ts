@@ -993,6 +993,8 @@ export interface IndexMetadata {
    * If the key length is not specified, it's -1.
    */
   keyLength: Long[];
+  /** The descending is the ordered descending of an index. */
+  descending: boolean[];
   /** The type is the type of an index. */
   type: string;
   /** The unique is whether the index is unique. */
@@ -5232,6 +5234,7 @@ function createBaseIndexMetadata(): IndexMetadata {
     name: "",
     expressions: [],
     keyLength: [],
+    descending: [],
     type: "",
     unique: false,
     primary: false,
@@ -5252,6 +5255,11 @@ export const IndexMetadata = {
     writer.uint32(74).fork();
     for (const v of message.keyLength) {
       writer.int64(v);
+    }
+    writer.ldelim();
+    writer.uint32(82).fork();
+    for (const v of message.descending) {
+      writer.bool(v);
     }
     writer.ldelim();
     if (message.type !== "") {
@@ -5307,6 +5315,23 @@ export const IndexMetadata = {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.keyLength.push(reader.int64() as Long);
+            }
+
+            continue;
+          }
+
+          break;
+        case 10:
+          if (tag === 80) {
+            message.descending.push(reader.bool());
+
+            continue;
+          }
+
+          if (tag === 82) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.descending.push(reader.bool());
             }
 
             continue;
@@ -5371,6 +5396,9 @@ export const IndexMetadata = {
         ? object.expressions.map((e: any) => globalThis.String(e))
         : [],
       keyLength: globalThis.Array.isArray(object?.keyLength) ? object.keyLength.map((e: any) => Long.fromValue(e)) : [],
+      descending: globalThis.Array.isArray(object?.descending)
+        ? object.descending.map((e: any) => globalThis.Boolean(e))
+        : [],
       type: isSet(object.type) ? globalThis.String(object.type) : "",
       unique: isSet(object.unique) ? globalThis.Boolean(object.unique) : false,
       primary: isSet(object.primary) ? globalThis.Boolean(object.primary) : false,
@@ -5390,6 +5418,9 @@ export const IndexMetadata = {
     }
     if (message.keyLength?.length) {
       obj.keyLength = message.keyLength.map((e) => (e || Long.ZERO).toString());
+    }
+    if (message.descending?.length) {
+      obj.descending = message.descending;
     }
     if (message.type !== "") {
       obj.type = message.type;
@@ -5420,6 +5451,7 @@ export const IndexMetadata = {
     message.name = object.name ?? "";
     message.expressions = object.expressions?.map((e) => e) || [];
     message.keyLength = object.keyLength?.map((e) => Long.fromValue(e)) || [];
+    message.descending = object.descending?.map((e) => e) || [];
     message.type = object.type ?? "";
     message.unique = object.unique ?? false;
     message.primary = object.primary ?? false;
