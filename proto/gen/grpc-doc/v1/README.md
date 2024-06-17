@@ -113,6 +113,7 @@
     - [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema)
     - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
     - [ChangedResources](#bytebase-v1-ChangedResources)
+    - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnConfig](#bytebase-v1-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-v1-ColumnConfig-LabelsEntry)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
@@ -2269,6 +2270,22 @@ AdviseIndexResponse is the response of advising index.
 
 
 
+<a name="bytebase-v1-CheckConstraintMetadata"></a>
+
+### CheckConstraintMetadata
+CheckConstraintMetadata is the metadata for check constraints.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a check constraint. |
+| expression | [string](#string) |  | The expression is the expression of a check constraint. |
+
+
+
+
+
+
 <a name="bytebase-v1-ColumnConfig"></a>
 
 ### ColumnConfig
@@ -3136,6 +3153,7 @@ TableMetadata is the metadata for tables.
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 | partitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| check_constraints | [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 
 
 
