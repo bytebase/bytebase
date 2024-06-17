@@ -2,6 +2,7 @@ package databricks
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -113,7 +114,9 @@ func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error
 			if err != nil {
 				return nil, err
 			}
-			appendSchemaTables(catalogMap, tablesInfo)
+			if err := appendSchemaTables(catalogMap, tablesInfo); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -121,33 +124,38 @@ func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error
 }
 
 // extract tables' metadata from 'tablesInfo' and store it in 'catalogMap'.
-func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.TableInfo) {
+func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.TableInfo) error {
 	for _, tableInfo := range tablesInfo {
 		table := tableUnion{
 			typeName: tableInfo.TableType,
 		}
 
+		qualifiedName, err := getQualifiedTblName("", tableInfo.SchemaName, tableInfo.Name)
+		if err != nil {
+			return err
+		}
+
 		switch tableInfo.TableType {
 		case catalog.TableTypeView:
 			table.view = &storepb.ViewMetadata{
-				Name:             tableInfo.Name,
+				Name:             qualifiedName,
 				Definition:       tableInfo.ViewDefinition,
 				Comment:          tableInfo.Comment,
 				DependentColumns: convertToDependentColumns(tableInfo.SchemaName, tableInfo.Name, tableInfo.Columns),
 			}
 		case catalog.TableTypeMaterializedView:
 			table.materialView = &storepb.MaterializedViewMetadata{
-				Name:       tableInfo.Name,
+				Name:       qualifiedName,
 				Definition: tableInfo.ViewDefinition,
 				Comment:    tableInfo.Comment,
 			}
 		case catalog.TableTypeExternal:
 			table.externalTable = &storepb.ExternalTableMetadata{
-				Name: tableInfo.Name,
+				Name: qualifiedName,
 			}
 		case catalog.TableTypeManaged:
 			table.table = &storepb.TableMetadata{
-				Name:    tableInfo.Name,
+				Name:    qualifiedName,
 				Columns: convertToColumnMetadata(tableInfo.Columns),
 				Comment: tableInfo.Comment,
 			}
@@ -169,6 +177,7 @@ func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.Ta
 			}
 		}
 	}
+	return nil
 }
 
 func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnMetadata {
@@ -221,4 +230,15 @@ func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*storepb.SchemaMet
 		schemas = append(schemas, schemaMetadata)
 	}
 	return schemas
+}
+
+func getQualifiedTblName(catalogName, schemaName, tblName string) (string, error) {
+	if tblName == "" || schemaName == "" {
+		return "", errors.New("table name and schema name must be specified")
+	}
+	qualifiedName := fmt.Sprintf("`%s`.`%s`", schemaName, tblName)
+	if catalogName != "" {
+		qualifiedName = fmt.Sprintf("`%s`.%s", catalogName)
+	}
+	return qualifiedName, nil
 }
