@@ -40,7 +40,7 @@ func validateQuery(statement string) (bool, error) {
 	explainAnalyze := false
 	for _, stmt := range stmtList {
 		switch stmt := stmt.(type) {
-		case *ast.SelectStmt, *ast.VariableSetStmt:
+		case *ast.SelectStmt, *ast.VariableSetStmt, *ast.VariableShowStmt:
 		case *ast.ExplainStmt:
 			if stmt.Analyze {
 				// We only support analyze select, because analyze will actually execute the statement.
