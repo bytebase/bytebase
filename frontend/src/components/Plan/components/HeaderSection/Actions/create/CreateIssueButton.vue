@@ -7,7 +7,7 @@
         tag="div"
         :disabled="issueCreateErrorList.length > 0 || loading"
         :loading="loading"
-        @click="doCreateIssue"
+        @click="handleCreateIssue"
       >
         {{ loading ? $t("common.creating") : $t("issue.create-issue") }}
       </NButton>
@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { uniqBy } from "lodash-es";
-import { NTooltip, NButton } from "naive-ui";
+import { NTooltip, NButton, useDialog } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -55,6 +55,7 @@ import {
 
 const { t } = useI18n();
 const router = useRouter();
+const dialog = useDialog();
 const { plan } = usePlanContext();
 const { runSQLCheck } = useSQLCheckContext();
 const me = useCurrentUserV1();
@@ -100,6 +101,18 @@ const issueCreateErrorList = computed(() => {
   }
   return errorList;
 });
+
+const handleCreateIssue = async () => {
+  dialog.info({
+    title: t("common.confirm"),
+    content: t("issue.this-plan-will-be-converted-to-a-new-issue"),
+    negativeText: t("common.cancel"),
+    positiveText: t("common.create"),
+    onPositiveClick: async () => {
+      await doCreateIssue();
+    },
+  });
+};
 
 const doCreateIssue = async () => {
   loading.value = true;
