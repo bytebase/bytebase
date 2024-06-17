@@ -628,6 +628,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
                 - name: pageSize
@@ -692,6 +693,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
             requestBody:
@@ -1846,6 +1848,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
                 - name: pageSize
@@ -1916,6 +1919,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
             requestBody:
@@ -2615,6 +2619,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
                 - name: pageSize
@@ -2679,6 +2684,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
             requestBody:
@@ -3382,6 +3388,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
                 - name: pageSize
@@ -3450,6 +3457,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
             requestBody:
@@ -5526,6 +5534,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
                 - name: pageSize
@@ -5590,6 +5599,7 @@ paths:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
             requestBody:
@@ -11572,6 +11582,7 @@ components:
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                        - TAG
                     type: string
                     format: enum
                 rolloutPolicy:

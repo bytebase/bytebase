@@ -27,6 +27,7 @@ export enum PolicyType {
   MASKING_RULE = "MASKING_RULE",
   MASKING_EXCEPTION = "MASKING_EXCEPTION",
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW",
+  TAG = "TAG",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -59,6 +60,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 12:
     case "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW":
       return PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW;
+    case 13:
+    case "TAG":
+      return PolicyType.TAG;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -86,6 +90,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "MASKING_EXCEPTION";
     case PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
       return "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW";
+    case PolicyType.TAG:
+      return "TAG";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -112,6 +118,8 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 10;
     case PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
       return 12;
+    case PolicyType.TAG:
+      return 13;
     case PolicyType.UNRECOGNIZED:
     default:
       return -1;
