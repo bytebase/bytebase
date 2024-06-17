@@ -552,6 +552,10 @@ export interface DataSource {
   directConnection: boolean;
   /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
   region: string;
+  /** account_id is used by Databricks. */
+  accountId: string;
+  /** warehouse_id is used by Databricks. */
+  warehouseId: string;
 }
 
 export enum DataSource_AuthenticationType {
@@ -2468,6 +2472,8 @@ function createBaseDataSource(): DataSource {
     replicaSet: "",
     directConnection: false,
     region: "",
+    accountId: "",
+    warehouseId: "",
   };
 }
 
@@ -2553,6 +2559,12 @@ export const DataSource = {
     }
     if (message.region !== "") {
       writer.uint32(218).string(message.region);
+    }
+    if (message.accountId !== "") {
+      writer.uint32(226).string(message.accountId);
+    }
+    if (message.warehouseId !== "") {
+      writer.uint32(234).string(message.warehouseId);
     }
     return writer;
   },
@@ -2753,6 +2765,20 @@ export const DataSource = {
 
           message.region = reader.string();
           continue;
+        case 28:
+          if (tag !== 226) {
+            break;
+          }
+
+          message.accountId = reader.string();
+          continue;
+        case 29:
+          if (tag !== 234) {
+            break;
+          }
+
+          message.warehouseId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2801,6 +2827,8 @@ export const DataSource = {
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
       region: isSet(object.region) ? globalThis.String(object.region) : "",
+      accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
+      warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
     };
   },
 
@@ -2887,6 +2915,12 @@ export const DataSource = {
     if (message.region !== "") {
       obj.region = message.region;
     }
+    if (message.accountId !== "") {
+      obj.accountId = message.accountId;
+    }
+    if (message.warehouseId !== "") {
+      obj.warehouseId = message.warehouseId;
+    }
     return obj;
   },
 
@@ -2926,6 +2960,8 @@ export const DataSource = {
     message.replicaSet = object.replicaSet ?? "";
     message.directConnection = object.directConnection ?? false;
     message.region = object.region ?? "";
+    message.accountId = object.accountId ?? "";
+    message.warehouseId = object.warehouseId ?? "";
     return message;
   },
 };

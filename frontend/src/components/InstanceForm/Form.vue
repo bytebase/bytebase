@@ -167,6 +167,7 @@
           v-if="
             basicInfo.engine !== Engine.SPANNER &&
             basicInfo.engine !== Engine.BIGQUERY &&
+            basicInfo.engine !== Engine.DATABRICKS &&
             adminDataSource.authenticationType !==
               DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
           "
