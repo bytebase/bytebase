@@ -26,7 +26,6 @@ var (
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
-type GetMaskedFieldsFunc func(string, string, *SensitiveSchemaInfo) ([]SensitiveField, error)
 type ExtractChangedResourcesFunc func(string, string, any) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)

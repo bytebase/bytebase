@@ -514,20 +514,6 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 		}
 	}
 
-	if queryContext != nil && queryContext.SensitiveSchemaInfo != nil {
-		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("MySQL schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != "" {
-				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
-			}
-		}
-	}
-
 	startTime := time.Now()
 	result, err := util.Query(ctx, d.dbType, conn, statement, queryContext)
 	if err != nil {
