@@ -1476,6 +1476,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TagPolicy"><span class="badge">M</span>TagPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdatePolicyRequest"><span class="badge">M</span>UpdatePolicyRequest</a>
                 </li>
               
@@ -16381,6 +16389,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>tag_policy</td>
+                  <td><a href="#bytebase.v1.TagPolicy">TagPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -16574,6 +16589,61 @@ roles/CREATOR </p></td>
                 <tr>
                   <td>active</td>
                   <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TagPolicy">TagPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#bytebase.v1.TagPolicy.TagsEntry">TagPolicy.TagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TagPolicy.TagsEntry">TagPolicy.TagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21008,6 +21078,14 @@ Format: reviewConfigs/{uid} </p></td>
                   <td><a href="#bytebase.v1.SQLReviewRule">SQLReviewRule</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resources</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>resources using the config.
+Format: {resurce}/{resource id}, for example, environments/test. </p></td>
                 </tr>
               
             </tbody>

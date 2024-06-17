@@ -86,3 +86,7 @@ enum SQLReviewRuleLevel {
   WARNING = 2;
   DISABLED = 3;
 }
+
+message TagPolicy {
+  map<string, string> tags = 1;
+}

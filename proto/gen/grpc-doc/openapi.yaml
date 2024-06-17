@@ -11590,6 +11590,8 @@ components:
                     $ref: '#/components/schemas/MaskingExceptionPolicy'
                 restrictIssueCreationForSqlReviewPolicy:
                     $ref: '#/components/schemas/RestrictIssueCreationForSQLReviewPolicy'
+                tagPolicy:
+                    $ref: '#/components/schemas/TagPolicy'
                 enforce:
                     type: boolean
                 resourceType:
@@ -12029,6 +12031,13 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/SQLReviewRule'
+                resources:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        resources using the config.
+                         Format: {resurce}/{resource id}, for example, environments/test.
         Risk:
             type: object
             properties:
@@ -13206,6 +13215,13 @@ components:
                         $ref: '#/components/schemas/TablePartitionMetadata'
                     description: The subpartitions is the list of subpartitions in a table partition.
             description: TablePartitionMetadata is the metadata for table partitions.
+        TagPolicy:
+            type: object
+            properties:
+                tags:
+                    type: object
+                    additionalProperties:
+                        type: string
         Task:
             type: object
             properties:

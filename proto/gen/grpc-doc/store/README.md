@@ -188,6 +188,8 @@
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewPolicy](#bytebase-store-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [TagPolicy](#bytebase-store-TagPolicy)
+    - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
@@ -2995,6 +2997,37 @@ Format: users/{userUID} or groups/{group email} |
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy"></a>
+
+### TagPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy-TagsEntry"></a>
+
+### TagPolicy.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 

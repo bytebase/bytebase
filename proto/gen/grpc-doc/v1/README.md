@@ -339,6 +339,8 @@
     - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
+    - [TagPolicy](#bytebase-v1-TagPolicy)
+    - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
@@ -5735,6 +5737,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
 | restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
+| tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
@@ -5821,6 +5824,37 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TagPolicy"></a>
+
+### TagPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tags | [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TagPolicy-TagsEntry"></a>
+
+### TagPolicy.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -7473,6 +7507,7 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
+| resources | [string](#string) | repeated | resources using the config. Format: {resurce}/{resource id}, for example, environments/test. |
 
 
 

@@ -82,6 +82,11 @@ export interface ReviewConfig {
   createTime: Date | undefined;
   updateTime: Date | undefined;
   rules: SQLReviewRule[];
+  /**
+   * resources using the config.
+   * Format: {resurce}/{resource id}, for example, environments/test.
+   */
+  resources: string[];
 }
 
 function createBaseListReviewConfigsRequest(): ListReviewConfigsRequest {
@@ -484,7 +489,16 @@ export const DeleteReviewConfigRequest = {
 };
 
 function createBaseReviewConfig(): ReviewConfig {
-  return { name: "", title: "", enabled: false, creator: "", createTime: undefined, updateTime: undefined, rules: [] };
+  return {
+    name: "",
+    title: "",
+    enabled: false,
+    creator: "",
+    createTime: undefined,
+    updateTime: undefined,
+    rules: [],
+    resources: [],
+  };
 }
 
 export const ReviewConfig = {
@@ -509,6 +523,9 @@ export const ReviewConfig = {
     }
     for (const v of message.rules) {
       SQLReviewRule.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    for (const v of message.resources) {
+      writer.uint32(66).string(v!);
     }
     return writer;
   },
@@ -569,6 +586,13 @@ export const ReviewConfig = {
 
           message.rules.push(SQLReviewRule.decode(reader, reader.uint32()));
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.resources.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -587,6 +611,9 @@ export const ReviewConfig = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
+      resources: globalThis.Array.isArray(object?.resources)
+        ? object.resources.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -613,6 +640,9 @@ export const ReviewConfig = {
     if (message.rules?.length) {
       obj.rules = message.rules.map((e) => SQLReviewRule.toJSON(e));
     }
+    if (message.resources?.length) {
+      obj.resources = message.resources;
+    }
     return obj;
   },
 
@@ -628,6 +658,7 @@ export const ReviewConfig = {
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
+    message.resources = object.resources?.map((e) => e) || [];
     return message;
   },
 };

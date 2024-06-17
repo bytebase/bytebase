@@ -112,4 +112,8 @@ message ReviewConfig {
   google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   repeated SQLReviewRule rules = 7;
+
+  // resources using the config.
+  // Format: {resurce}/{resource id}, for example, environments/test.
+  repeated string resources = 8;
 }
