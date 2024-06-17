@@ -13899,8 +13899,10 @@ components:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
                     description: The max duration for role expired.
-                domain:
-                    type: string
+                domains:
+                    type: array
+                    items:
+                        type: string
                     description: The workspace domain, e.g. bytebase.com.
         WorkspaceTrialSetting:
             type: object

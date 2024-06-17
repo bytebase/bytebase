@@ -322,7 +322,7 @@ export interface WorkspaceProfileSetting {
     | Duration
     | undefined;
   /** The workspace domain, e.g. bytebase.com. */
-  domain: string;
+  domains: string[];
 }
 
 export interface Announcement {
@@ -2025,7 +2025,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     tokenDuration: undefined,
     announcement: undefined,
     maximumRoleExpiration: undefined,
-    domain: "",
+    domains: [],
   };
 }
 
@@ -2055,8 +2055,8 @@ export const WorkspaceProfileSetting = {
     if (message.maximumRoleExpiration !== undefined) {
       Duration.encode(message.maximumRoleExpiration, writer.uint32(66).fork()).ldelim();
     }
-    if (message.domain !== "") {
-      writer.uint32(74).string(message.domain);
+    for (const v of message.domains) {
+      writer.uint32(74).string(v!);
     }
     return writer;
   },
@@ -2129,7 +2129,7 @@ export const WorkspaceProfileSetting = {
             break;
           }
 
-          message.domain = reader.string();
+          message.domains.push(reader.string());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2154,7 +2154,7 @@ export const WorkspaceProfileSetting = {
       maximumRoleExpiration: isSet(object.maximumRoleExpiration)
         ? Duration.fromJSON(object.maximumRoleExpiration)
         : undefined,
-      domain: isSet(object.domain) ? globalThis.String(object.domain) : "",
+      domains: globalThis.Array.isArray(object?.domains) ? object.domains.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -2184,8 +2184,8 @@ export const WorkspaceProfileSetting = {
     if (message.maximumRoleExpiration !== undefined) {
       obj.maximumRoleExpiration = Duration.toJSON(message.maximumRoleExpiration);
     }
-    if (message.domain !== "") {
-      obj.domain = message.domain;
+    if (message.domains?.length) {
+      obj.domains = message.domains;
     }
     return obj;
   },
@@ -2210,7 +2210,7 @@ export const WorkspaceProfileSetting = {
       (object.maximumRoleExpiration !== undefined && object.maximumRoleExpiration !== null)
         ? Duration.fromPartial(object.maximumRoleExpiration)
         : undefined;
-    message.domain = object.domain ?? "";
+    message.domains = object.domains?.map((e) => e) || [];
     return message;
   },
 };
