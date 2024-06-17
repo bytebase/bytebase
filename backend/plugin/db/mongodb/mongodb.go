@@ -198,7 +198,7 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.ReplicaSet != "" {
 		values.Add("replicaSet", connConfig.ReplicaSet)
 	}
-	values.Add("appName", "Bytebase")
+	values.Add("appName", "bytebase")
 	// Add SSL options if provided
 	if connConfig.TLSConfig.SslCA != "" {
 		values.Add("tlsCAFile", connConfig.TLSConfig.SslCA)

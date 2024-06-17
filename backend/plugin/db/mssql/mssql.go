@@ -52,7 +52,7 @@ func newDriver(db.DriverConfig) db.Driver {
 // Open opens a MSSQL driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	query := url.Values{}
-	query.Add("app name", "Bytebase")
+	query.Add("app name", "bytebase")
 	if config.Database != "" {
 		query.Add("database", config.Database)
 	}
