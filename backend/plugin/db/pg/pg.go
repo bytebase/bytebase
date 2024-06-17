@@ -684,10 +684,6 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
