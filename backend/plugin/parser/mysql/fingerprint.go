@@ -140,6 +140,10 @@ func collapseUnion(query string) (string, error) {
 		}
 		if i == start+1 {
 			// The i-th part is not equal to the front part.
+			if i == len(parts)-1 {
+				// The i-th part is the sentinel node.
+				break
+			}
 			if _, err := buf.WriteString(separators[i-1]); err != nil {
 				return "", err
 			}
