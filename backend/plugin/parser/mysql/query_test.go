@@ -15,6 +15,14 @@ func TestValidateSQLForEditor(t *testing.T) {
 		err       bool
 	}{
 		{
+			statement: "SHOW CREATE TABLE bytebase;",
+			validate:  true,
+		},
+		{
+			statement: "DESC bytebase;",
+			validate:  true,
+		},
+		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
 			validate:  true,
 		},
