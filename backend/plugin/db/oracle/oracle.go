@@ -191,7 +191,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// Oracle does not support transaction isolation level for read-only queries.
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
@@ -227,22 +229,26 @@ func (driver *Driver) getOracleStatementWithResultLimit(stmt string, queryContex
 	if err != nil {
 		return "", err
 	}
-	switch {
-	case versionNumber < dbVersion12:
-		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
-	default:
-		res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
-		if err != nil {
-			return "", err
+	if queryContext != nil {
+		switch {
+		case versionNumber < dbVersion12:
+			return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
+		default:
+			res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
+			if err != nil {
+				return "", err
+			}
+			return res, nil
 		}
-		return res, nil
 	}
+
+	return stmt, nil
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
-	if queryContext.Explain {
+	if queryContext != nil && queryContext.Explain {
 		startTime := time.Now()
 		randNum, err := rand.Int(rand.Reader, big.NewInt(999))
 		if err != nil {
@@ -264,7 +270,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		return result, nil
 	}
 
-	if queryContext.Limit > 0 {
+	if queryContext != nil && queryContext.Limit > 0 {
 		stmt, err := driver.getOracleStatementWithResultLimit(statement, queryContext)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
@@ -273,7 +279,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		statement = stmt
 	}
 
-	if queryContext.SensitiveSchemaInfo != nil {
+	if queryContext != nil && queryContext.SensitiveSchemaInfo != nil {
 		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
 			if len(database.SchemaList) == 0 {
 				continue
