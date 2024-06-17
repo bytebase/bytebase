@@ -448,7 +448,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.ReadOnly {
+	if queryContext != nil && queryContext.ReadOnly {
 		queryContext.ReadOnly = d.getReadOnly()
 	}
 
@@ -507,14 +507,14 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 	isSet := variableSetStmtRegexp.MatchString(statement)
 	isShow := variableShowStmtRegexp.MatchString(statement)
 	if !isSet && !isShow {
-		if queryContext.Explain {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 	}
 
-	if queryContext.SensitiveSchemaInfo != nil {
+	if queryContext != nil && queryContext.SensitiveSchemaInfo != nil {
 		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
 			if len(database.SchemaList) == 0 {
 				continue
