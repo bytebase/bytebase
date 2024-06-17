@@ -244,17 +244,17 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 		if _, ok := indexMap[key][indexName]; !ok {
 			indexMap[key][indexName] = &storepb.IndexMetadata{
-				Name:       indexName,
-				Type:       indexType,
-				Unique:     unique,
-				Primary:    indexName == "PRIMARY",
-				Visible:    visible,
-				Comment:    comment,
-				Descending: desc,
+				Name:    indexName,
+				Type:    indexType,
+				Unique:  unique,
+				Primary: indexName == "PRIMARY",
+				Visible: visible,
+				Comment: comment,
 			}
 		}
 		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, expression)
 		indexMap[key][indexName].KeyLength = append(indexMap[key][indexName].KeyLength, subPart)
+		indexMap[key][indexName].Descending = append(indexMap[key][indexName].Descending, desc)
 	}
 	if err := indexRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, indexQuery)

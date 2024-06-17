@@ -178,13 +178,13 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 			Name:        index.Name,
 			Expressions: index.Expressions,
 			KeyLength:   index.KeyLength,
+			Descending:  index.Descending,
 			Type:        index.Type,
 			Unique:      index.Unique,
 			Primary:     index.Primary,
 			Visible:     index.Visible,
 			Comment:     index.Comment,
 			Definition:  index.Definition,
-			Descending:  index.Descending,
 		})
 	}
 	for _, foreignKey := range table.ForeignKeys {
@@ -571,13 +571,13 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			Name:        index.Name,
 			Expressions: index.Expressions,
 			KeyLength:   index.KeyLength,
+			Descending:  index.Descending,
 			Type:        index.Type,
 			Unique:      index.Unique,
 			Primary:     index.Primary,
 			Visible:     index.Visible,
 			Comment:     index.Comment,
 			Definition:  index.Definition,
-			Descending:  index.Descending,
 		})
 	}
 	for _, foreignKey := range table.ForeignKeys {
