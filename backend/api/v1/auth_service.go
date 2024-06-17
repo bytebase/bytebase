@@ -159,7 +159,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	if err := validateEmail(request.User.Email); err != nil {
+	var allowedDomains []string
+	if setting.EnforceIdentityDomain {
+		allowedDomains = setting.Domains
+	}
+	if err := validateEmail(request.User.Email, allowedDomains); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
 	}
 	existingUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
@@ -276,12 +280,21 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
+	}
+
 	var passwordPatch *string
 	patch := &store.UpdateUserMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "email":
-			if err := validateEmail(request.User.Email); err != nil {
+			var allowedDomains []string
+			if setting.EnforceIdentityDomain {
+				allowedDomains = setting.Domains
+			}
+			if err := validateEmail(request.User.Email, allowedDomains); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
 			}
 			user, err := s.store.GetUserByEmail(ctx, request.User.Email)
@@ -639,6 +652,18 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.Unauthenticated, fmt.Sprintf("user type %s cannot login", loginUser.Type))
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	var allowedDomains []string
+	if setting.EnforceIdentityDomain {
+		allowedDomains = setting.Domains
+	}
+	if err := validateEmail(loginUser.Email, allowedDomains); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", loginUser.Email, err)
+	}
+
 	if request.Web {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
@@ -810,7 +835,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
 	email := strings.ToLower(userInfo.Identifier)
-	if err := validateEmail(email); err != nil {
+	var allowedDomains []string
+	if setting.EnforceIdentityDomain {
+		allowedDomains = setting.Domains
+	}
+	if err := validateEmail(email, allowedDomains); err != nil {
 		// If the email is invalid, we will try to use the domain and identifier to construct the email.
 		if idp.Domain != "" {
 			domain := extractDomain(idp.Domain)
@@ -819,7 +848,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	// If the email is still invalid, we will return an error.
-	if err := validateEmail(email); err != nil {
+	if err := validateEmail(email, allowedDomains); err != nil {
 		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
@@ -882,13 +911,26 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 	return status.Errorf(codes.Unauthenticated, "invalid recovery code")
 }
 
-func validateEmail(email string) error {
+func validateEmail(email string, allowedDomains []string) error {
 	formattedEmail := strings.ToLower(email)
 	if email != formattedEmail {
 		return errors.New("email should be lowercase")
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		return err
+	}
+	// Enforce domain restrictions.
+	if len(allowedDomains) > 0 {
+		ok := false
+		for _, v := range allowedDomains {
+			if strings.HasSuffix(email, fmt.Sprintf("@%s", v)) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return errors.Errorf("email %q does not belong to domains %v", email, allowedDomains)
+		}
 	}
 	return nil
 }
