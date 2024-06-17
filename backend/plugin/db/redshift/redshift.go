@@ -395,7 +395,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// Datashare doesn't support read-only transactions.
-	if driver.datashare {
+	if driver.datashare && queryContext != nil {
 		queryContext.ReadOnly = false
 		queryContext.ShareDB = true
 	}
@@ -432,9 +432,9 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
 	if !isSet {
-		if queryContext.Explain {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 	}
