@@ -43,6 +43,8 @@ export interface WorkspaceProfileSetting {
     | undefined;
   /** The workspace domain, e.g. bytebase.com. */
   domains: string[];
+  /** Only user and group from the domains can be created and login. */
+  enforceIdentityDomain: boolean;
 }
 
 export interface Announcement {
@@ -551,6 +553,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     announcement: undefined,
     maximumRoleExpiration: undefined,
     domains: [],
+    enforceIdentityDomain: false,
   };
 }
 
@@ -582,6 +585,9 @@ export const WorkspaceProfileSetting = {
     }
     for (const v of message.domains) {
       writer.uint32(74).string(v!);
+    }
+    if (message.enforceIdentityDomain === true) {
+      writer.uint32(80).bool(message.enforceIdentityDomain);
     }
     return writer;
   },
@@ -656,6 +662,13 @@ export const WorkspaceProfileSetting = {
 
           message.domains.push(reader.string());
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.enforceIdentityDomain = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -680,6 +693,9 @@ export const WorkspaceProfileSetting = {
         ? Duration.fromJSON(object.maximumRoleExpiration)
         : undefined,
       domains: globalThis.Array.isArray(object?.domains) ? object.domains.map((e: any) => globalThis.String(e)) : [],
+      enforceIdentityDomain: isSet(object.enforceIdentityDomain)
+        ? globalThis.Boolean(object.enforceIdentityDomain)
+        : false,
     };
   },
 
@@ -712,6 +728,9 @@ export const WorkspaceProfileSetting = {
     if (message.domains?.length) {
       obj.domains = message.domains;
     }
+    if (message.enforceIdentityDomain === true) {
+      obj.enforceIdentityDomain = message.enforceIdentityDomain;
+    }
     return obj;
   },
 
@@ -736,6 +755,7 @@ export const WorkspaceProfileSetting = {
         ? Duration.fromPartial(object.maximumRoleExpiration)
         : undefined;
     message.domains = object.domains?.map((e) => e) || [];
+    message.enforceIdentityDomain = object.enforceIdentityDomain ?? false;
     return message;
   },
 };
