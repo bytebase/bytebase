@@ -119,7 +119,10 @@ export const buildPlan = async (params: CreatePlanParams) => {
     }
   } else {
     // build standard plan
-    plan.steps = await buildSteps(databaseUIDList, params, nextUID());
+    // Use dedicated sheets if sqlMap is specified.
+    // Share ONE sheet if otherwise.
+    const sheetUID = hasInitialSQL(params.initialSQL) ? undefined : nextUID();
+    plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
   }
   return await composePlan(plan);
 };
@@ -420,6 +423,19 @@ const extractInitialSQLFromQuery = (
     };
   }
   return {};
+};
+
+const hasInitialSQL = (initialSQL?: InitialSQL) => {
+  if (!initialSQL) {
+    return false;
+  }
+  if (typeof initialSQL.sql === "string") {
+    return true;
+  }
+  if (typeof initialSQL.sqlMap === "object") {
+    return true;
+  }
+  return false;
 };
 
 export const prepareDatabaseList = async (

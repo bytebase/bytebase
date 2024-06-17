@@ -160,7 +160,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
     // build standard plan
     // Use dedicated sheets if sqlMap is specified.
     // Share ONE sheet if otherwise.
-    const sheetUID = params.initialSQL ? undefined : nextUID();
+    const sheetUID = hasInitialSQL(params.initialSQL) ? undefined : nextUID();
     plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
   }
   return plan;
@@ -495,6 +495,19 @@ const extractInitialSQLFromQuery = (
     };
   }
   return {};
+};
+
+const hasInitialSQL = (initialSQL?: InitialSQL) => {
+  if (!initialSQL) {
+    return false;
+  }
+  if (typeof initialSQL.sql === "string") {
+    return true;
+  }
+  if (typeof initialSQL.sqlMap === "object") {
+    return true;
+  }
+  return false;
 };
 
 export const prepareDatabaseList = async (
