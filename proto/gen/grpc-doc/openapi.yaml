@@ -9950,6 +9950,11 @@ components:
                     description: |-
                         The key_lengths are the ordered key lengths of an index.
                          If the key length is not specified, it's -1.
+                descending:
+                    type: array
+                    items:
+                        type: boolean
+                    description: The descending is the ordered descending of an index.
                 type:
                     type: string
                     description: The type is the type of an index.
