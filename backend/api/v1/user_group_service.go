@@ -70,6 +70,17 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+	}
+	if len(setting.Domains) == 0 {
+		return nil, status.Errorf(codes.FailedPrecondition, "workspace domain is required for creating user groups")
+	}
+	if err := validateEmail(groupMessage.Email, setting.Domains); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", groupMessage.Email, err)
+	}
+
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
