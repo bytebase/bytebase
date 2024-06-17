@@ -1223,7 +1223,8 @@
       "statement-type": "Tipo de declaración"
     },
     "sql-review-only": "Sólo revisión de SQL",
-    "create-issue": "Crear problema"
+    "create-issue": "Crear problema",
+    "this-plan-will-be-converted-to-a-new-issue": "Este plan se convertirá en una nueva edición."
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",

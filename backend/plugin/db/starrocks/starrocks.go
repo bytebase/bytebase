@@ -216,7 +216,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// Starrocks doesn't support READ ONLY transactions.
 	// Error: Error 1064 (HY000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'READ' at line 1
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	connectionID, err := getConnectionID(ctx, conn)
 	if err != nil {
@@ -271,24 +273,10 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
 	if !isSet {
-		if queryContext.Explain {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-	}
-
-	if queryContext.SensitiveSchemaInfo != nil {
-		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("MySQL schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != "" {
-				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
-			}
 		}
 	}
 

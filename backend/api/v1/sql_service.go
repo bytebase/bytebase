@@ -451,10 +451,8 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	}
 
 	queryContext := &db.QueryContext{
-		ReadOnly:            true,
-		CurrentDatabase:     database.DatabaseName,
-		SensitiveSchemaInfo: nil,
-		EnableSensitive:     licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		ReadOnly:        true,
+		CurrentDatabase: database.DatabaseName,
 	}
 	if request.Limit != 0 {
 		queryContext.Limit = int(request.Limit)
@@ -796,12 +794,10 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 
 	start := time.Now().UnixNano()
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:               int(request.Limit),
-		Explain:             request.Explain,
-		ReadOnly:            true,
-		CurrentDatabase:     database.DatabaseName,
-		SensitiveSchemaInfo: nil,
-		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		Limit:           int(request.Limit),
+		Explain:         request.Explain,
+		ReadOnly:        true,
+		CurrentDatabase: database.DatabaseName,
 	})
 	select {
 	case <-ctx.Done():
