@@ -2330,11 +2330,11 @@ func TestCopyStmt(t *testing.T) {
 func TestUnconvertStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "SHOW TABLES",
+			stmt: "UNLISTEN *",
 			want: []ast.Node{&ast.UnconvertedStmt{}},
 			statementList: []base.SingleSQL{
 				{
-					Text:     "SHOW TABLES",
+					Text:     "UNLISTEN *",
 					LastLine: 1,
 				},
 			},
