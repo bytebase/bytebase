@@ -719,6 +719,9 @@ message IndexMetadata {
   // If the key length is not specified, it's -1.
   repeated int64 key_length = 9;
 
+  // The descending is the ordered descending of an index.
+  repeated bool descending = 10;
+
   // The type is the type of an index.
   string type = 3;
 
