@@ -13904,6 +13904,9 @@ components:
                     items:
                         type: string
                     description: The workspace domain, e.g. bytebase.com.
+                enforceIdentityDomain:
+                    type: boolean
+                    description: Only user and group from the domains can be created and login.
         WorkspaceTrialSetting:
             type: object
             properties:
