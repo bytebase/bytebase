@@ -715,9 +715,9 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	isSet := variableSetStmtRegexp.MatchString(statement)
 	isShow := variableShowStmtRegexp.MatchString(statement)
 	if !isSet && !isShow {
-		if queryContext.Explain {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 	}

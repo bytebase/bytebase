@@ -322,7 +322,9 @@ func isNonTransactionStatement(stmt string) bool {
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 	// https://github.com/pingcap/tidb/issues/34626
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	connectionID, err := getConnectionID(ctx, conn)
 	if err != nil {
@@ -379,14 +381,14 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	isSet := variableSetStmtRegexp.MatchString(statement)
 	isShow := variableShowStmtRegexp.MatchString(statement)
 	if !isSet && !isShow {
-		if queryContext.Explain {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 	}
 
-	if queryContext.SensitiveSchemaInfo != nil {
+	if queryContext != nil && queryContext.SensitiveSchemaInfo != nil {
 		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
 			if len(database.SchemaList) == 0 {
 				continue

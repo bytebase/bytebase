@@ -154,7 +154,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // QueryConn queries a SQL statement in a given connection.
 // The result.Rows.Values can be nil in DynamoDB, which means the column is not set in the row.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.Explain {
+	if queryContext != nil && queryContext.Explain {
 		return nil, errors.New("DynamoDB does not support EXPLAIN")
 	}
 
@@ -192,7 +192,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 	input := &dynamodb.ExecuteStatementInput{
 		Statement: &statement.Text,
 	}
-	if queryContext.Limit > 0 {
+	if queryContext != nil && queryContext.Limit > 0 {
 		limit := int32(queryContext.Limit)
 		input.Limit = &limit
 	}
