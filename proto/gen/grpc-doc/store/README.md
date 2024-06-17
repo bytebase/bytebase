@@ -49,6 +49,7 @@
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
 - [store/database.proto](#store_database-proto)
+    - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
     - [ColumnConfig](#bytebase-store-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
@@ -880,6 +881,22 @@ Used internally for obfuscating the page token.
 
 
 
+<a name="bytebase-store-CheckConstraintMetadata"></a>
+
+### CheckConstraintMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a check constraint. |
+| expression | [string](#string) |  | The expression is the expression of a check constraint. |
+
+
+
+
+
+
 <a name="bytebase-store-ColumnConfig"></a>
 
 ### ColumnConfig
@@ -1399,6 +1416,7 @@ TableMetadata is the metadata for tables.
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 | partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 
 
 

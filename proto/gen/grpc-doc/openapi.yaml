@@ -8850,6 +8850,16 @@ components:
                 version:
                     type: string
                     description: The migration version for a change.
+        CheckConstraintMetadata:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: The name is the name of a check constraint.
+                expression:
+                    type: string
+                    description: The expression is the expression of a check constraint.
+            description: CheckConstraintMetadata is the metadata for check constraints.
         CheckRequest:
             required:
                 - database
@@ -12955,6 +12965,11 @@ components:
                     items:
                         $ref: '#/components/schemas/TablePartitionMetadata'
                     description: The partitions is the list of partitions in a table.
+                checkConstraints:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CheckConstraintMetadata'
+                    description: The check_constraints is the list of check constraints in a table.
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object
