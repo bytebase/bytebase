@@ -25,7 +25,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Username: "",
 				Password: "",
 			},
-			want: "mongodb://localhost:27017/?authSource=admin",
+			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -35,7 +35,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Password:         "",
 				DirectConnection: true,
 			},
-			want: "mongodb://localhost:27017/?authSource=admin&directConnection=true",
+			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin&directConnection=true",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -45,7 +45,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Password: "",
 				Database: "sampleDB",
 			},
-			want: "mongodb://localhost:27017/sampleDB?authSource=admin",
+			want: "mongodb://localhost:27017/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -55,7 +55,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Database: "sampleDB",
 				SRV:      true,
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?authSource=admin",
+			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -66,7 +66,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				AuthenticationDatabase: "",
 				SRV:                    true,
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?authSource=admin",
+			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -77,7 +77,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				AuthenticationDatabase: "admin",
 				SRV:                    true,
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?authSource=admin",
+			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -94,7 +94,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				},
 				ReplicaSet: "rs0",
 			},
-			want: "mongodb://bytebase:passwd@node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27017/sampleDB?authSource=admin&replicaSet=rs0",
+			want: "mongodb://bytebase:passwd@node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27017/sampleDB?appName=bytebase&authSource=admin&replicaSet=rs0",
 		},
 	}
 

@@ -245,9 +245,9 @@ func getStatementWithResultLimit(statement string, limit int) string {
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	startTime := time.Now()
 
-	if queryContext.Explain {
+	if queryContext != nil && queryContext.Explain {
 		statement = fmt.Sprintf("EXPLAIN %s", statement)
-	} else if queryContext.Limit > 0 {
+	} else if queryContext != nil && queryContext.Limit > 0 {
 		statement = getStatementWithResultLimit(statement, queryContext.Limit)
 	}
 

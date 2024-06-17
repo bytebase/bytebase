@@ -202,6 +202,15 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 			MatchType:         foreignKey.MatchType,
 		})
 	}
+	for _, check := range table.CheckConstraints {
+		if check == nil {
+			continue
+		}
+		t.CheckConstraints = append(t.CheckConstraints, &v1pb.CheckConstraintMetadata{
+			Name:       check.Name,
+			Expression: check.Expression,
+		})
+	}
 	return t
 }
 
@@ -600,6 +609,15 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			continue
 		}
 		t.Partitions = append(t.Partitions, convertV1TablePartitionMetadata(partition))
+	}
+	for _, check := range table.CheckConstraints {
+		if check == nil {
+			continue
+		}
+		t.CheckConstraints = append(t.CheckConstraints, &storepb.CheckConstraintMetadata{
+			Name:       check.Name,
+			Expression: check.Expression,
+		})
 	}
 	return t
 }
