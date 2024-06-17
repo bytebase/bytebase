@@ -117,8 +117,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
 		}, nil
-	case *pgquery.Node_VariableSetStmt:
-		// Skip the SET statement.
+	case *pgquery.Node_VariableSetStmt, *pgquery.Node_VariableShowStmt:
+		// Skip the SET statement and VARIABLE SHOW statement.
 		return &base.QuerySpan{
 			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},

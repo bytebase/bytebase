@@ -64,6 +64,42 @@ func newExpression(expression ast.ExpressionNode, text string) ast.ExpressionNod
 	return expression
 }
 
+func TestPGVariableShowStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `SHOW TIME ZONE`,
+			want: []ast.Node{
+				&ast.VariableShowStmt{
+					Name: "timezone",
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     `SHOW TIME ZONE`,
+					LastLine: 1,
+				},
+			},
+		},
+
+		{
+			stmt: `SHOW myvar`,
+			want: []ast.Node{
+				&ast.VariableShowStmt{
+					Name: "myvar",
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     `SHOW myvar`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestPGConvertCreateViewStmt(t *testing.T) {
 	tests := []testData{
 		{
@@ -2294,11 +2330,11 @@ func TestCopyStmt(t *testing.T) {
 func TestUnconvertStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "SHOW TABLES",
+			stmt: "UNLISTEN *",
 			want: []ast.Node{&ast.UnconvertedStmt{}},
 			statementList: []base.SingleSQL{
 				{
-					Text:     "SHOW TABLES",
+					Text:     "UNLISTEN *",
 					LastLine: 1,
 				},
 			},

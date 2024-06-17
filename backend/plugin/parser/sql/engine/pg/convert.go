@@ -875,6 +875,11 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 
 		viewStmt.SetOriginalNode(in)
 		return viewStmt, nil
+	case *pgquery.Node_VariableShowStmt:
+		variableShowStmt := &ast.VariableShowStmt{
+			Name: in.VariableShowStmt.GetName(),
+		}
+		return variableShowStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
