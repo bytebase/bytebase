@@ -164,6 +164,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			TABLE_NAME,
 			INDEX_NAME,
 			COLUMN_NAME,
+			COLLATION,
 			IFNULL(SUB_PART, -1),
 			'',
 			SEQ_IN_INDEX,
@@ -184,6 +185,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				TABLE_NAME,
 				INDEX_NAME,
 				COLUMN_NAME,
+				COLLATION,
 				IFNULL(SUB_PART, -1),
 				EXPRESSION,
 				SEQ_IN_INDEX,
@@ -204,6 +206,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		var tableName, indexName, indexType, comment, expression string
 		var columnName sql.NullString
 		var expressionName sql.NullString
+		var collation sql.NullString
 		var position int
 		var subPart int64
 		var unique, visible bool
@@ -211,6 +214,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&tableName,
 			&indexName,
 			&columnName,
+			&collation,
 			&subPart,
 			&expressionName,
 			&position,
@@ -229,6 +233,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			expression = fmt.Sprintf("(%s)", expressionName.String)
 		}
 
+		desc := false
+		if collation.Valid && collation.String == "D" {
+			desc = true
+		}
+
 		key := db.TableKey{Schema: "", Table: tableName}
 		if _, ok := indexMap[key]; !ok {
 			indexMap[key] = make(map[string]*storepb.IndexMetadata)
@@ -245,6 +254,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, expression)
 		indexMap[key][indexName].KeyLength = append(indexMap[key][indexName].KeyLength, subPart)
+		indexMap[key][indexName].Descending = append(indexMap[key][indexName].Descending, desc)
 	}
 	if err := indexRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, indexQuery)

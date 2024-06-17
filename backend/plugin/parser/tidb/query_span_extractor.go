@@ -56,8 +56,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	case *tidbast.SelectStmt:
 	case *tidbast.SetOprStmt:
 	case *tidbast.CreateViewStmt:
-	case *tidbast.ExplainStmt:
-		// Skip the EXPLAIN statement.
+	case *tidbast.ExplainStmt, *tidbast.ShowStmt:
+		// Skip the EXPLAIN and SHOW statement.
 		return &base.QuerySpan{
 			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
