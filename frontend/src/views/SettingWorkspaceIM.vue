@@ -146,7 +146,6 @@ const imList = computed(() => {
       name: t("common.feishu"),
       type: Webhook_Type.TYPE_DINGTALK,
       enabled: state.setting.feishu?.enabled,
-      hide: !isDev(),
       render: () => {
         return (
           <div class="space-y-4">
