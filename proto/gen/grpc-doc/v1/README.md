@@ -1053,6 +1053,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | ELASTICSEARCH | 21 |  |
 | BIGQUERY | 22 |  |
 | DYNAMODB | 23 |  |
+| DATABRICKS | 24 |  |
 
 
 
@@ -1636,6 +1637,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
+| account_id | [string](#string) |  | account_id is used by Databricks. |
+| warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
 
 
 

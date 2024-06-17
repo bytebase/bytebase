@@ -4,7 +4,8 @@
     v-if="
       basicInfo.engine !== Engine.SPANNER &&
       basicInfo.engine !== Engine.BIGQUERY &&
-      basicInfo.engine !== Engine.DYNAMODB
+      basicInfo.engine !== Engine.DYNAMODB &&
+      basicInfo.engine !== Engine.DATABRICKS
     "
   >
     <div
@@ -561,6 +562,54 @@ MIIEvQ...
     </div>
   </template>
 
+  <template v-if="basicInfo.engine === Engine.DATABRICKS">
+    <div>
+      <div class="textlabel black mt-4">Warehouse ID</div>
+      <NInput
+        v-model:value="dataSource.warehouseId"
+        class="mt-2"
+        :disabled="!allowEdit"
+      />
+    </div>
+    <div class="mt-2 sm:col-span-3 sm:col-start-1">
+      <NRadioGroup v-model:value="databricksAuth">
+        <NRadio :value="'PASSWORD'"> Password </NRadio>
+        <NRadio :value="'ACCESS_TOKEN'"> Access Token </NRadio>
+      </NRadioGroup>
+    </div>
+
+    <div v-if="databricksAuth === 'PASSWORD'">
+      <div class="textlabel black mt-4">Username</div>
+      <NInput
+        v-model:value="dataSource.username"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+      />
+      <div class="textlabel black mt-4">Password</div>
+      <NInput
+        v-model:value="dataSource.password"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+      />
+      <div class="textlabel black mt-4">Account ID</div>
+      <NInput
+        v-model:value="dataSource.accountId"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+        placeholder="optional"
+      />
+    </div>
+    <div v-else>
+      <div class="textlabel black mt-4">Token</div>
+      <NInput
+        v-model:value="dataSource.authenticationPrivateKey"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+        placeholder="personal access token"
+      />
+    </div>
+  </template>
+
   <template v-if="showAuthenticationDatabase">
     <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <div class="flex flex-row items-center space-x-2">
@@ -726,7 +775,7 @@ MIIEvQ...
 
 <script setup lang="ts">
 import { NButton, NRadioGroup, NRadio, NCheckbox, NInput } from "naive-ui";
-import { watch, reactive, computed } from "vue";
+import { watch, reactive, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto/v1/common";
@@ -794,6 +843,8 @@ watch(
   },
   { immediate: true, deep: true }
 );
+
+const databricksAuth = ref("PASSWORD");
 
 const hiveAuthentication = computed(() => {
   return props.dataSource.saslConfig?.krbConfig ? "KERBEROS" : "PASSWORD";

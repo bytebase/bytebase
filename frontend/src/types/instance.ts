@@ -22,6 +22,7 @@ export const EngineTypeList = [
   "RISINGWAVE",
   "BIGQUERY",
   "DYNAMODB",
+  "DATABRICKS",
 ] as const;
 
 export type EngineType = (typeof EngineTypeList)[number];
@@ -62,6 +63,8 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.BIGQUERY;
     case "DYNAMODB":
       return Engine.DYNAMODB;
+    case "DATABRICKS":
+      return Engine.DATABRICKS;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -106,6 +109,8 @@ export function defaultCharset(type: EngineType): string {
       return "";
     case "DYNAMODB":
       return "";
+    case "DATABRICKS":
+      return "";
   }
   return "";
 }
@@ -146,6 +151,8 @@ export function engineName(type: EngineType): string {
       return "BigQuery";
     case "DYNAMODB":
       return "DynamoDB";
+    case "DATABRICKS":
+      return "Databricks";
   }
   return "";
 }
@@ -183,6 +190,8 @@ export function defaultCollation(type: EngineType): string {
     case "BIGQUERY":
       return "";
     case "DYNAMODB":
+      return "";
+    case "DATABRICKS":
       return "";
   }
 }

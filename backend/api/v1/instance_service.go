@@ -1342,6 +1342,8 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		ReplicaSet:                         dataSource.ReplicaSet,
 		DirectConnection:                   dataSource.DirectConnection,
 		Region:                             dataSource.Region,
+		AccountID:                          dataSource.AccountId,
+		WarehouseID:                        dataSource.WarehouseId,
 	}, nil
 }
 
