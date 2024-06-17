@@ -1153,6 +1153,7 @@ IndexMetadata is the metadata for indexes.
 | visible | [bool](#bool) |  | The visible is whether the index is visible. |
 | comment | [string](#string) |  | The comment is the comment of an index. |
 | definition | [string](#string) |  | The definition of an index. |
+| descending | [bool](#bool) |  | Sort key in reverse order. |
 
 
 

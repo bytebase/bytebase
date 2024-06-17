@@ -404,6 +404,9 @@ message IndexMetadata {
 
   // The definition of an index.
   string definition = 8;
+
+  // Sort key in reverse order.
+  bool descending = 10;
 }
 
 // ExtensionMetadata is the metadata for extensions.

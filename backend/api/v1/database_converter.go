@@ -184,6 +184,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 			Visible:     index.Visible,
 			Comment:     index.Comment,
 			Definition:  index.Definition,
+			Descending:  index.Descending,
 		})
 	}
 	for _, foreignKey := range table.ForeignKeys {
@@ -576,6 +577,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			Visible:     index.Visible,
 			Comment:     index.Comment,
 			Definition:  index.Definition,
+			Descending:  index.Descending,
 		})
 	}
 	for _, foreignKey := range table.ForeignKeys {

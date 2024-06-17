@@ -9968,6 +9968,9 @@ components:
                 definition:
                     type: string
                     description: The definition of an index.
+                descending:
+                    type: boolean
+                    description: Sort key in reverse order.
             description: IndexMetadata is the metadata for indexes.
         Instance:
             type: object

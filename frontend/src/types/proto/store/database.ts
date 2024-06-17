@@ -627,6 +627,8 @@ export interface IndexMetadata {
   comment: string;
   /** The definition of an index. */
   definition: string;
+  /** Sort key in reverse order. */
+  descending: boolean;
 }
 
 /** ExtensionMetadata is the metadata for extensions. */
@@ -3064,6 +3066,7 @@ function createBaseIndexMetadata(): IndexMetadata {
     visible: false,
     comment: "",
     definition: "",
+    descending: false,
   };
 }
 
@@ -3097,6 +3100,9 @@ export const IndexMetadata = {
     }
     if (message.definition !== "") {
       writer.uint32(66).string(message.definition);
+    }
+    if (message.descending === true) {
+      writer.uint32(80).bool(message.descending);
     }
     return writer;
   },
@@ -3181,6 +3187,13 @@ export const IndexMetadata = {
 
           message.definition = reader.string();
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.descending = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3203,6 +3216,7 @@ export const IndexMetadata = {
       visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+      descending: isSet(object.descending) ? globalThis.Boolean(object.descending) : false,
     };
   },
 
@@ -3235,6 +3249,9 @@ export const IndexMetadata = {
     if (message.definition !== "") {
       obj.definition = message.definition;
     }
+    if (message.descending === true) {
+      obj.descending = message.descending;
+    }
     return obj;
   },
 
@@ -3252,6 +3269,7 @@ export const IndexMetadata = {
     message.visible = object.visible ?? false;
     message.comment = object.comment ?? "";
     message.definition = object.definition ?? "";
+    message.descending = object.descending ?? false;
     return message;
   },
 };
