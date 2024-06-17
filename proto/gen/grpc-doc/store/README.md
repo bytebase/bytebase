@@ -256,6 +256,9 @@
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
     - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
   
+- [store/sql_review.proto](#store_sql_review-proto)
+    - [SQLReviewPayload](#bytebase-store-SQLReviewPayload)
+  
 - [store/task_run.proto](#store_task_run-proto)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
     - [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position)
@@ -3940,6 +3943,37 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | total_rows_examined | [int32](#int32) |  | The total rows examined of the slow query log. |
 | maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_sql_review-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/sql_review.proto
+
+
+
+<a name="bytebase-store-SQLReviewPayload"></a>
+
+### SQLReviewPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rule_list | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
 
 
 

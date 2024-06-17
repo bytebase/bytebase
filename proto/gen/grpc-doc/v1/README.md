@@ -573,6 +573,17 @@
   
     - [SheetService](#bytebase-v1-SheetService)
   
+- [v1/sql_review_service.proto](#v1_sql_review_service-proto)
+    - [CreateSQLReviewRequest](#bytebase-v1-CreateSQLReviewRequest)
+    - [DeleteSQLReviewRequest](#bytebase-v1-DeleteSQLReviewRequest)
+    - [GetSQLReviewRequest](#bytebase-v1-GetSQLReviewRequest)
+    - [ListSQLReviewsRequest](#bytebase-v1-ListSQLReviewsRequest)
+    - [ListSQLReviewsResponse](#bytebase-v1-ListSQLReviewsResponse)
+    - [SQLReview](#bytebase-v1-SQLReview)
+    - [UpdateSQLReviewRequest](#bytebase-v1-UpdateSQLReviewRequest)
+  
+    - [SQLReviewService](#bytebase-v1-SQLReviewService)
+  
 - [v1/sql_service.proto](#v1_sql_service-proto)
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
     - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
@@ -9298,6 +9309,154 @@ Type of the SheetPayload.
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
+
+ 
+
+
+
+<a name="v1_sql_review_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/sql_review_service.proto
+
+
+
+<a name="bytebase-v1-CreateSQLReviewRequest"></a>
+
+### CreateSQLReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_review | [SQLReview](#bytebase-v1-SQLReview) |  | The sql review to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteSQLReviewRequest"></a>
+
+### DeleteSQLReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the sql review to delete. Format: sqlReviews/{uid} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSQLReviewRequest"></a>
+
+### GetSQLReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: sqlReviews/{uid} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSQLReviewsRequest"></a>
+
+### ListSQLReviewsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of sql review to return. The service may return fewer than this value. If unspecified, at most 50 sql review will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSQLReviews` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSQLReviewsResponse"></a>
+
+### ListSQLReviewsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_reviews | [SQLReview](#bytebase-v1-SQLReview) | repeated | The sql review from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReview"></a>
+
+### SQLReview
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: sqlReviews/{uid} |
+| title | [string](#string) |  |  |
+| enforce | [bool](#bool) |  |  |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSQLReviewRequest"></a>
+
+### UpdateSQLReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_review | [SQLReview](#bytebase-v1-SQLReview) |  | The sql review toupdate.
+
+The name field is used to identify the sql review to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SQLReviewService"></a>
+
+### SQLReviewService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateSQLReview | [CreateSQLReviewRequest](#bytebase-v1-CreateSQLReviewRequest) | [SQLReview](#bytebase-v1-SQLReview) |  |
+| ListSQLReviews | [ListSQLReviewsRequest](#bytebase-v1-ListSQLReviewsRequest) | [ListSQLReviewsResponse](#bytebase-v1-ListSQLReviewsResponse) |  |
+| GetSQLReview | [GetSQLReviewRequest](#bytebase-v1-GetSQLReviewRequest) | [SQLReview](#bytebase-v1-SQLReview) |  |
+| UpdateSQLReview | [UpdateSQLReviewRequest](#bytebase-v1-UpdateSQLReviewRequest) | [SQLReview](#bytebase-v1-SQLReview) |  |
+| DeleteSQLReview | [DeleteSQLReviewRequest](#bytebase-v1-DeleteSQLReviewRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
