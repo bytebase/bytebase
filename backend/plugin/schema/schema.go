@@ -14,11 +14,13 @@ var (
 	getDesignSchemas = make(map[storepb.Engine]getDesignSchema)
 	parseToMetadatas = make(map[storepb.Engine]parseToMetadata)
 	checkColumnTypes = make(map[storepb.Engine]checkColumnType)
+	stringifyTables  = make(map[storepb.Engine]stringifyTable)
 )
 
 type getDesignSchema func(string, string, *storepb.DatabaseSchemaMetadata) (string, error)
 type parseToMetadata func(string, string) (*storepb.DatabaseSchemaMetadata, error)
 type checkColumnType func(string) bool
+type stringifyTable func(*storepb.TableMetadata) (string, error)
 
 func RegisterGetDesignSchema(engine storepb.Engine, f getDesignSchema) {
 	mux.Lock()
@@ -69,4 +71,21 @@ func CheckColumnType(engine storepb.Engine, tp string) bool {
 		return false
 	}
 	return f(tp)
+}
+
+func RegisterStringifyTable(engine storepb.Engine, f stringifyTable) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := stringifyTables[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	stringifyTables[engine] = f
+}
+
+func StringifyTable(engine storepb.Engine, table *storepb.TableMetadata) (string, error) {
+	f, ok := stringifyTables[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(table)
 }
