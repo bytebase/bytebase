@@ -6738,6 +6738,149 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/reviewConfigs:
+        get:
+            tags:
+                - ReviewConfigService
+            operationId: ReviewConfigService_ListReviewConfigs
+            parameters:
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of sql review to return. The service may return fewer than
+                     this value.
+                     If unspecified, at most 50 sql review will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, provide this to retrieve the subsequent page.
+
+                     When paginating, all other parameters provided to `ListSQLReviews` must match
+                     the call that provided the page token.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListReviewConfigsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - ReviewConfigService
+            operationId: ReviewConfigService_CreateReviewConfig
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ReviewConfig'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReviewConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/reviewConfigs/{reviewConfig}:
+        get:
+            tags:
+                - ReviewConfigService
+            operationId: ReviewConfigService_GetReviewConfig
+            parameters:
+                - name: reviewConfig
+                  in: path
+                  description: The reviewConfig id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReviewConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ReviewConfigService
+            operationId: ReviewConfigService_DeleteReviewConfig
+            parameters:
+                - name: reviewConfig
+                  in: path
+                  description: The reviewConfig id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - ReviewConfigService
+            operationId: ReviewConfigService_UpdateReviewConfig
+            parameters:
+                - name: reviewConfig
+                  in: path
+                  description: The reviewConfig id.
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  description: The list of fields to update.
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ReviewConfig'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReviewConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/risks:
         get:
             tags:
@@ -7236,149 +7379,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/PrettyResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/sqlReviewConfigs:
-        get:
-            tags:
-                - SQLReviewService
-            operationId: SQLReviewService_ListSQLReviewConfigs
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    The maximum number of sql review to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 sql review will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    A page token, provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListSQLReviews` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListSQLReviewConfigsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - SQLReviewService
-            operationId: SQLReviewService_CreateSQLReviewConfig
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SQLReviewConfig'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SQLReviewConfig'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/sqlReviewConfigs/{sqlReviewConfig}:
-        get:
-            tags:
-                - SQLReviewService
-            operationId: SQLReviewService_GetSQLReviewConfig
-            parameters:
-                - name: sqlReviewConfig
-                  in: path
-                  description: The sqlReviewConfig id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SQLReviewConfig'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - SQLReviewService
-            operationId: SQLReviewService_DeleteSQLReviewConfig
-            parameters:
-                - name: sqlReviewConfig
-                  in: path
-                  description: The sqlReviewConfig id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - SQLReviewService
-            operationId: SQLReviewService_UpdateSQLReviewConfig
-            parameters:
-                - name: sqlReviewConfig
-                  in: path
-                  description: The sqlReviewConfig id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to update.
-                  schema:
-                    type: string
-                    format: field-mask
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SQLReviewConfig'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SQLReviewConfig'
                 default:
                     description: Default error response
                     content:
@@ -10857,6 +10857,19 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        ListReviewConfigsResponse:
+            type: object
+            properties:
+                reviewConfigs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ReviewConfig'
+                    description: The sql review from the specified request.
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
         ListRisksResponse:
             type: object
             properties:
@@ -10876,19 +10889,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Role'
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
-        ListSQLReviewConfigsResponse:
-            type: object
-            properties:
-                sqlReviewConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SQLReviewConfig'
-                    description: The sql review from the specified request.
                 nextPageToken:
                     type: string
                     description: |-
@@ -12000,6 +12000,35 @@ components:
                     format: int32
                 changedResources:
                     $ref: '#/components/schemas/ChangedResources'
+        ReviewConfig:
+            type: object
+            properties:
+                name:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The name of the sql review to retrieve.
+                         Format: reviewConfigs/{uid}
+                title:
+                    type: string
+                enabled:
+                    type: boolean
+                creator:
+                    readOnly: true
+                    type: string
+                    description: 'Format: users/hello@world.com'
+                createTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
+                updateTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
+                rules:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SQLReviewRule'
         Risk:
             type: object
             properties:
@@ -12191,35 +12220,6 @@ components:
                 to:
                     type: string
                     description: The recipient email address, used with validate_only to send test email.
-        SQLReviewConfig:
-            type: object
-            properties:
-                name:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The name of the sql review to retrieve.
-                         Format: sqlReviewConfigs/{uid}
-                title:
-                    type: string
-                enabled:
-                    type: boolean
-                creator:
-                    readOnly: true
-                    type: string
-                    description: 'Format: users/hello@world.com'
-                createTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
-                rules:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SQLReviewRule'
         SQLReviewPolicy:
             type: object
             properties:
@@ -14153,10 +14153,10 @@ tags:
     - name: OrgPolicyService
     - name: PlanService
     - name: ProjectService
+    - name: ReviewConfigService
     - name: RiskService
     - name: RoleService
     - name: RolloutService
-    - name: SQLReviewService
     - name: SQLService
     - name: SettingService
     - name: SheetService

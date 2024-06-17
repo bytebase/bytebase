@@ -12,40 +12,40 @@ import "v1/org_policy_service.proto";
 
 option go_package = "generated-go/v1";
 
-service SQLReviewService {
-  rpc CreateSQLReviewConfig(CreateSQLReviewConfigRequest) returns (SQLReviewConfig) {
+service ReviewConfigService {
+  rpc CreateReviewConfig(CreateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
-      post: "/v1/sqlReviewConfigs"
-      body: "sql_review_config"
+      post: "/v1/reviewConfigs"
+      body: "review_config"
     };
     option (google.api.method_signature) = "";
   }
 
-  rpc ListSQLReviewConfigs(ListSQLReviewConfigsRequest) returns (ListSQLReviewConfigsResponse) {
-    option (google.api.http) = {get: "/v1/sqlReviewConfigs"};
+  rpc ListReviewConfigs(ListReviewConfigsRequest) returns (ListReviewConfigsResponse) {
+    option (google.api.http) = {get: "/v1/reviewConfigs"};
     option (google.api.method_signature) = "";
   }
 
-  rpc GetSQLReviewConfig(GetSQLReviewConfigRequest) returns (SQLReviewConfig) {
-    option (google.api.http) = {get: "/v1/{name=sqlReviewConfigs/*}"};
+  rpc GetReviewConfig(GetReviewConfigRequest) returns (ReviewConfig) {
+    option (google.api.http) = {get: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc UpdateSQLReviewConfig(UpdateSQLReviewConfigRequest) returns (SQLReviewConfig) {
+  rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
-      patch: "/v1/{sql_review_config.name=sqlReviewConfigs/*}"
-      body: "sql_review_config"
+      patch: "/v1/{review_config.name=reviewConfigs/*}"
+      body: "review_config"
     };
-    option (google.api.method_signature) = "sql_review_config,update_mask";
+    option (google.api.method_signature) = "review_config,update_mask";
   }
 
-  rpc DeleteSQLReviewConfig(DeleteSQLReviewConfigRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=sqlReviewConfigs/*}"};
+  rpc DeleteReviewConfig(DeleteReviewConfigRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";
   }
 }
 
-message ListSQLReviewConfigsRequest {
+message ListReviewConfigsRequest {
   // The maximum number of sql review to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 sql review will be returned.
@@ -59,45 +59,45 @@ message ListSQLReviewConfigsRequest {
   string page_token = 2;
 }
 
-message ListSQLReviewConfigsResponse {
+message ListReviewConfigsResponse {
   // The sql review from the specified request.
-  repeated SQLReviewConfig sql_review_configs = 1;
+  repeated ReviewConfig review_configs = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-message CreateSQLReviewConfigRequest {
+message CreateReviewConfigRequest {
   // The sql review to create.
-  SQLReviewConfig sql_review_config = 1 [(google.api.field_behavior) = REQUIRED];
+  ReviewConfig review_config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message UpdateSQLReviewConfigRequest {
+message UpdateReviewConfigRequest {
   // The sql review toupdate.
   //
   // The name field is used to identify the sql review to update.
-  SQLReviewConfig sql_review_config = 1 [(google.api.field_behavior) = REQUIRED];
+  ReviewConfig review_config = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message GetSQLReviewConfigRequest {
+message GetReviewConfigRequest {
   // The name of the sql review to retrieve.
-  // Format: sqlReviewConfigs/{uid}
+  // Format: reviewConfigs/{uid}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message DeleteSQLReviewConfigRequest {
+message DeleteReviewConfigRequest {
   // The name of the sql review to delete.
-  // Format: sqlReviewConfigs/{uid}
+  // Format: reviewConfigs/{uid}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SQLReviewConfig {
+message ReviewConfig {
   // The name of the sql review to retrieve.
-  // Format: sqlReviewConfigs/{uid}
+  // Format: reviewConfigs/{uid}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 2;
