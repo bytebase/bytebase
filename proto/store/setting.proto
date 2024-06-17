@@ -41,6 +41,9 @@ message WorkspaceProfileSetting {
 
   // The max duration for role expired.
   google.protobuf.Duration maximum_role_expiration = 8;
+
+  // The workspace domain, e.g. bytebase.com.
+  repeated string domains = 9;
 }
 
 message Announcement {
