@@ -574,14 +574,14 @@
   
     - [SheetService](#bytebase-v1-SheetService)
   
-- [v1/sql_review_service.proto](#v1_sql_review_service-proto)
-    - [CreateSQLReviewRequest](#bytebase-v1-CreateSQLReviewRequest)
-    - [DeleteSQLReviewRequest](#bytebase-v1-DeleteSQLReviewRequest)
-    - [GetSQLReviewRequest](#bytebase-v1-GetSQLReviewRequest)
-    - [ListSQLReviewsRequest](#bytebase-v1-ListSQLReviewsRequest)
-    - [ListSQLReviewsResponse](#bytebase-v1-ListSQLReviewsResponse)
-    - [SQLReview](#bytebase-v1-SQLReview)
-    - [UpdateSQLReviewRequest](#bytebase-v1-UpdateSQLReviewRequest)
+- [v1/sql_review_config_service.proto](#v1_sql_review_config_service-proto)
+    - [CreateSQLReviewConfigRequest](#bytebase-v1-CreateSQLReviewConfigRequest)
+    - [DeleteSQLReviewConfigRequest](#bytebase-v1-DeleteSQLReviewConfigRequest)
+    - [GetSQLReviewConfigRequest](#bytebase-v1-GetSQLReviewConfigRequest)
+    - [ListSQLReviewConfigsRequest](#bytebase-v1-ListSQLReviewConfigsRequest)
+    - [ListSQLReviewConfigsResponse](#bytebase-v1-ListSQLReviewConfigsResponse)
+    - [SQLReviewConfig](#bytebase-v1-SQLReviewConfig)
+    - [UpdateSQLReviewConfigRequest](#bytebase-v1-UpdateSQLReviewConfigRequest)
   
     - [SQLReviewService](#bytebase-v1-SQLReviewService)
   
@@ -9332,61 +9332,61 @@ Type of the SheetPayload.
 
 
 
-<a name="v1_sql_review_service-proto"></a>
+<a name="v1_sql_review_config_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/sql_review_service.proto
+## v1/sql_review_config_service.proto
 
 
 
-<a name="bytebase-v1-CreateSQLReviewRequest"></a>
+<a name="bytebase-v1-CreateSQLReviewConfigRequest"></a>
 
-### CreateSQLReviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sql_review | [SQLReview](#bytebase-v1-SQLReview) |  | The sql review to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteSQLReviewRequest"></a>
-
-### DeleteSQLReviewRequest
+### CreateSQLReviewConfigRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to delete. Format: sqlReviews/{uid} |
+| sql_review_config | [SQLReviewConfig](#bytebase-v1-SQLReviewConfig) |  | The sql review to create. |
 
 
 
 
 
 
-<a name="bytebase-v1-GetSQLReviewRequest"></a>
+<a name="bytebase-v1-DeleteSQLReviewConfigRequest"></a>
 
-### GetSQLReviewRequest
+### DeleteSQLReviewConfigRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: sqlReviews/{uid} |
+| name | [string](#string) |  | The name of the sql review to delete. Format: sqlReviewConfigs/{uid} |
 
 
 
 
 
 
-<a name="bytebase-v1-ListSQLReviewsRequest"></a>
+<a name="bytebase-v1-GetSQLReviewConfigRequest"></a>
 
-### ListSQLReviewsRequest
+### GetSQLReviewConfigRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: sqlReviewConfigs/{uid} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSQLReviewConfigsRequest"></a>
+
+### ListSQLReviewConfigsRequest
 
 
 
@@ -9402,15 +9402,15 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 
 
 
-<a name="bytebase-v1-ListSQLReviewsResponse"></a>
+<a name="bytebase-v1-ListSQLReviewConfigsResponse"></a>
 
-### ListSQLReviewsResponse
+### ListSQLReviewConfigsResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sql_reviews | [SQLReview](#bytebase-v1-SQLReview) | repeated | The sql review from the specified request. |
+| sql_review_configs | [SQLReviewConfig](#bytebase-v1-SQLReviewConfig) | repeated | The sql review from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -9418,17 +9418,17 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 
 
 
-<a name="bytebase-v1-SQLReview"></a>
+<a name="bytebase-v1-SQLReviewConfig"></a>
 
-### SQLReview
+### SQLReviewConfig
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: sqlReviews/{uid} |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: sqlReviewConfigs/{uid} |
 | title | [string](#string) |  |  |
-| enforce | [bool](#bool) |  |  |
+| enabled | [bool](#bool) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -9439,15 +9439,15 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 
 
 
-<a name="bytebase-v1-UpdateSQLReviewRequest"></a>
+<a name="bytebase-v1-UpdateSQLReviewConfigRequest"></a>
 
-### UpdateSQLReviewRequest
+### UpdateSQLReviewConfigRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sql_review | [SQLReview](#bytebase-v1-SQLReview) |  | The sql review toupdate.
+| sql_review_config | [SQLReviewConfig](#bytebase-v1-SQLReviewConfig) |  | The sql review toupdate.
 
 The name field is used to identify the sql review to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
@@ -9470,11 +9470,11 @@ The name field is used to identify the sql review to update. |
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateSQLReview | [CreateSQLReviewRequest](#bytebase-v1-CreateSQLReviewRequest) | [SQLReview](#bytebase-v1-SQLReview) |  |
-| ListSQLReviews | [ListSQLReviewsRequest](#bytebase-v1-ListSQLReviewsRequest) | [ListSQLReviewsResponse](#bytebase-v1-ListSQLReviewsResponse) |  |
-| GetSQLReview | [GetSQLReviewRequest](#bytebase-v1-GetSQLReviewRequest) | [SQLReview](#bytebase-v1-SQLReview) |  |
-| UpdateSQLReview | [UpdateSQLReviewRequest](#bytebase-v1-UpdateSQLReviewRequest) | [SQLReview](#bytebase-v1-SQLReview) |  |
-| DeleteSQLReview | [DeleteSQLReviewRequest](#bytebase-v1-DeleteSQLReviewRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| CreateSQLReviewConfig | [CreateSQLReviewConfigRequest](#bytebase-v1-CreateSQLReviewConfigRequest) | [SQLReviewConfig](#bytebase-v1-SQLReviewConfig) |  |
+| ListSQLReviewConfigs | [ListSQLReviewConfigsRequest](#bytebase-v1-ListSQLReviewConfigsRequest) | [ListSQLReviewConfigsResponse](#bytebase-v1-ListSQLReviewConfigsResponse) |  |
+| GetSQLReviewConfig | [GetSQLReviewConfigRequest](#bytebase-v1-GetSQLReviewConfigRequest) | [SQLReviewConfig](#bytebase-v1-SQLReviewConfig) |  |
+| UpdateSQLReviewConfig | [UpdateSQLReviewConfigRequest](#bytebase-v1-UpdateSQLReviewConfigRequest) | [SQLReviewConfig](#bytebase-v1-SQLReviewConfig) |  |
+| DeleteSQLReviewConfig | [DeleteSQLReviewConfigRequest](#bytebase-v1-DeleteSQLReviewConfigRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

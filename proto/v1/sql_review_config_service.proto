@@ -13,39 +13,39 @@ import "v1/org_policy_service.proto";
 option go_package = "generated-go/v1";
 
 service SQLReviewService {
-  rpc CreateSQLReview(CreateSQLReviewRequest) returns (SQLReview) {
+  rpc CreateSQLReviewConfig(CreateSQLReviewConfigRequest) returns (SQLReviewConfig) {
     option (google.api.http) = {
-      post: "/v1/sqlReviews"
-      body: "sql_review"
+      post: "/v1/sqlReviewConfigs"
+      body: "sql_review_config"
     };
     option (google.api.method_signature) = "";
   }
 
-  rpc ListSQLReviews(ListSQLReviewsRequest) returns (ListSQLReviewsResponse) {
-    option (google.api.http) = {get: "/v1/sqlReviews"};
+  rpc ListSQLReviewConfigs(ListSQLReviewConfigsRequest) returns (ListSQLReviewConfigsResponse) {
+    option (google.api.http) = {get: "/v1/sqlReviewConfigs"};
     option (google.api.method_signature) = "";
   }
 
-  rpc GetSQLReview(GetSQLReviewRequest) returns (SQLReview) {
-    option (google.api.http) = {get: "/v1/{name=sqlReviews/*}"};
+  rpc GetSQLReviewConfig(GetSQLReviewConfigRequest) returns (SQLReviewConfig) {
+    option (google.api.http) = {get: "/v1/{name=sqlReviewConfigs/*}"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc UpdateSQLReview(UpdateSQLReviewRequest) returns (SQLReview) {
+  rpc UpdateSQLReviewConfig(UpdateSQLReviewConfigRequest) returns (SQLReviewConfig) {
     option (google.api.http) = {
-      patch: "/v1/{sql_review.name=sqlReviews/*}"
-      body: "sql_review"
+      patch: "/v1/{sql_review_config.name=sqlReviewConfigs/*}"
+      body: "sql_review_config"
     };
-    option (google.api.method_signature) = "sql_review,update_mask";
+    option (google.api.method_signature) = "sql_review_config,update_mask";
   }
 
-  rpc DeleteSQLReview(DeleteSQLReviewRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=sqlReviews/*}"};
+  rpc DeleteSQLReviewConfig(DeleteSQLReviewConfigRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=sqlReviewConfigs/*}"};
     option (google.api.method_signature) = "name";
   }
 }
 
-message ListSQLReviewsRequest {
+message ListSQLReviewConfigsRequest {
   // The maximum number of sql review to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 sql review will be returned.
@@ -59,50 +59,50 @@ message ListSQLReviewsRequest {
   string page_token = 2;
 }
 
-message ListSQLReviewsResponse {
+message ListSQLReviewConfigsResponse {
   // The sql review from the specified request.
-  repeated SQLReview sql_reviews = 1;
+  repeated SQLReviewConfig sql_review_configs = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-message CreateSQLReviewRequest {
+message CreateSQLReviewConfigRequest {
   // The sql review to create.
-  SQLReview sql_review = 1 [(google.api.field_behavior) = REQUIRED];
+  SQLReviewConfig sql_review_config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message UpdateSQLReviewRequest {
+message UpdateSQLReviewConfigRequest {
   // The sql review toupdate.
   //
   // The name field is used to identify the sql review to update.
-  SQLReview sql_review = 1 [(google.api.field_behavior) = REQUIRED];
+  SQLReviewConfig sql_review_config = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message GetSQLReviewRequest {
+message GetSQLReviewConfigRequest {
   // The name of the sql review to retrieve.
-  // Format: sqlReviews/{uid}
+  // Format: sqlReviewConfigs/{uid}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message DeleteSQLReviewRequest {
+message DeleteSQLReviewConfigRequest {
   // The name of the sql review to delete.
-  // Format: sqlReviews/{uid}
+  // Format: sqlReviewConfigs/{uid}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SQLReview {
+message SQLReviewConfig {
   // The name of the sql review to retrieve.
-  // Format: sqlReviews/{uid}
+  // Format: sqlReviewConfigs/{uid}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 2;
 
-  bool enforce = 3;
+  bool enabled = 3;
 
   // Format: users/hello@world.com
   string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -7242,11 +7242,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/sqlReviews:
+    /v1/sqlReviewConfigs:
         get:
             tags:
                 - SQLReviewService
-            operationId: SQLReviewService_ListSQLReviews
+            operationId: SQLReviewService_ListSQLReviewConfigs
             parameters:
                 - name: pageSize
                   in: query
@@ -7273,7 +7273,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListSQLReviewsResponse'
+                                $ref: '#/components/schemas/ListSQLReviewConfigsResponse'
                 default:
                     description: Default error response
                     content:
@@ -7283,12 +7283,12 @@ paths:
         post:
             tags:
                 - SQLReviewService
-            operationId: SQLReviewService_CreateSQLReview
+            operationId: SQLReviewService_CreateSQLReviewConfig
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/SQLReview'
+                            $ref: '#/components/schemas/SQLReviewConfig'
                 required: true
             responses:
                 "200":
@@ -7296,22 +7296,22 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/SQLReview'
+                                $ref: '#/components/schemas/SQLReviewConfig'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/sqlReviews/{sqlReview}:
+    /v1/sqlReviewConfigs/{sqlReviewConfig}:
         get:
             tags:
                 - SQLReviewService
-            operationId: SQLReviewService_GetSQLReview
+            operationId: SQLReviewService_GetSQLReviewConfig
             parameters:
-                - name: sqlReview
+                - name: sqlReviewConfig
                   in: path
-                  description: The sqlReview id.
+                  description: The sqlReviewConfig id.
                   required: true
                   schema:
                     type: string
@@ -7321,7 +7321,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/SQLReview'
+                                $ref: '#/components/schemas/SQLReviewConfig'
                 default:
                     description: Default error response
                     content:
@@ -7331,11 +7331,11 @@ paths:
         delete:
             tags:
                 - SQLReviewService
-            operationId: SQLReviewService_DeleteSQLReview
+            operationId: SQLReviewService_DeleteSQLReviewConfig
             parameters:
-                - name: sqlReview
+                - name: sqlReviewConfig
                   in: path
-                  description: The sqlReview id.
+                  description: The sqlReviewConfig id.
                   required: true
                   schema:
                     type: string
@@ -7352,11 +7352,11 @@ paths:
         patch:
             tags:
                 - SQLReviewService
-            operationId: SQLReviewService_UpdateSQLReview
+            operationId: SQLReviewService_UpdateSQLReviewConfig
             parameters:
-                - name: sqlReview
+                - name: sqlReviewConfig
                   in: path
-                  description: The sqlReview id.
+                  description: The sqlReviewConfig id.
                   required: true
                   schema:
                     type: string
@@ -7370,7 +7370,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/SQLReview'
+                            $ref: '#/components/schemas/SQLReviewConfig'
                 required: true
             responses:
                 "200":
@@ -7378,7 +7378,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/SQLReview'
+                                $ref: '#/components/schemas/SQLReviewConfig'
                 default:
                     description: Default error response
                     content:
@@ -10881,13 +10881,13 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
-        ListSQLReviewsResponse:
+        ListSQLReviewConfigsResponse:
             type: object
             properties:
-                sqlReviews:
+                sqlReviewConfigs:
                     type: array
                     items:
-                        $ref: '#/components/schemas/SQLReview'
+                        $ref: '#/components/schemas/SQLReviewConfig'
                     description: The sql review from the specified request.
                 nextPageToken:
                     type: string
@@ -12191,7 +12191,7 @@ components:
                 to:
                     type: string
                     description: The recipient email address, used with validate_only to send test email.
-        SQLReview:
+        SQLReviewConfig:
             type: object
             properties:
                 name:
@@ -12199,10 +12199,10 @@ components:
                     type: string
                     description: |-
                         The name of the sql review to retrieve.
-                         Format: sqlReviews/{uid}
+                         Format: sqlReviewConfigs/{uid}
                 title:
                     type: string
-                enforce:
+                enabled:
                     type: boolean
                 creator:
                     readOnly: true

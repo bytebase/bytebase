@@ -2375,35 +2375,35 @@
         
           
           <li>
-            <a href="#v1%2fsql_review_service.proto">v1/sql_review_service.proto</a>
+            <a href="#v1%2fsql_review_config_service.proto">v1/sql_review_config_service.proto</a>
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.CreateSQLReviewRequest"><span class="badge">M</span>CreateSQLReviewRequest</a>
+                  <a href="#bytebase.v1.CreateSQLReviewConfigRequest"><span class="badge">M</span>CreateSQLReviewConfigRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DeleteSQLReviewRequest"><span class="badge">M</span>DeleteSQLReviewRequest</a>
+                  <a href="#bytebase.v1.DeleteSQLReviewConfigRequest"><span class="badge">M</span>DeleteSQLReviewConfigRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetSQLReviewRequest"><span class="badge">M</span>GetSQLReviewRequest</a>
+                  <a href="#bytebase.v1.GetSQLReviewConfigRequest"><span class="badge">M</span>GetSQLReviewConfigRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListSQLReviewsRequest"><span class="badge">M</span>ListSQLReviewsRequest</a>
+                  <a href="#bytebase.v1.ListSQLReviewConfigsRequest"><span class="badge">M</span>ListSQLReviewConfigsRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListSQLReviewsResponse"><span class="badge">M</span>ListSQLReviewsResponse</a>
+                  <a href="#bytebase.v1.ListSQLReviewConfigsResponse"><span class="badge">M</span>ListSQLReviewConfigsResponse</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SQLReview"><span class="badge">M</span>SQLReview</a>
+                  <a href="#bytebase.v1.SQLReviewConfig"><span class="badge">M</span>SQLReviewConfig</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateSQLReviewRequest"><span class="badge">M</span>UpdateSQLReviewRequest</a>
+                  <a href="#bytebase.v1.UpdateSQLReviewConfigRequest"><span class="badge">M</span>UpdateSQLReviewConfigRequest</a>
                 </li>
               
               
@@ -25683,12 +25683,12 @@ Only support update the following fields for now:
     
       
       <div class="file-heading">
-        <h2 id="v1/sql_review_service.proto">v1/sql_review_service.proto</h2><a href="#title">Top</a>
+        <h2 id="v1/sql_review_config_service.proto">v1/sql_review_config_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="bytebase.v1.CreateSQLReviewRequest">CreateSQLReviewRequest</h3>
+        <h3 id="bytebase.v1.CreateSQLReviewConfigRequest">CreateSQLReviewConfigRequest</h3>
         <p></p>
 
         
@@ -25699,8 +25699,8 @@ Only support update the following fields for now:
             <tbody>
               
                 <tr>
-                  <td>sql_review</td>
-                  <td><a href="#bytebase.v1.SQLReview">SQLReview</a></td>
+                  <td>sql_review_config</td>
+                  <td><a href="#bytebase.v1.SQLReviewConfig">SQLReviewConfig</a></td>
                   <td></td>
                   <td><p>The sql review to create. </p></td>
                 </tr>
@@ -25712,7 +25712,7 @@ Only support update the following fields for now:
 
         
       
-        <h3 id="bytebase.v1.DeleteSQLReviewRequest">DeleteSQLReviewRequest</h3>
+        <h3 id="bytebase.v1.DeleteSQLReviewConfigRequest">DeleteSQLReviewConfigRequest</h3>
         <p></p>
 
         
@@ -25727,7 +25727,7 @@ Only support update the following fields for now:
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to delete.
-Format: sqlReviews/{uid} </p></td>
+Format: sqlReviewConfigs/{uid} </p></td>
                 </tr>
               
             </tbody>
@@ -25737,7 +25737,7 @@ Format: sqlReviews/{uid} </p></td>
 
         
       
-        <h3 id="bytebase.v1.GetSQLReviewRequest">GetSQLReviewRequest</h3>
+        <h3 id="bytebase.v1.GetSQLReviewConfigRequest">GetSQLReviewConfigRequest</h3>
         <p></p>
 
         
@@ -25752,7 +25752,7 @@ Format: sqlReviews/{uid} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: sqlReviews/{uid} </p></td>
+Format: sqlReviewConfigs/{uid} </p></td>
                 </tr>
               
             </tbody>
@@ -25762,7 +25762,7 @@ Format: sqlReviews/{uid} </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListSQLReviewsRequest">ListSQLReviewsRequest</h3>
+        <h3 id="bytebase.v1.ListSQLReviewConfigsRequest">ListSQLReviewConfigsRequest</h3>
         <p></p>
 
         
@@ -25799,7 +25799,7 @@ the call that provided the page token. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListSQLReviewsResponse">ListSQLReviewsResponse</h3>
+        <h3 id="bytebase.v1.ListSQLReviewConfigsResponse">ListSQLReviewConfigsResponse</h3>
         <p></p>
 
         
@@ -25810,8 +25810,8 @@ the call that provided the page token. </p></td>
             <tbody>
               
                 <tr>
-                  <td>sql_reviews</td>
-                  <td><a href="#bytebase.v1.SQLReview">SQLReview</a></td>
+                  <td>sql_review_configs</td>
+                  <td><a href="#bytebase.v1.SQLReviewConfig">SQLReviewConfig</a></td>
                   <td>repeated</td>
                   <td><p>The sql review from the specified request. </p></td>
                 </tr>
@@ -25831,7 +25831,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.SQLReview">SQLReview</h3>
+        <h3 id="bytebase.v1.SQLReviewConfig">SQLReviewConfig</h3>
         <p></p>
 
         
@@ -25846,7 +25846,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: sqlReviews/{uid} </p></td>
+Format: sqlReviewConfigs/{uid} </p></td>
                 </tr>
               
                 <tr>
@@ -25857,7 +25857,7 @@ Format: sqlReviews/{uid} </p></td>
                 </tr>
               
                 <tr>
-                  <td>enforce</td>
+                  <td>enabled</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -25898,7 +25898,7 @@ Format: sqlReviews/{uid} </p></td>
 
         
       
-        <h3 id="bytebase.v1.UpdateSQLReviewRequest">UpdateSQLReviewRequest</h3>
+        <h3 id="bytebase.v1.UpdateSQLReviewConfigRequest">UpdateSQLReviewConfigRequest</h3>
         <p></p>
 
         
@@ -25909,8 +25909,8 @@ Format: sqlReviews/{uid} </p></td>
             <tbody>
               
                 <tr>
-                  <td>sql_review</td>
-                  <td><a href="#bytebase.v1.SQLReview">SQLReview</a></td>
+                  <td>sql_review_config</td>
+                  <td><a href="#bytebase.v1.SQLReviewConfig">SQLReviewConfig</a></td>
                   <td></td>
                   <td><p>The sql review toupdate.
 
@@ -25946,36 +25946,36 @@ The name field is used to identify the sql review to update. </p></td>
           <tbody>
             
               <tr>
-                <td>CreateSQLReview</td>
-                <td><a href="#bytebase.v1.CreateSQLReviewRequest">CreateSQLReviewRequest</a></td>
-                <td><a href="#bytebase.v1.SQLReview">SQLReview</a></td>
+                <td>CreateSQLReviewConfig</td>
+                <td><a href="#bytebase.v1.CreateSQLReviewConfigRequest">CreateSQLReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.SQLReviewConfig">SQLReviewConfig</a></td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ListSQLReviews</td>
-                <td><a href="#bytebase.v1.ListSQLReviewsRequest">ListSQLReviewsRequest</a></td>
-                <td><a href="#bytebase.v1.ListSQLReviewsResponse">ListSQLReviewsResponse</a></td>
+                <td>ListSQLReviewConfigs</td>
+                <td><a href="#bytebase.v1.ListSQLReviewConfigsRequest">ListSQLReviewConfigsRequest</a></td>
+                <td><a href="#bytebase.v1.ListSQLReviewConfigsResponse">ListSQLReviewConfigsResponse</a></td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>GetSQLReview</td>
-                <td><a href="#bytebase.v1.GetSQLReviewRequest">GetSQLReviewRequest</a></td>
-                <td><a href="#bytebase.v1.SQLReview">SQLReview</a></td>
+                <td>GetSQLReviewConfig</td>
+                <td><a href="#bytebase.v1.GetSQLReviewConfigRequest">GetSQLReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.SQLReviewConfig">SQLReviewConfig</a></td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>UpdateSQLReview</td>
-                <td><a href="#bytebase.v1.UpdateSQLReviewRequest">UpdateSQLReviewRequest</a></td>
-                <td><a href="#bytebase.v1.SQLReview">SQLReview</a></td>
+                <td>UpdateSQLReviewConfig</td>
+                <td><a href="#bytebase.v1.UpdateSQLReviewConfigRequest">UpdateSQLReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.SQLReviewConfig">SQLReviewConfig</a></td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DeleteSQLReview</td>
-                <td><a href="#bytebase.v1.DeleteSQLReviewRequest">DeleteSQLReviewRequest</a></td>
+                <td>DeleteSQLReviewConfig</td>
+                <td><a href="#bytebase.v1.DeleteSQLReviewConfigRequest">DeleteSQLReviewConfigRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p></p></td>
               </tr>
@@ -26001,19 +26001,19 @@ The name field is used to identify the sql review to update. </p></td>
               
               
               <tr>
-                <td>CreateSQLReview</td>
+                <td>CreateSQLReviewConfig</td>
                 <td>POST</td>
-                <td>/v1/sqlReviews</td>
-                <td>sql_review</td>
+                <td>/v1/sqlReviewConfigs</td>
+                <td>sql_review_config</td>
               </tr>
               
             
               
               
               <tr>
-                <td>ListSQLReviews</td>
+                <td>ListSQLReviewConfigs</td>
                 <td>GET</td>
-                <td>/v1/sqlReviews</td>
+                <td>/v1/sqlReviewConfigs</td>
                 <td></td>
               </tr>
               
@@ -26021,9 +26021,9 @@ The name field is used to identify the sql review to update. </p></td>
               
               
               <tr>
-                <td>GetSQLReview</td>
+                <td>GetSQLReviewConfig</td>
                 <td>GET</td>
-                <td>/v1/{name=sqlReviews/*}</td>
+                <td>/v1/{name=sqlReviewConfigs/*}</td>
                 <td></td>
               </tr>
               
@@ -26031,19 +26031,19 @@ The name field is used to identify the sql review to update. </p></td>
               
               
               <tr>
-                <td>UpdateSQLReview</td>
+                <td>UpdateSQLReviewConfig</td>
                 <td>PATCH</td>
-                <td>/v1/{sql_review.name=sqlReviews/*}</td>
-                <td>sql_review</td>
+                <td>/v1/{sql_review_config.name=sqlReviewConfigs/*}</td>
+                <td>sql_review_config</td>
               </tr>
               
             
               
               
               <tr>
-                <td>DeleteSQLReview</td>
+                <td>DeleteSQLReviewConfig</td>
                 <td>DELETE</td>
-                <td>/v1/{name=sqlReviews/*}</td>
+                <td>/v1/{name=sqlReviewConfigs/*}</td>
                 <td></td>
               </tr>
               
