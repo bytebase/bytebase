@@ -8667,6 +8667,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -9106,6 +9107,12 @@ components:
                 region:
                     type: string
                     description: region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
+                accountId:
+                    type: string
+                    description: account_id is used by Databricks.
+                warehouseId:
+                    type: string
+                    description: warehouse_id is used by Databricks.
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9383,6 +9390,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9449,6 +9457,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 oldSchema:
@@ -10007,6 +10016,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 engineVersion:
@@ -10072,6 +10082,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 engineVersion:
@@ -11455,6 +11466,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 currentSchema:
@@ -12058,6 +12070,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     format: enum
                 comment:
@@ -12526,6 +12539,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     description: The SQL dialect.
                     format: enum
@@ -12777,6 +12791,7 @@ components:
                         - ELASTICSEARCH
                         - BIGQUERY
                         - DYNAMODB
+                        - DATABRICKS
                     type: string
                     description: The database engine of the schema string.
                     format: enum

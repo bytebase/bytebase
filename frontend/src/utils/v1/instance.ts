@@ -96,6 +96,7 @@ export const supportedEngineV1List = () => {
     Engine.ELASTICSEARCH,
     Engine.BIGQUERY,
     Engine.DYNAMODB,
+    Engine.DATABRICKS,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -297,6 +298,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "BigQuery";
     case Engine.DYNAMODB:
       return "DynamoDB";
+    case Engine.DATABRICKS:
+      return "Databricks";
   }
   return "";
 };
