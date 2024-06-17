@@ -1223,7 +1223,8 @@
       "statement-type": "Statement type"
     },
     "sql-review-only": "SQL Review Only",
-    "create-issue": "Create issue"
+    "create-issue": "Create issue",
+    "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

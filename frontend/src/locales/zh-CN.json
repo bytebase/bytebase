@@ -1223,7 +1223,8 @@
       "statement-type": "语句类型"
     },
     "sql-review-only": "仅 SQL 审核",
-    "create-issue": "创建变更工单"
+    "create-issue": "创建变更工单",
+    "this-plan-will-be-converted-to-a-new-issue": "该计划将转换为一个变更工单"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
