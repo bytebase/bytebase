@@ -876,7 +876,7 @@
       "not-show-till-next-release": "在下次更新前不要提醒我"
     },
     "mail-delivery": {
-      "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮箱，如慢查询周报。",
+      "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
       "field": {
         "smtp-server-host": "SMTP 服务器主机",
         "smtp-server-port": "SMTP 服务器端口",
