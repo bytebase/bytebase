@@ -1,0 +1,46 @@
+-- Create review config table.
+CREATE TABLE review_config
+(
+    id BIGSERIAL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    name TEXT NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+ALTER SEQUENCE review_config_id_seq RESTART WITH 101;
+
+-- Migrate sql review policy to the new table.
+INSERT INTO review_config
+    (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, payload)
+SELECT
+    policy.id,
+    policy.row_status,
+    policy.creator_id,
+    policy.created_ts,
+    policy.updater_id,
+    policy.updated_ts,
+    policy.payload->>'name',
+    jsonb_build_object('sqlReviewRules', policy.payload->'ruleList')
+FROM policy
+WHERE type = 'bb.policy.sql-review';
+
+-- Migrate environment sql review policy to bb.policy.tag policy.
+INSERT INTO policy
+    (creator_id, created_ts, updater_id, updated_ts, resource_type, resource_id, type, payload)
+SELECT
+    policy.creator_id,
+    policy.created_ts,
+    policy.updater_id,
+    policy.updated_ts,
+    policy.resource_type,
+    policy.resource_id,
+    'bb.policy.tag',
+    jsonb_build_object('tags', jsonb_build_object('bb.tag.review_config', CONCAT('reviewConfigs/', policy.id::text)))
+FROM policy
+WHERE type = 'bb.policy.sql-review';
+
+-- TODO: remove legacy bb.policy.sql-review policy after migration.
