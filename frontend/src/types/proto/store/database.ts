@@ -302,6 +302,15 @@ export interface TableMetadata {
   foreignKeys: ForeignKeyMetadata[];
   /** The partitions is the list of partitions in a table. */
   partitions: TablePartitionMetadata[];
+  /** The check_constraints is the list of check constraints in a table. */
+  checkConstraints: CheckConstraintMetadata[];
+}
+
+export interface CheckConstraintMetadata {
+  /** The name is the name of a check constraint. */
+  name: string;
+  /** The expression is the expression of a check constraint. */
+  expression: string;
 }
 
 export interface ExternalTableMetadata {
@@ -1755,6 +1764,7 @@ function createBaseTableMetadata(): TableMetadata {
     userComment: "",
     foreignKeys: [],
     partitions: [],
+    checkConstraints: [],
   };
 }
 
@@ -1801,6 +1811,9 @@ export const TableMetadata = {
     }
     for (const v of message.partitions) {
       TablePartitionMetadata.encode(v!, writer.uint32(122).fork()).ldelim();
+    }
+    for (const v of message.checkConstraints) {
+      CheckConstraintMetadata.encode(v!, writer.uint32(130).fork()).ldelim();
     }
     return writer;
   },
@@ -1910,6 +1923,13 @@ export const TableMetadata = {
 
           message.partitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
           continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.checkConstraints.push(CheckConstraintMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1942,6 +1962,9 @@ export const TableMetadata = {
         : [],
       partitions: globalThis.Array.isArray(object?.partitions)
         ? object.partitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
+        : [],
+      checkConstraints: globalThis.Array.isArray(object?.checkConstraints)
+        ? object.checkConstraints.map((e: any) => CheckConstraintMetadata.fromJSON(e))
         : [],
     };
   },
@@ -1990,6 +2013,9 @@ export const TableMetadata = {
     if (message.partitions?.length) {
       obj.partitions = message.partitions.map((e) => TablePartitionMetadata.toJSON(e));
     }
+    if (message.checkConstraints?.length) {
+      obj.checkConstraints = message.checkConstraints.map((e) => CheckConstraintMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -2020,6 +2046,81 @@ export const TableMetadata = {
     message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
+    message.checkConstraints = object.checkConstraints?.map((e) => CheckConstraintMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCheckConstraintMetadata(): CheckConstraintMetadata {
+  return { name: "", expression: "" };
+}
+
+export const CheckConstraintMetadata = {
+  encode(message: CheckConstraintMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.expression !== "") {
+      writer.uint32(18).string(message.expression);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CheckConstraintMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckConstraintMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.expression = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckConstraintMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
+    };
+  },
+
+  toJSON(message: CheckConstraintMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.expression !== "") {
+      obj.expression = message.expression;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckConstraintMetadata>): CheckConstraintMetadata {
+    return CheckConstraintMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CheckConstraintMetadata>): CheckConstraintMetadata {
+    const message = createBaseCheckConstraintMetadata();
+    message.name = object.name ?? "";
+    message.expression = object.expression ?? "";
     return message;
   },
 };

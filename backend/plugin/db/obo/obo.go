@@ -164,7 +164,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// Oracle does not support transaction isolation level for read-only queries.
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
@@ -193,7 +195,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
-	if queryContext.Explain {
+	if queryContext != nil && queryContext.Explain {
 		startTime := time.Now()
 		randNum, err := rand.Int(rand.Reader, big.NewInt(999))
 		if err != nil {
@@ -215,22 +217,8 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		return result, nil
 	}
 
-	if queryContext.Limit > 0 {
+	if queryContext != nil && queryContext.Limit > 0 {
 		statement = fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", statement, queryContext.Limit)
-	}
-
-	if queryContext.SensitiveSchemaInfo != nil {
-		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("Oracle schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != database.Name {
-				return nil, errors.Errorf("Oracle schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
-			}
-		}
 	}
 
 	startTime := time.Now()

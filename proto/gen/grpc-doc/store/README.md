@@ -49,6 +49,7 @@
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
 - [store/database.proto](#store_database-proto)
+    - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
     - [ColumnConfig](#bytebase-store-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
@@ -187,6 +188,8 @@
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewPolicy](#bytebase-store-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [TagPolicy](#bytebase-store-TagPolicy)
+    - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
@@ -206,6 +209,9 @@
   
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
+  
+- [store/review_config.proto](#store_review_config-proto)
+    - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
   
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
@@ -880,6 +886,22 @@ Used internally for obfuscating the page token.
 
 
 
+<a name="bytebase-store-CheckConstraintMetadata"></a>
+
+### CheckConstraintMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a check constraint. |
+| expression | [string](#string) |  | The expression is the expression of a check constraint. |
+
+
+
+
+
+
 <a name="bytebase-store-ColumnConfig"></a>
 
 ### ColumnConfig
@@ -1399,6 +1421,7 @@ TableMetadata is the metadata for tables.
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 | partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 
 
 
@@ -2979,6 +3002,37 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
+
+<a name="bytebase-store-TagPolicy"></a>
+
+### TagPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy-TagsEntry"></a>
+
+### TagPolicy.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
  
 
 
@@ -3190,6 +3244,37 @@ The type of target.
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_review_config-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_config.proto
+
+
+
+<a name="bytebase-store-ReviewConfigPayload"></a>
+
+### ReviewConfigPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_review_rules | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
 
 
 

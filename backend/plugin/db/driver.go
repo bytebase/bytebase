@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -233,12 +232,9 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit               int
-	Explain             bool
-	ReadOnly            bool
-	SensitiveSchemaInfo *base.SensitiveSchemaInfo
-	// EnableSensitive will set to be true if the database instance has license.
-	EnableSensitive bool
+	Limit    int
+	Explain  bool
+	ReadOnly bool
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string

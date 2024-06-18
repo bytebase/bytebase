@@ -2,14 +2,19 @@ package feishu
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
@@ -98,46 +103,65 @@ type feishuReceiver struct {
 }
 
 func (*feishuReceiver) Post(context webhook.Context) error {
-	var markdownBuf strings.Builder
+	if len(context.MentionUsers) > 0 {
+		postDirectMessage(context)
+		return nil
+	}
+	return postMessage(context)
+}
 
-	if context.Description != "" {
-		if _, err := markdownBuf.WriteString(fmt.Sprintf("%s\n", context.Description)); err != nil {
-			return err
+func postDirectMessage(webhookCtx webhook.Context) {
+	feishu := webhookCtx.IMSetting.GetFeishu()
+	if feishu == nil {
+		return
+	}
+	p := newProvider(feishu.AppId, feishu.AppSecret)
+
+	ctx := context.Background()
+
+	sent := map[string]bool{}
+
+	if err := common.Retry(ctx, func() error {
+		var errs error
+
+		var emails []string
+		for _, u := range webhookCtx.MentionUsers {
+			if sent[u.Email] {
+				continue
+			}
+			emails = append(emails, u.Email)
 		}
-	}
 
-	for _, meta := range context.GetMetaList() {
-		if _, err := markdownBuf.WriteString(fmt.Sprintf("**%s**: %s\n", meta.Name, meta.Value)); err != nil {
-			return err
+		idByEmail, err := p.getIDByEmail(ctx, emails)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get id by email")
 		}
-	}
 
-	if _, err := markdownBuf.WriteString(fmt.Sprintf("**By**: %s (%s)\n[View in Bytebase](%s)", context.CreatorName, context.CreatorEmail, context.Link)); err != nil {
-		return err
+		for _, u := range webhookCtx.MentionUsers {
+			if sent[u.Email] {
+				continue
+			}
+			id, ok := idByEmail[u.Email]
+			if !ok {
+				continue
+			}
+			err := p.sendMessage(ctx, id, getMessageCard(webhookCtx))
+			if err != nil {
+				err = errors.Wrapf(err, "failed to send message")
+				multierr.AppendInto(&errs, err)
+			}
+			sent[u.Email] = true
+		}
+		return errs
+	}); err != nil {
+		slog.Warn("failed to send direct message to feishu user", log.BBError(err))
 	}
+}
 
+func postMessage(context webhook.Context) error {
 	post := Webhook{
 		MessageType: "interactive",
-		Card: &WebhookCard{
-			Config: WebhookCardConfig{
-				WideScreenMode: true,
-				EnableForward:  true,
-			},
-			Header: WebhookCardHeader{
-				Title: WebhookCardHeaderTitle{
-					Content: context.Title,
-					Tag:     "plain_text",
-				},
-			},
-			I18nElements: WebhookCardI18nElements{
-				English: []WebhookMarkdownSection{
-					{
-						Tag:     "markdown",
-						Content: markdownBuf.String(),
-					},
-				},
-			},
-		},
+		Card:        getMessageCard(context),
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
@@ -178,4 +202,39 @@ func (*feishuReceiver) Post(context webhook.Context) error {
 	}
 
 	return nil
+}
+
+func getMessageCard(context webhook.Context) *WebhookCard {
+	var markdownBuf strings.Builder
+
+	if context.Description != "" {
+		_, _ = markdownBuf.WriteString(fmt.Sprintf("%s\n", context.Description))
+	}
+
+	for _, meta := range context.GetMetaList() {
+		_, _ = markdownBuf.WriteString(fmt.Sprintf("**%s**: %s\n", meta.Name, meta.Value))
+	}
+
+	_, _ = markdownBuf.WriteString(fmt.Sprintf("**By**: %s (%s)\n[View in Bytebase](%s)", context.CreatorName, context.CreatorEmail, context.Link))
+
+	return &WebhookCard{
+		Config: WebhookCardConfig{
+			WideScreenMode: true,
+			EnableForward:  true,
+		},
+		Header: WebhookCardHeader{
+			Title: WebhookCardHeaderTitle{
+				Content: context.Title,
+				Tag:     "plain_text",
+			},
+		},
+		I18nElements: WebhookCardI18nElements{
+			English: []WebhookMarkdownSection{
+				{
+					Tag:     "markdown",
+					Content: markdownBuf.String(),
+				},
+			},
+		},
+	}
 }

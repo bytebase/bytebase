@@ -653,6 +653,15 @@
           "days": "天数",
           "never-expires": "永不过期"
         },
+        "domain-restriction": {
+          "self": "域名限制",
+          "description": "可用于指定成员电子邮箱的域名。留空以允许任何邮箱。",
+          "domain-input-placeholder": "请输入域名，例如 example.com",
+          "members-restriction": {
+            "self": "成员邮箱限制",
+            "description": "仅允许具有指定域名的电子邮箱的用户进行登录或注册。"
+          }
+        },
         "config-updated": "配置已更新。",
         "plugin": {
           "openai": {
@@ -1223,7 +1232,8 @@
       "statement-type": "语句类型"
     },
     "sql-review-only": "仅 SQL 审核",
-    "create-issue": "创建变更工单"
+    "create-issue": "创建变更工单",
+    "this-plan-will-be-converted-to-a-new-issue": "该计划将转换为一个变更工单"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1496,7 +1506,7 @@
     "production-environment": "生产环境",
     "access-control": {
       "title": "访问控制",
-      "disable-copy-data-from-sql-editor": "禁止从 SQL 编辑器复制数据"
+      "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)"
     }
   },
   "quick-start": {

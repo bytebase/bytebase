@@ -653,6 +653,15 @@
           "days": "Day(s)",
           "never-expires": "Never expires"
         },
+        "domain-restriction": {
+          "self": "Domain restriction",
+          "description": "Specify the domain that could be used as the email domain for workspace members. Leave it empty to allow any domain.",
+          "domain-input-placeholder": "Please input domain, e.g. example.com",
+          "members-restriction": {
+            "self": "Members restriction",
+            "description": "Restrict sign-in to users with email addresses from the specified domains."
+          }
+        },
         "config-updated": "Configuration is updated.",
         "plugin": {
           "openai": {
@@ -1223,7 +1232,8 @@
       "statement-type": "Statement type"
     },
     "sql-review-only": "SQL Review Only",
-    "create-issue": "Create issue"
+    "create-issue": "Create issue",
+    "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1496,7 +1506,7 @@
     "production-environment": "Production environment",
     "access-control": {
       "title": "Access control",
-      "disable-copy-data-from-sql-editor": "Disable copy data from SQL editor"
+      "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)"
     }
   },
   "quick-start": {

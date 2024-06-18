@@ -52,7 +52,7 @@ func newDriver(db.DriverConfig) db.Driver {
 // Open opens a MSSQL driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	query := url.Values{}
-	query.Add("app name", "Bytebase")
+	query.Add("app name", "bytebase")
 	if config.Database != "" {
 		query.Add("database", config.Database)
 	}
@@ -223,7 +223,9 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// MSSQL does not support transaction isolation level for read-only queries.
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	singleSQLs, err := tsqlparser.SplitSQL(statement)
 	if err != nil {
@@ -251,9 +253,9 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-	if queryContext.Explain {
+	if queryContext != nil && queryContext.Explain {
 		statement = fmt.Sprintf("EXPLAIN %s", statement)
-	} else if queryContext.Limit > 0 {
+	} else if queryContext != nil && queryContext.Limit > 0 {
 		stmt, err := getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))

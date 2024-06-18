@@ -209,6 +209,7 @@ message Policy {
     MaskingRulePolicy masking_rule_policy = 17;
     MaskingExceptionPolicy masking_exception_policy = 18;
     RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
+    TagPolicy tag_policy = 21;
   }
 
   bool enforce = 13;
@@ -232,6 +233,7 @@ enum PolicyType {
   MASKING_RULE = 9;
   MASKING_EXCEPTION = 10;
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
+  TAG = 13;
 }
 
 enum PolicyResourceType {
@@ -334,4 +336,10 @@ message MaskingRulePolicy {
 
 message RestrictIssueCreationForSQLReviewPolicy {
   bool disallow = 1;
+}
+
+message TagPolicy {
+  // tags is the key - value map for resources.
+  // for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
+  map<string, string> tags = 1;
 }

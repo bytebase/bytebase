@@ -653,6 +653,15 @@
           "days": "日々）",
           "never-expires": "期限切れなし"
         },
+        "domain-restriction": {
+          "self": "ドメイン制限",
+          "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。任意のドメインを許可する場合は空のままにします。",
+          "domain-input-placeholder": "ドメインを入力してください。例: example.com",
+          "members-restriction": {
+            "self": "メンバー制限",
+            "description": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
+          }
+        },
         "config-updated": "構成が更新されました。",
         "plugin": {
           "openai": {
@@ -1223,7 +1232,8 @@
       "statement-type": "ステートメントタイプ"
     },
     "sql-review-only": "SQLレビューのみ",
-    "create-issue": "問題を作成"
+    "create-issue": "問題を作成",
+    "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます"
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトでは、VCS ベースのバージョン管理が有効になっています。以下のデータベースを選択すると、対応する Git リポジトリに移動して、変更プロセスを開始します。",
@@ -1496,7 +1506,7 @@
     "production-environment": "本番環境",
     "access-control": {
       "title": "アクセス制御",
-      "disable-copy-data-from-sql-editor": "SQLエディタからのデータのコピーを無効にする"
+      "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限 (管理者/DBA はコピー可能)"
     }
   },
   "quick-start": {

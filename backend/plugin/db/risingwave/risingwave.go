@@ -434,9 +434,9 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
 	if !isSet {
-		if queryContext.Explain {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 	}

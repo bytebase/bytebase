@@ -451,10 +451,8 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	}
 
 	queryContext := &db.QueryContext{
-		ReadOnly:            true,
-		CurrentDatabase:     database.DatabaseName,
-		SensitiveSchemaInfo: nil,
-		EnableSensitive:     licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		ReadOnly:        true,
+		CurrentDatabase: database.DatabaseName,
 	}
 	if request.Limit != 0 {
 		queryContext.Limit = int(request.Limit)
@@ -796,12 +794,10 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 
 	start := time.Now().UnixNano()
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:               int(request.Limit),
-		Explain:             request.Explain,
-		ReadOnly:            true,
-		CurrentDatabase:     database.DatabaseName,
-		SensitiveSchemaInfo: nil,
-		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		Limit:           int(request.Limit),
+		Explain:         request.Explain,
+		ReadOnly:        true,
+		CurrentDatabase: database.DatabaseName,
 	})
 	select {
 	case <-ctx.Done():
@@ -1293,8 +1289,8 @@ func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 			Code:    int32(advice.Code),
 			Title:   advice.Title,
 			Content: advice.Content,
-			Line:    int32(advice.GetStartPosition().Line),
-			Column:  int32(advice.GetStartPosition().Column),
+			Line:    int32(advice.GetStartPosition().GetLine()),
+			Column:  int32(advice.GetStartPosition().GetColumn()),
 			Detail:  advice.Detail,
 		})
 	}
@@ -1436,6 +1432,17 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 	}
 	if !config.ClassificationFromConfig {
 		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config))
+	}
+
+	if request.Engine == v1pb.Engine_MYSQL && isSingleTable(storeSchemaMetadata) {
+		table := storeSchemaMetadata.Schemas[0].Tables[0]
+		schema, err := schema.StringifyTable(storepb.Engine(request.Engine), table)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to stringify table: %v", err)
+		}
+		return &v1pb.StringifyMetadataResponse{
+			Schema: schema,
+		}, nil
 	}
 
 	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)

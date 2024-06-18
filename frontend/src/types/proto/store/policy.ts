@@ -203,6 +203,19 @@ export interface SQLReviewRule {
   comment: string;
 }
 
+export interface TagPolicy {
+  /**
+   * tags is the key - value map for resources.
+   * for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
+   */
+  tags: { [key: string]: string };
+}
+
+export interface TagPolicy_TagsEntry {
+  key: string;
+  value: string;
+}
+
 function createBaseRolloutPolicy(): RolloutPolicy {
   return { automatic: false, workspaceRoles: [], projectRoles: [], issueRoles: [] };
 }
@@ -1051,6 +1064,158 @@ export const SQLReviewRule = {
   },
 };
 
+function createBaseTagPolicy(): TagPolicy {
+  return { tags: {} };
+}
+
+export const TagPolicy = {
+  encode(message: TagPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    Object.entries(message.tags).forEach(([key, value]) => {
+      TagPolicy_TagsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TagPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTagPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          const entry1 = TagPolicy_TagsEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.tags[entry1.key] = entry1.value;
+          }
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TagPolicy {
+    return {
+      tags: isObject(object.tags)
+        ? Object.entries(object.tags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: TagPolicy): unknown {
+    const obj: any = {};
+    if (message.tags) {
+      const entries = Object.entries(message.tags);
+      if (entries.length > 0) {
+        obj.tags = {};
+        entries.forEach(([k, v]) => {
+          obj.tags[k] = v;
+        });
+      }
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TagPolicy>): TagPolicy {
+    return TagPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TagPolicy>): TagPolicy {
+    const message = createBaseTagPolicy();
+    message.tags = Object.entries(object.tags ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseTagPolicy_TagsEntry(): TagPolicy_TagsEntry {
+  return { key: "", value: "" };
+}
+
+export const TagPolicy_TagsEntry = {
+  encode(message: TagPolicy_TagsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TagPolicy_TagsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTagPolicy_TagsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TagPolicy_TagsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: TagPolicy_TagsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TagPolicy_TagsEntry>): TagPolicy_TagsEntry {
+    return TagPolicy_TagsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TagPolicy_TagsEntry>): TagPolicy_TagsEntry {
+    const message = createBaseTagPolicy_TagsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -1062,6 +1227,10 @@ export type DeepPartial<T> = T extends Builtin ? T
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

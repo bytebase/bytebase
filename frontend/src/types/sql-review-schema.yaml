@@ -237,6 +237,7 @@ ruleList:
       - OCEANBASE
       - MARIADB
       - TIDB
+      - ORACLE
   - type: statement.disallow-add-column-with-default
     category: STATEMENT
     engineList:

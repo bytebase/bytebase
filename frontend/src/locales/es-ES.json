@@ -653,6 +653,15 @@
           "days": "Días)",
           "never-expires": "Nunca expira"
         },
+        "domain-restriction": {
+          "self": "Restricción de dominio",
+          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo. Déjelo vacío para permitir cualquier dominio.",
+          "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
+          "members-restriction": {
+            "self": "Restricción de miembros",
+            "description": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
+          }
+        },
         "config-updated": "La configuración se ha actualizado.",
         "plugin": {
           "openai": {
@@ -1223,7 +1232,8 @@
       "statement-type": "Tipo de declaración"
     },
     "sql-review-only": "Sólo revisión de SQL",
-    "create-issue": "Crear problema"
+    "create-issue": "Crear problema",
+    "this-plan-will-be-converted-to-a-new-issue": "Este plan se convertirá en una nueva edición."
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1496,7 +1506,7 @@
     "production-environment": "Entorno de producción",
     "access-control": {
       "title": "Control de acceso",
-      "disable-copy-data-from-sql-editor": "Desactivar copiar datos desde el editor SQL"
+      "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)"
     }
   },
   "quick-start": {

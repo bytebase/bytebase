@@ -25,6 +25,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -134,6 +135,11 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 
 // SetSetting set the setting by name.
 func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.UpdateSettingRequest) (*v1pb.Setting, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
 	settingName, err := common.GetSettingName(request.Setting.Name)
 	if err != nil {
 		return nil, err
@@ -201,6 +207,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			if payload.MaximumRoleExpiration.Seconds <= 0 {
 				payload.MaximumRoleExpiration = nil
 			}
+		}
+		if len(payload.Domains) == 0 && payload.EnforceIdentityDomain {
+			return nil, status.Errorf(codes.InvalidArgument, "identity domain can be enforced only when workspace domains are set")
+		}
+		if err := validateDomains(payload.Domains); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid domains, error %v", err)
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -342,11 +354,15 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		for _, path := range request.UpdateMask.Paths {
 			switch path {
 			case "value.app_im_setting_value.slack":
-				setting.Slack = payload.Slack
 				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "token doesn't pass validation, error: %v", err)
 				}
+				setting.Slack = payload.Slack
+
 			case "value.app_im_setting_value.feishu":
+				if err := feishu.Validate(ctx, payload.GetFeishu().GetAppId(), payload.GetFeishu().GetAppSecret(), user.Email); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "token does not pass validation, error: %v", err)
+				}
 				setting.Feishu = payload.Feishu
 			case "value.app_im_setting_value.wecom":
 				setting.Wecom = payload.Wecom
@@ -1228,6 +1244,56 @@ func checkSubstitution(substitution string) error {
 	}
 	if len(substitution) > 16 {
 		return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+	}
+	return nil
+}
+
+var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)
+var disallowedDomains = map[string]bool{
+	"gmail.com":      true,
+	"googlemail.com": true,
+	"outlook.com":    true,
+	"hotmail.com":    true,
+	"live.com":       true,
+	"msn.com":        true,
+	"yahoo.com":      true,
+	"ymail.com":      true,
+	"rocketmail.com": true,
+	"icloud.com":     true,
+	"me.com":         true,
+	"mac.com":        true,
+	"aol.com":        true,
+	"zoho.com":       true,
+	"protonmail.com": true,
+	"gmx.com":        true,
+	"gmx.net":        true,
+	"mail.com":       true,
+	"yandex.com":     true,
+	"yandex.ru":      true,
+	"fastmail.com":   true,
+	"fastmail.fm":    true,
+	"tutanota.com":   true,
+	"163.com":        true,
+	"126.com":        true,
+	"sohu.com":       true,
+	"qq.com":         true,
+	"sina.com":       true,
+	"sina.cn":        true,
+	"aliyun.com":     true,
+	"aliyun.cn":      true,
+	"tom.com":        true,
+	"21cn.com":       true,
+	"yeah.net":       true,
+}
+
+func validateDomains(domains []string) error {
+	for _, domain := range domains {
+		if !domainRegexp.MatchString(domain) {
+			return errors.Errorf("invalid domain %q", domain)
+		}
+		if disallowedDomains[domain] {
+			return errors.Errorf("domain %q is not allowed", domain)
+		}
 	}
 	return nil
 }

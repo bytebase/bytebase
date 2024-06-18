@@ -327,6 +327,39 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 
+	// Check constraints info.
+	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+	checkQuery := `
+		SELECT
+			tc.TABLE_NAME,
+			cc.CONSTRAINT_NAME,
+			cc.CHECK_CLAUSE
+		FROM information_schema.CHECK_CONSTRAINTS cc
+			JOIN information_schema.TABLE_CONSTRAINTS tc ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+		WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
+	`
+	checkRows, err := driver.db.QueryContext(ctx, checkQuery, driver.databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkQuery)
+	}
+	defer checkRows.Close()
+	for checkRows.Next() {
+		check := &storepb.CheckConstraintMetadata{}
+		var tableName string
+		if err := checkRows.Scan(
+			&tableName,
+			&check.Name,
+			&check.Expression,
+		); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: "", Table: tableName}
+		checkMap[key] = append(checkMap[key], check)
+	}
+	if err := checkRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkQuery)
+	}
+
 	// Query view info.
 	viewMap := make(map[db.TableKey]*storepb.ViewMetadata)
 	viewQuery := `
@@ -432,18 +465,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		case baseTableType:
 			columns := columnMap[key]
 			tableMetadata := &storepb.TableMetadata{
-				Name:          tableName,
-				Columns:       columns,
-				ForeignKeys:   foreignKeysMap[key],
-				Engine:        engine,
-				Collation:     collation,
-				RowCount:      rowCount,
-				DataSize:      dataSize,
-				IndexSize:     indexSize,
-				DataFree:      dataFree,
-				CreateOptions: createOptions,
-				Comment:       comment,
-				Partitions:    partitionTables[key],
+				Name:             tableName,
+				Columns:          columns,
+				ForeignKeys:      foreignKeysMap[key],
+				Engine:           engine,
+				Collation:        collation,
+				RowCount:         rowCount,
+				DataSize:         dataSize,
+				IndexSize:        indexSize,
+				DataFree:         dataFree,
+				CreateOptions:    createOptions,
+				Comment:          comment,
+				Partitions:       partitionTables[key],
+				CheckConstraints: checkMap[key],
 			}
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String
