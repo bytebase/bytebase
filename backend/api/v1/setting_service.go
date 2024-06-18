@@ -25,6 +25,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -134,6 +135,11 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 
 // SetSetting set the setting by name.
 func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.UpdateSettingRequest) (*v1pb.Setting, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
 	settingName, err := common.GetSettingName(request.Setting.Name)
 	if err != nil {
 		return nil, err
@@ -342,11 +348,15 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		for _, path := range request.UpdateMask.Paths {
 			switch path {
 			case "value.app_im_setting_value.slack":
-				setting.Slack = payload.Slack
 				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "token doesn't pass validation, error: %v", err)
 				}
+				setting.Slack = payload.Slack
+
 			case "value.app_im_setting_value.feishu":
+				if err := feishu.Validate(ctx, payload.GetFeishu().GetAppId(), payload.GetFeishu().GetAppSecret(), user.Email); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "token does not pass validation, error: %v", err)
+				}
 				setting.Feishu = payload.Feishu
 			case "value.app_im_setting_value.wecom":
 				setting.Wecom = payload.Wecom
