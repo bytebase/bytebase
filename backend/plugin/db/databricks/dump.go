@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	dftCatalog = "system"
+	sysCatalog = "system"
 	infoSchema = "information_schema"
 	dftSchema  = "default"
 )
@@ -34,7 +34,7 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ bool) (string, er
 	}
 
 	for catalogName, schemaMap := range catalogMap {
-		if catalogName == dftCatalog {
+		if catalogName == sysCatalog {
 			continue
 		}
 		if _, err := writer.Write([]byte(fmt.Sprintf("CREATE CATALOG %s\n", catalogName))); err != nil {
