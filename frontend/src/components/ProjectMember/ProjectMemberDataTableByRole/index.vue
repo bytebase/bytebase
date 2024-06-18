@@ -98,7 +98,7 @@ const columns = computed(() => {
           return h(UserOperationsCell, {
             project: props.project,
             projectMember: row.member,
-            "onUpdate-user": () => {
+            "onUpdate-binding": () => {
               emit("update-binding", row.member);
             },
           });
