@@ -1,7 +1,7 @@
 -- Create review config table.
 CREATE TABLE review_config
 (
-    id BIGSERIAL PRIMARY KEY,
+    resource_id TEXT NOT NULL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
@@ -11,13 +11,11 @@ CREATE TABLE review_config
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-ALTER SEQUENCE review_config_id_seq RESTART WITH 101;
-
 -- Migrate sql review policy to the new table.
 INSERT INTO review_config
-    (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, payload)
+    (resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, name, payload)
 SELECT
-    policy.id,
+    environment.resource_id,
     policy.row_status,
     policy.creator_id,
     policy.created_ts,
@@ -26,6 +24,7 @@ SELECT
     policy.payload->>'name',
     jsonb_build_object('sqlReviewRules', policy.payload->'ruleList')
 FROM policy
+INNER JOIN environment ON policy.resource_id = environment.id
 WHERE type = 'bb.policy.sql-review';
 
 -- Migrate environment sql review policy to bb.policy.tag policy.
