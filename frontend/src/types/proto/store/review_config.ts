@@ -5,26 +5,26 @@ import { SQLReviewRule } from "./policy";
 
 export const protobufPackage = "bytebase.store";
 
-export interface SQLReviewPayload {
-  ruleList: SQLReviewRule[];
+export interface ReviewConfigPayload {
+  sqlReviewRules: SQLReviewRule[];
 }
 
-function createBaseSQLReviewPayload(): SQLReviewPayload {
-  return { ruleList: [] };
+function createBaseReviewConfigPayload(): ReviewConfigPayload {
+  return { sqlReviewRules: [] };
 }
 
-export const SQLReviewPayload = {
-  encode(message: SQLReviewPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.ruleList) {
+export const ReviewConfigPayload = {
+  encode(message: ReviewConfigPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.sqlReviewRules) {
       SQLReviewRule.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SQLReviewPayload {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReviewConfigPayload {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSQLReviewPayload();
+    const message = createBaseReviewConfigPayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -33,7 +33,7 @@ export const SQLReviewPayload = {
             break;
           }
 
-          message.ruleList.push(SQLReviewRule.decode(reader, reader.uint32()));
+          message.sqlReviewRules.push(SQLReviewRule.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -44,28 +44,28 @@ export const SQLReviewPayload = {
     return message;
   },
 
-  fromJSON(object: any): SQLReviewPayload {
+  fromJSON(object: any): ReviewConfigPayload {
     return {
-      ruleList: globalThis.Array.isArray(object?.ruleList)
-        ? object.ruleList.map((e: any) => SQLReviewRule.fromJSON(e))
+      sqlReviewRules: globalThis.Array.isArray(object?.sqlReviewRules)
+        ? object.sqlReviewRules.map((e: any) => SQLReviewRule.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: SQLReviewPayload): unknown {
+  toJSON(message: ReviewConfigPayload): unknown {
     const obj: any = {};
-    if (message.ruleList?.length) {
-      obj.ruleList = message.ruleList.map((e) => SQLReviewRule.toJSON(e));
+    if (message.sqlReviewRules?.length) {
+      obj.sqlReviewRules = message.sqlReviewRules.map((e) => SQLReviewRule.toJSON(e));
     }
     return obj;
   },
 
-  create(base?: DeepPartial<SQLReviewPayload>): SQLReviewPayload {
-    return SQLReviewPayload.fromPartial(base ?? {});
+  create(base?: DeepPartial<ReviewConfigPayload>): ReviewConfigPayload {
+    return ReviewConfigPayload.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SQLReviewPayload>): SQLReviewPayload {
-    const message = createBaseSQLReviewPayload();
-    message.ruleList = object.ruleList?.map((e) => SQLReviewRule.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<ReviewConfigPayload>): ReviewConfigPayload {
+    const message = createBaseReviewConfigPayload();
+    message.sqlReviewRules = object.sqlReviewRules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     return message;
   },
 };

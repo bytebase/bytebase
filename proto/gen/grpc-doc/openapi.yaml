@@ -13233,6 +13233,9 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+                    description: |-
+                        tags is the key - value map for resources.
+                         for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "{review config id}"
         Task:
             type: object
             properties:

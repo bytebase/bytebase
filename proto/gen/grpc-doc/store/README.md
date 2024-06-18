@@ -210,6 +210,9 @@
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
   
+- [store/review_config.proto](#store_review_config-proto)
+    - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
+  
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
   
@@ -258,9 +261,6 @@
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
     - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
-  
-- [store/sql_review.proto](#store_sql_review-proto)
-    - [SQLReviewPayload](#bytebase-store-SQLReviewPayload)
   
 - [store/task_run.proto](#store_task_run-proto)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
@@ -3011,7 +3011,7 @@ Format: users/{userUID} or groups/{group email} |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated |  |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;{review config id}&#34; |
 
 
 
@@ -3244,6 +3244,37 @@ The type of target.
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_review_config-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_config.proto
+
+
+
+<a name="bytebase-store-ReviewConfigPayload"></a>
+
+### ReviewConfigPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_review_rules | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
 
 
 
@@ -3994,37 +4025,6 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | total_rows_examined | [int32](#int32) |  | The total rows examined of the slow query log. |
 | maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_sql_review-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/sql_review.proto
-
-
-
-<a name="bytebase-store-SQLReviewPayload"></a>
-
-### SQLReviewPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rule_list | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
 
 
 
