@@ -38,8 +38,10 @@ SELECT
     policy.resource_type,
     policy.resource_id,
     'bb.policy.tag',
-    jsonb_build_object('tags', jsonb_build_object('bb.tag.review_config', CONCAT('reviewConfigs/', policy.id::text)))
+    -- We're using environment.resource_id as review config resource_id.
+    jsonb_build_object('tags', jsonb_build_object('bb.tag.review_config', CONCAT('reviewConfigs/', environment.resource_id)))
 FROM policy
+INNER JOIN environment ON policy.resource_id = environment.id
 WHERE type = 'bb.policy.sql-review';
 
 -- TODO: remove legacy bb.policy.sql-review policy after migration.
