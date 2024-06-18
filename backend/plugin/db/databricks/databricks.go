@@ -180,6 +180,11 @@ func toStrColInfo(colInfo []dbsql.ColumnInfo) ([]string, []string) {
 
 func toV1pbRowVal(colType dbsql.ColumnInfoTypeName, val string) (*v1pb.RowValue, error) {
 	rowVal := v1pb.RowValue{}
+	if val == "" && colType != dbsql.ColumnInfoTypeNameString {
+		rowVal.Kind = &v1pb.RowValue_NullValue{}
+		return &rowVal, nil
+	}
+
 	switch colType {
 	case dbsql.ColumnInfoTypeNameBoolean:
 		boolVal, err := strconv.ParseBool(val)
