@@ -1476,6 +1476,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TagPolicy"><span class="badge">M</span>TagPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdatePolicyRequest"><span class="badge">M</span>UpdatePolicyRequest</a>
                 </li>
               
@@ -1854,6 +1862,49 @@
               
                 <li>
                   <a href="#bytebase.v1.ProjectService"><span class="badge">S</span>ProjectService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2freview_config_service.proto">v1/review_config_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateReviewConfigRequest"><span class="badge">M</span>CreateReviewConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteReviewConfigRequest"><span class="badge">M</span>DeleteReviewConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetReviewConfigRequest"><span class="badge">M</span>GetReviewConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReviewConfigsRequest"><span class="badge">M</span>ListReviewConfigsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReviewConfigsResponse"><span class="badge">M</span>ListReviewConfigsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewConfig"><span class="badge">M</span>ReviewConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateReviewConfigRequest"><span class="badge">M</span>UpdateReviewConfigRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewConfigService"><span class="badge">S</span>ReviewConfigService</a>
                 </li>
               
             </ul>
@@ -16338,6 +16389,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>tag_policy</td>
+                  <td><a href="#bytebase.v1.TagPolicy">TagPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -16542,6 +16600,62 @@ roles/CREATOR </p></td>
 
         
       
+        <h3 id="bytebase.v1.TagPolicy">TagPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#bytebase.v1.TagPolicy.TagsEntry">TagPolicy.TagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>tags is the key - value map for resources.
+for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;{review config id}&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TagPolicy.TagsEntry">TagPolicy.TagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdatePolicyRequest">UpdatePolicyRequest</h3>
         <p></p>
 
@@ -16725,6 +16839,12 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW</td>
                 <td>12</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TAG</td>
+                <td>13</td>
                 <td><p></p></td>
               </tr>
             
@@ -20749,6 +20869,386 @@ The API will default to the BASIC view.</p></td>
                 <td>PATCH</td>
                 <td>/v1/{protection_rules.name=projects/*/protectionRules}</td>
                 <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/review_config_service.proto">v1/review_config_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateReviewConfigRequest">CreateReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>review_config</td>
+                  <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                  <td></td>
+                  <td><p>The sql review to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteReviewConfigRequest">DeleteReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the sql review to delete.
+Format: reviewConfigs/{uid} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetReviewConfigRequest">GetReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the sql review to retrieve.
+Format: reviewConfigs/{uid} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReviewConfigsRequest">ListReviewConfigsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of sql review to return. The service may return fewer than
+this value.
+If unspecified, at most 50 sql review will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSQLReviews` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReviewConfigsResponse">ListReviewConfigsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>review_configs</td>
+                  <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                  <td>repeated</td>
+                  <td><p>The sql review from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ReviewConfig">ReviewConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the sql review to retrieve.
+Format: reviewConfigs/{uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.v1.SQLReviewRule">SQLReviewRule</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resources</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>resources using the config.
+Format: {resurce}/{resource id}, for example, environments/test. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>review_config</td>
+                  <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                  <td></td>
+                  <td><p>The sql review toupdate.
+
+The name field is used to identify the sql review to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.ReviewConfigService">ReviewConfigService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CreateReviewConfig</td>
+                <td><a href="#bytebase.v1.CreateReviewConfigRequest">CreateReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListReviewConfigs</td>
+                <td><a href="#bytebase.v1.ListReviewConfigsRequest">ListReviewConfigsRequest</a></td>
+                <td><a href="#bytebase.v1.ListReviewConfigsResponse">ListReviewConfigsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GetReviewConfig</td>
+                <td><a href="#bytebase.v1.GetReviewConfigRequest">GetReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateReviewConfig</td>
+                <td><a href="#bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteReviewConfig</td>
+                <td><a href="#bytebase.v1.DeleteReviewConfigRequest">DeleteReviewConfigRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>CreateReviewConfig</td>
+                <td>POST</td>
+                <td>/v1/reviewConfigs</td>
+                <td>review_config</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListReviewConfigs</td>
+                <td>GET</td>
+                <td>/v1/reviewConfigs</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetReviewConfig</td>
+                <td>GET</td>
+                <td>/v1/{name=reviewConfigs/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateReviewConfig</td>
+                <td>PATCH</td>
+                <td>/v1/{review_config.name=reviewConfigs/*}</td>
+                <td>review_config</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteReviewConfig</td>
+                <td>DELETE</td>
+                <td>/v1/{name=reviewConfigs/*}</td>
+                <td></td>
               </tr>
               
             

@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "v1/org_policy_service.proto";
+
+option go_package = "generated-go/v1";
+
+service ReviewConfigService {
+  rpc CreateReviewConfig(CreateReviewConfigRequest) returns (ReviewConfig) {
+    option (google.api.http) = {
+      post: "/v1/reviewConfigs"
+      body: "review_config"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc ListReviewConfigs(ListReviewConfigsRequest) returns (ListReviewConfigsResponse) {
+    option (google.api.http) = {get: "/v1/reviewConfigs"};
+    option (google.api.method_signature) = "";
+  }
+
+  rpc GetReviewConfig(GetReviewConfigRequest) returns (ReviewConfig) {
+    option (google.api.http) = {get: "/v1/{name=reviewConfigs/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
+    option (google.api.http) = {
+      patch: "/v1/{review_config.name=reviewConfigs/*}"
+      body: "review_config"
+    };
+    option (google.api.method_signature) = "review_config,update_mask";
+  }
+
+  rpc DeleteReviewConfig(DeleteReviewConfigRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=reviewConfigs/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+message ListReviewConfigsRequest {
+  // The maximum number of sql review to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 sql review will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListSQLReviews` must match
+  // the call that provided the page token.
+  string page_token = 2;
+}
+
+message ListReviewConfigsResponse {
+  // The sql review from the specified request.
+  repeated ReviewConfig review_configs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateReviewConfigRequest {
+  // The sql review to create.
+  ReviewConfig review_config = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateReviewConfigRequest {
+  // The sql review toupdate.
+  //
+  // The name field is used to identify the sql review to update.
+  ReviewConfig review_config = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message GetReviewConfigRequest {
+  // The name of the sql review to retrieve.
+  // Format: reviewConfigs/{uid}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DeleteReviewConfigRequest {
+  // The name of the sql review to delete.
+  // Format: reviewConfigs/{uid}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ReviewConfig {
+  // The name of the sql review to retrieve.
+  // Format: reviewConfigs/{uid}
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string title = 2;
+
+  bool enabled = 3;
+
+  // Format: users/hello@world.com
+  string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated SQLReviewRule rules = 7;
+
+  // resources using the config.
+  // Format: {resurce}/{resource id}, for example, environments/test.
+  repeated string resources = 8;
+}
