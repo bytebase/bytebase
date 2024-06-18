@@ -1434,6 +1434,17 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config))
 	}
 
+	if request.Engine == v1pb.Engine_MYSQL && isSingleTable(storeSchemaMetadata) {
+		table := storeSchemaMetadata.Schemas[0].Tables[0]
+		schema, err := schema.StringifyTable(storepb.Engine(request.Engine), table)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to stringify table: %v", err)
+		}
+		return &v1pb.StringifyMetadataResponse{
+			Schema: schema,
+		}, nil
+	}
+
 	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
 	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, "" /* baseline */, storeSchemaMetadata)
 	if err != nil {
