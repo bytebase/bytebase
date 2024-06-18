@@ -114,6 +114,7 @@
       </div>
       <SignInFrequencySetting :allow-edit="allowEdit" />
       <MaximumRoleExpirationSetting :allow-edit="allowEdit" />
+      <DomainRestrictionSetting :allow-edit="allowEdit" />
     </div>
   </div>
 
@@ -141,6 +142,8 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
+import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
