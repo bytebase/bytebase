@@ -45,8 +45,11 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ bool) (string, er
 			if schemaName == infoSchema {
 				continue
 			}
-			if _, err := writer.Write([]byte(fmt.Sprintf("CREATE SCHEMA `%s`.`%s`\n", catalogName, schemaName))); err != nil && schemaName != dftSchema {
-				return "", err
+			if schemaName != dftSchema {
+				_, err := writer.Write([]byte(fmt.Sprintf("CREATE SCHEMA `%s`.`%s`\n", catalogName, schemaName)))
+				if err != nil {
+					return "", err
+				}
 			}
 
 			viewDDL := strings.Builder{}
