@@ -1497,7 +1497,7 @@
     "production-environment": "Production environment",
     "access-control": {
       "title": "Access control",
-      "disable-copy-data-from-sql-editor": "Disable copy data from SQL editor"
+      "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)"
     }
   },
   "quick-start": {
