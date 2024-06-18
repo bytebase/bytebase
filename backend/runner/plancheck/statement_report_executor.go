@@ -7,6 +7,7 @@ import (
 
 	"log/slog"
 
+	"github.com/antlr4-go/antlr/v4"
 	pgquery "github.com/pganalyze/pg_query_go/v5"
 	"github.com/pkg/errors"
 
@@ -315,19 +316,17 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 			},
 		}, nil
 	}
-	nodes, ok := ast.([]any)
+	nodes, ok := ast.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", ast)
 	}
 
 	var changedResources []base.SchemaResource
-	for _, node := range nodes {
-		resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, node)
-		if err != nil {
-			slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
-		} else {
-			changedResources = append(changedResources, resources...)
-		}
+	resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, nodes)
+	if err != nil {
+		slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
+	} else {
+		changedResources = append(changedResources, resources...)
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{

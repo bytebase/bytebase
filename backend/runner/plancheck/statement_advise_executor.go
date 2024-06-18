@@ -198,8 +198,8 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 			Code:    0,
 			Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 				SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-					Line:   advice.GetStartPosition().Line,
-					Column: advice.GetStartPosition().Column,
+					Line:   advice.GetStartPosition().GetLine(),
+					Column: advice.GetStartPosition().GetColumn(),
 					Code:   advice.Code,
 					Detail: advice.Detail,
 				},
@@ -386,8 +386,8 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					Code:    0,
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   advice.GetStartPosition().Line,
-							Column: advice.GetStartPosition().Column,
+							Line:   advice.GetStartPosition().GetLine(),
+							Column: advice.GetStartPosition().GetColumn(),
 							Code:   advice.Code,
 							Detail: advice.Detail,
 						},
