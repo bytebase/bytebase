@@ -21,7 +21,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// ReviewConfigService implements the sql review service.
+// ReviewConfigService implements the review config service.
 type ReviewConfigService struct {
 	v1pb.UnimplementedReviewConfigServiceServer
 	store          *store.Store

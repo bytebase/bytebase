@@ -79,7 +79,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
 		v1pb.SubscriptionService_UpdateSubscription_FullMethodName,
-		// TODO(p0ny): permission for sql review service.
+		// TODO(p0ny): permission for review config service.
 		v1pb.ReviewConfigService_CreateReviewConfig_FullMethodName,
 		v1pb.ReviewConfigService_ListReviewConfigs_FullMethodName,
 		v1pb.ReviewConfigService_GetReviewConfig_FullMethodName,
