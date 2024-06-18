@@ -295,7 +295,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				allowedDomains = setting.Domains
 			}
 			if err := validateEmail(request.User.Email, allowedDomains); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
 			}
 			user, err := s.store.GetUserByEmail(ctx, request.User.Email)
 			if err != nil {
@@ -849,7 +849,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 	// If the email is still invalid, we will return an error.
 	if err := validateEmail(email, allowedDomains); err != nil {
-		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", email, err)
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
