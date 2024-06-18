@@ -1360,6 +1360,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementDMLDryRun, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementDMLDryRun, nil
+		case storepb.Engine_ORACLE:
+			return OracleStatementDMLDryRun, nil
 		}
 	case SchemaRuleStatementDisallowAddColumnWithDefault:
 		if engine == storepb.Engine_POSTGRES {

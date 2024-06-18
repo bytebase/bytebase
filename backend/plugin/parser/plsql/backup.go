@@ -117,7 +117,7 @@ type suffixSelectClauseExtractor struct {
 }
 
 func (e *suffixSelectClauseExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if e.err != nil || !isTopLevel(ctx.GetParent()) {
+	if e.err != nil || !IsTopLevelStatement(ctx.GetParent()) {
 		return
 	}
 
@@ -139,7 +139,7 @@ func (e *suffixSelectClauseExtractor) EnterDelete_statement(ctx *parser.Delete_s
 }
 
 func (e *suffixSelectClauseExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if e.err != nil || !isTopLevel(ctx.GetParent()) {
+	if e.err != nil || !IsTopLevelStatement(ctx.GetParent()) {
 		return
 	}
 
@@ -187,7 +187,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	return extractor.dmls, nil
 }
 
-func isTopLevel(ctx antlr.Tree) bool {
+func IsTopLevelStatement(ctx antlr.Tree) bool {
 	if ctx == nil {
 		return true
 	}
@@ -195,7 +195,7 @@ func isTopLevel(ctx antlr.Tree) bool {
 	case *parser.Unit_statementContext, *parser.Sql_scriptContext:
 		return true
 	case *parser.Data_manipulation_language_statementsContext:
-		return isTopLevel(ctx.GetParent())
+		return IsTopLevelStatement(ctx.GetParent())
 	default:
 		return false
 	}
@@ -219,7 +219,7 @@ func (e *dmlExtractor) ExitSql_plus_command(_ *parser.Sql_plus_commandContext) {
 }
 
 func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if isTopLevel(ctx.GetParent()) {
+	if IsTopLevelStatement(ctx.GetParent()) {
 		extractor := &tableExtractor{
 			databaseName:  e.databaseName,
 			defaultSchema: e.defaultSchema,
@@ -237,7 +237,7 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 }
 
 func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if isTopLevel(ctx.GetParent()) {
+	if IsTopLevelStatement(ctx.GetParent()) {
 		extractor := &tableExtractor{
 			databaseName:  e.databaseName,
 			defaultSchema: e.defaultSchema,
