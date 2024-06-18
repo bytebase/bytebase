@@ -12,7 +12,7 @@
     <div class="w-full flex flex-col gap-2 mt-2">
       <NInput
         v-model:value="state.domain"
-        :readonly="!allowChangeSetting"
+        :readonly="!allowEdit"
         :placeholder="
           $t(
             'settings.general.workspace.domain-restriction.domain-input-placeholder'
@@ -24,7 +24,7 @@
         <NCheckbox
           v-model:checked="state.enableRestriction"
           :disabled="!state.domain"
-          :readonly="!allowChangeSetting"
+          :readonly="!allowEdit"
         >
           <p class="font-medium">
             {{
@@ -83,17 +83,13 @@ interface LocalState {
   enableRestriction: boolean;
 }
 
-const props = defineProps<{
+defineProps<{
   allowEdit: boolean;
 }>();
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
-
-const allowChangeSetting = computed(() => {
-  return props.allowEdit;
-});
 
 const allowSaveUpdates = computed(() => {
   return !isEqual(state, getInitialState());
