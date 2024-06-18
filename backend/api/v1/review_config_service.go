@@ -150,15 +150,21 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, request *v
 	return &emptypb.Empty{}, nil
 }
 
-func convertToReviewConfigMessage(sqlReview *v1pb.ReviewConfig) (*store.ReviewConfigMessage, error) {
-	ruleList, err := convertToSQLReviewRules(sqlReview.Rules)
+func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.ReviewConfigMessage, error) {
+	ruleList, err := convertToSQLReviewRules(reviewConfig.Rules)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert rules, error %v", err)
 	}
 
+	id, err := common.GetReviewConfigID(reviewConfig.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid config name %s, error %v", reviewConfig.Name, err)
+	}
+
 	return &store.ReviewConfigMessage{
-		Name:    sqlReview.Title,
-		Enforce: sqlReview.Enabled,
+		ID:      id,
+		Name:    reviewConfig.Title,
+		Enforce: reviewConfig.Enabled,
 		Payload: &storepb.ReviewConfigPayload{
 			SqlReviewRules: ruleList,
 		},
