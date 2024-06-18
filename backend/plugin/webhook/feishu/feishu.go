@@ -124,39 +124,34 @@ func postDirectMessage(webhookCtx webhook.Context) {
 	if err := common.Retry(ctx, func() error {
 		var errs error
 
-		err := func() error {
-			var emails []string
-			for _, u := range webhookCtx.MentionUsers {
-				if sent[u.Email] {
-					continue
-				}
-				emails = append(emails, u.Email)
+		var emails []string
+		for _, u := range webhookCtx.MentionUsers {
+			if sent[u.Email] {
+				continue
 			}
+			emails = append(emails, u.Email)
+		}
 
-			idByEmail, err := p.getIDByEmail(ctx, emails)
+		idByEmail, err := p.getIDByEmail(ctx, emails)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get id by email")
+		}
+
+		for _, u := range webhookCtx.MentionUsers {
+			if sent[u.Email] {
+				continue
+			}
+			id, ok := idByEmail[u.Email]
+			if !ok {
+				continue
+			}
+			err := p.sendMessage(ctx, id, getMessageCard(webhookCtx))
 			if err != nil {
-				return errors.Wrapf(err, "failed to get id by email")
+				err = errors.Wrapf(err, "failed to send message")
+				multierr.AppendInto(&errs, err)
 			}
-
-			for _, u := range webhookCtx.MentionUsers {
-				if sent[u.Email] {
-					continue
-				}
-				id, ok := idByEmail[u.Email]
-				if !ok {
-					continue
-				}
-				err := p.sendMessage(ctx, id, getMessageCard(webhookCtx))
-				if err != nil {
-					err = errors.Wrapf(err, "failed to send message")
-					multierr.AppendInto(&errs, err)
-				}
-				sent[u.Email] = true
-			}
-			return nil
-		}()
-		multierr.AppendInto(&errs, err)
-
+			sent[u.Email] = true
+		}
 		return errs
 	}); err != nil {
 		slog.Warn("failed to send direct message to feishu user", log.BBError(err))
