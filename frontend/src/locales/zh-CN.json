@@ -499,8 +499,8 @@
         "delete-warning": "群组“{name}”将被删除。此操作无法撤消。",
         "delete-warning-with-resources": "以下资源使用了群组“{name}”：",
         "form": {
-          "email": "电子邮件",
-          "email-tips": "电子邮件应该是唯一的，并且创建后不能更改。",
+          "email": "邮箱",
+          "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",
           "title": "标题",
           "description": "描述",
           "members": "成员",
@@ -876,7 +876,7 @@
       "not-show-till-next-release": "在下次更新前不要提醒我"
     },
     "mail-delivery": {
-      "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
+      "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮箱，如慢查询周报。",
       "field": {
         "smtp-server-host": "SMTP 服务器主机",
         "smtp-server-port": "SMTP 服务器端口",
@@ -1906,7 +1906,7 @@
       },
       "direct-messages": "私信通知",
       "enable-direct-messages": "启用私信通知",
-      "direct-messages-tip": "启用后，Bytebase 将私信通知相关用户（通过电子邮件匹配）。",
+      "direct-messages-tip": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。",
       "direct-messages-warning": "您需要配置 {im} 才能使其正常工作。",
       "activity-support-direct-message": "支持向相关用户发送私信通知",
       "activity-item": {
