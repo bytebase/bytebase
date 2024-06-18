@@ -1474,7 +1474,7 @@ type TagPolicy struct {
 	unknownFields protoimpl.UnknownFields
 
 	// tags is the key - value map for resources.
-	// for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "{review config id}"
+	// for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
 	Tags map[string]string `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
