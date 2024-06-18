@@ -367,10 +367,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		return 0, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return 0, nil
-	}
+	var originalIndex []int
+	singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
 
 	// If the statement is a single statement and is a PL/pgSQL block,
 	// we should execute it as a single statement without transaction.
@@ -398,9 +396,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	var remainingSQLs []base.SingleSQL
-
-	remainingSQLsIndex := map[int]int{}
-	nonTransactionAndSetRoleStmtsIndex := map[int]int{}
+	var remainingSQLsIndex, nonTransactionAndSetRoleStmtsIndex []int
 
 	var nonTransactionAndSetRoleStmts []string
 	for i, singleSQL := range singleSQLs {
@@ -409,13 +405,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 		if IsNonTransactionStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
 			continue
 		}
 
 		if isSetRoleStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
 		}
 
 		if isSuperuserStatement(singleSQL.Text) {
@@ -431,7 +427,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			singleSQL.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", singleSQL.Text, owner)
 		}
 		remainingSQLs = append(remainingSQLs, singleSQL)
-		remainingSQLsIndex[len(remainingSQLs)-1] = i
+		remainingSQLsIndex = append(remainingSQLsIndex, i)
 	}
 
 	totalRowsAffected := int64(0)
@@ -511,7 +507,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 				var indexes []int32
 				for i := currentIndex; i < currentIndex+len(chunk); i++ {
-					indexes = append(indexes, int32(remainingSQLsIndex[i]))
+					indexes = append(indexes, int32(originalIndex[remainingSQLsIndex[i]]))
 				}
 				opts.LogCommandExecute(indexes)
 
@@ -563,7 +559,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{int32(nonTransactionAndSetRoleStmtsIndex[i])}
+		indexes := []int32{int32(originalIndex[nonTransactionAndSetRoleStmtsIndex[i]])}
 		opts.LogCommandExecute(indexes)
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
 			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())

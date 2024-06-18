@@ -316,7 +316,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	var totalCommands int
 	var chunks [][]base.SingleSQL
-	var originalIndex map[int]int
+	var originalIndex []int
 	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
@@ -340,7 +340,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				},
 			},
 		}
-		originalIndex = map[int]int{0: 0}
+		originalIndex = []int{0}
 	}
 
 	tx, err := conn.BeginTx(ctx, nil)
