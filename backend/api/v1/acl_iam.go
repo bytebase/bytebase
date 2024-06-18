@@ -78,7 +78,13 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SQLService_GenerateRestoreSQL_FullMethodName,
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
-		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
+		v1pb.SubscriptionService_UpdateSubscription_FullMethodName,
+		// TODO(p0ny): permission for review config service.
+		v1pb.ReviewConfigService_CreateReviewConfig_FullMethodName,
+		v1pb.ReviewConfigService_ListReviewConfigs_FullMethodName,
+		v1pb.ReviewConfigService_GetReviewConfig_FullMethodName,
+		v1pb.ReviewConfigService_UpdateReviewConfig_FullMethodName,
+		v1pb.ReviewConfigService_DeleteReviewConfig_FullMethodName:
 		return true
 	// skip checking for sheet service because we want to
 	// discriminate bytebase artifact sheets and user sheets first.

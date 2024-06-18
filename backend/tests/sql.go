@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -53,9 +54,11 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 	return nil, nil
 }
 
-func prodTemplateSQLReviewPolicyForPostgreSQL() (*v1pb.SQLReviewPolicy, error) {
-	policy := &v1pb.SQLReviewPolicy{
-		Name: "Prod",
+func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
+	config := &v1pb.ReviewConfig{
+		Name:    common.FormatReviewConfig(generateRandomString("review", 10)),
+		Title:   "Prod",
+		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{
 			// Naming
 			{
@@ -268,19 +271,21 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (*v1pb.SQLReviewPolicy, error) {
 		},
 	}
 
-	for _, rule := range policy.Rules {
+	for _, rule := range config.Rules {
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type), storepb.Engine_POSTGRES)
 		if err != nil {
 			return nil, err
 		}
 		rule.Payload = payload
 	}
-	return policy, nil
+	return config, nil
 }
 
-func prodTemplateSQLReviewPolicyForMySQL() (*v1pb.SQLReviewPolicy, error) {
-	policy := &v1pb.SQLReviewPolicy{
-		Name: "Prod",
+func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
+	config := &v1pb.ReviewConfig{
+		Name:    common.FormatReviewConfig(generateRandomString("review", 10)),
+		Title:   "Prod",
+		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{
 			// Engine
 			{
@@ -544,14 +549,14 @@ func prodTemplateSQLReviewPolicyForMySQL() (*v1pb.SQLReviewPolicy, error) {
 		},
 	}
 
-	for _, rule := range policy.Rules {
+	for _, rule := range config.Rules {
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type), storepb.Engine_POSTGRES)
 		if err != nil {
 			return nil, err
 		}
 		rule.Payload = payload
 	}
-	return policy, nil
+	return config, nil
 }
 
 // getSchemaDiff gets the schema diff.
