@@ -597,6 +597,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.CheckConstraintMetadata"><span class="badge">M</span>CheckConstraintMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ColumnConfig"><span class="badge">M</span>ColumnConfig</a>
                 </li>
               
@@ -662,6 +666,10 @@
               
                 <li>
                   <a href="#bytebase.v1.FunctionMetadata"><span class="badge">M</span>FunctionMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GenerationMetadata"><span class="badge">M</span>GenerationMetadata</a>
                 </li>
               
                 <li>
@@ -827,6 +835,10 @@
               
                 <li>
                   <a href="#bytebase.v1.DatabaseMetadataView"><span class="badge">E</span>DatabaseMetadataView</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
                 </li>
               
                 <li>
@@ -1464,6 +1476,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TagPolicy"><span class="badge">M</span>TagPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdatePolicyRequest"><span class="badge">M</span>UpdatePolicyRequest</a>
                 </li>
               
@@ -1548,6 +1568,10 @@
               
                 <li>
                   <a href="#bytebase.v1.Plan.ExportDataConfig"><span class="badge">M</span>Plan.ExportDataConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.PlanCheckRunStatusCountEntry"><span class="badge">M</span>Plan.PlanCheckRunStatusCountEntry</a>
                 </li>
               
                 <li>
@@ -1838,6 +1862,49 @@
               
                 <li>
                   <a href="#bytebase.v1.ProjectService"><span class="badge">S</span>ProjectService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2freview_config_service.proto">v1/review_config_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateReviewConfigRequest"><span class="badge">M</span>CreateReviewConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteReviewConfigRequest"><span class="badge">M</span>DeleteReviewConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetReviewConfigRequest"><span class="badge">M</span>GetReviewConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReviewConfigsRequest"><span class="badge">M</span>ListReviewConfigsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReviewConfigsResponse"><span class="badge">M</span>ListReviewConfigsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewConfig"><span class="badge">M</span>ReviewConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateReviewConfigRequest"><span class="badge">M</span>UpdateReviewConfigRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewConfigService"><span class="badge">S</span>ReviewConfigService</a>
                 </li>
               
             </ul>
@@ -2154,6 +2221,10 @@
               
                 <li>
                   <a href="#bytebase.v1.AppIMSetting.Slack"><span class="badge">M</span>AppIMSetting.Slack</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AppIMSetting.Wecom"><span class="badge">M</span>AppIMSetting.Wecom</a>
                 </li>
               
                 <li>
@@ -3726,6 +3797,12 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
               <tr>
                 <td>DYNAMODB</td>
                 <td>23</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABRICKS</td>
+                <td>24</td>
                 <td><p></p></td>
               </tr>
             
@@ -5320,6 +5397,20 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>region is the location of where the DB is, works for AWS RDS. For example, us-east-1. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>account_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>account_id is used by Databricks. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>warehouse_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>warehouse_id is used by Databricks. </p></td>
                 </tr>
               
             </tbody>
@@ -6997,6 +7088,37 @@ Format: projects/{project}/sheets/{sheet} </p></td>
 
         
       
+        <h3 id="bytebase.v1.CheckConstraintMetadata">CheckConstraintMetadata</h3>
+        <p>CheckConstraintMetadata is the metadata for check constraints.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a check constraint. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expression is the expression of a check constraint. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ColumnConfig">ColumnConfig</h3>
         <p></p>
 
@@ -7182,6 +7304,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td></td>
                   <td><p>The effective_masking_level is the effective masking level of the column, evaluate from the
 column masking data and global masking rules. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>generation</td>
+                  <td><a href="#bytebase.v1.GenerationMetadata">GenerationMetadata</a></td>
+                  <td></td>
+                  <td><p>The generation is the generation of a column. </p></td>
                 </tr>
               
             </tbody>
@@ -7819,6 +7948,37 @@ Format: users/{email} </p></td>
 
         
       
+        <h3 id="bytebase.v1.GenerationMetadata">GenerationMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.GenerationMetadata.Type">GenerationMetadata.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetChangeHistoryRequest">GetChangeHistoryRequest</h3>
         <p></p>
 
@@ -8002,6 +8162,13 @@ This could refer to a column or an expression. </p></td>
                   <td>repeated</td>
                   <td><p>The key_lengths are the ordered key lengths of an index.
 If the key length is not specified, it&#39;s -1. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>descending</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td>repeated</td>
+                  <td><p>The descending is the ordered descending of an index. </p></td>
                 </tr>
               
                 <tr>
@@ -9279,6 +9446,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p>The partitions is the list of partitions in a table. </p></td>
                 </tr>
               
+                <tr>
+                  <td>check_constraints</td>
+                  <td><a href="#bytebase.v1.CheckConstraintMetadata">CheckConstraintMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The check_constraints is the list of check constraints in a table. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9815,6 +9989,35 @@ The API will default to the BASIC view.</p></td>
                 <td>DATABASE_METADATA_VIEW_FULL</td>
                 <td>2</td>
                 <td><p>Include everything such as columns and column masking level.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.GenerationMetadata.Type">GenerationMetadata.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_VIRTUAL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_STORED</td>
+                <td>2</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -16186,6 +16389,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>tag_policy</td>
+                  <td><a href="#bytebase.v1.TagPolicy">TagPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -16390,6 +16600,62 @@ roles/CREATOR </p></td>
 
         
       
+        <h3 id="bytebase.v1.TagPolicy">TagPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#bytebase.v1.TagPolicy.TagsEntry">TagPolicy.TagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>tags is the key - value map for resources.
+for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TagPolicy.TagsEntry">TagPolicy.TagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdatePolicyRequest">UpdatePolicyRequest</h3>
         <p></p>
 
@@ -16573,6 +16839,12 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW</td>
                 <td>12</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TAG</td>
+                <td>13</td>
                 <td><p></p></td>
               </tr>
             
@@ -17178,6 +17450,17 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>plan_check_run_status_count</td>
+                  <td><a href="#bytebase.v1.Plan.PlanCheckRunStatusCountEntry">Plan.PlanCheckRunStatusCountEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The status count of the latest plan check runs.
+Keys are:
+- SUCCESS
+- WARNING
+- ERROR </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -17459,6 +17742,37 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>optional</td>
                   <td><p>The zip password provide by users.
 Leave it empty if no needs to encrypt the zip file. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.PlanCheckRunStatusCountEntry">Plan.PlanCheckRunStatusCountEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -20565,6 +20879,386 @@ The API will default to the BASIC view.</p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/review_config_service.proto">v1/review_config_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateReviewConfigRequest">CreateReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>review_config</td>
+                  <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                  <td></td>
+                  <td><p>The sql review to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteReviewConfigRequest">DeleteReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the sql review to delete.
+Format: reviewConfigs/{uid} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetReviewConfigRequest">GetReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the sql review to retrieve.
+Format: reviewConfigs/{uid} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReviewConfigsRequest">ListReviewConfigsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of sql review to return. The service may return fewer than
+this value.
+If unspecified, at most 50 sql review will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSQLReviews` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReviewConfigsResponse">ListReviewConfigsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>review_configs</td>
+                  <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                  <td>repeated</td>
+                  <td><p>The sql review from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ReviewConfig">ReviewConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the sql review to retrieve.
+Format: reviewConfigs/{uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.v1.SQLReviewRule">SQLReviewRule</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resources</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>resources using the config.
+Format: {resurce}/{resource id}, for example, environments/test. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>review_config</td>
+                  <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                  <td></td>
+                  <td><p>The sql review toupdate.
+
+The name field is used to identify the sql review to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.ReviewConfigService">ReviewConfigService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CreateReviewConfig</td>
+                <td><a href="#bytebase.v1.CreateReviewConfigRequest">CreateReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListReviewConfigs</td>
+                <td><a href="#bytebase.v1.ListReviewConfigsRequest">ListReviewConfigsRequest</a></td>
+                <td><a href="#bytebase.v1.ListReviewConfigsResponse">ListReviewConfigsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GetReviewConfig</td>
+                <td><a href="#bytebase.v1.GetReviewConfigRequest">GetReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateReviewConfig</td>
+                <td><a href="#bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteReviewConfig</td>
+                <td><a href="#bytebase.v1.DeleteReviewConfigRequest">DeleteReviewConfigRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>CreateReviewConfig</td>
+                <td>POST</td>
+                <td>/v1/reviewConfigs</td>
+                <td>review_config</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListReviewConfigs</td>
+                <td>GET</td>
+                <td>/v1/reviewConfigs</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetReviewConfig</td>
+                <td>GET</td>
+                <td>/v1/{name=reviewConfigs/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateReviewConfig</td>
+                <td>PATCH</td>
+                <td>/v1/{review_config.name=reviewConfigs/*}</td>
+                <td>review_config</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteReviewConfig</td>
+                <td>DELETE</td>
+                <td>/v1/{name=reviewConfigs/*}</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/risk_service.proto">v1/risk_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -23344,6 +24038,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>wecom</td>
+                  <td><a href="#bytebase.v1.AppIMSetting.Wecom">AppIMSetting.Wecom</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23360,6 +24061,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
               
                 <tr>
                   <td>app_id</td>
@@ -23393,7 +24101,52 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
             <tbody>
               
                 <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AppIMSetting.Wecom">AppIMSetting.Wecom</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -24684,6 +25437,20 @@ The external URL is used for:
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
                   <td><p>The max duration for role expired. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>domains</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The workspace domain, e.g. bytebase.com. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enforce_identity_domain</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Only user and group from the domains can be created and login. </p></td>
                 </tr>
               
             </tbody>

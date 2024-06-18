@@ -405,6 +405,8 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_BIGQUERY
 	case v1pb.Engine_DYNAMODB:
 		return storepb.Engine_DYNAMODB
+	case v1pb.Engine_DATABRICKS:
+		return storepb.Engine_DATABRICKS
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED
 }

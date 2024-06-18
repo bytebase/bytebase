@@ -2,6 +2,8 @@ package databricks
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -17,6 +19,7 @@ type tableUnion struct {
 	view          *storepb.ViewMetadata
 	materialView  *storepb.MaterializedViewMetadata
 	typeName      catalog.TableType
+	name          string
 }
 
 type databricksSchemaMap = map[string][]*tableUnion
@@ -30,7 +33,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// fetch table data from databricks.
-	catalogMap, err := d.listTables(ctx)
+	catalogMap, err := d.listCatologTables(ctx, d.curCatalog)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +54,22 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	instanceMetadata := &db.InstanceMetadata{}
 
+	// fetch version.
+	versionData, _, err := d.execSingleSQLSync(ctx, "SELECT VERSION()")
+	if err != nil {
+		return nil, err
+	}
+	if len(versionData) != 1 || len(versionData[0]) != 1 {
+		return nil, errors.New("invalid version format")
+	}
+	splitVersion := strings.Split(versionData[0][0], " ")
+	if len(splitVersion) != 2 {
+		return nil, errors.New("invalid version format")
+	}
+	instanceMetadata.Version = splitVersion[0]
+
 	// fetch table data from databricks.
-	catalogMap, err := d.listTables(ctx)
+	catalogMap, err := d.listCatologTables(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +82,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		instanceMetadata.Databases = append(instanceMetadata.Databases, &dbSchemaMeta)
 	}
 
+	// fetch workspace users.
+	// TODO(tommy): complete this part when Permissions API for Golang is implemented.
+
 	return instanceMetadata, nil
 }
 
@@ -72,61 +92,102 @@ func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storep
 	return nil, nil
 }
 
-func (d *Driver) listTables(ctx context.Context) (databricksCatalogMap, error) {
-	tablesInfo, err := d.client.Tables.ListAll(ctx, catalog.ListTablesRequest{})
+// list all tables in the workspace when catalogName is set to "".
+func (d *Driver) listCatologTables(ctx context.Context, targetCatalogName string) (databricksCatalogMap, error) {
+	catalogMap := make(databricksCatalogMap)
+
+	catalogsInfo, err := d.Client.Catalogs.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	catalogMap := make(databricksCatalogMap)
+	for _, catalogInfo := range catalogsInfo {
+		if targetCatalogName != "" && targetCatalogName != catalogInfo.Name {
+			continue
+		}
+		schemasInfo, err := d.Client.Schemas.ListAll(ctx, catalog.ListSchemasRequest{
+			CatalogName: catalogInfo.Name,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, schemaInfo := range schemasInfo {
+			// init map.
+			scMap, ok := catalogMap[catalogInfo.Name]
+			if !ok {
+				catalogMap[catalogInfo.Name] = databricksSchemaMap{
+					schemaInfo.Name: []*tableUnion{},
+				}
+			} else {
+				_, ok := scMap[schemaInfo.Name]
+				if !ok {
+					scMap[schemaInfo.Name] = []*tableUnion{}
+				}
+				catalogMap[catalogInfo.Name] = scMap
+			}
+			// list tables in the schema.
+			tablesInfo, err := d.Client.Tables.ListAll(ctx, catalog.ListTablesRequest{
+				CatalogName: catalogInfo.Name,
+				SchemaName:  schemaInfo.Name,
+			})
+			if err != nil {
+				return nil, err
+			}
+			if err := appendSchemaTables(catalogMap, tablesInfo); err != nil {
+				return nil, err
+			}
+		}
+	}
 
+	return catalogMap, nil
+}
+
+// extract tables' metadata from 'tablesInfo' and store it in 'catalogMap'.
+func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.TableInfo) error {
 	for _, tableInfo := range tablesInfo {
 		table := tableUnion{
 			typeName: tableInfo.TableType,
+			name:     tableInfo.Name,
 		}
 
 		switch tableInfo.TableType {
 		case catalog.TableTypeView:
 			table.view = &storepb.ViewMetadata{
-				Name:             tableInfo.Name,
+				Name:             table.name,
 				Definition:       tableInfo.ViewDefinition,
 				Comment:          tableInfo.Comment,
 				DependentColumns: convertToDependentColumns(tableInfo.SchemaName, tableInfo.Name, tableInfo.Columns),
 			}
 		case catalog.TableTypeMaterializedView:
 			table.materialView = &storepb.MaterializedViewMetadata{
-				Name:       tableInfo.Name,
+				Name:       table.name,
 				Definition: tableInfo.ViewDefinition,
 				Comment:    tableInfo.Comment,
 			}
 		case catalog.TableTypeExternal:
 			table.externalTable = &storepb.ExternalTableMetadata{
-				Name: tableInfo.Name,
+				Name: table.name,
 			}
-			// TODO(tommy): find the responding string for the normal table type.
-		default:
+		case catalog.TableTypeManaged:
 			table.table = &storepb.TableMetadata{
-				Name:    tableInfo.Name,
+				Name:    table.name,
 				Columns: convertToColumnMetadata(tableInfo.Columns),
 				Comment: tableInfo.Comment,
 			}
+		default:
+			// we do not sync streaming table.
+			continue
 		}
 
-		if schemaMap, ok := catalogMap[tableInfo.CatalogName]; !ok {
-			catalogMap[tableInfo.CatalogName] = databricksSchemaMap{
-				tableInfo.SchemaName: []*tableUnion{&table},
-			}
+		// catalogMap[tableInfo.CatalogName] must not be nil.
+		if tblList, ok := catalogMap[tableInfo.CatalogName][tableInfo.SchemaName]; ok {
+			tblList = append(tblList, &table)
+			catalogMap[tableInfo.CatalogName][tableInfo.SchemaName] = tblList
 		} else {
-			if tableList, ok := schemaMap[tableInfo.SchemaName]; ok {
-				tableList = append(tableList, &table)
-				schemaMap[tableInfo.SchemaName] = tableList
-			} else {
-				schemaMap[tableInfo.SchemaName] = []*tableUnion{&table}
-			}
+			return errors.New("table list not initialized")
 		}
 	}
-
-	return catalogMap, nil
+	return nil
 }
 
 func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnMetadata {
@@ -170,12 +231,24 @@ func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*storepb.SchemaMet
 				schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, table.materialView)
 			case catalog.TableTypeExternal:
 				schemaMetadata.ExternalTables = append(schemaMetadata.ExternalTables, table.externalTable)
-			default:
-				// TODO(tommy): find the responding string for the normal table type.
+			case catalog.TableTypeManaged:
 				schemaMetadata.Tables = append(schemaMetadata.Tables, table.table)
+			default:
+				// we do not sync streaming table.
 			}
 		}
 		schemas = append(schemas, schemaMetadata)
 	}
 	return schemas
+}
+
+func getQualifiedTblName(catalogName, schemaName, tblName string) (string, error) {
+	if tblName == "" || schemaName == "" {
+		return "", errors.New("table name and schema name must be specified")
+	}
+	qualifiedName := fmt.Sprintf("`%s`.`%s`", schemaName, tblName)
+	if catalogName != "" {
+		qualifiedName = fmt.Sprintf("`%s`.%s", catalogName, qualifiedName)
+	}
+	return qualifiedName, nil
 }

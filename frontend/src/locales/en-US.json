@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "At least one workspace role is required"
     },
     "im-integration": {
-      "enable": "Enable",
-      "description": "Allow users to approve issues from IM directly.",
-      "feishu-updated-tip": "Successfully updated the Feishu integration"
+      "description": "Push direct messages to users for specific issue events. Works with project webhook."
     },
     "sso": {
       "create": "Create SSO",
@@ -654,6 +652,15 @@
           "description": "Maximum role expiration is the maximum period a role can be granted to a user. (Only for querier and exporter roles)",
           "days": "Day(s)",
           "never-expires": "Never expires"
+        },
+        "domain-restriction": {
+          "self": "Domain restriction",
+          "description": "Specify the domain that could be used as the email domain for workspace members. Leave it empty to allow any domain.",
+          "domain-input-placeholder": "Please input domain, e.g. example.com",
+          "members-restriction": {
+            "self": "Members restriction",
+            "description": "Restrict sign-in to users with email addresses from the specified domains."
+          }
         },
         "config-updated": "Configuration is updated.",
         "plugin": {
@@ -1225,7 +1232,8 @@
       "statement-type": "Statement type"
     },
     "sql-review-only": "SQL Review Only",
-    "create-issue": "Create issue"
+    "create-issue": "Create issue",
+    "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1460,7 +1468,7 @@
     "create-gcp-credentials": "To create Credentials, see",
     "used-for-testing-connection": "Used for testing connections only",
     "all": "All instances",
-    "force-archive-description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted.",
+    "force-archive-description": "Force to archive. All databases will be unassigned.",
     "sync-mode": {
       "self": "Sync Mode",
       "database": {
@@ -1498,7 +1506,7 @@
     "production-environment": "Production environment",
     "access-control": {
       "title": "Access control",
-      "disable-copy-data-from-sql-editor": "Disable copy data from SQL editor"
+      "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)"
     }
   },
   "quick-start": {
@@ -1614,6 +1622,7 @@
     "need-to-select-first": "Need to select change history first",
     "all-tables": "All tables",
     "affected-tables": "Affected Tables",
+    "select-affection-tables": "Select affected tables",
     "view-full": "View full"
   },
   "database": {
@@ -1878,7 +1887,7 @@
       "create-webhook": "Create webhook",
       "last-updated-by": "Last updated by",
       "destination": "Destination",
-      "webhook-url": "Webhook url",
+      "webhook-url": "Webhook URL",
       "triggering-activity": "Triggering activities",
       "test-webhook": "Test Webhook",
       "no-webhook": {
@@ -1895,6 +1904,11 @@
         "btn-text": "Delete this webhook",
         "confirm-title": "Delete webhook '{title}' and all its execution history?"
       },
+      "direct-messages": "Direct messages",
+      "enable-direct-messages": "Enable direct messages",
+      "direct-messages-tip": "Once enabled, Bytebase will send direct messages to the related users (matched by email).",
+      "direct-messages-warning": "You need to configure {im} to make it work.",
+      "activity-support-direct-message": "Support send direct messages to related users",
       "activity-item": {
         "issue-creation": {
           "title": "Issue creation",
@@ -2295,6 +2309,7 @@
       "description": "Batch query {count} additional databases under {project}."
     },
     "executing-query": "Executing query",
+    "request-query": "Request query",
     "grouping": "Grouping",
     "previous-row": "Previous row",
     "next-row": "Next row",
@@ -3253,7 +3268,9 @@
         "pattern": "{resource} can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
         "max-length": "{resource} can contain up to {length} characters"
       },
-      "delete": "Delete role"
+      "delete": "Delete role",
+      "delete-warning": "The role \"{name}\" will be deleted. This action cannot be undone.",
+      "delete-warning-with-resources": "The role \"{name}\" is assigned to following users:"
     },
     "select": "Select role",
     "select-roles": "Select roles",

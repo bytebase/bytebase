@@ -188,6 +188,9 @@ const (
 
 	// 1801 ~ 1899 advice error code.
 	AdviseOnlineMigration Code = 1801
+
+	// 1901 ~ 1999 schema error code.
+	SchemaNotExists Code = 1901
 )
 
 // Int returns the int type of code.
@@ -657,6 +660,9 @@ const (
 
 	// OracleIdentifierCase is an advisor type for Oracle identifier case.
 	OracleIdentifierCase Type = "bb.plugin.advisor.oracle.naming.identifier-case"
+
+	// OracleStatementDMLDryRun is an advisor type for Oracle DML dry run.
+	OracleStatementDMLDryRun Type = "bb.plugin.advisor.oracle.statement.dml-dry-run"
 
 	// Snowflake Advisor.
 

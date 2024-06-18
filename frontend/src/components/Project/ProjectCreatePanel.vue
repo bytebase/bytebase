@@ -1,5 +1,8 @@
 <template>
-  <DrawerContent :title="$t('quick-action.create-project')">
+  <DrawerContent
+    :title="$t('quick-action.create-project')"
+    class="max-w-[100vw]"
+  >
     <form class="w-96 space-y-6 divide-y divide-block-border">
       <div class="grid gap-y-6 gap-x-4 grid-cols-1">
         <div class="col-span-1">
@@ -46,7 +49,7 @@
             :required="true"
           />
         </div>
-        <div class="col-span-1">
+        <div v-if="!simple" class="col-span-1">
           <div for="name" class="text-base leading-6 font-medium text-control">
             {{ $t("common.mode") }}
             <span class="text-red-600">*</span>
@@ -119,6 +122,11 @@ interface LocalState {
   showFeatureModal: boolean;
   isCreating: boolean;
 }
+
+const props = defineProps<{
+  simple?: boolean;
+  onCreated?: (project: Project) => void;
+}>();
 
 const emit = defineEmits<{
   (event: "dismiss"): void;
@@ -200,10 +208,22 @@ const create = async () => {
       state.project,
       state.resourceId
     );
-    useUIStateStore().saveIntroStateByKey({
-      key: "project.visit",
-      newState: true,
-    });
+
+    if (props.onCreated) {
+      props.onCreated(createdProject);
+    } else {
+      useUIStateStore().saveIntroStateByKey({
+        key: "project.visit",
+        newState: true,
+      });
+
+      const url = {
+        path: `/${createdProject.name}`,
+      };
+      router.push(url);
+      emit("dismiss");
+    }
+
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -211,11 +231,6 @@ const create = async () => {
         name: createdProject.title,
       }),
     });
-    const url = {
-      path: `/${createdProject.name}`,
-    };
-    router.push(url);
-    emit("dismiss");
   } finally {
     state.isCreating = false;
   }

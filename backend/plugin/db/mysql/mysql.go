@@ -42,6 +42,9 @@ var (
 	viewTableType = "VIEW"
 
 	_ db.Driver = (*Driver)(nil)
+
+	variableSetStmtRegexp  = regexp.MustCompile(`(?i)^SET\s+?`)
+	variableShowStmtRegexp = regexp.MustCompile(`(?i)^SHOW\s+?`)
 )
 
 func init() {
@@ -313,7 +316,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	var totalCommands int
 	var chunks [][]base.SingleSQL
-	var originalIndex map[int]int
+	var originalIndex []int
 	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
@@ -337,7 +340,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				},
 			},
 		}
-		originalIndex = map[int]int{0: 0}
+		originalIndex = []int{0}
 	}
 
 	tx, err := conn.BeginTx(ctx, nil)
@@ -445,7 +448,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.ReadOnly {
+	if queryContext != nil && queryContext.ReadOnly {
 		queryContext.ReadOnly = d.getReadOnly()
 	}
 
@@ -501,26 +504,13 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 
 func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
-	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
-	if !isSet {
-		if queryContext.Explain {
+	isSet := variableSetStmtRegexp.MatchString(statement)
+	isShow := variableShowStmtRegexp.MatchString(statement)
+	if !isSet && !isShow {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-	}
-
-	if queryContext.SensitiveSchemaInfo != nil {
-		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("MySQL schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != "" {
-				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
-			}
 		}
 	}
 

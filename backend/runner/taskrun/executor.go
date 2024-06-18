@@ -59,7 +59,7 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 	return exec.RunOnce(ctx, driverCtx, task, taskRunUID)
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version) (*db.MigrationInfo, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (*db.MigrationInfo, error) {
 	if schemaVersion.Version == "" {
 		return nil, errors.Errorf("empty schema version")
 	}
@@ -120,6 +120,9 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 				continue
 			}
 			if run.Config.DatabaseName != database.DatabaseName {
+				continue
+			}
+			if sheetID != nil && run.Config.SheetUid != int32(*sheetID) {
 				continue
 			}
 			if run.Result == nil {
@@ -430,7 +433,7 @@ func postMigration(ctx context.Context, stores *store.Store, task *store.TaskMes
 }
 
 func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion)
+	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion, sheetID)
 	if err != nil {
 		return true, nil, err
 	}

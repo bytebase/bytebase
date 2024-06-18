@@ -21,9 +21,11 @@
     <div class="flex flex-col justify-end items-center">
       <OpenAIButton :size="size" />
 
-      <HideInStandaloneMode>
-        <SettingButton :style="buttonStyle" v-bind="buttonProps" />
-      </HideInStandaloneMode>
+      <SettingButton
+        v-if="showSettingButton"
+        :style="buttonStyle"
+        v-bind="buttonProps"
+      />
     </div>
   </div>
 </template>
@@ -31,10 +33,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, toRef, watch } from "vue";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
+  usePageMode,
+  useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
@@ -57,7 +60,9 @@ const props = withDefaults(
 const me = useCurrentUserV1();
 const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
+const { strictProject } = storeToRefs(useSQLEditorStore());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const pageMode = usePageMode();
 
 const { props: buttonProps, style: buttonStyle } = useButton({
   size: toRef(props, "size"),
@@ -93,6 +98,17 @@ const showSchemaPane = computed(() => {
     me.value,
     "bb.databases.getSchema"
   );
+});
+
+const showSettingButton = computed(() => {
+  if (pageMode.value === "STANDALONE") {
+    return false;
+  }
+  if (strictProject.value) {
+    return false;
+  }
+
+  return true;
 });
 
 const handleClickTab = (target: AsidePanelTab) => {

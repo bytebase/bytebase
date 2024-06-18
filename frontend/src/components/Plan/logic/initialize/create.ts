@@ -33,7 +33,7 @@ import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
 
 export type InitialSQL = {
-  sqlList?: string[];
+  sqlMap?: Record<string, string>;
   sql?: string;
 };
 
@@ -68,7 +68,7 @@ export const createPlanSkeleton = async (
     databaseUIDList,
     project,
     query,
-    initialSQL: extractInitialSQLListFromQuery(query),
+    initialSQL: extractInitialSQLFromQuery(query),
   };
 
   // Prepare params context for building plan.
@@ -119,7 +119,10 @@ export const buildPlan = async (params: CreatePlanParams) => {
     }
   } else {
     // build standard plan
-    plan.steps = await buildSteps(databaseUIDList, params, undefined);
+    // Use dedicated sheets if sqlMap is specified.
+    // Share ONE sheet if otherwise.
+    const sheetUID = hasInitialSQL(params.initialSQL) ? undefined : nextUID();
+    plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
   }
   return await composePlan(plan);
 };
@@ -159,10 +162,9 @@ export const buildSteps = async (
     });
     for (let j = 0; j < databases.length; j++) {
       const db = databases[j];
-      const sqlIndex = databaseUIDList.findIndex((uid) => uid === db.uid);
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
-      maybeSetInitialSQLForSpec(spec, sqlIndex, params);
+      maybeSetInitialSQLForSpec(spec, db.name, params);
       maybeSetInitialDatabaseConfigForSpec(spec, params);
     }
     steps.push(step);
@@ -208,7 +210,7 @@ export const buildStepsViaDeploymentConfig = async (
     params,
     sheetUID
   );
-  maybeSetInitialSQLForSpec(spec, 0, params);
+  maybeSetInitialSQLForSpec(spec, "", params);
   maybeSetInitialDatabaseConfigForSpec(spec, params);
   const step = Plan_Step.fromPartial({
     specs: [spec],
@@ -346,7 +348,7 @@ export const buildSpecForTarget = async (
 
 const maybeSetInitialSQLForSpec = (
   spec: Plan_Spec,
-  index: number,
+  key: string,
   params: CreatePlanParams
 ) => {
   const sheet = sheetNameForSpec(spec);
@@ -356,8 +358,8 @@ const maybeSetInitialSQLForSpec = (
     // If the sheet is a remote sheet, ignore initial SQL in URL query
     return;
   }
-  // Priority: sqlList[index] -> sql -> nothing
-  const sql = params.initialSQL.sqlList?.[index] ?? params.initialSQL.sql ?? "";
+  // Priority: sqlMap[key] -> sql -> nothing
+  const sql = params.initialSQL.sqlMap?.[key] ?? params.initialSQL.sql ?? "";
   if (sql) {
     const sheetEntity = getLocalSheetByName(sheet);
     setSheetStatement(sheetEntity, sql);
@@ -397,22 +399,18 @@ const maybeSetInitialDatabaseConfigForSpec = async (
   }
 };
 
-const extractInitialSQLListFromQuery = (
+const extractInitialSQLFromQuery = (
   query: Record<string, string>
-): {
-  sqlList?: string[];
-  sql?: string;
-} => {
-  const sqlListJSON = query.sqlList;
-  if (sqlListJSON && sqlListJSON.startsWith("[") && sqlListJSON.endsWith("]")) {
+): InitialSQL => {
+  const sqlMapJSON = query.sqlMap;
+  if (sqlMapJSON && sqlMapJSON.startsWith("{") && sqlMapJSON.endsWith("}")) {
     try {
-      const sqlList = JSON.parse(sqlListJSON) as string[];
-      if (Array.isArray(sqlList)) {
-        if (sqlList.every((maybeSQL) => typeof maybeSQL === "string")) {
-          return {
-            sqlList,
-          };
-        }
+      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
+      const keys = Object.keys(sqlMap);
+      if (keys.every((key) => typeof sqlMap[key] === "string")) {
+        return {
+          sqlMap,
+        };
       }
     } catch {
       // Nothing
@@ -425,6 +423,19 @@ const extractInitialSQLListFromQuery = (
     };
   }
   return {};
+};
+
+const hasInitialSQL = (initialSQL?: InitialSQL) => {
+  if (!initialSQL) {
+    return false;
+  }
+  if (typeof initialSQL.sql === "string") {
+    return true;
+  }
+  if (typeof initialSQL.sqlMap === "object") {
+    return true;
+  }
+  return false;
 };
 
 export const prepareDatabaseList = async (

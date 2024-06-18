@@ -111,6 +111,8 @@ message DataSourceOptions {
   string region = 17;
   // account_id is used by Databricks.
   string account_id = 18;
+  // warehouse_id is used by Databricks.
+  string warehouse_id = 19;
 }
 
 message SASLConfig {

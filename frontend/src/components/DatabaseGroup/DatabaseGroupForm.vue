@@ -77,9 +77,7 @@ import type {
   ResourceId,
   ValidatedMessage,
 } from "@/types";
-import type {
-  DatabaseGroup,
-} from "@/types/proto/v1/project_service";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { getErrorCode } from "@/utils/grpcweb";
 import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
@@ -126,7 +124,8 @@ onMounted(async () => {
   state.resourceId = databaseGroupName;
   state.placeholder = databaseGroupEntity.databasePlaceholder;
   const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-    databaseGroup.name
+    databaseGroup.name,
+    { silent: true }
   );
   if (composedDatabaseGroup.simpleExpr) {
     state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
@@ -142,7 +141,7 @@ const validateResourceId = async (
 
   const request = dbGroupStore.getOrFetchDBGroupByName(
     `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`,
-    true /* silent */
+    { silent: true }
   );
 
   if (!request) {

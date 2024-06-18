@@ -671,7 +671,7 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
-				"environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID),
+				"environment_name": common.FormatEnvironment(database.EffectiveEnvironmentID),
 				"instance_id":      database.InstanceID,
 			},
 		})
@@ -710,8 +710,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 
 		hasUser := false
 		for _, member := range binding.Members {
-			// TODO: only support AllUsers or users/{AllUsersID}
-			if member == api.AllUsers || member == common.FormatUserUID(api.AllUsersID) {
+			if member == api.AllUsers {
 				hasUser = true
 				break
 			}

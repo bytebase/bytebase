@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador"
     },
     "im-integration": {
-      "enable": "Habilitar",
-      "description": "Permitir a los usuarios aprobar incidencias directamente desde IM.",
-      "feishu-updated-tip": "Integración con Feishu actualizada correctamente"
+      "description": "Envíe mensajes directos a los usuarios para eventos de problemas específicos. Funciona con el webhook del proyecto."
     },
     "sso": {
       "create": "Crear SSO",
@@ -654,6 +652,15 @@
           "description": "La caducidad máxima de la función es el período máximo que se puede otorgar una función a un usuario.",
           "days": "Días)",
           "never-expires": "Nunca expira"
+        },
+        "domain-restriction": {
+          "self": "Restricción de dominio",
+          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo. Déjelo vacío para permitir cualquier dominio.",
+          "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
+          "members-restriction": {
+            "self": "Restricción de miembros",
+            "description": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
+          }
         },
         "config-updated": "La configuración se ha actualizado.",
         "plugin": {
@@ -1225,7 +1232,8 @@
       "statement-type": "Tipo de declaración"
     },
     "sql-review-only": "Sólo revisión de SQL",
-    "create-issue": "Crear problema"
+    "create-issue": "Crear problema",
+    "this-plan-will-be-converted-to-a-new-issue": "Este plan se convertirá en una nueva edición."
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1460,7 +1468,7 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
     "all": "Todas las instancias",
-    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
+    "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
     "sync-mode": {
       "self": "Modo de sincronización",
       "database": {
@@ -1498,7 +1506,7 @@
     "production-environment": "Entorno de producción",
     "access-control": {
       "title": "Control de acceso",
-      "disable-copy-data-from-sql-editor": "Desactivar copiar datos desde el editor SQL"
+      "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)"
     }
   },
   "quick-start": {
@@ -1614,6 +1622,7 @@
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
     "affected-tables": "Tablas afectadas",
+    "select-affection-tables": "Seleccionar tablas afectadas",
     "view-full": "Ver completo"
   },
   "database": {
@@ -1895,6 +1904,11 @@
         "btn-text": "Eliminar este webhook",
         "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
       },
+      "direct-messages": "Mensajes directos",
+      "enable-direct-messages": "Habilitar mensajes directos",
+      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos a los usuarios relacionados (emparejados por correo electrónico).",
+      "direct-messages-warning": "Debes configurar {im} para que funcione.",
+      "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
       "activity-item": {
         "issue-creation": {
           "title": "Creación de incidencia",
@@ -2295,6 +2309,7 @@
       "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
     },
     "executing-query": "Ejecutando consulta",
+    "request-query": "Solicitar consulta",
     "grouping": "Agrupamiento",
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",
@@ -3253,7 +3268,9 @@
         "pattern": "{recurso} solo puede contener letras minúsculas, números y guiones. Debe comenzar con una letra minúscula.",
         "max-length": "{recurso} puede contener hasta {length} caracteres"
       },
-      "delete": "Eliminar rol"
+      "delete": "Eliminar rol",
+      "delete-warning": "Se eliminará el rol \"{name}\". Esta acción no se puede deshacer.",
+      "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:"
     },
     "select": "Seleccionar rol",
     "select-roles": "Seleccionar roles",

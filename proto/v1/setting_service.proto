@@ -162,15 +162,23 @@ message SMTPMailDeliverySettingValue {
 
 message AppIMSetting {
   message Slack {
-    string token = 1;
+    bool enabled = 1;
+    string token = 2 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Feishu {
-    string app_id = 1;
-    string app_secret = 2;
+    bool enabled = 1;
+    string app_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+  }
+  message Wecom {
+    bool enabled = 1;
+    string id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
 
   Slack slack = 1;
   Feishu feishu = 2;
+  Wecom wecom = 3;
 }
 
 message AgentPluginSetting {
@@ -209,6 +217,12 @@ message WorkspaceProfileSetting {
 
   // The max duration for role expired.
   google.protobuf.Duration maximum_role_expiration = 8;
+
+  // The workspace domain, e.g. bytebase.com.
+  repeated string domains = 9;
+
+  // Only user and group from the domains can be created and login.
+  bool enforce_identity_domain = 10;
 }
 
 message Announcement {

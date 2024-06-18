@@ -934,19 +934,13 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
 	}
 
+	nextPageToken := ""
 	if len(changeHistories) == limitPlusOne {
-		nextPageToken, err := getPageToken(limit, offset+limit)
+		nextPageToken, err = getPageToken(limit, offset+limit)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		converted, err := s.convertToChangeHistories(ctx, changeHistories[:limit])
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
-		}
-		return &v1pb.ListChangeHistoriesResponse{
-			ChangeHistories: converted,
-			NextPageToken:   nextPageToken,
-		}, nil
+		changeHistories = changeHistories[:limit]
 	}
 
 	// no subsequent pages
@@ -956,7 +950,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 	return &v1pb.ListChangeHistoriesResponse{
 		ChangeHistories: converted,
-		NextPageToken:   "",
+		NextPageToken:   nextPageToken,
 	}, nil
 }
 
@@ -1841,10 +1835,10 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	}
 	environment, effectiveEnvironment := "", ""
 	if database.EnvironmentID != "" {
-		environment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EnvironmentID)
+		environment = common.FormatEnvironment(database.EnvironmentID)
 	}
 	if database.EffectiveEnvironmentID != "" {
-		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
+		effectiveEnvironment = common.FormatEnvironment(database.EffectiveEnvironmentID)
 	}
 	instanceResource, err := convertToInstanceResource(instance)
 	if err != nil {

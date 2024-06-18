@@ -49,15 +49,10 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { pushNotification, useDBGroupStore } from "@/store";
-import type {
-  ComposedDatabaseGroup,
-  ComposedProject,
-} from "@/types";
+import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import type {
-  DatabaseGroup,
-} from "@/types/proto/v1/project_service";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 

@@ -1511,3 +1511,58 @@ func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) st
 	}
 	return ""
 }
+
+func mysqlExtractColumnsClause(ctx mysql.IColumnsClauseContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	var result []string
+	for _, column := range ctx.AllJtColumn() {
+		result = append(result, mysqlExtractJtColumn(column)...)
+	}
+
+	return result
+}
+
+func mysqlExtractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	var result []string
+	for _, columnInternalRef := range ctx.AllColumnInternalRef() {
+		result = append(result, NormalizeMySQLIdentifier(columnInternalRef.Identifier()))
+	}
+	return result
+}
+
+func extractQueryExpression(ctx mysql.IQueryExpressionParensContext) mysql.IQueryExpressionContext {
+	if ctx == nil {
+		return nil
+	}
+
+	switch {
+	case ctx.QueryExpression() != nil:
+		return ctx.QueryExpression()
+	case ctx.QueryExpressionParens() != nil:
+		return extractQueryExpression(ctx.QueryExpressionParens())
+	}
+
+	return nil
+}
+
+func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
+	if ctx == nil {
+		return []string{}
+	}
+
+	switch {
+	case ctx.Identifier() != nil:
+		return []string{NormalizeMySQLIdentifier(ctx.Identifier())}
+	case ctx.ColumnsClause() != nil:
+		return mysqlExtractColumnsClause(ctx.ColumnsClause())
+	}
+
+	return []string{}
+}

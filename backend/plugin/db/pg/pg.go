@@ -24,6 +24,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	pgquery "github.com/pganalyze/pg_query_go/v5"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -39,6 +41,9 @@ var (
 	driverName = "pgx"
 
 	_ db.Driver = (*Driver)(nil)
+
+	variableSetStmtRegexp  = regexp.MustCompile(`(?i)^SET\s+?`)
+	variableShowStmtRegexp = regexp.MustCompile(`(?i)^SHOW\s+?`)
 )
 
 func init() {
@@ -362,15 +367,36 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		return 0, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
+	var originalIndex []int
+	singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
+
+	// If the statement is a single statement and is a PL/pgSQL block,
+	// we should execute it as a single statement without transaction.
+	if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
+		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
+		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
+		conn, err := driver.db.Conn(ctx)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to get connection")
+		}
+		defer conn.Close()
+
+		// USE SET SESSION ROLE to set the role for the current session.
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
+		opts.LogCommandExecute([]int32{0})
+		if _, err := conn.ExecContext(ctx, singleSQLs[0].Text); err != nil {
+			opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
+			return 0, err
+		}
+		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+
 		return 0, nil
 	}
 
 	var remainingSQLs []base.SingleSQL
-
-	remainingSQLsIndex := map[int]int{}
-	nonTransactionAndSetRoleStmtsIndex := map[int]int{}
+	var remainingSQLsIndex, nonTransactionAndSetRoleStmtsIndex []int
 
 	var nonTransactionAndSetRoleStmts []string
 	for i, singleSQL := range singleSQLs {
@@ -379,13 +405,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 		if IsNonTransactionStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
 			continue
 		}
 
 		if isSetRoleStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
 		}
 
 		if isSuperuserStatement(singleSQL.Text) {
@@ -401,7 +427,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			singleSQL.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", singleSQL.Text, owner)
 		}
 		remainingSQLs = append(remainingSQLs, singleSQL)
-		remainingSQLsIndex[len(remainingSQLs)-1] = i
+		remainingSQLsIndex = append(remainingSQLsIndex, i)
 	}
 
 	totalRowsAffected := int64(0)
@@ -481,7 +507,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 				var indexes []int32
 				for i := currentIndex; i < currentIndex+len(chunk); i++ {
-					indexes = append(indexes, int32(remainingSQLsIndex[i]))
+					indexes = append(indexes, int32(originalIndex[remainingSQLsIndex[i]]))
 				}
 				opts.LogCommandExecute(indexes)
 
@@ -533,7 +559,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{int32(nonTransactionAndSetRoleStmtsIndex[i])}
+		indexes := []int32{int32(originalIndex[nonTransactionAndSetRoleStmtsIndex[i]])}
 		opts.LogCommandExecute(indexes)
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
 			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
@@ -657,10 +683,6 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
@@ -686,11 +708,12 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
-	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
-	if !isSet {
-		if queryContext.Explain {
+	isSet := variableSetStmtRegexp.MatchString(statement)
+	isShow := variableShowStmtRegexp.MatchString(statement)
+	if !isSet && !isShow {
+		if queryContext != nil && queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext.Limit > 0 {
+		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 	}
@@ -708,4 +731,21 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_POSTGRES, conn, statement)
+}
+
+func isPlSQLBlock(stmt string) bool {
+	tree, err := pgquery.Parse(stmt)
+	if err != nil {
+		return false
+	}
+
+	if len(tree.Stmts) != 1 {
+		return false
+	}
+
+	if _, ok := tree.Stmts[0].Stmt.Node.(*pgquery.Node_DoStmt); ok {
+		return true
+	}
+
+	return false
 }

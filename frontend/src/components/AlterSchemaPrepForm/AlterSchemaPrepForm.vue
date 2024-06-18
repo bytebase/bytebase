@@ -1,5 +1,5 @@
 <template>
-  <DrawerContent>
+  <DrawerContent class="max-w-[100vw]">
     <template #header>
       <div class="flex flex-col gap-y-1">
         <span>
@@ -219,10 +219,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-x-3">
-          <NCheckbox
-            v-if="!props.planOnly && isDev()"
-            v-model:checked="state.planOnly"
-          >
+          <NCheckbox v-if="!props.planOnly" v-model:checked="state.planOnly">
             {{ $t("issue.sql-review-only") }}
           </NCheckbox>
           <NButton @click.prevent="cancel">
@@ -316,7 +313,6 @@ import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
-  isDev,
 } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import AdvancedSearch from "../AdvancedSearch";

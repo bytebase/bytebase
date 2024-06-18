@@ -100,16 +100,27 @@ func (exec *DataUpdateExecutor) backupData(
 		return errors.Errorf("issue not found for pipeline %v", task.PipelineID)
 	}
 
+	var backupDatabase *store.DatabaseMessage
+	var backupDriver db.Driver
+
 	backupInstanceID, backupDatabaseName, err := common.GetInstanceDatabaseID(payload.PreUpdateBackupDetail.Database)
 	if err != nil {
 		return err
 	}
-	backupDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
-	if err != nil {
-		return err
-	}
-	if backupDatabase == nil {
-		return errors.Errorf("backup database %q not found", payload.PreUpdateBackupDetail.Database)
+
+	if instance.Engine != storepb.Engine_POSTGRES {
+		backupDatabase, err = exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
+		if err != nil {
+			return err
+		}
+		if backupDatabase == nil {
+			return errors.Errorf("backup database %q not found", payload.PreUpdateBackupDetail.Database)
+		}
+		backupDriver, err = exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, backupDatabase, db.ConnectionContext{})
+		if err != nil {
+			return err
+		}
+		defer backupDriver.Close(driverCtx)
 	}
 
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{})
@@ -117,12 +128,6 @@ func (exec *DataUpdateExecutor) backupData(
 		return err
 	}
 	defer driver.Close(driverCtx)
-
-	backupDriver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, backupDatabase, db.ConnectionContext{})
-	if err != nil {
-		return err
-	}
-	defer backupDriver.Close(driverCtx)
 
 	prefix := "_" + time.Now().Format("20060102150405")
 	statements, err := base.TransformDMLToSelect(instance.Engine, statement, database.DatabaseName, backupDatabaseName, prefix)
@@ -152,6 +157,12 @@ func (exec *DataUpdateExecutor) backupData(
 			}
 			num := int32(statement.OriginalLine)
 			originalLine = &num
+		case storepb.Engine_POSTGRES:
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+				return err
+			}
+			num := int32(statement.OriginalLine)
+			originalLine = &num
 		}
 
 		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
@@ -176,11 +187,20 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 	}
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, true /* force */); err != nil {
-		slog.Error("failed to sync backup database schema",
-			slog.String("database", payload.PreUpdateBackupDetail.Database),
-			log.BBError(err),
-		)
+	if instance.Engine != storepb.Engine_POSTGRES {
+		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, true /* force */); err != nil {
+			slog.Error("failed to sync backup database schema",
+				slog.String("database", payload.PreUpdateBackupDetail.Database),
+				log.BBError(err),
+			)
+		}
+	} else {
+		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+			slog.Error("failed to sync backup database schema",
+				slog.String("database", fmt.Sprintf("/instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)),
+				log.BBError(err),
+			)
+		}
 	}
 	return nil
 }

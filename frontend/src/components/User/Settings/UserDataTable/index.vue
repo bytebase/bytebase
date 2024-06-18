@@ -71,7 +71,7 @@ const columns = computed(() => {
       resizable: true,
       render: (user: User) => {
         return h(UserRolesCell, {
-          user,
+          roles: user.roles,
         });
       },
     },

@@ -109,14 +109,25 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
+	reviewConfig, err := prodTemplateReviewConfigForPostgreSQL()
 	a.NoError(err)
+
+	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
+		ReviewConfig: reviewConfig,
+	})
+	a.NoError(err)
+	a.NotNil(createdConfig.Name)
+
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_SQL_REVIEW,
-			Policy: &v1pb.Policy_SqlReviewPolicy{
-				SqlReviewPolicy: reviewPolicy,
+			Type: v1pb.PolicyType_TAG,
+			Policy: &v1pb.Policy_TagPolicy{
+				TagPolicy: &v1pb.TagPolicy{
+					Tags: map[string]string{
+						string(api.ReservedTagReviewConfig): createdConfig.Name,
+					},
+				},
 			},
 		},
 	})
@@ -272,15 +283,25 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	reviewPolicy, err := prodTemplateSQLReviewPolicyForMySQL()
+	reviewConfig, err := prodTemplateReviewConfigForMySQL()
 	a.NoError(err)
+
+	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
+		ReviewConfig: reviewConfig,
+	})
+	a.NoError(err)
+	a.NotNil(createdConfig.Name)
 
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_SQL_REVIEW,
-			Policy: &v1pb.Policy_SqlReviewPolicy{
-				SqlReviewPolicy: reviewPolicy,
+			Type: v1pb.PolicyType_TAG,
+			Policy: &v1pb.Policy_TagPolicy{
+				TagPolicy: &v1pb.TagPolicy{
+					Tags: map[string]string{
+						string(api.ReservedTagReviewConfig): createdConfig.Name,
+					},
+				},
 			},
 		},
 	})

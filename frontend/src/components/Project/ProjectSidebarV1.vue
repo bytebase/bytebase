@@ -52,7 +52,7 @@ import { getProjectName } from "@/store/modules/v1/common";
 import type { ProjectPermission } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { hasProjectPermissionV2, isDev } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
 import { useCurrentProject } from "./useCurrentProject";
 
@@ -209,7 +209,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(SearchCodeIcon),
       path: PROJECT_V1_ROUTE_REVIEW_CENTER,
       type: "div",
-      hide: isDefaultProject.value || !isDev(),
+      hide: isDefaultProject.value,
     },
     {
       title: t("export-center.self"),

@@ -25,6 +25,8 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -133,6 +135,11 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 
 // SetSetting set the setting by name.
 func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.UpdateSettingRequest) (*v1pb.Setting, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
 	settingName, err := common.GetSettingName(request.Setting.Name)
 	if err != nil {
 		return nil, err
@@ -200,6 +207,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			if payload.MaximumRoleExpiration.Seconds <= 0 {
 				payload.MaximumRoleExpiration = nil
 			}
+		}
+		if len(payload.Domains) == 0 && payload.EnforceIdentityDomain {
+			return nil, status.Errorf(codes.InvalidArgument, "identity domain can be enforced only when workspace domains are set")
+		}
+		if err := validateDomains(payload.Domains); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid domains, error %v", err)
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -328,9 +341,52 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+
 	case api.SettingAppIM:
-		// TODO(p0ny): impl
-		return nil, status.Errorf(codes.Unimplemented, "not implemented")
+		payload := new(storepb.AppIMSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetAppImSettingValue(), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s, error: %v", apiSettingName, err)
+		}
+		setting, err := s.store.GetAppIMSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get old app im setting")
+		}
+		for _, path := range request.UpdateMask.Paths {
+			switch path {
+			case "value.app_im_setting_value.slack":
+				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "token doesn't pass validation, error: %v", err)
+				}
+				setting.Slack = payload.Slack
+
+			case "value.app_im_setting_value.feishu":
+				if err := feishu.Validate(ctx, payload.GetFeishu().GetAppId(), payload.GetFeishu().GetAppSecret(), user.Email); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "token does not pass validation, error: %v", err)
+				}
+				setting.Feishu = payload.Feishu
+			case "value.app_im_setting_value.wecom":
+				setting.Wecom = payload.Wecom
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
+			}
+		}
+		if request.ValidateOnly {
+			return &v1pb.Setting{
+				Name: request.Setting.Name,
+				Value: &v1pb.Value{
+					Value: &v1pb.Value_AppImSettingValue{
+						AppImSettingValue: &v1pb.AppIMSetting{},
+					},
+				},
+			}, nil
+		}
+
+		bytes, err := protojson.Marshal(setting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s, error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
+
 	case api.SettingWorkspaceExternalApproval:
 		oldSetting, err := s.store.GetWorkspaceExternalApprovalSetting(ctx)
 		if err != nil {
@@ -537,12 +593,25 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		})
 	case api.SettingAppIM:
-		// TODO(p0ny): impl
+		storeValue := new(storepb.AppIMSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: &v1pb.AppIMSetting{},
+					AppImSettingValue: &v1pb.AppIMSetting{
+						Slack: &v1pb.AppIMSetting_Slack{
+							Enabled: storeValue.Slack != nil && storeValue.Slack.Enabled,
+						},
+						Feishu: &v1pb.AppIMSetting_Feishu{
+							Enabled: storeValue.Feishu != nil && storeValue.Feishu.Enabled,
+						},
+						Wecom: &v1pb.AppIMSetting_Wecom{
+							Enabled: storeValue.Wecom != nil && storeValue.Wecom.Enabled,
+						},
+					},
 				},
 			},
 		}, nil
@@ -1175,6 +1244,56 @@ func checkSubstitution(substitution string) error {
 	}
 	if len(substitution) > 16 {
 		return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+	}
+	return nil
+}
+
+var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)
+var disallowedDomains = map[string]bool{
+	"gmail.com":      true,
+	"googlemail.com": true,
+	"outlook.com":    true,
+	"hotmail.com":    true,
+	"live.com":       true,
+	"msn.com":        true,
+	"yahoo.com":      true,
+	"ymail.com":      true,
+	"rocketmail.com": true,
+	"icloud.com":     true,
+	"me.com":         true,
+	"mac.com":        true,
+	"aol.com":        true,
+	"zoho.com":       true,
+	"protonmail.com": true,
+	"gmx.com":        true,
+	"gmx.net":        true,
+	"mail.com":       true,
+	"yandex.com":     true,
+	"yandex.ru":      true,
+	"fastmail.com":   true,
+	"fastmail.fm":    true,
+	"tutanota.com":   true,
+	"163.com":        true,
+	"126.com":        true,
+	"sohu.com":       true,
+	"qq.com":         true,
+	"sina.com":       true,
+	"sina.cn":        true,
+	"aliyun.com":     true,
+	"aliyun.cn":      true,
+	"tom.com":        true,
+	"21cn.com":       true,
+	"yeah.net":       true,
+}
+
+func validateDomains(domains []string) error {
+	for _, domain := range domains {
+		if !domainRegexp.MatchString(domain) {
+			return errors.Errorf("invalid domain %q", domain)
+		}
+		if disallowedDomains[domain] {
+			return errors.Errorf("domain %q is not allowed", domain)
+		}
 	}
 	return nil
 }

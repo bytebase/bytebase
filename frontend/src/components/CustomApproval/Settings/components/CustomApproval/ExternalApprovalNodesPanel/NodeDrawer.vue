@@ -1,6 +1,6 @@
 <template>
   <Drawer :show="show" @close="cancel">
-    <DrawerContent :title="title" class="w-[32rem]">
+    <DrawerContent :title="title" class="w-[32rem] max-w-[100vw]">
       <div class="flex flex-col gap-y-4">
         <div class="space-y-1">
           <label class="block font-medium text-control space-x-1">

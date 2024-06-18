@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watchEffect } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   useEnvironmentV1Store,
@@ -27,16 +27,16 @@ const isLoading = ref<boolean>(true);
 const policyStore = usePolicyV1Store();
 const databaseStore = useDatabaseV1Store();
 
-watchEffect(async () => {
+const fetchDatabases = async (project: string) => {
   const filters = [`instance = "instances/-"`];
   // If `projectId` is provided in the route, filter the database list by the project.
-  if (route.params.projectId) {
-    filters.push(`project = "${projectNamePrefix}${route.params.projectId}"`);
+  if (project) {
+    filters.push(`project = "${projectNamePrefix}${project}"`);
   }
   await databaseStore.searchDatabases({
     filter: filters.join(" && "),
   });
-});
+};
 
 onMounted(async () => {
   await router.isReady();
@@ -59,6 +59,15 @@ onMounted(async () => {
     useProjectV1Store().fetchProjectList(true /* showDeleted */),
   ]);
   await Promise.all([useUIStateStore().restoreState()]);
+  await fetchDatabases(route.params.projectId as string);
+
+  watch(
+    () => route.params.projectId,
+    (project) => {
+      fetchDatabases(project as string);
+    },
+    { immediate: false }
+  );
 
   isLoading.value = false;
 });

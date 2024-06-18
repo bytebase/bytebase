@@ -52,6 +52,7 @@
             <HideInStandaloneMode>
               <RequestQueryButton
                 v-if="resultSet.status === Status.PERMISSION_DENIED"
+                :database="database ?? connectedDb"
               />
               <SyncDatabaseButton
                 v-else-if="resultSet.error.includes('resource not found')"
@@ -143,7 +144,8 @@ const props = defineProps({
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
-const { instance } = useConnectionOfCurrentSQLEditorTab();
+const { instance, database: connectedDb } =
+  useConnectionOfCurrentSQLEditorTab();
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref({
   show: false,

@@ -499,8 +499,8 @@
         "delete-warning": "群组“{name}”将被删除。此操作无法撤消。",
         "delete-warning-with-resources": "以下资源使用了群组“{name}”：",
         "form": {
-          "email": "电子邮件",
-          "email-tips": "电子邮件应该是唯一的，并且创建后不能更改。",
+          "email": "邮箱",
+          "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",
           "title": "标题",
           "description": "描述",
           "members": "成员",
@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "至少选择一个工作空间级别的角色"
     },
     "im-integration": {
-      "enable": "启用",
-      "description": "可以让用户在 IM 里直接审批工单。",
-      "feishu-updated-tip": "飞书配置更新成功"
+      "description": "针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
     },
     "sso": {
       "create": "创建 SSO",
@@ -654,6 +652,15 @@
           "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间。(包括数据查询者和导出者)",
           "days": "天数",
           "never-expires": "永不过期"
+        },
+        "domain-restriction": {
+          "self": "域名限制",
+          "description": "可用于指定成员电子邮箱的域名。留空以允许任何邮箱。",
+          "domain-input-placeholder": "请输入域名，例如 example.com",
+          "members-restriction": {
+            "self": "成员邮箱限制",
+            "description": "仅允许具有指定域名的电子邮箱的用户进行登录或注册。"
+          }
         },
         "config-updated": "配置已更新。",
         "plugin": {
@@ -1225,7 +1232,8 @@
       "statement-type": "语句类型"
     },
     "sql-review-only": "仅 SQL 审核",
-    "create-issue": "创建变更工单"
+    "create-issue": "创建变更工单",
+    "this-plan-will-be-converted-to-a-new-issue": "该计划将转换为一个变更工单"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1460,7 +1468,7 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "used-for-testing-connection": "仅作测试连接用",
     "all": "所有实例",
-    "force-archive-description": "强制归档。所有关联的工单都将被标记为完成，所有关联的工作表都将被删除。",
+    "force-archive-description": "强制归档。所有数据库均将被取消分配。",
     "sync-mode": {
       "self": "同步模式",
       "database": {
@@ -1498,7 +1506,7 @@
     "production-environment": "生产环境",
     "access-control": {
       "title": "访问控制",
-      "disable-copy-data-from-sql-editor": "禁止从 SQL 编辑器复制数据"
+      "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)"
     }
   },
   "quick-start": {
@@ -1614,6 +1622,7 @@
     "need-to-select-first": "需要先选择变更历史",
     "all-tables": "所有表",
     "affected-tables": "受影响的表",
+    "select-affection-tables": "选择受影响的表",
     "view-full": "查看全部"
   },
   "database": {
@@ -1878,7 +1887,7 @@
       "create-webhook": "创建 webhook",
       "last-updated-by": "最后修改人",
       "destination": "外部应用",
-      "webhook-url": "Webhook url",
+      "webhook-url": "Webhook URL",
       "triggering-activity": "触发事件",
       "test-webhook": "测试 Webhook",
       "no-webhook": {
@@ -1895,6 +1904,11 @@
         "btn-text": "删除这个 webhook",
         "confirm-title": "删除 webhook '{title}' 以及所有的执行历史?"
       },
+      "direct-messages": "私信通知",
+      "enable-direct-messages": "启用私信通知",
+      "direct-messages-tip": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。",
+      "direct-messages-warning": "您需要配置 {im} 才能使其正常工作。",
+      "activity-support-direct-message": "支持向相关用户发送私信通知",
       "activity-item": {
         "issue-creation": {
           "title": "创建@:common.issue",
@@ -2295,6 +2309,7 @@
       "description": "批量查询 {project} 下的 {count} 个数据库。"
     },
     "executing-query": "执行查询",
+    "request-query": "请求查询",
     "grouping": "分组",
     "previous-row": "上一行",
     "next-row": "下一行",
@@ -3253,7 +3268,9 @@
         "pattern": "{resource}只能包含小写字母、数字和连字符，并以小写字母开头。",
         "max-length": "{resource}至多包含 {length} 个字符"
       },
-      "delete": "删除角色"
+      "delete": "删除角色",
+      "delete-warning": "角色“{name}”将被删除。此操作无法撤消。",
+      "delete-warning-with-resources": "角色“{name}”已分配给以下用户："
     },
     "select": "选择角色",
     "select-roles": "选择角色",

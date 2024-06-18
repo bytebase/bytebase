@@ -49,6 +49,7 @@
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
 - [store/database.proto](#store_database-proto)
+    - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
     - [ColumnConfig](#bytebase-store-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
@@ -62,6 +63,7 @@
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
     - [FunctionConfig](#bytebase-store-FunctionConfig)
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
+    - [GenerationMetadata](#bytebase-store-GenerationMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
@@ -81,6 +83,7 @@
     - [ViewConfig](#bytebase-store-ViewConfig)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
+    - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
@@ -185,6 +188,8 @@
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewPolicy](#bytebase-store-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [TagPolicy](#bytebase-store-TagPolicy)
+    - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
@@ -205,6 +210,9 @@
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
   
+- [store/review_config.proto](#store_review_config-proto)
+    - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
+  
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
   
@@ -214,6 +222,7 @@
     - [AppIMSetting](#bytebase-store-AppIMSetting)
     - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
     - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
+    - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-store-DataClassificationSetting-DataClassificationConfig)
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
@@ -877,6 +886,22 @@ Used internally for obfuscating the page token.
 
 
 
+<a name="bytebase-store-CheckConstraintMetadata"></a>
+
+### CheckConstraintMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a check constraint. |
+| expression | [string](#string) |  | The expression is the expression of a check constraint. |
+
+
+
+
+
+
 <a name="bytebase-store-ColumnConfig"></a>
 
 ### ColumnConfig
@@ -931,6 +956,7 @@ ColumnMetadata is the metadata for columns.
 | collation | [string](#string) |  | The collation is the collation of a column. |
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+| generation | [GenerationMetadata](#bytebase-store-GenerationMetadata) |  | The generation is for generated columns. |
 
 
 
@@ -1116,6 +1142,22 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-store-GenerationMetadata"></a>
+
+### GenerationMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type) |  |  |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-IndexMetadata"></a>
 
 ### IndexMetadata
@@ -1127,6 +1169,7 @@ IndexMetadata is the metadata for indexes.
 | name | [string](#string) |  | The name is the name of an index. |
 | expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
 | key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
+| descending | [bool](#bool) | repeated | The descending is the ordered descending of an index. |
 | type | [string](#string) |  | The type is the type of an index. |
 | unique | [bool](#bool) |  | The unique is whether the index is unique. |
 | primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
@@ -1378,6 +1421,7 @@ TableMetadata is the metadata for tables.
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 | partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 
 
 
@@ -1463,6 +1507,19 @@ ViewMetadata is the metadata for views.
 
 
  
+
+
+<a name="bytebase-store-GenerationMetadata-Type"></a>
+
+### GenerationMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_VIRTUAL | 1 |  |
+| TYPE_STORED | 2 |  |
+
 
 
 <a name="bytebase-store-StreamMetadata-Mode"></a>
@@ -1704,6 +1761,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
 | account_id | [string](#string) |  | account_id is used by Databricks. |
+| warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
 
 
 
@@ -2944,6 +3002,37 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
+
+<a name="bytebase-store-TagPolicy"></a>
+
+### TagPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy-TagsEntry"></a>
+
+### TagPolicy.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
  
 
 
@@ -3170,6 +3259,37 @@ The type of target.
 
 
 
+<a name="store_review_config-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_config.proto
+
+
+
+<a name="bytebase-store-ReviewConfigPayload"></a>
+
+### ReviewConfigPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_review_rules | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_role-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3251,6 +3371,7 @@ The type of target.
 | ----- | ---- | ----- | ----------- |
 | slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
 | feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
+| wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
 
 
 
@@ -3265,6 +3386,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | app_id | [string](#string) |  |  |
 | app_secret | [string](#string) |  |  |
 
@@ -3281,7 +3403,25 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Wecom"></a>
+
+### AppIMSetting.Wecom
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| id | [string](#string) |  |  |
+| secret | [string](#string) |  |  |
 
 
 
@@ -3701,6 +3841,8 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
 | announcement | [Announcement](#bytebase-store-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
+| domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
+| enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 
 
 

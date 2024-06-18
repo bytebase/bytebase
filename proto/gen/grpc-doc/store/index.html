@@ -354,6 +354,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.CheckConstraintMetadata"><span class="badge">M</span>CheckConstraintMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ColumnConfig"><span class="badge">M</span>ColumnConfig</a>
                 </li>
               
@@ -403,6 +407,10 @@
               
                 <li>
                   <a href="#bytebase.store.FunctionMetadata"><span class="badge">M</span>FunctionMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.GenerationMetadata"><span class="badge">M</span>GenerationMetadata</a>
                 </li>
               
                 <li>
@@ -477,6 +485,10 @@
                   <a href="#bytebase.store.ViewMetadata"><span class="badge">M</span>ViewMetadata</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.StreamMetadata.Mode"><span class="badge">E</span>StreamMetadata.Mode</a>
@@ -909,6 +921,14 @@
                   <a href="#bytebase.store.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.TagPolicy"><span class="badge">M</span>TagPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.MaskingExceptionPolicy.MaskingException.Action"><span class="badge">E</span>MaskingExceptionPolicy.MaskingException.Action</a>
@@ -994,6 +1014,21 @@
         
           
           <li>
+            <a href="#store%2freview_config.proto">store/review_config.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewConfigPayload"><span class="badge">M</span>ReviewConfigPayload</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2frole.proto">store/role.proto</a>
             <ul>
               
@@ -1030,6 +1065,10 @@
               
                 <li>
                   <a href="#bytebase.store.AppIMSetting.Slack"><span class="badge">M</span>AppIMSetting.Slack</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.AppIMSetting.Wecom"><span class="badge">M</span>AppIMSetting.Wecom</a>
                 </li>
               
                 <li>
@@ -2637,6 +2676,37 @@ Some fields are omitted because they are too large or contain sensitive informat
       <p></p>
 
       
+        <h3 id="bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a check constraint. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expression is the expression of a check constraint. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ColumnConfig">ColumnConfig</h3>
         <p></p>
 
@@ -2807,6 +2877,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The user_comment is the user comment of a table parsed from the comment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>generation</td>
+                  <td><a href="#bytebase.store.GenerationMetadata">GenerationMetadata</a></td>
+                  <td></td>
+                  <td><p>The generation is for generated columns. </p></td>
                 </tr>
               
             </tbody>
@@ -3265,6 +3342,37 @@ Format: users/{userUID}. </p></td>
 
         
       
+        <h3 id="bytebase.store.GenerationMetadata">GenerationMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.GenerationMetadata.Type">GenerationMetadata.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.IndexMetadata">IndexMetadata</h3>
         <p>IndexMetadata is the metadata for indexes.</p>
 
@@ -3296,6 +3404,13 @@ This could refer to a column or an expression. </p></td>
                   <td>repeated</td>
                   <td><p>The key_lengths are the ordered key lengths of an index.
 If the key length is not specified, it&#39;s -1. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>descending</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td>repeated</td>
+                  <td><p>The descending is the ordered descending of an index. </p></td>
                 </tr>
               
                 <tr>
@@ -4000,6 +4115,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p>The partitions is the list of partitions in a table. </p></td>
                 </tr>
               
+                <tr>
+                  <td>check_constraints</td>
+                  <td><a href="#bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The check_constraints is the list of check constraints in a table. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4251,6 +4373,35 @@ Format: users/{userUID}. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.GenerationMetadata.Type">GenerationMetadata.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_VIRTUAL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_STORED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.StreamMetadata.Mode">StreamMetadata.Mode</h3>
         <p></p>
@@ -4836,6 +4987,13 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>account_id is used by Databricks. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>warehouse_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>warehouse_id is used by Databricks. </p></td>
                 </tr>
               
             </tbody>
@@ -7610,6 +7768,62 @@ roles/CREATOR </p></td>
 
         
       
+        <h3 id="bytebase.store.TagPolicy">TagPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#bytebase.store.TagPolicy.TagsEntry">TagPolicy.TagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>tags is the key - value map for resources.
+for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TagPolicy.TagsEntry">TagPolicy.TagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
         <h3 id="bytebase.store.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</h3>
@@ -8031,6 +8245,44 @@ IM integration setting should be set for this function to work. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/review_config.proto">store/review_config.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.ReviewConfigPayload">ReviewConfigPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sql_review_rules</td>
+                  <td><a href="#bytebase.store.SQLReviewRule">SQLReviewRule</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/role.proto">store/role.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -8167,6 +8419,13 @@ IM integration setting should be set for this function to work. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>wecom</td>
+                  <td><a href="#bytebase.store.AppIMSetting.Wecom">AppIMSetting.Wecom</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8183,6 +8442,13 @@ IM integration setting should be set for this function to work. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
               
                 <tr>
                   <td>app_id</td>
@@ -8216,7 +8482,52 @@ IM integration setting should be set for this function to work. </p></td>
             <tbody>
               
                 <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.Wecom">AppIMSetting.Wecom</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -9213,6 +9524,20 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
                   <td><p>The max duration for role expired. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>domains</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The workspace domain, e.g. bytebase.com. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enforce_identity_domain</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Only user and group from the domains can be created and login. </p></td>
                 </tr>
               
             </tbody>

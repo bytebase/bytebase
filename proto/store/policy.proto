@@ -86,3 +86,9 @@ enum SQLReviewRuleLevel {
   WARNING = 2;
   DISABLED = 3;
 }
+
+message TagPolicy {
+  // tags is the key - value map for resources.
+  // for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
+  map<string, string> tags = 1;
+}

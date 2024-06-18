@@ -6,6 +6,7 @@ import (
 	// Drivers.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/databricks"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dynamodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
@@ -27,6 +28,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/redis"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -48,4 +50,8 @@ import (
 
 	// Transformers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql"
+
+	// IM webhooks.
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 )

@@ -57,6 +57,25 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.Worksp
 	return payload, nil
 }
 
+func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, error) {
+	settingName := api.SettingAppIM
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return nil, errors.Errorf("cannot find setting %v", settingName)
+	}
+
+	payload := new(storepb.AppIMSetting)
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
 // GetWorkspaceID finds the workspace id in setting bb.workspace.id.
 func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
 	settingName := api.SettingWorkspaceID

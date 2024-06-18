@@ -23,7 +23,7 @@ service DatabaseService {
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=instances/*}/databases"
-      additional_bindings {get: "/v1/{parent=projects/*}/databases"}
+      additional_bindings: {get: "/v1/{parent=projects/*}/databases"}
     };
     option (google.api.method_signature) = "";
   }
@@ -76,7 +76,7 @@ service DatabaseService {
       post: "/v1/{name=instances/*/databases/*}:diffSchema"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"
         body: "*"
       }
@@ -95,8 +95,8 @@ service DatabaseService {
 
   rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
     option (google.api.http) = {
-      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}";
-      body: "secret";
+      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}"
+      body: "secret"
     };
   }
 
@@ -461,6 +461,18 @@ message TableMetadata {
 
   // The partitions is the list of partitions in a table.
   repeated TablePartitionMetadata partitions = 15;
+
+  // The check_constraints is the list of check constraints in a table.
+  repeated CheckConstraintMetadata check_constraints = 16;
+}
+
+// CheckConstraintMetadata is the metadata for check constraints.
+message CheckConstraintMetadata {
+  // The name is the name of a check constraint.
+  string name = 1;
+
+  // The expression is the expression of a check constraint.
+  string expression = 2;
 }
 
 // TablePartitionMetadata is the metadata for table partitions.
@@ -556,6 +568,20 @@ message ColumnMetadata {
   // The effective_masking_level is the effective masking level of the column, evaluate from the
   // column masking data and global masking rules.
   MaskingLevel effective_masking_level = 14;
+
+  // The generation is the generation of a column.
+  GenerationMetadata generation = 16;
+}
+
+message GenerationMetadata {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_VIRTUAL = 1;
+    TYPE_STORED = 2;
+  }
+
+  Type type = 1;
+  string expression = 2;
 }
 
 // ViewMetadata is the metadata for views.
@@ -704,6 +730,9 @@ message IndexMetadata {
   // The key_lengths are the ordered key lengths of an index.
   // If the key length is not specified, it's -1.
   repeated int64 key_length = 9;
+
+  // The descending is the ordered descending of an index.
+  repeated bool descending = 10;
 
   // The type is the type of an index.
   string type = 3;

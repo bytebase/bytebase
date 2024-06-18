@@ -2,6 +2,7 @@
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent
       :title="$t('settings.sensitive-data.semantic-types.add-from-template')"
+      class="max-w-[100vw]"
     >
       <div class="w-[42rem]">
         <SemanticTypesTable

@@ -53,6 +53,9 @@ type queryValidateListener struct {
 
 // EnterQuery is called when production query is entered.
 func (l *queryValidateListener) EnterQuery(ctx *parser.QueryContext) {
+	if !l.valid {
+		return
+	}
 	if ctx.BeginWork() != nil {
 		l.valid = false
 	}
@@ -60,20 +63,29 @@ func (l *queryValidateListener) EnterQuery(ctx *parser.QueryContext) {
 
 // EnterSimpleStatement is called when production simpleStatement is entered.
 func (l *queryValidateListener) EnterSimpleStatement(ctx *parser.SimpleStatementContext) {
-	if ctx.SelectStatement() == nil && ctx.UtilityStatement() == nil && ctx.SetStatement() == nil {
+	if !l.valid {
+		return
+	}
+	if ctx.SelectStatement() == nil && ctx.UtilityStatement() == nil && ctx.SetStatement() == nil && ctx.ShowStatement() == nil {
 		l.valid = false
 	}
 }
 
 // EnterUtilityStatement is called when production utilityStatement is entered.
 func (l *queryValidateListener) EnterUtilityStatement(ctx *parser.UtilityStatementContext) {
-	if ctx.ExplainStatement() == nil {
+	if !l.valid {
+		return
+	}
+	if ctx.ExplainStatement() == nil && ctx.DescribeStatement() == nil {
 		l.valid = false
 	}
 }
 
 // EnterExplainableStatement is called when production explainableStatement is entered.
 func (l *queryValidateListener) EnterExplainableStatement(ctx *parser.ExplainableStatementContext) {
+	if !l.valid {
+		return
+	}
 	if ctx.DeleteStatement() != nil || ctx.UpdateStatement() != nil || ctx.InsertStatement() != nil || ctx.ReplaceStatement() != nil {
 		l.valid = false
 	}

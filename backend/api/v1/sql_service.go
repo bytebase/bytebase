@@ -451,10 +451,8 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	}
 
 	queryContext := &db.QueryContext{
-		ReadOnly:            true,
-		CurrentDatabase:     database.DatabaseName,
-		SensitiveSchemaInfo: nil,
-		EnableSensitive:     licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		ReadOnly:        true,
+		CurrentDatabase: database.DatabaseName,
 	}
 	if request.Limit != 0 {
 		queryContext.Limit = int(request.Limit)
@@ -796,12 +794,10 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 
 	start := time.Now().UnixNano()
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:               int(request.Limit),
-		Explain:             request.Explain,
-		ReadOnly:            true,
-		CurrentDatabase:     database.DatabaseName,
-		SensitiveSchemaInfo: nil,
-		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		Limit:           int(request.Limit),
+		Explain:         request.Explain,
+		ReadOnly:        true,
+		CurrentDatabase: database.DatabaseName,
 	})
 	select {
 	case <-ctx.Done():
@@ -1256,7 +1252,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		dbMetadata = dbSchema.GetMetadata()
 	}
 
-	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
+	catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
@@ -1293,8 +1289,8 @@ func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 			Code:    int32(advice.Code),
 			Title:   advice.Title,
 			Content: advice.Content,
-			Line:    int32(advice.GetStartPosition().Line),
-			Column:  int32(advice.GetStartPosition().Column),
+			Line:    int32(advice.GetStartPosition().GetLine()),
+			Column:  int32(advice.GetStartPosition().GetColumn()),
 			Detail:  advice.Detail,
 		})
 	}
@@ -1321,12 +1317,12 @@ func (s *SQLService) sqlCheck(
 	environmentID int,
 	statement string,
 	changeType v1pb.CheckRequest_ChangeType,
-	catalog catalog.Catalog,
+	catalog *catalog.Catalog,
 	driver *sql.DB,
 	currentDatabase string,
 ) (storepb.Advice_Status, []*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
-	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
+	reviewConfig, err := s.store.GetReviewConfigByEnvironment(ctx, environmentID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return storepb.Advice_SUCCESS, nil, nil
@@ -1334,7 +1330,7 @@ func (s *SQLService) sqlCheck(
 		return storepb.Advice_ERROR, nil, err
 	}
 
-	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, policy.RuleList, advisor.SQLReviewCheckContext{
+	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
 		Charset:         dbSchema.CharacterSet,
 		Collation:       dbSchema.Collation,
 		ChangeType:      convertChangeType(changeType),
@@ -1438,15 +1434,88 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config))
 	}
 
+	if request.Engine == v1pb.Engine_MYSQL && isSingleTable(storeSchemaMetadata) {
+		table := storeSchemaMetadata.Schemas[0].Tables[0]
+		schema, err := schema.StringifyTable(storepb.Engine(request.Engine), table)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to stringify table: %v", err)
+		}
+		return &v1pb.StringifyMetadataResponse{
+			Schema: schema,
+		}, nil
+	}
+
 	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
 	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, "" /* baseline */, storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
 
+	if request.Engine == v1pb.Engine_ORACLE {
+		schema, err = appendComments(schema, storeSchemaMetadata)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to append comments: %v", err)
+		}
+	}
+
 	return &v1pb.StringifyMetadataResponse{
 		Schema: schema,
 	}, nil
+}
+
+func appendComments(schema string, storeSchemaMetadata *storepb.DatabaseSchemaMetadata) (string, error) {
+	if !isSingleTable(storeSchemaMetadata) {
+		return schema, nil
+	}
+
+	schemaName := storeSchemaMetadata.Schemas[0].Name
+	table := storeSchemaMetadata.Schemas[0].Tables[0]
+	// Append comments to the schema.
+	comments, err := getComments(schemaName, table)
+	if err != nil {
+		return "", err
+	}
+	return schema + comments, nil
+}
+
+func getComments(schemaName string, table *storepb.TableMetadata) (string, error) {
+	var buf strings.Builder
+	if table.Comment != "" {
+		if _, err := fmt.Fprintf(&buf, "COMMENT ON TABLE \"%s\".\"%s\" IS '%s';\n", schemaName, table.Name, table.Comment); err != nil {
+			return "", err
+		}
+	}
+	for _, column := range table.Columns {
+		if column.Comment != "" {
+			if _, err := fmt.Fprintf(&buf, "COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';\n", schemaName, table.Name, column.Name, column.Comment); err != nil {
+				return "", err
+			}
+		}
+	}
+	return buf.String(), nil
+}
+
+func isSingleTable(storeSchemaMetadata *storepb.DatabaseSchemaMetadata) bool {
+	if len(storeSchemaMetadata.Schemas) != 1 {
+		return false
+	}
+
+	if len(storeSchemaMetadata.Schemas[0].Tables) != 1 {
+		return false
+	}
+
+	if len(storeSchemaMetadata.Schemas[0].ExternalTables)+
+		len(storeSchemaMetadata.Schemas[0].Views)+
+		len(storeSchemaMetadata.Schemas[0].MaterializedViews)+
+		len(storeSchemaMetadata.Schemas[0].Functions)+
+		len(storeSchemaMetadata.Schemas[0].Procedures)+
+		len(storeSchemaMetadata.Schemas[0].Sequences)+
+		len(storeSchemaMetadata.Schemas[0].Streams)+
+		len(storeSchemaMetadata.Schemas[0].Tasks) != 0 {
+		return false
+	}
+
+	return true
 }
 
 // Pretty returns pretty format SDL.
@@ -1536,12 +1605,12 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 		return 0, "", nil
 	}
 	parts := strings.Split(backupTable, "_")
-	if len(parts) != 4 {
+	if len(parts) < 4 {
 		return 0, "", status.Errorf(codes.InvalidArgument, "invalid backup table format: %s", backupTable)
 	}
 	offset, err := strconv.Atoi(parts[2])
 	if err != nil {
 		return 0, "", status.Errorf(codes.InvalidArgument, "invalid offset: %s", parts[0])
 	}
-	return offset, parts[3], nil
+	return offset, strings.Join(parts[3:], "_"), nil
 }

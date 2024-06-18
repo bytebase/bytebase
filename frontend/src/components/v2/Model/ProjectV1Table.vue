@@ -44,11 +44,13 @@ const props = withDefaults(
     bordered?: boolean;
     loading?: boolean;
     pagination?: false | PaginationProps;
+    onClick?: (project: ComposedProject, e: MouseEvent) => void;
   }>(),
   {
     bordered: true,
     currentProject: undefined,
     pagination: () => ({ pageSize: 20 }) as PaginationProps,
+    onClick: undefined,
   }
 );
 
@@ -95,6 +97,11 @@ const rowProps = (project: ComposedProject) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
+      if (props.onClick) {
+        props.onClick(project, e);
+        return;
+      }
+
       let routeName = PROJECT_V1_ROUTE_DETAIL;
       const currentRouteName = router.currentRoute.value.name?.toString();
       if (

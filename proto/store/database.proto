@@ -194,6 +194,17 @@ message TableMetadata {
 
   // The partitions is the list of partitions in a table.
   repeated TablePartitionMetadata partitions = 15;
+
+  // The check_constraints is the list of check constraints in a table.
+  repeated CheckConstraintMetadata check_constraints = 16;
+}
+
+message CheckConstraintMetadata {
+  // The name is the name of a check constraint.
+  string name = 1;
+
+  // The expression is the expression of a check constraint.
+  string expression = 2;
 }
 
 message ExternalTableMetadata {
@@ -298,6 +309,20 @@ message ColumnMetadata {
 
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 12;
+
+  // The generation is for generated columns.
+  GenerationMetadata generation = 14;
+}
+
+message GenerationMetadata {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_VIRTUAL = 1;
+    TYPE_STORED = 2;
+  }
+
+  Type type = 1;
+  string expression = 2;
 }
 
 // ViewMetadata is the metadata for views.
@@ -372,6 +397,9 @@ message IndexMetadata {
   // The key_lengths are the ordered key lengths of an index.
   // If the key length is not specified, it's -1.
   repeated int64 key_length = 9;
+
+  // The descending is the ordered descending of an index.
+  repeated bool descending = 10;
 
   // The type is the type of an index.
   string type = 3;

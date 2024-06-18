@@ -162,11 +162,9 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementsStr st
 		statementStr := strings.TrimRight(statement.Text, ";")
 
 		result, err := runSingleStatement(ctx, d.conn, statementStr)
-		if err != nil {
-			result.Error = err.Error()
-			return nil, err
+		if err != nil && result == nil {
+			return results, err
 		}
-
 		results = append(results, result)
 	}
 	return results, nil
@@ -175,29 +173,29 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementsStr st
 // This function converts basic types to types that have implemented isRowValue_Kind interface.
 func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	var rowValue v1pb.RowValue
-	switch gohiveType {
-	case "BOOLEAN_TYPE":
-		rowValue.Kind = &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}
-	case "TINYINT_TYPE":
-		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}
-	case "SMALLINT_TYPE":
-		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}
-	case "INT_TYPE":
-		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
-	case "BIGINT_TYPE":
-		rowValue.Kind = &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}
-	// dangerous truncation: float64 -> float32.
-	case "FLOAT_TYPE":
-		rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: float32(value.(float64))}
-	case "BINARY_TYPE":
-		rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
-	default:
-		if value == nil {
-			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: ""}
-		} else if gohiveType == "DOUBLE_TYPE" {
+	if value == nil {
+		rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: ""}
+	} else {
+		switch gohiveType {
+		case "BOOLEAN_TYPE":
+			rowValue.Kind = &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}
+		case "TINYINT_TYPE":
+			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}
+		case "SMALLINT_TYPE":
+			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}
+		case "INT_TYPE":
+			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
+		case "BIGINT_TYPE":
+			rowValue.Kind = &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}
+		// dangerous truncation: float64 -> float32.
+		case "FLOAT_TYPE":
+			rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: float32(value.(float64))}
+		case "BINARY_TYPE":
+			rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
+		case "DOUBLE_TYPE":
 			// convert float64 to string to avoid trancation.
 			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}
-		} else {
+		default:
 			// convert all remaining types to string.
 			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: value.(string)}
 		}
@@ -220,35 +218,40 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	result := &v1pb.QueryResult{
 		Statement: statement,
 	}
+
+	// We will get an error when a certain statement doesn't need returned results.
 	columnNamesAndTypes := cursor.Description()
-	for _, row := range columnNamesAndTypes {
-		result.ColumnNames = append(result.ColumnNames, row[0])
-	}
+	if cursor.Err == nil {
+		for _, row := range columnNamesAndTypes {
+			result.ColumnNames = append(result.ColumnNames, row[0])
+		}
 
-	// process query results.
-	for cursor.HasMore(ctx) {
-		var queryRow v1pb.QueryRow
-		rowMap := cursor.RowMap(ctx)
-		for idx, columnName := range result.ColumnNames {
-			gohiveTypeStr := columnNamesAndTypes[idx][1]
-			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
-			if err != nil {
-				return result, err
+		// process query results.
+		for cursor.HasMore(ctx) {
+			var queryRow v1pb.QueryRow
+			rowMap := cursor.RowMap(ctx)
+			for idx, columnName := range result.ColumnNames {
+				gohiveTypeStr := columnNamesAndTypes[idx][1]
+				val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
+				if err != nil {
+					return result, err
+				}
+				queryRow.Values = append(queryRow.Values, val)
 			}
-			queryRow.Values = append(queryRow.Values, val)
-		}
 
-		// Rows.
-		result.Rows = append(result.Rows, &queryRow)
-		n := len(result.Rows)
-		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-			result.Error = common.MaximumSQLResultSizeExceeded
-			result.Latency = durationpb.New(time.Since(startTime))
-			return result, nil
+			// Rows.
+			result.Rows = append(result.Rows, &queryRow)
+			n := len(result.Rows)
+			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
+				result.Error = common.MaximumSQLResultSizeExceeded
+				result.Latency = durationpb.New(time.Since(startTime))
+				return result, nil
+			}
 		}
+		result.Latency = durationpb.New(time.Since(startTime))
+		return result, nil
 	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	return result, nil
+	return nil, nil
 }
 
 func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
@@ -279,14 +282,13 @@ func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, sta
 
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")
-		if queryCtx.Explain {
+		if queryCtx != nil && queryCtx.Explain {
 			statementStr = fmt.Sprintf("EXPLAIN %s", statementStr)
 		}
 
 		result, err := runSingleStatement(ctx, conn, statementStr)
-		if err != nil {
-			result.Error = err.Error()
-			return nil, err
+		if err != nil && result == nil {
+			return results, err
 		}
 
 		results = append(results, result)

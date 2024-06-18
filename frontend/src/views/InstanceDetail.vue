@@ -85,6 +85,7 @@ import {
 } from "@/components/InstanceForm/";
 import { InstanceRoleTable, Drawer } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import { useBodyLayoutContext } from "@/layouts/common";
 import {
   pushNotification,
   useDBSchemaV1Store,
@@ -103,7 +104,6 @@ import {
   hasWorkspaceLevelProjectPermissionInAnyProject,
   databaseV1Url,
 } from "@/utils";
-import { useBodyLayoutContext } from "@/layouts/common";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
@@ -172,6 +172,7 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
+      databaseStore.removeCacheByInstance(instance.value.name);
       databaseStore.searchDatabases({
         filter: `instance = "${instance.value.name}"`,
       });

@@ -549,9 +549,7 @@
       "workspace-role-at-least-one": "少なくとも 1 つのワークスペースレベルの役割を選択してください"
     },
     "im-integration": {
-      "enable": "有効にする",
-      "description": "ユーザーが IM で作業指示書を直接承認できるようにします。",
-      "feishu-updated-tip": "フェイシュの設定が正常に更新されました"
+      "description": "特定の作業指示イベントについて、プライベート メッセージをユーザーにプッシュします。プロジェクト Webhook で使用する必要があります。"
     },
     "sso": {
       "create": "SSOの作成",
@@ -654,6 +652,15 @@
           "description": "最大ロール有効期限は、ユーザーにロールを付与できる最大期間です。",
           "days": "日々）",
           "never-expires": "期限切れなし"
+        },
+        "domain-restriction": {
+          "self": "ドメイン制限",
+          "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。任意のドメインを許可する場合は空のままにします。",
+          "domain-input-placeholder": "ドメインを入力してください。例: example.com",
+          "members-restriction": {
+            "self": "メンバー制限",
+            "description": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
+          }
         },
         "config-updated": "構成が更新されました。",
         "plugin": {
@@ -1225,7 +1232,8 @@
       "statement-type": "ステートメントタイプ"
     },
     "sql-review-only": "SQLレビューのみ",
-    "create-issue": "問題を作成"
+    "create-issue": "問題を作成",
+    "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます"
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトでは、VCS ベースのバージョン管理が有効になっています。以下のデータベースを選択すると、対応する Git リポジトリに移動して、変更プロセスを開始します。",
@@ -1460,7 +1468,7 @@
     "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
     "used-for-testing-connection": "テスト接続のみ",
     "all": "すべてのインスタンス",
-    "force-archive-description": "アーカイブを強制します。関連するすべての作業指示書は完了としてマークされ、関連するすべてのワークシートが削除されます。",
+    "force-archive-description": "アーカイブを強制します。すべてのデータベースの割り当てが解除されます。",
     "sync-mode": {
       "self": "同期モード",
       "database": {
@@ -1498,7 +1506,7 @@
     "production-environment": "本番環境",
     "access-control": {
       "title": "アクセス制御",
-      "disable-copy-data-from-sql-editor": "SQLエディタからのデータのコピーを無効にする"
+      "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限 (管理者/DBA はコピー可能)"
     }
   },
   "quick-start": {
@@ -1614,6 +1622,7 @@
     "need-to-select-first": "最初に変更履歴を選択する必要があります",
     "all-tables": "すべてのテーブル",
     "affected-tables": "影響を受けるテーブル",
+    "select-affection-tables": "影響を受けるテーブルを選択",
     "view-full": "すべて見る"
   },
   "database": {
@@ -1895,6 +1904,11 @@
         "btn-text": "この Webhook を削除します",
         "confirm-title": "Webhook '{title}' とすべての実行履歴を削除しますか?"
       },
+      "direct-messages": "プライベートメッセージ通知",
+      "enable-direct-messages": "プライベートメッセージ通知を有効にする",
+      "direct-messages-tip": "有効にすると、Bytebase は関連ユーザー (電子メールで一致) にダイレクト メッセージを送信します。",
+      "direct-messages-warning": "これを機能させるには、{im} を構成する必要があります。",
+      "activity-support-direct-message": "関連するユーザーへのプライベート メッセージ通知の送信のサポート",
       "activity-item": {
         "issue-creation": {
           "title": "@:common.issue を作成する",
@@ -2295,6 +2309,7 @@
       "description": "{project} の下にある {count} データベースをバッチクエリします。"
     },
     "executing-query": "クエリの実行",
+    "request-query": "リクエストクエリ",
     "grouping": "グループ",
     "previous-row": "前の行",
     "next-row": "次の行",
@@ -3253,7 +3268,9 @@
         "pattern": "{resource} には小文字、数字、ハイフンのみを含めることができ、小文字で始まります。",
         "max-length": "{resource} には最大で {length} 文字が含まれます"
       },
-      "delete": "役割の削除"
+      "delete": "役割の削除",
+      "delete-warning": "ロール「{name}」は削除されます。この操作は元に戻すことができません。",
+      "delete-warning-with-resources": "ロール「{name}」は次のユーザーに割り当てられています:"
     },
     "select": "役割の選択",
     "select-roles": "役割の選択",
