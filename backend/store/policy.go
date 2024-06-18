@@ -63,10 +63,11 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*store
 	return p, nil
 }
 
-// GetSQLReviewPolicy will get the SQL review policy for an environment.
-func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*storepb.SQLReviewPolicy, error) {
+// GetSQLReviewConfigByEnvironment will get the review config for an environment.
+func (s *Store) GetReviewConfigByEnvironment(ctx context.Context, environmentID int) (*storepb.ReviewConfigPayload, error) {
 	resourceType := api.PolicyResourceTypeEnvironment
-	pType := api.PolicyTypeSQLReview
+	pType := api.PolicyTypeTag
+
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		ResourceUID:  &environmentID,
@@ -82,12 +83,29 @@ func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*sto
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy is not enforced for environment %d", environmentID)}
 	}
 
-	p := new(storepb.SQLReviewPolicy)
-	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
-		return nil, err
+	payload := &storepb.TagPolicy{}
+	if err := protojson.Unmarshal([]byte(policy.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal tag policy payload")
 	}
 
-	return p, nil
+	reviewConfigName, ok := payload.Tags[string(api.ReservedTagReviewConfig)]
+	if !ok {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for environment %d not found", environmentID)}
+	}
+	reviewConfigID, err := common.GetReviewConfigID(reviewConfigName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract review config uid from %s", reviewConfigName)
+	}
+
+	reviewConfig, err := s.GetReviewConfig(ctx, reviewConfigID)
+	if err != nil {
+		return nil, err
+	}
+	if reviewConfig == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config for environment %d not found", environmentID)}
+	}
+
+	return reviewConfig.Payload, nil
 }
 
 // GetSlowQueryPolicy will get the slow query policy for instance ID.
@@ -211,7 +229,6 @@ type UpdatePolicyMessage struct {
 	InheritFromParent *bool
 	Payload           *string
 	Enforce           *bool
-	Delete            *bool
 }
 
 // GetPolicyV2 gets a policy.

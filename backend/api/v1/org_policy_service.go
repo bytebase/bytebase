@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -437,7 +436,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, env.ResourceID), nil
+		return common.FormatEnvironment(env.ResourceID), nil
 	case api.PolicyResourceTypeProject:
 		proj, err := s.findActiveProject(ctx, &store.FindProjectMessage{
 			UID: &policyMessage.ResourceUID,
@@ -445,7 +444,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s", common.ProjectNamePrefix, proj.ResourceID), nil
+		return common.FormatProject(proj.ResourceID), nil
 	case api.PolicyResourceTypeInstance:
 		ins, err := s.findActiveInstance(ctx, &store.FindInstanceMessage{
 			UID: &policyMessage.ResourceUID,
@@ -453,7 +452,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s", common.InstanceNamePrefix, ins.ResourceID), nil
+		return common.FormatInstance(ins.ResourceID), nil
 	case api.PolicyResourceTypeDatabase:
 		db, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
 			UID: &policyMessage.ResourceUID,
@@ -461,7 +460,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, db.InstanceID, common.DatabaseIDPrefix, db.DatabaseName), nil
+		return common.FormatDatabase(db.InstanceID, db.DatabaseName), nil
 	default:
 		return "", nil
 	}
@@ -547,11 +546,15 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_SQL_REVIEW:
+		// TODO(ed): remove PolicyType_SQL_REVIEW
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		v1SqlReviewPolicy := policy.GetSqlReviewPolicy()
-		if err := validateSQLReviewPolicy(v1SqlReviewPolicy); err != nil {
+		if v1SqlReviewPolicy.Name == "" {
+			return "", status.Errorf(codes.InvalidArgument, "invalid payload, name cannot be empty")
+		}
+		if err := validateSQLReviewRules(v1SqlReviewPolicy.Rules); err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		payload, err := convertToSQLReviewPolicyPayload(v1SqlReviewPolicy)
@@ -560,7 +563,16 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return "", status.Errorf(codes.Internal, "failed to marshal sql review policy with error: %v", err)
+			return "", errors.Wrap(err, "failed to marshal sql review policy")
+		}
+		return string(payloadBytes), nil
+	case v1pb.PolicyType_TAG:
+		tagPolicy := &storepb.TagPolicy{
+			Tags: policy.GetTagPolicy().Tags,
+		}
+		payloadBytes, err := protojson.Marshal(tagPolicy)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal tag policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING:
@@ -669,6 +681,15 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 			return nil, err
 		}
 		policy.Policy = payload
+	case api.PolicyTypeTag:
+		pType = v1pb.PolicyType_TAG
+		p := &v1pb.TagPolicy{}
+		if err := protojson.Unmarshal([]byte(policyMessage.Payload), p); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal rollout policy payload")
+		}
+		policy.Policy = &v1pb.Policy_TagPolicy{
+			TagPolicy: p,
+		}
 	case api.PolicyTypeMasking:
 		pType = v1pb.PolicyType_MASKING
 		payload, err := convertToV1PBMaskingPolicy(policyMessage.Payload)
@@ -740,8 +761,17 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 		return nil, err
 	}
 
+	return &v1pb.Policy_SqlReviewPolicy{
+		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
+			Name:  p.Name,
+			Rules: convertToV1PBSQLReviewRules(p.RuleList),
+		},
+	}, nil
+}
+
+func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
 	var rules []*v1pb.SQLReviewRule
-	for _, rule := range p.RuleList {
+	for _, rule := range ruleList {
 		level := v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
 		switch rule.Level {
 		case storepb.SQLReviewRuleLevel_ERROR:
@@ -760,17 +790,12 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 		})
 	}
 
-	return &v1pb.Policy_SqlReviewPolicy{
-		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Name:  p.Name,
-			Rules: rules,
-		},
-	}, nil
+	return rules
 }
 
-func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*storepb.SQLReviewPolicy, error) {
+func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewRule, error) {
 	var ruleList []*storepb.SQLReviewRule
-	for _, rule := range policy.Rules {
+	for _, rule := range rules {
 		var level storepb.SQLReviewRuleLevel
 		switch rule.Level {
 		case v1pb.SQLReviewRuleLevel_ERROR:
@@ -791,6 +816,14 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*storepb.SQL
 		})
 	}
 
+	return ruleList, nil
+}
+
+func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*storepb.SQLReviewPolicy, error) {
+	ruleList, err := convertToSQLReviewRules(policy.Rules)
+	if err != nil {
+		return nil, err
+	}
 	return &storepb.SQLReviewPolicy{
 		Name:     policy.Name,
 		RuleList: ruleList,
@@ -1091,7 +1124,10 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 	case v1pb.PolicyType_ROLLOUT_POLICY.String():
 		return api.PolicyTypeRollout, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():
+		// TODO(ed): remove this.
 		return api.PolicyTypeSQLReview, nil
+	case v1pb.PolicyType_TAG.String():
+		return api.PolicyTypeTag, nil
 	case v1pb.PolicyType_MASKING.String():
 		return api.PolicyTypeMasking, nil
 	case v1pb.PolicyType_MASKING_RULE.String():
@@ -1106,47 +1142,4 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeRestrictIssueCreationForSQLReview, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
-}
-
-// validateSQLReviewPolicy validates the SQL review rule.
-func validateSQLReviewPolicy(policy *v1pb.SQLReviewPolicy) error {
-	if policy.Name == "" || len(policy.Rules) == 0 {
-		return errors.Errorf("invalid payload, name or rule list cannot be empty")
-	}
-	for _, rule := range policy.Rules {
-		ruleType := advisor.SQLReviewRuleType(rule.Type)
-		// TODO(rebelice): add other SQL review rule validation.
-		switch ruleType {
-		case advisor.SchemaRuleTableNaming, advisor.SchemaRuleColumnNaming, advisor.SchemaRuleAutoIncrementColumnNaming:
-			if _, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
-				return err
-			}
-		case advisor.SchemaRuleFKNaming, advisor.SchemaRuleIDXNaming, advisor.SchemaRuleUKNaming:
-			if _, _, _, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ruleType, rule.Payload); err != nil {
-				return err
-			}
-		case advisor.SchemaRuleRequiredColumn:
-			if _, err := advisor.UnmarshalRequiredColumnList(rule.Payload); err != nil {
-				return err
-			}
-		case advisor.SchemaRuleColumnCommentConvention, advisor.SchemaRuleTableCommentConvention:
-			if _, err := advisor.UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		case advisor.SchemaRuleIndexKeyNumberLimit, advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleIndexTotalNumberLimit,
-			advisor.SchemaRuleColumnMaximumCharacterLength, advisor.SchemaRuleColumnMaximumVarcharLength, advisor.SchemaRuleColumnAutoIncrementInitialValue, advisor.SchemaRuleStatementAffectedRowLimit:
-			if _, err := advisor.UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		case advisor.SchemaRuleColumnTypeDisallowList, advisor.SchemaRuleCharsetAllowlist, advisor.SchemaRuleCollationAllowlist, advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist:
-			if _, err := advisor.UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		case advisor.SchemaRuleIdentifierCase:
-			if _, err := advisor.UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
