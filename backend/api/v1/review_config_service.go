@@ -161,6 +161,10 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 		return nil, status.Errorf(codes.InvalidArgument, "invalid config name %s, error %v", reviewConfig.Name, err)
 	}
 
+	if !isValidResourceID(id) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid config id %v", reviewConfig.Name)
+	}
+
 	return &store.ReviewConfigMessage{
 		ID:      id,
 		Name:    reviewConfig.Title,
