@@ -21,6 +21,12 @@ const (
 		"%s;\n"
 )
 
+var (
+	sysCatalog = "system"
+	infoSchema = "information_schema"
+	dftSchema  = "default"
+)
+
 func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ bool) (string, error) {
 	catalogMap, err := d.listCatologTables(ctx, "")
 	if err != nil {
@@ -28,13 +34,22 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ bool) (string, er
 	}
 
 	for catalogName, schemaMap := range catalogMap {
+		if catalogName == sysCatalog {
+			continue
+		}
 		if _, err := writer.Write([]byte(fmt.Sprintf("CREATE CATALOG %s\n", catalogName))); err != nil {
 			return "", err
 		}
 
 		for schemaName, tableList := range schemaMap {
-			if _, err := writer.Write([]byte(fmt.Sprintf("CREATE SCHEMA `%s`.`%s`\n", catalogName, schemaName))); err != nil {
-				return "", err
+			if schemaName == infoSchema {
+				continue
+			}
+			if schemaName != dftSchema {
+				_, err := writer.Write([]byte(fmt.Sprintf("CREATE SCHEMA `%s`.`%s`\n", catalogName, schemaName)))
+				if err != nil {
+					return "", err
+				}
 			}
 
 			viewDDL := strings.Builder{}
