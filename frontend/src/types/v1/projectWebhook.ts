@@ -70,7 +70,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       urlPlaceholder: "https://open.feishu.cn/open-apis/bot/v2/hook/...",
       docUrl:
         "https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot",
-      supportDirectMessage: isDev(),
+      supportDirectMessage: true,
     },
     {
       type: Webhook_Type.TYPE_WECOM,
