@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -209,17 +208,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				payload.MaximumRoleExpiration = nil
 			}
 		}
-		if payload.Domains != nil && len(payload.Domains) > 0 {
-			for _, domain := range payload.Domains {
-				if !govalidator.IsDNSName(domain) {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid domain: %s", domain)
-				}
-			}
+		if len(payload.Domains) == 0 && payload.EnforceIdentityDomain {
+			return nil, status.Errorf(codes.InvalidArgument, "identity domain can be enforced only when workspace domains are set")
 		}
-		if payload.EnforceIdentityDomain {
-			if payload.Domains == nil || len(payload.Domains) == 0 {
-				return nil, status.Errorf(codes.InvalidArgument, "enforce identity domain is enabled but no domain is set")
-			}
+		if err := validateDomains(payload.Domains); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid domains, error %v", err)
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -1251,6 +1244,56 @@ func checkSubstitution(substitution string) error {
 	}
 	if len(substitution) > 16 {
 		return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+	}
+	return nil
+}
+
+var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)
+var disallowedDomains = map[string]bool{
+	"gmail.com":      true,
+	"googlemail.com": true,
+	"outlook.com":    true,
+	"hotmail.com":    true,
+	"live.com":       true,
+	"msn.com":        true,
+	"yahoo.com":      true,
+	"ymail.com":      true,
+	"rocketmail.com": true,
+	"icloud.com":     true,
+	"me.com":         true,
+	"mac.com":        true,
+	"aol.com":        true,
+	"zoho.com":       true,
+	"protonmail.com": true,
+	"gmx.com":        true,
+	"gmx.net":        true,
+	"mail.com":       true,
+	"yandex.com":     true,
+	"yandex.ru":      true,
+	"fastmail.com":   true,
+	"fastmail.fm":    true,
+	"tutanota.com":   true,
+	"163.com":        true,
+	"126.com":        true,
+	"sohu.com":       true,
+	"qq.com":         true,
+	"sina.com":       true,
+	"sina.cn":        true,
+	"aliyun.com":     true,
+	"aliyun.cn":      true,
+	"tom.com":        true,
+	"21cn.com":       true,
+	"yeah.net":       true,
+}
+
+func validateDomains(domains []string) error {
+	for _, domain := range domains {
+		if !domainRegexp.MatchString(domain) {
+			return errors.Errorf("invalid domain %q", domain)
+		}
+		if disallowedDomains[domain] {
+			return errors.Errorf("domain %q is not allowed", domain)
+		}
 	}
 	return nil
 }
