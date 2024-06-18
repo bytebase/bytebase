@@ -2,6 +2,7 @@ package databricks
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ type tableUnion struct {
 	view          *storepb.ViewMetadata
 	materialView  *storepb.MaterializedViewMetadata
 	typeName      catalog.TableType
+	name          string
 }
 
 type databricksSchemaMap = map[string][]*tableUnion
@@ -31,7 +33,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// fetch table data from databricks.
-	catalogMap, err := d.listAllTables(ctx)
+	catalogMap, err := d.listCatologTables(ctx, d.curCatalog)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +69,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	instanceMetadata.Version = splitVersion[0]
 
 	// fetch table data from databricks.
-	catalogMap, err := d.listAllTables(ctx)
+	catalogMap, err := d.listCatologTables(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +92,8 @@ func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storep
 	return nil, nil
 }
 
-func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error) {
+// list all tables in the workspace when catalogName is set to "".
+func (d *Driver) listCatologTables(ctx context.Context, targetCatalogName string) (databricksCatalogMap, error) {
 	catalogMap := make(databricksCatalogMap)
 
 	catalogsInfo, err := d.Client.Catalogs.ListAll(ctx)
@@ -99,6 +102,9 @@ func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error
 	}
 
 	for _, catalogInfo := range catalogsInfo {
+		if targetCatalogName != "" && targetCatalogName != catalogInfo.Name {
+			continue
+		}
 		schemasInfo, err := d.Client.Schemas.ListAll(ctx, catalog.ListSchemasRequest{
 			CatalogName: catalogInfo.Name,
 		})
@@ -106,6 +112,20 @@ func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error
 			return nil, err
 		}
 		for _, schemaInfo := range schemasInfo {
+			// init map.
+			scMap, ok := catalogMap[catalogInfo.Name]
+			if !ok {
+				catalogMap[catalogInfo.Name] = databricksSchemaMap{
+					schemaInfo.Name: []*tableUnion{},
+				}
+			} else {
+				_, ok := scMap[schemaInfo.Name]
+				if !ok {
+					scMap[schemaInfo.Name] = []*tableUnion{}
+				}
+				catalogMap[catalogInfo.Name] = scMap
+			}
+			// list tables in the schema.
 			tablesInfo, err := d.Client.Tables.ListAll(ctx, catalog.ListTablesRequest{
 				CatalogName: catalogInfo.Name,
 				SchemaName:  schemaInfo.Name,
@@ -113,7 +133,9 @@ func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error
 			if err != nil {
 				return nil, err
 			}
-			appendSchemaTables(catalogMap, tablesInfo)
+			if err := appendSchemaTables(catalogMap, tablesInfo); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -121,33 +143,34 @@ func (d *Driver) listAllTables(ctx context.Context) (databricksCatalogMap, error
 }
 
 // extract tables' metadata from 'tablesInfo' and store it in 'catalogMap'.
-func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.TableInfo) {
+func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.TableInfo) error {
 	for _, tableInfo := range tablesInfo {
 		table := tableUnion{
 			typeName: tableInfo.TableType,
+			name:     tableInfo.Name,
 		}
 
 		switch tableInfo.TableType {
 		case catalog.TableTypeView:
 			table.view = &storepb.ViewMetadata{
-				Name:             tableInfo.Name,
+				Name:             table.name,
 				Definition:       tableInfo.ViewDefinition,
 				Comment:          tableInfo.Comment,
 				DependentColumns: convertToDependentColumns(tableInfo.SchemaName, tableInfo.Name, tableInfo.Columns),
 			}
 		case catalog.TableTypeMaterializedView:
 			table.materialView = &storepb.MaterializedViewMetadata{
-				Name:       tableInfo.Name,
+				Name:       table.name,
 				Definition: tableInfo.ViewDefinition,
 				Comment:    tableInfo.Comment,
 			}
 		case catalog.TableTypeExternal:
 			table.externalTable = &storepb.ExternalTableMetadata{
-				Name: tableInfo.Name,
+				Name: table.name,
 			}
 		case catalog.TableTypeManaged:
 			table.table = &storepb.TableMetadata{
-				Name:    tableInfo.Name,
+				Name:    table.name,
 				Columns: convertToColumnMetadata(tableInfo.Columns),
 				Comment: tableInfo.Comment,
 			}
@@ -156,19 +179,15 @@ func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.Ta
 			continue
 		}
 
-		if schemaMap, ok := catalogMap[tableInfo.CatalogName]; !ok {
-			catalogMap[tableInfo.CatalogName] = databricksSchemaMap{
-				tableInfo.SchemaName: []*tableUnion{&table},
-			}
+		// catalogMap[tableInfo.CatalogName] must not be nil.
+		if tblList, ok := catalogMap[tableInfo.CatalogName][tableInfo.SchemaName]; ok {
+			tblList = append(tblList, &table)
+			catalogMap[tableInfo.CatalogName][tableInfo.SchemaName] = tblList
 		} else {
-			if tableList, ok := schemaMap[tableInfo.SchemaName]; ok {
-				tableList = append(tableList, &table)
-				schemaMap[tableInfo.SchemaName] = tableList
-			} else {
-				schemaMap[tableInfo.SchemaName] = []*tableUnion{&table}
-			}
+			return errors.New("table list not initialized")
 		}
 	}
+	return nil
 }
 
 func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnMetadata {
@@ -221,4 +240,15 @@ func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*storepb.SchemaMet
 		schemas = append(schemas, schemaMetadata)
 	}
 	return schemas
+}
+
+func getQualifiedTblName(catalogName, schemaName, tblName string) (string, error) {
+	if tblName == "" || schemaName == "" {
+		return "", errors.New("table name and schema name must be specified")
+	}
+	qualifiedName := fmt.Sprintf("`%s`.`%s`", schemaName, tblName)
+	if catalogName != "" {
+		qualifiedName = fmt.Sprintf("`%s`.%s", catalogName, qualifiedName)
+	}
+	return qualifiedName, nil
 }
