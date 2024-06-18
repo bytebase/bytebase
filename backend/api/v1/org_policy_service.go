@@ -551,7 +551,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		v1SqlReviewPolicy := policy.GetSqlReviewPolicy()
-		if policy.Name == "" {
+		if v1SqlReviewPolicy.Name == "" {
 			return "", status.Errorf(codes.InvalidArgument, "invalid payload, name cannot be empty")
 		}
 		if err := validateSQLReviewRules(v1SqlReviewPolicy.Rules); err != nil {
@@ -562,6 +562,9 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal sql review policy")
+		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_TAG:
 		tagPolicy := &storepb.TagPolicy{
