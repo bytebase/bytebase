@@ -333,7 +333,7 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 			// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-all-sql-modules-transact-sql?view=sql-server-ver16
 			// https://www.mssqltips.com/sqlservertip/7465/encrypt-stored-procedure-sql-server/
 			// We will write a pseudo definition in pure comment.
-			viewDefinition = fmt.Sprintf("/* Definition of function %s.%s is encrypted. */", schemaName, view.Name)
+			viewDefinition = fmt.Sprintf("/* Definition of view %s.%s is encrypted. */", schemaName, view.Name)
 		} else {
 			viewDefinition = definition.String
 		}
