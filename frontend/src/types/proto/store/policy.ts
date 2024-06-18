@@ -206,7 +206,7 @@ export interface SQLReviewRule {
 export interface TagPolicy {
   /**
    * tags is the key - value map for resources.
-   * for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "{review config id}"
+   * for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
    */
   tags: { [key: string]: string };
 }

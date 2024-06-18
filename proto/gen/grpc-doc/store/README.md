@@ -3011,7 +3011,7 @@ Format: users/{userUID} or groups/{group email} |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;{review config id}&#34; |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; |
 
 
 
