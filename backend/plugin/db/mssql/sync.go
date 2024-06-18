@@ -323,9 +323,21 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	for rows.Next() {
 		view := &storepb.ViewMetadata{}
 		var schemaName string
+		var definition sql.NullString
 		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
+		var viewDefinition string
+		if !definition.Valid {
+			// Definition is null if the view is encrypted.
+			// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-all-sql-modules-transact-sql?view=sql-server-ver16
+			// https://www.mssqltips.com/sqlservertip/7465/encrypt-stored-procedure-sql-server/
+			// We will write a pseudo definition in pure comment.
+			viewDefinition = fmt.Sprintf("/* Definition of view %s.%s is encrypted. */", schemaName, view.Name)
+		} else {
+			viewDefinition = definition.String
+		}
+		view.Definition = viewDefinition
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
 	if err := rows.Err(); err != nil {
@@ -365,9 +377,21 @@ func getProcedures(txn *sql.Tx) (map[string][]*storepb.ProcedureMetadata, error)
 	for rows.Next() {
 		procedure := &storepb.ProcedureMetadata{}
 		var schemaName string
-		if err := rows.Scan(&schemaName, &procedure.Name, &procedure.Definition); err != nil {
+		var definition sql.NullString
+		if err := rows.Scan(&schemaName, &procedure.Name, &definition); err != nil {
 			return nil, err
 		}
+		var procedureDefinition string
+		if !definition.Valid {
+			// Definition is null if the procedure is encrypted.
+			// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-all-sql-modules-transact-sql?view=sql-server-ver16
+			// https://www.mssqltips.com/sqlservertip/7465/encrypt-stored-procedure-sql-server/
+			// We will write a pseudo definition in pure comment.
+			procedureDefinition = fmt.Sprintf("/* Definition of procedure %s.%s is encrypted. */", schemaName, procedure.Name)
+		} else {
+			procedureDefinition = definition.String
+		}
+		procedure.Definition = procedureDefinition
 		procedureMap[schemaName] = append(procedureMap[schemaName], procedure)
 	}
 	if err := rows.Err(); err != nil {
@@ -407,9 +431,21 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 	for rows.Next() {
 		function := &storepb.FunctionMetadata{}
 		var schemaName string
-		if err := rows.Scan(&schemaName, &function.Name, &function.Definition); err != nil {
+		var definition sql.NullString
+		if err := rows.Scan(&schemaName, &function.Name, &definition); err != nil {
 			return nil, err
 		}
+		var functionDefinition string
+		if !definition.Valid {
+			// Definition is null if the function is encrypted.
+			// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-all-sql-modules-transact-sql?view=sql-server-ver16
+			// https://www.mssqltips.com/sqlservertip/7465/encrypt-stored-procedure-sql-server/
+			// We will write a pseudo definition in pure comment.
+			functionDefinition = fmt.Sprintf("/* Definition of function %s.%s is encrypted. */", schemaName, function.Name)
+		} else {
+			functionDefinition = definition.String
+		}
+		function.Definition = functionDefinition
 		funcMap[schemaName] = append(funcMap[schemaName], function)
 	}
 	if err := rows.Err(); err != nil {
