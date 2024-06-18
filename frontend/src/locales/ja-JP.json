@@ -653,6 +653,15 @@
           "days": "日々）",
           "never-expires": "期限切れなし"
         },
+        "domain-restriction": {
+          "self": "ドメイン制限",
+          "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。任意のドメインを許可する場合は空のままにします。",
+          "domain-input-placeholder": "ドメインを入力してください。例: example.com",
+          "members-restriction": {
+            "self": "メンバー制限",
+            "description": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
+          }
+        },
         "config-updated": "構成が更新されました。",
         "plugin": {
           "openai": {
