@@ -255,7 +255,7 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 	var payload []byte
 	var rowStatus string
 
-	if err := tx.QueryRowContext(ctx, query).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&sqlReview.ID,
 		&rowStatus,
 		&sqlReview.CreatorUID,
