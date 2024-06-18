@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -58,7 +56,7 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 
 func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 	config := &v1pb.ReviewConfig{
-		Name:    common.FormatReviewConfig(uuid.NewString()),
+		Name:    common.FormatReviewConfig(generateRandomString("review", 10)),
 		Title:   "Prod",
 		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{
@@ -285,7 +283,7 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 
 func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
 	config := &v1pb.ReviewConfig{
-		Name:    common.FormatReviewConfig(uuid.NewString()),
+		Name:    common.FormatReviewConfig(generateRandomString("review", 10)),
 		Title:   "Prod",
 		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{
