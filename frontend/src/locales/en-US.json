@@ -653,6 +653,15 @@
           "days": "Day(s)",
           "never-expires": "Never expires"
         },
+        "domain-restriction": {
+          "self": "Domain restriction",
+          "description": "Specify the domain that could be used as the email domain for workspace members. Leave it empty to allow any domain.",
+          "domain-input-placeholder": "Please input domain, e.g. example.com",
+          "members-restriction": {
+            "self": "Members restriction",
+            "description": "Restrict sign-in to users with email addresses from the specified domains."
+          }
+        },
         "config-updated": "Configuration is updated.",
         "plugin": {
           "openai": {
