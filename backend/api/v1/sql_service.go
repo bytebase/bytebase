@@ -1322,7 +1322,7 @@ func (s *SQLService) sqlCheck(
 	currentDatabase string,
 ) (storepb.Advice_Status, []*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
-	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
+	reviewConfig, err := s.store.GetReviewConfigByEnvironment(ctx, environmentID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return storepb.Advice_SUCCESS, nil, nil
@@ -1330,7 +1330,7 @@ func (s *SQLService) sqlCheck(
 		return storepb.Advice_ERROR, nil, err
 	}
 
-	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, policy.RuleList, advisor.SQLReviewCheckContext{
+	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
 		Charset:         dbSchema.CharacterSet,
 		Collation:       dbSchema.Collation,
 		ChangeType:      convertChangeType(changeType),

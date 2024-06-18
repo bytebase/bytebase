@@ -225,7 +225,7 @@ func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environme
 		tier = v1pb.EnvironmentTier_PROTECTED
 	}
 	return &v1pb.Environment{
-		Name:  fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
+		Name:  common.FormatEnvironment(environment.ResourceID),
 		Uid:   fmt.Sprintf("%d", environment.UID),
 		State: convertDeletedToState(environment.Deleted),
 		Title: environment.Title,

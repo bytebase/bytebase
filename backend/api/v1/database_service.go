@@ -1835,10 +1835,10 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	}
 	environment, effectiveEnvironment := "", ""
 	if database.EnvironmentID != "" {
-		environment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EnvironmentID)
+		environment = common.FormatEnvironment(database.EnvironmentID)
 	}
 	if database.EffectiveEnvironmentID != "" {
-		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
+		effectiveEnvironment = common.FormatEnvironment(database.EffectiveEnvironmentID)
 	}
 	instanceResource, err := convertToInstanceResource(instance)
 	if err != nil {
