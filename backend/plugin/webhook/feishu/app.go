@@ -70,6 +70,18 @@ type generalResponse struct {
 	Msg  string `json:"msg"`
 }
 
+func Validate(ctx context.Context, id, secret, email string) error {
+	p := newProvider(id, secret)
+	if err := p.refreshToken(ctx); err != nil {
+		return errors.Wrapf(err, "failed to refresh token")
+	}
+	_, err := p.getIDByEmail(ctx, []string{email})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get id for user %s", email)
+	}
+	return nil
+}
+
 func (p *provider) refreshToken(ctx context.Context) error {
 	const getTenantAccessTokenReq = `{"app_id": "%s","app_secret": "%s"}`
 	const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
