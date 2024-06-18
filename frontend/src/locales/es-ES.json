@@ -653,6 +653,15 @@
           "days": "Días)",
           "never-expires": "Nunca expira"
         },
+        "domain-restriction": {
+          "self": "Restricción de dominio",
+          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo. Déjelo vacío para permitir cualquier dominio.",
+          "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
+          "members-restriction": {
+            "self": "Restricción de miembros",
+            "description": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
+          }
+        },
         "config-updated": "La configuración se ha actualizado.",
         "plugin": {
           "openai": {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -206,6 +207,18 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
 			if payload.MaximumRoleExpiration.Seconds <= 0 {
 				payload.MaximumRoleExpiration = nil
+			}
+		}
+		if payload.Domains != nil && len(payload.Domains) > 0 {
+			for _, domain := range payload.Domains {
+				if !govalidator.IsDNSName(domain) {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid domain: %s", domain)
+				}
+			}
+		}
+		if payload.EnforceIdentityDomain {
+			if payload.Domains == nil || len(payload.Domains) == 0 {
+				return nil, status.Errorf(codes.InvalidArgument, "enforce identity domain is enabled but no domain is set")
 			}
 		}
 		bytes, err := protojson.Marshal(payload)

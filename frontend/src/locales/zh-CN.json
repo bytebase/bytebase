@@ -653,6 +653,15 @@
           "days": "天数",
           "never-expires": "永不过期"
         },
+        "domain-restriction": {
+          "self": "域名限制",
+          "description": "可用于指定成员电子邮箱的域名。留空以允许任何邮箱。",
+          "domain-input-placeholder": "请输入域名，例如 example.com",
+          "members-restriction": {
+            "self": "成员邮箱限制",
+            "description": "仅允许具有指定域名的电子邮箱的用户进行登录或注册。"
+          }
+        },
         "config-updated": "配置已更新。",
         "plugin": {
           "openai": {
