@@ -661,6 +661,9 @@ const (
 	// OracleIdentifierCase is an advisor type for Oracle identifier case.
 	OracleIdentifierCase Type = "bb.plugin.advisor.oracle.naming.identifier-case"
 
+	// OracleStatementDMLDryRun is an advisor type for Oracle DML dry run.
+	OracleStatementDMLDryRun Type = "bb.plugin.advisor.oracle.statement.dml-dry-run"
+
 	// Snowflake Advisor.
 
 	// SnowflakeSyntax is an advisor type for Snowflake syntax.
