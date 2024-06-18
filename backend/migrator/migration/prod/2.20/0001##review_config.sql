@@ -1,7 +1,7 @@
 -- Create review config table.
 CREATE TABLE review_config
 (
-    resource_id TEXT NOT NULL PRIMARY KEY,
+    id TEXT NOT NULL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
@@ -13,7 +13,7 @@ CREATE TABLE review_config
 
 -- Migrate sql review policy to the new table.
 INSERT INTO review_config
-    (resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, name, payload)
+    (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, payload)
 SELECT
     environment.resource_id,
     policy.row_status,
