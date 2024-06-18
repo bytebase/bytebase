@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -163,8 +164,10 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
 	}
 
-	policyPayload, err := json.Marshal(map[string]string{
-		string(api.ReservedTagReviewConfig): common.FormatReviewConfig(config.ID),
+	policyPayload, err := protojson.Marshal(&storepb.TagPolicy{
+		Tags: map[string]string{
+			string(api.ReservedTagReviewConfig): common.FormatReviewConfig(config.ID),
+		},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal environment tag")

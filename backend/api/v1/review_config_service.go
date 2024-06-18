@@ -44,7 +44,7 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v
 	if err := validateSQLReviewRules(request.ReviewConfig.Rules); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sqlReview, err := convertToReviewConfigMessage(request.ReviewConfig)
+	reviewConfigMessage, err := convertToReviewConfigMessage(request.ReviewConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +54,8 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	sqlReview.CreatorUID = principalID
-	created, err := s.store.CreateReviewConfig(ctx, sqlReview)
+	reviewConfigMessage.CreatorUID = principalID
+	created, err := s.store.CreateReviewConfig(ctx, reviewConfigMessage)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -175,13 +175,13 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 	}, nil
 }
 
-func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, sqlReviewMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
-	creator, err := s.store.GetUserByID(ctx, sqlReviewMessage.CreatorUID)
+func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
+	creator, err := s.store.GetUserByID(ctx, reviewConfigMessage.CreatorUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get creator, error %v", err)
 	}
 	if creator == nil {
-		return nil, status.Errorf(codes.NotFound, "creator %d not found", sqlReviewMessage.CreatorUID)
+		return nil, status.Errorf(codes.NotFound, "creator %d not found", reviewConfigMessage.CreatorUID)
 	}
 
 	resourceType := api.PolicyResourceTypeEnvironment
@@ -196,13 +196,13 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, sqlRe
 	}
 
 	config := &v1pb.ReviewConfig{
-		Name:       common.FormatReviewConfig(sqlReviewMessage.ID),
+		Name:       common.FormatReviewConfig(reviewConfigMessage.ID),
 		Creator:    common.FormatUserEmail(creator.Email),
-		CreateTime: timestamppb.New(sqlReviewMessage.CreatedTime),
-		UpdateTime: timestamppb.New(sqlReviewMessage.CreatedTime),
-		Title:      sqlReviewMessage.Name,
-		Enabled:    sqlReviewMessage.Enforce,
-		Rules:      convertToV1PBSQLReviewRules(sqlReviewMessage.Payload.SqlReviewRules),
+		CreateTime: timestamppb.New(reviewConfigMessage.CreatedTime),
+		UpdateTime: timestamppb.New(reviewConfigMessage.CreatedTime),
+		Title:      reviewConfigMessage.Name,
+		Enabled:    reviewConfigMessage.Enforce,
+		Rules:      convertToV1PBSQLReviewRules(reviewConfigMessage.Payload.SqlReviewRules),
 	}
 
 	for _, policy := range tagPolicies {

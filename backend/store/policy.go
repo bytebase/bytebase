@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -84,12 +83,12 @@ func (s *Store) GetReviewConfigByEnvironment(ctx context.Context, environmentID 
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy is not enforced for environment %d", environmentID)}
 	}
 
-	var payload map[string]string
-	if err := json.Unmarshal([]byte(policy.Payload), &payload); err != nil {
-		return nil, err
+	payload := &storepb.TagPolicy{}
+	if err := protojson.Unmarshal([]byte(policy.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal tag policy payload")
 	}
 
-	reviewConfigName, ok := payload[string(api.ReservedTagReviewConfig)]
+	reviewConfigName, ok := payload.Tags[string(api.ReservedTagReviewConfig)]
 	if !ok {
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for environment %d not found", environmentID)}
 	}
