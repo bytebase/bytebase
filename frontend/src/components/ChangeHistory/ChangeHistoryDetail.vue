@@ -66,23 +66,19 @@
         <span class="flex items-center text-lg text-main capitalize">
           {{ $t("change-history.affected-tables") }}
         </span>
-        <div
-          class="w-full flex flex-row justify-start items-center gap-x-3 gap-y-2"
-        >
-          <div
-            v-for="affectedTable in affectedTables"
-            :key="`${affectedTable.schema}.${affectedTable.table}`"
+        <div>
+          <span
+            v-for="(affectedTable, i) in affectedTables"
+            :key="`${i}.${affectedTable.schema}.${affectedTable.table}`"
+            :class="[
+              'mr-3 mb-2',
+              !affectedTable.dropped
+                ? 'text-blue-600 cursor-pointer hover:opacity-80'
+                : 'mb-2 text-gray-400 italic',
+            ]"
+            @click="handleAffectedTableClick(affectedTable)"
+            >{{ getAffectedTableDisplayName(affectedTable) }}</span
           >
-            <span
-              :class="
-                !affectedTable.dropped
-                  ? 'text-blue-600 cursor-pointer hover:opacity-80'
-                  : 'text-gray-400 italic'
-              "
-              @click="handleAffectedTableClick(affectedTable)"
-              >{{ getAffectedTableDisplayName(affectedTable) }}</span
-            >
-          </div>
         </div>
       </div>
 
