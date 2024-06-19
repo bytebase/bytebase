@@ -43,5 +43,3 @@ SELECT
 FROM policy
 INNER JOIN environment ON policy.resource_id = environment.id
 WHERE type = 'bb.policy.sql-review';
-
--- TODO: remove legacy bb.policy.sql-review policy after migration.
