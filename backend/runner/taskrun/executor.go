@@ -230,10 +230,6 @@ func executeMigration(
 			return nil
 		}
 	}
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == storepb.Engine_ORACLE {
-		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
-		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
-	}
 
 	if profile.ExecuteDetail && stateCfg != nil {
 		switch task.Type {
@@ -265,51 +261,6 @@ func executeMigration(
 	}
 
 	return migrationID, schema, nil
-}
-
-func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage, store *store.Store) func(tx *sql.Tx) error {
-	return func(tx *sql.Tx) error {
-		payload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-			slog.Error("failed to unmarshal task payload", slog.Int("TaskId", task.ID), log.BBError(err))
-			return nil
-		}
-		// Get oracle current transaction id;
-		transactionID, err := tx.QueryContext(ctx, "SELECT RAWTOHEX(tx.xid) FROM v$transaction tx JOIN v$session s ON tx.ses_addr = s.saddr")
-		if err != nil {
-			slog.Error("failed to transaction id in task", slog.Int("TaskId", task.ID), log.BBError(err))
-			return nil
-		}
-		defer transactionID.Close()
-		var txID string
-		for transactionID.Next() {
-			err := transactionID.Scan(&txID)
-			if err != nil {
-				slog.Error("failed to the Oracle transaction id in task", slog.Int("TaskId", task.ID), log.BBError(err))
-				return nil
-			}
-		}
-		if err := transactionID.Err(); err != nil {
-			return err
-		}
-		payload.TransactionID = txID
-		updatedPayload, err := json.Marshal(payload)
-		if err != nil {
-			slog.Error("failed to unmarshal task payload", slog.Int("TaskId", task.ID), log.BBError(err), slog.Any("payload", updatedPayload))
-			return nil
-		}
-		updatedPayloadString := string(updatedPayload)
-		patch := &api.TaskPatch{
-			ID:        task.ID,
-			UpdaterID: api.SystemBotID,
-			Payload:   &updatedPayloadString,
-		}
-		if _, err = store.UpdateTaskV2(ctx, patch); err != nil {
-			slog.Error("failed to update task with new payload", slog.Any("TaskPatch", patch), log.BBError(err))
-			return nil
-		}
-		return nil
-	}
 }
 
 func setThreadIDAndStartBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {

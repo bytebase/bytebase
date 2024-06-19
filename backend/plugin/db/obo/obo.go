@@ -150,12 +150,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		totalRowsAffected += rowsAffected
 	}
 
-	if opts.EndTransactionFunc != nil {
-		if err := opts.EndTransactionFunc(tx); err != nil {
-			return 0, errors.Wrapf(err, "failed to execute beforeCommitTx")
-		}
-	}
-
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit transaction")
 	}
