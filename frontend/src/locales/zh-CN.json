@@ -513,7 +513,8 @@
         "n-members": "{n} 位成员",
         "group-members": "小组成员",
         "group-roles": "群组角色",
-        "edit-group": "编辑群组"
+        "edit-group": "编辑群组",
+        "workspace-domain-required": "请先设置工作空间的域名。"
       },
       "action": {
         "deactivate": "禁用",
@@ -655,7 +656,7 @@
         },
         "domain-restriction": {
           "self": "域名限制",
-          "description": "可用于指定成员电子邮箱的域名。留空以允许任何邮箱。",
+          "description": "用于指定成员电子邮箱的域名。",
           "domain-input-placeholder": "请输入域名，例如 example.com",
           "members-restriction": {
             "self": "成员邮箱限制",

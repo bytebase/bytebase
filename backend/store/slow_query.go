@@ -14,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -102,7 +103,7 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 		}
 
 		var slowLog storepb.SlowQueryStatistics
-		if err := protojson.Unmarshal(logBytes, &slowLog); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(logBytes, &slowLog); err != nil {
 			return nil, err
 		}
 

@@ -114,7 +114,7 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 		}
 
 		reviewConfigPyload := &storepb.ReviewConfigPayload{}
-		if err := protojsonUnmarshaler.Unmarshal(payload, reviewConfigPyload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, reviewConfigPyload); err != nil {
 			return nil, err
 		}
 
@@ -272,7 +272,7 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 	}
 
 	reviewConfigPyload := &storepb.ReviewConfigPayload{}
-	if err := protojsonUnmarshaler.Unmarshal(payload, reviewConfigPyload); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, reviewConfigPyload); err != nil {
 		return nil, err
 	}
 

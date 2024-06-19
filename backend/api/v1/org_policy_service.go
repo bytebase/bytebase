@@ -656,7 +656,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	case api.PolicyTypeTag:
 		pType = v1pb.PolicyType_TAG
 		p := &v1pb.TagPolicy{}
-		if err := protojson.Unmarshal([]byte(policyMessage.Payload), p); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), p); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal rollout policy payload")
 		}
 		policy.Policy = &v1pb.Policy_TagPolicy{
@@ -686,7 +686,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	case api.PolicyTypeMaskingRule:
 		pType = v1pb.PolicyType_MASKING_RULE
 		maskingRulePolicy := &storepb.MaskingRulePolicy{}
-		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal masking rule policy")
 		}
 		payload, err := convertToV1PBMaskingRulePolicy(maskingRulePolicy)
@@ -699,7 +699,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	case api.PolicyTypeMaskingException:
 		pType = v1pb.PolicyType_MASKING_EXCEPTION
 		maskingRulePolicy := &storepb.MaskingExceptionPolicy{}
-		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal masking exception policy")
 		}
 		payload, err := s.convertToV1PBMaskingExceptionPolicyPayload(ctx, maskingRulePolicy)
@@ -779,7 +779,7 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 
 func convertToV1PBMaskingPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, error) {
 	var maskingPolicy storepb.MaskingPolicy
-	if err := protojson.Unmarshal([]byte(payloadStr), &maskingPolicy); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), &maskingPolicy); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal masking policy")
 	}
 
@@ -877,7 +877,7 @@ func convertToStorePBMaskingLevel(level v1pb.MaskingLevel) storepb.MaskingLevel 
 
 func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPolicy, error) {
 	p := &v1pb.RolloutPolicy{}
-	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal rollout policy payload")
 	}
 	return &v1pb.Policy_RolloutPolicy{

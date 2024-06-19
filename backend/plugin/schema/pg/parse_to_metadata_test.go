@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	// Import PostgreSQL parser.
+	"github.com/bytebase/bytebase/backend/common"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -46,8 +47,8 @@ func TestParseToMetadata(t *testing.T) {
 		} else {
 			resultMeta := &storepb.DatabaseSchemaMetadata{}
 			expectedMeta := &storepb.DatabaseSchemaMetadata{}
-			a.NoError(protojson.Unmarshal([]byte(t.Metadata), resultMeta))
-			a.NoError(protojson.Unmarshal([]byte(t.Metadata), expectedMeta))
+			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Metadata), resultMeta))
+			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Metadata), expectedMeta))
 			a.Equal(expectedMeta, resultMeta)
 		}
 	}

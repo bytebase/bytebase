@@ -513,7 +513,8 @@
         "n-members": "{n} members",
         "group-members": "Group members",
         "group-roles": "Group roles",
-        "edit-group": "Edit group"
+        "edit-group": "Edit group",
+        "workspace-domain-required": "Please set a workspace domain first."
       },
       "action": {
         "deactivate": "Deactivate",
@@ -655,7 +656,7 @@
         },
         "domain-restriction": {
           "self": "Domain restriction",
-          "description": "Specify the domain that could be used as the email domain for workspace members. Leave it empty to allow any domain.",
+          "description": "Specify the domain that could be used as the email domain for workspace members.",
           "domain-input-placeholder": "Please input domain, e.g. example.com",
           "members-restriction": {
             "self": "Members restriction",

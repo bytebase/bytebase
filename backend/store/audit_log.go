@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -118,7 +119,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
 
-		if err := protojson.Unmarshal(payload, l.Payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, l.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal payload")
 		}
 

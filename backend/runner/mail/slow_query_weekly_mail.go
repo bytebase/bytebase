@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -94,7 +94,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	var storeValue storepb.SMTPMailDeliverySetting
-	if err := protojson.Unmarshal([]byte(mailSetting.Value), &storeValue); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(mailSetting.Value), &storeValue); err != nil {
 		slog.Error("Failed to unmarshal setting value", log.BBError(err))
 		return
 	}
@@ -109,7 +109,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 	if setting != nil {
 		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), settingValue); err != nil {
 			slog.Error("Failed to unmarshal setting value", log.BBError(err))
 			return
 		}

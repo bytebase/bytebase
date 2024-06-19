@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 // DatabaseGroupMessage is the message for database groups.
@@ -184,7 +186,7 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
 		var expression expr.Expr
-		if err := protojson.Unmarshal([]byte(stringExpr), &expression); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(stringExpr), &expression); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal expression")
 		}
 		databaseGroup.Expression = &expression
@@ -245,7 +247,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	var expression expr.Expr
-	if err := protojson.Unmarshal([]byte(stringExpr), &expression); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(stringExpr), &expression); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	updatedDatabaseGroup.Expression = &expression
@@ -306,7 +308,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	var expression expr.Expr
-	if err := protojson.Unmarshal([]byte(stringExpr), &expression); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(stringExpr), &expression); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	insertedDatabaseGroup.Expression = &expression
