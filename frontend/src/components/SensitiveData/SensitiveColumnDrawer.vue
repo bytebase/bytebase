@@ -266,7 +266,7 @@
     </DrawerContent>
 
     <GrantAccessDrawer
-      :show="state.showGrantAccessDrawer"
+      v-if="state.showGrantAccessDrawer"
       :column-list="[props.column]"
       @dismiss="state.showGrantAccessDrawer = false"
     />
