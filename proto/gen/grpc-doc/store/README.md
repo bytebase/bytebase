@@ -186,7 +186,6 @@
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
-    - [SQLReviewPolicy](#bytebase-store-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
@@ -2962,22 +2961,6 @@ Format: users/{userUID} or groups/{group email} |
 | workspace_roles | [string](#string) | repeated |  |
 | project_roles | [string](#string) | repeated |  |
 | issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
-
-
-
-
-
-
-<a name="bytebase-store-SQLReviewPolicy"></a>
-
-### SQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| rule_list | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
 
 
 

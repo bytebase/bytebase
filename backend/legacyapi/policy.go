@@ -30,9 +30,6 @@ const (
 
 	// PolicyTypeRollout is the rollout policy type.
 	PolicyTypeRollout PolicyType = "bb.policy.rollout"
-	// PolicyTypeSQLReview is the sql review policy type.
-	// TODO(ed): remove this.
-	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
 	// PolicyTypeEnvironmentTier is the tier of an environment.
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeMasking is the masking policy type.
@@ -87,9 +84,7 @@ const (
 var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
-		PolicyTypeRollout: {PolicyResourceTypeEnvironment},
-		// TODO(ed): remove this.
-		PolicyTypeSQLReview:                         {PolicyResourceTypeEnvironment},
+		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
 		PolicyTypeTag:                               {PolicyResourceTypeEnvironment},
 		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},

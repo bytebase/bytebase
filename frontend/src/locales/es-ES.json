@@ -2747,6 +2747,7 @@
     "configure-policy": "Configurar política",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
+    "policy-create-failed": "No se pudo crear la política de revisión.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
@@ -2914,7 +2915,8 @@
     "schema-group": "grupo de mesas",
     "changelist": "Lista de cambios",
     "vcs-provider": "Proveedor GitOps",
-    "vcs-connector": "Conector GitOps"
+    "vcs-connector": "Conector GitOps",
+    "review-config": "Revisar configuración"
   },
   "resource-id": {
     "self": "ID de {resource}",

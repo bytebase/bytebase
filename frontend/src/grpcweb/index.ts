@@ -21,6 +21,7 @@ import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
 import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
+import { ReviewConfigServiceDefinition } from "@/types/proto/v1/review_config_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
@@ -203,6 +204,10 @@ export const auditLogServiceClient = clientFactory.create(
 
 export const userGroupServiceClient = clientFactory.create(
   UserGroupServiceDefinition,
+  channel
+);
+export const reviewConfigServiceClient = clientFactory.create(
+  ReviewConfigServiceDefinition,
   channel
 );
 
