@@ -271,58 +271,42 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	totalRowsAffected := int64(0)
 	if len(remainingSQLs) != 0 {
-		var chunks [][]base.SingleSQL
 		totalCommands := len(remainingSQLs)
-		ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to chunk sql")
-		}
-		chunks = ret
-		currentIndex := 0
-
 		tx, err := driver.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
 		defer tx.Rollback()
 
-		for _, chunk := range chunks {
-			if len(chunk) == 0 {
-				continue
-			}
+		for i, command := range remainingSQLs {
 			// Start the current chunk.
 			// Set the progress information for the current chunk.
 			if opts.UpdateExecutionStatus != nil {
 				opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
 					CommandsTotal:     int32(totalCommands),
-					CommandsCompleted: int32(currentIndex),
+					CommandsCompleted: int32(i),
 					CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(chunk[0].FirstStatementLine),
-						Column: int32(chunk[0].FirstStatementColumn),
+						Line:   int32(command.FirstStatementLine),
+						Column: int32(command.FirstStatementColumn),
 					},
 					CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(chunk[len(chunk)-1].LastLine),
-						Column: int32(chunk[len(chunk)-1].LastColumn),
+						Line:   int32(command.LastLine),
+						Column: int32(command.LastColumn),
 					},
 				})
 			}
 
-			chunkText, err := util.ConcatChunk(chunk)
-			if err != nil {
-				return 0, err
-			}
-
-			sqlResult, err := tx.ExecContext(ctx, chunkText)
+			sqlResult, err := tx.ExecContext(ctx, command.Text)
 			if err != nil {
 				return 0, &db.ErrorWithPosition{
 					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 					Start: &storepb.TaskRunResult_Position{
-						Line:   int32(chunk[0].FirstStatementLine),
-						Column: int32(chunk[0].FirstStatementColumn),
+						Line:   int32(command.FirstStatementLine),
+						Column: int32(command.FirstStatementColumn),
 					},
 					End: &storepb.TaskRunResult_Position{
-						Line:   int32(chunk[len(chunk)-1].LastLine),
-						Column: int32(chunk[len(chunk)-1].LastColumn),
+						Line:   int32(command.LastLine),
+						Column: int32(command.LastColumn),
 					},
 				}
 			}
@@ -332,7 +316,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				slog.Debug("rowsAffected returns error", log.BBError(err))
 			}
 			totalRowsAffected += rowsAffected
-			currentIndex += len(chunk)
 		}
 
 		if err := tx.Commit(); err != nil {
