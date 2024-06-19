@@ -565,7 +565,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal(payload, issue.Payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, issue.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal issue payload")
 		}
 		if err := json.Unmarshal(taskRunStatusCount, &issue.TaskStatusCount); err != nil {

@@ -330,7 +330,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			return nil, err
 		}
 		setting := &storepb.Project{}
-		if err := protojsonUnmarshaler.Unmarshal(payload, setting); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, setting); err != nil {
 			return nil, err
 		}
 		projectMessage.Setting = setting

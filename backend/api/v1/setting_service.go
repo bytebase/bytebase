@@ -285,7 +285,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, "should set the password for the first time")
 			}
 			oldValue := new(storepb.SMTPMailDeliverySetting)
-			if err := protojson.Unmarshal([]byte(oldStoreSetting.Value), oldValue); err != nil {
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(oldStoreSetting.Value), oldValue); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
 			}
 			apiValue.Password = &oldValue.Password
@@ -559,7 +559,7 @@ func convertV1PbToStorePb(inputPB, outputPB protoreflect.ProtoMessage) error {
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to marshal setting: %v", err)
 	}
-	if err := protojson.Unmarshal(bytes, outputPB); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(bytes, outputPB); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting: %v", err)
 	}
 	return nil
@@ -570,7 +570,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 	switch setting.Name {
 	case api.SettingWorkspaceMailDelivery:
 		storeValue := new(storepb.SMTPMailDeliverySetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return stripSensitiveData(&v1pb.Setting{
@@ -594,7 +594,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		})
 	case api.SettingAppIM:
 		storeValue := new(storepb.AppIMSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
@@ -617,7 +617,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		}, nil
 	case api.SettingPluginAgent:
 		v1Value := new(v1pb.AgentPluginSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
@@ -630,7 +630,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		}, nil
 	case api.SettingWorkspaceProfile:
 		v1Value := new(v1pb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
@@ -643,7 +643,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		}, nil
 	case api.SettingWorkspaceApproval:
 		storeValue := new(storepb.WorkspaceApprovalSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
@@ -671,7 +671,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		}, nil
 	case api.SettingWorkspaceExternalApproval:
 		storeValue := new(storepb.ExternalApprovalSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting values for %s with error: %v", setting.Name, err)
 		}
 		v1Value := convertToExternalApprovalSetting(storeValue)
@@ -684,9 +684,8 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	case api.SettingSchemaTemplate:
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 		value := new(storepb.SchemaTemplateSetting)
-		if err := decoder.Unmarshal([]byte(setting.Value), value); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 
@@ -704,7 +703,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		}, nil
 	case api.SettingDataClassification:
 		v1Value := new(v1pb.DataClassificationSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
@@ -717,7 +716,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		}, nil
 	case api.SettingSemanticTypes:
 		v1Value := new(v1pb.SemanticTypeSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
@@ -730,7 +729,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		}, nil
 	case api.SettingMaskingAlgorithm:
 		v1Value := new(v1pb.MaskingAlgorithmSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
@@ -768,8 +767,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	}
 
 	value := new(storepb.SchemaTemplateSetting)
-	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := decoder.Unmarshal([]byte(settingValue), value); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
 	}
 	v1Value, err := convertSchemaTemplateSetting(ctx, value)
@@ -886,7 +884,7 @@ func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMail
 	}
 	if setting != nil {
 		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), settingValue); err != nil {
 			return status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
 		}
 		if settingValue.ExternalUrl != "" {

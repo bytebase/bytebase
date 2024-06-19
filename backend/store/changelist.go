@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -116,7 +117,7 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 			return nil, err
 		}
 		changelistPayload := &storepb.Changelist{}
-		if err := protojsonUnmarshaler.Unmarshal(payload, changelistPayload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, changelistPayload); err != nil {
 			return nil, err
 		}
 		changelist.Payload = changelistPayload
