@@ -473,8 +473,6 @@ export interface TaskRun {
   changeHistory: string;
   schemaVersion: string;
   executionStatus: TaskRun_ExecutionStatus;
-  /** Last execution status update timestamp. */
-  executionStatusUpdateTime: Date | undefined;
   executionDetail: TaskRun_ExecutionDetail | undefined;
   startTime: Date | undefined;
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
@@ -2702,7 +2700,6 @@ function createBaseTaskRun(): TaskRun {
     changeHistory: "",
     schemaVersion: "",
     executionStatus: TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED,
-    executionStatusUpdateTime: undefined,
     executionDetail: undefined,
     startTime: undefined,
     exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
@@ -2746,9 +2743,6 @@ export const TaskRun = {
     }
     if (message.executionStatus !== TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED) {
       writer.uint32(96).int32(taskRun_ExecutionStatusToNumber(message.executionStatus));
-    }
-    if (message.executionStatusUpdateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.executionStatusUpdateTime), writer.uint32(106).fork()).ldelim();
     }
     if (message.executionDetail !== undefined) {
       TaskRun_ExecutionDetail.encode(message.executionDetail, writer.uint32(122).fork()).ldelim();
@@ -2853,13 +2847,6 @@ export const TaskRun = {
 
           message.executionStatus = taskRun_ExecutionStatusFromJSON(reader.int32());
           continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.executionStatusUpdateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
         case 15:
           if (tag !== 122) {
             break;
@@ -2906,9 +2893,6 @@ export const TaskRun = {
       executionStatus: isSet(object.executionStatus)
         ? taskRun_ExecutionStatusFromJSON(object.executionStatus)
         : TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED,
-      executionStatusUpdateTime: isSet(object.executionStatusUpdateTime)
-        ? fromJsonTimestamp(object.executionStatusUpdateTime)
-        : undefined,
       executionDetail: isSet(object.executionDetail)
         ? TaskRun_ExecutionDetail.fromJSON(object.executionDetail)
         : undefined,
@@ -2957,9 +2941,6 @@ export const TaskRun = {
     if (message.executionStatus !== TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED) {
       obj.executionStatus = taskRun_ExecutionStatusToJSON(message.executionStatus);
     }
-    if (message.executionStatusUpdateTime !== undefined) {
-      obj.executionStatusUpdateTime = message.executionStatusUpdateTime.toISOString();
-    }
     if (message.executionDetail !== undefined) {
       obj.executionDetail = TaskRun_ExecutionDetail.toJSON(message.executionDetail);
     }
@@ -2989,7 +2970,6 @@ export const TaskRun = {
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.executionStatus = object.executionStatus ?? TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED;
-    message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
     message.executionDetail = (object.executionDetail !== undefined && object.executionDetail !== null)
       ? TaskRun_ExecutionDetail.fromPartial(object.executionDetail)
       : undefined;

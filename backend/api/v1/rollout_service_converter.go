@@ -450,7 +450,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
 		if s, ok := v.(state.TaskRunExecutionStatus); ok {
 			t.ExecutionStatus = s.ExecutionStatus
-			t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
 			t.ExecutionDetail = s.ExecutionDetail
 		}
 	}
