@@ -366,7 +366,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	var commands []base.SingleSQL
 	var originalIndex []int
-	oneshot := true
+	var plsql bool
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
 		if err != nil {
@@ -379,11 +379,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
 		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
 		if len(singleSQLs) > 1 || !isPlSQLBlock(singleSQLs[0].Text) {
-			oneshot = false
+			plsql = true
 		}
+	} else {
+		commands = []base.SingleSQL{
+			{
+				Text: statement,
+			},
+		}
+		originalIndex = []int{0}
 	}
 
-	if oneshot {
+	if plsql {
 		conn, err := driver.db.Conn(ctx)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to get connection")

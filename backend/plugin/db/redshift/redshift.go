@@ -180,32 +180,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	var commands []base.SingleSQL
-	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
 		if err != nil {
 			return 0, err
 		}
 		commands = base.FilterEmptySQL(singleSQLs)
-		oneshot = false
-	}
-
-	if oneshot {
-		conn, err := driver.db.Conn(ctx)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to get connection")
+	} else {
+		commands = []base.SingleSQL{
+			{
+				Text: statement,
+			},
 		}
-		defer conn.Close()
-
-		// USE SET SESSION ROLE to set the role for the current session.
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s'", owner)); err != nil {
-			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-		}
-		if _, err := conn.ExecContext(ctx, statement); err != nil {
-			return 0, err
-		}
-
-		return 0, nil
 	}
 
 	var remainingSQLs []base.SingleSQL

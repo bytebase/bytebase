@@ -245,28 +245,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	var commands []base.SingleSQL
-	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
 		if err != nil {
 			return 0, err
 		}
 		commands = base.FilterEmptySQL(singleSQLs)
-		oneshot = false
-	}
-
-	if oneshot {
-		conn, err := driver.db.Conn(ctx)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to get connection")
+	} else {
+		commands = []base.SingleSQL{
+			{
+				Text: statement,
+			},
 		}
-		defer conn.Close()
-
-		if _, err := conn.ExecContext(ctx, statement); err != nil {
-			return 0, err
-		}
-
-		return 0, nil
 	}
 
 	var remainingSQLs []base.SingleSQL
