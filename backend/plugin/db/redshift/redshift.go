@@ -178,18 +178,39 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		return 0, err
 	}
-	singleSQLs, err := pgparser.SplitSQL(statement)
-	if err != nil {
-		return 0, err
+
+	var commands []base.SingleSQL
+	oneshot := true
+	if len(statement) <= common.MaxSheetCheckSize {
+		singleSQLs, err := pgparser.SplitSQL(statement)
+		if err != nil {
+			return 0, err
+		}
+		commands = base.FilterEmptySQL(singleSQLs)
+		oneshot = false
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
+
+	if oneshot {
+		conn, err := driver.db.Conn(ctx)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to get connection")
+		}
+		defer conn.Close()
+
+		// USE SET SESSION ROLE to set the role for the current session.
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s'", owner)); err != nil {
+			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
+			return 0, err
+		}
+
 		return 0, nil
 	}
 
 	var remainingSQLs []base.SingleSQL
 	var nonTransactionStmts []string
-	for _, singleSQL := range singleSQLs {
+	for _, singleSQL := range commands {
 		if isNonTransactionStatement(singleSQL.Text) {
 			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
 			continue
@@ -211,20 +232,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	totalRowsAffected := int64(0)
 	if len(remainingSQLs) != 0 {
-		var totalCommands int
 		var chunks [][]base.SingleSQL
-		if len(statement) <= common.MaxSheetCheckSize {
-			totalCommands = len(remainingSQLs)
-			ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
-			if err != nil {
-				return 0, errors.Wrapf(err, "failed to chunk sql")
-			}
-			chunks = ret
-		} else {
-			chunks = [][]base.SingleSQL{
-				remainingSQLs,
-			}
+		totalCommands := len(remainingSQLs)
+		ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to chunk sql")
 		}
+		chunks = ret
 		currentIndex := 0
 
 		tx, err := driver.db.BeginTx(ctx, nil)
