@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -419,10 +418,10 @@ func convertToPlanCheckRunResultStatus(status storepb.PlanCheckRunResult_Result_
 	return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
 }
 
-func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.State, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
+func convertToTaskRuns(ctx context.Context, s *store.Store, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		taskRunV1, err := convertToTaskRun(ctx, s, stateCfg, taskRun)
+		taskRunV1, err := convertToTaskRun(ctx, s, taskRun)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert task run")
 		}
@@ -431,7 +430,7 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 	return taskRunsV1, nil
 }
 
-func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
+func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	t := &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),

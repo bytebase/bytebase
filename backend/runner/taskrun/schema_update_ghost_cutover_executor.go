@@ -52,7 +52,7 @@ type SchemaUpdateGhostCutoverExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
 // TODO: support cancellation.
-func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskContext context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
+func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskContext context.Context, task *store.TaskMessage, _ int) (bool, *storepb.TaskRunResult, error) {
 	if len(task.DependsOn) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
@@ -102,7 +102,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
 	version := model.Version{Version: payload.SchemaVersion}
-	terminated, result, err := cutover(ctx, taskContext, e.store, e.dbFactory, e.stateCfg, e.profile, task, taskRunUID, statement, payload.SheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	terminated, result, err := cutover(ctx, taskContext, e.store, e.dbFactory, e.profile, task, statement, payload.SheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
@@ -114,7 +114,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, taskContext context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *storepb.TaskRunResult, err error) {
+func cutover(ctx context.Context, taskContext context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, task *store.TaskMessage, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *storepb.TaskRunResult, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
@@ -152,7 +152,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	migrationID, _, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, stateCfg, taskRunUID, driver, mi, statement, &sheetID, execFunc, db.ExecuteOptions{})
+	migrationID, _, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, driver, mi, statement, &sheetID, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}

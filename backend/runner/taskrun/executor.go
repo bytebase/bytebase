@@ -251,7 +251,7 @@ func executeMigration(
 		}
 	}
 
-	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, driverCtx, stores, stateCfg, taskRunUID, driver, mi, statement, sheetID, opts)
+	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, driverCtx, stores, driver, mi, statement, sheetID, opts)
 	if err != nil {
 		return "", "", err
 	}
