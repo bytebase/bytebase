@@ -104,3 +104,4 @@ linters-settings:
     forbid:
       - 'fmt\.Errorf(# Please use errors\.Wrap\|Wrapf\|Errorf instead)?'
       - 'ioutil\.ReadDir(# Please use os\.ReadDir)?'
+      - 'protojson\.Unmarshal?'

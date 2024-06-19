@@ -15,6 +15,7 @@ import (
 
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -634,7 +635,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		}
 		changeHistory.Version = version
 		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
-		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
 			return nil, err
 		}
 
@@ -937,7 +938,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			changeHistory.IssueUID = &n
 		}
 		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
-		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
 			return nil, err
 		}
 		version, err := model.NewVersion(storedVersion)

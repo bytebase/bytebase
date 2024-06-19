@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
 	// Import PostgreSQL parser.
+	"github.com/bytebase/bytebase/backend/common"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -40,7 +40,7 @@ func TestGetSchemaDesign(t *testing.T) {
 
 	for i, t := range tests {
 		targetSchema := &storepb.DatabaseSchemaMetadata{}
-		a.NoError(protojson.Unmarshal([]byte(t.Target), targetSchema))
+		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Target), targetSchema))
 		result, err := GetDesignSchema("", t.Baseline, targetSchema)
 		a.NoError(err)
 		if record {
