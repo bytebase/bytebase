@@ -29,7 +29,6 @@ import { useI18n } from "vue-i18n";
 import { unknownTask, isPostgresFamily } from "@/types";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import {
-  TaskRun_ExecutionStatus,
   TaskRun_Status,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
@@ -78,50 +77,9 @@ const comment = computed(() => {
     }
     return t("task-run.status.enqueued");
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
-    if (taskRun.executionStatus === TaskRun_ExecutionStatus.PRE_EXECUTING) {
-      if (isDatabaseDataExportIssue(issue.value)) {
-        return t("task-run.status.preparing-to-export-data");
-      }
-      return t("task-run.status.dumping-schema-before-executing-sql");
-    } else if (taskRun.executionStatus === TaskRun_ExecutionStatus.EXECUTING) {
-      if (taskRun.executionDetail) {
-        return t("task-run.status.executing-sql-detail", {
-          current: taskRun.executionDetail.commandsCompleted + 1,
-          total: taskRun.executionDetail.commandsTotal,
-          startLine:
-            (taskRun.executionDetail.commandStartPosition?.line ?? 0) + 1,
-          startColumn:
-            (taskRun.executionDetail.commandStartPosition?.column ?? 0) + 1,
-          endLine: (taskRun.executionDetail.commandEndPosition?.line ?? 0) + 1,
-          endColumn:
-            (taskRun.executionDetail.commandEndPosition?.column ?? 0) + 1,
-        });
-      }
-      if (isDatabaseDataExportIssue(issue.value)) {
-        return t("task-run.status.exporting-data");
-      }
-      return t("task-run.status.executing-sql");
-    } else if (
-      taskRun.executionStatus === TaskRun_ExecutionStatus.POST_EXECUTING
-    ) {
-      return t("task-run.status.dumping-schema-after-executing-sql");
-    }
+    // TODO(jim).
   } else if (taskRun.status === TaskRun_Status.FAILED) {
-    if (
-      taskRun.executionDetail?.commandStartPosition &&
-      taskRun.executionDetail?.commandEndPosition
-    ) {
-      return t("task-run.status.failed-sql-detail", {
-        startLine:
-          (taskRun.executionDetail.commandStartPosition?.line ?? 0) + 1,
-        startColumn:
-          (taskRun.executionDetail.commandStartPosition?.column ?? 0) + 1,
-        endLine: (taskRun.executionDetail.commandEndPosition?.line ?? 0) + 1,
-        endColumn:
-          (taskRun.executionDetail.commandEndPosition?.column ?? 0) + 1,
-        message: taskRun.detail,
-      });
-    }
+    // TODO(jim).
   }
   return taskRun.detail;
 });

@@ -120,8 +120,7 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
     return undefined;
   }
   if (
-    taskRun.status === TaskRun_Status.RUNNING &&
-    taskRun.executionStatusUpdateTime
+    taskRun.status === TaskRun_Status.RUNNING
   ) {
     const elapsedMS = Date.now() - startTime.getTime();
     return Duration.fromPartial({
