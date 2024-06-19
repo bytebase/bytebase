@@ -13,32 +13,32 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
-// WeComWebhookResponse is the API message for WeCom webhook response.
-type WeComWebhookResponse struct {
+// WebhookResponse is the API message for WeCom webhook response.
+type WebhookResponse struct {
 	ErrorCode    int    `json:"errcode"`
 	ErrorMessage string `json:"errmsg"`
 }
 
-// WeComWebhookMarkdown is the API message for WeCom webhook markdown.
-type WeComWebhookMarkdown struct {
+// WebhookMarkdown is the API message for WeCom webhook markdown.
+type WebhookMarkdown struct {
 	Content string `json:"content"`
 }
 
-// WeComWebhook is the API message for WeCom webhook.
-type WeComWebhook struct {
-	MessageType string               `json:"msgtype"`
-	Markdown    WeComWebhookMarkdown `json:"markdown"`
+// Webhook is the API message for WeCom webhook.
+type Webhook struct {
+	MessageType string          `json:"msgtype"`
+	Markdown    WebhookMarkdown `json:"markdown"`
 }
 
 func init() {
-	webhook.Register("bb.plugin.webhook.wecom", &WeComReceiver{})
+	webhook.Register("bb.plugin.webhook.wecom", &Receiver{})
 }
 
-// WeComReceiver is the receiver for WeCom.
-type WeComReceiver struct {
+// Receiver is the receiver for WeCom.
+type Receiver struct {
 }
 
-func (*WeComReceiver) Post(context webhook.Context) error {
+func (*Receiver) Post(context webhook.Context) error {
 	metaStrList := []string{}
 	for _, meta := range context.GetMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
@@ -59,9 +59,9 @@ func (*WeComReceiver) Post(context webhook.Context) error {
 		content = fmt.Sprintf("# %s%s\n> %s\n\n%s\n[View in Bytebase](%s)", status, context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
 
-	post := WeComWebhook{
+	post := Webhook{
 		MessageType: "markdown",
-		Markdown: WeComWebhookMarkdown{
+		Markdown: WebhookMarkdown{
 			Content: content,
 		},
 	}
@@ -94,7 +94,7 @@ func (*WeComReceiver) Post(context webhook.Context) error {
 		return errors.Errorf("failed to POST webhook to %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
 	}
 
-	webhookResponse := &WeComWebhookResponse{}
+	webhookResponse := &WebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
 		return errors.Wrapf(err, "malformed webhook response from %s", context.URL)
 	}
