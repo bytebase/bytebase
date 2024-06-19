@@ -634,7 +634,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		}
 		changeHistory.Version = version
 		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
-		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
 			return nil, err
 		}
 
@@ -937,7 +937,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			changeHistory.IssueUID = &n
 		}
 		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
-		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
 			return nil, err
 		}
 		version, err := model.NewVersion(storedVersion)

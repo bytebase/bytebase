@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -31,7 +30,7 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*store
 	}
 
 	p := &storepb.ProjectIamPolicy{}
-	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal iam policy")
 	}
 
@@ -56,7 +55,7 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*store
 	}
 
 	p := &storepb.RolloutPolicy{}
-	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal rollout policy")
 	}
 
@@ -83,7 +82,7 @@ func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*sto
 	}
 
 	p := new(storepb.SQLReviewPolicy)
-	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, err
 	}
 
@@ -124,7 +123,7 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 	}
 
 	p := new(storepb.MaskingRulePolicy)
-	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, err
 	}
 
@@ -149,7 +148,7 @@ func (s *Store) GetMaskingPolicyByDatabaseUID(ctx context.Context, databaseUID i
 	}
 
 	p := new(storepb.MaskingPolicy)
-	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, err
 	}
 
@@ -174,7 +173,7 @@ func (s *Store) GetMaskingExceptionPolicyByProjectUID(ctx context.Context, proje
 	}
 
 	p := new(storepb.MaskingExceptionPolicy)
-	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, err
 	}
 

@@ -237,7 +237,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		); err != nil {
 			return nil, errors.Wrap(err, "failed to scan plan")
 		}
-		if err := protojson.Unmarshal(config, plan.Config); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
 		}
 		if err := json.Unmarshal(statusCount, &plan.PlanCheckRunStatusCount); err != nil {

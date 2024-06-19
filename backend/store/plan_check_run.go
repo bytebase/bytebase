@@ -179,10 +179,10 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 		); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
 			return nil, err
 		}
 		planCheckRuns = append(planCheckRuns, &planCheckRun)
