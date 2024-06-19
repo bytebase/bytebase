@@ -367,6 +367,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var commands []base.SingleSQL
 	var originalIndex []int32
 	var isPlsql bool
+	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
 		if err != nil {
@@ -381,7 +382,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
 			isPlsql = true
 		}
-	} else {
+		if len(commands) <= common.MaximumCommands {
+			oneshot = false
+		}
+	}
+	if oneshot {
 		commands = []base.SingleSQL{
 			{
 				Text: statement,

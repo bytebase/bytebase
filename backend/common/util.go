@@ -28,6 +28,8 @@ const (
 	// The maximum number of bytes for sql results in response body.
 	// 100 MB.
 	MaximumSQLResultSize = 100 * 1024 * 1024
+	// MaximumCommands is the maximum number of commands that can be executed in a single transaction.
+	MaximumCommands = 200
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
