@@ -354,7 +354,6 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 type ExecuteOptions struct {
 	CreateDatabase        bool
 	BeginFunc             func(ctx context.Context, conn *sql.Conn) error
-	EndTransactionFunc    func(tx *sql.Tx) error
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
 	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
 }
