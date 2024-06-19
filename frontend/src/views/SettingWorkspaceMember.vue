@@ -49,16 +49,30 @@
       <template #suffix>
         <div class="flex items-center space-x-3">
           <SearchBox v-model:value="state.activeUserFilterText" />
-          <NButton
-            v-if="allowCreateGroup"
-            class="capitalize"
-            @click="handleCreateGroup"
-          >
-            <template #icon>
-              <PlusIcon class="h-5 w-5" />
+
+          <NPopover :disabled="workspaceProfileSetting.domains.length > 0">
+            <template #trigger>
+              <NButton
+                v-if="allowCreateGroup"
+                :disabled="workspaceProfileSetting.domains.length === 0"
+                @click="handleCreateGroup"
+              >
+                <template #icon>
+                  <PlusIcon class="h-5 w-5" />
+                </template>
+                {{ $t(`settings.members.groups.add-group`) }}
+              </NButton>
             </template>
-            {{ $t(`settings.members.groups.add-group`) }}
-          </NButton>
+            <p>
+              {{ $t("settings.members.groups.workspace-domain-required") }}
+              <router-link
+                to="/setting/general#domain-restriction"
+                class="normal-link"
+              >
+                {{ $t("common.configure") }}
+              </router-link>
+            </p>
+          </NPopover>
           <NButton
             v-if="allowCreateUser"
             type="primary"
@@ -145,7 +159,7 @@
 <script lang="tsx" setup>
 import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NTabs, NTabPane } from "naive-ui";
+import { NButton, NCheckbox, NTabs, NTabPane, NPopover } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, RouterLink } from "vue-router";
@@ -160,6 +174,7 @@ import {
   useUserStore,
   useUIStateStore,
   useUserGroupStore,
+  useSettingV1Store,
 } from "@/store";
 import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -170,6 +185,7 @@ import {
 import type { User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import type { UserGroup } from "@/types/proto/v1/user_group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -208,6 +224,7 @@ const groupStore = useUserGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const uiStateStore = useUIStateStore();
 const subscriptionV1Store = useSubscriptionV1Store();
+const settingV1Store = useSettingV1Store();
 
 watch(
   () => route.hash,
@@ -229,6 +246,12 @@ watch(
   (tab) => {
     router.push({ hash: `#${tab}` });
   }
+);
+
+const workspaceProfileSetting = computed(() =>
+  WorkspaceProfileSetting.fromPartial(
+    settingV1Store.workspaceProfileSetting || {}
+  )
 );
 
 const hasRBACFeature = computed(() =>
