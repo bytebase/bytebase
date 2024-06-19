@@ -267,7 +267,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if len(remainingSQLs) != 0 {
 		var totalCommands int
 		var chunks [][]base.SingleSQL
-		if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+		if len(statement) <= common.MaxSheetCheckSize {
 			totalCommands = len(remainingSQLs)
 			ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
 			if err != nil {
