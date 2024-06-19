@@ -447,27 +447,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		SchemaVersion: taskRun.ResultProto.Version,
 	}
 
-	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
-		if s, ok := v.(state.TaskRunExecutionStatus); ok {
-			t.ExecutionStatus = s.ExecutionStatus
-			t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
-			t.ExecutionDetail = s.ExecutionDetail
-		}
-	}
-
-	if taskRun.Status == api.TaskRunFailed && taskRun.ResultProto.StartPosition != nil && taskRun.ResultProto.EndPosition != nil {
-		t.ExecutionDetail = &v1pb.TaskRun_ExecutionDetail{
-			CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-				Line:   taskRun.ResultProto.StartPosition.Line,
-				Column: taskRun.ResultProto.StartPosition.Column,
-			},
-			CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-				Line:   taskRun.ResultProto.EndPosition.Line,
-				Column: taskRun.ResultProto.EndPosition.Column,
-			},
-		}
-	}
-
 	if taskRun.ResultProto.ExportArchiveUid != 0 {
 		t.ExportArchiveStatus = v1pb.TaskRun_EXPORTED
 		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)

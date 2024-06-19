@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // NewSchemaUpdateGhostSyncExecutor creates a schema update (gh-ost) sync task executor.
@@ -42,12 +41,6 @@ type SchemaUpdateGhostSyncExecutor struct {
 // RunOnce will run SchemaUpdateGhostSync task once.
 // TODO: support cancellation.
 func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, taskContext context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
-
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")

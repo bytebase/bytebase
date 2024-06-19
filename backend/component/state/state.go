@@ -3,11 +3,8 @@ package state
 
 import (
 	"sync"
-	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/pkg/errors"
 )
@@ -29,9 +26,6 @@ type State struct {
 	TaskProgress sync.Map // map[taskID]api.Progress
 	// GhostTaskState is the map from task ID to gh-ost state.
 	GhostTaskState sync.Map // map[taskID]sharedGhostState
-
-	// TaskRunExecutionStatuses is the map from task run ID to task run execution status.
-	TaskRunExecutionStatuses sync.Map // map[taskRunID]TaskRunExecutionStatus
 
 	// RunningTaskRuns is the set of running taskruns.
 	RunningTaskRuns sync.Map // map[taskRunID]bool
@@ -88,10 +82,4 @@ type InstanceSlowQuerySyncMessage struct {
 	// If ProjectID is empty, then all databases will be synced.
 	// If ProjectID is not empty, then only databases belong to the project will be synced.
 	ProjectID string
-}
-
-type TaskRunExecutionStatus struct {
-	ExecutionStatus v1pb.TaskRun_ExecutionStatus
-	ExecutionDetail *v1pb.TaskRun_ExecutionDetail
-	UpdateTime      time.Time
 }

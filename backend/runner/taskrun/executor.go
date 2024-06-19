@@ -24,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // Executor is the task executor.
@@ -245,14 +244,6 @@ func executeMigration(
 				storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_MSSQL,
 				storepb.Engine_DYNAMODB:
 				opts.ChunkedSubmission = true
-				opts.UpdateExecutionStatus = func(detail *v1pb.TaskRun_ExecutionDetail) {
-					stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-						state.TaskRunExecutionStatus{
-							ExecutionStatus: v1pb.TaskRun_EXECUTING,
-							ExecutionDetail: detail,
-							UpdateTime:      time.Now(),
-						})
-				}
 				opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, taskRunUID, stores)
 			default:
 				// do nothing

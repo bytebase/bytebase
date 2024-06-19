@@ -190,7 +190,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
 	var nonTransactionStmts []string
-	var totalCommands int
 	var chunks [][]base.SingleSQL
 	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := tidbparser.SplitSQL(statement)
@@ -201,7 +200,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
-		totalCommands = len(singleSQLs)
 
 		// Find non-transactional statements.
 		// TiDB cannot run create table and create index in a single transaction.
@@ -241,23 +239,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	for _, chunk := range chunks {
 		if len(chunk) == 0 {
 			continue
-		}
-		// Start the current chunk.
-
-		// Set the progress information for the current chunk.
-		if opts.UpdateExecutionStatus != nil {
-			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-				CommandsTotal:     int32(totalCommands),
-				CommandsCompleted: int32(currentIndex),
-				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[0].FirstStatementLine),
-					Column: int32(chunk[0].FirstStatementColumn),
-				},
-				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[len(chunk)-1].LastLine),
-					Column: int32(chunk[len(chunk)-1].LastColumn),
-				},
-			})
 		}
 
 		chunkText, err := util.ConcatChunk(chunk)

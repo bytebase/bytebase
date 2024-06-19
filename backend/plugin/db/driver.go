@@ -358,9 +358,8 @@ type ExecuteOptions struct {
 	// ChunkedSubmission is the flag to indicate if we should use chunked submission for the statement.
 	// If true, we will submit each statement chunk, otherwise we will submit all statements in a batch.
 	// For both cases, we will use one transaction to wrap the statements.
-	ChunkedSubmission     bool
-	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
-	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
+	ChunkedSubmission bool
+	CreateTaskRunLog  func(time.Time, *storepb.TaskRunLog) error
 }
 
 func (o *ExecuteOptions) LogSchemaDumpStart() {
