@@ -69,7 +69,7 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// We must use the same MySQL connection to lock and unlock tables.
@@ -89,8 +89,8 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	}
 	defer txn.Rollback()
 
-	slog.Debug("begin to dump database", slog.String("database", driver.databaseName), slog.Bool("schemaOnly", schemaOnly))
-	if err := dumpTxn(txn, driver.databaseName, out, schemaOnly); err != nil {
+	slog.Debug("begin to dump database", slog.String("database", driver.databaseName))
+	if err := dumpTxn(txn, driver.databaseName, out); err != nil {
 		return "", err
 	}
 
@@ -101,7 +101,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	return "", nil
 }
 
-func dumpTxn(txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+func dumpTxn(txn *sql.Tx, database string, out io.Writer) error {
 	// Disable foreign key check.
 	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 	// the unique and foreign key check so that the restoring will not fail.
@@ -147,11 +147,6 @@ func dumpTxn(txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 			return err
-		}
-		if !schemaOnly && tbl.TableType == baseTableType {
-			if err := exportTableData(txn, database, tbl.Name, out); err != nil {
-				return err
-			}
 		}
 	}
 	// Construct final views.
@@ -335,62 +330,6 @@ func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
 		return nil, err
 	}
 	return fields, nil
-}
-
-// exportTableData gets the data of a table.
-func exportTableData(txn *sql.Tx, dbName, tblName string, out io.Writer) error {
-	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	cols, err := rows.ColumnTypes()
-	if err != nil {
-		return err
-	}
-	if len(cols) == 0 {
-		return nil
-	}
-	values := make([]*sql.NullString, len(cols))
-	refs := make([]any, len(cols))
-	for i := 0; i < len(cols); i++ {
-		refs[i] = &values[i]
-	}
-	for rows.Next() {
-		if err := rows.Scan(refs...); err != nil {
-			return err
-		}
-		tokens := make([]string, len(cols))
-		for i, v := range values {
-			switch {
-			case v == nil || !v.Valid:
-				tokens[i] = "NULL"
-			case isNumeric(cols[i].ScanType().Name()):
-				tokens[i] = v.String
-			default:
-				tokens[i] = fmt.Sprintf("'%s'", v.String)
-			}
-		}
-		stmt := fmt.Sprintf("INSERT INTO `%s` VALUES (%s);\n", tblName, strings.Join(tokens, ", "))
-		if _, err := io.WriteString(out, stmt); err != nil {
-			return err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, "\n"); err != nil {
-		return err
-	}
-	return nil
-}
-
-// isNumeric determines whether the value needs quotes.
-// Even if the function returns incorrect result, the data dump will still work.
-func isNumeric(t string) bool {
-	return strings.Contains(t, "int") || strings.Contains(t, "bool") || strings.Contains(t, "float") || strings.Contains(t, "byte")
 }
 
 // getRoutines gets all routines of a database.
