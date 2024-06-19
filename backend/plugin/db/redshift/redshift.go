@@ -180,13 +180,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	var commands []base.SingleSQL
+	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
 		if err != nil {
 			return 0, err
 		}
 		commands = base.FilterEmptySQL(singleSQLs)
-	} else {
+		if len(commands) <= common.MaximumCommands {
+			oneshot = false
+		}
+	}
+	if oneshot {
 		commands = []base.SingleSQL{
 			{
 				Text: statement,
