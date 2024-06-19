@@ -193,7 +193,7 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 					Kind: &kind,
 				},
 				CompletionProvider: &lsp.CompletionOptions{
-					TriggerCharacters: []string{".", " ", "\n"},
+					TriggerCharacters: []string{".", " "},
 				},
 				ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
 					Commands: []string{string(CommandNameSetMetadata)},
