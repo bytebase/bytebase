@@ -192,6 +192,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var nonTransactionStmts []string
 	var totalCommands int
 	var commands []base.SingleSQL
+	exceeded := false
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := tidbparser.SplitSQL(statement)
 		if err != nil {
@@ -202,19 +203,25 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, nil
 		}
 		totalCommands = len(singleSQLs)
-
-		// Find non-transactional statements.
-		// TiDB cannot run create table and create index in a single transaction.
-		var remainingSQLs []base.SingleSQL
-		for _, singleSQL := range singleSQLs {
-			if isNonTransactionStatement(singleSQL.Text) {
-				nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
-				continue
+		if totalCommands > common.MaximumCommands {
+			exceeded = true
+		} else {
+			// Find non-transactional statements.
+			// TiDB cannot run create table and create index in a single transaction.
+			var remainingSQLs []base.SingleSQL
+			for _, singleSQL := range singleSQLs {
+				if isNonTransactionStatement(singleSQL.Text) {
+					nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
+					continue
+				}
+				remainingSQLs = append(remainingSQLs, singleSQL)
 			}
-			remainingSQLs = append(remainingSQLs, singleSQL)
+			commands = remainingSQLs
 		}
-		commands = remainingSQLs
 	} else {
+		exceeded = true
+	}
+	if exceeded {
 		commands = []base.SingleSQL{
 			{
 				Text: statement,

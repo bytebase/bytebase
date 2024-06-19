@@ -311,6 +311,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	var totalCommands int
 	var commands []base.SingleSQL
 	var originalIndex []int32
+	exceeded := false
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
@@ -320,9 +321,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
-		totalCommands = len(singleSQLs)
 		commands = singleSQLs
+		totalCommands = len(commands)
+		if totalCommands > common.MaximumCommands {
+			exceeded = true
+		}
 	} else {
+		exceeded = true
+	}
+	if exceeded {
 		commands = []base.SingleSQL{
 			{
 				Text: statement,
