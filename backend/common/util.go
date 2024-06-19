@@ -63,6 +63,9 @@ var (
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+// ProtojsonMarshaler is a global protojson marshaler with DiscardUnknown set to true.
+//
+//nolint:forbidigo
 var ProtojsonUnmarshaler = protojson.UnmarshalOptions{DiscardUnknown: true}
 
 // RandomString returns a random string with length n.
