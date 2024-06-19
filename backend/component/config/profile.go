@@ -45,11 +45,6 @@ type Profile struct {
 	// BackupRunnerInterval is the interval for backup runner.
 	BackupRunnerInterval time.Duration
 
-	// Cloud backup related fields
-	BackupRegion         string
-	BackupBucket         string
-	BackupCredentialFile string
-
 	// Version is the bytebase's server version
 	Version string
 	// Git commit hash of the build
