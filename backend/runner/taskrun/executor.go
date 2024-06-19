@@ -2,8 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -19,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -220,16 +217,6 @@ func executeMigration(
 
 	var migrationID string
 	opts := db.ExecuteOptions{}
-	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB) {
-		opts.BeginFunc = func(ctx context.Context, conn *sql.Conn) error {
-			updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, conn, task, stores)
-			if err != nil {
-				return errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
-			}
-			task = updatedTask
-			return nil
-		}
-	}
 
 	if profile.ExecuteDetail && stateCfg != nil {
 		switch task.Type {
@@ -261,46 +248,6 @@ func executeMigration(
 	}
 
 	return migrationID, schema, nil
-}
-
-func setThreadIDAndStartBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
-	payload := &api.TaskDatabaseDataUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrap(err, "invalid database data update payload")
-	}
-
-	var connID string
-	if err := conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&connID); err != nil {
-		return nil, errors.Wrap(err, "failed to get the connection ID")
-	}
-	payload.ThreadID = connID
-
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
-	}
-	if (binlogInfo == api.BinlogInfo{}) {
-		slog.Warn("binlog is not enabled", slog.Int("task", task.ID))
-		return task, nil
-	}
-	payload.BinlogFileStart = binlogInfo.FileName
-	payload.BinlogPosStart = binlogInfo.Position
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal task payload")
-	}
-	payloadString := string(payloadBytes)
-	patch := &api.TaskPatch{
-		ID:        task.ID,
-		UpdaterID: api.SystemBotID,
-		Payload:   &payloadString,
-	}
-	updatedTask, err := store.UpdateTaskV2(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
-	}
-	return updatedTask, nil
 }
 
 func postMigration(ctx context.Context, stores *store.Store, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, sheetID *int) (bool, *storepb.TaskRunResult, error) {
