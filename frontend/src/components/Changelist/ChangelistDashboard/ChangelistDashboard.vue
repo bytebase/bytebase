@@ -30,7 +30,7 @@ const props = defineProps<{
 }>();
 
 const { filter, events } = provideChangelistDashboardContext(
-  props.project.name
+  computed(() => props.project.name)
 );
 
 const isFetching = ref(false);
