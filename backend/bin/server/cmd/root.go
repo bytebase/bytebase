@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -83,11 +82,6 @@ var (
 		lsp             bool
 		preUpdateBackup bool
 
-		// Cloud backup configs.
-		backupRegion     string
-		backupBucket     string
-		backupCredential string
-
 		executeDetail    bool
 		developmentAudit bool
 	}
@@ -136,12 +130,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
 
-	// Cloud backup related flags.
-	// TODO(dragonly): Add GCS usages when it's supported.
-	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
-	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
-	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
-
 	rootCmd.PersistentFlags().BoolVar(&flags.executeDetail, "execute-detail", true, "expose execute details")
 
 	rootCmd.PersistentFlags().BoolVar(&flags.developmentAudit, "development-audit", true, "enable audit logs")
@@ -166,23 +154,6 @@ func checkDataDir() error {
 		return errors.Wrapf(err, "unable to access --data directory %s", flags.dataDir)
 	}
 
-	return nil
-}
-
-func checkCloudBackupFlags() error {
-	if flags.backupBucket == "" {
-		return nil
-	}
-	if !strings.HasPrefix(flags.backupBucket, "s3://") {
-		return errors.Errorf("only support bucket URI starting with s3://")
-	}
-	flags.backupBucket = strings.TrimPrefix(flags.backupBucket, "s3://")
-	if flags.backupCredential == "" {
-		return errors.Errorf("must specify --backup-credential when --backup-bucket is present")
-	}
-	if flags.backupRegion == "" {
-		return errors.Errorf("must specify --backup-region for AWS S3 backup")
-	}
 	return nil
 }
 
@@ -217,11 +188,6 @@ func start() {
 
 	if err := checkDataDir(); err != nil {
 		slog.Error(err.Error())
-		return
-	}
-
-	if err := checkCloudBackupFlags(); err != nil {
-		slog.Error("invalid flags for cloud backup", log.BBError(err))
 		return
 	}
 

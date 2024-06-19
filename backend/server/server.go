@@ -39,7 +39,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/migrator"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -106,8 +105,6 @@ type Server struct {
 	pgBinDir string
 	// PG server stoppers.
 	stopper []func()
-
-	s3Client *bbs3.Client
 
 	// stateCfg is the shared in-momory state within the server.
 	stateCfg *state.State
@@ -248,18 +245,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// the user has to restart the server to take the latest value.
 	gatewayModifier := auth.GatewayResponseModifier{TokenDuration: tokenDuration}
 	mux := grpcruntime.NewServeMux(grpcruntime.WithForwardResponseOption(gatewayModifier.Modify))
-
-	if profile.BackupBucket != "" {
-		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get credentials from file")
-		}
-		s3Client, err := bbs3.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create AWS S3 client")
-		}
-		s.s3Client = s3Client
-	}
 
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
