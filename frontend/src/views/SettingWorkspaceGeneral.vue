@@ -11,6 +11,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
+import { useRoute } from "vue-router";
 import {
   BrandingSetting,
   SecuritySetting,
@@ -25,10 +26,15 @@ defineProps<{
   allowEdit: boolean;
 }>();
 
+const route = useRoute();
 const actuatorStore = useActuatorV1Store();
 
 onMounted(async () => {
   await useSettingV1Store().fetchSettingList();
+  // If the route has a hash, try to scroll to the element with the value.
+  if (route.hash) {
+    document.body.querySelector(route.hash)?.scrollIntoView();
+  }
 });
 const { isSaaSMode } = storeToRefs(actuatorStore);
 </script>

@@ -1,11 +1,13 @@
 <template>
   <div class="mb-7 mt-4 lg:mt-0 border-t pt-4">
-    <p class="font-medium flex flex-row justify-start items-center">
+    <h3
+      id="domain-restriction"
+      class="font-medium flex flex-row justify-start items-center"
+    >
       <span class="mr-2">{{
         $t("settings.general.workspace.domain-restriction.self")
       }}</span>
-      <FeatureBadge feature="bb.feature.secure-token" />
-    </p>
+    </h3>
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.domain-restriction.description") }}
     </p>
@@ -100,7 +102,7 @@ const saveDomainRestrictionSettings = async () => {
     state.enableRestriction = false;
   }
   await settingV1Store.updateWorkspaceProfile({
-    domains: [state.domain],
+    domains: state.domain ? [state.domain] : [],
     enforceIdentityDomain: state.enableRestriction,
   });
   pushNotification({
