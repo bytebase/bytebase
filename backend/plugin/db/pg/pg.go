@@ -363,18 +363,34 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		return 0, err
 	}
-	singleSQLs, err := pgparser.SplitSQL(statement)
-	if err != nil {
-		return 0, err
-	}
-	var originalIndex []int
-	singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
 
-	// If the statement is a single statement and is a PL/pgSQL block,
-	// we should execute it as a single statement without transaction.
-	if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
+	var commands []base.SingleSQL
+	var originalIndex []int
+	var isPlsql bool
+	if len(statement) <= common.MaxSheetCheckSize {
+		singleSQLs, err := pgparser.SplitSQL(statement)
+		if err != nil {
+			return 0, err
+		}
+		commands, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
+
+		// If the statement is a single statement and is a PL/pgSQL block,
+		// we should execute it as a single statement without transaction.
 		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
 		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
+		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
+			isPlsql = true
+		}
+	} else {
+		commands = []base.SingleSQL{
+			{
+				Text: statement,
+			},
+		}
+		originalIndex = []int{0}
+	}
+
+	if isPlsql {
 		conn, err := driver.db.Conn(ctx)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to get connection")
@@ -386,7 +402,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
 		opts.LogCommandExecute([]int32{0})
-		if _, err := conn.ExecContext(ctx, singleSQLs[0].Text); err != nil {
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
 			opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
 			return 0, err
 		}
@@ -399,7 +415,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var remainingSQLsIndex, nonTransactionAndSetRoleStmtsIndex []int
 
 	var nonTransactionAndSetRoleStmts []string
-	for i, singleSQL := range singleSQLs {
+	for i, singleSQL := range commands {
 		if isIgnoredStatement(singleSQL.Text) {
 			continue
 		}
@@ -449,23 +465,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	defer conn.Close()
 
 	if len(remainingSQLs) != 0 {
-		var totalCommands int
 		var chunks [][]base.SingleSQL
-		if len(statement) <= common.MaxSheetCheckSize {
-			totalCommands = len(remainingSQLs)
-			ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
-			if err != nil {
-				return 0, errors.Wrapf(err, "failed to chunk sql")
-			}
-			chunks = ret
-		} else {
-			chunks = [][]base.SingleSQL{
-				remainingSQLs,
-			}
+		totalCommands := len(remainingSQLs)
+		ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to chunk sql")
 		}
+		chunks = ret
 		currentIndex := 0
 
-		err := conn.Raw(func(driverConn any) error {
+		err = conn.Raw(func(driverConn any) error {
 			conn := driverConn.(*stdlib.Conn).Conn()
 
 			tx, err := conn.Begin(ctx)
