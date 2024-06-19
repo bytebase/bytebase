@@ -76,6 +76,4 @@ const (
 	ActivitySQLQuery ActivityType = "bb.sql.query"
 	// ActivitySQLExport is the type for exporting SQL.
 	ActivitySQLExport ActivityType = "bb.sql.export"
-
-	// Database related.
 )

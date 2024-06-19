@@ -314,7 +314,6 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) compon
 		ResourceDir:          resourceDir,
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
 	}
 }
 
@@ -332,7 +331,6 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 		ResourceDir:                resourceDir,
 		AppRunnerInterval:          1 * time.Second,
 		BackupRunnerInterval:       10 * time.Second,
-		BackupStorageBackend:       api.BackupStorageBackendLocal,
 		PgURL:                      pgURL,
 		TestOnlySkipOnboardingData: skipOnboardingData,
 	}

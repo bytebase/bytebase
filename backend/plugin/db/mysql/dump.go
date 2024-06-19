@@ -3,19 +3,16 @@ package mysql
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -87,7 +84,7 @@ var (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// We must use the same MySQL connection to lock and unlock tables.
@@ -98,30 +95,6 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	defer conn.Close()
 
 	var payloadBytes []byte
-	// Before we dump the real data, we should record the binlog position for PITR.
-	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
-	if !schemaOnly {
-		slog.Debug("flush tables in database with read locks",
-			slog.String("database", driver.databaseName))
-		if err := FlushTablesWithReadLock(ctx, driver.dbType, conn, driver.databaseName); err != nil {
-			slog.Error("flush tables failed", log.BBError(err))
-			return "", err
-		}
-
-		binlog, err := GetBinlogInfo(ctx, conn)
-		if err != nil {
-			return "", err
-		}
-		slog.Debug("binlog coordinate at dump time",
-			slog.String("fileName", binlog.FileName),
-			slog.Int64("position", binlog.Position))
-
-		payload := api.BackupPayload{BinlogInfo: binlog}
-		payloadBytes, err = json.Marshal(payload)
-		if err != nil {
-			return "", err
-		}
-	}
 
 	readOnly := driver.getReadOnly()
 	options := sql.TxOptions{ReadOnly: readOnly}
@@ -135,8 +108,8 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	}
 	defer txn.Rollback()
 
-	slog.Debug("begin to dump database", slog.String("database", driver.databaseName), slog.Bool("schemaOnly", schemaOnly))
-	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out, schemaOnly); err != nil {
+	slog.Debug("begin to dump database", slog.String("database", driver.databaseName))
+	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out); err != nil {
 		return "", err
 	}
 
@@ -147,43 +120,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	return string(payloadBytes), nil
 }
 
-// FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.
-func FlushTablesWithReadLock(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, database string) error {
-	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
-	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	txn, err := conn.BeginTx(ctxWithTimeout, nil)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	tables, err := getTablesTx(txn, dbType, database)
-	if err != nil {
-		return err
-	}
-
-	var tableNames []string
-	for _, table := range tables {
-		if table.TableType != baseTableType {
-			continue
-		}
-		tableNames = append(tableNames, fmt.Sprintf("`%s`", table.Name))
-	}
-
-	if len(tableNames) != 0 {
-		flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
-		if _, err := txn.ExecContext(ctxWithTimeout, flushTableStmt); err != nil {
-			return err
-		}
-	}
-
-	return txn.Commit()
-}
-
-func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer, schemaOnly bool) error {
+func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer) error {
 	// Disable foreign key check.
 	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 	// the unique and foreign key check so that the restoring will not fail.
@@ -227,16 +164,10 @@ func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer,
 		if tbl.TableType == viewTableType {
 			continue
 		}
-		if schemaOnly {
-			tbl.Statement = excludeSchemaAutoValues(tbl.Statement)
-		}
+		tbl.Statement = excludeSchemaAutoValues(tbl.Statement)
+
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 			return err
-		}
-		if !schemaOnly && tbl.TableType == baseTableType {
-			if err := exportTableData(txn, database, tbl.Name, out); err != nil {
-				return err
-			}
 		}
 	}
 	// Construct final views.
@@ -312,69 +243,6 @@ func getTemporaryView(name string, columns []string) string {
 // https://github.com/bytebase/bytebase/issues/123
 func excludeSchemaAutoValues(s string) string {
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
-}
-
-// GetBinlogInfo queries current binlog info from MySQL server.
-func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
-	query := "SHOW MASTER STATUS"
-	binlogInfo := api.BinlogInfo{}
-	var unused any
-	rows, err := conn.QueryContext(ctx, query)
-	if err != nil {
-		return api.BinlogInfo{}, errors.Wrapf(err, "cannot execute %q query", query)
-	}
-	defer rows.Close()
-	columns, err := rows.Columns()
-	if err != nil {
-		return api.BinlogInfo{}, errors.Wrapf(err, "cannot get columns from %q query", query)
-	}
-
-	findFileName := false
-	findPosition := false
-	for _, columnName := range columns {
-		switch columnName {
-		case "File":
-			findFileName = true
-		case "Position":
-			findPosition = true
-		}
-	}
-	if !findFileName || !findPosition {
-		return api.BinlogInfo{}, errors.Errorf("cannot find File and Position columns from %q query", query)
-	}
-
-	scanOneRow := false
-
-	for rows.Next() {
-		if scanOneRow {
-			return api.BinlogInfo{}, errors.Errorf("unexpected multiple rows returned from %q query", query)
-		}
-		cols := make([]any, len(columns))
-		scanOneRow = true
-		// The query SHOW MASTER STATUS returns uncertain number of columns, especially for the RDS, which may returns 4 columns.
-		// So we have to dynamically scan the columns, and return the error if we cannot find the File and Position columns.
-		for i := 0; i < len(columns); i++ {
-			switch columns[i] {
-			case "File":
-				cols[i] = &binlogInfo.FileName
-			case "Position":
-				cols[i] = &binlogInfo.Position
-			default:
-				cols[i] = &unused
-			}
-		}
-		if err := rows.Scan(cols...); err != nil {
-			return api.BinlogInfo{}, errors.Wrapf(err, "cannot scan row from %q query", query)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return api.BinlogInfo{}, err
-	}
-	if !scanOneRow {
-		// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
-		return api.BinlogInfo{}, nil
-	}
-	return binlogInfo, nil
 }
 
 // TableSchema describes the schema of a table or view.
@@ -583,62 +451,6 @@ func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
 		return nil, err
 	}
 	return fields, nil
-}
-
-// exportTableData gets the data of a table.
-func exportTableData(txn *sql.Tx, dbName, tblName string, out io.Writer) error {
-	query := fmt.Sprintf("SELECT * FROM `%s`.`%s`;", dbName, tblName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	cols, err := rows.ColumnTypes()
-	if err != nil {
-		return err
-	}
-	if len(cols) == 0 {
-		return nil
-	}
-	values := make([]*sql.NullString, len(cols))
-	refs := make([]any, len(cols))
-	for i := 0; i < len(cols); i++ {
-		refs[i] = &values[i]
-	}
-	for rows.Next() {
-		if err := rows.Scan(refs...); err != nil {
-			return err
-		}
-		tokens := make([]string, len(cols))
-		for i, v := range values {
-			switch {
-			case v == nil || !v.Valid:
-				tokens[i] = "NULL"
-			case isNumeric(cols[i].ScanType().Name()):
-				tokens[i] = v.String
-			default:
-				tokens[i] = fmt.Sprintf("'%s'", v.String)
-			}
-		}
-		stmt := fmt.Sprintf("INSERT INTO `%s` VALUES (%s);\n", tblName, strings.Join(tokens, ", "))
-		if _, err := io.WriteString(out, stmt); err != nil {
-			return err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, "\n"); err != nil {
-		return err
-	}
-	return nil
-}
-
-// isNumeric determines whether the value needs quotes.
-// Even if the function returns incorrect result, the data dump will still work.
-func isNumeric(t string) bool {
-	return strings.Contains(t, "int") || strings.Contains(t, "bool") || strings.Contains(t, "float") || strings.Contains(t, "byte")
 }
 
 // getRoutines gets all routines of a database.
