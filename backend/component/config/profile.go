@@ -44,8 +44,6 @@ type Profile struct {
 	AppRunnerInterval time.Duration
 	// BackupRunnerInterval is the interval for backup runner.
 	BackupRunnerInterval time.Duration
-	// BackupStorageBackend is the backup storage backend.
-	BackupStorageBackend api.BackupStorageBackend
 
 	// Cloud backup related fields
 	BackupRegion         string

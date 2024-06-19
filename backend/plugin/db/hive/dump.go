@@ -52,7 +52,7 @@ type MaterializedViewDDLOptions struct {
 	as             string
 }
 
-func (d *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, error) {
+func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	instanceMetadata, err := d.SyncInstance(ctx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync instance")

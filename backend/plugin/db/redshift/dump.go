@@ -7,6 +7,6 @@ import (
 )
 
 // Dump dumps the database to the writer. But not implemented yet.
-func (*Driver) Dump(context.Context, io.Writer, bool) (string, error) {
+func (*Driver) Dump(context.Context, io.Writer) (string, error) {
 	return "", nil
 }
