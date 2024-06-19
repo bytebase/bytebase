@@ -513,7 +513,8 @@
         "n-members": "{n} 人のメンバー",
         "group-members": "チームメンバー",
         "group-roles": "グループの役割",
-        "edit-group": "グループの編集"
+        "edit-group": "グループの編集",
+        "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
       "action": {
         "deactivate": "無効にする",
@@ -655,7 +656,7 @@
         },
         "domain-restriction": {
           "self": "ドメイン制限",
-          "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。任意のドメインを許可する場合は空のままにします。",
+          "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。",
           "domain-input-placeholder": "ドメインを入力してください。例: example.com",
           "members-restriction": {
             "self": "メンバー制限",

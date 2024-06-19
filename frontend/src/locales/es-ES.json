@@ -513,7 +513,8 @@
         "n-members": "{n} miembros",
         "group-members": "Miembros del grupo",
         "group-roles": "Roles grupales",
-        "edit-group": "Editar grupo"
+        "edit-group": "Editar grupo",
+        "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
       "action": {
         "deactivate": "Desactivar",
@@ -655,7 +656,7 @@
         },
         "domain-restriction": {
           "self": "Restricción de dominio",
-          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo. Déjelo vacío para permitir cualquier dominio.",
+          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo.",
           "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
           "members-restriction": {
             "self": "Restricción de miembros",
