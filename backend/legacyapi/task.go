@@ -141,23 +141,6 @@ type TaskDatabaseDataUpdatePayload struct {
 	SheetID       int    `json:"sheetId,omitempty"`
 	SchemaVersion string `json:"schemaVersion,omitempty"`
 
-	// MySQL rollback SQL related.
-
-	// TransactionID is the ID of the transaction executing the migration.
-	// It is only use for Oracle to find Rollback SQL statement now.
-	TransactionID string `json:"transactionId,omitempty"`
-	// ThreadID is the ID of the connection executing the migration.
-	// We use it to filter the binlog events of the migration transaction.
-	ThreadID string `json:"threadId,omitempty"`
-	// MigrationID is the ID of the migration history record.
-	// We use it to get the schema when the transaction ran.
-	MigrationID string `json:"migrationId,omitempty"`
-	// BinlogXxx are obtained before and after executing the migration.
-	// We use them to locate the range of binlog for the migration transaction.
-	BinlogFileStart       string                `json:"binlogFileStart,omitempty"`
-	BinlogFileEnd         string                `json:"binlogFileEnd,omitempty"`
-	BinlogPosStart        int64                 `json:"binlogPosStart,omitempty"`
-	BinlogPosEnd          int64                 `json:"binlogPosEnd,omitempty"`
 	PreUpdateBackupDetail PreUpdateBackupDetail `json:"preUpdateBackupDetail,omitempty"`
 }
 

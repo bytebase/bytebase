@@ -308,12 +308,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
-	if opts.BeginFunc != nil {
-		if err := opts.BeginFunc(ctx, conn); err != nil {
-			return 0, err
-		}
-	}
-
 	var totalCommands int
 	var commands []base.SingleSQL
 	var originalIndex []int
