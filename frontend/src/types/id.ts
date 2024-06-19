@@ -12,8 +12,6 @@ export type MemberId = IdType;
 
 export type SettingId = IdType;
 
-export type PolicyId = IdType;
-
 export type ProjectId = IdType;
 
 export type ProjectWebhookId = IdType;

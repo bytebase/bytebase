@@ -3,6 +3,7 @@
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
+    class="mt-1"
     :policy="reviewPolicy"
     :name="reviewPolicy.name"
     :selected-environment="reviewPolicy.environment"
@@ -286,14 +287,14 @@ const pushUpdatedNotify = () => {
   });
 };
 
-const changeName = async (name: string) => {
+const changeName = async (title: string) => {
   state.editingTitle = false;
   const policy = reviewPolicy.value;
-  if (name === policy.name) {
+  if (title === policy.name) {
     return;
   }
   const upsert = {
-    name,
+    title,
     ruleList: policy.ruleList,
   };
 
@@ -352,7 +353,7 @@ const onApplyChanges = async () => {
   try {
     await store.updateReviewPolicy({
       id: policy.id,
-      name: policy.name,
+      title: policy.name,
       ruleList,
     });
     state.rulesUpdated = false;

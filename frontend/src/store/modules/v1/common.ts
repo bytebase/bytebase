@@ -22,6 +22,7 @@ export const ssoNamePrefix = "idps/";
 export const protectionRulesSuffix = "/protectionRules";
 export const issueCommentNamePrefix = "issueComments/";
 export const userGroupNamePrefix = "groups/";
+export const reviewConfigNamePrefix = "reviewConfigs/";
 
 export const getNameParentTokens = (
   name: string,

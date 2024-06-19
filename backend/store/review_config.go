@@ -263,7 +263,7 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 		&sqlReview.UpdaterUID,
 		&updatedTs,
 		&sqlReview.Name,
-		&sqlReview,
+		&payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil

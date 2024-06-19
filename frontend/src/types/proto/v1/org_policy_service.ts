@@ -20,7 +20,6 @@ export const protobufPackage = "bytebase.v1";
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED",
   ROLLOUT_POLICY = "ROLLOUT_POLICY",
-  SQL_REVIEW = "SQL_REVIEW",
   MASKING = "MASKING",
   SLOW_QUERY = "SLOW_QUERY",
   DISABLE_COPY_DATA = "DISABLE_COPY_DATA",
@@ -39,9 +38,6 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 11:
     case "ROLLOUT_POLICY":
       return PolicyType.ROLLOUT_POLICY;
-    case 4:
-    case "SQL_REVIEW":
-      return PolicyType.SQL_REVIEW;
     case 5:
     case "MASKING":
       return PolicyType.MASKING;
@@ -76,8 +72,6 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "POLICY_TYPE_UNSPECIFIED";
     case PolicyType.ROLLOUT_POLICY:
       return "ROLLOUT_POLICY";
-    case PolicyType.SQL_REVIEW:
-      return "SQL_REVIEW";
     case PolicyType.MASKING:
       return "MASKING";
     case PolicyType.SLOW_QUERY:
@@ -104,8 +98,6 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 0;
     case PolicyType.ROLLOUT_POLICY:
       return 11;
-    case PolicyType.SQL_REVIEW:
-      return 4;
     case PolicyType.MASKING:
       return 5;
     case PolicyType.SLOW_QUERY:
@@ -377,7 +369,6 @@ export interface Policy {
   type: PolicyType;
   rolloutPolicy?: RolloutPolicy | undefined;
   maskingPolicy?: MaskingPolicy | undefined;
-  sqlReviewPolicy?: SQLReviewPolicy | undefined;
   slowQueryPolicy?: SlowQueryPolicy | undefined;
   disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
   maskingRulePolicy?: MaskingRulePolicy | undefined;
@@ -421,11 +412,6 @@ export interface MaskData {
   maskingLevel: MaskingLevel;
   fullMaskingAlgorithmId: string;
   partialMaskingAlgorithmId: string;
-}
-
-export interface SQLReviewPolicy {
-  name: string;
-  rules: SQLReviewRule[];
 }
 
 export interface SQLReviewRule {
@@ -1041,7 +1027,6 @@ function createBasePolicy(): Policy {
     type: PolicyType.POLICY_TYPE_UNSPECIFIED,
     rolloutPolicy: undefined,
     maskingPolicy: undefined,
-    sqlReviewPolicy: undefined,
     slowQueryPolicy: undefined,
     disableCopyDataPolicy: undefined,
     maskingRulePolicy: undefined,
@@ -1073,9 +1058,6 @@ export const Policy = {
     }
     if (message.maskingPolicy !== undefined) {
       MaskingPolicy.encode(message.maskingPolicy, writer.uint32(74).fork()).ldelim();
-    }
-    if (message.sqlReviewPolicy !== undefined) {
-      SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(90).fork()).ldelim();
     }
     if (message.slowQueryPolicy !== undefined) {
       SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(98).fork()).ldelim();
@@ -1158,13 +1140,6 @@ export const Policy = {
           }
 
           message.maskingPolicy = MaskingPolicy.decode(reader, reader.uint32());
-          continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
           continue;
         case 12:
           if (tag !== 98) {
@@ -1249,7 +1224,6 @@ export const Policy = {
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
       maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
-      sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
       slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
       disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
         ? DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy)
@@ -1291,9 +1265,6 @@ export const Policy = {
     }
     if (message.maskingPolicy !== undefined) {
       obj.maskingPolicy = MaskingPolicy.toJSON(message.maskingPolicy);
-    }
-    if (message.sqlReviewPolicy !== undefined) {
-      obj.sqlReviewPolicy = SQLReviewPolicy.toJSON(message.sqlReviewPolicy);
     }
     if (message.slowQueryPolicy !== undefined) {
       obj.slowQueryPolicy = SlowQueryPolicy.toJSON(message.slowQueryPolicy);
@@ -1341,9 +1312,6 @@ export const Policy = {
       : undefined;
     message.maskingPolicy = (object.maskingPolicy !== undefined && object.maskingPolicy !== null)
       ? MaskingPolicy.fromPartial(object.maskingPolicy)
-      : undefined;
-    message.sqlReviewPolicy = (object.sqlReviewPolicy !== undefined && object.sqlReviewPolicy !== null)
-      ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
       : undefined;
     message.slowQueryPolicy = (object.slowQueryPolicy !== undefined && object.slowQueryPolicy !== null)
       ? SlowQueryPolicy.fromPartial(object.slowQueryPolicy)
@@ -1800,80 +1768,6 @@ export const MaskData = {
     message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
     message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
-    return message;
-  },
-};
-
-function createBaseSQLReviewPolicy(): SQLReviewPolicy {
-  return { name: "", rules: [] };
-}
-
-export const SQLReviewPolicy = {
-  encode(message: SQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    for (const v of message.rules) {
-      SQLReviewRule.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SQLReviewPolicy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSQLReviewPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.rules.push(SQLReviewRule.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SQLReviewPolicy {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: SQLReviewPolicy): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.rules?.length) {
-      obj.rules = message.rules.map((e) => SQLReviewRule.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
-    return SQLReviewPolicy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
-    const message = createBaseSQLReviewPolicy();
-    message.name = object.name ?? "";
-    message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     return message;
   },
 };
