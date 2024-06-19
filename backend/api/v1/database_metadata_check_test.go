@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -38,7 +38,7 @@ func TestCheckDatabaseMetadata(t *testing.T) {
 
 	for i, t := range tests {
 		meta := &storepb.DatabaseSchemaMetadata{}
-		a.NoError(protojson.Unmarshal([]byte(t.Metadata), meta))
+		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Metadata), meta))
 		err := checkDatabaseMetadata(t.Engine, meta)
 		if record {
 			if err != nil {

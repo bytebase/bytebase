@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -237,7 +238,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		); err != nil {
 			return nil, errors.Wrap(err, "failed to scan plan")
 		}
-		if err := protojson.Unmarshal(config, plan.Config); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
 		}
 		if err := json.Unmarshal(statusCount, &plan.PlanCheckRunStatusCount); err != nil {

@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -71,7 +72,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 		return nil, err
 	}
 	var rolePermissions storepb.RolePermissions
-	if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(permissions, &rolePermissions); err != nil {
 		return nil, err
 	}
 	role.Permissions = &rolePermissions
@@ -158,7 +159,7 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 			return nil, err
 		}
 		var rolePermissions storepb.RolePermissions
-		if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(permissions, &rolePermissions); err != nil {
 			return nil, err
 		}
 		role.Permissions = &rolePermissions
@@ -206,7 +207,7 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 	}
 	s.rolesCache.Remove(patch.ResourceID)
 	var rolePermissions storepb.RolePermissions
-	if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(permissions, &rolePermissions); err != nil {
 		return nil, err
 	}
 	role.Permissions = &rolePermissions

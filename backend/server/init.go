@@ -167,7 +167,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	}
 	if workspaceProfileSetting != nil {
 		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
 			return "", 0, err
 		}
 		if s.profile.ExternalURL != "" {
@@ -196,7 +196,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	tokenDuration := auth.DefaultTokenDuration
 	if setting != nil {
 		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), settingValue); err != nil {
 			return "", 0, err
 		}
 		if settingValue.TokenDuration != nil && settingValue.TokenDuration.Seconds > 0 {

@@ -352,13 +352,13 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	instance.DataSources = dataSourceList
 	var instanceOptions storepb.InstanceOptions
-	if err := protojson.Unmarshal(options, &instanceOptions); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
 		return nil, err
 	}
 	instance.Options = &instanceOptions
 
 	var instanceMetadata storepb.InstanceMetadata
-	if err := protojson.Unmarshal(metadata, &instanceMetadata); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
 		return nil, err
 	}
 	instance.Metadata = &instanceMetadata
@@ -443,12 +443,12 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 
 		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		var instanceOptions storepb.InstanceOptions
-		if err := protojson.Unmarshal(options, &instanceOptions); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
 			return nil, err
 		}
 		instanceMessage.Options = &instanceOptions
 		var instanceMetadata storepb.InstanceMetadata
-		if err := protojson.Unmarshal(metadata, &instanceMetadata); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
 			return nil, err
 		}
 		instanceMessage.Metadata = &instanceMetadata

@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -428,7 +429,7 @@ func readTestData(path string) ([]test, error) {
 		}
 		for _, r := range yamlTest.Result {
 			result := &v1pb.PlanCheckRun_Result{}
-			if err := protojson.Unmarshal([]byte(r), result); err != nil {
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(r), result); err != nil {
 				return nil, err
 			}
 			t.Result = append(t.Result, result)
