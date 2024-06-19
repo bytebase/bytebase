@@ -2747,6 +2747,7 @@
     "configure-policy": "配置审核策略",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
+    "policy-create-failed": "审核策略创建失败",
     "policy-updated": "审核策略已更新",
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
@@ -2914,7 +2915,8 @@
     "schema-group": "表分组",
     "changelist": "变更列表",
     "vcs-provider": "GitOps 提供方",
-    "vcs-connector": "GitOps 连接"
+    "vcs-connector": "GitOps 连接",
+    "review-config": "审查配置"
   },
   "resource-id": {
     "self": "{resource} ID",

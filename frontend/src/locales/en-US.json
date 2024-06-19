@@ -2747,6 +2747,7 @@
     "configure-policy": "Configure policy",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
+    "policy-create-failed": "Failed to create the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
@@ -2914,7 +2915,8 @@
     "schema-group": "Table Group",
     "changelist": "Changelist",
     "vcs-provider": "GitOps Provider",
-    "vcs-connector": "GitOps Connector"
+    "vcs-connector": "GitOps Connector",
+    "review-config": "Review Config"
   },
   "resource-id": {
     "self": "{resource} ID",

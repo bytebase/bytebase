@@ -247,7 +247,7 @@ const makeUnknown = (type: ResourceType) => {
   };
 
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
-    id: UNKNOWN_ID,
+    id: `${UNKNOWN_ID}`,
     enforce: false,
     name: "",
     ruleList: [],

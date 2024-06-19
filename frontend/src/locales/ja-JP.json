@@ -2747,6 +2747,7 @@
     "configure-policy": "監査ポリシーを構成する",
     "policy-removed": "監査ポリシーが削除されました",
     "policy-created": "監査ポリシーが作成されました",
+    "policy-create-failed": "監査ポリシーの作成に失敗しました",
     "policy-updated": "監査ポリシーが更新されました",
     "policy-duplicated": "監査ポリシーがコピーされました",
     "rules": "ルール",
@@ -2914,7 +2915,8 @@
     "schema-group": "テーブルのグループ化",
     "changelist": "変更リスト",
     "vcs-provider": "GitOpsプロバイダー",
-    "vcs-connector": "GitOps接続"
+    "vcs-connector": "GitOps接続",
+    "review-config": "構成を確認する"
   },
   "resource-id": {
     "self": "{resource} ID",

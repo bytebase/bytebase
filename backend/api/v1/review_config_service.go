@@ -90,6 +90,9 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	if message == nil {
+		return nil, status.Errorf(codes.NotFound, "cannot found review config %s", request.Name)
+	}
 	return s.convertToV1ReviewConfig(ctx, message)
 }
 
