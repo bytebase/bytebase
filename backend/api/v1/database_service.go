@@ -18,7 +18,6 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -2249,7 +2248,7 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 			retErr = err
 			continue
 		}
-		if err := protojson.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
 			retErr = err
 			continue
 		}

@@ -218,7 +218,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, principalUID int, pr
 	if err := txtArray.AssignTo(&projectWebhook.ActivityList); err != nil {
 		return nil, err
 	}
-	if err := protojson.Unmarshal(payload, projectWebhook.Payload); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, projectWebhook.Payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
 
@@ -301,7 +301,7 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindPr
 		if err := txtArray.AssignTo(&projectWebhook.ActivityList); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal(payload, projectWebhook.Payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, projectWebhook.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal")
 		}
 

@@ -11,7 +11,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
@@ -76,7 +75,7 @@ func (p *remoteLicenseProvider) FetchLicense(ctx context.Context) (string, error
 		return "", errors.Wrapf(err, "agent not found")
 	}
 	payload := new(storepb.AgentPluginSetting)
-	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
 		return "", errors.Wrapf(err, "failed to parse agent")
 	}
 	if _, err := p.parseJWTToken(payload.Token); err != nil {

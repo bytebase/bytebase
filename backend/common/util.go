@@ -14,6 +14,7 @@ import (
 
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -61,6 +62,8 @@ var (
 )
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+var ProtojsonUnmarshaler = protojson.UnmarshalOptions{DiscardUnknown: true}
 
 // RandomString returns a random string with length n.
 func RandomString(n int) (string, error) {

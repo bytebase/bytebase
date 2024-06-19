@@ -170,7 +170,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			return nil, err
 		}
 		sheetPayload := &storepb.SheetPayload{}
-		if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
 			return nil, err
 		}
 		sheet.Payload = sheetPayload
@@ -313,7 +313,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		return nil, err
 	}
 	sheetPayload := &storepb.SheetPayload{}
-	if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
 		return nil, err
 	}
 	sheet.Payload = sheetPayload
