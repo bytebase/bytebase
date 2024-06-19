@@ -1,4 +1,4 @@
-package webhook
+package wecom
 
 import (
 	"bytes"
@@ -9,34 +9,36 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
-// WeComWebhookResponse is the API message for WeCom webhook response.
-type WeComWebhookResponse struct {
+// WebhookResponse is the API message for WeCom webhook response.
+type WebhookResponse struct {
 	ErrorCode    int    `json:"errcode"`
 	ErrorMessage string `json:"errmsg"`
 }
 
-// WeComWebhookMarkdown is the API message for WeCom webhook markdown.
-type WeComWebhookMarkdown struct {
+// WebhookMarkdown is the API message for WeCom webhook markdown.
+type WebhookMarkdown struct {
 	Content string `json:"content"`
 }
 
-// WeComWebhook is the API message for WeCom webhook.
-type WeComWebhook struct {
-	MessageType string               `json:"msgtype"`
-	Markdown    WeComWebhookMarkdown `json:"markdown"`
+// Webhook is the API message for WeCom webhook.
+type Webhook struct {
+	MessageType string          `json:"msgtype"`
+	Markdown    WebhookMarkdown `json:"markdown"`
 }
 
 func init() {
-	Register("bb.plugin.webhook.wecom", &WeComReceiver{})
+	webhook.Register("bb.plugin.webhook.wecom", &Receiver{})
 }
 
-// WeComReceiver is the receiver for WeCom.
-type WeComReceiver struct {
+// Receiver is the receiver for WeCom.
+type Receiver struct {
 }
 
-func (*WeComReceiver) Post(context Context) error {
+func (*Receiver) Post(context webhook.Context) error {
 	metaStrList := []string{}
 	for _, meta := range context.GetMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
@@ -45,11 +47,11 @@ func (*WeComReceiver) Post(context Context) error {
 
 	status := ""
 	switch context.Level {
-	case WebhookSuccess:
+	case webhook.WebhookSuccess:
 		status = "<font color=\"green\">Success</font> "
-	case WebhookWarn:
+	case webhook.WebhookWarn:
 		status = "<font color=\"yellow\">Warn</font> "
-	case WebhookError:
+	case webhook.WebhookError:
 		status = "<font color=\"red\">Error</font> "
 	}
 	content := fmt.Sprintf("# %s%s\n\n%s\n[View in Bytebase](%s)", status, context.Title, strings.Join(metaStrList, "\n"), context.Link)
@@ -57,9 +59,9 @@ func (*WeComReceiver) Post(context Context) error {
 		content = fmt.Sprintf("# %s%s\n> %s\n\n%s\n[View in Bytebase](%s)", status, context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
 
-	post := WeComWebhook{
+	post := Webhook{
 		MessageType: "markdown",
-		Markdown: WeComWebhookMarkdown{
+		Markdown: WebhookMarkdown{
 			Content: content,
 		},
 	}
@@ -75,7 +77,7 @@ func (*WeComReceiver) Post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: Timeout,
+		Timeout: webhook.Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -92,7 +94,7 @@ func (*WeComReceiver) Post(context Context) error {
 		return errors.Errorf("failed to POST webhook to %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
 	}
 
-	webhookResponse := &WeComWebhookResponse{}
+	webhookResponse := &WebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
 		return errors.Wrapf(err, "malformed webhook response from %s", context.URL)
 	}
