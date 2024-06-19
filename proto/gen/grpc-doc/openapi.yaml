@@ -13341,10 +13341,6 @@ components:
                         - POST_EXECUTING
                     type: string
                     format: enum
-                executionStatusUpdateTime:
-                    type: string
-                    description: Last execution status update timestamp.
-                    format: date-time
                 executionDetail:
                     $ref: '#/components/schemas/TaskRun_ExecutionDetail'
                 startTime:
