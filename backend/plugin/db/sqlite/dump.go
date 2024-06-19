@@ -85,7 +85,6 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, out io.Writer) error 
 		if _, err := io.WriteString(out, fmt.Sprintf("%s;\n", s.statement)); err != nil {
 			return err
 		}
-
 	}
 
 	return txn.Commit()
