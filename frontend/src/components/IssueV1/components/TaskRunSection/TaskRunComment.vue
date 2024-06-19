@@ -37,7 +37,6 @@ import {
   extractChangeHistoryUID,
   extractTaskUID,
   flattenTaskV1List,
-  isDatabaseDataExportIssue,
 } from "@/utils";
 import { databaseForTask, specForTask, useIssueContext } from "../../logic";
 
