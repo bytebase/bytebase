@@ -365,7 +365,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	var commands []base.SingleSQL
-	var originalIndex []int
+	var originalIndex []int32
 	var isPlsql bool
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
@@ -387,7 +387,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				Text: statement,
 			},
 		}
-		originalIndex = []int{0}
+		originalIndex = []int32{0}
 	}
 
 	if isPlsql {
@@ -465,14 +465,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	defer conn.Close()
 
 	if len(remainingSQLs) != 0 {
-		var chunks [][]base.SingleSQL
 		totalCommands := len(remainingSQLs)
-		ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to chunk sql")
-		}
-		chunks = ret
-		currentIndex := 0
 
 		err = conn.Raw(func(driverConn any) error {
 			conn := driverConn.(*stdlib.Conn).Conn()
@@ -488,39 +481,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				return err
 			}
 
-			for _, chunk := range chunks {
-				if len(chunk) == 0 {
-					continue
-				}
+			for i, command := range remainingSQLs {
 				// Start the current chunk.
 				// Set the progress information for the current chunk.
 				if opts.UpdateExecutionStatus != nil {
 					opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
 						CommandsTotal:     int32(totalCommands),
-						CommandsCompleted: int32(currentIndex),
+						CommandsCompleted: int32(i),
 						CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-							Line:   int32(chunk[0].FirstStatementLine),
-							Column: int32(chunk[0].FirstStatementColumn),
+							Line:   int32(command.FirstStatementLine),
+							Column: int32(command.FirstStatementColumn),
 						},
 						CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-							Line:   int32(chunk[len(chunk)-1].LastLine),
-							Column: int32(chunk[len(chunk)-1].LastColumn),
+							Line:   int32(command.LastLine),
+							Column: int32(command.LastColumn),
 						},
 					})
 				}
 
-				chunkText, err := util.ConcatChunk(chunk)
-				if err != nil {
-					return err
-				}
-
-				var indexes []int32
-				for i := currentIndex; i < currentIndex+len(chunk); i++ {
-					indexes = append(indexes, int32(originalIndex[remainingSQLsIndex[i]]))
-				}
+				indexes := []int32{int32(originalIndex[remainingSQLsIndex[i]])}
 				opts.LogCommandExecute(indexes)
 
-				rr := tx.Conn().PgConn().Exec(ctx, chunkText)
+				rr := tx.Conn().PgConn().Exec(ctx, command.Text)
 				results, err := rr.ReadAll()
 				if err != nil {
 					opts.LogCommandResponse(indexes, 0, nil, err.Error())
@@ -528,12 +510,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 					return &db.ErrorWithPosition{
 						Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 						Start: &storepb.TaskRunResult_Position{
-							Line:   int32(chunk[0].FirstStatementLine),
-							Column: int32(chunk[0].FirstStatementColumn),
+							Line:   int32(command.FirstStatementLine),
+							Column: int32(command.FirstStatementColumn),
 						},
 						End: &storepb.TaskRunResult_Position{
-							Line:   int32(chunk[len(chunk)-1].LastLine),
-							Column: int32(chunk[len(chunk)-1].LastColumn),
+							Line:   int32(command.LastLine),
+							Column: int32(command.LastColumn),
 						},
 					}
 				}
@@ -548,7 +530,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffected, "")
 
 				totalRowsAffected += rowsAffected
-				currentIndex += len(chunk)
 			}
 
 			if err := tx.Commit(ctx); err != nil {

@@ -104,13 +104,13 @@ func FilterEmptySQL(list []SingleSQL) []SingleSQL {
 	return result
 }
 
-func FilterEmptySQLWithIndexes(list []SingleSQL) ([]SingleSQL, []int) {
+func FilterEmptySQLWithIndexes(list []SingleSQL) ([]SingleSQL, []int32) {
 	var result []SingleSQL
-	var originalIndex []int
+	var originalIndex []int32
 	for i, sql := range list {
 		if !sql.Empty {
 			result = append(result, sql)
-			originalIndex = append(originalIndex, i)
+			originalIndex = append(originalIndex, int32(i))
 		}
 	}
 	return result, originalIndex
