@@ -131,10 +131,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	slog.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
-	slog.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
-	slog.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
-	slog.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
 	slog.Info("-----Config END-------")
 
 	serverStarted := false

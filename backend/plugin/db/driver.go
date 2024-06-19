@@ -311,11 +311,8 @@ type Driver interface {
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
-	// Dump and restore
-	// Dump the database.
-	// The returned string is the JSON encoded metadata for the logical dump.
-	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-	Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error)
+	// Dump dumps the schema of database.
+	Dump(ctx context.Context, out io.Writer) (string, error)
 }
 
 // Register makes a database driver available by the provided type.
