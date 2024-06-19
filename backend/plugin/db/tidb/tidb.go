@@ -192,7 +192,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var nonTransactionStmts []string
 	var totalCommands int
 	var commands []base.SingleSQL
-	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := tidbparser.SplitSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")

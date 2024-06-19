@@ -317,7 +317,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	var totalCommands int
 	var commands []base.SingleSQL
 	var originalIndex []int
-	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
