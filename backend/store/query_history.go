@@ -175,7 +175,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		}
 
 		var payload storepb.QueryHistoryPayload
-		if err := protojson.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal([]byte(payloadStr), &payload); err != nil {
 			return nil, err
 		}
 		queryHistory.Payload = &payload
