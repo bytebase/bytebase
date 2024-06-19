@@ -1,4 +1,4 @@
-package webhook
+package wecom
 
 import (
 	"bytes"
@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
 // WeComWebhookResponse is the API message for WeCom webhook response.
@@ -29,14 +31,14 @@ type WeComWebhook struct {
 }
 
 func init() {
-	Register("bb.plugin.webhook.wecom", &WeComReceiver{})
+	webhook.Register("bb.plugin.webhook.wecom", &WeComReceiver{})
 }
 
 // WeComReceiver is the receiver for WeCom.
 type WeComReceiver struct {
 }
 
-func (*WeComReceiver) Post(context Context) error {
+func (*WeComReceiver) Post(context webhook.Context) error {
 	metaStrList := []string{}
 	for _, meta := range context.GetMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
@@ -45,11 +47,11 @@ func (*WeComReceiver) Post(context Context) error {
 
 	status := ""
 	switch context.Level {
-	case WebhookSuccess:
+	case webhook.WebhookSuccess:
 		status = "<font color=\"green\">Success</font> "
-	case WebhookWarn:
+	case webhook.WebhookWarn:
 		status = "<font color=\"yellow\">Warn</font> "
-	case WebhookError:
+	case webhook.WebhookError:
 		status = "<font color=\"red\">Error</font> "
 	}
 	content := fmt.Sprintf("# %s%s\n\n%s\n[View in Bytebase](%s)", status, context.Title, strings.Join(metaStrList, "\n"), context.Link)
@@ -75,7 +77,7 @@ func (*WeComReceiver) Post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: Timeout,
+		Timeout: webhook.Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
