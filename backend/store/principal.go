@@ -232,8 +232,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
 			return nil, err
 		}
 		userMessage.MFAConfig = &mfaConfig

@@ -71,7 +71,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 		return nil, err
 	}
 	var rolePermissions storepb.RolePermissions
-	if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal(permissions, &rolePermissions); err != nil {
 		return nil, err
 	}
 	role.Permissions = &rolePermissions
@@ -158,7 +158,7 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 			return nil, err
 		}
 		var rolePermissions storepb.RolePermissions
-		if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal(permissions, &rolePermissions); err != nil {
 			return nil, err
 		}
 		role.Permissions = &rolePermissions
@@ -206,7 +206,7 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 	}
 	s.rolesCache.Remove(patch.ResourceID)
 	var rolePermissions storepb.RolePermissions
-	if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal(permissions, &rolePermissions); err != nil {
 		return nil, err
 	}
 	role.Permissions = &rolePermissions

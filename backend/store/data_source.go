@@ -172,8 +172,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			return nil, err
 		}
 		var dataSourceOptions storepb.DataSourceOptions
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
 			return nil, err
 		}
 		dataSourceMessage.SRV = dataSourceOptions.Srv

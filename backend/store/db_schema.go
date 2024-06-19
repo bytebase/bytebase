@@ -164,11 +164,10 @@ func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *Updat
 func convertMetadataAndConfig(metadata, schema, config []byte) (*model.DBSchema, error) {
 	var databaseSchema storepb.DatabaseSchemaMetadata
 	var databaseConfig storepb.DatabaseConfig
-	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal(metadata, &databaseSchema); err != nil {
 		return nil, err
 	}
-	if err := decoder.Unmarshal(config, &databaseConfig); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal(config, &databaseConfig); err != nil {
 		return nil, err
 	}
 	return model.NewDBSchema(&databaseSchema, schema, &databaseConfig), nil

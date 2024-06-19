@@ -102,7 +102,7 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 		}
 
 		var slowLog storepb.SlowQueryStatistics
-		if err := protojson.Unmarshal(logBytes, &slowLog); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal(logBytes, &slowLog); err != nil {
 			return nil, err
 		}
 

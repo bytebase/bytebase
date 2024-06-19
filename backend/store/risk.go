@@ -97,7 +97,7 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 	risk.Deleted = convertRowStatusToDeleted(string(rowStatus))
 
 	var expression expr.Expr // v1alpha1.ParsedExpr
-	if err := protojson.Unmarshal(expressionBytes, &expression); err != nil {
+	if err := protojsonUnmarshaler.Unmarshal(expressionBytes, &expression); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal")
 	}
 	risk.Expression = &expression
@@ -157,7 +157,7 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 			return nil, errors.Wrap(err, "failed to scan")
 		}
 		var expression expr.Expr
-		if err := protojson.Unmarshal(expressionBytes, &expression); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal(expressionBytes, &expression); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal")
 		}
 		risk.Expression = &expression

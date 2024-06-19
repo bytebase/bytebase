@@ -118,7 +118,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
 
-		if err := protojson.Unmarshal(payload, l.Payload); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal(payload, l.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal payload")
 		}
 

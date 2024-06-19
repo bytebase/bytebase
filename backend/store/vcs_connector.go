@@ -123,7 +123,7 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 			return nil, err
 		}
 		var payload storepb.VCSConnector
-		if err := protojson.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		if err := protojsonUnmarshaler.Unmarshal([]byte(payloadStr), &payload); err != nil {
 			return nil, err
 		}
 		vcsConnector.Payload = &payload
