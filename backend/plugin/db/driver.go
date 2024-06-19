@@ -352,13 +352,9 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 
 // ExecuteOptions is the options for execute.
 type ExecuteOptions struct {
-	CreateDatabase     bool
-	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
-	EndTransactionFunc func(tx *sql.Tx) error
-	// ChunkedSubmission is the flag to indicate if we should use chunked submission for the statement.
-	// If true, we will submit each statement chunk, otherwise we will submit all statements in a batch.
-	// For both cases, we will use one transaction to wrap the statements.
-	ChunkedSubmission     bool
+	CreateDatabase        bool
+	BeginFunc             func(ctx context.Context, conn *sql.Conn) error
+	EndTransactionFunc    func(tx *sql.Tx) error
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
 	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
 }
