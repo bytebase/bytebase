@@ -102,7 +102,7 @@ func (checker *tableDisallowPartitionChecker) EnterAlterTable(ctx *mysql.AlterTa
 		return
 	}
 	code := advisor.Ok
-	if ctx.AlterTableActions().PartitionClause() != nil && ctx.AlterTableActions().PartitionClause().PartitionTypeDef() != nil {
+	if ctx.AlterTableActions() != nil && ctx.AlterTableActions().PartitionClause() != nil && ctx.AlterTableActions().PartitionClause().PartitionTypeDef() != nil {
 		code = advisor.CreateTablePartition
 	}
 	if code != advisor.Ok {

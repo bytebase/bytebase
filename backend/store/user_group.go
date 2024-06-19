@@ -128,7 +128,7 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 		}
 		group.CreatedTime = time.Unix(createdTs, 0)
 		groupPayload := storepb.UserGroupPayload{}
-		if err := protojson.Unmarshal(payload, &groupPayload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, &groupPayload); err != nil {
 			return nil, err
 		}
 		group.Payload = &groupPayload
@@ -245,7 +245,7 @@ func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *Update
 
 	group.CreatedTime = time.Unix(createdTs, 0)
 	groupPayload := storepb.UserGroupPayload{}
-	if err := protojson.Unmarshal(payload, &groupPayload); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, &groupPayload); err != nil {
 		return nil, err
 	}
 	group.Payload = &groupPayload
