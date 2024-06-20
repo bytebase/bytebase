@@ -108,7 +108,14 @@ const showDeleteButton = computed(() => {
 });
 
 onMounted(async () => {
-  await dbGroupStore.fetchAllDatabaseGroupList();
+  const project = router.currentRoute.value.params.projectId as string;
+  if (project && typeof project === "string") {
+    await dbGroupStore.getOrFetchDBGroupListByProjectName(
+      `projects/${project}`
+    );
+  } else {
+    await dbGroupStore.fetchAllDatabaseGroupList();
+  }
 });
 
 const doDelete = () => {
