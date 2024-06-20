@@ -2,13 +2,49 @@ package plsql
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+type Version struct {
+	First  int
+	Second int
+}
+
+// GTE returns true if the version is greater than or equal to the base version.
+func (v *Version) GTE(base *Version) bool {
+	if v.First > base.First {
+		return true
+	}
+	if v.First == base.First {
+		return v.Second >= base.Second
+	}
+	return false
+}
+
+func ParseVersion(banner string) (*Version, error) {
+	re := regexp.MustCompile(`(\d+)\.(\d+)`)
+	match := re.FindStringSubmatch(banner)
+	if len(match) >= 3 {
+		firstVersion, err := strconv.Atoi(match[1])
+		if err != nil {
+			return nil, errors.Errorf("failed to parse first version from banner: %s", banner)
+		}
+		secondVersion, err := strconv.Atoi(match[2])
+		if err != nil {
+			return nil, errors.Errorf("failed to parse second version from banner: %s", banner)
+		}
+		return &Version{First: firstVersion, Second: secondVersion}, nil
+	}
+	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
+}
 
 // ParsePLSQL parses the given PLSQL.
 func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {

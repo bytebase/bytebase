@@ -18,7 +18,7 @@ func init() {
 	base.RegisterTransformDMLToSelect(store.Engine_TIDB, TransformDMLToSelect)
 }
 
-func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.BackupStatement, error) {
+func TransformDMLToSelect(_ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.BackupStatement, error) {
 	tableStatementMap, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")

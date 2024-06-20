@@ -37,7 +37,7 @@ func TestBackup(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := TransformDMLToSelect(t.Input, "db", "backupDB", "_rollback")
+		result, err := TransformDMLToSelect(base.TransformContext{}, t.Input, "db", "backupDB", "_rollback")
 		a.NoError(err)
 		sort.Slice(result, func(i, j int) bool {
 			if result[i].TableName == result[j].TableName {
