@@ -204,7 +204,10 @@ const handleDisallowSignupToggle = async (on: boolean) => {
     return;
   }
   await settingV1Store.updateWorkspaceProfile({
-    disallowSignup: on,
+    payload: {
+      disallowSignup: on,
+    },
+    updateMask: ["value.workspace_profile_setting_value.disallow_signup"],
   });
   pushNotification({
     module: "bytebase",
@@ -220,7 +223,10 @@ const handleRequire2FAToggle = async (on: boolean) => {
   }
 
   await settingV1Store.updateWorkspaceProfile({
-    require2fa: on,
+    payload: {
+      require2fa: on,
+    },
+    updateMask: ["value.workspace_profile_setting_value.require_2fa"],
   });
   pushNotification({
     module: "bytebase",

@@ -104,9 +104,13 @@ export const useSettingV1Store = defineStore("setting_v1", {
       this.settingMapByName.set(resp.name, resp);
       return resp;
     },
-    async updateWorkspaceProfile(
-      payload: Partial<WorkspaceProfileSetting>
-    ): Promise<void> {
+    async updateWorkspaceProfile({
+      payload,
+      updateMask,
+    }: {
+      payload: Partial<WorkspaceProfileSetting>;
+      updateMask: string[];
+    }): Promise<void> {
       if (!this.workspaceProfileSetting) {
         return;
       }
@@ -119,6 +123,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         value: {
           workspaceProfileSettingValue: profileSetting,
         },
+        updateMask,
       });
       // Fetch the latest server info to refresh the disallow signup flag.
       await useActuatorV1Store().fetchServerInfo();

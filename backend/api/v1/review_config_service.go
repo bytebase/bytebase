@@ -98,6 +98,9 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb
 
 // UpdateReviewConfig updates the review config.
 func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v1pb.UpdateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
 	id, err := common.GetReviewConfigID(request.ReviewConfig.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
