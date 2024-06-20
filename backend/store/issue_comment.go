@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -110,7 +111,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
-		if err := protojson.Unmarshal(p, ic.Payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(p, ic.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal")
 		}
 		issueComments = append(issueComments, &ic)

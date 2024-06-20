@@ -88,7 +88,8 @@ type ResourceType =
   | "role"
   | "database-group"
   | "schema-group"
-  | "changelist";
+  | "changelist"
+  | "review-config";
 
 const props = withDefaults(
   defineProps<{

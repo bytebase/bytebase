@@ -183,7 +183,7 @@ message ListPoliciesResponse {
 }
 
 message Policy {
-  reserved 7, 10;
+  reserved 7, 10, 11;
 
   // The name of the policy.
   // Format: {resource name}/policies/{policy type}
@@ -203,7 +203,6 @@ message Policy {
   oneof policy {
     RolloutPolicy rollout_policy = 19;
     MaskingPolicy masking_policy = 9;
-    SQLReviewPolicy sql_review_policy = 11;
     SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
     MaskingRulePolicy masking_rule_policy = 17;
@@ -222,11 +221,10 @@ message Policy {
 }
 
 enum PolicyType {
-  reserved 2, 6;
+  reserved 2, 4, 6;
 
   POLICY_TYPE_UNSPECIFIED = 0;
   ROLLOUT_POLICY = 11;
-  SQL_REVIEW = 4;
   MASKING = 5;
   SLOW_QUERY = 7;
   DISABLE_COPY_DATA = 8;
@@ -273,11 +271,6 @@ message MaskData {
   MaskingLevel masking_level = 4;
   string full_masking_algorithm_id = 5;
   string partial_masking_algorithm_id = 6;
-}
-
-message SQLReviewPolicy {
-  string name = 1;
-  repeated SQLReviewRule rules = 2;
 }
 
 message SQLReviewRule {

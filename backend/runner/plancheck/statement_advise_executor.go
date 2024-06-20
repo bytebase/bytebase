@@ -140,14 +140,12 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
-	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
+	reviewConfig, err := e.store.GetReviewConfigByEnvironment(ctx, environment.UID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			policy = &storepb.SQLReviewPolicy{
-				Name: "Default",
-			}
+			reviewConfig = &storepb.ReviewConfigPayload{}
 		} else {
-			return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
+			return nil, common.Wrapf(err, common.Internal, "failed to get SQL review config")
 		}
 	}
 
@@ -166,7 +164,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
-	adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
+	adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
 		Charset:               dbSchema.GetMetadata().CharacterSet,
 		Collation:             dbSchema.GetMetadata().Collation,
 		DBSchema:              dbSchema.GetMetadata(),
@@ -330,14 +328,12 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
 		}
 
-		policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
+		reviewConfig, err := e.store.GetReviewConfigByEnvironment(ctx, environment.UID)
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-				policy = &storepb.SQLReviewPolicy{
-					Name: "Default",
-				}
+				reviewConfig = &storepb.ReviewConfigPayload{}
 			} else {
-				return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
+				return nil, common.Wrapf(err, common.Internal, "failed to get SQL review config")
 			}
 		}
 
@@ -357,7 +353,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			materials := utils.GetSecretMapFromDatabaseMessage(database)
 			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 			renderedStatement := utils.RenderStatement(sheetStatement, materials)
-			adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
+			adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
 				Charset:    dbSchema.GetMetadata().CharacterSet,
 				Collation:  dbSchema.GetMetadata().Collation,
 				DBSchema:   dbSchema.GetMetadata(),

@@ -621,7 +621,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -686,7 +685,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -1841,7 +1839,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -1912,7 +1909,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -2612,7 +2608,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -2677,7 +2672,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -3381,7 +3375,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -3450,7 +3443,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -5527,7 +5519,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -5592,7 +5583,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -11575,7 +11565,6 @@ components:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SQL_REVIEW
                         - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
@@ -11589,8 +11578,6 @@ components:
                     $ref: '#/components/schemas/RolloutPolicy'
                 maskingPolicy:
                     $ref: '#/components/schemas/MaskingPolicy'
-                sqlReviewPolicy:
-                    $ref: '#/components/schemas/SQLReviewPolicy'
                 slowQueryPolicy:
                     $ref: '#/components/schemas/SlowQueryPolicy'
                 disableCopyDataPolicy:
@@ -12240,15 +12227,6 @@ components:
                 to:
                     type: string
                     description: The recipient email address, used with validate_only to send test email.
-        SQLReviewPolicy:
-            type: object
-            properties:
-                name:
-                    type: string
-                rules:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SQLReviewRule'
         SQLReviewRule:
             type: object
             properties:
@@ -13363,10 +13341,6 @@ components:
                         - POST_EXECUTING
                     type: string
                     format: enum
-                executionStatusUpdateTime:
-                    type: string
-                    description: Last execution status update timestamp.
-                    format: date-time
                 executionDetail:
                     $ref: '#/components/schemas/TaskRun_ExecutionDetail'
                 startTime:

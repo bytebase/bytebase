@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -123,7 +124,7 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 			return nil, err
 		}
 		var payload storepb.VCSConnector
-		if err := protojson.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), &payload); err != nil {
 			return nil, err
 		}
 		vcsConnector.Payload = &payload

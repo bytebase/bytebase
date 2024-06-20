@@ -16,14 +16,17 @@
       <template #0>
         <SQLReviewInfo
           :name="state.name"
+          :resource-id="state.resourceId"
           :selected-environment="props.selectedEnvironment"
           :available-environment-list="availableEnvironmentList"
           :selected-template="
             state.pendingApplyTemplate || state.selectedTemplate
           "
           :is-edit="!!policy"
+          :is-create="!isUpdate"
           @select-template="tryApplyTemplate"
           @name-change="(val: string) => (state.name = val)"
+          @resource-id-change="(val: string) => (state.resourceId = val)"
         />
       </template>
       <template #1>
@@ -52,6 +55,7 @@ import {
   useSubscriptionV1Store,
   useEnvironmentV1List,
 } from "@/store";
+import { reviewConfigNamePrefix } from "@/store/modules/v1/common";
 import type {
   RuleTemplate,
   SQLReviewPolicyTemplate,
@@ -73,6 +77,7 @@ import { rulesToTemplate } from "./components";
 interface LocalState {
   currentStep: number;
   name: string;
+  resourceId: string;
   selectedRuleList: RuleTemplate[];
   selectedTemplate: SQLReviewPolicyTemplate | undefined;
   ruleUpdated: boolean;
@@ -114,6 +119,7 @@ const STEP_LIST = [
 const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
+  resourceId: "",
   selectedRuleList: [...props.selectedRuleList],
   selectedTemplate: props.policy
     ? rulesToTemplate(props.policy, false /* withDisabled=false */)
@@ -121,6 +127,8 @@ const state = reactive<LocalState>({
   ruleUpdated: false,
   pendingApplyTemplate: undefined,
 });
+
+const isUpdate = computed(() => !!props.policy);
 
 const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
   if (!template) {
@@ -205,7 +213,7 @@ const changeStepIndex = (nextIndex: number) => {
   state.currentStep = nextIndex;
 };
 
-const tryFinishSetup = () => {
+const tryFinishSetup = async () => {
   if (!hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")) {
     pushNotification({
       module: "bytebase",
@@ -220,39 +228,42 @@ const tryFinishSetup = () => {
   }
 
   const upsert = {
-    name: state.name,
+    title: state.name,
     ruleList,
   };
 
-  if (props.policy) {
-    store
-      .updateReviewPolicy({
-        id: props.policy.id,
-        ...upsert,
-      })
-      .then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("sql-review.policy-updated"),
-        });
-      });
+  if (isUpdate.value) {
+    await store.updateReviewPolicy({
+      id: props.policy!.id,
+      ...upsert,
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-review.policy-updated"),
+    });
   } else {
     if (!props.selectedEnvironment) {
       return;
     }
-    store
-      .addReviewPolicy({
+    try {
+      await store.createReviewPolicy({
         ...upsert,
+        id: `${reviewConfigNamePrefix}${state.resourceId}`,
         environmentPath: props.selectedEnvironment.name,
-      })
-      .then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("sql-review.policy-created"),
-        });
       });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("sql-review.policy-created"),
+      });
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-review.policy-create-failed"),
+      });
+    }
   }
 
   onCancel();

@@ -67,11 +67,6 @@ message MaskingRulePolicy {
   repeated MaskingRule rules = 1;
 }
 
-message SQLReviewPolicy {
-  string name = 1;
-  repeated SQLReviewRule rule_list = 2;
-}
-
 message SQLReviewRule {
   string type = 1;
   SQLReviewRuleLevel level = 2;

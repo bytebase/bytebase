@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -43,7 +44,7 @@ func TestParseToMetadata(t *testing.T) {
 			tests[i].Metadata = protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result)
 		} else {
 			want := &storepb.DatabaseSchemaMetadata{}
-			err = protojson.Unmarshal([]byte(t.Metadata), want)
+			err = common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Metadata), want)
 			a.NoError(err)
 			diff := cmp.Diff(want, result, protocmp.Transform())
 			a.Equal("", diff)

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -153,8 +152,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		}
 
 		var resultProto storepb.TaskRunResult
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", taskRun.Result)
 		}
 		taskRun.ResultProto = &resultProto

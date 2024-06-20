@@ -155,7 +155,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
+func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
 	return "", nil
 }
 

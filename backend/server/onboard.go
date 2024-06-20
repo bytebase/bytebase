@@ -152,21 +152,38 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
 	// change issue to demonstrate the SQL Review feature.
-	policyPayload, err := protojson.Marshal(getSampleSQLReviewPolicy())
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal onboarding SQL Review policy")
+	sqlReviewConfig := &store.ReviewConfigMessage{
+		Name:       "SQL Review Sample Policy",
+		CreatorUID: userID,
+		Enforce:    true,
+		Payload:    getSampleSQLReviewPayload(),
 	}
+
+	config, err := s.store.CreateReviewConfig(ctx, sqlReviewConfig)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
+	}
+
+	policyPayload, err := protojson.Marshal(&storepb.TagPolicy{
+		Tags: map[string]string{
+			string(api.ReservedTagReviewConfig): common.FormatReviewConfig(config.ID),
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal environment tag")
+	}
+
 	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
 		ResourceUID:       api.DefaultProdEnvironmentUID,
 		ResourceType:      api.PolicyResourceTypeEnvironment,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeSQLReview,
+		Type:              api.PolicyTypeTag,
 		InheritFromParent: true,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
 	}, userID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
+		return errors.Wrapf(err, "failed to create onboarding environment tag policy")
 	}
 
 	// Create a standalone sample SQL sheet.
@@ -320,20 +337,16 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	return nil
 }
 
-// getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
-func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
-	policy := &storepb.SQLReviewPolicy{
-		Name: "SQL Review Sample Policy",
-	}
-
-	ruleList := []*storepb.SQLReviewRule{}
+// getSampleSQLReviewPayload returns a sample SQL review policy for preparing onboardign data.
+func getSampleSQLReviewPayload() *storepb.ReviewConfigPayload {
+	payload := &storepb.ReviewConfigPayload{}
 
 	// Add DropEmptyDatabase rule.
 	for _, e := range []storepb.Engine{
 		storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE,
 		storepb.Engine_MARIADB,
 	} {
-		ruleList = append(ruleList, &storepb.SQLReviewRule{
+		payload.SqlReviewRules = append(payload.SqlReviewRules, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleDropEmptyDatabase),
 			Level:   storepb.SQLReviewRuleLevel_ERROR,
 			Engine:  e,
@@ -347,7 +360,7 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 		storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE,
 		storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL, storepb.Engine_MARIADB,
 	} {
-		ruleList = append(ruleList, &storepb.SQLReviewRule{
+		payload.SqlReviewRules = append(payload.SqlReviewRules, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleColumnNotNull),
 			Level:   storepb.SQLReviewRuleLevel_WARNING,
 			Engine:  e,
@@ -361,7 +374,7 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 		storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL,
 		storepb.Engine_MARIADB,
 	} {
-		ruleList = append(ruleList, &storepb.SQLReviewRule{
+		payload.SqlReviewRules = append(payload.SqlReviewRules, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleTableDropNamingConvention),
 			Level:   storepb.SQLReviewRuleLevel_ERROR,
 			Engine:  e,
@@ -369,6 +382,5 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 		})
 	}
 
-	policy.RuleList = ruleList
-	return policy
+	return payload
 }

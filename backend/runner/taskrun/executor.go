@@ -2,8 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -19,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -220,20 +217,6 @@ func executeMigration(
 
 	var migrationID string
 	opts := db.ExecuteOptions{}
-	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB) {
-		opts.BeginFunc = func(ctx context.Context, conn *sql.Conn) error {
-			updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, conn, task, stores)
-			if err != nil {
-				return errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
-			}
-			task = updatedTask
-			return nil
-		}
-	}
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == storepb.Engine_ORACLE {
-		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
-		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
-	}
 
 	if profile.ExecuteDetail && stateCfg != nil {
 		switch task.Type {
@@ -244,7 +227,6 @@ func executeMigration(
 				storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_ORACLE,
 				storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_MSSQL,
 				storepb.Engine_DYNAMODB:
-				opts.ChunkedSubmission = true
 				opts.UpdateExecutionStatus = func(detail *v1pb.TaskRun_ExecutionDetail) {
 					stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 						state.TaskRunExecutionStatus{
@@ -266,91 +248,6 @@ func executeMigration(
 	}
 
 	return migrationID, schema, nil
-}
-
-func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage, store *store.Store) func(tx *sql.Tx) error {
-	return func(tx *sql.Tx) error {
-		payload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-			slog.Error("failed to unmarshal task payload", slog.Int("TaskId", task.ID), log.BBError(err))
-			return nil
-		}
-		// Get oracle current transaction id;
-		transactionID, err := tx.QueryContext(ctx, "SELECT RAWTOHEX(tx.xid) FROM v$transaction tx JOIN v$session s ON tx.ses_addr = s.saddr")
-		if err != nil {
-			slog.Error("failed to transaction id in task", slog.Int("TaskId", task.ID), log.BBError(err))
-			return nil
-		}
-		defer transactionID.Close()
-		var txID string
-		for transactionID.Next() {
-			err := transactionID.Scan(&txID)
-			if err != nil {
-				slog.Error("failed to the Oracle transaction id in task", slog.Int("TaskId", task.ID), log.BBError(err))
-				return nil
-			}
-		}
-		if err := transactionID.Err(); err != nil {
-			return err
-		}
-		payload.TransactionID = txID
-		updatedPayload, err := json.Marshal(payload)
-		if err != nil {
-			slog.Error("failed to unmarshal task payload", slog.Int("TaskId", task.ID), log.BBError(err), slog.Any("payload", updatedPayload))
-			return nil
-		}
-		updatedPayloadString := string(updatedPayload)
-		patch := &api.TaskPatch{
-			ID:        task.ID,
-			UpdaterID: api.SystemBotID,
-			Payload:   &updatedPayloadString,
-		}
-		if _, err = store.UpdateTaskV2(ctx, patch); err != nil {
-			slog.Error("failed to update task with new payload", slog.Any("TaskPatch", patch), log.BBError(err))
-			return nil
-		}
-		return nil
-	}
-}
-
-func setThreadIDAndStartBinlogCoordinate(ctx context.Context, conn *sql.Conn, task *store.TaskMessage, store *store.Store) (*store.TaskMessage, error) {
-	payload := &api.TaskDatabaseDataUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrap(err, "invalid database data update payload")
-	}
-
-	var connID string
-	if err := conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&connID); err != nil {
-		return nil, errors.Wrap(err, "failed to get the connection ID")
-	}
-	payload.ThreadID = connID
-
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
-	}
-	if (binlogInfo == api.BinlogInfo{}) {
-		slog.Warn("binlog is not enabled", slog.Int("task", task.ID))
-		return task, nil
-	}
-	payload.BinlogFileStart = binlogInfo.FileName
-	payload.BinlogPosStart = binlogInfo.Position
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal task payload")
-	}
-	payloadString := string(payloadBytes)
-	patch := &api.TaskPatch{
-		ID:        task.ID,
-		UpdaterID: api.SystemBotID,
-		Payload:   &payloadString,
-	}
-	updatedTask, err := store.UpdateTaskV2(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
-	}
-	return updatedTask, nil
 }
 
 func postMigration(ctx context.Context, stores *store.Store, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, sheetID *int) (bool, *storepb.TaskRunResult, error) {

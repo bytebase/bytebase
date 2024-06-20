@@ -5,7 +5,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
@@ -186,7 +185,7 @@ func (s *RoleService) getProjectUsingRole(ctx context.Context, role string) (boo
 
 	for _, policy := range policies {
 		iamPolicy := &storepb.ProjectIamPolicy{}
-		if err := protojson.Unmarshal([]byte(policy.Payload), iamPolicy); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), iamPolicy); err != nil {
 			return false, 0, errors.Wrapf(err, "failed to unmarshal iam policy")
 		}
 

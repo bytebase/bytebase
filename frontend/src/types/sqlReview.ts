@@ -8,7 +8,6 @@ import {
   sQLReviewRuleLevelFromJSON,
 } from "@/types/proto/v1/org_policy_service";
 import type { PlanType } from "@/types/proto/v1/subscription_service";
-import type { PolicyId } from "./id";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
@@ -141,7 +140,7 @@ export interface SchemaPolicyRule {
 
 // The API for SQL review policy in backend.
 export interface SQLReviewPolicy {
-  id: PolicyId;
+  id: string;
 
   // Standard fields
   // enforce means if the policy is active

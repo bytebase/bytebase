@@ -450,7 +450,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
 		if s, ok := v.(state.TaskRunExecutionStatus); ok {
 			t.ExecutionStatus = s.ExecutionStatus
-			t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
 			t.ExecutionDetail = s.ExecutionDetail
 		}
 	}
@@ -619,7 +618,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
 		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
+		Target:         common.FormatInstance(instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",
@@ -628,7 +627,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Sheet:        getResourceNameForSheet(project, payload.SheetID),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
-				Environment:  fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, payload.EnvironmentID),
+				Environment:  common.FormatEnvironment(payload.EnvironmentID),
 				Labels:       labels,
 			},
 		},
