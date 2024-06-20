@@ -2325,7 +2325,8 @@
       "rows": "rows"
     },
     "n-per-page": "{n} / page",
-    "customize-tree-structure": "Customize tree structure"
+    "customize-tree-structure": "Customize tree structure",
+    "will-override-current-editing-statement": "Will override current editing statement."
   },
   "schema-editor": {
     "self": "Schema Editor",
