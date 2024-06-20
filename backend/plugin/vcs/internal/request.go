@@ -45,6 +45,8 @@ func request(ctx context.Context, method, url string, authorization string, head
 	if err != nil {
 		return 0, "", errors.Wrapf(err, "failed to send delete request for url %s", url)
 	}
+	defer resp.Body.Close()
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, "", errors.Wrapf(err, "read delete %s response body with status code %d", url, resp.StatusCode)
