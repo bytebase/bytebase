@@ -96,6 +96,7 @@
 <script lang="ts" setup>
 import { NTabs, NTab, NTooltip } from "naive-ui";
 import { reactive } from "vue";
+import { useIssueContext } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { hasFeature, pushNotification } from "@/store";
@@ -115,8 +116,9 @@ const state = reactive<LocalState>({
 });
 
 const { state: sdlState, events: sdlEvents } = useSDLState();
+const context = useIssueContext();
 
-const { markers } = useSQLAdviceMarkers();
+const { markers } = useSQLAdviceMarkers(context, undefined);
 
 sdlEvents.on("error", ({ message }) => {
   state.tab = "SCHEMA";

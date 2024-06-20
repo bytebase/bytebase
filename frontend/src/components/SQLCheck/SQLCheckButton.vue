@@ -73,7 +73,7 @@
 import { computedAsync } from "@vueuse/core";
 import type { ButtonProps } from "naive-ui";
 import { NButton, NPopover } from "naive-ui";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
@@ -105,6 +105,10 @@ const props = withDefaults(
     changeType: undefined,
   }
 );
+
+const emit = defineEmits<{
+  (event: "update:advices", advices: Advice[] | undefined): void;
+}>();
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
@@ -242,5 +246,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (!context) return;
   context.runSQLCheck.value = undefined;
+});
+
+watch(advices, (advices) => {
+  emit("update:advices", advices);
 });
 </script>
