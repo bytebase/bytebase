@@ -15,9 +15,8 @@ import {
   useSearchDatabaseV1List,
   useEnvironmentV1List,
   useProjectV1List,
-  useProjectV1Store,
 } from "@/store";
-import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME, type MaybeRef } from "@/types";
+import { UNKNOWN_ID, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
@@ -42,23 +41,20 @@ export const useCommonSearchScopeOptions = (
   const project = computed(() => {
     const { projectId } = route.params;
     if (projectId && typeof projectId === "string") {
-      const p = useProjectV1Store().getProjectByName(`projects/${projectId}`);
-      if (p && p.name !== UNKNOWN_PROJECT_NAME) {
-        return p;
-      }
+      return `projects/${projectId}`;
     }
     return undefined;
   });
   const { instanceList } = useInstanceV1List(
     /* !showDeleted */ false,
     /* !forceUpdate */ false,
-    /* parent */ computed(() => project.value?.name)
+    /* parent */ computed(() => project.value)
   );
   const { databaseList } = useSearchDatabaseV1List(
     computed(() => {
       const filters = ["instance = instances/-"];
       if (project.value) {
-        filters.push(`project = ${project.value.name}`);
+        filters.push(`project = ${project.value}`);
       }
       return {
         filter: filters.join(" && "),
