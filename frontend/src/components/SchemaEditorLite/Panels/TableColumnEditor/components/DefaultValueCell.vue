@@ -8,8 +8,6 @@
     :disabled="disabled"
     class="bb-schema-editor--column-default-value-select"
     style="max-height: 20rem; overflow-y: auto; overflow-x: hidden"
-    @focus="focused = true"
-    @blur="focused = false"
     @select="handleSelect"
   >
     <NInput
@@ -18,6 +16,8 @@
       :placeholder="placeholder"
       :disabled="inputDisabled"
       :style="inputStyle"
+      @focus="focused = true"
+      @blur="focused = false"
       @update:value="handleInput"
     >
       <template #suffix>
@@ -138,10 +138,7 @@ const options = computed((): DefaultValueSelectOption[] => {
 });
 
 const inputDisabled = computed(() => {
-  if (props.disabled) return true;
-  if (dropdownValue.value === "no-default" || dropdownValue.value === "null")
-    return true;
-  return false;
+  return props.disabled;
 });
 
 const handleSelect = (value: string) => {
@@ -164,6 +161,9 @@ const handleSelect = (value: string) => {
 };
 
 const handleInput = (value: string) => {
+  if (dropdownValue.value === "no-default" || dropdownValue.value === "null") {
+    handleSelect("string");
+  }
   emit("input", value);
 };
 
