@@ -10,10 +10,10 @@
         <StepSection />
         <SpecListSection />
 
-        <SQLCheckSection v-if="isCreating" />
+        <SQLCheckSection v-if="isCreating" @update:advices="advices = $event" />
         <PlanCheckSection v-if="!isCreating" />
 
-        <StatementSection />
+        <StatementSection :advices="advices" />
         <DescriptionSection />
       </div>
     </div>
@@ -21,9 +21,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import type { Advice } from "@/types/proto/v1/sql_service";
 import {
   extractIssueUID,
   extractProjectResourceName,
@@ -43,6 +44,7 @@ import { usePlanContext, usePollPlan } from "./logic";
 
 const router = useRouter();
 const { isCreating, plan } = usePlanContext();
+const advices = ref<Advice[]>();
 
 usePollPlan();
 

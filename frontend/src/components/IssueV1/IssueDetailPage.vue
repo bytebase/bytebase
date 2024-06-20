@@ -16,10 +16,10 @@
 
         <TaskRunSection v-if="!isCreating" />
 
-        <SQLCheckSection v-if="isCreating" />
+        <SQLCheckSection v-if="isCreating" @update:advices="advices = $event" />
         <PlanCheckSection v-if="!isCreating" />
 
-        <StatementSection />
+        <StatementSection :advices="advices" />
 
         <DescriptionSection />
 
@@ -76,6 +76,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Advice } from "@/types/proto/v1/sql_service";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { Drawer } from "../v2";
 import {
@@ -107,6 +108,7 @@ import {
 
 const containerRef = ref<HTMLElement>();
 const { isCreating, phase, issue, events } = useIssueContext();
+const advices = ref<Advice[]>();
 
 const ongoingIssueReviewAction = ref<{
   action: IssueReviewAction;

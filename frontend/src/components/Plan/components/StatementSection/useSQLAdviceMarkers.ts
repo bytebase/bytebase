@@ -1,30 +1,52 @@
 import { maxBy } from "lodash-es";
-import { computed } from "vue";
+import { computed, type Ref } from "vue";
 import type { AdviceOption } from "@/components/MonacoEditor";
 import {
   PlanCheckRun,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/plan_service";
-import { planCheckRunListForSpec, usePlanContext } from "../../logic";
+import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+import { planCheckRunListForSpec, type PlanContext } from "../../logic";
 
-export const useSQLAdviceMarkers = () => {
-  const { isCreating, plan, selectedSpec } = usePlanContext();
+export const useSQLAdviceMarkers = (
+  context: PlanContext,
+  advices: Ref<Advice[] | undefined> | undefined
+) => {
+  const { isCreating } = context;
   const markers = computed(() => {
-    if (isCreating.value) return [];
-
-    const planCheckRunList = planCheckRunListForSpec(
-      plan.value,
-      selectedSpec.value
-    );
-    const types: PlanCheckRun_Type[] = [
-      PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
-    ];
-    return types.flatMap((type) => {
-      return getLatestAdviceOptions(
-        planCheckRunList.filter((checkRun) => checkRun.type === type)
+    if (isCreating.value) {
+      if (!advices) return [];
+      if (!advices.value) return [];
+      return advices.value.map<AdviceOption>((advice) => {
+        const line = advice.line;
+        const column = advice.column ?? Number.MAX_SAFE_INTEGER;
+        const code = advice.code;
+        return {
+          severity: advice.status === Advice_Status.ERROR ? "ERROR" : "WARNING",
+          message: advice.content,
+          source: `${advice.title} (${code}) L${line}:C${column}`,
+          startLineNumber: line,
+          endLineNumber: line,
+          startColumn: column,
+          endColumn: column,
+        };
+      });
+    } else {
+      const { plan, selectedSpec } = context;
+      const planCheckRunList = planCheckRunListForSpec(
+        plan.value,
+        selectedSpec.value
       );
-    });
+      const types: PlanCheckRun_Type[] = [
+        PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
+      ];
+      return types.flatMap((type) => {
+        return getLatestAdviceOptions(
+          planCheckRunList.filter((checkRun) => checkRun.type === type)
+        );
+      });
+    }
   });
   return { markers };
 };
