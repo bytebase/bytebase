@@ -5,7 +5,7 @@ import {
   LinkIcon,
   SquarePenIcon,
 } from "lucide-vue-next";
-import type { DropdownOption } from "naive-ui";
+import { useDialog, type DropdownOption } from "naive-ui";
 import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import TableIcon from "@/components/Icon/TableIcon.vue";
@@ -22,6 +22,7 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
+  defer,
   extractInstanceResourceName,
   extractProjectResourceName,
   generateSimpleSelectAllStatement,
@@ -44,10 +45,39 @@ const VIEW_SCHEMA_ACTION_ENABLED_ENGINES = [
   Engine.TIDB,
 ];
 
+const confirmOverrideStatement = async (
+  $d: ReturnType<typeof useDialog>,
+  statement: string
+) => {
+  const { currentTab } = useSQLEditorTabStore();
+  if (currentTab && currentTab.statement.trim().length > 0) {
+    const d = defer<boolean>();
+
+    $d.warning({
+      title: t("common.warning"),
+      content: t("sql-editor.will-override-current-editing-statement"),
+      contentClass: "whitespace-pre-wrap",
+      style: "z-index: 100000",
+      negativeText: t("common.cancel"),
+      positiveText: t("common.confirm"),
+      onNegativeClick: () => {
+        d.resolve(false);
+      },
+      onPositiveClick: () => {
+        d.resolve(true);
+      },
+    });
+    return d.promise;
+  }
+
+  return Promise.resolve(true);
+};
+
 export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const pageMode = usePageMode();
+  const $d = useDialog();
 
   const show = ref(false);
   const position = ref<Position>({
@@ -191,13 +221,17 @@ export const useDropdown = () => {
           key: "preview-table-data",
           label: t("sql-editor.preview-table-data"),
           icon: () => <TableIcon class="w-4 h-4" />,
-          onSelect: () => {
+          onSelect: async () => {
             const statement = generateSimpleSelectAllStatement(
               engineForTarget(target),
               schema,
               tableOrView,
               SELECT_ALL_LIMIT
             );
+            const confirmed = await confirmOverrideStatement($d, statement);
+            if (!confirmed) {
+              return;
+            }
             runQuery(
               (target as NodeTarget<"database">).db,
               schema,
@@ -319,7 +353,10 @@ const runQuery = async (
   });
 };
 
-export const selectAllFromTableOrView = async (node: TreeNode) => {
+export const selectAllFromTableOrView = async (
+  $d: ReturnType<typeof useDialog>,
+  node: TreeNode
+) => {
   const { target } = (node as TreeNode<"table" | "view">).meta;
   if (!targetSupportsSelectAll(target)) {
     return;
@@ -340,5 +377,9 @@ export const selectAllFromTableOrView = async (node: TreeNode) => {
     tableOrViewName,
     SELECT_ALL_LIMIT
   );
+  const confirmed = await confirmOverrideStatement($d, query);
+  if (!confirmed) {
+    return;
+  }
   runQuery(db, schema, tableOrViewName, query);
 };
