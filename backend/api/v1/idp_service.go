@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -59,6 +60,10 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 
 // CreateIdentityProvider creates an identity provider.
 func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, request *v1pb.CreateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
+
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
@@ -96,6 +101,9 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 
 // UpdateIdentityProvider updates an identity provider.
 func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, request *v1pb.UpdateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
 	if request.IdentityProvider == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider must be set")
 	}
@@ -176,6 +184,9 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 
 // UndeleteIdentityProvider undeletes an identity provider.
 func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, request *v1pb.UndeleteIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
 	identityProvider, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err

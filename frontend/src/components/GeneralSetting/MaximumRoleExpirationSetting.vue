@@ -78,7 +78,12 @@ const handleSettingChange = useDebounceFn(async () => {
     seconds = state.inputValue * 24 * 60 * 60;
   }
   await settingV1Store.updateWorkspaceProfile({
-    maximumRoleExpiration: Duration.fromPartial({ seconds, nanos: 0 }),
+    payload: {
+      maximumRoleExpiration: Duration.fromPartial({ seconds, nanos: 0 }),
+    },
+    updateMask: [
+      "value.workspace_profile_setting_value.maximum_role_expiration",
+    ],
   });
   pushNotification({
     module: "bytebase",

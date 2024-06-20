@@ -655,7 +655,7 @@
           "never-expires": "期限切れなし"
         },
         "domain-restriction": {
-          "self": "ドメイン制限",
+          "self": "ワークスペースドメイン",
           "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。",
           "domain-input-placeholder": "ドメインを入力してください。例: example.com",
           "members-restriction": {
@@ -2336,7 +2336,8 @@
       "rows": "行"
     },
     "n-per-page": "{n} / ページ",
-    "customize-tree-structure": "ツリー構造をカスタマイズする"
+    "customize-tree-structure": "ツリー構造をカスタマイズする",
+    "will-override-current-editing-statement": "現在の編集ステートメントをオーバーライドします。"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

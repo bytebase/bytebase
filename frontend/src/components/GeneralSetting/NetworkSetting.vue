@@ -26,7 +26,7 @@
             <NInput
               v-model:value="state.externalUrl"
               class="mb-4 w-full"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || isSaaSMode"
             />
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -78,10 +78,11 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingV1Store, useActuatorV1Store } from "@/store";
 
 defineProps<{
   allowEdit: boolean;
@@ -94,11 +95,14 @@ interface LocalState {
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
+const actuatorV1Store = useActuatorV1Store();
 
 const state = reactive<LocalState>({
   externalUrl: "",
   gitopsWebhookUrl: "",
 });
+
+const { isSaaSMode } = storeToRefs(actuatorV1Store);
 
 watchEffect(() => {
   state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
@@ -121,8 +125,14 @@ const updateNetworkSetting = async () => {
     return;
   }
   await settingV1Store.updateWorkspaceProfile({
-    externalUrl: state.externalUrl,
-    gitopsWebhookUrl: state.gitopsWebhookUrl,
+    payload: {
+      externalUrl: state.externalUrl,
+      gitopsWebhookUrl: state.gitopsWebhookUrl,
+    },
+    updateMask: [
+      "value.workspace_profile_setting_value.external_url",
+      "value.workspace_profile_setting_value.gitops_webhook_url",
+    ],
   });
   pushNotification({
     module: "bytebase",

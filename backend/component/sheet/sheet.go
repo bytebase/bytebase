@@ -67,7 +67,9 @@ func (sm *Manager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
 	switch engine {
-	case storepb.Engine_MYSQL:
+	case
+		storepb.Engine_MYSQL,
+		storepb.Engine_TIDB:
 		if len(statement) > common.MaxSheetCheckSize {
 			return nil
 		}
@@ -80,8 +82,10 @@ func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetC
 	}
 
 	switch engine {
-	case storepb.Engine_ORACLE:
-		return getSheetCommandsForOracle(statement)
+	case
+		storepb.Engine_TIDB,
+		storepb.Engine_ORACLE:
+		return getSheetCommandsFromByteOffset(engine, statement)
 	case storepb.Engine_MSSQL:
 		return getSheetCommandsForMSSQL(statement)
 	default:
@@ -111,11 +115,11 @@ func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb
 	return sheetCommands
 }
 
-func getSheetCommandsForOracle(statement string) []*storepb.SheetCommand {
-	singleSQLs, err := plsqlparser.SplitSQL(statement)
+func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*storepb.SheetCommand {
+	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not supported") {
-			slog.Warn("failed to get sheet command for oracle", "statement", statement)
+			slog.Warn("failed to get sheet command from byte offset", "engine", engine.String(), "statement", statement)
 		}
 		return nil
 	}

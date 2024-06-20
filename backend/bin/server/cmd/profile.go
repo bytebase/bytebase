@@ -5,15 +5,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func getBaseProfile(dataDir string) config.Profile {
-	backupStorageBackend := api.BackupStorageBackendLocal
-	if flags.backupBucket != "" {
-		backupStorageBackend = api.BackupStorageBackendS3
-	}
-
 	sampleDatabasePort := 0
 	if !flags.disableSample {
 		// Using flags.port + 3 as our sample database port if not disabled.
@@ -21,27 +15,23 @@ func getBaseProfile(dataDir string) config.Profile {
 	}
 
 	return config.Profile{
-		ExternalURL:          flags.externalURL,
-		Port:                 flags.port,     // Using flags.port as our gRPC server port.
-		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
-		SampleDatabasePort:   sampleDatabasePort,
-		Readonly:             flags.readonly,
-		SaaS:                 flags.saas,
-		Debug:                flags.debug,
-		DataDir:              dataDir,
-		ResourceDir:          common.GetResourceDir(dataDir),
-		DemoName:             flags.demoName,
-		Version:              version,
-		GitCommit:            gitcommit,
-		PgURL:                flags.pgURL,
-		BackupStorageBackend: backupStorageBackend,
-		BackupRegion:         flags.backupRegion,
-		BackupBucket:         flags.backupBucket,
-		BackupCredentialFile: flags.backupCredential,
-		LastActiveTs:         time.Now().Unix(),
-		Lsp:                  flags.lsp,
-		PreUpdateBackup:      flags.preUpdateBackup,
-		ExecuteDetail:        flags.executeDetail,
-		DevelopmentAudit:     flags.developmentAudit,
+		ExternalURL:        flags.externalURL,
+		Port:               flags.port,     // Using flags.port as our gRPC server port.
+		DatastorePort:      flags.port + 2, // Using flags.port + 2 as our datastore port.
+		SampleDatabasePort: sampleDatabasePort,
+		Readonly:           flags.readonly,
+		SaaS:               flags.saas,
+		Debug:              flags.debug,
+		DataDir:            dataDir,
+		ResourceDir:        common.GetResourceDir(dataDir),
+		DemoName:           flags.demoName,
+		Version:            version,
+		GitCommit:          gitcommit,
+		PgURL:              flags.pgURL,
+		LastActiveTs:       time.Now().Unix(),
+		Lsp:                flags.lsp,
+		PreUpdateBackup:    flags.preUpdateBackup,
+		ExecuteDetail:      flags.executeDetail,
+		DevelopmentAudit:   flags.developmentAudit,
 	}
 }

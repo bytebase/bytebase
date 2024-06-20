@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	maxTableNameLength = 128
+	maxTableNameLengthAfter12_2  = 128
+	maxTableNameLengthBefore12_2 = 30
 )
 
 func init() {
@@ -49,26 +50,38 @@ type statementInfo struct {
 
 // TransformDMLToSelect transforms DML statement to SELECT statement.
 // For Oracle, we only consider the managed on schema mode.
-func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+func TransformDMLToSelect(ctx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
 
-	return generateSQL(statementInfoList, targetDatabase, tablePrefix)
+	return generateSQL(ctx, statementInfoList, targetDatabase, tablePrefix)
 }
 
-func generateSQL(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+func generateSQL(ctx base.TransformContext, statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	var result []base.BackupStatement
 	offsetLength := 1
 	if len(statementInfoList) > 1 {
 		offsetLength = getOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
 	}
 
+	version, ok := ctx.Version.(*Version)
+	if !ok {
+		version = &Version{
+			First:  11,
+			Second: 0,
+		}
+	}
+
 	for _, info := range statementInfoList {
 		table := info.table
 		targetTable := fmt.Sprintf("%s_%0*d_%s", tablePrefix, offsetLength, info.offset, table.Table)
-		targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
+		if version.GTE(&Version{First: 12, Second: 2}) {
+			targetTable, _ = common.TruncateString(targetTable, maxTableNameLengthAfter12_2)
+		} else {
+			targetTable, _ = common.TruncateString(targetTable, maxTableNameLengthBefore12_2)
+		}
 		var buf strings.Builder
 		if _, err := buf.WriteString(fmt.Sprintf(`CREATE TABLE "%s"."%s" AS SELECT `, targetDatabase, targetTable)); err != nil {
 			return nil, errors.Wrap(err, "failed to write to buffer")

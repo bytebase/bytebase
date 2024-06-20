@@ -465,9 +465,18 @@ watch(
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
-const { ready } = useSearchDatabaseV1List({
-  filter: "instance = instances/-",
-});
+const { ready } = useSearchDatabaseV1List(
+  computed(() => {
+    const filters = ["instance = instances/-"];
+    const project = selectedProject.value;
+    if (project) {
+      filters.push(`project = ${project.name}`);
+    }
+    return {
+      filter: filters.join(" && "),
+    };
+  })
+);
 
 const prepareDatabaseGroupList = async () => {
   if (selectedProject.value) {

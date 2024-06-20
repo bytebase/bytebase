@@ -655,7 +655,7 @@
           "never-expires": "永不过期"
         },
         "domain-restriction": {
-          "self": "域名限制",
+          "self": "工作空间域名",
           "description": "用于指定成员电子邮箱的域名。",
           "domain-input-placeholder": "请输入域名，例如 example.com",
           "members-restriction": {
@@ -2336,7 +2336,8 @@
       "rows": "行"
     },
     "n-per-page": "{n} / 页",
-    "customize-tree-structure": "自定义树结构"
+    "customize-tree-structure": "自定义树结构",
+    "will-override-current-editing-statement": "将会覆盖当前的编辑中语句。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

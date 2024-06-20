@@ -308,16 +308,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
-	if opts.BeginFunc != nil {
-		if err := opts.BeginFunc(ctx, conn); err != nil {
-			return 0, err
-		}
-	}
-
 	var totalCommands int
 	var commands []base.SingleSQL
-	var originalIndex []int
-	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+	var originalIndex []int32
+	oneshot := true
+	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
@@ -326,22 +321,20 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
-		totalCommands = len(singleSQLs)
 		commands = singleSQLs
-	} else {
+		totalCommands = len(commands)
+		if totalCommands <= common.MaximumCommands {
+			oneshot = false
+		}
+	}
+	if oneshot {
 		commands = []base.SingleSQL{
 			{
 				Text: statement,
 			},
 		}
-		originalIndex = []int{0}
+		originalIndex = []int32{0}
 	}
-
-	tx, err := conn.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin execute transaction")
-	}
-	defer tx.Rollback()
 
 	var totalRowsAffected int64
 
@@ -373,7 +366,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				})
 			}
 
-			indexes := []int32{int32(originalIndex[i])}
+			indexes := []int32{originalIndex[i]}
 			opts.LogCommandExecute(indexes)
 
 			sqlResult, err := exer.ExecContext(ctx, command.Text, nil)

@@ -192,7 +192,10 @@ const updateAnnouncementSetting = async () => {
   }
 
   await settingV1Store.updateWorkspaceProfile({
-    announcement: announcement,
+    payload: {
+      announcement: announcement,
+    },
+    updateMask: ["value.workspace_profile_setting_value.announcement"],
   });
   pushNotification({
     module: "bytebase",

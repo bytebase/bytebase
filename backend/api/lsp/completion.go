@@ -92,7 +92,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 
 func generateSortText(params lsp.CompletionParams, candidate base.Candidate) string {
 	switch params.Context.TriggerCharacter {
-	case ".", " ", "\n":
+	case ".", " ":
 		return generateSortTextAfterDot(candidate)
 	default:
 		return string(candidate.Type) + candidate.Text

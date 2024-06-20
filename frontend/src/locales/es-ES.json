@@ -655,7 +655,7 @@
           "never-expires": "Nunca expira"
         },
         "domain-restriction": {
-          "self": "Restricción de dominio",
+          "self": "Dominio de espacio de trabajo",
           "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo.",
           "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
           "members-restriction": {
@@ -2336,7 +2336,8 @@
       "rows": "filas"
     },
     "n-per-page": "{n} / página",
-    "customize-tree-structure": "Personalizar la estructura del árbol"
+    "customize-tree-structure": "Personalizar la estructura del árbol",
+    "will-override-current-editing-statement": "Anulará la declaración de edición actual."
   },
   "schema-editor": {
     "self": "Editor de esquema",

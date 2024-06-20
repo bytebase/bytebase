@@ -655,7 +655,7 @@
           "never-expires": "Never expires"
         },
         "domain-restriction": {
-          "self": "Domain restriction",
+          "self": "Workspace Domain",
           "description": "Specify the domain that could be used as the email domain for workspace members.",
           "domain-input-placeholder": "Please input domain, e.g. example.com",
           "members-restriction": {
@@ -2336,7 +2336,8 @@
       "rows": "rows"
     },
     "n-per-page": "{n} / page",
-    "customize-tree-structure": "Customize tree structure"
+    "customize-tree-structure": "Customize tree structure",
+    "will-override-current-editing-statement": "Will override current editing statement."
   },
   "schema-editor": {
     "self": "Schema Editor",

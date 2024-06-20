@@ -25,15 +25,11 @@ const (
 	MaxSheetSize = 1024 * 1024
 	// MaxSheetCheckSize is the maximum size of a sheet for checking changes.
 	MaxSheetCheckSize = 1024 * 1024
-	// MaxSheetSizeForRollback is the maximum size of a sheet for rollback generator to run.
-	MaxSheetSizeForRollback = 8 * 1024 * 1024
-	// MaxBinlogSizeLimit defines the upper limit for scanning the binlog text body size in search of a transaction..
-	MaxBinlogSizeLimit = 32 * 1024 * 1024
-	// MaxChunksCount is the maximum number of chunks for a sheet.
-	MaxSheetChunksCount = 200
 	// The maximum number of bytes for sql results in response body.
 	// 100 MB.
 	MaximumSQLResultSize = 100 * 1024 * 1024
+	// MaximumCommands is the maximum number of commands that can be executed in a single transaction.
+	MaximumCommands = 200
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"

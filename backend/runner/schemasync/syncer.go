@@ -384,7 +384,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
 			var schemaBuf bytes.Buffer
-			if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
+			if _, err := driver.Dump(ctx, &schemaBuf); err != nil {
 				return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 			}
 			rawDump = schemaBuf.Bytes()
