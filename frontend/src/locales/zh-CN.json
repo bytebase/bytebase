@@ -655,7 +655,7 @@
           "never-expires": "永不过期"
         },
         "domain-restriction": {
-          "self": "域名限制",
+          "self": "工作空间域名",
           "description": "用于指定成员电子邮箱的域名。",
           "domain-input-placeholder": "请输入域名，例如 example.com",
           "members-restriction": {
