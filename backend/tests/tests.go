@@ -227,10 +227,10 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err != nil {
 		return nil, err
 	}
-	if err := ctl.initWorkspaceProfile(metaCtx); err != nil {
+	if err := ctl.setLicense(metaCtx); err != nil {
 		return nil, err
 	}
-	if err := ctl.setLicense(metaCtx); err != nil {
+	if err := ctl.initWorkspaceProfile(metaCtx); err != nil {
 		return nil, err
 	}
 	for _, environment := range []string{"test", "prod"} {
