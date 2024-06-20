@@ -119,7 +119,7 @@ func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*
 	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not supported") {
-			slog.Warn("failed to get sheet command for oracle", "statement", statement)
+			slog.Warn("failed to get sheet command from byte offset", "engine", engine.String(), "statement", statement)
 		}
 		return nil
 	}
