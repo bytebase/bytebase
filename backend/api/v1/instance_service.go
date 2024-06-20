@@ -863,6 +863,12 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.DirectConnection = request.DataSource.DirectConnection
 		case "region":
 			dataSource.Region = request.DataSource.Region
+		case "account_id":
+			dataSource.AccountID = request.DataSource.AccountId
+			patch.AccountID = &request.DataSource.AccountId
+		case "warehouse_id":
+			dataSource.WarehouseID = request.DataSource.WarehouseId
+			patch.WarehouseID = &request.DataSource.WarehouseId
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
