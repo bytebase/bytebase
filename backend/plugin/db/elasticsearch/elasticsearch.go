@@ -217,10 +217,10 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 			result.Statement = fmt.Sprintf("%s %s\n%s", s.method, s.route, s.queryString)
 			// TODO(d): handle max size.
 			results = append(results, &result)
+			return nil
 		}(); err != nil {
 			return nil, err
 		}
-
 	}
 
 	return results, nil
