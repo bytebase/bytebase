@@ -2336,7 +2336,8 @@
       "rows": "filas"
     },
     "n-per-page": "{n} / página",
-    "customize-tree-structure": "Personalizar la estructura del árbol"
+    "customize-tree-structure": "Personalizar la estructura del árbol",
+    "will-override-current-editing-statement": "Anulará la declaración de edición actual."
   },
   "schema-editor": {
     "self": "Editor de esquema",
