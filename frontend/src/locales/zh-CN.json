@@ -2336,7 +2336,8 @@
       "rows": "行"
     },
     "n-per-page": "{n} / 页",
-    "customize-tree-structure": "自定义树结构"
+    "customize-tree-structure": "自定义树结构",
+    "will-override-current-editing-statement": "将会覆盖当前的编辑中语句。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
