@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -293,6 +294,12 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 						DisallowSignup: false,
 					},
 				},
+			},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{
+				"value.workspace_profile_setting_value.disallow_signup",
+				"value.workspace_profile_setting_value.external_url",
 			},
 		},
 	})

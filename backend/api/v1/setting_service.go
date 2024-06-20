@@ -165,6 +165,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
+		if request.UpdateMask == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "update mask is required")
+		}
 		payload := new(storepb.WorkspaceProfileSetting)
 		if err := convertV1PbToStorePb(request.Setting.Value.GetWorkspaceProfileSettingValue(), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
@@ -384,6 +387,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		setting, err := s.store.GetAppIMSetting(ctx)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get old app im setting")
+		}
+		if request.UpdateMask == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "update mask is required")
 		}
 		for _, path := range request.UpdateMask.Paths {
 			switch path {
