@@ -655,7 +655,7 @@
           "never-expires": "Never expires"
         },
         "domain-restriction": {
-          "self": "Domain restriction",
+          "self": "Workspace Domain",
           "description": "Specify the domain that could be used as the email domain for workspace members.",
           "domain-input-placeholder": "Please input domain, e.g. example.com",
           "members-restriction": {
