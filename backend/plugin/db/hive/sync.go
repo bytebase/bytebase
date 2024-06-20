@@ -38,7 +38,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	for idx, databaseName := range databaseNames {
 		wg.Add(1)
 		go func(index int, databaseName string) {
-			defer wg.done()
+			defer wg.Done()
 			databaseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
 			databaseSchemaMetadata.Name = databaseName
 
