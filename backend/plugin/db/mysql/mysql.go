@@ -166,6 +166,7 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	pem, err := io.ReadAll(resp.Body)
 	if err != nil {
