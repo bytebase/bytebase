@@ -51,7 +51,7 @@ func init() {
 	base.RegisterTransformDMLToSelect(storebp.Engine_POSTGRES, TransformDMLToSelect)
 }
 
-func TransformDMLToSelect(statement string, _ string, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
+func TransformDMLToSelect(_ base.TransformContext, statement string, _ string, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
 	statementInfoList, err := prepareTransformation(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare transformation")
