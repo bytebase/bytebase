@@ -22,7 +22,7 @@ const (
 	maxTableNameLength = 64
 )
 
-func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+func TransformDMLToSelect(_ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")

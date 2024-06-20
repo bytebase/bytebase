@@ -22,6 +22,7 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -147,8 +148,18 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 	defer driver.Close(driverCtx)
 
+	tc := base.TransformContext{}
+	if instance.Engine == storepb.Engine_ORACLE {
+		oracleDriver, ok := driver.(*oracle.Driver)
+		if ok {
+			if version, err := oracleDriver.GetVersion(); err == nil {
+				tc.Version = version
+			}
+		}
+	}
+
 	prefix := "_" + time.Now().Format("20060102150405")
-	statements, err := base.TransformDMLToSelect(instance.Engine, statement, database.DatabaseName, backupDatabaseName, prefix)
+	statements, err := base.TransformDMLToSelect(instance.Engine, tc, statement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return errors.Wrap(err, "failed to transform DML to select")
 	}
@@ -177,6 +188,12 @@ func (exec *DataUpdateExecutor) backupData(
 			originalLine = &num
 		case storepb.Engine_POSTGRES:
 			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+				return err
+			}
+			num := int32(statement.OriginalLine)
+			originalLine = &num
+		case storepb.Engine_ORACLE:
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("COMMENT ON TABLE %s.%s IS 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
 				return err
 			}
 			num := int32(statement.OriginalLine)
