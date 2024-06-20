@@ -38,6 +38,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	for idx, databaseName := range databaseNames {
 		wg.Add(1)
 		go func(index int, databaseName string) {
+			defer wg.Done()
 			databaseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
 			databaseSchemaMetadata.Name = databaseName
 
@@ -48,7 +49,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 			databaseSchemaMetadata.Schemas = append(databaseSchemaMetadata.Schemas, schemaMetadata)
 			instanceMetadata.Databases[index] = databaseSchemaMetadata
-			wg.Done()
 		}(idx, databaseName)
 	}
 	wg.Wait()
