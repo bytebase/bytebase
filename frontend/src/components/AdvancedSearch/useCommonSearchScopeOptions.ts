@@ -1,6 +1,7 @@
 import type { Ref, VNode } from "vue";
 import { computed, h, unref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import GitIcon from "@/components/GitIcon.vue";
 import {
   InstanceV1Name,
@@ -14,8 +15,9 @@ import {
   useSearchDatabaseV1List,
   useEnvironmentV1List,
   useProjectV1List,
+  useProjectV1Store,
 } from "@/store";
-import { UNKNOWN_ID, type MaybeRef } from "@/types";
+import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
@@ -32,13 +34,37 @@ export const useCommonSearchScopeOptions = (
   supportOptionIdList: MaybeRef<SearchScopeId[]>
 ) => {
   const { t } = useI18n();
+  const route = useRoute();
   const databaseV1Store = useDatabaseV1Store();
   const environmentList = useEnvironmentV1List(false /* !showDeleted */);
   const { projectList } = useProjectV1List();
-  const { instanceList } = useInstanceV1List(false /* !showDeleted */);
-  const { databaseList } = useSearchDatabaseV1List({
-    filter: "instance = instances/-",
+
+  const project = computed(() => {
+    const { projectId } = route.params;
+    if (projectId && typeof projectId === "string") {
+      const p = useProjectV1Store().getProjectByName(`projects/${projectId}`);
+      if (p && p.name !== UNKNOWN_PROJECT_NAME) {
+        return p;
+      }
+    }
+    return undefined;
   });
+  const { instanceList } = useInstanceV1List(
+    /* !showDeleted */ false,
+    /* !forceUpdate */ false,
+    /* parent */ computed(() => project.value?.name)
+  );
+  const { databaseList } = useSearchDatabaseV1List(
+    computed(() => {
+      const filters = ["instance = instances/-"];
+      if (project.value) {
+        filters.push(`project = ${project.value.name}`);
+      }
+      return {
+        filter: filters.join(" && "),
+      };
+    })
+  );
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.

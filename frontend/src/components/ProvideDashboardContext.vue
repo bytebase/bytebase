@@ -27,6 +27,14 @@ const isLoading = ref<boolean>(true);
 const policyStore = usePolicyV1Store();
 const databaseStore = useDatabaseV1Store();
 
+const fetchInstances = async (project: string) => {
+  const parent = project ? `${projectNamePrefix}${project}` : undefined;
+  await useInstanceV1Store().fetchInstanceList(
+    /* !showDeleted */ false,
+    parent
+  );
+};
+
 const fetchDatabases = async (project: string) => {
   const filters = [`instance = "instances/-"`];
   // If `projectId` is provided in the route, filter the database list by the project.
@@ -36,6 +44,10 @@ const fetchDatabases = async (project: string) => {
   await databaseStore.searchDatabases({
     filter: filters.join(" && "),
   });
+};
+const fetchInstancesAndDatabases = async (project: string) => {
+  await fetchInstances(project);
+  await fetchDatabases(project);
 };
 
 onMounted(async () => {
@@ -55,16 +67,15 @@ onMounted(async () => {
     useUserStore().fetchUserList(),
     useUserGroupStore().fetchGroupList(),
     useEnvironmentV1Store().fetchEnvironments(),
-    useInstanceV1Store().fetchInstanceList(),
     useProjectV1Store().fetchProjectList(true /* showDeleted */),
   ]);
   await Promise.all([useUIStateStore().restoreState()]);
-  await fetchDatabases(route.params.projectId as string);
+  await fetchInstancesAndDatabases(route.params.projectId as string);
 
   watch(
     () => route.params.projectId,
     (project) => {
-      fetchDatabases(project as string);
+      fetchInstancesAndDatabases(project as string);
     },
     { immediate: false }
   );
