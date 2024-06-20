@@ -66,7 +66,7 @@
 
 <script setup lang="tsx">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import { NDropdown, type TreeOption } from "naive-ui";
+import { NDropdown, useDialog, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
@@ -109,6 +109,7 @@ const {
   position: hoverPosition,
   update: updateHoverState,
 } = provideHoverStateContext();
+const $d = useDialog();
 const {
   show: showDropdown,
   context: dropdownContext,
@@ -185,7 +186,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     },
     ondblclick() {
       if (node.meta.type === "table" || node.meta.type === "view") {
-        selectAllFromTableOrView(node);
+        selectAllFromTableOrView($d, node);
       }
     },
     onmouseenter(e: MouseEvent) {
