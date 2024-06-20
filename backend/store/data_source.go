@@ -127,6 +127,8 @@ type UpdateDataSourceMessage struct {
 	RemoveSASLConfig  bool
 	DirectConnection  *bool
 	Region            *string
+	AccountID         *string
+	WarehouseID       *string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
