@@ -177,6 +177,7 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to send HTTP request, status code message: %s", resp.Status)
 		}
+		defer resp.Body.Close()
 
 		respBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
