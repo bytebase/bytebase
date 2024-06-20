@@ -539,6 +539,9 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_ROLLOUT_POLICY:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy); err != nil {
+			return "", status.Errorf(codes.PermissionDenied, err.Error())
+		}
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
 		payloadBytes, err := protojson.Marshal(rolloutPolicy)
 		if err != nil {

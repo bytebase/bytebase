@@ -24,12 +24,10 @@ export type FeatureType =
   | "bb.feature.branding"
   // Change Workflow
   | "bb.feature.dba-workflow"
-  | "bb.feature.im.approval"
   | "bb.feature.multi-tenancy"
   | "bb.feature.online-migration"
   | "bb.feature.schema-drift"
   | "bb.feature.sql-review"
-  | "bb.feature.mybatis-sql-review"
   | "bb.feature.task-schedule-time"
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
@@ -59,7 +57,6 @@ export type FeatureType =
 
 export const instanceLimitFeature = new Set<FeatureType>([
   // Change Workflow
-  "bb.feature.im.approval",
   "bb.feature.schema-drift",
   "bb.feature.encrypted-secrets",
   "bb.feature.task-schedule-time",
@@ -74,8 +71,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   // Policy Control
   "bb.feature.sensitive-data",
   "bb.feature.custom-approval",
-  // VCS Integration
-  "bb.feature.mybatis-sql-review",
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {
