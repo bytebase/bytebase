@@ -92,7 +92,7 @@ var (
 		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment},
 		PolicyTypeMaskingRule:                       {PolicyResourceTypeWorkspace},
 		PolicyTypeMaskingException:                  {PolicyResourceTypeProject},
-		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace},
+		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace, PolicyResourceTypeProject},
 	}
 )
 
