@@ -102,8 +102,14 @@ const saveDomainRestrictionSettings = async () => {
     state.enableRestriction = false;
   }
   await settingV1Store.updateWorkspaceProfile({
-    domains: state.domain ? [state.domain] : [],
-    enforceIdentityDomain: state.enableRestriction,
+    payload: {
+      domains: state.domain ? [state.domain] : [],
+      enforceIdentityDomain: state.enableRestriction,
+    },
+    updateMask: [
+      "value.workspace_profile_setting_value.domains",
+      "value.workspace_profile_setting_value.enforce_identity_domain",
+    ],
   });
   pushNotification({
     module: "bytebase",

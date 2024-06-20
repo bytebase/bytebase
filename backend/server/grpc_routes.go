@@ -52,7 +52,7 @@ func configureGrpcRouters(
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	v1pb.RegisterAuditLogServiceServer(grpcServer, apiv1.NewAuditLogService(stores, iamManager))
+	v1pb.RegisterAuditLogServiceServer(grpcServer, apiv1.NewAuditLogService(stores, iamManager, licenseService))
 	v1pb.RegisterAuthServiceServer(grpcServer, authService)
 	v1pb.RegisterActuatorServiceServer(grpcServer, apiv1.NewActuatorService(stores, profile, errorRecordRing, licenseService))
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(

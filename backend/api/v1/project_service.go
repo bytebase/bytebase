@@ -110,6 +110,12 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	if projectMessage.TenantMode == api.TenantModeTenant {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
+	}
+
 	setting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		slog.Error("failed to find classification setting", log.BBError(err))
@@ -169,6 +175,11 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.Key = &request.Project.Key
 		case "tenant_mode":
 			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
+			if tenantMode == api.TenantModeTenant {
+				if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
+					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+				}
+			}
 			patch.TenantMode = &tenantMode
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)

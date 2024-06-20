@@ -165,6 +165,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
+		if request.UpdateMask == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "update mask is required")
+		}
 		payload := new(storepb.WorkspaceProfileSetting)
 		if err := convertV1PbToStorePb(request.Setting.Value.GetWorkspaceProfileSettingValue(), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
@@ -173,48 +176,82 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to find setting %s with error: %v", apiSettingName, err)
 		}
-		if s.profile.SaaS {
-			if oldSetting.ExternalUrl != payload.ExternalUrl {
-				return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
-			}
-			if oldSetting.DisallowSignup != payload.DisallowSignup {
-				return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
-			}
-			if strings.Join(oldSetting.OutboundIpList, ",") != strings.Join(payload.OutboundIpList, ",") {
-				return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+
+		for _, path := range request.UpdateMask.Paths {
+			switch path {
+			case "value.workspace_profile_setting_value.disallow_signup":
+				if s.profile.SaaS {
+					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+				}
+				if err := s.licenseService.IsFeatureEnabled(api.FeatureDisallowSignup); err != nil {
+					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+				}
+				oldSetting.DisallowSignup = payload.DisallowSignup
+			case "value.workspace_profile_setting_value.external_url":
+				if s.profile.SaaS {
+					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+				}
+				if payload.ExternalUrl != "" {
+					externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
+					}
+					payload.ExternalUrl = externalURL
+				}
+				oldSetting.ExternalUrl = payload.ExternalUrl
+			case "value.workspace_profile_setting_value.require_2fa":
+				if err := s.licenseService.IsFeatureEnabled(api.Feature2FA); err != nil {
+					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+				}
+				oldSetting.Require_2Fa = payload.Require_2Fa
+			case "value.workspace_profile_setting_value.outbound_ip_list":
+				// We're not support update outbound_ip_list via api.
+			case "value.workspace_profile_setting_value.gitops_webhook_url":
+				if payload.GitopsWebhookUrl != "" {
+					gitopsWebhookURL, err := common.NormalizeExternalURL(payload.GitopsWebhookUrl)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument, "invalid GitOps webhook URL: %v", err)
+					}
+					payload.GitopsWebhookUrl = gitopsWebhookURL
+				}
+				oldSetting.GitopsWebhookUrl = payload.GitopsWebhookUrl
+			case "value.workspace_profile_setting_value.token_duration":
+				if err := s.licenseService.IsFeatureEnabled(api.FeatureSecureToken); err != nil {
+					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+				}
+				if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
+					return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
+				}
+				oldSetting.TokenDuration = payload.TokenDuration
+			case "value.workspace_profile_setting_value.announcement":
+				if err := s.licenseService.IsFeatureEnabled(api.FeatureAnnouncement); err != nil {
+					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+				}
+				oldSetting.Announcement = payload.Announcement
+			case "value.workspace_profile_setting_value.maximum_role_expiration":
+				if payload.MaximumRoleExpiration != nil {
+					// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
+					if payload.MaximumRoleExpiration.Seconds <= 0 {
+						payload.MaximumRoleExpiration = nil
+					}
+				}
+				oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
+			case "value.workspace_profile_setting_value.domains":
+				if err := validateDomains(payload.Domains); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid domains, error %v", err)
+				}
+				oldSetting.Domains = payload.Domains
+			case "value.workspace_profile_setting_value.enforce_identity_domain":
+				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
 			}
 		}
 
-		if payload.ExternalUrl != "" {
-			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
-			}
-			payload.ExternalUrl = externalURL
-		}
-		if payload.GitopsWebhookUrl != "" {
-			gitopsWebhookURL, err := common.NormalizeExternalURL(payload.GitopsWebhookUrl)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid GitOps webhook URL: %v", err)
-			}
-			payload.GitopsWebhookUrl = gitopsWebhookURL
-		}
-		if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
-			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
-		}
-		if payload.MaximumRoleExpiration != nil {
-			// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
-			if payload.MaximumRoleExpiration.Seconds <= 0 {
-				payload.MaximumRoleExpiration = nil
-			}
-		}
-		if len(payload.Domains) == 0 && payload.EnforceIdentityDomain {
+		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
 			return nil, status.Errorf(codes.InvalidArgument, "identity domain can be enforced only when workspace domains are set")
 		}
-		if err := validateDomains(payload.Domains); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid domains, error %v", err)
-		}
-		bytes, err := protojson.Marshal(payload)
+		bytes, err := protojson.Marshal(oldSetting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
@@ -351,6 +388,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get old app im setting")
 		}
+		if request.UpdateMask == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "update mask is required")
+		}
 		for _, path := range request.UpdateMask.Paths {
 			switch path {
 			case "value.app_im_setting_value.slack":
@@ -437,6 +477,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingSchemaTemplate:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureSchemaTemplate); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
 		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
 		if schemaTemplateSetting == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting schema template setting")
@@ -512,6 +555,16 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingWatermark:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureWatermark); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		storeSettingValue = request.Setting.Value.GetStringValue()
+	case api.SettingPluginOpenAIKey:
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		storeSettingValue = request.Setting.Value.GetStringValue()
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
