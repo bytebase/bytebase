@@ -1,6 +1,10 @@
 <template>
   <div v-if="viewMode !== 'NONE'" class="px-4 py-2 flex flex-col gap-y-2">
-    <EditorView v-if="viewMode === 'EDITOR'" ref="editorViewRef" />
+    <EditorView
+      v-if="viewMode === 'EDITOR'"
+      ref="editorViewRef"
+      :advices="advices"
+    />
     <SDLView v-if="viewMode === 'SDL'" />
   </div>
 </template>
@@ -12,9 +16,14 @@ import { nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { EMPTY_ID, TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Advice } from "@/types/proto/v1/sql_service";
 import { useIssueContext } from "../../logic";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
+
+defineProps<{
+  advices?: Advice[];
+}>();
 
 const { isCreating, selectedTask, selectedSpec } = useIssueContext();
 
