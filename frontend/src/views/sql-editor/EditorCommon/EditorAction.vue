@@ -29,7 +29,6 @@
         <QueryContextSettingPopover
           v-if="showQueryContextSettingPopover && allowQuery"
         />
-        <QueryModePopover v-if="showQueryModePopover && allowQuery" />
       </NButtonGroup>
       <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
         <mdi:play class="-ml-1.5" />
@@ -50,6 +49,7 @@
         </span>
       </NButton>
       <ResultLimitSelect />
+      <QueryModeSelect v-if="showQueryModeSelect && allowQuery" />
     </div>
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
@@ -125,9 +125,9 @@ import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
+import QueryModeSelect from "./QueryModeSelect.vue";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
 import SharePopover from "./SharePopover.vue";
-import QueryModePopover from "./QueryModePopover.vue";
 
 interface LocalState {
   requiredFeatureName?: FeatureType;
@@ -247,7 +247,7 @@ const showQueryContextSettingPopover = computed(() => {
   );
 });
 
-const showQueryModePopover = computed(() => {
+const showQueryModeSelect = computed(() => {
   const tab = currentTab.value;
   if (!tab) {
     return false;

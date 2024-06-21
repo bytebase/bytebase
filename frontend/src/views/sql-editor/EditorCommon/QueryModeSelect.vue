@@ -1,10 +1,8 @@
 <template>
   <NPopover placement="bottom" trigger="click">
     <template #trigger>
-      <NButton type="primary" class="!px-1" size="small">
-        <template #icon>
-          <ChevronDown />
-        </template>
+      <NButton size="small">
+        {{ tab.mode }}
       </NButton>
     </template>
     <div class="flex flex-col gap-2">
@@ -33,7 +31,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronDown } from "lucide-vue-next";
 import { NButton, NPopover, NRadioGroup } from "naive-ui";
 import { computed } from "vue";
 import { useSQLEditorTabStore } from "@/store";
