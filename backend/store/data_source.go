@@ -128,6 +128,8 @@ type UpdateDataSourceMessage struct {
 	RemoveSASLConfig  bool
 	DirectConnection  *bool
 	Region            *string
+	AccountID         *string
+	WarehouseID       *string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -360,6 +362,12 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 	if v := patch.Region; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('region', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.AccountID; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('accountID', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.WarehouseID; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseID', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))

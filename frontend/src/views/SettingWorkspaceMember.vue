@@ -93,7 +93,6 @@
       v-model:value="state.tab"
       class="!mt-2"
       type="bar"
-      animated
     >
       <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
         <UserDataTable

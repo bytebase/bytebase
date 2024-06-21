@@ -15,6 +15,7 @@
       }"
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
+      @update:advices="$emit('update:advices', $event)"
     >
       <template #result="{ advices, isRunning }">
         <template v-if="advices === undefined">
@@ -33,10 +34,14 @@ import { computed } from "vue";
 import { databaseForSpec } from "@/components/Plan/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import { Advice, CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import { usePlanContext } from "../../logic";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
+
+defineEmits<{
+  (event: "update:advices", advices: Advice[] | undefined): void;
+}>();
 
 const { plan, selectedSpec } = usePlanContext();
 const { sheetStatement } = useSpecSheet();

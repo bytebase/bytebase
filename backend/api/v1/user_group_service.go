@@ -77,7 +77,7 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 	if len(setting.Domains) == 0 {
 		return nil, status.Errorf(codes.FailedPrecondition, "workspace domain is required for creating user groups")
 	}
-	if err := validateEmail(groupMessage.Email, setting.Domains); err != nil {
+	if err := validateEmail(groupMessage.Email, setting.Domains, false /* isServiceAccount */); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", groupMessage.Email, err)
 	}
 

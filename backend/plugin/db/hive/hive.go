@@ -73,8 +73,19 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 
 	newConn, err := d.connPool.Get(config.Database)
 	if err != nil {
-		return nil, errors.New("failed to get connection from pool")
+		err = errors.Wrapf(err, "failed to get connection from pool")
+		// release resources.
+		if errClose := func() error {
+			if err := newConn.Close(); err != nil {
+				return err
+			}
+			return d.connPool.Destroy()
+		}(); errClose != nil {
+			return nil, errors.Wrapf(err, "failed to release resources")
+		}
+		return nil, err
 	}
+
 	d.conn = newConn
 
 	return d, nil
