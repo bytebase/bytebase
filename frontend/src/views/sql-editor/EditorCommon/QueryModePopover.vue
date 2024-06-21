@@ -23,7 +23,7 @@
           <div class="flex flex-col gap-1 text-sm">
             <p class="font-normal">READONLY</p>
             <p class="text-control-light text-xs">
-              Allow <code>SELECT</code>, <code>SHOW</code> statements.
+              Allow <code>SELECT</code>, <code>SHOW</code> and <code>SET</code> statements.
             </p>
           </div>
         </NRadio>
