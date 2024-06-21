@@ -2274,7 +2274,11 @@
     "tab-mode": {
       "readonly": "只读",
       "admin": "管理员",
-      "standard": "标准"
+      "standard": "标准",
+      "description": {
+        "standard": "支持 DDL 和 DML 语句。",
+        "readonly": "支持 SELECT、SHOW 和 SET 语句。"
+      }
     },
     "close-sheet": "关闭工作表",
     "connect": "连接",

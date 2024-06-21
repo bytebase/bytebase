@@ -2274,7 +2274,11 @@
     "tab-mode": {
       "readonly": "Read-only",
       "admin": "Admin",
-      "standard": "Standard"
+      "standard": "Standard",
+      "description": {
+        "standard": "Allow DDL and DML statements.",
+        "readonly": "Allow SELECT, SHOW and SET statements."
+      }
     },
     "close-sheet": "Close sheet",
     "connect": "Connect",

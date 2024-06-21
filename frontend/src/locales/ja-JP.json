@@ -2274,7 +2274,11 @@
     "tab-mode": {
       "readonly": "読み取り専用",
       "admin": "管理者",
-      "standard": "標準"
+      "standard": "標準",
+      "description": {
+        "standard": "DDL および DML ステートメントを許可します。",
+        "readonly": "SELECT、SHOW、SET ステートメントを許可します。"
+      }
     },
     "close-sheet": "ワークシートを閉じる",
     "connect": "接続する",
