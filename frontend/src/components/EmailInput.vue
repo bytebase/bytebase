@@ -42,7 +42,7 @@ const showDomainLabel = ref(false);
 
 onMounted(() => {
   if (props.domain) {
-    if (!props.value || props.value.endsWith(props.domain)) {
+    if (!props.value || props.value.endsWith(`@${props.domain}`)) {
       showDomainLabel.value = true;
     }
   }
