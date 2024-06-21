@@ -90,7 +90,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	}, nil
 }
 
-func generateSortText(params lsp.CompletionParams, candidate base.Candidate) string {
+func generateSortText(_ lsp.CompletionParams, candidate base.Candidate) string {
 	switch candidate.Type {
 	case base.CandidateTypeColumn:
 		return "01" + candidate.Text
