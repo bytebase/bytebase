@@ -90,16 +90,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	}, nil
 }
 
-func generateSortText(params lsp.CompletionParams, candidate base.Candidate) string {
-	switch params.Context.TriggerCharacter {
-	case ".", " ":
-		return generateSortTextAfterDot(candidate)
-	default:
-		return string(candidate.Type) + candidate.Text
-	}
-}
-
-func generateSortTextAfterDot(candidate base.Candidate) string {
+func generateSortText(_ lsp.CompletionParams, candidate base.Candidate) string {
 	switch candidate.Type {
 	case base.CandidateTypeColumn:
 		return "01" + candidate.Text
@@ -111,6 +102,13 @@ func generateSortTextAfterDot(candidate base.Candidate) string {
 		return "04" + candidate.Text
 	case base.CandidateTypeFunction:
 		return "05" + candidate.Text
+	case base.CandidateTypeKeyword:
+		switch candidate.Text {
+		case "SELECT", "SHOW", "SET", "FROM", "WHERE":
+			return "00" + candidate.Text
+		default:
+			return "10" + candidate.Text
+		}
 	default:
 		return "10" + string(candidate.Type) + candidate.Text
 	}
