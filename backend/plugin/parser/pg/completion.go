@@ -1156,51 +1156,29 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 	input := antlr.NewInputStream(statement)
 	lexer := pg.NewPostgreSQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := pg.NewPostgreSQLParser(stream)
-	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{}
-	parserErrorListener := &base.ParseErrorListener{}
 	lexer.AddErrorListener(lexerErrorListener)
-	p.AddErrorListener(parserErrorListener)
 
-	lastLine, lastColumn, lastIndex := 0, 0, 0
-	num := 0
-	for {
-		if num > 10 {
-			// We only skip at most 10 SQL statements.
-			return statement, caretLine, caretOffset
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	latestSelect := 0
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	for _, token := range tokens {
+		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+			break
 		}
-		tree := p.Stmt()
-		if lexerErrorListener.Err != nil || parserErrorListener.Err != nil {
-			if num == 0 {
-				return statement, caretLine, caretOffset
-			}
-			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
-			newCaretOffset := caretOffset
-			if caretLine == lastLine {
-				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
-			}
-			return stream.GetTextFromInterval(antlr.NewInterval(lastIndex+1, stream.Size())), newCaretLine, newCaretOffset
+		if token.GetTokenType() == pg.PostgreSQLLexerSELECT && token.GetColumn() == 0 {
+			latestSelect = token.GetTokenIndex()
+			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
+			newCaretOffset = caretOffset
 		}
-		if tree.GetStop().GetLine() > caretLine || (tree.GetStop().GetLine() == caretLine && tree.GetStop().GetColumn() >= caretOffset) {
-			if num == 0 {
-				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
-				return statement, caretLine, caretOffset
-			}
-
-			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
-			newCaretOffset := caretOffset
-			if caretLine == lastLine {
-				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
-			}
-			return stream.GetTextFromInterval(antlr.NewInterval(tree.GetStart().GetTokenIndex(), stream.Size())), newCaretLine, newCaretOffset
-		}
-		num++
-		lastLine = tree.GetStop().GetLine()
-		lastColumn = tree.GetStop().GetColumn()
-		lastIndex = tree.GetStop().GetTokenIndex()
 	}
+
+	if latestSelect == 0 {
+		return statement, caretLine, caretOffset
+	}
+	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
 }
 
 func (c *Completer) listAllSchemas() []string {
