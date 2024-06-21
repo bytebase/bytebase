@@ -75,12 +75,12 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get connection from pool")
 		// release resources.
-		if errClose := func(conn *gohive.Connection, pool *FixedConnPool) error {
-			if err := conn.Close(); err != nil {
+		if errClose := func() error {
+			if err := newConn.Close(); err != nil {
 				return err
 			}
-			return pool.Destroy()
-		}(newConn, d.connPool); errClose != nil {
+			return d.connPool.Destroy()
+		}(); errClose != nil {
 			return nil, errors.Wrapf(err, "failed to release resources")
 		}
 		return nil, err
