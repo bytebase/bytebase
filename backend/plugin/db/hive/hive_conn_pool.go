@@ -142,6 +142,7 @@ func (pool *FixedConnPool) Destroy() error {
 	for conn := range pool.Connections {
 		if err := conn.Close(); err != nil {
 			errWhenClose = err
+			break
 		}
 	}
 
