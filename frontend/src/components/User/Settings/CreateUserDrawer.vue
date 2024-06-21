@@ -59,11 +59,10 @@
                 {{ serviceAccountEmailSuffix }}
               </span>
             </div>
-            <NInput
+            <EmailInput
               v-else
               v-model:value="state.user.email"
-              :input-props="{ type: 'email', autocomplete: 'new-password' }"
-              placeholder="foo@example.com"
+              :domain="workspaceDomain"
             />
           </NFormItem>
           <NFormItem :label="$t('settings.members.table.roles')" required>
@@ -173,7 +172,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEmpty } from "lodash-es";
+import { cloneDeep, head, isEmpty } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import {
@@ -188,10 +187,12 @@ import {
 } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import EmailInput from "@/components/EmailInput.vue";
 import {
   getUpdateMaskFromUsers,
   pushNotification,
   useRoleStore,
+  useSettingV1Store,
   useUserStore,
 } from "@/store";
 import {
@@ -223,6 +224,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   isRequesting: false,
@@ -276,6 +278,13 @@ const availableRoleOptions = computed(
 
 const hasWorkspaceRole = computed(() => {
   return state.user.roles.some((role) => PRESET_WORKSPACE_ROLES.includes(role));
+});
+
+const workspaceDomain = computed(() => {
+  if (!settingV1Store.workspaceProfileSetting?.enforceIdentityDomain) {
+    return undefined;
+  }
+  return head(settingV1Store.workspaceProfileSetting?.domains);
 });
 
 const isCreating = computed(() => !props.user);
