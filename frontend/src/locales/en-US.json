@@ -2273,7 +2273,8 @@
     "rows-upper-limit": "reached the limit of query results",
     "tab-mode": {
       "readonly": "Read-only",
-      "admin": "Admin"
+      "admin": "Admin",
+      "standard": "Standard"
     },
     "close-sheet": "Close sheet",
     "connect": "Connect",

@@ -2273,7 +2273,8 @@
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "tab-mode": {
       "readonly": "読み取り専用",
-      "admin": "管理者"
+      "admin": "管理者",
+      "standard": "標準"
     },
     "close-sheet": "ワークシートを閉じる",
     "connect": "接続する",

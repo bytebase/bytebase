@@ -2,7 +2,7 @@
   <NPopover placement="bottom" trigger="click">
     <template #trigger>
       <NButton size="small">
-        {{ tab.mode }}
+        {{ $t(`sql-editor.tab-mode.${tab.mode.toLowerCase()}`) }}
       </NButton>
     </template>
     <div class="flex flex-col gap-2">
@@ -11,7 +11,9 @@
       <NRadioGroup v-model:value="tab.mode" class="gap-2 !flex flex-col">
         <NRadio value="STANDARD" class="flex flex-row">
           <div class="flex flex-col gap-1 text-sm">
-            <p class="font-normal">STANDARD</p>
+            <p class="font-normal">
+              {{ $t("sql-editor.tab-mode.standard") }}
+            </p>
             <p class="text-control-light text-xs">
               Allow DDL and DML statements.
             </p>
@@ -19,9 +21,12 @@
         </NRadio>
         <NRadio value="READONLY" class="flex flex-row">
           <div class="flex flex-col gap-1 text-sm">
-            <p class="font-normal">READONLY</p>
+            <p class="font-normal">
+              {{ $t("sql-editor.tab-mode.readonly") }}
+            </p>
             <p class="text-control-light text-xs">
-              Allow <code>SELECT</code>, <code>SHOW</code> and <code>SET</code> statements.
+              Allow <code>SELECT</code>, <code>SHOW</code> and
+              <code>SET</code> statements.
             </p>
           </div>
         </NRadio>

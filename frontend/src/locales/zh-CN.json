@@ -2273,7 +2273,8 @@
     "rows-upper-limit": "到达查询结果条数上限",
     "tab-mode": {
       "readonly": "只读",
-      "admin": "管理员"
+      "admin": "管理员",
+      "standard": "标准"
     },
     "close-sheet": "关闭工作表",
     "connect": "连接",
