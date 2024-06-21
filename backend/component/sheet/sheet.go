@@ -101,6 +101,9 @@ func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb
 		}
 		return nil
 	}
+	if len(singleSQLs) > common.MaximumCommands {
+		return nil
+	}
 
 	var sheetCommands []*storepb.SheetCommand
 	p := 0
@@ -121,6 +124,9 @@ func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*
 		if !strings.Contains(err.Error(), "not supported") {
 			slog.Warn("failed to get sheet command from byte offset", "engine", engine.String(), "statement", statement)
 		}
+		return nil
+	}
+	if len(singleSQLs) > common.MaximumCommands {
 		return nil
 	}
 
@@ -165,6 +171,9 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 			})
 			p = np
 		default:
+		}
+		if len(sheetCommands) > common.MaximumCommands {
+			return nil
 		}
 	}
 	return sheetCommands
