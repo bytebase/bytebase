@@ -8,15 +8,25 @@
       </NButton>
     </template>
     <div class="flex flex-col gap-2">
-      <p>{{ $t("common.mode") }}</p>
+      <p class="font-semibold">{{ $t("common.mode") }}</p>
 
-      <NRadioGroup
-        v-model:value="tab.mode"
-        class="gap-1"
-        style="display: flex; flex-direction: column"
-      >
-        <NRadio value="STANDARD">STANDARD</NRadio>
-        <NRadio value="READONLY">READONLY</NRadio>
+      <NRadioGroup v-model:value="tab.mode" class="gap-2 !flex flex-col">
+        <NRadio value="STANDARD" class="flex flex-row">
+          <div class="flex flex-col gap-1 text-sm">
+            <p class="font-normal">STANDARD</p>
+            <p class="text-control-light text-xs">
+              Allow DDL and DML statements.
+            </p>
+          </div>
+        </NRadio>
+        <NRadio value="READONLY" class="flex flex-row">
+          <div class="flex flex-col gap-1 text-sm">
+            <p class="font-normal">READONLY</p>
+            <p class="text-control-light text-xs">
+              Allow <code>SELECT</code>, <code>SHOW</code> statements.
+            </p>
+          </div>
+        </NRadio>
       </NRadioGroup>
     </div>
   </NPopover>
