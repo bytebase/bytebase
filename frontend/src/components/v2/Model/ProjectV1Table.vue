@@ -24,6 +24,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { BBGridRow } from "@/bbkit";
+import { useCurrentProject } from "@/components/Project/useCurrentProject";
+import { useProjectSidebar } from "@/components/Project/useProjectSidebar";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
@@ -60,6 +62,13 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const { t } = useI18n();
+
+const { project } = useCurrentProject(
+  computed(() => ({
+    projectId: router.currentRoute.value.params.projectId as string,
+  }))
+);
+const { activeSidebar } = useProjectSidebar(project);
 
 const columnList = computed((): ProjectDataTableColumn[] => {
   return (
@@ -104,11 +113,19 @@ const rowProps = (project: ComposedProject) => {
 
       let routeName = PROJECT_V1_ROUTE_DETAIL;
       const currentRouteName = router.currentRoute.value.name?.toString();
-      if (
-        currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD) &&
-        currentRouteName !== PROJECT_V1_ROUTE_DASHBOARD
-      ) {
-        routeName = currentRouteName;
+      if (currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD)) {
+        routeName = activeSidebar.value?.path ?? routeName;
+
+        const { flattenNavigationItems } = useProjectSidebar(
+          computed(() => project)
+        );
+        if (
+          !flattenNavigationItems.value.find(
+            (item) => !item.hide && item.path === routeName
+          )
+        ) {
+          routeName = PROJECT_V1_ROUTE_DETAIL;
+        }
       }
 
       const route = router.resolve({
