@@ -29,6 +29,7 @@
         <QueryContextSettingPopover
           v-if="showQueryContextSettingPopover && allowQuery"
         />
+        <QueryModePopover v-if="showQueryModePopover && allowQuery" />
       </NButtonGroup>
       <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
         <mdi:play class="-ml-1.5" />
@@ -126,6 +127,7 @@ import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
 import SharePopover from "./SharePopover.vue";
+import QueryModePopover from "./QueryModePopover.vue";
 
 interface LocalState {
   requiredFeatureName?: FeatureType;
@@ -159,7 +161,7 @@ const isEmptyStatement = computed(() => {
 const isExecutingSQL = computed(
   () => currentTab.value?.queryContext?.status === "EXECUTING"
 );
-const { instance } = useConnectionOfCurrentSQLEditorTab();
+const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
@@ -242,6 +244,19 @@ const showQueryContextSettingPopover = computed(() => {
     Boolean(instance.value) &&
     tab.mode !== "ADMIN" &&
     actuatorStore.customTheme === "lixiang"
+  );
+});
+
+const showQueryModePopover = computed(() => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return false;
+  }
+  return (
+    !!instance &&
+    !!database &&
+    tab.mode !== "ADMIN" &&
+    actuatorStore.customTheme !== "lixiang"
   );
 });
 
