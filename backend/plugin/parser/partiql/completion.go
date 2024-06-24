@@ -171,6 +171,7 @@ func init() {
 type Completer struct {
 	ctx     context.Context
 	core    *base.CodeCompletionCore
+	scene   base.SceneType
 	parser  *partiqlparser.PartiQLParserParser
 	lexer   *partiqlparser.PartiQLLexer
 	scanner *base.Scanner
@@ -188,8 +189,8 @@ type Completer struct {
 	references []base.TableReference
 }
 
-func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadataGetter)
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	result, err := completer.complete()
 	if err != nil {
 		return nil, err
@@ -198,11 +199,11 @@ func Completion(ctx context.Context, statement string, caretLine int, caretOffse
 		return result, nil
 	}
 
-	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadataGetter)
+	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	return trickyCompleter.complete()
 }
 
-func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc) *Completer {
+func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
 		parser,
@@ -218,17 +219,18 @@ func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, ca
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
+		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
-		metadataGetter:      metadataGetter,
+		metadataGetter:      cCtx.Metadata,
 		noSeparatorRequired: make(map[int]bool),
 	}
 }
 
-func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc) *Completer {
+func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
 		parser,
@@ -244,12 +246,13 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
+		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
-		metadataGetter:      metadataGetter,
+		metadataGetter:      cCtx.Metadata,
 		noSeparatorRequired: nil,
 	}
 }
@@ -261,7 +264,12 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
-	context := c.parser.Script()
+	var context antlr.ParserRuleContext
+	if c.scene == base.SceneTypeQuery {
+		context = c.parser.SelectClause()
+	} else {
+		context = c.parser.Script()
+	}
 	candidates := c.core.CollectCandidates(caretIndex, context)
 
 	for ruleName := range candidates.Rules {
