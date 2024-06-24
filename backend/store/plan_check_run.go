@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -179,10 +180,10 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 		); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
 			return nil, err
 		}
 		planCheckRuns = append(planCheckRuns, &planCheckRun)

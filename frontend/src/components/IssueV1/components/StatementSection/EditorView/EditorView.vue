@@ -127,7 +127,7 @@
         :auto-focus="false"
         :readonly="isEditorReadonly"
         :dialect="dialect"
-        :advices="isEditorReadonly ? markers : []"
+        :advices="isEditorReadonly || isCreating ? markers : []"
         :auto-height="{ min: 120, max: 240 }"
         :auto-complete-context="{
           instance: database.instance,
@@ -176,7 +176,7 @@
         :auto-focus="false"
         :readonly="isEditorReadonly"
         :dialect="dialect"
-        :advices="isEditorReadonly ? markers : []"
+        :advices="isEditorReadonly || isCreating ? markers : []"
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
@@ -211,7 +211,7 @@ import { cloneDeep, head, uniq } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { computed, h, reactive, ref, watch } from "vue";
+import { computed, h, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
@@ -251,6 +251,7 @@ import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Advice } from "@/types/proto/v1/sql_service";
 import {
   defer,
   flattenTaskV1List,
@@ -271,11 +272,16 @@ type LocalState = EditState & {
   isUploadingFile: boolean;
 };
 
+const props = defineProps<{
+  advices?: Advice[];
+}>();
+
 const { t } = useI18n();
 const route = useRoute();
 const currentUser = useCurrentUserV1();
+const context = useIssueContext();
 const { events, isCreating, issue, selectedTask, selectedSpec, formatOnSave } =
-  useIssueContext();
+  context;
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
@@ -313,7 +319,7 @@ const dialect = computed((): SQLDialect => {
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
-const { markers } = useSQLAdviceMarkers();
+const { markers } = useSQLAdviceMarkers(context, toRef(props, "advices"));
 
 const allowEditStatementWhenCreating = computed(() => {
   if (route.query.sheetId) {

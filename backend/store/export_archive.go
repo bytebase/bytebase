@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -84,7 +85,7 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 			return nil, err
 		}
 		exportArchivePayload := &storepb.ExportArchivePayload{}
-		if err := protojsonUnmarshaler.Unmarshal(payload, exportArchivePayload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, exportArchivePayload); err != nil {
 			return nil, err
 		}
 		exportArchive.Payload = exportArchivePayload

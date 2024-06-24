@@ -585,12 +585,12 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		databaseMessage.SchemaVersion = version
 
 		var secret storepb.Secrets
-		if err := protojson.Unmarshal([]byte(secretsString), &secret); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(secretsString), &secret); err != nil {
 			return nil, err
 		}
 		databaseMessage.Secrets = &secret
 		var metadata storepb.DatabaseMetadata
-		if err := protojson.Unmarshal([]byte(metadataString), &metadata); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataString), &metadata); err != nil {
 			return nil, err
 		}
 		databaseMessage.Metadata = &metadata

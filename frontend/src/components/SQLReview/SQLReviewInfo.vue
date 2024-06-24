@@ -37,7 +37,19 @@
           $t('sql-review.create.basic-info.display-name-placeholder')
         "
         :value="name"
-        @update:value="onNameChange($event)"
+        @update:value="emit('name-change', $event)"
+      />
+      <ResourceIdField
+        ref="resourceIdField"
+        class="mt-1"
+        editing-class="mt-6"
+        resource-type="review-config"
+        :value="resourceId"
+        :readonly="false"
+        :resource-title="name"
+        :suffix="true"
+        :validate="validateResourceId"
+        @update:value="emit('resource-id-change', $event)"
       />
     </div>
     <div>
@@ -52,17 +64,32 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
+import { Status } from "nice-grpc-common";
+import { type PropType, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { reviewConfigServiceClient } from "@/grpcweb";
+import { reviewConfigNamePrefix } from "@/store/modules/v1/common";
 import type { SQLReviewPolicyTemplate } from "@/types";
+import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { environmentV1Name } from "@/utils";
+import { getErrorCode } from "@/utils/grpcweb";
 import { SQLReviewTemplateSelector } from "./components";
 
 const props = defineProps({
   name: {
     required: true,
     type: String,
+  },
+  resourceId: {
+    required: true,
+    type: String,
+  },
+  isCreate: {
+    required: true,
+    type: Boolean,
   },
   selectedEnvironment: {
     required: true,
@@ -84,12 +111,11 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (event: "name-change", name: string): void;
+  (event: "resource-id-change", resourceId: string): void;
   (event: "select-template", template: SQLReviewPolicyTemplate): void;
 }>();
 
-const onNameChange = (value: string) => {
-  emit("name-change", value);
-};
+const { t } = useI18n();
 
 const onTemplatesChange = (templates: {
   policy: SQLReviewPolicyTemplate[];
@@ -98,5 +124,40 @@ const onTemplatesChange = (templates: {
   if (!props.selectedTemplate) {
     emit("select-template", templates.policy[0] ?? templates.builtin[0]);
   }
+};
+
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
+
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
+  if (!resourceId) {
+    return [];
+  }
+
+  try {
+    const existed = await reviewConfigServiceClient.getReviewConfig(
+      {
+        name: `${reviewConfigNamePrefix}${resourceId}`,
+      },
+      { silent: true }
+    );
+    if (existed) {
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.review-config"),
+          }),
+        },
+      ];
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+
+  return [];
 };
 </script>

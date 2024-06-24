@@ -513,7 +513,8 @@
         "n-members": "{n} miembros",
         "group-members": "Miembros del grupo",
         "group-roles": "Roles grupales",
-        "edit-group": "Editar grupo"
+        "edit-group": "Editar grupo",
+        "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
       "action": {
         "deactivate": "Desactivar",
@@ -654,8 +655,8 @@
           "never-expires": "Nunca expira"
         },
         "domain-restriction": {
-          "self": "Restricción de dominio",
-          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo. Déjelo vacío para permitir cualquier dominio.",
+          "self": "Dominio de espacio de trabajo",
+          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo.",
           "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
           "members-restriction": {
             "self": "Restricción de miembros",
@@ -2335,7 +2336,8 @@
       "rows": "filas"
     },
     "n-per-page": "{n} / página",
-    "customize-tree-structure": "Personalizar la estructura del árbol"
+    "customize-tree-structure": "Personalizar la estructura del árbol",
+    "will-override-current-editing-statement": "Anulará la declaración de edición actual."
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2746,6 +2748,7 @@
     "configure-policy": "Configurar política",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
+    "policy-create-failed": "No se pudo crear la política de revisión.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
@@ -2913,7 +2916,8 @@
     "schema-group": "grupo de mesas",
     "changelist": "Lista de cambios",
     "vcs-provider": "Proveedor GitOps",
-    "vcs-connector": "Conector GitOps"
+    "vcs-connector": "Conector GitOps",
+    "review-config": "Revisar configuración"
   },
   "resource-id": {
     "self": "ID de {resource}",

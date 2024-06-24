@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +47,11 @@ type Driver struct {
 
 func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
+}
+
+// GetVersion gets the Oracle version.
+func (driver *Driver) GetVersion() (*plsqlparser.Version, error) {
+	return plsqlparser.ParseVersion(driver.connectionCtx.EngineVersion)
 }
 
 // Open opens a Oracle driver.
@@ -176,12 +180,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		totalRowsAffected += rowsAffected
 	}
 
-	if opts.EndTransactionFunc != nil {
-		if err := opts.EndTransactionFunc(tx); err != nil {
-			return 0, errors.Wrapf(err, "failed to execute beforeCommitTx")
-		}
-	}
-
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit transaction")
 	}
@@ -292,26 +290,4 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_ORACLE, conn, statement)
-}
-
-type oracleVersion struct {
-	first  int
-	second int
-}
-
-func parseVersion(banner string) (*oracleVersion, error) {
-	re := regexp.MustCompile(`(\d+)\.(\d+)`)
-	match := re.FindStringSubmatch(banner)
-	if len(match) >= 3 {
-		firstVersion, err := strconv.Atoi(match[1])
-		if err != nil {
-			return nil, errors.Errorf("failed to parse first version from banner: %s", banner)
-		}
-		secondVersion, err := strconv.Atoi(match[2])
-		if err != nil {
-			return nil, errors.Errorf("failed to parse second version from banner: %s", banner)
-		}
-		return &oracleVersion{first: firstVersion, second: secondVersion}, nil
-	}
-	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
 }

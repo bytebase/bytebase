@@ -7,17 +7,10 @@ import (
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store/model"
-)
-
-var (
-	protojsonUnmarshaler = protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}
 )
 
 // Store provides database access to all raw objects.

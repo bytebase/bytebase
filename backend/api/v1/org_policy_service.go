@@ -539,31 +539,13 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_ROLLOUT_POLICY:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy); err != nil {
+			return "", status.Errorf(codes.PermissionDenied, err.Error())
+		}
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
 		payloadBytes, err := protojson.Marshal(rolloutPolicy)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal rollout policy")
-		}
-		return string(payloadBytes), nil
-	case v1pb.PolicyType_SQL_REVIEW:
-		// TODO(ed): remove PolicyType_SQL_REVIEW
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
-			return "", status.Errorf(codes.PermissionDenied, err.Error())
-		}
-		v1SqlReviewPolicy := policy.GetSqlReviewPolicy()
-		if v1SqlReviewPolicy.Name == "" {
-			return "", status.Errorf(codes.InvalidArgument, "invalid payload, name cannot be empty")
-		}
-		if err := validateSQLReviewRules(v1SqlReviewPolicy.Rules); err != nil {
-			return "", status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		payload, err := convertToSQLReviewPolicyPayload(v1SqlReviewPolicy)
-		if err != nil {
-			return "", status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal sql review policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_TAG:
@@ -674,17 +656,10 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 			return nil, err
 		}
 		policy.Policy = payload
-	case api.PolicyTypeSQLReview:
-		pType = v1pb.PolicyType_SQL_REVIEW
-		payload, err := convertToV1PBSQLReviewPolicy(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
 	case api.PolicyTypeTag:
 		pType = v1pb.PolicyType_TAG
 		p := &v1pb.TagPolicy{}
-		if err := protojson.Unmarshal([]byte(policyMessage.Payload), p); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), p); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal rollout policy payload")
 		}
 		policy.Policy = &v1pb.Policy_TagPolicy{
@@ -714,7 +689,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	case api.PolicyTypeMaskingRule:
 		pType = v1pb.PolicyType_MASKING_RULE
 		maskingRulePolicy := &storepb.MaskingRulePolicy{}
-		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal masking rule policy")
 		}
 		payload, err := convertToV1PBMaskingRulePolicy(maskingRulePolicy)
@@ -727,7 +702,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	case api.PolicyTypeMaskingException:
 		pType = v1pb.PolicyType_MASKING_EXCEPTION
 		maskingRulePolicy := &storepb.MaskingExceptionPolicy{}
-		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal masking exception policy")
 		}
 		payload, err := s.convertToV1PBMaskingExceptionPolicyPayload(ctx, maskingRulePolicy)
@@ -753,20 +728,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	}
 
 	return policy, nil
-}
-
-func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
-	p := new(storepb.SQLReviewPolicy)
-	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
-		return nil, err
-	}
-
-	return &v1pb.Policy_SqlReviewPolicy{
-		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Name:  p.Name,
-			Rules: convertToV1PBSQLReviewRules(p.RuleList),
-		},
-	}, nil
 }
 
 func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
@@ -819,20 +780,9 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 	return ruleList, nil
 }
 
-func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*storepb.SQLReviewPolicy, error) {
-	ruleList, err := convertToSQLReviewRules(policy.Rules)
-	if err != nil {
-		return nil, err
-	}
-	return &storepb.SQLReviewPolicy{
-		Name:     policy.Name,
-		RuleList: ruleList,
-	}, nil
-}
-
 func convertToV1PBMaskingPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, error) {
 	var maskingPolicy storepb.MaskingPolicy
-	if err := protojson.Unmarshal([]byte(payloadStr), &maskingPolicy); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), &maskingPolicy); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal masking policy")
 	}
 
@@ -930,7 +880,7 @@ func convertToStorePBMaskingLevel(level v1pb.MaskingLevel) storepb.MaskingLevel 
 
 func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPolicy, error) {
 	p := &v1pb.RolloutPolicy{}
-	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal rollout policy payload")
 	}
 	return &v1pb.Policy_RolloutPolicy{
@@ -1123,9 +1073,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 	switch strings.ToUpper(pType) {
 	case v1pb.PolicyType_ROLLOUT_POLICY.String():
 		return api.PolicyTypeRollout, nil
-	case v1pb.PolicyType_SQL_REVIEW.String():
-		// TODO(ed): remove this.
-		return api.PolicyTypeSQLReview, nil
 	case v1pb.PolicyType_TAG.String():
 		return api.PolicyTypeTag, nil
 	case v1pb.PolicyType_MASKING.String():

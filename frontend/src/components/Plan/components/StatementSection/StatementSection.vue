@@ -1,6 +1,6 @@
 <template>
   <div v-if="viewMode !== 'NONE'" class="px-4 py-2 flex flex-col gap-y-2">
-    <EditorView ref="editorViewRef" />
+    <EditorView ref="editorViewRef" :advices="advices" />
   </div>
 </template>
 
@@ -10,8 +10,13 @@ import { ref } from "vue";
 import { nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { EMPTY_ID } from "@/types";
+import type { Advice } from "@/types/proto/v1/sql_service";
 import { usePlanContext } from "../../logic";
 import EditorView from "./EditorView";
+
+defineProps<{
+  advices?: Advice[];
+}>();
 
 const { selectedSpec } = usePlanContext();
 

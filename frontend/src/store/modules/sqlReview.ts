@@ -1,40 +1,40 @@
 import { pullAt } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
+import { reviewConfigServiceClient } from "@/grpcweb";
 import {
   policyNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
 import type {
-  PolicyId,
   SchemaPolicyRule,
   SQLReviewPolicy,
   IdType,
   MaybeRef,
 } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
-import type {
-  Policy,
-  SQLReviewPolicy as SQLReviewPolicyV1,
-} from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
   policyTypeToJSON,
-  PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { extractEnvironmentResourceName } from "@/utils";
+import { ReviewConfig } from "@/types/proto/v1/review_config_service";
 import { useEnvironmentV1Store } from "./v1/environment";
 import { usePolicyV1Store } from "./v1/policy";
 
+const reviewConfigTagName = "bb.tag.review_config";
+
 const convertToSQLReviewPolicy = async (
-  policy: Policy
+  reviewConfig: ReviewConfig
 ): Promise<SQLReviewPolicy | undefined> => {
-  if (policy.type !== PolicyType.SQL_REVIEW || !policy.sqlReviewPolicy) {
+  const environmentName = reviewConfig.resources.find((resource) =>
+    resource.startsWith(environmentNamePrefix)
+  );
+  if (!environmentName) {
     return;
   }
 
   const ruleList: SchemaPolicyRule[] = [];
-  for (const r of policy.sqlReviewPolicy.rules) {
+  for (const r of reviewConfig.rules) {
     const rule: SchemaPolicyRule = {
       type: r.type,
       level: r.level,
@@ -47,16 +47,15 @@ const convertToSQLReviewPolicy = async (
     ruleList.push(rule);
   }
 
-  const environment = await useEnvironmentV1Store().getOrFetchEnvironmentByName(
-    `${environmentNamePrefix}${extractEnvironmentResourceName(policy.name)}`
-  );
+  const environment =
+    await useEnvironmentV1Store().getOrFetchEnvironmentByName(environmentName);
 
   return {
-    id: policy.name,
-    name: policy.sqlReviewPolicy.name,
+    id: reviewConfig.name,
+    name: reviewConfig.title,
     environment,
     ruleList,
-    enforce: policy.enforce,
+    enforce: reviewConfig.enabled,
   };
 };
 
@@ -64,9 +63,9 @@ interface SQLReviewState {
   reviewPolicyList: SQLReviewPolicy[];
 }
 
-const getSQLReviewPolicyName = (environmentPath: string): string => {
+const getTagPolicyName = (environmentPath: string): string => {
   return `${environmentPath}/${policyNamePrefix}${policyTypeToJSON(
-    PolicyType.SQL_REVIEW
+    PolicyType.TAG
   ).toLowerCase()}`;
 };
 
@@ -94,7 +93,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     },
     availableEnvironments(
       environmentList: Environment[],
-      reviewPolicyId: PolicyId | undefined
+      reviewPolicyId: string | undefined
     ): Environment[] {
       const envMap = environmentList.reduce((map, env) => {
         map.set(env.name, env);
@@ -112,91 +111,21 @@ export const useSQLReviewStore = defineStore("sqlReview", {
 
       return [...envMap.values()];
     },
-    async addReviewPolicy({
-      name,
+    async createReviewPolicy({
+      id,
+      title,
       environmentPath,
       ruleList,
     }: {
-      name: string;
+      id: string;
+      title: string;
       environmentPath: string;
       ruleList: SchemaPolicyRule[];
     }) {
-      const sqlReviewPolicy: SQLReviewPolicyV1 = {
-        name,
-        rules: ruleList.map((r) => {
-          return {
-            type: r.type as string,
-            level: r.level,
-            engine: r.engine,
-            comment: r.comment,
-            payload: r.payload ? JSON.stringify(r.payload) : "{}",
-          };
-        }),
-      };
-
-      const policyStore = usePolicyV1Store();
-      const policy = await policyStore.createPolicy(environmentPath, {
-        type: PolicyType.SQL_REVIEW,
-        sqlReviewPolicy,
-        inheritFromParent: true,
-      });
-
-      const reviewPolicy = await convertToSQLReviewPolicy(policy);
-      if (!reviewPolicy) {
-        throw new Error(`invalid policy ${JSON.stringify(policy)}`);
-      }
-
-      this.setReviewPolicy(reviewPolicy);
-    },
-    async removeReviewPolicy(id: PolicyId) {
-      const index = this.reviewPolicyList.findIndex((g) => g.id === id);
-      if (index < 0) {
-        return;
-      }
-
-      const targetPolicy = this.reviewPolicyList[index];
-      const policyStore = usePolicyV1Store();
-      await policyStore.deletePolicy(
-        getSQLReviewPolicyName(targetPolicy.environment.name)
-      );
-
-      pullAt(this.reviewPolicyList, index);
-    },
-    async updateReviewPolicy({
-      id,
-      name,
-      enforce,
-      ruleList,
-    }: {
-      id: PolicyId;
-      name?: string;
-      enforce?: boolean;
-      ruleList?: SchemaPolicyRule[];
-    }) {
-      const index = this.reviewPolicyList.findIndex((g) => g.id === id);
-      if (index < 0) {
-        return;
-      }
-
-      const targetPolicy = this.reviewPolicyList[index];
-      const policyStore = usePolicyV1Store();
-
-      const policy = await policyStore.getOrFetchPolicyByName(
-        getSQLReviewPolicyName(targetPolicy.environment.name)
-      );
-      if (!policy) {
-        return;
-      }
-
-      const updateMask: string[] = [];
-      if (enforce !== undefined) {
-        updateMask.push("enforce");
-        policy.enforce = enforce;
-      }
-      if (name && ruleList) {
-        updateMask.push("payload");
-        policy.sqlReviewPolicy = {
-          name,
+      const reviewConfig = await reviewConfigServiceClient.createReviewConfig({
+        reviewConfig: {
+          name: id,
+          title,
           rules: ruleList.map((r) => {
             return {
               type: r.type as string,
@@ -206,11 +135,106 @@ export const useSQLReviewStore = defineStore("sqlReview", {
               payload: r.payload ? JSON.stringify(r.payload) : "{}",
             };
           }),
-        };
+          enabled: true,
+        },
+      });
+
+      const policyStore = usePolicyV1Store();
+      await policyStore.upsertPolicy({
+        updateMask: ["payload"],
+        parentPath: environmentPath,
+        policy: {
+          name: getTagPolicyName(environmentPath),
+          type: PolicyType.TAG,
+          tagPolicy: {
+            tags: {
+              [reviewConfigTagName]: reviewConfig.name,
+            },
+          },
+        },
+      });
+
+      reviewConfig.resources = [environmentPath];
+      const reviewPolicy = await convertToSQLReviewPolicy(reviewConfig);
+      if (!reviewPolicy) {
+        throw new Error(
+          `invalid review config ${JSON.stringify(reviewConfig)}`
+        );
       }
 
-      const updatedPolicy = await policyStore.updatePolicy(updateMask, policy);
-      const reviewPolicy = await convertToSQLReviewPolicy(updatedPolicy);
+      this.setReviewPolicy(reviewPolicy);
+    },
+    async removeReviewPolicy(id: string) {
+      const index = this.reviewPolicyList.findIndex((g) => g.id === id);
+      if (index < 0) {
+        return;
+      }
+
+      const targetPolicy = this.reviewPolicyList[index];
+      await reviewConfigServiceClient.deleteReviewConfig({
+        name: targetPolicy.id,
+      });
+
+      if (!targetPolicy.environment) {
+        return;
+      }
+
+      // TODO(ed): for now, we can just simply delete the tag policy for environment.
+      const policyStore = usePolicyV1Store();
+      await policyStore.deletePolicy(
+        getTagPolicyName(targetPolicy.environment.name)
+      );
+
+      pullAt(this.reviewPolicyList, index);
+    },
+    async updateReviewPolicy({
+      id,
+      title,
+      enforce,
+      ruleList,
+    }: {
+      id: string;
+      title?: string;
+      enforce?: boolean;
+      ruleList?: SchemaPolicyRule[];
+    }) {
+      const index = this.reviewPolicyList.findIndex((g) => g.id === id);
+      if (index < 0) {
+        return;
+      }
+
+      const targetPolicy = this.reviewPolicyList[index];
+
+      const patch: Partial<ReviewConfig> = {
+        name: targetPolicy.id,
+      };
+      const updateMask: string[] = [];
+      if (enforce !== undefined) {
+        updateMask.push("enabled");
+        patch.enabled = enforce;
+      }
+      if (title) {
+        updateMask.push("title");
+        patch.title = title;
+      }
+      if (ruleList) {
+        updateMask.push("payload");
+        patch.rules = ruleList.map((r) => {
+          return {
+            type: r.type as string,
+            level: r.level,
+            engine: r.engine,
+            comment: r.comment,
+            payload: r.payload ? JSON.stringify(r.payload) : "{}",
+          };
+        });
+      }
+
+      const updated = await reviewConfigServiceClient.updateReviewConfig({
+        reviewConfig: patch,
+        updateMask,
+      });
+      const reviewPolicy = await convertToSQLReviewPolicy(updated);
       if (reviewPolicy) {
         this.setReviewPolicy(reviewPolicy);
       }
@@ -222,16 +246,12 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     },
 
     async fetchReviewPolicyList(): Promise<SQLReviewPolicy[]> {
-      const policyStore = usePolicyV1Store();
-      const policyList = await policyStore.fetchPolicies({
-        resourceType: PolicyResourceType.ENVIRONMENT,
-        policyType: PolicyType.SQL_REVIEW,
-        showDeleted: true,
-      });
+      const { reviewConfigs } =
+        await reviewConfigServiceClient.listReviewConfigs({});
 
       const reviewPolicyList: SQLReviewPolicy[] = [];
-      for (const policy of policyList) {
-        const reviewPolicy = await convertToSQLReviewPolicy(policy);
+      for (const config of reviewConfigs) {
+        const reviewPolicy = await convertToSQLReviewPolicy(config);
         if (reviewPolicy) {
           reviewPolicyList.push(reviewPolicy);
         }
@@ -239,9 +259,32 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       this.reviewPolicyList = reviewPolicyList;
       return reviewPolicyList;
     },
+    async getOrFetchReviewPolicyByName(name: string) {
+      const policy = this.reviewPolicyList.find((g) => g.id === name);
+      if (policy) {
+        return policy;
+      }
+
+      const reviewConfig = await reviewConfigServiceClient.getReviewConfig({
+        name,
+      });
+      if (!reviewConfig) {
+        return;
+      }
+      const reviewPolicy = await convertToSQLReviewPolicy(reviewConfig);
+      if (reviewPolicy) {
+        this.setReviewPolicy(reviewPolicy);
+      }
+      return reviewPolicy;
+    },
     async getOrFetchReviewPolicyByEnvironmentName(
       name: string
     ): Promise<SQLReviewPolicy | undefined> {
+      const cached = this.getReviewPolicyByEnvironmentName(name);
+      if (cached) {
+        return cached;
+      }
+
       const environmentV1Store = useEnvironmentV1Store();
       const environment = await environmentV1Store.getOrFetchEnvironmentByName(
         name,
@@ -249,17 +292,18 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       );
       const policyStore = usePolicyV1Store();
       const policy = await policyStore.getOrFetchPolicyByName(
-        getSQLReviewPolicyName(environment.name)
+        getTagPolicyName(environment.name)
       );
 
       if (!policy) {
         return;
       }
-      const reviewPolicy = await convertToSQLReviewPolicy(policy);
-      if (reviewPolicy) {
-        this.setReviewPolicy(reviewPolicy);
+      const sqlReviewName = policy.tagPolicy?.tags[reviewConfigTagName];
+      if (!sqlReviewName) {
+        return;
       }
-      return reviewPolicy;
+
+      return this.getOrFetchReviewPolicyByName(sqlReviewName);
     },
   },
 });

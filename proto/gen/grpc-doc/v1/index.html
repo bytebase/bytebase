@@ -1464,10 +1464,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SQLReviewPolicy"><span class="badge">M</span>SQLReviewPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
                 </li>
               
@@ -16347,13 +16343,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
-                  <td>sql_review_policy</td>
-                  <td><a href="#bytebase.v1.SQLReviewPolicy">SQLReviewPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>slow_query_policy</td>
                   <td><a href="#bytebase.v1.SlowQueryPolicy">SlowQueryPolicy</a></td>
                   <td></td>
@@ -16484,37 +16473,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                   <td>repeated</td>
                   <td><p>roles/LAST_APPROVER
 roles/CREATOR </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SQLReviewPolicy">SQLReviewPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rules</td>
-                  <td><a href="#bytebase.v1.SQLReviewRule">SQLReviewRule</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -16797,12 +16755,6 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ROLLOUT_POLICY</td>
                 <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SQL_REVIEW</td>
-                <td>4</td>
                 <td><p></p></td>
               </tr>
             
@@ -22847,13 +22799,6 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><a href="#bytebase.v1.TaskRun.ExecutionStatus">TaskRun.ExecutionStatus</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>execution_status_update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Last execution status update timestamp. </p></td>
                 </tr>
               
                 <tr>

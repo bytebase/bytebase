@@ -11,6 +11,7 @@
         {{ $t("settings.general.workspace.only-admin-can-edit") }}
       </span>
     </div>
+
     <div class="flex-1 lg:px-4">
       <div class="mb-7 mt-4 lg:mt-0">
         <NTooltip placement="top-start" :disabled="allowEdit">
@@ -164,9 +165,6 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
-const hasRestrictIssueCreationFeature = featureToRef(
-  "bb.feature.access-control"
-);
 
 const watermarkEnabled = computed((): boolean => {
   return (
@@ -182,9 +180,10 @@ const require2FAEnabled = computed((): boolean => {
 });
 const restrictIssueCreationForSQLReview = computed((): boolean => {
   return (
-    policyV1Store.getPolicyByName(
-      "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
-    )?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
+    policyV1Store.getPolicyByParentAndType({
+      parentPath: "",
+      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+    })?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
   );
 });
 
@@ -193,9 +192,10 @@ onMounted(async () => {
 });
 
 const prepareOrgPolicy = async () => {
-  await policyV1Store.getOrFetchPolicyByName(
-    "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
-  );
+  await policyV1Store.getOrFetchPolicyByParentAndType({
+    parentPath: "",
+    policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+  });
 };
 
 const handleDisallowSignupToggle = async (on: boolean) => {
@@ -204,7 +204,10 @@ const handleDisallowSignupToggle = async (on: boolean) => {
     return;
   }
   await settingV1Store.updateWorkspaceProfile({
-    disallowSignup: on,
+    payload: {
+      disallowSignup: on,
+    },
+    updateMask: ["value.workspace_profile_setting_value.disallow_signup"],
   });
   pushNotification({
     module: "bytebase",
@@ -220,7 +223,10 @@ const handleRequire2FAToggle = async (on: boolean) => {
   }
 
   await settingV1Store.updateWorkspaceProfile({
-    require2fa: on,
+    payload: {
+      require2fa: on,
+    },
+    updateMask: ["value.workspace_profile_setting_value.require_2fa"],
   });
   pushNotification({
     module: "bytebase",
@@ -249,10 +255,6 @@ const handleWatermarkToggle = async (on: boolean) => {
 };
 
 const handleRestrictIssueCreationForSQLReviewToggle = async (on: boolean) => {
-  if (!hasRestrictIssueCreationFeature.value && on) {
-    state.featureNameForModal = "bb.feature.access-control";
-    return;
-  }
   await policyV1Store.createPolicy("", {
     type: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
     resourceType: PolicyResourceType.WORKSPACE,

@@ -2,7 +2,6 @@ package collector
 
 import (
 	"context"
-	"fmt"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
@@ -52,12 +51,6 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 		rowStatus := api.Normal
 		if environment.Deleted {
 			rowStatus = api.Archived
-		}
-
-		if policy.Type == api.PolicyTypeSQLReview {
-			key = fmt.Sprintf("%s_%s_%s", policy.Type, environment.Title, rowStatus)
-			// SQL review policy don't need to set the value.
-			value = ""
 		}
 
 		if key == "" {

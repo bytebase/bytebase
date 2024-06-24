@@ -66,11 +66,12 @@ func SplitCommentBeforeDelimiter() Option {
 }
 
 type Tokenizer struct {
-	buffer         []rune
-	cursor         uint
-	len            uint
-	line           int
-	emptyStatement bool
+	buffer           []rune
+	bufferByteOffset []int
+	cursor           uint
+	len              uint
+	line             int
+	emptyStatement   bool
 
 	// steaming API specific field
 	reader  *bufio.Reader
@@ -92,9 +93,13 @@ func NewTokenizer(statement string, options ...Option) *Tokenizer {
 		cursor: 0,
 		line:   1,
 	}
+	for i := range statement {
+		t.bufferByteOffset = append(t.bufferByteOffset, i)
+	}
 	t.len = uint(len(t.buffer))
 	// append an additional eofRune.
 	t.buffer = append(t.buffer, eofRune)
+	t.bufferByteOffset = append(t.bufferByteOffset, len(statement))
 
 	for _, option := range options {
 		option(t)
@@ -428,7 +433,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 	for {
 		switch {
 		case t.char(0) == eofRune:
-			s := t.getString(startPos, t.pos())
+			s := t.getString(startPos, t.pos()-startPos)
 			if !emptyString(s) {
 				if t.f == nil {
 					res = append(res, base.SingleSQL{
@@ -445,8 +450,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine: t.line - t.aboveNonBlankLineDistance(),
-						Empty:    t.emptyStatement,
+						LastLine:        t.line - t.aboveNonBlankLineDistance(),
+						Empty:           t.emptyStatement,
+						ByteOffsetStart: t.getByteOffset(int(startPos)),
+						ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -478,9 +485,11 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:     text,
-					LastLine: t.line,
-					Empty:    t.emptyStatement,
+					Text:            text,
+					LastLine:        t.line,
+					Empty:           t.emptyStatement,
+					ByteOffsetStart: t.getByteOffset(int(startPos)),
+					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
 				})
 			}
 			t.skipBlank()
@@ -516,9 +525,11 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:     text,
-					LastLine: t.line,
-					Empty:    false,
+					Text:            text,
+					LastLine:        t.line,
+					Empty:           false,
+					ByteOffsetStart: t.getByteOffset(int(startPos)),
+					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
 				})
 			}
 			t.skipBlank()
@@ -1050,6 +1061,10 @@ func (t *Tokenizer) runeList(startPos uint, length uint) []rune {
 		endPos = t.len
 	}
 	return t.buffer[startPos:endPos]
+}
+
+func (t *Tokenizer) getByteOffset(runeIndex int) int {
+	return t.bufferByteOffset[runeIndex]
 }
 
 func (t *Tokenizer) equalWordCaseInsensitive(word []rune) bool {

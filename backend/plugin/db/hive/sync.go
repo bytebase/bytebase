@@ -35,23 +35,32 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 	var wg sync.WaitGroup
 	instanceMetadata.Databases = make([]*storepb.DatabaseSchemaMetadata, len(databaseNames))
+	// handler errors from go-routines.
+	errChan := make(chan error, len(databaseNames))
 	for idx, databaseName := range databaseNames {
 		wg.Add(1)
 		go func(index int, databaseName string) {
+			defer wg.Done()
 			databaseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
 			databaseSchemaMetadata.Name = databaseName
 
 			schemaMetadata, err := d.getDatabaseInfoByName(ctx, databaseName)
 			if err != nil {
+				errChan <- err
 				return
 			}
 
 			databaseSchemaMetadata.Schemas = append(databaseSchemaMetadata.Schemas, schemaMetadata)
 			instanceMetadata.Databases[index] = databaseSchemaMetadata
-			wg.Done()
 		}(idx, databaseName)
 	}
 	wg.Wait()
+	// continue if no errors are in the channel.
+	select {
+	case err := <-errChan:
+		return nil, err
+	default:
+	}
 
 	rolesMetadata, err := d.getRoles(ctx)
 	if err != nil {

@@ -92,6 +92,8 @@ export const defaultEditorOptions =
     return {
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       renderValidationDecorations: "on",
+      // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
+      accessibilitySupport: 'off',
       theme: "bb",
       tabSize: 2,
       insertSpaces: true,
@@ -125,6 +127,8 @@ export const defaultDiffEditorOptions =
     return {
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       enableSplitViewResizing: false,
+      // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
+      accessibilitySupport: 'off',
       renderValidationDecorations: "on",
       theme: "bb",
       autoClosingQuotes: "always",

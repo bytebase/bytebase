@@ -178,10 +178,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // Dump and restore
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
-func (*Driver) Dump(_ context.Context, _ io.Writer, schemaOnly bool) (string, error) {
-	if !schemaOnly {
-		return "", errors.New("redis: not supported")
-	}
+func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
 	return "", nil
 }
 

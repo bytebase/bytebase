@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -175,7 +176,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		}
 
 		var payload storepb.QueryHistoryPayload
-		if err := protojson.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), &payload); err != nil {
 			return nil, err
 		}
 		queryHistory.Payload = &payload

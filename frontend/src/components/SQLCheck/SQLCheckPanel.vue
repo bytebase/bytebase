@@ -12,6 +12,7 @@
       :plan-check-run="planCheckRun"
       :environment="environment"
       :is-latest="true"
+      @close="$emit('close')"
     >
       <template #row-extra="{ row }">
         <slot name="row-extra" :row="row" />
@@ -38,9 +39,10 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
-import { computed, onMounted } from "vue";
+import { computed, watchEffect, ref } from "vue";
 import { usePolicyV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import {
   PlanCheckRun,
   PlanCheckRun_Result,
@@ -64,28 +66,38 @@ defineEmits<{
   (event: "close"): void;
 }>();
 
+const restrictIssueCreationForSqlReviewPolicy = ref(false);
 const policyV1Store = usePolicyV1Store();
 
 // disallow creating issues if advice statuses contains any error.
 const restrictIssueCreationForSQLReview = computed((): boolean => {
   return (
-    (policyV1Store.getPolicyByName(
-      "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
-    )?.restrictIssueCreationForSqlReviewPolicy?.disallow ??
-      false) &&
+    restrictIssueCreationForSqlReviewPolicy.value &&
     advices.some((advice) => advice.status === Advice_Status.ERROR)
   );
 });
 
-onMounted(async () => {
-  await prepareOrgPolicy();
-});
+watchEffect(async () => {
+  const workspaceLevelPolicy =
+    await policyV1Store.getOrFetchPolicyByParentAndType({
+      parentPath: "",
+      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+    });
+  if (workspaceLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
+    restrictIssueCreationForSqlReviewPolicy.value = true;
+    return;
+  }
 
-const prepareOrgPolicy = async () => {
-  await policyV1Store.getOrFetchPolicyByName(
-    "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
-  );
-};
+  const projectLevelPolicy =
+    await policyV1Store.getOrFetchPolicyByParentAndType({
+      parentPath: database.project,
+      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+    });
+  if (projectLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
+    restrictIssueCreationForSqlReviewPolicy.value = true;
+    return;
+  }
+});
 
 const environment = computed(() => {
   return database.effectiveEnvironmentEntity.name;

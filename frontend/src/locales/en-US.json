@@ -513,7 +513,8 @@
         "n-members": "{n} members",
         "group-members": "Group members",
         "group-roles": "Group roles",
-        "edit-group": "Edit group"
+        "edit-group": "Edit group",
+        "workspace-domain-required": "Please set a workspace domain first."
       },
       "action": {
         "deactivate": "Deactivate",
@@ -654,8 +655,8 @@
           "never-expires": "Never expires"
         },
         "domain-restriction": {
-          "self": "Domain restriction",
-          "description": "Specify the domain that could be used as the email domain for workspace members. Leave it empty to allow any domain.",
+          "self": "Workspace Domain",
+          "description": "Specify the domain that could be used as the email domain for workspace members.",
           "domain-input-placeholder": "Please input domain, e.g. example.com",
           "members-restriction": {
             "self": "Members restriction",
@@ -2335,7 +2336,8 @@
       "rows": "rows"
     },
     "n-per-page": "{n} / page",
-    "customize-tree-structure": "Customize tree structure"
+    "customize-tree-structure": "Customize tree structure",
+    "will-override-current-editing-statement": "Will override current editing statement."
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2746,6 +2748,7 @@
     "configure-policy": "Configure policy",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
+    "policy-create-failed": "Failed to create the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
@@ -2913,7 +2916,8 @@
     "schema-group": "Table Group",
     "changelist": "Changelist",
     "vcs-provider": "GitOps Provider",
-    "vcs-connector": "GitOps Connector"
+    "vcs-connector": "GitOps Connector",
+    "review-config": "Review Config"
   },
   "resource-id": {
     "self": "{resource} ID",

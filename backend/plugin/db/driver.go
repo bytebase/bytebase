@@ -311,11 +311,8 @@ type Driver interface {
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
-	// Dump and restore
-	// Dump the database.
-	// The returned string is the JSON encoded metadata for the logical dump.
-	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-	Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error)
+	// Dump dumps the schema of database.
+	Dump(ctx context.Context, out io.Writer) (string, error)
 }
 
 // Register makes a database driver available by the provided type.
@@ -352,13 +349,7 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 
 // ExecuteOptions is the options for execute.
 type ExecuteOptions struct {
-	CreateDatabase     bool
-	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
-	EndTransactionFunc func(tx *sql.Tx) error
-	// ChunkedSubmission is the flag to indicate if we should use chunked submission for the statement.
-	// If true, we will submit each statement chunk, otherwise we will submit all statements in a batch.
-	// For both cases, we will use one transaction to wrap the statements.
-	ChunkedSubmission     bool
+	CreateDatabase        bool
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
 	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
 }

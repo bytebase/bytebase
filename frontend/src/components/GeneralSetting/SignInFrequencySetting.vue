@@ -111,7 +111,10 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
       ? state.inputValue * 60 * 60
       : state.inputValue * 24 * 60 * 60;
   await settingV1Store.updateWorkspaceProfile({
-    tokenDuration: Duration.fromPartial({ seconds, nanos: 0 }),
+    payload: {
+      tokenDuration: Duration.fromPartial({ seconds, nanos: 0 }),
+    },
+    updateMask: ["value.workspace_profile_setting_value.token_duration"],
   });
   pushNotification({
     module: "bytebase",

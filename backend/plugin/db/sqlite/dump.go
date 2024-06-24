@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -13,7 +12,7 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	if driver.databaseName == "" {
 		return "", errors.Errorf("SQLite can dump one database only at a time")
 	}
@@ -34,7 +33,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		return "", errors.Errorf("database %s not found", driver.databaseName)
 	}
 
-	if err := driver.dumpOneDatabase(ctx, out, schemaOnly); err != nil {
+	if err := driver.dumpOneDatabase(ctx, out); err != nil {
 		return "", err
 	}
 
@@ -47,7 +46,7 @@ type sqliteSchema struct {
 	statement  string
 }
 
-func (driver *Driver) dumpOneDatabase(ctx context.Context, out io.Writer, schemaOnly bool) error {
+func (driver *Driver) dumpOneDatabase(ctx context.Context, out io.Writer) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return err
@@ -86,62 +85,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, out io.Writer, schema
 		if _, err := io.WriteString(out, fmt.Sprintf("%s;\n", s.statement)); err != nil {
 			return err
 		}
-
-		// Dump table data.
-		if !schemaOnly && s.schemaType == "table" {
-			if err := exportTableData(txn, s.name, out); err != nil {
-				return err
-			}
-		}
 	}
 
 	return txn.Commit()
-}
-
-// exportTableData gets the data of a table.
-func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
-	query := fmt.Sprintf("SELECT * FROM `%s`;", tblName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	cols, err := rows.ColumnTypes()
-	if err != nil {
-		return err
-	}
-	if len(cols) == 0 {
-		return nil
-	}
-	values := make([]*sql.NullString, len(cols))
-	refs := make([]any, len(cols))
-	for i := 0; i < len(cols); i++ {
-		refs[i] = &values[i]
-	}
-	for rows.Next() {
-		if err := rows.Scan(refs...); err != nil {
-			return err
-		}
-		tokens := make([]string, len(cols))
-		for i, v := range values {
-			switch {
-			case v == nil || !v.Valid:
-				tokens[i] = "NULL"
-			default:
-				tokens[i] = fmt.Sprintf("'%s'", v.String)
-			}
-		}
-		stmt := fmt.Sprintf("INSERT INTO '%s' VALUES (%s);\n", tblName, strings.Join(tokens, ", "))
-		if _, err := io.WriteString(out, stmt); err != nil {
-			return err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, "\n"); err != nil {
-		return err
-	}
-	return nil
 }

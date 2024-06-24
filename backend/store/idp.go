@@ -325,8 +325,7 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 	identityProviderConfig := &storepb.IdentityProviderConfig{}
 	if identityProviderType == storepb.IdentityProviderType_OAUTH2 {
 		var formattedConfig storepb.OAuth2IdentityProviderConfig
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal([]byte(config), &formattedConfig); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil
 		}
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_Oauth2Config{
@@ -334,8 +333,7 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 		}
 	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
 		var formattedConfig storepb.OIDCIdentityProviderConfig
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal([]byte(config), &formattedConfig); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil
 		}
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_OidcConfig{
@@ -343,8 +341,7 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 		}
 	} else if identityProviderType == storepb.IdentityProviderType_LDAP {
 		var formattedConfig storepb.LDAPIdentityProviderConfig
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal([]byte(config), &formattedConfig); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil
 		}
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_LdapConfig{
