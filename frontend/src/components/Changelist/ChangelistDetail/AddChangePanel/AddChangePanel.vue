@@ -73,7 +73,6 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import dayjs from "dayjs";
 import { File, History } from "lucide-vue-next";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
@@ -101,6 +100,7 @@ import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
 import { ChangeHistoryForm, RawSQLForm } from "./form";
 import { emptyRawSQLChange } from "./utils";
+import { fallbackVersionForChange } from "../../common";
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
@@ -195,8 +195,7 @@ const doAddChange = async () => {
       change.version = changeHistory?.version || "";
     }
     if (change.version === "") {
-      // Example: 20240101061834.
-      change.version = dayjs().utc().format("YYYYMMDDHHmmss");
+      change.version = fallbackVersionForChange();
     }
 
     return change;
