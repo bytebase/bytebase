@@ -40,7 +40,12 @@ func TestCompletion(t *testing.T) {
 
 	for i, t := range tests {
 		text, caretOffset := catchCaret(t.Input)
-		result, err := base.Completion(context.Background(), storepb.Engine_POSTGRES, text, 1, caretOffset, "db", getMetadataForTest, listDatbaseNamesForTest)
+		result, err := base.Completion(context.Background(), storepb.Engine_POSTGRES, base.CompletionContext{
+			Scene:             base.SceneTypeAll,
+			DefaultDatabase:   "db",
+			Metadata:          getMetadataForTest,
+			ListDatabaseNames: listDatbaseNamesForTest,
+		}, text, 1, caretOffset)
 		a.NoError(err)
 		var filteredResult []base.Candidate
 		for _, r := range result {

@@ -61,7 +61,12 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
 	}
-	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc, h.ListDatabaseNamesFunc)
+	candidates, err := base.Completion(ctx, engine, base.CompletionContext{
+		Scene:             h.getScene(),
+		DefaultDatabase:   defaultDatabase,
+		Metadata:          h.GetDatabaseMetadataFunc,
+		ListDatabaseNames: h.ListDatabaseNamesFunc,
+	}, string(content), params.Position.Line+1, params.Position.Character)
 	if err != nil {
 		// return errors will close the websocket connection, so we just log the error and return empty completion list.
 		slog.Error("Failed to get completion candidates", "err", err)
@@ -105,7 +110,7 @@ func generateSortText(_ lsp.CompletionParams, candidate base.Candidate) string {
 	case base.CandidateTypeKeyword:
 		switch candidate.Text {
 		case "SELECT", "SHOW", "SET", "FROM", "WHERE":
-			return "00" + candidate.Text
+			return "09" + candidate.Text
 		default:
 			return "10" + candidate.Text
 		}
