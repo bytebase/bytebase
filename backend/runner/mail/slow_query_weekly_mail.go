@@ -211,6 +211,9 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 
 		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, projectPolicy)
 		for _, user := range users {
+			if user.ID == api.SystemBotID {
+				continue
+			}
 			apiValue.SMTPTo = user.Email
 			subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
 			if err := send(apiValue, subject, body); err != nil {
