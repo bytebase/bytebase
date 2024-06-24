@@ -346,7 +346,13 @@ message DataClassificationSetting {
     // classification is the id - DataClassification map.
     // The id should in [0-9]+-[0-9]+-[0-9]+ format.
     map<string, DataClassification> classification = 4;
+
+    // If true, we will only store the classification in the config.
+    // Otherwise we will get the classification from table/column comment,
+    // and write back to the schema metadata.
+    bool classification_from_config = 5;
   }
+
   repeated DataClassificationConfig configs = 1;
 }
 

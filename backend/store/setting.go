@@ -190,6 +190,20 @@ func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.Data
 	return payload, nil
 }
 
+// GetDataClassificationConfigByID gets the classification config by the id.
+func (s *Store) GetDataClassificationConfigByID(ctx context.Context, classificationConfigID string) (*storepb.DataClassificationSetting_DataClassificationConfig, error) {
+	setting, err := s.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, config := range setting.Configs {
+		if config.Id == classificationConfigID {
+			return config, nil
+		}
+	}
+	return &storepb.DataClassificationSetting_DataClassificationConfig{}, nil
+}
+
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache.Purge()
