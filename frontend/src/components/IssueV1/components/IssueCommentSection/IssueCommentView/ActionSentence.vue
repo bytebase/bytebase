@@ -7,9 +7,12 @@ import dayjs from "dayjs";
 import type { h } from "vue";
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-import { IssueCommentType, type ComposedIssueComment } from "@/store";
+import {
+  useUserStore,
+  IssueCommentType,
+  type ComposedIssueComment,
+} from "@/store";
 import type { ComposedIssue } from "@/types";
-import { SYSTEM_BOT_EMAIL } from "@/types";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -40,6 +43,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const userStore = useUserStore();
 
 const renderActionSentence = () => {
   const { issueComment, issue } = props;
@@ -225,7 +229,10 @@ const maybeAutomaticallyVerb = (
   issueComment: ComposedIssueComment,
   verb: string
 ): string => {
-  if (extractUserResourceName(issueComment.creator) !== SYSTEM_BOT_EMAIL) {
+  if (
+    extractUserResourceName(issueComment.creator) !==
+    userStore.systemBotUser?.email
+  ) {
     return verb;
   }
   return t("activity.sentence.xxx-automatically", {
@@ -242,7 +249,8 @@ type VerbTypeTarget = {
 
 const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
   const keypath =
-    extractUserResourceName(params.issueComment.creator) === SYSTEM_BOT_EMAIL
+    extractUserResourceName(params.issueComment.creator) ===
+    userStore.systemBotUser?.email
       ? "activity.sentence.verb-type-target-by-system-bot"
       : "activity.sentence.verb-type-target-by-people";
 
