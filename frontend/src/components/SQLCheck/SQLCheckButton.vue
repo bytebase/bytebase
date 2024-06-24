@@ -121,7 +121,7 @@ const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
 
 const reviewPolicy = computedAsync(async () => {
-  return await useSQLReviewStore().getOrFetchReviewPolicyByEnvironmentName(
+  return await useSQLReviewStore().getOrFetchReviewPolicyByResource(
     props.database.effectiveEnvironment
   );
 }, undefined);

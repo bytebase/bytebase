@@ -90,12 +90,11 @@
         {{ $t("common.environment") }}
       </label>
       <EnvironmentSelect
+        v-model:environment="state.environment"
         class="mt-1"
         required
         name="environment"
-        :environment="state.environment"
         :use-resource-id="true"
-        @update:environment="selectEnvironment"
       />
     </div>
 
@@ -310,10 +309,6 @@ const validDatabaseOwnerName = computed((): boolean => {
 
 const selectProject = (projectId: string | undefined) => {
   state.projectId = projectId;
-};
-
-const selectEnvironment = (environment: string | undefined) => {
-  state.environment = environment;
 };
 
 const selectInstance = (instance: string | undefined) => {

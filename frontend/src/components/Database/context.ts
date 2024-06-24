@@ -40,16 +40,15 @@ export const useDatabaseDetailContext = () => {
 };
 
 export const provideDatabaseDetailContext = (
-  projectId: string,
-  instanceId: string,
-  databaseName: string
+  instanceId: Ref<string>,
+  databaseName: Ref<string>
 ) => {
   const me = useCurrentUserV1();
   const databaseV1Store = useDatabaseV1Store();
 
   const database: Ref<ComposedDatabase> = computed(() => {
     return databaseV1Store.getDatabaseByName(
-      `${instanceNamePrefix}${instanceId}/${databaseNamePrefix}${databaseName}`
+      `${instanceNamePrefix}${instanceId.value}/${databaseNamePrefix}${databaseName.value}`
     );
   });
 

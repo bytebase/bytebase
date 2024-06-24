@@ -1,4 +1,3 @@
-import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import type { DataSource } from "./dataSource";
 import type { Database } from "./database";
@@ -251,7 +250,7 @@ const makeUnknown = (type: ResourceType) => {
     enforce: false,
     name: "",
     ruleList: [],
-    environment: EnvironmentV1.fromJSON({}),
+    resources: [],
   };
 
   switch (type) {

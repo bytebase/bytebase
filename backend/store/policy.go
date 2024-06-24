@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -62,24 +64,53 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*store
 	return p, nil
 }
 
-// GetSQLReviewConfigByEnvironment will get the review config for an environment.
-func (s *Store) GetReviewConfigByEnvironment(ctx context.Context, environmentID int) (*storepb.ReviewConfigPayload, error) {
-	resourceType := api.PolicyResourceTypeEnvironment
+// GetReviewConfigForDatabase will get the review config for a database.
+func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
+	resources := []DatabaseReviewConfig{
+		&databaseReviewConfigResource{},
+		&databaseProjectReviewConfigResource{},
+		&databaseEnvironmentReviewConfigResource{},
+	}
+
+	for _, resource := range resources {
+		resourceType := resource.GetResourceType()
+		resourceUID, err := resource.GetResourceUID(ctx, s, database)
+		if err != nil {
+			slog.Debug("failed to resource id", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			continue
+		}
+
+		reviewConfig, err := s.getReviewConfigByResource(ctx, resourceType, resourceUID)
+		if err != nil {
+			slog.Debug("failed to get review config", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			continue
+		}
+		if reviewConfig == nil {
+			slog.Debug("review config is empty", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			continue
+		}
+		return reviewConfig, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy for database %s not found", database.DatabaseName)}
+}
+
+func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.PolicyResourceType, resourceUID int) (*storepb.ReviewConfigPayload, error) {
 	pType := api.PolicyTypeTag
 
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &environmentID,
+		ResourceUID:  &resourceUID,
 		Type:         &pType,
 	})
 	if err != nil {
 		return nil, err
 	}
 	if policy == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy for environment %d not found", environmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("tag policy for resource %v/%d not found", resourceType, resourceUID)}
 	}
 	if !policy.Enforce {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy is not enforced for environment %d", environmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("tag policy is not enforced for resource %v/%d", resourceType, resourceUID)}
 	}
 
 	payload := &storepb.TagPolicy{}
@@ -89,7 +120,7 @@ func (s *Store) GetReviewConfigByEnvironment(ctx context.Context, environmentID 
 
 	reviewConfigName, ok := payload.Tags[string(api.ReservedTagReviewConfig)]
 	if !ok {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for environment %d not found", environmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for resource %v/%d not found", resourceType, resourceUID)}
 	}
 	reviewConfigID, err := common.GetReviewConfigID(reviewConfigName)
 	if err != nil {
@@ -101,7 +132,10 @@ func (s *Store) GetReviewConfigByEnvironment(ctx context.Context, environmentID 
 		return nil, err
 	}
 	if reviewConfig == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config for environment %d not found", environmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config for resource %v/%d not found", resourceType, resourceUID)}
+	}
+	if !reviewConfig.Enforce {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config is not enforced for resource %v/%d", resourceType, resourceUID)}
 	}
 
 	return reviewConfig.Payload, nil

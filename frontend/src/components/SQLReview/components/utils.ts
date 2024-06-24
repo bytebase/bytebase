@@ -7,13 +7,8 @@ import type {
 } from "@/types";
 import { convertPolicyRuleToRuleTemplate, TEMPLATE_LIST } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import type { Environment } from "@/types/proto/v1/environment_service";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import type { PayloadForEngine } from "./RuleConfigComponents";
-
-export const templateIdForEnvironment = (environment: Environment): string => {
-  return `bb.sql-review.environment-policy.${environment.name}`;
-};
 
 export const rulesToTemplate = (
   review: SQLReviewPolicy,
@@ -56,7 +51,7 @@ export const rulesToTemplate = (
   }
 
   return {
-    id: templateIdForEnvironment(review.environment),
+    id: `bb.sql-review.${review.id}`,
     review,
     ruleList: ruleTemplateList,
   };
