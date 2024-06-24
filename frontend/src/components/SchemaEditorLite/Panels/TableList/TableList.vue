@@ -144,7 +144,7 @@ const configForTable = (table: TableMetadata) => {
 const showClassification = computed(() => {
   return showClassificationColumn(
     engine.value,
-    props.database.classificationFromConfig
+    classificationConfig.value?.classificationFromConfig ?? false
   );
 });
 

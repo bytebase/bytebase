@@ -41,7 +41,11 @@ import { nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { sqlServiceClient } from "@/grpcweb";
-import { pushNotification, useDBSchemaV1Store } from "@/store";
+import {
+  pushNotification,
+  useDBSchemaV1Store,
+  useSettingV1Store,
+} from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -59,6 +63,8 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const dbSchemaStore = useDBSchemaV1Store();
+const settingStore = useSettingV1Store();
+
 const { copy: copyTextToClipboard, isSupported } = useClipboard({
   legacy: true,
 });
@@ -142,9 +148,14 @@ onMounted(async () => {
       mockedDatabaseMetadata.schemas = [schemaMetadata];
     }
 
+    const classificationConfig = settingStore.getProjectClassification(
+      props.database.projectEntity.dataClassificationConfigId
+    );
     const { schema } = await sqlServiceClient.stringifyMetadata({
       metadata: mockedDatabaseMetadata,
       engine: engine.value,
+      classificationFromConfig:
+        classificationConfig?.classificationFromConfig ?? false,
     });
     schemaString.value = schema.trim();
   });

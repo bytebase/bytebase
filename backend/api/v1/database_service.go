@@ -761,9 +761,8 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		if path == "schema_configs" {
 			databaseMetadata := request.GetDatabaseMetadata()
 			databaseConfig := convertV1DatabaseConfig(ctx, &v1pb.DatabaseConfig{
-				Name:                     databaseName,
-				SchemaConfigs:            databaseMetadata.GetSchemaConfigs(),
-				ClassificationFromConfig: databaseMetadata.ClassificationFromConfig,
+				Name:          databaseName,
+				SchemaConfigs: databaseMetadata.GetSchemaConfigs(),
 			}, nil /* optionalStores */)
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err

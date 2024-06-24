@@ -1,40 +1,71 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex items-center justify-end">
-      <NButton
-        type="primary"
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @click="onUpload"
+    <div>
+      <div class="flex items-center space-x-2">
+        <NSwitch
+          :value="!state.classification.classificationFromConfig"
+          :disabled="!allowEdit || !hasSensitiveDataFeature"
+          @update:value="onClassificationConfigChange"
+        />
+        <div class="font-medium leading-7 text-main">
+          {{ $t("database.classification.sync-from-comment") }}
+        </div>
+      </div>
+      <i18n-t
+        class="textinfolabel"
+        tag="div"
+        keypath="database.classification.sync-from-comment-tip"
       >
-        {{ $t("settings.sensitive-data.classification.upload") }}
-      </NButton>
-      <input
-        ref="uploader"
-        type="file"
-        accept=".json"
-        class="sr-only hidden"
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @input="onFileChange"
-      />
+        <template #format>
+          <span class="font-semibold">{calssification id}-{comment}</span>
+        </template>
+      </i18n-t>
     </div>
-    <div class="textinfolabel">
-      {{ $t("settings.sensitive-data.classification.upload-label") }}
-      <span
-        class="normal-link cursor-pointer hover:underline"
-        @click="state.showExampleModal = true"
-      >
-        {{ $t("settings.sensitive-data.view-example") }}
-      </span>
+
+    <NDivider class="my-2" />
+
+    <div class="flex items-center justify-between">
+      <div class="textinfolabel">
+        {{ $t("settings.sensitive-data.classification.upload-label") }}
+        <span
+          class="normal-link cursor-pointer hover:underline"
+          @click="state.showExampleModal = true"
+        >
+          {{ $t("settings.sensitive-data.view-example") }}
+        </span>
+      </div>
+
+      <div class="flex items-center justify-end">
+        <NButton
+          type="primary"
+          :disabled="!allowEdit || !hasSensitiveDataFeature"
+          @click="onUpload"
+        >
+          {{ $t("settings.sensitive-data.classification.upload") }}
+        </NButton>
+        <input
+          ref="uploader"
+          type="file"
+          accept=".json"
+          class="sr-only hidden"
+          :disabled="!allowEdit || !hasSensitiveDataFeature"
+          @input="onFileChange"
+        />
+      </div>
     </div>
+
     <div
-      v-if="settingStore.classification.length === 0"
+      v-if="
+        settingStore.classification.length === 0 ||
+        Object.keys(settingStore.classification[0].classification).length === 0
+      "
       class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-72"
     >
       <SingleFileSelector
         class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
         :support-file-extensions="['.json']"
         :max-file-size-in-mi-b="maxFileSizeInMiB"
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        :disabled="!allowEdit || !hasSensitiveDataFeature"
         @on-select="onFileSelect"
       >
         <template #image>
@@ -70,6 +101,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NSwitch, useDialog, NDivider } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -79,12 +111,12 @@ import {
   useSettingV1Store,
   pushNotification,
 } from "@/store";
+import { PresetRoleType } from "@/types";
 import type {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
 } from "@/types/proto/v1/setting_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 const uploader = ref<HTMLInputElement | null>(null);
 const maxFileSizeInMiB = 10;
@@ -96,18 +128,52 @@ interface UploadClassificationConfig {
 }
 
 interface LocalState {
-  classification?: DataClassificationSetting_DataClassificationConfig;
+  classification: DataClassificationSetting_DataClassificationConfig;
   showExampleModal: boolean;
   showOverrideModal: boolean;
 }
 
 const { t } = useI18n();
+const $dialog = useDialog();
 const settingStore = useSettingV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   showExampleModal: false,
   showOverrideModal: false,
+  classification:
+    DataClassificationSetting_DataClassificationConfig.fromPartial({
+      id: uuidv4(),
+    }),
 });
+
+const onClassificationConfigChange = (on: boolean) => {
+  state.classification.classificationFromConfig = !on;
+
+  $dialog.warning({
+    title: t("common.warning"),
+    content: on
+      ? t("database.classification.sync-from-comment-enable-warning")
+      : t("database.classification.sync-from-comment-disable-warning"),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.confirm"),
+    onPositiveClick: async () => {
+      await settingStore.upsertSetting({
+        name: "bb.workspace.data-classification",
+        value: {
+          dataClassificationSettingValue: {
+            configs: [state.classification],
+          },
+        },
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    },
+  });
+};
 
 watch(
   () => state.classification,
@@ -122,9 +188,6 @@ watch(
 );
 
 const upsertSetting = async () => {
-  if (!state.classification) {
-    return;
-  }
   await settingStore.upsertSetting({
     name: "bb.workspace.data-classification",
     value: {
@@ -141,9 +204,11 @@ const upsertSetting = async () => {
   state.showOverrideModal = false;
 };
 
-const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+const allowEdit = computed(() => {
+  // Only allow workspace admin to manage user.
+  return currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
 });
+
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const onUpload = () => {
@@ -206,10 +271,10 @@ const onFileSelect = (file: File) => {
         description: "Should not contains duplicate classification id",
       });
     }
-    state.classification =
+    Object.assign(
+      state.classification,
       DataClassificationSetting_DataClassificationConfig.fromPartial({
-        id: uuidv4(),
-        title: data.title || "",
+        title: data.title || state.classification.title || "",
         levels: data.levels,
         classification: data.classifications.reduce(
           (obj, item) => {
@@ -218,7 +283,8 @@ const onFileSelect = (file: File) => {
           },
           {} as { [key: string]: DataClassification }
         ),
-      });
+      })
+    );
   };
   fr.onerror = () => {
     pushNotification({
