@@ -94,12 +94,10 @@ func (h *Handler) getInstanceID() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.metadata == nil {
-		slog.Error("Metadata is not set")
 		return ""
 	}
 	id, err := common.GetInstanceID(h.metadata.InstanceID)
 	if err != nil {
-		slog.Error("Failed to get instance ID", log.BBError(err), slog.String("instanceID", h.metadata.InstanceID))
 		return ""
 	}
 	return id
