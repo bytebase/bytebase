@@ -110,20 +110,19 @@ const hasSchemaProperty = computed(() => {
   );
 });
 
-const databaseSchemaMetadata = computed(() => {
-  return dbSchemaStore.getDatabaseMetadata(props.database.name);
-});
-
 const hasClassificationProperty = computed(() => {
   return !!classificationConfig.value;
 });
 
-const setClassificationFromComment = computed(() =>
-  supportSetClassificationFromComment(
+const setClassificationFromComment = computed(() => {
+  const classificationConfig = settingStore.getProjectClassification(
+    props.database.projectEntity.dataClassificationConfigId
+  );
+  return supportSetClassificationFromComment(
     engine.value,
-    databaseSchemaMetadata.value.classificationFromConfig
-  )
-);
+    classificationConfig?.classificationFromConfig ?? false
+  );
+});
 
 const hasEngineProperty = computed(() => {
   return !isPostgres.value;

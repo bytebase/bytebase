@@ -9162,6 +9162,12 @@ components:
                     description: |-
                         classification is the id - DataClassification map.
                          The id should in [0-9]+-[0-9]+-[0-9]+ format.
+                classificationFromConfig:
+                    type: boolean
+                    description: |-
+                        If true, we will only store the classification in the config.
+                         Otherwise we will get the classification from table/column comment,
+                         and write back to the schema metadata.
         DataSource:
             type: object
             properties:
@@ -9393,12 +9399,6 @@ components:
                     items:
                         $ref: '#/components/schemas/SchemaConfig'
                     description: The schema_configs is the list of configs for schemas in a database.
-                classificationFromConfig:
-                    type: boolean
-                    description: |-
-                        If true, we will only store the classification in the config.
-                         Otherwise we will get the classification from table/column comment,
-                         and write back to the schema metadata.
         DatabaseGroup:
             type: object
             properties:
@@ -9547,6 +9547,9 @@ components:
                     type: string
                     description: The database engine of the schema.
                     format: enum
+                classificationFromConfig:
+                    type: boolean
+                    description: If false, we will build the raw common by classification in database config.
         DiffMetadataResponse:
             type: object
             properties:
@@ -12993,6 +12996,9 @@ components:
                     type: string
                     description: The database engine of the schema string.
                     format: enum
+                classificationFromConfig:
+                    type: boolean
+                    description: If false, we will build the raw common by classification in database config.
         StringifyMetadataResponse:
             type: object
             properties:
