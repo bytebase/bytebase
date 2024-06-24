@@ -231,7 +231,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		}
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
+			Actor:   s.store.GetSystemBotUser(ctx),
 			Type:    webhook.EventTypeTaskRunStatusUpdate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -667,7 +667,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				// create "stage ends" activity.
 				if err := func() error {
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
-						Actor:   store.SystemBotUser,
+						Actor:   s.store.GetSystemBotUser(ctx),
 						Type:    webhook.EventTypeStageStatusUpdate,
 						Comment: "",
 						Issue:   webhook.NewIssue(issue),
@@ -691,7 +691,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						return errors.Wrapf(err, "failed to get rollout policy")
 					}
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
-						Actor:   store.SystemBotUser,
+						Actor:   s.store.GetSystemBotUser(ctx),
 						Type:    webhook.EventTypeIssueRolloutReady,
 						Comment: "",
 						Issue:   webhook.NewIssue(issue),
@@ -738,7 +738,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						}
 
 						s.webhookManager.CreateEvent(ctx, &webhook.Event{
-							Actor:   store.SystemBotUser,
+							Actor:   s.store.GetSystemBotUser(ctx),
 							Type:    webhook.EventTypeIssueStatusUpdate,
 							Comment: "",
 							Issue:   webhook.NewIssue(updatedIssue),
@@ -772,7 +772,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 			return nil
 		}
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
+			Actor:   s.store.GetSystemBotUser(ctx),
 			Type:    webhook.EventTypeTaskRunStatusUpdate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),

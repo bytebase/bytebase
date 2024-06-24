@@ -5,7 +5,7 @@
         <ActionCreator
           v-if="
             extractUserResourceName(issueComment.creator) !==
-              SYSTEM_BOT_EMAIL ||
+              userStore.systemBotUser?.email ||
             issueComment.type === IssueCommentType.USER_COMMENT
           "
           :creator="issueComment.creator"
@@ -66,10 +66,9 @@ import { useRouter } from "vue-router";
 import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { IssueCommentType, type ComposedIssueComment } from "@/store";
-import { useSheetV1Store } from "@/store";
+import { useSheetV1Store, useUserStore } from "@/store";
 import { useGenerateRestoreSQL } from "@/store/modules/restore";
 import type { ComposedIssue } from "@/types";
-import { SYSTEM_BOT_EMAIL } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { IssueComment_TaskPriorBackup } from "@/types/proto/v1/issue_service";
 import type { IssueComment } from "@/types/proto/v1/issue_service";
@@ -92,6 +91,7 @@ const props = defineProps<{
 
 const { selectedTask } = useIssueContext();
 const router = useRouter();
+const userStore = useUserStore();
 
 const coreDatabaseInfo = computed(() => {
   return databaseForTask(props.issue, selectedTask.value);
@@ -159,5 +159,4 @@ const createRestoreIssue = async (comment: IssueComment) => {
     query,
   });
 };
-
 </script>
