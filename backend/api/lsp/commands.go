@@ -23,4 +23,7 @@ type SetMetadataCommandArguments struct {
 	// For PostgreSQL, it's required.
 	// For other database engines, it's optional.
 	DatabaseName string `json:"databaseName,omitempty"`
+	// The scene is the scene for completion.
+	// Available scenes: "query", "all".
+	Scene string `json:"scene,omitempty"`
 }
