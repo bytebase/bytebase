@@ -15,12 +15,6 @@
       >
         <NRadio value="environment">{{ $t("common.environment") }}</NRadio>
         <NRadio value="project">{{ $t("common.project") }}</NRadio>
-        <NRadio
-          v-if="isDev() && attachResourceType !== 'database'"
-          value="database"
-        >
-          {{ $t("common.database") }}
-        </NRadio>
       </NRadioGroup>
       <EnvironmentSelect
         v-if="attachResourceType === 'environment'"
@@ -130,7 +124,6 @@ import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { Project } from "@/types/proto/v1/project_service";
-import { isDev } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { SQLReviewTemplateSelector } from "./components";
 import { type ResourceType } from "./components/useReviewConfigAttachedResource";
