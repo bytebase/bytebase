@@ -2913,15 +2913,6 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
                 </tr>
               
-                <tr>
-                  <td>classification_from_config</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If true, we will only store the classification in the config.
-Otherwise we will get the classification from table/column comment,
-and write back to the schema metadata. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -8568,6 +8559,15 @@ The order for the level decides its priority. </p></td>
                   <td>repeated</td>
                   <td><p>classification is the id - DataClassification map.
 The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If true, we will only store the classification in the config.
+Otherwise we will get the classification from table/column comment,
+and write back to the schema metadata. </p></td>
                 </tr>
               
             </tbody>

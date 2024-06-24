@@ -21,7 +21,30 @@
       :node-props="nodeProps"
       :virtual-scroll="false"
       :theme-overrides="{ nodeHeight: '21px' }"
-    />
+    >
+      <template #empty>
+        <NoDataPlaceholder
+          class="!border-0"
+          :img-attrs="{ class: '!max-h-[10vh]' }"
+        >
+          <template #default>
+            <NButton
+              :size="'small'"
+              type="primary"
+              :disabled="!hasPermission || !hasSensitiveDataFeature"
+              @click="
+                router.push({
+                  name: WORKSPACE_ROUTE_SENSITIVE_DATA,
+                  hash: '#classification',
+                })
+              "
+            >
+              {{ $t("settings.sensitive-data.classification.upload") }}
+            </NButton>
+          </template>
+        </NoDataPlaceholder>
+      </template>
+    </NTree>
   </div>
 </template>
 
@@ -29,8 +52,12 @@
 import type { TreeOption } from "naive-ui";
 import { NTree } from "naive-ui";
 import { computed, reactive, h } from "vue";
+import { useRouter } from "vue-router";
+import { WORKSPACE_ROUTE_SENSITIVE_DATA } from "@/router/dashboard/workspaceRoutes";
+import { featureToRef, useCurrentUserV1 } from "@/store";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { getHighlightHTMLByKeyWords } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 
 const props = defineProps<{
@@ -61,9 +88,18 @@ interface ClassificationMap {
   };
 }
 
+const currentUser = useCurrentUserV1();
+const router = useRouter();
+
 const state = reactive<LocalState>({
   searchText: "",
 });
+
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+});
+
+const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
   return {

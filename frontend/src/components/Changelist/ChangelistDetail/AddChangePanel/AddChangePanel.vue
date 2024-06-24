@@ -86,6 +86,7 @@ import {
   useChangeHistoryStore,
   useChangelistStore,
   useLocalSheetStore,
+  useSettingV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
@@ -102,6 +103,7 @@ import { ChangeHistoryForm, RawSQLForm } from "./form";
 import { emptyRawSQLChange } from "./utils";
 
 const { t } = useI18n();
+const settingStore = useSettingV1Store();
 const { project, changelist, showAddChangePanel } =
   useChangelistDetailContext();
 const {
@@ -168,10 +170,15 @@ const doAddChange = async () => {
           false /* !useCache */
         );
 
+        const classificationConfig = settingStore.getProjectClassification(
+          project.value.dataClassificationConfigId
+        );
         const { diff } = await branchServiceClient.diffMetadata({
           sourceMetadata: branch.baselineSchemaMetadata,
           targetMetadata: branch.schemaMetadata,
           engine: branch.engine,
+          classificationFromConfig:
+            classificationConfig?.classificationFromConfig ?? false,
         });
         setSheetStatement(sheet, diff);
       }

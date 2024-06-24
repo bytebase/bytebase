@@ -1430,8 +1430,9 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 	if err != nil {
 		return nil, err
 	}
-	if !config.ClassificationFromConfig {
-		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config))
+
+	if !request.ClassificationFromConfig {
+		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config), request.ClassificationFromConfig)
 	}
 
 	if request.Engine == v1pb.Engine_MYSQL && isSingleTable(storeSchemaMetadata) {
