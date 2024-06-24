@@ -54,7 +54,12 @@ func TestCompletion(t *testing.T) {
 	for i, t := range tests {
 		statement, caretLine, caretPosition := getCaretPosition(t.Input)
 		getter, lister := buildMockDatabaseMetadataGetterLister()
-		results, err := Completion(context.Background(), statement, caretLine, caretPosition, "xx-ap-east-1", getter, lister)
+		results, err := Completion(context.Background(), base.CompletionContext{
+			Scene:             base.SceneTypeAll,
+			DefaultDatabase:   "xx-ap-east-1",
+			Metadata:          getter,
+			ListDatabaseNames: lister,
+		}, statement, caretLine, caretPosition)
 		a.NoErrorf(err, "Case %02d: %s", i, t.Description)
 		var filteredResult []base.Candidate
 		for _, r := range results {
