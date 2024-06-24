@@ -273,7 +273,8 @@
     "leave-without-saving": "¿Salir sin ahorrar?",
     "configure-now": "Configurar ahora",
     "connection": "Conexión",
-    "permission-denied": "Permiso denegado"
+    "permission-denied": "Permiso denegado",
+    "resource": "Recurso"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2760,6 +2761,8 @@
     "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
     "not-available-for-free": "La regla no está disponible para {plan}",
     "unlock-full-feature": "Desbloquear más de 100 reglas de validación de SQL",
+    "search-by-name": "Buscar por nombre",
+    "no-linked-resources": "No hay recursos vinculados",
     "create": {
       "breadcrumb": "Crear política de revisión SQL",
       "basic-info": {
@@ -2768,8 +2771,8 @@
         "display-name-placeholder": "El nombre de la política de revisión",
         "display-name-default": "Política de revisión SQL",
         "display-name-label": "Un nombre para mostrar que ayuda a identificar entre diferentes políticas de revisión.",
-        "environments": "Entornos",
-        "environments-label": "Aplicar la política de revisión a los entornos seleccionados. Un entorno solo puede estar vinculado a una política.",
+        "attach-resource": "Adjuntar al recurso",
+        "attach-resource-label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política.",
         "environments-select": "Seleccionar entornos",
         "no-linked-environments": "Ningún entorno vinculado",
         "no-available-environment": "Ningún entorno disponible",

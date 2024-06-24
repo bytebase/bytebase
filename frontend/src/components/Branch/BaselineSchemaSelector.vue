@@ -3,8 +3,6 @@
     <EnvironmentSelect
       name="environment"
       :disabled="readonly || props.loading"
-      :selected-id="state.environmentId"
-      :select-default="false"
       :environment="state.environmentId"
       @update:environment="handleEnvironmentSelect"
     />

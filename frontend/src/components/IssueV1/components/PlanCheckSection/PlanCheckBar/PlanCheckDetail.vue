@@ -117,7 +117,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { useReviewPolicyByEnvironmentName } from "@/store";
+import { useReviewPolicyByResource } from "@/store";
 import type { RuleTemplate } from "@/types";
 import {
   GeneralErrorCode,
@@ -292,7 +292,7 @@ const showCategoryColumn = computed((): boolean =>
   tableRows.value.some((row) => row.category !== "")
 );
 
-const reviewPolicy = useReviewPolicyByEnvironmentName(
+const reviewPolicy = useReviewPolicyByResource(
   computed(() => {
     return props.environment || UNKNOWN_ENVIRONMENT_NAME;
   })

@@ -49,6 +49,7 @@ const props = withDefaults(
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
+    useResourceId?: boolean;
     filter?: (project: ComposedProject, index: number) => boolean;
   }>(),
   {
@@ -63,6 +64,7 @@ const props = withDefaults(
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
+    useResourceId: false,
     filter: () => true,
   }
 );
@@ -97,10 +99,14 @@ const rawProjectList = computed(() => {
   });
 });
 
+const getValue = (project: Project): string => {
+  return props.useResourceId ? project.name : project.uid;
+};
+
 const isOrphanValue = computed(() => {
   if (props.project === undefined) return false;
 
-  return !rawProjectList.value.find((proj) => proj.uid === props.project);
+  return !rawProjectList.value.find((proj) => getValue(proj) === props.project);
 });
 
 const combinedProjectList = computed(() => {
@@ -108,7 +114,7 @@ const combinedProjectList = computed(() => {
     if (props.includeArchived) return true;
     if (project.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (project.uid === props.project) return true;
+    if (getValue(project) === props.project) return true;
     return false;
   });
 
@@ -168,7 +174,7 @@ const options = computed(() => {
   return combinedProjectList.value.map<ProjectSelectOption>((project) => {
     return {
       project,
-      value: project.uid,
+      value: getValue(project),
       label:
         project.uid === String(DEFAULT_PROJECT_ID)
           ? t("common.unassigned")

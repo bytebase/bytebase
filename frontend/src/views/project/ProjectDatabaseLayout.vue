@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from "vue";
+import { onMounted, computed } from "vue";
 import { provideDatabaseDetailContext } from "@/components/Database/context";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import {
@@ -25,9 +25,8 @@ const props = defineProps<{
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 provideDatabaseDetailContext(
-  props.projectId,
-  props.instanceId,
-  props.databaseName
+  computed(() => props.instanceId),
+  computed(() => props.databaseName)
 );
 
 onMounted(async () => {

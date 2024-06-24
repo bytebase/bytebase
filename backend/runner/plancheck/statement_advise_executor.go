@@ -85,14 +85,6 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-	if err != nil {
-		return nil, err
-	}
-	if environment == nil {
-		return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
-	}
-
 	if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -140,7 +132,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
-	reviewConfig, err := e.store.GetReviewConfigByEnvironment(ctx, environment.UID)
+	reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			reviewConfig = &storepb.ReviewConfigPayload{}
@@ -296,14 +288,6 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			continue
 		}
 
-		environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-		if err != nil {
-			return nil, err
-		}
-		if environment == nil {
-			return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
-		}
-
 		if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			// nolint:nilerr
 			return []*storepb.PlanCheckRunResult_Result{
@@ -328,7 +312,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
 		}
 
-		reviewConfig, err := e.store.GetReviewConfigByEnvironment(ctx, environment.UID)
+		reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 				reviewConfig = &storepb.ReviewConfigPayload{}
