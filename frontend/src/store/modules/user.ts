@@ -2,9 +2,14 @@ import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { authServiceClient } from "@/grpcweb";
-import type { PrincipalType } from "@/types";
-import { PresetRoleType, PRESET_WORKSPACE_ROLES } from "@/types";
-import { ALL_USERS_USER_EMAIL, allUsersUser } from "@/types";
+import {
+  type PrincipalType,
+  PresetRoleType,
+  PRESET_WORKSPACE_ROLES,
+  ALL_USERS_USER_EMAIL,
+  allUsersUser,
+  SYSTEM_BOT_USER_NAME,
+} from "@/types";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -34,6 +39,12 @@ export const useUserStore = defineStore("user", () => {
     return userList.value.filter(
       (user) =>
         user.state === State.ACTIVE && user.email !== ALL_USERS_USER_EMAIL
+    );
+  });
+
+  const systemBotUser = computed(() => {
+    return activeUserList.value.find(
+      (user) => user.name === SYSTEM_BOT_USER_NAME
     );
   });
 
@@ -129,6 +140,7 @@ export const useUserStore = defineStore("user", () => {
     userMapByName,
     userList,
     activeUserList,
+    systemBotUser,
     workspaceLevelProjectMembers,
     fetchUserList,
     fetchUser,

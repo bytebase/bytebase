@@ -307,7 +307,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 			return nil
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
+			Actor:   r.store.GetSystemBotUser(ctx),
 			Type:    webhook.EventTypeIssueApprovalCreate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -334,7 +334,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, store.SystemBotUser, ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, r.store.GetSystemBotUser(ctx), ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
