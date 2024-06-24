@@ -175,3 +175,13 @@ export const getIssueCommentId = (name: string) => {
   }
   return tokens[2];
 };
+
+export const getReviewConfigId = (name: string) => {
+  const tokens = getNameParentTokens(name, [reviewConfigNamePrefix]);
+  return tokens[0];
+};
+
+export const isDatabaseName = (name: string): boolean => {
+  const regex = /^instances\/([^/]+)\/databases\/(.+)$/;
+  return regex.test(name);
+};

@@ -6,7 +6,7 @@
     class="mt-1"
     :policy="reviewPolicy"
     :name="reviewPolicy.name"
-    :selected-environment="reviewPolicy.environment"
+    :selected-resources="reviewPolicy.resources"
     :selected-rule-list="ruleListOfPolicy"
     @cancel="state.editMode = false"
   />
@@ -15,16 +15,6 @@
       class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
       <div class="flex-1 flex space-x-2 items-center justify-start">
-        <BBBadge
-          v-if="reviewPolicy.environment"
-          :can-remove="false"
-          :link="`/${reviewPolicy.environment.name}`"
-        >
-          <EnvironmentV1Name
-            :environment="reviewPolicy.environment"
-            :link="false"
-          />
-        </BBBadge>
         <div v-if="!reviewPolicy.enforce" class="whitespace-nowrap">
           <BBBadge
             :text="$t('sql-review.disabled')"
@@ -61,12 +51,21 @@
         </NButton>
       </div>
     </div>
-    <BBAttention
-      v-if="!reviewPolicy.environment"
-      class="my-4"
-      type="warning"
-      :title="$t('sql-review.create.basic-info.no-linked-environments')"
-    />
+    <div class="mt-4 space-y-4">
+      <BBAttention v-if="reviewPolicy.resources.length === 0" type="warning">
+        {{ $t("sql-review.no-linked-resources") }}
+      </BBAttention>
+      <div class="flex space-x-2 items-center">
+        <BBBadge
+          v-for="resource in reviewPolicy.resources"
+          :key="resource"
+          :can-remove="false"
+          :link="`/${resource}`"
+        >
+          <SQLReviewAttachedResource :resource="resource" :show-prefix="true" />
+        </BBBadge>
+      </div>
+    </div>
     <SQLRuleFilter
       :rule-list="state.ruleList"
       :params="filterParams"
@@ -133,7 +132,7 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
 import { cloneDeep, groupBy } from "lodash-es";
 import { computed, reactive, toRef, watch, watchEffect } from "vue";
@@ -147,13 +146,11 @@ import {
   SQLRuleTable,
 } from "@/components/SQLReview/components";
 import type { PayloadForEngine } from "@/components/SQLReview/components/RuleConfigComponents";
-import { EnvironmentV1Name } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useCurrentUserV1,
   useSQLReviewStore,
-  useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import type { RuleTemplate, SchemaPolicyRule } from "@/types";
@@ -166,7 +163,7 @@ import {
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { idFromSlug, hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   sqlReviewPolicySlug: string;
@@ -189,7 +186,6 @@ const { t } = useI18n();
 const store = useSQLReviewStore();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
-const environmentV1Store = useEnvironmentV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
@@ -208,18 +204,13 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
-const environment = computed(() => {
-  const environmentUID = idFromSlug(props.sqlReviewPolicySlug);
-  return environmentV1Store.getEnvironmentByUID(environmentUID);
-});
-
 watchEffect(async () => {
-  await store.getOrFetchReviewPolicyByEnvironmentName(environment.value.name);
+  await store.getOrFetchReviewPolicyByName(props.sqlReviewPolicySlug);
 });
 
 const reviewPolicy = computed(() => {
   return (
-    store.getReviewPolicyByEnvironmentName(environment.value.name) ??
+    store.getReviewPolicyByName(props.sqlReviewPolicySlug) ??
     unknown("SQL_REVIEW")
   );
 });

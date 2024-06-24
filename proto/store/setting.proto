@@ -47,6 +47,9 @@ message WorkspaceProfileSetting {
 
   // Only user and group from the domains can be created and login.
   bool enforce_identity_domain = 10;
+
+  // The workspace database change mode.
+  DatabaseChangeMode database_change_mode = 11;
 }
 
 message Announcement {
@@ -321,4 +324,13 @@ message AppIMSetting {
   Slack slack = 1;
   Feishu feishu = 2;
   Wecom wecom = 3;
+}
+
+enum DatabaseChangeMode {
+  DATABASE_CHANGE_MODE_UNSPECIFIED = 0;
+  // A more advanced database change process, including custom approval workflows and other advanced features.
+  // Default to this mode.
+  PIPELINE = 1;
+  // A simple database change process in SQL editor. Users can execute SQL directly.
+  EDITOR = 2;
 }
