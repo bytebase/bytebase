@@ -273,7 +273,8 @@
     "leave-without-saving": "変更を保存していませんか?",
     "configure-now": "今すぐ設定する",
     "connection": "接続する",
-    "permission-denied": "許可が拒否されました"
+    "permission-denied": "許可が拒否されました",
+    "resource": "リソース"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -2760,6 +2761,8 @@
     "input-then-press-enter": "入力後、Enterを押して追加します",
     "not-available-for-free": "{plan}定期購入ではこのルールを使用できません",
     "unlock-full-feature": "100 を超える SQL レビュー ルールのロックを解除する",
+    "search-by-name": "名前で検索",
+    "no-linked-resources": "リンクされたリソースはありません",
     "create": {
       "breadcrumb": "監査ポリシーを作成する",
       "basic-info": {
@@ -2768,8 +2771,8 @@
         "display-name-placeholder": "監査ポリシー名",
         "display-name-default": "SQL監査ポリシー",
         "display-name-label": "さまざまな監査ポリシーを区別するために使用される名前。",
-        "environments": "環境",
-        "environments-label": "この監査ポリシーが適用される環境。 1 つの環境に関連付けることができる監査ポリシーは 1 つだけです。",
+        "attach-resource": "リソースにアタッチする",
+        "attach-resource-label": "選択したリソースにレビュー ポリシーを適用します。リソースは 1 つのポリシーにのみ関連付けることができます。",
         "environments-select": "環境を選ぶ",
         "no-linked-environments": "環境が選択されていません",
         "no-available-environment": "代わりの環境がない",

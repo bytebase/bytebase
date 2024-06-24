@@ -2,6 +2,7 @@
   <div class="w-full space-y-6 mb-6">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
+      <ProjectSecuritySettingPanel :project="project" :allow-edit="allowEdit" />
       <ProjectBranchProtectionRulesSettingPanel
         :project="project"
         :allow-edit="allowEdit"
@@ -21,6 +22,7 @@
 import type { ComposedProject } from "@/types";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
 import ProjectGeneralSettingPanel from "./Project/ProjectGeneralSettingPanel.vue";
+import ProjectSecuritySettingPanel from "./Project/ProjectSecuritySettingPanel.vue";
 
 defineProps<{
   project: ComposedProject;
