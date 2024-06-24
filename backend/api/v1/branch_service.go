@@ -580,7 +580,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.Internal, `failed to get classification config by id "%s" with error: %v`, baseProject.DataClassificationConfigID, err)
 		}
 
-		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
+		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig.ClassificationFromConfig)
 		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
 		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
@@ -1598,7 +1598,7 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 	}
 }
 
-func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig, classificationFromConfig bool) {
+func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, classificationFromConfig bool) {
 	if classificationFromConfig {
 		return
 	}
