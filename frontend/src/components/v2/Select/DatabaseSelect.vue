@@ -1,16 +1,17 @@
 <template>
   <NSelect
-    :value="database ?? null"
+    :value="value"
     :options="options"
     :placeholder="placeholder ?? $t('database.select')"
     :virtual-scroll="true"
+    :multiple="multiple"
     :filter="filterByDatabaseName"
     :filterable="true"
     class="bb-database-select"
     style="width: 12rem"
     v-bind="$attrs"
     :render-label="renderLabel"
-    @update:value="$emit('update:database', $event)"
+    @update:value="handleValueUpdated"
   />
 </template>
 
@@ -40,6 +41,7 @@ const slots = useSlots();
 const props = withDefaults(
   defineProps<{
     database?: string;
+    databases?: string[];
     environment?: string;
     instance?: string;
     project?: string;
@@ -48,9 +50,12 @@ const props = withDefaults(
     autoReset?: boolean;
     placeholder?: string;
     filter?: (database: ComposedDatabase, index: number) => boolean;
+    useResourceId?: boolean;
+    multiple?: boolean;
   }>(),
   {
     database: undefined,
+    databases: undefined,
     environment: undefined,
     instance: undefined,
     project: undefined,
@@ -59,11 +64,14 @@ const props = withDefaults(
     autoReset: true,
     placeholder: undefined,
     filter: undefined,
+    useResourceId: false,
+    multiple: false,
   }
 );
 
 const emit = defineEmits<{
   (event: "update:database", value: string | undefined): void;
+  (event: "update:databases", value: string[]): void;
 }>();
 
 const { t } = useI18n();
@@ -71,6 +79,34 @@ const currentUserV1 = useCurrentUserV1();
 const { ready } = useSearchDatabaseV1List({
   filter: "instance = instances/-",
 });
+
+const value = computed(() => {
+  if (props.multiple) {
+    return props.databases || [];
+  } else {
+    return props.database;
+  }
+});
+
+const handleValueUpdated = (value: string | string[]) => {
+  if (props.multiple) {
+    if (!value) {
+      // normalize value
+      value = [];
+    }
+    emit("update:databases", value as string[]);
+  } else {
+    if (value === null) {
+      // normalize value
+      value = "";
+    }
+    emit("update:database", value as string);
+  }
+};
+
+const getDatabaseValue = (database: ComposedDatabase): string => {
+  return props.useResourceId ? database.name : database.uid;
+};
 
 const rawDatabaseList = computed(() => {
   const list = useDatabaseV1Store().databaseListByUser(currentUserV1.value);
@@ -117,7 +153,7 @@ const options = computed(() => {
   return combinedDatabaseList.value.map<DatabaseSelectOption>((database) => {
     return {
       database,
-      value: database.uid,
+      value: getDatabaseValue(database),
       label: database.databaseName,
     };
   });
@@ -175,7 +211,9 @@ const resetInvalidSelection = () => {
   if (
     ready.value &&
     props.database &&
-    !combinedDatabaseList.value.find((item) => item.uid === props.database)
+    !combinedDatabaseList.value.find(
+      (item) => getDatabaseValue(item) === props.database
+    )
   ) {
     emit("update:database", undefined);
   }

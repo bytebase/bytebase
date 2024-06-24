@@ -273,7 +273,8 @@
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
     "connection": "连接",
-    "permission-denied": "您没有权限执行此操作"
+    "permission-denied": "您没有权限执行此操作",
+    "resource": "资源"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2760,6 +2761,8 @@
     "input-then-press-enter": "输入后按下回车来添加",
     "not-available-for-free": "{plan}订阅不能使用该规则",
     "unlock-full-feature": "解锁 100+ SQL Review 规则",
+    "search-by-name": "按名称搜索",
+    "no-linked-resources": "没有绑定的资源",
     "create": {
       "breadcrumb": "创建审核策略",
       "basic-info": {
@@ -2768,8 +2771,8 @@
         "display-name-placeholder": "审核策略名称",
         "display-name-default": "SQL 审核策略",
         "display-name-label": "用以区分不同审核策略的名称。",
-        "environments": "环境",
-        "environments-label": "将该审核策略应用于哪些环境。一个环境只能关联一个审核策略。",
+        "attach-resource": "附加到资源",
+        "attach-resource-label": "将审核政策应用到选定的资源。一个资源只能关联一个政策。",
         "environments-select": "选择环境",
         "no-linked-environments": "没有选择环境",
         "no-available-environment": "没有可供选择的环境",

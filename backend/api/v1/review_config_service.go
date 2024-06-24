@@ -189,12 +189,10 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		return nil, status.Errorf(codes.NotFound, "creator %d not found", reviewConfigMessage.CreatorUID)
 	}
 
-	resourceType := api.PolicyResourceTypeEnvironment
 	policyType := api.PolicyTypeTag
 	tagPolicies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
-		ResourceType: &resourceType,
-		Type:         &policyType,
-		ShowDeleted:  false,
+		Type:        &policyType,
+		ShowDeleted: false,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list tag policy, error %v", err)
@@ -218,17 +216,45 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		if p.Tags[string(api.ReservedTagReviewConfig)] != config.Name {
 			continue
 		}
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			UID:         &policy.ResourceUID,
-			ShowDeleted: false,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get environment %d with error: %v", policy.ResourceUID, err)
+
+		switch policy.ResourceType {
+		case api.PolicyResourceTypeEnvironment:
+			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+				UID:         &policy.ResourceUID,
+				ShowDeleted: false,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get environment %d with error: %v", policy.ResourceUID, err)
+			}
+			if environment == nil {
+				continue
+			}
+			config.Resources = append(config.Resources, common.FormatEnvironment(environment.ResourceID))
+		case api.PolicyResourceTypeProject:
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+				UID:         &policy.ResourceUID,
+				ShowDeleted: false,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get project %d with error: %v", policy.ResourceUID, err)
+			}
+			if project == nil {
+				continue
+			}
+			config.Resources = append(config.Resources, common.FormatProject(project.ResourceID))
+		case api.PolicyResourceTypeDatabase:
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				UID:         &policy.ResourceUID,
+				ShowDeleted: false,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get database %d with error: %v", policy.ResourceUID, err)
+			}
+			if database == nil {
+				continue
+			}
+			config.Resources = append(config.Resources, common.FormatDatabase(database.InstanceID, database.DatabaseName))
 		}
-		if environment == nil {
-			continue
-		}
-		config.Resources = append(config.Resources, common.FormatEnvironment(environment.ResourceID))
 	}
 
 	return config, nil

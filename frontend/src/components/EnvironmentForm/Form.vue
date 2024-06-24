@@ -81,44 +81,19 @@
           />
         </div>
 
-        <div v-if="!create" class="flex flex-col gap-y-2">
-          <label class="textlabel">
-            {{ $t("sql-review.title") }}
-          </label>
-          <div>
-            <div
-              v-if="sqlReviewPolicy"
-              class="inline-flex items-center gap-x-2"
-            >
-              <Switch
-                v-if="allowEditSQLReviewPolicy"
-                :value="sqlReviewPolicy.enforce"
-                :text="true"
-                @update:value="toggleSQLReviewPolicy"
-              />
-              <span
-                class="textlabel normal-link !text-accent"
-                @click="onSQLReviewPolicyClick"
-                >{{ sqlReviewPolicy.name }}</span
-              >
-            </div>
-            <NButton
-              v-else-if="hasPermission('bb.policies.update')"
-              @click.prevent="onSQLReviewPolicyClick"
-            >
-              {{ $t("sql-review.configure-policy") }}
-            </NButton>
-            <span v-else class="textinfolabel">
-              {{ $t("sql-review.no-policy-set") }}
-            </span>
-          </div>
-        </div>
+        <SQLReviewForResource
+          v-if="!create"
+          :resource="environment.name"
+          :allow-edit="allowEdit"
+        />
 
         <div v-if="!create" class="flex flex-col gap-y-2">
-          <label class="textlabel flex items-center">
-            {{ $t("environment.access-control.title") }}
+          <div class="textlabel flex items-center space-x-1">
+            <label>
+              {{ $t("environment.access-control.title") }}
+            </label>
             <FeatureBadge feature="bb.feature.access-control" />
-          </label>
+          </div>
           <div>
             <div class="inline-flex items-center gap-x-2">
               <Switch
@@ -180,19 +155,12 @@ import { NCheckbox } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import {
-  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
 import {
   hasFeature,
   pushNotification,
   useEnvironmentV1List,
   useEnvironmentV1Store,
   usePolicyV1Store,
-  useReviewPolicyByEnvironmentName,
-  useSQLReviewStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage } from "@/types";
@@ -202,7 +170,7 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { extractEnvironmentResourceName, sqlReviewPolicySlug } from "@/utils";
+import { extractEnvironmentResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { useEnvironmentFormContext } from "./context";
 
@@ -212,7 +180,6 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const {
   create,
   environment,
@@ -225,16 +192,6 @@ const {
 } = useEnvironmentFormContext();
 const policyStore = usePolicyV1Store();
 const environmentList = useEnvironmentV1List();
-
-const sqlReviewPolicy = useReviewPolicyByEnvironmentName(
-  computed(() => {
-    return create.value ? undefined : environment.value.name;
-  })
-);
-
-const allowEditSQLReviewPolicy = computed(() => {
-  return hasPermission("bb.policies.update");
-});
 
 const disableCopyDataPolicy = computed(() => {
   const policies = policyStore.policyList.filter(
@@ -296,40 +253,6 @@ const validateResourceId = async (
     }
   }
   return [];
-};
-
-const toggleSQLReviewPolicy = async (on: boolean) => {
-  const policy = sqlReviewPolicy.value;
-  if (!policy) return;
-  const originalOn = policy.enforce;
-  if (on === originalOn) return;
-  await useSQLReviewStore().updateReviewPolicy({
-    id: policy.id,
-    enforce: on,
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("sql-review.policy-updated"),
-  });
-};
-
-const onSQLReviewPolicyClick = () => {
-  if (sqlReviewPolicy.value) {
-    router.push({
-      name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-      params: {
-        sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
-      },
-    });
-  } else {
-    router.push({
-      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-      query: {
-        environmentId: environment.value.uid,
-      },
-    });
-  }
 };
 
 const upsertPolicy = async (on: boolean) => {

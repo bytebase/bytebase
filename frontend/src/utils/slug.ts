@@ -61,7 +61,7 @@ export function taskSlug(name: string, id: IdType): string {
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return [slug(reviewPolicy.name), reviewPolicy.environment.uid].join("-");
+  return reviewPolicy.id;
 }
 
 export function worksheetSlugV1(sheet: Worksheet): string {

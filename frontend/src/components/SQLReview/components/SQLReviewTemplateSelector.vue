@@ -23,13 +23,18 @@
           <span class="text-base mt-4 font-medium">
             {{ template.review.name }}
           </span>
-          <p class="text-sm">
-            <span class="mr-2">{{ $t("common.environment") }}:</span>
-            <EnvironmentV1Name
-              :environment="template.review.environment"
-              :link="false"
-            />
-          </p>
+          <div>
+            <BBBadge
+              v-for="resource in template.review.resources"
+              :key="resource"
+              :can-remove="false"
+            >
+              <SQLReviewAttachedResource
+                :resource="resource"
+                :show-prefix="true"
+              />
+            </BBBadge>
+          </div>
           <p class="text-sm">
             <span class="mr-2">{{ $t("sql-review.enabled-rules") }}:</span>
             <span>{{ enabledRuleCount(template) }}</span>
@@ -91,7 +96,6 @@
 
 <script lang="ts" setup>
 import { computed, watch } from "vue";
-import { EnvironmentV1Name } from "@/components/v2";
 import { useSQLReviewPolicyList } from "@/store";
 import type { SQLReviewPolicyTemplate } from "@/types";
 import { TEMPLATE_LIST as builtInTemplateList } from "@/types";
