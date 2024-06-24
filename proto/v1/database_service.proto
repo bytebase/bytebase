@@ -348,6 +348,8 @@ message Database {
 
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
+  reserved 7;
+
   // The database metadata name.
   //
   // Format: instances/{instance}/databases/{database}/metadata
@@ -367,8 +369,6 @@ message DatabaseMetadata {
 
   // The schema_configs is the list of configs for schemas in a database.
   repeated SchemaConfig schema_configs = 6;
-
-  bool classification_from_config = 7;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -799,15 +799,12 @@ message ForeignKeyMetadata {
 }
 
 message DatabaseConfig {
+  reserved 3;
+
   string name = 1;
 
   // The schema_configs is the list of configs for schemas in a database.
   repeated SchemaConfig schema_configs = 2;
-
-  // If true, we will only store the classification in the config.
-  // Otherwise we will get the classification from table/column comment,
-  // and write back to the schema metadata.
-  bool classification_from_config = 3;
 }
 
 message SchemaConfig {

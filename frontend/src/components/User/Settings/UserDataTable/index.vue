@@ -4,6 +4,8 @@
     :data="userList"
     :striped="true"
     :bordered="true"
+    :max-height="'calc(100vh - 20rem)'"
+    virtual-scroll
   />
 
   <BBAlert

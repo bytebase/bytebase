@@ -42,7 +42,7 @@ func MergeDatabaseConfig(baseline, head, target *storepb.DatabaseConfig) *storep
 		delete(currentMap, schemaName)
 	}
 
-	result := &storepb.DatabaseConfig{Name: head.Name, ClassificationFromConfig: head.ClassificationFromConfig}
+	result := &storepb.DatabaseConfig{Name: head.Name}
 	for _, v := range currentMap {
 		result.SchemaConfigs = append(result.SchemaConfigs, v)
 	}

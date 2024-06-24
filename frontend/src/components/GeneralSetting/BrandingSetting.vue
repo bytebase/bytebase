@@ -24,8 +24,9 @@
         <div class="mb-4 flex space-x-2">
           <NInput
             ref="workspaceIdField"
-            :value="workspaceId"
             class="mb-4 w-full"
+            readonly
+            :value="workspaceId"
             @click="selectWorkspaceId"
           />
           <NButton

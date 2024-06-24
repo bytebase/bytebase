@@ -170,7 +170,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 }
 
 func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, error) {
-	user, _, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -179,14 +179,14 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 
 // Execute executes the SQL statement.
 func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) (*v1pb.ExecuteResponse, error) {
-	environment, instance, database, err := s.preExecute(ctx, request)
+	instance, database, err := s.preExecute(ctx, request)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to prepare execute: %v", err)
 	}
 
 	statement := request.Statement
 	// Run SQL review.
-	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, database, nil /* Override Metadata */)
+	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}
@@ -208,19 +208,19 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	return response, nil
 }
 
-func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteRequest) (*store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
+func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, error) {
 	hasDatabase := strings.Contains(request.Name, "/databases/")
 	var err error
 	var instanceID, databaseName string
 	if hasDatabase {
 		instanceID, databaseName, err = common.GetInstanceDatabaseID(request.Name)
 		if err != nil {
-			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	} else {
 		instanceID, err = common.GetInstanceID(request.Name)
 		if err != nil {
-			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
@@ -234,10 +234,10 @@ func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteReques
 
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
-		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+		return nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
 	var database *store.DatabaseMessage
@@ -248,25 +248,14 @@ func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteReques
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+			return nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
 		if database == nil {
-			return nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+			return nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 		}
 	}
 
-	environmentID := instance.EnvironmentID
-	if database != nil {
-		environmentID = database.EffectiveEnvironmentID
-	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
-	if err != nil {
-		return nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
-	}
-	if environment == nil {
-		return nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", environmentID)
-	}
-	return environment, instance, database, nil
+	return instance, database, nil
 }
 
 func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, request *v1pb.ExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
@@ -309,7 +298,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return s.doExportFromIssue(ctx, request.Name)
 	}
 	// Prepare related message.
-	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +338,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	// Run SQL review.
-	if _, _, err = s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, database, nil /* Override Metadata */); err != nil {
+	if _, _, err = s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */); err != nil {
 		return nil, err
 	}
 
@@ -684,7 +673,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
 	// Prepare related message.
-	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, err
 	}
@@ -725,7 +714,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Run SQL review.
-	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, database, nil /* Override Metadata */)
+	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}
@@ -1012,22 +1001,22 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 	}
 }
 
-func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string, requestDatabaseName string) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
+func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string, requestDatabaseName string) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
-		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	var instanceID, databaseName string
 	if strings.Contains(requestName, "/databases/") {
 		instanceID, databaseName, err = common.GetInstanceDatabaseID(requestName)
 		if err != nil {
-			return nil, nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	} else {
 		instanceID, err = common.GetInstanceID(requestName)
 		if err != nil {
-			return nil, nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		databaseName = requestDatabaseName
 	}
@@ -1042,10 +1031,10 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
-		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -1054,21 +1043,13 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		return nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 	}
 	if database == nil {
-		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		return nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-	if err != nil {
-		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
-	}
-	if environment == nil {
-		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", database.EffectiveEnvironmentID)
-	}
-
-	return user, environment, instance, database, nil
+	return user, instance, database, nil
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {
@@ -1196,16 +1177,6 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Database)
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &database.EffectiveEnvironmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get environment, error: %v", err)
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
-	}
-
 	var overideMetadata *storepb.DatabaseSchemaMetadata
 	if request.Metadata != nil {
 		overideMetadata, _, err = convertV1DatabaseMetadata(ctx, request.Metadata, nil /* optionalStores */)
@@ -1213,7 +1184,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 			return nil, err
 		}
 	}
-	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, environment, instance, database, overideMetadata)
+	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, instance, database, overideMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -1226,7 +1197,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 // sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
-func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (storepb.Advice_Status, []*v1pb.Advice, error) {
+func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
@@ -1267,12 +1238,11 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		ctx,
 		instance.Engine,
 		dbMetadata,
-		environment.UID,
 		statement,
 		changeType,
 		catalog,
 		connection,
-		database.DatabaseName,
+		database,
 	)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
@@ -1314,15 +1284,14 @@ func (s *SQLService) sqlCheck(
 	ctx context.Context,
 	dbType storepb.Engine,
 	dbSchema *storepb.DatabaseSchemaMetadata,
-	environmentID int,
 	statement string,
 	changeType v1pb.CheckRequest_ChangeType,
 	catalog *catalog.Catalog,
 	driver *sql.DB,
-	currentDatabase string,
+	database *store.DatabaseMessage,
 ) (storepb.Advice_Status, []*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
-	reviewConfig, err := s.store.GetReviewConfigByEnvironment(ctx, environmentID)
+	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return storepb.Advice_SUCCESS, nil, nil
@@ -1339,7 +1308,7 @@ func (s *SQLService) sqlCheck(
 		Catalog:         catalog,
 		Driver:          driver,
 		Context:         ctx,
-		CurrentDatabase: currentDatabase,
+		CurrentDatabase: database.DatabaseName,
 	})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, err
@@ -1430,8 +1399,9 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 	if err != nil {
 		return nil, err
 	}
-	if !config.ClassificationFromConfig {
-		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config))
+
+	if !request.ClassificationFromConfig {
+		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config), request.ClassificationFromConfig)
 	}
 
 	if request.Engine == v1pb.Engine_MYSQL && isSingleTable(storeSchemaMetadata) {

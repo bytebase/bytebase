@@ -326,6 +326,8 @@ export interface DiffMetadataRequest {
     | undefined;
   /** The database engine of the schema. */
   engine: Engine;
+  /** If false, we will build the raw common by classification in database config. */
+  classificationFromConfig: boolean;
 }
 
 export interface DiffMetadataResponse {
@@ -1593,7 +1595,12 @@ export const DiffDatabaseResponse = {
 };
 
 function createBaseDiffMetadataRequest(): DiffMetadataRequest {
-  return { sourceMetadata: undefined, targetMetadata: undefined, engine: Engine.ENGINE_UNSPECIFIED };
+  return {
+    sourceMetadata: undefined,
+    targetMetadata: undefined,
+    engine: Engine.ENGINE_UNSPECIFIED,
+    classificationFromConfig: false,
+  };
 }
 
 export const DiffMetadataRequest = {
@@ -1606,6 +1613,9 @@ export const DiffMetadataRequest = {
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       writer.uint32(24).int32(engineToNumber(message.engine));
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(32).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -1638,6 +1648,13 @@ export const DiffMetadataRequest = {
 
           message.engine = engineFromJSON(reader.int32());
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1652,6 +1669,9 @@ export const DiffMetadataRequest = {
       sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
       targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -1665,6 +1685,9 @@ export const DiffMetadataRequest = {
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
+    }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
     }
     return obj;
   },
@@ -1681,6 +1704,7 @@ export const DiffMetadataRequest = {
       ? DatabaseMetadata.fromPartial(object.targetMetadata)
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };
