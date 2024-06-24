@@ -76,17 +76,17 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 		resourceType := resource.GetResourceType()
 		resourceUID, err := resource.GetResourceUID(ctx, s, database)
 		if err != nil {
-			slog.Error("failed to resource id", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			slog.Debug("failed to resource id", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
 		}
 
 		reviewConfig, err := s.getReviewConfigByResource(ctx, resourceType, resourceUID)
 		if err != nil {
-			slog.Warn("failed to get review config", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			slog.Debug("failed to get review config", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
 		}
 		if reviewConfig == nil {
-			slog.Warn("review config is empty", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			slog.Debug("review config is empty", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
 		}
 		return reviewConfig, nil
