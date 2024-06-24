@@ -371,6 +371,8 @@ export interface StringifyMetadataRequest {
     | undefined;
   /** The database engine of the schema string. */
   engine: Engine;
+  /** If false, we will build the raw common by classification in database config. */
+  classificationFromConfig: boolean;
 }
 
 export interface StringifyMetadataResponse {
@@ -2572,7 +2574,7 @@ export const ParseMyBatisMapperResponse = {
 };
 
 function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
-  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED };
+  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED, classificationFromConfig: false };
 }
 
 export const StringifyMetadataRequest = {
@@ -2582,6 +2584,9 @@ export const StringifyMetadataRequest = {
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       writer.uint32(16).int32(engineToNumber(message.engine));
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(24).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -2607,6 +2612,13 @@ export const StringifyMetadataRequest = {
 
           message.engine = engineFromJSON(reader.int32());
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2620,6 +2632,9 @@ export const StringifyMetadataRequest = {
     return {
       metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -2630,6 +2645,9 @@ export const StringifyMetadataRequest = {
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
+    }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
     }
     return obj;
   },
@@ -2643,6 +2661,7 @@ export const StringifyMetadataRequest = {
       ? DatabaseMetadata.fromPartial(object.metadata)
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };

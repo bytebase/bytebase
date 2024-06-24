@@ -139,7 +139,6 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 	databaseConfig := convertStoreDatabaseConfig(ctx, config, filter, optionalStores)
 	if databaseConfig != nil {
 		m.SchemaConfigs = databaseConfig.SchemaConfigs
-		m.ClassificationFromConfig = databaseConfig.ClassificationFromConfig
 	}
 	return m, nil
 }
@@ -317,8 +316,7 @@ func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1p
 
 func convertStoreDatabaseConfig(ctx context.Context, config *storepb.DatabaseConfig, filter *metadataFilter, optionalStores *store.Store) *v1pb.DatabaseConfig {
 	databaseConfig := &v1pb.DatabaseConfig{
-		Name:                     config.Name,
-		ClassificationFromConfig: config.ClassificationFromConfig,
+		Name: config.Name,
 	}
 	for _, schema := range config.SchemaConfigs {
 		if schema == nil {
@@ -544,9 +542,8 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 	databaseConfig := convertV1DatabaseConfig(
 		ctx,
 		&v1pb.DatabaseConfig{
-			Name:                     metadata.Name,
-			SchemaConfigs:            metadata.SchemaConfigs,
-			ClassificationFromConfig: metadata.ClassificationFromConfig,
+			Name:          metadata.Name,
+			SchemaConfigs: metadata.SchemaConfigs,
 		},
 		optionalStores,
 	)
@@ -705,8 +702,7 @@ func convertV1GenerationMetadata(generation *v1pb.GenerationMetadata) *storepb.G
 
 func convertV1DatabaseConfig(ctx context.Context, databaseConfig *v1pb.DatabaseConfig, optionalStores *store.Store) *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{
-		Name:                     databaseConfig.Name,
-		ClassificationFromConfig: databaseConfig.ClassificationFromConfig,
+		Name: databaseConfig.Name,
 	}
 	for _, schema := range databaseConfig.SchemaConfigs {
 		if schema == nil {

@@ -354,6 +354,12 @@ export interface DataClassificationSetting_DataClassificationConfig {
    * The id should in [0-9]+-[0-9]+-[0-9]+ format.
    */
   classification: { [key: string]: DataClassificationSetting_DataClassificationConfig_DataClassification };
+  /**
+   * If true, we will only store the classification in the config.
+   * Otherwise we will get the classification from table/column comment,
+   * and write back to the schema metadata.
+   */
+  classificationFromConfig: boolean;
 }
 
 export interface DataClassificationSetting_DataClassificationConfig_Level {
@@ -1935,7 +1941,7 @@ export const DataClassificationSetting = {
 };
 
 function createBaseDataClassificationSetting_DataClassificationConfig(): DataClassificationSetting_DataClassificationConfig {
-  return { id: "", title: "", levels: [], classification: {} };
+  return { id: "", title: "", levels: [], classification: {}, classificationFromConfig: false };
 }
 
 export const DataClassificationSetting_DataClassificationConfig = {
@@ -1958,6 +1964,9 @@ export const DataClassificationSetting_DataClassificationConfig = {
         writer.uint32(34).fork(),
       ).ldelim();
     });
+    if (message.classificationFromConfig === true) {
+      writer.uint32(40).bool(message.classificationFromConfig);
+    }
     return writer;
   },
 
@@ -2002,6 +2011,13 @@ export const DataClassificationSetting_DataClassificationConfig = {
             message.classification[entry4.key] = entry4.value;
           }
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2026,6 +2042,9 @@ export const DataClassificationSetting_DataClassificationConfig = {
           return acc;
         }, {})
         : {},
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -2048,6 +2067,9 @@ export const DataClassificationSetting_DataClassificationConfig = {
           obj.classification[k] = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(v);
         });
       }
+    }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
     }
     return obj;
   },
@@ -2073,6 +2095,7 @@ export const DataClassificationSetting_DataClassificationConfig = {
       }
       return acc;
     }, {});
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };

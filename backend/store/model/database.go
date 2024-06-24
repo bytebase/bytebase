@@ -172,9 +172,8 @@ func (dbs *DBSchema) FindIndex(schemaName string, tableName string, indexName st
 
 // DatabaseConfig is the config for a database.
 type DatabaseConfig struct {
-	name                     string
-	ClassificationFromConfig bool
-	internal                 map[string]*SchemaConfig
+	name     string
+	internal map[string]*SchemaConfig
 }
 
 // NewDatabaseConfig creates a new database config.
@@ -186,7 +185,6 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 		return databaseConfig
 	}
 	databaseConfig.name = config.Name
-	databaseConfig.ClassificationFromConfig = config.ClassificationFromConfig
 	for _, schema := range config.SchemaConfigs {
 		schemaConfig := &SchemaConfig{
 			internal: make(map[string]*TableConfig),
@@ -223,7 +221,7 @@ func (d *DatabaseConfig) RemoveSchemaConfig(name string) {
 }
 
 func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
-	config := &storepb.DatabaseConfig{Name: d.name, ClassificationFromConfig: d.ClassificationFromConfig}
+	config := &storepb.DatabaseConfig{Name: d.name}
 
 	for schemaName, sConfig := range d.internal {
 		schemaConfig := &storepb.SchemaConfig{Name: schemaName}
