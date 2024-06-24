@@ -328,8 +328,9 @@ message AppIMSetting {
 
 enum DatabaseChangeMode {
   DATABASE_CHANGE_MODE_UNSPECIFIED = 0;
-  // The issue-based mode of Bytebase. Users need to create an issue to change the database.
-  SQL_TASK_MODE = 1;
-  // The standard mode in sql editor. Users can execute any SQL statement directly.
-  EDITOR_STANDARD_MODE = 2;
+  // A more advanced database change process, including custom approval workflows and other advanced features.
+  // Default to this mode.
+  PIPELINE = 1;
+  // A simple database change process in SQL editor. Users can execute SQL directly.
+  EDITOR = 2;
 }
