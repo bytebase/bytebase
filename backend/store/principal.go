@@ -85,9 +85,6 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 
 // GetUserByEmail gets the user by email.
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
-	if email == api.SystemBotEmail {
-		return SystemBotUser, nil
-	}
 	if v, ok := s.userEmailCache.Get(email); ok {
 		return v, nil
 	}

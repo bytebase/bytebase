@@ -2,7 +2,6 @@ import { pullAt, cloneDeep, groupBy } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import type { Engine } from "@/types/proto/v1/common";
 import { engineFromJSON } from "@/types/proto/v1/common";
-import type { Environment } from "@/types/proto/v1/environment_service";
 import {
   SQLReviewRuleLevel,
   sQLReviewRuleLevelFromJSON,
@@ -149,7 +148,7 @@ export interface SQLReviewPolicy {
   // Domain specific fields
   name: string;
   ruleList: SchemaPolicyRule[];
-  environment: Environment;
+  resources: string[];
 }
 
 // RuleTemplate is the rule template. Used by the frontend

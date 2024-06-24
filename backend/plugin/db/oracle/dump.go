@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 // Dump dumps the database.
@@ -33,7 +34,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 }
 
 func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
-	version, err := parseVersion(driver.connectionCtx.EngineVersion)
+	version, err := driver.GetVersion()
 	if err != nil {
 		return err
 	}
@@ -1678,7 +1679,7 @@ ORDER BY AT.TABLE_OWNER, AT.TABLE_NAME, AT.TRIGGER_NAME, ATC.COLUMN_NAME ASC
 `
 )
 
-func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *oracleVersion, out io.Writer) error {
+func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *plsql.Version, out io.Writer) error {
 	tableMap := make(map[string]*tableSchema)
 	slog.Debug("running dump table query", slog.String("schema", schema))
 	tableRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTableSQL, schema))
@@ -1768,7 +1769,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *orac
 
 	var fieldRows *sql.Rows
 	// https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/ALL_TAB_COLS.html#GUID-85036F42-140A-406B-BE11-0AC49A00DBA3
-	equalOrHigherThan12c2release := version.first > 12 || (version.first == 12 && version.second >= 2)
+	equalOrHigherThan12c2release := version.First > 12 || (version.First == 12 && version.Second >= 2)
 	fieldSQL := ""
 	if equalOrHigherThan12c2release {
 		fieldSQL = fmt.Sprintf(dumpFieldSQL, schema)
@@ -2188,10 +2189,10 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 }
 
 // nolint
-func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, version *oracleVersion, _ io.Writer) error {
+func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, version *plsql.Version, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
 	var sequenceSQL string
-	if version.first >= 12 {
+	if version.First >= 12 {
 		sequenceSQL = fmt.Sprintf(dumpSequenceSQL, schema)
 	} else {
 		sequenceSQL = fmt.Sprintf(dumpSequenceSQL11g, schema)

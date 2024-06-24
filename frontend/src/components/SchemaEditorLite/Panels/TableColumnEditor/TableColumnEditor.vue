@@ -261,7 +261,7 @@ const showSemanticTypeColumn = computed(() => {
 const showClassification = computed(() => {
   return showClassificationColumn(
     props.engine,
-    props.database.classificationFromConfig
+    classificationConfig.value?.classificationFromConfig ?? false
   );
 });
 

@@ -47,6 +47,9 @@ message WorkspaceProfileSetting {
 
   // Only user and group from the domains can be created and login.
   bool enforce_identity_domain = 10;
+
+  // The workspace database change mode.
+  DatabaseChangeMode database_change_mode = 11;
 }
 
 message Announcement {
@@ -207,7 +210,13 @@ message DataClassificationSetting {
     // classification is the id - DataClassification map.
     // The id should in [0-9]+-[0-9]+-[0-9]+ format.
     map<string, DataClassification> classification = 4;
+
+    // If true, we will only store the classification in the config.
+    // Otherwise we will get the classification from table/column comment,
+    // and write back to the schema metadata.
+    bool classification_from_config = 5;
   }
+
   repeated DataClassificationConfig configs = 1;
 }
 
@@ -315,4 +324,13 @@ message AppIMSetting {
   Slack slack = 1;
   Feishu feishu = 2;
   Wecom wecom = 3;
+}
+
+enum DatabaseChangeMode {
+  DATABASE_CHANGE_MODE_UNSPECIFIED = 0;
+  // A more advanced database change process, including custom approval workflows and other advanced features.
+  // Default to this mode.
+  PIPELINE = 1;
+  // A simple database change process in SQL editor. Users can execute SQL directly.
+  EDITOR = 2;
 }

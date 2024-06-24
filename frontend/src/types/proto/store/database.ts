@@ -705,12 +705,6 @@ export interface DatabaseConfig {
   name: string;
   /** The schema_configs is the list of configs for schemas in a database. */
   schemaConfigs: SchemaConfig[];
-  /**
-   * If true, we will only store the classification in the config.
-   * Otherwise we will get the classification from table/column comment,
-   * and write back to the schema metadata.
-   */
-  classificationFromConfig: boolean;
 }
 
 export interface SchemaConfig {
@@ -3891,7 +3885,7 @@ export const SecretItem = {
 };
 
 function createBaseDatabaseConfig(): DatabaseConfig {
-  return { name: "", schemaConfigs: [], classificationFromConfig: false };
+  return { name: "", schemaConfigs: [] };
 }
 
 export const DatabaseConfig = {
@@ -3901,9 +3895,6 @@ export const DatabaseConfig = {
     }
     for (const v of message.schemaConfigs) {
       SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.classificationFromConfig === true) {
-      writer.uint32(24).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -3929,13 +3920,6 @@ export const DatabaseConfig = {
 
           message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.classificationFromConfig = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3951,9 +3935,6 @@ export const DatabaseConfig = {
       schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
         ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
-      classificationFromConfig: isSet(object.classificationFromConfig)
-        ? globalThis.Boolean(object.classificationFromConfig)
-        : false,
     };
   },
 
@@ -3965,9 +3946,6 @@ export const DatabaseConfig = {
     if (message.schemaConfigs?.length) {
       obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
     }
-    if (message.classificationFromConfig === true) {
-      obj.classificationFromConfig = message.classificationFromConfig;
-    }
     return obj;
   },
 
@@ -3978,7 +3956,6 @@ export const DatabaseConfig = {
     const message = createBaseDatabaseConfig();
     message.name = object.name ?? "";
     message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
-    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };

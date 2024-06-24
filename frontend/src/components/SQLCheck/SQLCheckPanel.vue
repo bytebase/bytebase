@@ -12,6 +12,7 @@
       :plan-check-run="planCheckRun"
       :environment="environment"
       :is-latest="true"
+      @close="$emit('close')"
     >
       <template #row-extra="{ row }">
         <slot name="row-extra" :row="row" />

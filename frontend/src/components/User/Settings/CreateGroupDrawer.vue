@@ -20,10 +20,10 @@
                 {{ $t("settings.members.groups.form.email-tips") }}
               </span>
             </div>
-            <NInput
+            <EmailInput
               v-model:value="state.group.email"
-              :disabled="!isCreating || !allowEdit"
-              placeholder="The unique email"
+              :readonly="!isCreating"
+              :domain="workspaceDomain"
             />
           </div>
           <div class="flex flex-col gap-y-2">
@@ -131,17 +131,19 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, head, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import EmailInput from "@/components/EmailInput.vue";
 import {
   extractGroupEmail,
   useUserGroupStore,
   useCurrentUserV1,
   pushNotification,
   useUserStore,
+  useSettingV1Store,
 } from "@/store";
 import { userNamePrefix, userGroupNamePrefix } from "@/store/modules/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
@@ -176,6 +178,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
 const groupStore = useUserGroupStore();
 const currentUserV1 = useCurrentUserV1();
@@ -198,6 +201,10 @@ const state = reactive<LocalState>({
 });
 
 const isCreating = computed(() => !props.group);
+
+const workspaceDomain = computed(() =>
+  head(settingV1Store.workspaceProfileSetting?.domains)
+);
 
 const selfMemberInGroup = computed(() => {
   return props.group?.members.find(

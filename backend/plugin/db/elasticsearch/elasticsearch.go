@@ -171,51 +171,56 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 
 	var results []*v1pb.QueryResult
 	for _, s := range statements {
-		startTime := time.Now()
-		// send HTTP request.
-		resp, err := d.basicAuthClient.Do(s.method, s.route, s.queryString)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to send HTTP request, status code message: %s", resp.Status)
-		}
-
-		respBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		if err := resp.Body.Close(); err != nil {
-			return nil, err
-		}
-
-		// structure results.
-		var result v1pb.QueryResult
-		var row v1pb.QueryRow
-
-		contentType := resp.Header.Get("Content-Type")
-		if strings.Contains(contentType, "application/json") {
-			pairs := map[string]any{}
-			if err := json.Unmarshal(respBytes, &pairs); err != nil {
-				return nil, errors.Wrapf(err, "failed to parse json body")
+		if err := func() error {
+			startTime := time.Now()
+			// send HTTP request.
+			resp, err := d.basicAuthClient.Do(s.method, s.route, s.queryString)
+			if err != nil {
+				return errors.Wrapf(err, "failed to send HTTP request, status code message: %s", resp.Status)
 			}
-			for key, val := range pairs {
-				result.ColumnNames = append(result.ColumnNames, key)
-				bytes, err := json.Marshal(val)
-				if err != nil {
-					return nil, err
+			defer resp.Body.Close()
+
+			respBytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			if err := resp.Body.Close(); err != nil {
+				return err
+			}
+
+			// structure results.
+			var result v1pb.QueryResult
+			var row v1pb.QueryRow
+
+			contentType := resp.Header.Get("Content-Type")
+			if strings.Contains(contentType, "application/json") {
+				pairs := map[string]any{}
+				if err := json.Unmarshal(respBytes, &pairs); err != nil {
+					return errors.Wrapf(err, "failed to parse json body")
 				}
-				row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
+				for key, val := range pairs {
+					result.ColumnNames = append(result.ColumnNames, key)
+					bytes, err := json.Marshal(val)
+					if err != nil {
+						return err
+					}
+					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
+				}
+			} else if strings.Contains(contentType, "text/plain") {
+				result.ColumnNames = append(result.ColumnNames, "text/plain")
+				row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(respBytes)}})
+			} else {
+				return errors.Errorf("Content-Type not supported: %s", contentType)
 			}
-		} else if strings.Contains(contentType, "text/plain") {
-			result.ColumnNames = append(result.ColumnNames, "text/plain")
-			row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(respBytes)}})
-		} else {
-			return nil, errors.Errorf("Content-Type not supported: %s", contentType)
+			result.Rows = append(result.Rows, &row)
+			result.Latency = durationpb.New(time.Since(startTime))
+			result.Statement = fmt.Sprintf("%s %s\n%s", s.method, s.route, s.queryString)
+			// TODO(d): handle max size.
+			results = append(results, &result)
+			return nil
+		}(); err != nil {
+			return nil, err
 		}
-
-		result.Rows = append(result.Rows, &row)
-		result.Latency = durationpb.New(time.Since(startTime))
-		result.Statement = fmt.Sprintf("%s %s\n%s", s.method, s.route, s.queryString)
-		// TODO(d): handle max size.
-		results = append(results, &result)
 	}
 
 	return results, nil

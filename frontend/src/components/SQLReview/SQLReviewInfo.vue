@@ -1,26 +1,70 @@
 <template>
   <div class="space-y-6">
-    <div v-if="selectedEnvironment">
+    <div>
       <label class="textlabel">
-        {{ $t("sql-review.create.basic-info.environments") }}
+        {{ $t("sql-review.create.basic-info.attach-resource") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel">
-        {{ $t("sql-review.create.basic-info.environments-label") }}
+        {{ $t("sql-review.create.basic-info.attach-resource-label") }}
       </p>
-      <BBAttention
-        v-if="availableEnvironmentList.length === 0"
+      <NRadioGroup
+        v-model:value="attachResourceType"
+        :disabled="!allowChangeAttachedResource"
+        class="space-x-2 mt-2"
+      >
+        <NRadio value="environment">{{ $t("common.environment") }}</NRadio>
+        <NRadio value="project">{{ $t("common.project") }}</NRadio>
+      </NRadioGroup>
+      <EnvironmentSelect
+        v-if="attachResourceType === 'environment'"
         class="mt-2"
-        type="warning"
-        :title="$t('common.environment')"
-        :description="
-          $t('sql-review.create.basic-info.no-available-environment-desc')
+        required
+        name="environment"
+        :environment="attachedResources[0]"
+        :use-resource-id="true"
+        :disabled="!allowChangeAttachedResource"
+        :filter="(env: Environment, _: number) => filterResource(env.name)"
+        @update:environment="
+          (val: string | undefined) => {
+            if (!val) {
+              $emit('attached-resources-change', []);
+            } else {
+              $emit('attached-resources-change', [val]);
+            }
+          }
         "
       />
-      <BBTextField
-        class="mt-2 w-full"
-        :value="environmentV1Name(selectedEnvironment)"
-        :disabled="true"
+      <ProjectSelect
+        v-if="attachResourceType === 'project'"
+        class="mt-2"
+        style="width: 100%"
+        required
+        :project="attachedResources[0]"
+        :use-resource-id="true"
+        :disabled="!allowChangeAttachedResource"
+        :filter="(proj: Project, _: number) => filterResource(proj.name)"
+        @update:project="
+          (val: string | undefined) => {
+            if (!val) {
+              $emit('attached-resources-change', []);
+            } else {
+              $emit('attached-resources-change', [val]);
+            }
+          }
+        "
+      />
+      <DatabaseSelect
+        v-if="attachResourceType === 'database'"
+        class="mt-2"
+        style="width: 100%"
+        required
+        :multiple="true"
+        :databases="attachedResources"
+        :use-resource-id="true"
+        :disabled="!allowChangeAttachedResource"
+        :filter="(db: Database, _: number) => filterResource(db.name)"
+        @update:databases="$emit('attached-resources-change', $event)"
       />
     </div>
     <div>
@@ -45,7 +89,7 @@
         editing-class="mt-6"
         resource-type="review-config"
         :value="resourceId"
-        :readonly="false"
+        :readonly="!isCreate"
         :resource-title="name"
         :suffix="true"
         :validate="validateResourceId"
@@ -65,57 +109,75 @@
 
 <script lang="ts" setup>
 import { Status } from "nice-grpc-common";
-import { type PropType, ref } from "vue";
+import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { reviewConfigServiceClient } from "@/grpcweb";
-import { reviewConfigNamePrefix } from "@/store/modules/v1/common";
+import { useSQLReviewStore } from "@/store";
+import {
+  reviewConfigNamePrefix,
+  projectNamePrefix,
+  isDatabaseName,
+} from "@/store/modules/v1/common";
 import type { SQLReviewPolicyTemplate } from "@/types";
 import type { ResourceId, ValidatedMessage } from "@/types";
+import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
-import { environmentV1Name } from "@/utils";
+import type { Project } from "@/types/proto/v1/project_service";
 import { getErrorCode } from "@/utils/grpcweb";
 import { SQLReviewTemplateSelector } from "./components";
+import { type ResourceType } from "./components/useReviewConfigAttachedResource";
 
-const props = defineProps({
-  name: {
-    required: true,
-    type: String,
-  },
-  resourceId: {
-    required: true,
-    type: String,
-  },
-  isCreate: {
-    required: true,
-    type: Boolean,
-  },
-  selectedEnvironment: {
-    required: true,
-    type: Object as PropType<Environment>,
-  },
-  availableEnvironmentList: {
-    required: true,
-    type: Array as PropType<Environment[]>,
-  },
-  selectedTemplate: {
-    type: Object as PropType<SQLReviewPolicyTemplate>,
-    default: undefined,
-  },
-  isEdit: {
-    required: true,
-    type: Boolean,
-  },
-});
+const props = defineProps<{
+  name: string;
+  resourceId: string;
+  attachedResources: string[];
+  isCreate: boolean;
+  selectedTemplate?: SQLReviewPolicyTemplate;
+  isEdit: boolean;
+  allowChangeAttachedResource: boolean;
+}>();
 
 const emit = defineEmits<{
   (event: "name-change", name: string): void;
   (event: "resource-id-change", resourceId: string): void;
+  (event: "attached-resources-change", resourceId: string[]): void;
   (event: "select-template", template: SQLReviewPolicyTemplate): void;
 }>();
 
+const sqlReviewStore = useSQLReviewStore();
+
+const attachResourceType = ref<ResourceType>(
+  (function (): ResourceType {
+    if (props.attachedResources.length === 0) {
+      return "environment";
+    }
+    if (props.attachedResources.every((resource) => isDatabaseName(resource))) {
+      return "database";
+    }
+    if (
+      props.attachedResources.every((resource) =>
+        resource.startsWith(projectNamePrefix)
+      )
+    ) {
+      return "project";
+    }
+    return "environment";
+  })()
+);
 const { t } = useI18n();
+
+watch(
+  () => attachResourceType.value,
+  () => emit("attached-resources-change", [])
+);
+
+const filterResource = (name: string): boolean => {
+  if (!props.allowChangeAttachedResource) {
+    return true;
+  }
+  return !sqlReviewStore.getReviewPolicyByResouce(name);
+};
 
 const onTemplatesChange = (templates: {
   policy: SQLReviewPolicyTemplate[];
@@ -136,12 +198,10 @@ const validateResourceId = async (
   }
 
   try {
-    const existed = await reviewConfigServiceClient.getReviewConfig(
-      {
-        name: `${reviewConfigNamePrefix}${resourceId}`,
-      },
-      { silent: true }
-    );
+    const existed = await sqlReviewStore.fetchReviewPolicyByName({
+      name: `${reviewConfigNamePrefix}${resourceId}`,
+      silent: true,
+    });
     if (existed) {
       return [
         {

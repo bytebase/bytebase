@@ -1,13 +1,17 @@
 import type { editor as Editor } from "monaco-editor";
+import type { Language } from "@/types";
 
-export const checkEndsWithSemicolon = (
-  editor: Editor.IStandaloneCodeEditor
+export const checkIsEnterEndsStatement = (
+  editor: Editor.IStandaloneCodeEditor,
+  lang: Language
 ): boolean => {
   const value = editor.getValue();
-  if (value.endsWith(";")) {
-    return true;
+  switch (lang) {
+    case "redis":
+      return true;
+    default:
+      return value.endsWith(";");
   }
-  return false;
 };
 
 export const checkCursorAtLast = (

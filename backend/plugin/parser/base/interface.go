@@ -39,7 +39,7 @@ type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statem
 type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
 
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
-type TransformDMLToSelectFunc func(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
+type TransformDMLToSelectFunc func(ctx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
 
 type GenerateRestoreSQLFunc func(statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error)
 
@@ -226,12 +226,12 @@ func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectF
 }
 
 // TransformDMLToSelect transforms the DML statement to SELECT statement.
-func TransformDMLToSelect(engine storepb.Engine, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
+func TransformDMLToSelect(engine storepb.Engine, ctx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
 	f, ok := transformDMLToSelect[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(statement, sourceDatabase, targetDatabase, tablePrefix)
+	return f(ctx, statement, sourceDatabase, targetDatabase, tablePrefix)
 }
 
 func RegisterGenerateRestoreSQL(engine storepb.Engine, f GenerateRestoreSQLFunc) {

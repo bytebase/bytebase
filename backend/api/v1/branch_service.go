@@ -220,8 +220,14 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create branch: %v", err)
 		}
+
+		classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, `failed to get classification config by id "%s" with error: %v`, project.DataClassificationConfigID, err)
+		}
+
 		config := databaseSchema.GetConfig()
-		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config))
+		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config), classificationConfig.ClassificationFromConfig)
 		initializeBranchUpdaterInfoConfig(filteredBaseSchemaMetadata, config, common.FormatUserUID(user.ID))
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
@@ -317,7 +323,12 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		if err != nil {
 			return nil, err
 		}
-		sanitizeCommentForSchemaMetadata(metadata, model.NewDatabaseConfig(config))
+
+		classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, `failed to get classification config by id "%s" with error: %v`, project.DataClassificationConfigID, err)
+		}
+		sanitizeCommentForSchemaMetadata(metadata, model.NewDatabaseConfig(config), classificationConfig.ClassificationFromConfig)
 
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
@@ -434,10 +445,15 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	// Restrict merging only when the head branch is not updated.
 	// Maybe we can support auto-merging in the future.
 
+	classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, `failed to get classification config by id "%s" with error: %v`, project.DataClassificationConfigID, err)
+	}
+
 	// The first crazy night in 2024.
-	sanitizeCommentForSchemaMetadata(headBranch.Base.Metadata, model.NewDatabaseConfig(headBranch.Base.DatabaseConfig))
-	sanitizeCommentForSchemaMetadata(headBranch.Head.Metadata, model.NewDatabaseConfig(headBranch.Head.DatabaseConfig))
-	sanitizeCommentForSchemaMetadata(baseBranch.Head.Metadata, model.NewDatabaseConfig(baseBranch.Head.DatabaseConfig))
+	sanitizeCommentForSchemaMetadata(headBranch.Base.Metadata, model.NewDatabaseConfig(headBranch.Base.DatabaseConfig), classificationConfig.ClassificationFromConfig)
+	sanitizeCommentForSchemaMetadata(headBranch.Head.Metadata, model.NewDatabaseConfig(headBranch.Head.DatabaseConfig), classificationConfig.ClassificationFromConfig)
+	sanitizeCommentForSchemaMetadata(baseBranch.Head.Metadata, model.NewDatabaseConfig(baseBranch.Head.DatabaseConfig), classificationConfig.ClassificationFromConfig)
 
 	adHead, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 	if err != nil {
@@ -558,8 +574,14 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		// String-based rebase operation do not include the structural information, such as classification, so we need to sanitize the user comment,
 		// trim the classification in user comment if the classification is not from the config.
 		modelNewHeadConfig := model.NewDatabaseConfig(newHeadConfig)
-		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, modelNewHeadConfig)
-		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig)
+
+		classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, baseProject.DataClassificationConfigID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, `failed to get classification config by id "%s" with error: %v`, baseProject.DataClassificationConfigID, err)
+		}
+
+		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig.ClassificationFromConfig)
+		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
 		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
@@ -770,7 +792,7 @@ func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetada
 	if err != nil {
 		return nil, err
 	}
-	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig))
+	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig), request.ClassificationFromConfig)
 
 	storeTargetMetadata, targetConfig, err := convertV1DatabaseMetadata(ctx, request.TargetMetadata, nil /* optionalStores */)
 	if err != nil {
@@ -779,7 +801,7 @@ func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetada
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
-	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig))
+	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig), request.ClassificationFromConfig)
 
 	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
@@ -939,20 +961,20 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	return v1Branch, nil
 }
 
-func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig) {
+func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig, classificationFromConfig bool) {
 	for _, schema := range dbSchema.Schemas {
 		schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(schema.Name)
 		for _, table := range schema.Tables {
 			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
 			classificationID := ""
-			if !dbModelConfig.ClassificationFromConfig {
+			if !classificationFromConfig {
 				classificationID = tableConfig.ClassificationID
 			}
 			table.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, table.UserComment)
 			for _, col := range table.Columns {
 				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
 				classificationID := ""
-				if !dbModelConfig.ClassificationFromConfig {
+				if !classificationFromConfig {
 					classificationID = columnConfig.ClassificationId
 				}
 				col.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, col.UserComment)
@@ -1576,17 +1598,17 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 	}
 }
 
-func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig) {
-	if dbModelConfig.ClassificationFromConfig {
+func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, classificationFromConfig bool) {
+	if classificationFromConfig {
 		return
 	}
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
-			if !dbModelConfig.ClassificationFromConfig {
+			if !classificationFromConfig {
 				_, table.UserComment = common.GetClassificationAndUserComment(table.UserComment)
 			}
 			for _, col := range table.Columns {
-				if !dbModelConfig.ClassificationFromConfig {
+				if !classificationFromConfig {
 					_, col.UserComment = common.GetClassificationAndUserComment(col.UserComment)
 				}
 			}

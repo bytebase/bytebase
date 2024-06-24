@@ -73,7 +73,7 @@
 import { computedAsync } from "@vueuse/core";
 import type { ButtonProps } from "naive-ui";
 import { NButton, NPopover } from "naive-ui";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
@@ -106,6 +106,10 @@ const props = withDefaults(
   }
 );
 
+const emit = defineEmits<{
+  (event: "update:advices", advices: Advice[] | undefined): void;
+}>();
+
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
@@ -117,7 +121,7 @@ const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
 
 const reviewPolicy = computedAsync(async () => {
-  return await useSQLReviewStore().getOrFetchReviewPolicyByEnvironmentName(
+  return await useSQLReviewStore().getOrFetchReviewPolicyByResource(
     props.database.effectiveEnvironment
   );
 }, undefined);
@@ -242,5 +246,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (!context) return;
   context.runSQLCheck.value = undefined;
+});
+
+watch(advices, (advices) => {
+  emit("update:advices", advices);
 });
 </script>

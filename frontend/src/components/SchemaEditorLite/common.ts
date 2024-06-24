@@ -1,6 +1,7 @@
 import { isEqual } from "lodash-es";
 import { branchServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
+import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TinyTimer } from "@/utils";
@@ -45,11 +46,16 @@ export const generateDiffDDL = async (
     );
   }
   try {
+    const classificationConfig = useSettingV1Store().getProjectClassification(
+      database.projectEntity.dataClassificationConfigId
+    );
     const diffResponse = await branchServiceClient.diffMetadata(
       {
         sourceMetadata: source,
         targetMetadata: target,
         engine: database.instanceEntity.engine,
+        classificationFromConfig:
+          classificationConfig?.classificationFromConfig ?? false,
       },
       {
         silent: true,

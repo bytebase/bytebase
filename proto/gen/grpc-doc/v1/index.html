@@ -7463,15 +7463,6 @@ Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-ove
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
                 </tr>
               
-                <tr>
-                  <td>classification_from_config</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If true, we will only store the classification in the config.
-Otherwise we will get the classification from table/column comment,
-and write back to the schema metadata. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -7531,13 +7522,6 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
                   <td><a href="#bytebase.v1.SchemaConfig">SchemaConfig</a></td>
                   <td>repeated</td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification_from_config</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -10815,6 +10799,13 @@ The conflict section is enclosed by the following.
                   <td><a href="#bytebase.v1.Engine">Engine</a></td>
                   <td></td>
                   <td><p>The database engine of the schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If false, we will build the raw common by classification in database config. </p></td>
                 </tr>
               
             </tbody>
@@ -24168,6 +24159,15 @@ The order for the level decides its priority. </p></td>
 The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If true, we will only store the classification in the config.
+Otherwise we will get the classification from table/column comment,
+and write back to the schema metadata. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -27268,6 +27268,13 @@ to retrieve the next page of history. </p></td>
                   <td><a href="#bytebase.v1.Engine">Engine</a></td>
                   <td></td>
                   <td><p>The database engine of the schema string. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If false, we will build the raw common by classification in database config. </p></td>
                 </tr>
               
             </tbody>
