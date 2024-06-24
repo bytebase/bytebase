@@ -127,6 +127,7 @@
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
+          scene: 'all',
         }"
         @update:content="handleStatementChange"
       />
@@ -175,6 +176,7 @@
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
+          scene: 'all',
         }"
         @update:content="handleStatementChange"
       />
