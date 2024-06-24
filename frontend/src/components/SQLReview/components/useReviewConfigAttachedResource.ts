@@ -26,7 +26,7 @@ export const useReviewConfigAttachedResource = (resource: Ref<string>) => {
     } else if (resource.value.startsWith(projectNamePrefix)) {
       return "project";
     }
-    return;
+    return undefined;
   });
 
   const resourcePrefix = computed(() => {
