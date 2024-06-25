@@ -313,7 +313,7 @@ message Project {
   // Allow modifying statement after issue is created.
   bool allow_modify_statement = 15;
   // Enable auto close issue.
-  bool enable_auto_close_issue = 16;
+  bool auto_close_issue = 16;
 }
 
 enum Workflow {
