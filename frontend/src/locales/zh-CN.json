@@ -2782,11 +2782,9 @@
         "display-name-default": "SQL 审核策略",
         "display-name-label": "用以区分不同审核策略的名称。",
         "attach-resource": "附加到资源",
-        "attach-resource-label": "将审核政策应用到选定的资源。一个资源只能关联一个政策。",
-        "environments-select": "选择环境",
-        "no-linked-environments": "没有选择环境",
-        "no-available-environment": "没有可供选择的环境",
-        "no-available-environment-desc": "没有可供选择的环境。一个环境只能关联一个审核策略。",
+        "attach-resource-label": "将审核策略应用于所选资源。一个资源只能关联一个策略。数据库将使用附加到项目的 SQL 审核策略，否则将回退到环境策略。",
+        "attach-resource-info-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
+        "attach-resource-info-project": "SQL 审核策略将影响所选项目下的所有数据库。环境的 SQL 审核策略将被忽略。",
         "choose-template": "选择模板"
       },
       "configure-rule": {
