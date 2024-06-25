@@ -308,7 +308,12 @@ message Project {
 
   repeated Label issue_labels = 13;
 
+  // Force issue labels to be used when creating an issue.
   bool force_issue_labels = 14;
+  // Allow modifying statement after issue is created.
+  bool allow_modify_statement = 15;
+  // Enable auto resolve issue.
+  bool auto_resolve_issue = 16;
 }
 
 enum Workflow {

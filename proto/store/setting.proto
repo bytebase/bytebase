@@ -317,8 +317,9 @@ message AppIMSetting {
   }
   message Wecom {
     bool enabled = 1;
-    string id = 2;
-    string secret = 3;
+    string corp_id = 2;
+    string agent_id = 3;
+    string secret = 4;
   }
 
   Slack slack = 1;

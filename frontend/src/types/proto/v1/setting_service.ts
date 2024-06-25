@@ -339,7 +339,8 @@ export interface AppIMSetting_Feishu {
 
 export interface AppIMSetting_Wecom {
   enabled: boolean;
-  id: string;
+  corpId: string;
+  agentId: string;
   secret: string;
 }
 
@@ -1921,7 +1922,7 @@ export const AppIMSetting_Feishu = {
 };
 
 function createBaseAppIMSetting_Wecom(): AppIMSetting_Wecom {
-  return { enabled: false, id: "", secret: "" };
+  return { enabled: false, corpId: "", agentId: "", secret: "" };
 }
 
 export const AppIMSetting_Wecom = {
@@ -1929,11 +1930,14 @@ export const AppIMSetting_Wecom = {
     if (message.enabled === true) {
       writer.uint32(8).bool(message.enabled);
     }
-    if (message.id !== "") {
-      writer.uint32(18).string(message.id);
+    if (message.corpId !== "") {
+      writer.uint32(18).string(message.corpId);
+    }
+    if (message.agentId !== "") {
+      writer.uint32(26).string(message.agentId);
     }
     if (message.secret !== "") {
-      writer.uint32(26).string(message.secret);
+      writer.uint32(34).string(message.secret);
     }
     return writer;
   },
@@ -1957,10 +1961,17 @@ export const AppIMSetting_Wecom = {
             break;
           }
 
-          message.id = reader.string();
+          message.corpId = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
+            break;
+          }
+
+          message.agentId = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -1978,7 +1989,8 @@ export const AppIMSetting_Wecom = {
   fromJSON(object: any): AppIMSetting_Wecom {
     return {
       enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      corpId: isSet(object.corpId) ? globalThis.String(object.corpId) : "",
+      agentId: isSet(object.agentId) ? globalThis.String(object.agentId) : "",
       secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
     };
   },
@@ -1988,8 +2000,11 @@ export const AppIMSetting_Wecom = {
     if (message.enabled === true) {
       obj.enabled = message.enabled;
     }
-    if (message.id !== "") {
-      obj.id = message.id;
+    if (message.corpId !== "") {
+      obj.corpId = message.corpId;
+    }
+    if (message.agentId !== "") {
+      obj.agentId = message.agentId;
     }
     if (message.secret !== "") {
       obj.secret = message.secret;
@@ -2003,7 +2018,8 @@ export const AppIMSetting_Wecom = {
   fromPartial(object: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
     const message = createBaseAppIMSetting_Wecom();
     message.enabled = object.enabled ?? false;
-    message.id = object.id ?? "";
+    message.corpId = object.corpId ?? "";
+    message.agentId = object.agentId ?? "";
     message.secret = object.secret ?? "";
     return message;
   },
