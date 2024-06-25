@@ -8430,7 +8430,9 @@ components:
             properties:
                 enabled:
                     type: boolean
-                id:
+                corpId:
+                    type: string
+                agentId:
                     type: string
                 secret:
                     type: string
