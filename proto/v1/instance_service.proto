@@ -455,7 +455,7 @@ message KerberosConfig {
   string primary = 1;
   string instance = 2;
   string realm = 3;
-  string keytab = 4;
+  bytes keytab = 4;
   string kdc_host = 5;
   string kdc_port = 6;
   string kdc_transport_protocol = 7;
