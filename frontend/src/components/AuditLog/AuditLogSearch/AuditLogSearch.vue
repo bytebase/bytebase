@@ -32,7 +32,7 @@ import YouTag from "@/components/misc/YouTag.vue";
 import { ProjectV1Name } from "@/components/v2";
 import ALL_METHODS from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
-import { SYSTEM_BOT_EMAIL } from "@/types";
+import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
@@ -80,7 +80,7 @@ const principalSearchValueOptions = computed(() => {
         if (user.name === me.value.name) {
           children.push(<YouTag />);
         }
-        if (user.email === SYSTEM_BOT_EMAIL) {
+        if (user.name === SYSTEM_BOT_USER_NAME) {
           children.push(<SystemBotTag />);
         }
         return <div class="flex items-center gap-x-1">{children}</div>;

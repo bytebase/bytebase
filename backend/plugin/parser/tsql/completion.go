@@ -411,6 +411,7 @@ const (
 type Completer struct {
 	ctx     context.Context
 	core    *base.CodeCompletionCore
+	scene   base.SceneType
 	parser  *tsqlparser.TSqlParser
 	lexer   *tsqlparser.TSqlLexer
 	scanner *base.Scanner
@@ -432,8 +433,8 @@ type Completer struct {
 	caretTokenIsQuoted quotedType
 }
 
-func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadataGetter, databaseNamesLister)
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	completer.fetchCommonTableExpression(statement)
 	result, err := completer.complete()
 
@@ -444,12 +445,12 @@ func Completion(ctx context.Context, statement string, caretLine int, caretOffse
 		return result, nil
 	}
 
-	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadataGetter, databaseNamesLister)
+	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	trickyCompleter.fetchCommonTableExpression(statement)
 	return trickyCompleter.complete()
 }
 
-func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) *Completer {
+func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
 		parser,
@@ -465,19 +466,20 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
+		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
-		metadataGetter:      metadataGetter,
-		databaseNamesLister: databaseNamesLister,
+		metadataGetter:      cCtx.Metadata,
+		databaseNamesLister: cCtx.ListDatabaseNames,
 		noSeparatorRequired: nil,
 		cteCache:            nil,
 	}
 }
 
-func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) *Completer {
+func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
 		parser,
@@ -493,13 +495,14 @@ func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, ca
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
+		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
-		metadataGetter:      metadataGetter,
-		databaseNamesLister: databaseNamesLister,
+		metadataGetter:      cCtx.Metadata,
+		databaseNamesLister: cCtx.ListDatabaseNames,
 		noSeparatorRequired: nil,
 		cteCache:            nil,
 	}
@@ -576,7 +579,12 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
-	context := c.parser.Tsql_file()
+	var context antlr.ParserRuleContext
+	if c.scene == base.SceneTypeQuery {
+		context = c.parser.Select_statement()
+	} else {
+		context = c.parser.Tsql_file()
+	}
 	candidates := c.core.CollectCandidates(caretIndex, context)
 
 	for ruleName := range candidates.Rules {

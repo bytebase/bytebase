@@ -30,7 +30,7 @@ type ExtractChangedResourcesFunc func(string, string, any) ([]SchemaResource, er
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
-type CompletionFunc func(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc, listDatabaseNames ListDatabaseNamesFunc) ([]Candidate, error)
+type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
@@ -146,12 +146,12 @@ func RegisterCompleteFunc(engine storepb.Engine, f CompletionFunc) {
 }
 
 // Completion returns the completion candidates for the statement.
-func Completion(ctx context.Context, engine storepb.Engine, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc, listDatabaseNames ListDatabaseNamesFunc) ([]Candidate, error) {
+func Completion(ctx context.Context, engine storepb.Engine, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error) {
 	f, ok := completers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+	return f(ctx, cCtx, statement, caretLine, caretOffset)
 }
 
 func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {

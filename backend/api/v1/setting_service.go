@@ -243,6 +243,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.Domains = payload.Domains
 			case "value.workspace_profile_setting_value.enforce_identity_domain":
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
+			case "value.workspace_profile_setting_value.database_change_mode":
+				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
 			}

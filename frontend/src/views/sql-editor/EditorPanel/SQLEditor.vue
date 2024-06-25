@@ -13,6 +13,7 @@
       :auto-complete-context="{
         instance: instance.name,
         database: database.name,
+        scene: 'query',
       }"
       @update:content="handleChange"
       @select-content="handleChangeSelection"

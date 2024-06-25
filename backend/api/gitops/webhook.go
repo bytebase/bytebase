@@ -22,7 +22,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -185,10 +184,10 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		user, err := s.store.GetUserByEmail(ctx, prInfo.email)
 		if err != nil {
 			slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
-			return store.SystemBotUser
+			return s.store.GetSystemBotUser(ctx)
 		}
 		if user == nil {
-			return store.SystemBotUser
+			return s.store.GetSystemBotUser(ctx)
 		}
 		return user
 	}()
@@ -227,7 +226,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
 	childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
 	plan, err := s.planService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
-		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Parent: common.FormatProject(project.ResourceID),
 		Plan: &v1pb.Plan{
 			Title: prInfo.title,
 			Steps: steps,
@@ -242,12 +241,12 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to create plan")
 	}
 	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
-		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Parent: common.FormatProject(project.ResourceID),
 		Issue: &v1pb.Issue{
 			Title:       prInfo.title,
 			Description: prInfo.description,
 			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+			Assignee:    common.FormatUserEmail(s.store.GetSystemBotUser(ctx).Email),
 			Plan:        plan.Name,
 		},
 	})
@@ -255,7 +254,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to create issue")
 	}
 	if _, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
-		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Parent: common.FormatProject(project.ResourceID),
 		Rollout: &v1pb.Rollout{
 			Plan: plan.Name,
 		},
