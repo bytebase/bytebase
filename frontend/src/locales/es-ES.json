@@ -708,13 +708,13 @@
           "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
         },
         "database-change-mode": {
-          "self": "Modo de cambio",
+          "self": "Modo de cambio de base de datos",
           "description": "Controla cómo los usuarios realizan migraciones de esquemas de bases de datos. El modo de emisión utiliza flujos de trabajo de problemas/tareas con aprobaciones personalizadas para un proceso estructurado. El modo Editor SQL permite la ejecución directa de SQL en un editor SQL para realizar cambios rápidos y sencillos.",
           "issue-mode": {
             "self": "Modo de emisión"
           },
           "sql-editor-mode": {
-            "self": "Modo editor SQL"
+            "self": "Modo de edición SQL"
           }
         }
       }
