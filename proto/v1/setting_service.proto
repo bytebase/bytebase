@@ -172,8 +172,9 @@ message AppIMSetting {
   }
   message Wecom {
     bool enabled = 1;
-    string id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string corp_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string agent_id = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret = 4 [(google.api.field_behavior) = INPUT_ONLY];
   }
 
   Slack slack = 1;

@@ -1794,7 +1794,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | primary | [string](#string) |  |  |
 | instance | [string](#string) |  |  |
 | realm | [string](#string) |  |  |
-| keytab | [string](#string) |  |  |
+| keytab | [bytes](#bytes) |  |  |
 | kdc_host | [string](#string) |  |  |
 | kdc_port | [string](#string) |  |  |
 | kdc_transport_protocol | [string](#string) |  |  |
@@ -3104,7 +3104,9 @@ Format: users/{userUID} or groups/{group email} |
 | ----- | ---- | ----- | ----------- |
 | protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
-| force_issue_labels | [bool](#bool) |  |  |
+| force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
+| allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
+| auto_resolve_issue | [bool](#bool) |  | Enable auto resolve issue. |
 
 
 
@@ -3403,7 +3405,8 @@ The type of target.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | enabled | [bool](#bool) |  |  |
-| id | [string](#string) |  |  |
+| corp_id | [string](#string) |  |  |
+| agent_id | [string](#string) |  |  |
 | secret | [string](#string) |  |  |
 
 

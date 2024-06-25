@@ -8430,7 +8430,9 @@ components:
             properties:
                 enabled:
                     type: boolean
-                id:
+                corpId:
+                    type: string
+                agentId:
                     type: string
                 secret:
                     type: string
@@ -10569,6 +10571,7 @@ components:
                     type: string
                 keytab:
                     type: string
+                    format: bytes
                 kdcHost:
                     type: string
                 kdcPort:
@@ -11704,6 +11707,13 @@ components:
                         $ref: '#/components/schemas/Label'
                 forceIssueLabels:
                     type: boolean
+                    description: Force issue labels to be used when creating an issue.
+                allowModifyStatement:
+                    type: boolean
+                    description: Allow modifying statement after issue is created.
+                autoResolveIssue:
+                    type: boolean
+                    description: Enable auto resolve issue.
         ProtectionRule:
             type: object
             properties:
