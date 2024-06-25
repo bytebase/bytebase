@@ -1533,6 +1533,10 @@ func sortAndWriteCreateIndexConstraintList(buf *strings.Builder, indexes []*inde
 }
 
 func writeCreateIndexConstraintStatement(buf *strings.Builder, index *indexConstraintDef) error {
+	indexCategory := strings.ToUpper(index.ctx.GetType_().GetText())
+	if indexCategory == "KEY" || indexCategory == "INDEX" {
+		indexCategory = ""
+	}
 	indexType := ""
 	if nameAndType := index.ctx.IndexNameAndType(); nameAndType != nil {
 		indexType = nameAndType.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
@@ -1545,7 +1549,11 @@ func writeCreateIndexConstraintStatement(buf *strings.Builder, index *indexConst
 		Start: index.ctx.KeyListVariants().GetStop().GetTokenIndex() + 1,
 		Stop:  index.ctx.GetStop().GetTokenIndex(),
 	})
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE INDEX `%s` ON `%s`%s%s%s;\n\n", index.name, index.tableName, keyList, indexType, indexOption)); err != nil {
+	createIndexPrefix := ""
+	if indexCategory != "" {
+		createIndexPrefix = fmt.Sprintf("%s ", indexCategory)
+	}
+	if _, err := buf.WriteString(fmt.Sprintf("CREATE %sINDEX `%s` ON `%s`%s%s%s;\n\n", createIndexPrefix, index.name, index.tableName, keyList, indexType, indexOption)); err != nil {
 		return err
 	}
 	return nil
