@@ -2782,11 +2782,9 @@
         "display-name-default": "Política de revisión SQL",
         "display-name-label": "Un nombre para mostrar que ayuda a identificar entre diferentes políticas de revisión.",
         "attach-resource": "Adjuntar al recurso",
-        "attach-resource-label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política.",
-        "environments-select": "Seleccionar entornos",
-        "no-linked-environments": "Ningún entorno vinculado",
-        "no-available-environment": "Ningún entorno disponible",
-        "no-available-environment-desc": "No hay entornos disponibles. Un entorno solo puede estar vinculado a una política de revisión SQL.",
+        "attach-resource-label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
+        "attach-resource-info-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
+        "attach-resource-info-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno.",
         "choose-template": "Elegir plantilla"
       },
       "configure-rule": {
