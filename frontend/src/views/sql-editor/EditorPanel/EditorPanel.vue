@@ -35,17 +35,11 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { computed, defineAsyncComponent, watch } from "vue";
+import { defineAsyncComponent, watch } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import {
-  useInstanceV1Store,
-  usePageMode,
-  useSQLEditorTabStore,
-  useSettingV1Store,
-} from "@/store";
+import { useInstanceV1Store, usePageMode, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   EditorAction,
   ConnectionPathBar,
@@ -59,7 +53,7 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
-const { showAIChatBox } = useSQLEditorContext();
+const { showAIChatBox, standardModeEnabled } = useSQLEditorContext();
 const pageMode = usePageMode();
 
 const { execute } = useExecuteSQL();
@@ -90,19 +84,12 @@ const handleApplyStatement = async (
   }
 };
 
-const allowStandardMode = computed(() => {
-  return (
-    useSettingV1Store().workspaceProfileSetting?.databaseChangeMode ===
-    DatabaseChangeMode.EDITOR
-  );
-});
-
 watch(
-  [() => tab.value, allowStandardMode],
-  ([tab, allowStandardMode]) => {
+  [() => tab.value, standardModeEnabled],
+  ([tab, standardModeEnabled]) => {
     if (!tab) return;
     // Fallback to READONLY mode if standard mode is not allowed.
-    if (!allowStandardMode && tab.mode === "STANDARD") {
+    if (!standardModeEnabled && tab.mode === "STANDARD") {
       tab.mode = "READONLY";
     }
   },
