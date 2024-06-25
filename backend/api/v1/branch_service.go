@@ -700,7 +700,12 @@ func (s *BranchService) getNewBaseFromRebaseRequest(ctx context.Context, request
 		if databaseSchema == nil {
 			return nil, "", nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 		}
-		return databaseSchema.GetMetadata(), string(databaseSchema.GetSchema()), databaseSchema.GetConfig(), nil
+		databaseMetadata := databaseSchema.GetMetadata()
+		filteredNewBaseMetadata := filterDatabaseMetadataByEngine(databaseMetadata, instance.Engine)
+		defaultStoreSourceSchema := extractDefaultSchemaForOracleBranch(instance.Engine, filteredNewBaseMetadata)
+		sourceSchema, err := schema.GetDesignSchema(instance.Engine, defaultStoreSourceSchema, "" /* baseline*/, filteredNewBaseMetadata)
+
+		return databaseSchema.GetMetadata(), sourceSchema, databaseSchema.GetConfig(), nil
 	}
 
 	if request.SourceBranch != "" {
