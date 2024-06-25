@@ -706,6 +706,16 @@
         "restrict-issue-creation-for-sql-review": {
           "title": "禁止提交包含错误告警的工单",
           "description": "启用后，只有在预览阶段不包含任何“错误”级别告警的工单才能被提交。"
+        },
+        "database-change-mode": {
+          "self": "数据库变更模式",
+          "description": "控制用户如何进行数据库变更。工单模式使用工单/任务工作流和自定义审批流来实现结构化流程。SQL 编辑器模式允许用户在 SQL 编辑器中直接执行变更语句，以便快速简单地进行更改。",
+          "issue-mode": {
+            "self": "工单模式"
+          },
+          "sql-editor-mode": {
+            "self": "SQL 编辑器模式"
+          }
         }
       }
     },

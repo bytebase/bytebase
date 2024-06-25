@@ -14122,6 +14122,14 @@ components:
                 enforceIdentityDomain:
                     type: boolean
                     description: Only user and group from the domains can be created and login.
+                databaseChangeMode:
+                    enum:
+                        - DATABASE_CHANGE_MODE_UNSPECIFIED
+                        - PIPELINE
+                        - EDITOR
+                    type: string
+                    description: The workspace database change mode.
+                    format: enum
         WorkspaceTrialSetting:
             type: object
             properties:
