@@ -71,7 +71,9 @@ const prepare = async () => {
     }),
     policyV1Store.fetchPolicies({
       resourceType: PolicyResourceType.ENVIRONMENT,
-      policyType: PolicyType.DISABLE_COPY_DATA,
+    }),
+    policyV1Store.fetchPolicies({
+      resourceType: PolicyResourceType.PROJECT,
     }),
   ]);
   ready.value = true;
