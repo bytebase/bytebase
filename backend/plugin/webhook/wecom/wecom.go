@@ -69,7 +69,7 @@ func getMessageCard(context webhook.Context) *WebhookMarkdown {
 }
 
 func (r *Receiver) Post(context webhook.Context) error {
-	if len(context.MentionUsers) > 0 {
+	if context.DirectMessage && len(context.MentionUsers) > 0 {
 		r.sendDirectMessage(context)
 		return nil
 	}
