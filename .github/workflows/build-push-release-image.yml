@@ -45,8 +45,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: depot/setup-action@v1
-      - name: Build and push
-        id: bytebase_build
+      - name: Build and push to DockerHub
+        id: bytebase_dockerhub
         uses: depot/build-push-action@v1
         with:
           context: .
@@ -61,5 +61,30 @@ jobs:
             GIT_COMMIT=${{ env.GIT_COMMIT }}
             BUILD_TIME=${{ env.BUILD_TIME }}
             BUILD_USER=${{ env.BUILD_USER }}
-      - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:${{ env.RELEASE_VERSION }} ${{ steps.bytebase_build.outputs.digest }}"
+      - name: Image digest for DockerHub
+        run: echo "Successfully pushed bytebase/bytebase:${{ env.RELEASE_VERSION }} ${{ steps.bytebase_dockerhub.outputs.digest }}"
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-shanghai.aliyuncs.com
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          password: ${{ secrets.ALIYUN_PASSWORD }}
+      - uses: depot/setup-action@v1
+      - name: Build and push to Aliyun Container Registry
+        id: bytebase_aliyun
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          project: ${{ secrets.DEPOT_PROJECT}}
+          token: ${{ secrets.DEPOT_TOKEN }}
+          file: scripts/Dockerfile.depot
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: registry.cn-shanghai.aliyuncs.com/bytebase/bytebase:${{ env.RELEASE_VERSION }}
+          build-args: |
+            VERSION=${{ env.RELEASE_VERSION }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
+            BUILD_USER=${{ env.BUILD_USER }}
+      - name: Image digest for Aliyun
+        run: echo "Successfully pushed registry.cn-shanghai.aliyuncs.com/bytebase/bytebase:${{ env.RELEASE_VERSION }} ${{ steps.bytebase_aliyun.outputs.digest }}"
