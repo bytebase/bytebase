@@ -46,6 +46,7 @@ import { Sheet } from "@/types/proto/v1/sheet_service";
 import { setSheetStatement } from "@/utils";
 import { readUpload, type ParsedFile } from "../../import";
 import { useChangelistDetailContext } from "../context";
+import { fallbackVersionForChange } from "../../common";
 
 const { t } = useI18n();
 const { changelist, project, isUpdating } = useChangelistDetailContext();
@@ -101,6 +102,7 @@ const save = async (files: ParsedFile[]) => {
   const newChanges = createdSheets.map((sheet) =>
     Change.fromPartial({
       sheet: sheet.name,
+      version: fallbackVersionForChange()
     })
   );
   const changelistPatch = Changelist.fromPartial({

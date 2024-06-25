@@ -5,6 +5,7 @@
     <SecuritySetting :allow-edit="allowEdit" />
     <AIAugmentationSetting :allow-edit="allowEdit" />
     <AnnouncementSetting :allow-edit="allowEdit" />
+    <DatabaseChangeModeSetting v-if="isDev()" :allow-edit="allowEdit" />
   </div>
 </template>
 
@@ -18,9 +19,11 @@ import {
   NetworkSetting,
   AIAugmentationSetting,
   AnnouncementSetting,
+  DatabaseChangeModeSetting,
 } from "@/components/GeneralSetting";
 import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { isDev } from "@/utils";
 
 defineProps<{
   allowEdit: boolean;

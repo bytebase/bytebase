@@ -8,9 +8,9 @@ import { userNamePrefix } from "@/store/modules/v1/common";
 import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
 import {
   DEFAULT_RISK_LEVEL,
-  SYSTEM_BOT_EMAIL,
   unknownUser,
   UNKNOWN_USER_NAME,
+  SYSTEM_BOT_EMAIL,
 } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, SupportedSourceList } from "@/types";
@@ -304,7 +304,7 @@ export const seedWorkspaceApprovalSetting = () => {
       template: {
         title,
         description,
-        creator: `${userNamePrefix}${SYSTEM_BOT_EMAIL}`,
+        creator: `${userNamePrefix}${useUserStore().systemBotUser?.email ?? SYSTEM_BOT_EMAIL}`,
         flow: {
           steps: roles.map((role) => ({
             type: ApprovalStep_Type.ANY,

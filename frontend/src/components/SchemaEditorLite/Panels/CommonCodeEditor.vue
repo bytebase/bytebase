@@ -44,6 +44,7 @@
       :auto-complete-context="{
         instance: db.instance,
         database: db.name,
+        scene: 'all',
       }"
       class="border w-full rounded flex-1 relative"
       @update:content="handleUpdateCode"

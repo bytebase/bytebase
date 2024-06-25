@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -11,11 +12,12 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var SystemBotUser = &UserMessage{
+var systemBotUser = &UserMessage{
 	ID:    api.SystemBotID,
 	Name:  "Bytebase",
 	Email: api.SystemBotEmail,
@@ -62,11 +64,21 @@ type UserMessage struct {
 	Phone string
 }
 
+// GetSystemBotUser gets the system bot.
+func (s *Store) GetSystemBotUser(ctx context.Context) *UserMessage {
+	user, err := s.GetUserByID(ctx, api.SystemBotID)
+	if err != nil {
+		slog.Error("failed to find system bot", slog.Int("id", api.SystemBotID), log.BBError(err))
+		return systemBotUser
+	}
+	if user == nil {
+		return systemBotUser
+	}
+	return user
+}
+
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
-	if id == api.SystemBotID {
-		return SystemBotUser, nil
-	}
 	if v, ok := s.userIDCache.Get(id); ok {
 		return v, nil
 	}
@@ -85,9 +97,6 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 
 // GetUserByEmail gets the user by email.
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
-	if email == api.SystemBotEmail {
-		return SystemBotUser, nil
-	}
 	if v, ok := s.userEmailCache.Get(email); ok {
 		return v, nil
 	}

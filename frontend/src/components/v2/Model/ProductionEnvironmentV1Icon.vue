@@ -12,45 +12,32 @@
   </NTooltip>
 </template>
 
-<script lang="ts">
-import type { PropType } from "vue";
-import { computed, defineComponent } from "vue";
+<script lang="ts" setup>
+import { computed } from "vue";
 import { featureToRef } from "@/store";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
-export default defineComponent({
-  name: "ProductionEnvironmentV1Icon",
-  inheritAttrs: false,
-  props: {
-    environment: {
-      type: Object as PropType<Environment>,
-      default: undefined,
-    },
-    tier: {
-      type: String as PropType<EnvironmentTier>,
-      default: EnvironmentTier.UNPROTECTED,
-    },
-    tooltip: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  setup(props) {
-    const hasEnvironmentTierPolicyFeature = featureToRef(
-      "bb.feature.environment-tier-policy"
-    );
+const props = withDefaults(
+  defineProps<{
+    environment: Environment;
+    tier?: EnvironmentTier;
+    tooltip?: boolean;
+  }>(),
+  {
+    tier: EnvironmentTier.UNPROTECTED,
+    tooltip: false,
+  }
+);
 
-    const enabled = computed((): boolean => {
-      if (!hasEnvironmentTierPolicyFeature.value) {
-        return false;
-      }
-      return (
-        (props.environment?.tier ?? props.tier) === EnvironmentTier.PROTECTED
-      );
-    });
+const hasEnvironmentTierPolicyFeature = featureToRef(
+  "bb.feature.environment-tier-policy"
+);
 
-    return { enabled };
-  },
+const enabled = computed((): boolean => {
+  if (!hasEnvironmentTierPolicyFeature.value) {
+    return false;
+  }
+  return (props.environment?.tier ?? props.tier) === EnvironmentTier.PROTECTED;
 });
 </script>

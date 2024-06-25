@@ -8,14 +8,18 @@ import {
 } from "@/utils";
 import type { MonacoModule } from "../types";
 
+export type AutoCompleteContextScene = "query" | "all";
+
 export type AutoCompleteContext = {
   instance: string; // instances/{instance}
   database?: string; // instances/{instance}/databases/{database_name}
+  scene?: AutoCompleteContextScene;
 };
 
 type SetMetadataParams = {
   instanceId: string; // instances/{instance}
   databaseName: string;
+  scene?: AutoCompleteContextScene;
 };
 
 export const useAutoComplete = async (
@@ -30,6 +34,7 @@ export const useAutoComplete = async (
     const p: SetMetadataParams = {
       instanceId: "",
       databaseName: "",
+      scene: context.value?.scene,
     };
     const ctx = context.value;
     if (ctx) {

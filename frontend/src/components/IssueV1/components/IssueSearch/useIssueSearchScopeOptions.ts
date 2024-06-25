@@ -12,7 +12,7 @@ import {
   useUserStore,
   useProjectV1List,
 } from "@/store";
-import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
+import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 
@@ -26,6 +26,7 @@ export type ScopeOption = {
 export type ValueOption = {
   value: string;
   keywords: string[];
+  bot?: boolean;
   custom?: boolean;
   render: RenderFunction;
 };
@@ -74,6 +75,7 @@ export const useIssueSearchScopeOptions = (
       return {
         value: user.email,
         keywords: [user.email, user.title],
+        bot: user.name === SYSTEM_BOT_USER_NAME,
         render: () => {
           const children = [
             h(BBAvatar, { size: "TINY", username: user.title }),
@@ -82,7 +84,7 @@ export const useIssueSearchScopeOptions = (
           if (user.name === me.value.name) {
             children.push(h(YouTag));
           }
-          if (user.email === SYSTEM_BOT_EMAIL) {
+          if (user.name === SYSTEM_BOT_USER_NAME) {
             children.push(h(SystemBotTag));
           }
           return h("div", { class: "flex items-center gap-x-1" }, children);
@@ -146,9 +148,7 @@ export const useIssueSearchScopeOptions = (
         id: "approver",
         title: t("issue.advanced-search.scope.approver.title"),
         description: t("issue.advanced-search.scope.approver.description"),
-        options: principalSearchValueOptions.value.filter(
-          (o) => o.value !== SYSTEM_BOT_EMAIL
-        ),
+        options: principalSearchValueOptions.value.filter((o) => !o.bot),
       },
       {
         id: "subscriber",

@@ -110,7 +110,6 @@ import {
   useUserStore,
   type ComposedIssueComment,
 } from "@/store";
-import { SYSTEM_BOT_EMAIL } from "@/types";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -140,9 +139,11 @@ const props = defineProps<{
   issueComment: ComposedIssueComment;
 }>();
 
+const userStore = useUserStore();
+
 const user = computed(() => {
   const email = extractUserResourceName(props.issueComment.creator);
-  return useUserStore().getUserByEmail(email);
+  return userStore.getUserByEmail(email);
 });
 
 const icon = computed((): ActionIconType => {
@@ -205,7 +206,8 @@ const icon = computed((): ActionIconType => {
     // Otherwise, show avatar icon based on the creator.
   }
 
-  return extractUserResourceName(issueComment.creator) == SYSTEM_BOT_EMAIL
+  return extractUserResourceName(issueComment.creator) ==
+    userStore.systemBotUser?.email
     ? "system"
     : "avatar";
 });

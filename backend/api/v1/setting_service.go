@@ -243,6 +243,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.Domains = payload.Domains
 			case "value.workspace_profile_setting_value.enforce_identity_domain":
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
+			case "value.workspace_profile_setting_value.database_change_mode":
+				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
 			}
@@ -276,18 +278,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to get creator: %v", err))
 			}
-			if email == api.SystemBotEmail {
-				creatorID = api.SystemBotID
-			} else {
-				creator, err := s.store.GetUserByEmail(ctx, email)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
-				}
-				if creator == nil {
-					return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("creator %s not found", rule.Template.Creator))
-				}
-				creatorID = creator.ID
+			creator, err := s.store.GetUserByEmail(ctx, email)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 			}
+			if creator == nil {
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("creator %s not found", rule.Template.Creator))
+			}
+			creatorID = creator.ID
 
 			flow := new(storepb.ApprovalFlow)
 			if err := convertV1PbToStorePb(rule.Template.Flow, flow); err != nil {

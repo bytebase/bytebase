@@ -248,6 +248,7 @@
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
+    - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
     - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
@@ -972,7 +973,6 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | schema_configs | [SchemaConfig](#bytebase-store-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
-| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -3438,6 +3438,7 @@ The type of target.
 | title | [string](#string) |  |  |
 | levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
 | classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -3826,6 +3827,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 | domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
+| database_change_mode | [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode) |  | The workspace database change mode. |
 
 
 
@@ -3845,6 +3847,19 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ALERT_LEVEL_INFO | 1 |  |
 | ALERT_LEVEL_WARNING | 2 |  |
 | ALERT_LEVEL_CRITICAL | 3 |  |
+
+
+
+<a name="bytebase-store-DatabaseChangeMode"></a>
+
+### DatabaseChangeMode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
+| PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
+| EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
 
 
 

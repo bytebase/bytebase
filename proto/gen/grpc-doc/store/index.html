@@ -1169,6 +1169,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a>
                 </li>
               
@@ -2911,15 +2915,6 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#bytebase.store.SchemaConfig">SchemaConfig</a></td>
                   <td>repeated</td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification_from_config</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If true, we will only store the classification in the config.
-Otherwise we will get the classification from table/column comment,
-and write back to the schema metadata. </p></td>
                 </tr>
               
             </tbody>
@@ -8570,6 +8565,15 @@ The order for the level decides its priority. </p></td>
 The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If true, we will only store the classification in the config.
+Otherwise we will get the classification from table/column comment,
+and write back to the schema metadata. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9505,6 +9509,13 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                   <td><p>Only user and group from the domains can be created and login. </p></td>
                 </tr>
               
+                <tr>
+                  <td>database_change_mode</td>
+                  <td><a href="#bytebase.store.DatabaseChangeMode">DatabaseChangeMode</a></td>
+                  <td></td>
+                  <td><p>The workspace database change mode. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9544,6 +9555,36 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                 <td>ALERT_LEVEL_CRITICAL</td>
                 <td>3</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DatabaseChangeMode">DatabaseChangeMode</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DATABASE_CHANGE_MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PIPELINE</td>
+                <td>1</td>
+                <td><p>A more advanced database change process, including custom approval workflows and other advanced features.
+Default to this mode.</p></td>
+              </tr>
+            
+              <tr>
+                <td>EDITOR</td>
+                <td>2</td>
+                <td><p>A simple database change process in SQL editor. Users can execute SQL directly.</p></td>
               </tr>
             
           </tbody>

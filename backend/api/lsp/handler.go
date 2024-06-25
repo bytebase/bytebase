@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -94,15 +95,27 @@ func (h *Handler) getInstanceID() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.metadata == nil {
-		slog.Error("Metadata is not set")
 		return ""
 	}
 	id, err := common.GetInstanceID(h.metadata.InstanceID)
 	if err != nil {
-		slog.Error("Failed to get instance ID", log.BBError(err), slog.String("instanceID", h.metadata.InstanceID))
 		return ""
 	}
 	return id
+}
+
+func (h *Handler) getScene() base.SceneType {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.metadata == nil {
+		return base.SceneTypeAll
+	}
+	switch h.metadata.Scene {
+	case "query":
+		return base.SceneTypeQuery
+	default:
+		return base.SceneTypeAll
+	}
 }
 
 func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {

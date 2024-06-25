@@ -568,6 +568,7 @@
     - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
+    - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
     - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
@@ -2411,7 +2412,6 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
-| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -2434,7 +2434,6 @@ Format: instances/{instance}/databases/{database}/metadata |
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-v1-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
 | schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
-| classification_from_config | [bool](#bool) |  |  |
 
 
 
@@ -3597,6 +3596,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
 | target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
+| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
 
 
 
@@ -8731,6 +8731,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | title | [string](#string) |  |  |
 | levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
 | classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -9245,6 +9246,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 | domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
+| database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |
 
 
 
@@ -9284,6 +9286,19 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ALERT_LEVEL_INFO | 1 |  |
 | ALERT_LEVEL_WARNING | 2 |  |
 | ALERT_LEVEL_CRITICAL | 3 |  |
+
+
+
+<a name="bytebase-v1-DatabaseChangeMode"></a>
+
+### DatabaseChangeMode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
+| PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
+| EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
 
 
 
@@ -9954,6 +9969,7 @@ Type of the SheetPayload.
 | ----- | ---- | ----- | ----------- |
 | metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
+| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
 
 
 

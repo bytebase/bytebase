@@ -1,7 +1,7 @@
 <template>
   <component
     :is="isLink ? 'router-link' : 'span'"
-    v-if="userEmail !== SYSTEM_BOT_EMAIL"
+    v-if="userEmail !== userStore.systemBotUser?.email"
     v-bind="bindings"
     class="font-medium text-main whitespace-nowrap"
     :class="[isLink && 'hover:underline']"
@@ -20,7 +20,6 @@
 import { computed } from "vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import { usePageMode, useUserStore } from "@/store";
-import { SYSTEM_BOT_EMAIL } from "@/types";
 import { extractUserResourceName } from "@/utils";
 
 const props = defineProps<{
@@ -29,13 +28,14 @@ const props = defineProps<{
 }>();
 
 const pageMode = usePageMode();
+const userStore = useUserStore();
 
 const userEmail = computed(() => {
   return extractUserResourceName(props.creator);
 });
 
 const user = computed(() => {
-  return useUserStore().getUserByEmail(userEmail.value);
+  return userStore.getUserByEmail(userEmail.value);
 });
 
 const isLink = computed(() => {

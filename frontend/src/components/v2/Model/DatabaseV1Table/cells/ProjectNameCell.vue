@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row space-x-2 items-center">
-    <ProjectV1Name :project="project" :link="false" tag="div" />
+    <ProjectV1Name :project="project" :link="link" tag="div" />
     <NTooltip
       v-if="
         showTenantIcon && project.tenantMode === TenantMode.TENANT_MODE_ENABLED
@@ -50,9 +50,11 @@ const props = withDefaults(
   defineProps<{
     project: Project;
     mode?: Mode;
+    link?: boolean;
   }>(),
   {
     mode: "ALL",
+    link: false,
   }
 );
 

@@ -86,7 +86,7 @@ var (
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
-		PolicyTypeTag:                               {PolicyResourceTypeEnvironment},
+		PolicyTypeTag:                               {PolicyResourceTypeEnvironment, PolicyResourceTypeProject, PolicyResourceTypeDatabase},
 		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:                         {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment},
