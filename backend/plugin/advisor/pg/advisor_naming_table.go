@@ -25,7 +25,7 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -52,9 +52,9 @@ func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -63,8 +63,8 @@ func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 }
 
 type namingTableConventionChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 	maxLength  int
@@ -85,21 +85,25 @@ func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 
 	for _, tableName := range tableNames {
 		if !checker.format.MatchString(tableName) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NamingTableConventionMismatch,
+				Code:    advisor.NamingTableConventionMismatch.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, checker.format),
-				Line:    node.LastLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(node.LastLine()),
+				},
 			})
 		}
 		if checker.maxLength > 0 && len(tableName) > checker.maxLength {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NamingTableConventionMismatch,
+				Code:    advisor.NamingTableConventionMismatch.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, checker.maxLength),
-				Line:    node.LastLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(node.LastLine()),
+				},
 			})
 		}
 	}

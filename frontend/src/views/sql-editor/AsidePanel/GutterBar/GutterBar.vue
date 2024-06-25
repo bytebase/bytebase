@@ -18,26 +18,37 @@
       <TabItem tab="HISTORY" :size="size" @click="handleClickTab('HISTORY')" />
     </div>
 
-    <OpenAIButton :size="size" />
+    <div class="flex flex-col justify-end items-center">
+      <OpenAIButton :size="size" />
+
+      <SettingButton
+        v-if="showSettingButton"
+        :style="buttonStyle"
+        v-bind="buttonProps"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, toRef, watch } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
+  usePageMode,
+  useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
+import { SettingButton } from "../../Setting";
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
 import OpenAIButton from "./OpenAIButton.vue";
 import TabItem from "./TabItem.vue";
-import type { Size } from "./common";
+import { useButton, type Size } from "./common";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     size?: Size;
   }>(),
@@ -49,7 +60,15 @@ withDefaults(
 const me = useCurrentUserV1();
 const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
+const { strictProject } = storeToRefs(useSQLEditorStore());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const pageMode = usePageMode();
+
+const { props: buttonProps, style: buttonStyle } = useButton({
+  size: toRef(props, "size"),
+  active: false,
+  disabled: false,
+});
 
 const isSchemalessInstance = computed(() => {
   if (instance.value.uid === String(UNKNOWN_ID)) {
@@ -79,6 +98,17 @@ const showSchemaPane = computed(() => {
     me.value,
     "bb.databases.getSchema"
   );
+});
+
+const showSettingButton = computed(() => {
+  if (pageMode.value === "STANDALONE") {
+    return false;
+  }
+  if (strictProject.value) {
+    return false;
+  }
+
+  return true;
 });
 
 const handleClickTab = (target: AsidePanelTab) => {

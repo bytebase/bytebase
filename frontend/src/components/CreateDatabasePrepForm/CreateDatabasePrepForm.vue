@@ -90,12 +90,11 @@
         {{ $t("common.environment") }}
       </label>
       <EnvironmentSelect
+        v-model:environment="state.environment"
         class="mt-1"
         required
         name="environment"
-        :environment="state.environment"
         :use-resource-id="true"
-        @update:environment="selectEnvironment"
       />
     </div>
 
@@ -176,7 +175,6 @@ import {
   InstanceSelect,
   InstanceV1EngineIcon,
 } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   hasFeature,
@@ -194,14 +192,12 @@ import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { Engine } from "@/types/proto/v1/common";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
+import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/rollout_service";
-import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
 import {
-  extractProjectResourceName,
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
-  issueSlug,
 } from "@/utils";
 
 interface LocalState {
@@ -315,10 +311,6 @@ const selectProject = (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
-const selectEnvironment = (environment: string | undefined) => {
-  state.environment = environment;
-};
-
 const selectInstance = (instance: string | undefined) => {
   state.instance = instance;
   state.environment = selectedInstance.value.environment;
@@ -407,11 +399,7 @@ const createV1 = async () => {
       planCreate
     );
     router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project.value.name),
-        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
-      },
+      path: `/${createdIssue.name}`,
     });
   } finally {
     state.creating = false;

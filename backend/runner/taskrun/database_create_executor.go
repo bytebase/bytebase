@@ -405,6 +405,8 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 			log.BBError(err),
 		)
 	}
+	mi.ProjectUID = &project.UID
+	// TODO(d): how could issue be nil?
 	if issue == nil {
 		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
 		slog.Error(err.Error(),
@@ -471,16 +473,10 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if err != nil {
 		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}
-	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
-	if err != nil {
-		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to convert deployment config for project ID: %v", project.UID)
-	}
-
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
-	if err != nil {
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
 		return nil, model.Version{}, "", errors.Errorf("Failed to get deployment schedule")
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, databases)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, databases)
 	if err != nil {
 		return nil, model.Version{}, "", errors.Errorf("Failed to create deployment pipeline")
 	}
@@ -504,7 +500,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	}
 
 	var schemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, &schemaBuf); err != nil {
 		return nil, model.Version{}, "", err
 	}
 	return similarDB, schemaVersion, schemaBuf.String(), nil

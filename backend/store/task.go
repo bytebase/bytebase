@@ -43,8 +43,6 @@ type TaskMessage struct {
 	DependsOn         []int
 
 	DatabaseName string
-	// Statement used by grouping batch change, Bytebase use it to render.
-	Statement string
 
 	LatestTaskRunStatus api.TaskRunStatus
 }
@@ -293,33 +291,18 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	if (patch.SchemaVersion != nil || patch.SheetID != nil) && patch.Payload != nil {
 		return nil, errors.Errorf("cannot set both sheetID/schemaVersion and payload for TaskPatch")
 	}
-	if (patch.RollbackEnabled != nil || patch.RollbackSQLStatus != nil || patch.RollbackSheetID != nil || patch.RollbackError != nil || patch.Flags != nil) && patch.Payload != nil {
-		return nil, errors.Errorf("cannot set both rollbackEnabled/rollbackSQLStatus/rollbackSheetID/rollbackError/flags payload for TaskPatch")
-	}
 	var payloadSet []string
 	if v := patch.SheetID; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('sheetId', to_jsonb($%d::INT))`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('sheetId', $%d::INT)`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.SchemaVersion; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('schemaVersion', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
-	}
-	if v := patch.RollbackEnabled; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackEnabled', to_jsonb($%d::BOOLEAN))`, len(args)+1)), append(args, *v)
-	}
-	if v := patch.RollbackSQLStatus; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackSqlStatus', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
-	}
-	if v := patch.RollbackSheetID; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackSheetId', to_jsonb($%d::INT))`, len(args)+1)), append(args, *v)
-	}
-	if v := patch.RollbackError; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackError', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('schemaVersion', $%d::TEXT)`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.ExportFormat; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('format', to_jsonb($%d::INT))`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('format', $%d::INT)`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.ExportPassword; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('password', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('password', $%d::TEXT)`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.PreUpdateBackupDetail; v != nil {
 		jsonb, err := json.Marshal(v)
@@ -397,7 +380,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string, updaterUID int) error {
 	query := `
 	UPDATE task
-	SET updater_id = $1, payload = payload || jsonb_build_object('skipped', to_jsonb($2::BOOLEAN)) || jsonb_build_object('skippedReason', to_jsonb($3::TEXT))
+	SET updater_id = $1, payload = payload || jsonb_build_object('skipped', $2::BOOLEAN) || jsonb_build_object('skippedReason', $3::TEXT)
 	WHERE id = ANY($4)`
 	args := []any{updaterUID, true, comment, taskUIDs}
 

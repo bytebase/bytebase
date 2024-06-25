@@ -22,11 +22,6 @@ type State struct {
 	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
 	InstanceSlowQuerySyncChan chan *InstanceSlowQuerySyncMessage
 
-	// RollbackGenerate is the set of tasks for generating rollback statements.
-	RollbackGenerate sync.Map // map[task.ID]*store.TaskMessage
-	// RollbackCancel cancels the running rollback SQL generation for task taskID.
-	RollbackCancel sync.Map // map[taskID]context.CancelFunc
-
 	// ApprovalFinding is the set of issues for finding the approval template.
 	ApprovalFinding sync.Map // map[issue.ID]*store.IssueMessage
 

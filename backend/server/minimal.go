@@ -4,7 +4,6 @@ import (
 	// This includes the first-class database, Postgres.
 
 	// Drivers.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 
 	// Parsers.
@@ -18,4 +17,9 @@ import (
 
 	// Editors.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+
+	// IM webhooks.
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/slack"
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/wecom"
 )

@@ -2,13 +2,11 @@ import { pullAt, cloneDeep, groupBy } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import type { Engine } from "@/types/proto/v1/common";
 import { engineFromJSON } from "@/types/proto/v1/common";
-import type { Environment } from "@/types/proto/v1/environment_service";
 import {
   SQLReviewRuleLevel,
   sQLReviewRuleLevelFromJSON,
 } from "@/types/proto/v1/org_policy_service";
 import type { PlanType } from "@/types/proto/v1/subscription_service";
-import type { PolicyId } from "./id";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
@@ -141,7 +139,7 @@ export interface SchemaPolicyRule {
 
 // The API for SQL review policy in backend.
 export interface SQLReviewPolicy {
-  id: PolicyId;
+  id: string;
 
   // Standard fields
   // enforce means if the policy is active
@@ -150,7 +148,7 @@ export interface SQLReviewPolicy {
   // Domain specific fields
   name: string;
   ruleList: SchemaPolicyRule[];
-  environment: Environment;
+  resources: string[];
 }
 
 // RuleTemplate is the rule template. Used by the frontend

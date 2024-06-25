@@ -100,11 +100,11 @@
       }
     },
     "table-limit-size": {
-      "title": "限制对数据量大的表执行 DDL 操作",
-      "description": "配置可执行 DDL 的表的最大数据量。建议错误级别：警告",
+      "title": "限制对多行数表的 DDL 操作",
+      "description": "配置可以执行 DDL 的表的最大行数。推荐错误级别：警告",
       "component": {
         "number": {
-          "title": "最大数据量"
+          "title": "最大行数"
         }
       }
     },
@@ -278,6 +278,10 @@
       "title": "禁止修改表中的列顺序",
       "description": "修改列顺序可能导致某些依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
     },
+    "column-disallow-drop": {
+      "title": "禁止删除列",
+      "description": "禁止删除列。建议错误等级：警告"
+    },
     "column-disallow-drop-in-index": {
       "title": "禁止删除有索引的列",
       "description": "禁止删除一个已经有索引的列。建议错误等级：错误"
@@ -443,7 +447,7 @@
       "title": "禁止在WHERE子句中使用NULL等式比较",
       "description": "NULL 等式比较的结果始终是 NULL，可能导致意外的结果。建议错误级别：警告"
     },
-    "statement-where-disallow-using-function": {
+    "statement-where-disallow-functions-and-calculations": {
       "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算",
       "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。"
     },
@@ -501,8 +505,20 @@
       "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
     },
     "statement-prior-backup-check": {
-      "title": "检查能否预前备份数据",
+      "title": "检查能否预先备份数据",
       "description": "此规则将检查是否可以在数据更改前创建备份。该规则要求备份目标数据库存在且不存在DDL语句。"
+    },
+    "statement-add-column-without-position": {
+      "title": "禁止在指定位置加列",
+      "description": "某些情况下，使用 FIRST/AFTER 在指定位置加列将引起数据重整（把原来的数据重写一遍）。建议错误级别：警告"
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "禁止离线 DDL",
+      "description": "为了防止数据库更改影响您的业务，请避免使用离线 DDL。"
+    },
+    "statement-disallow-cross-db-queries": {
+      "title": "禁止跨数据库查询",
+      "description": "跨数据库查询会增加系统的耦合性，并可能导致效率问题。建议的错误级别：警告"
     },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
@@ -563,6 +579,10 @@
           "title": "允许的索引类型"
         }
       }
+    },
+    "index-not-redundant": {
+      "title": "禁止冗余索引",
+      "description": "冗余索引可能会导致性能损失并占用额外空间。例如，如果列（c1）上已经有一个索引，那么在列（c1，c2）上的索引将被视为冗余索引。建议的错误级别：警告"
     },
     "system-charset-allowlist": {
       "title": "允许使用的字符集（Charset）列表",

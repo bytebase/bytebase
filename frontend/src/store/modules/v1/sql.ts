@@ -3,11 +3,12 @@ import { RichClientError } from "nice-grpc-error-details";
 import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import type { SQLResultSetV1 } from "@/types";
-import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/rollout_service";
+import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/plan_service";
 import type {
   ExportRequest,
   QueryRequest,
   Advice,
+  GenerateRestoreSQLRequest,
 } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
@@ -74,9 +75,17 @@ export const useSQLStore = defineStore("sql", () => {
       ignoredCodes: [Status.PERMISSION_DENIED],
     });
   };
+  
+  const generateRestoreSQL = async (params: GenerateRestoreSQLRequest) => {
+    return await sqlServiceClient.generateRestoreSQL(params, {
+      // Won't jump to 403 page when permission denied.
+      ignoredCodes: [Status.PERMISSION_DENIED],
+    });
+  }
 
   return {
     queryReadonly,
     exportData,
+    generateRestoreSQL,
   };
 });

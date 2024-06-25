@@ -15,12 +15,11 @@ const (
 	publicSchemaName = "public"
 )
 
-func (d *DatabaseState) pgWalkThrough(stmt string) error {
-	nodeList, err := pgParse(stmt)
-	if err != nil {
-		return NewParseError(err.Error())
+func (d *DatabaseState) pgWalkThrough(pgAst any) error {
+	nodeList, ok := pgAst.([]ast.Node)
+	if !ok {
+		return errors.Errorf("invalid ast type %T", pgAst)
 	}
-
 	for _, node := range nodeList {
 		if err := d.pgChangeState(node); err != nil {
 			return err
@@ -231,6 +230,7 @@ func (d *DatabaseState) pgCreateSchema(node *ast.CreateSchemaStmt) *WalkThroughE
 	}
 
 	schema := &SchemaState{
+		ctx:           d.ctx.Copy(),
 		name:          node.Name,
 		identifierMap: make(identifierMap),
 		tableSet:      make(tableStateMap),
@@ -1017,6 +1017,7 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 			}
 		}
 		schema = &SchemaState{
+			ctx:           d.ctx.Copy(),
 			name:          publicSchemaName,
 			tableSet:      make(tableStateMap),
 			viewSet:       make(viewStateMap),
@@ -1060,10 +1061,6 @@ func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughErr
 		}
 	}
 	return column, nil
-}
-
-func pgParse(stmt string) ([]ast.Node, error) {
-	return pgrawparser.Parse(pgrawparser.ParseContext{}, stmt)
 }
 
 func normalizeCollation(collation *ast.CollationNameDef) string {

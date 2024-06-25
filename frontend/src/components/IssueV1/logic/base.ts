@@ -5,11 +5,16 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
-import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
+import {
+  EMPTY_ID,
+  emptyStage,
+  emptyTask,
+  TaskTypeListWithStatement,
+} from "@/types";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import type { Plan_Spec, Stage, Task } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { unknownPlanSpec } from "@/types/v1/issue/plan";
+import { Task_Type, Stage, Task } from "@/types/proto/v1/rollout_service";
+import { emptyPlanSpec } from "@/types/v1/issue/plan";
 import {
   activeStageInRollout,
   activeTaskInRollout,
@@ -76,11 +81,11 @@ export const useBaseIssueContext = (
     }
 
     // Otherwise, fallback to selected task's spec.
-    if (selectedTask.value) {
-      return specForTask(plan.value, selectedTask.value) || unknownPlanSpec();
+    if (selectedTask.value && selectedTask.value.uid !== String(EMPTY_ID)) {
+      return specForTask(plan.value, selectedTask.value) || emptyPlanSpec();
     }
     // Fallback to first spec.
-    return first(specs.value) || unknownPlanSpec();
+    return first(specs.value) || emptyPlanSpec();
   });
   const selectedStage = computed((): Stage => {
     const stageSlug = route.query.stage as string;
@@ -204,8 +209,8 @@ export const useBaseIssueContext = (
     return !issue.value.plan && !issue.value.planEntity;
   });
   const formatOnSave = computed({
-    get: () => uiStateStore.issueFormatStatementOnSave,
-    set: (value: boolean) => uiStateStore.setIssueFormatStatementOnSave(value),
+    get: () => uiStateStore.editorFormatStatementOnSave,
+    set: (value: boolean) => uiStateStore.setEditorFormatStatementOnSave(value),
   });
 
   return {

@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -41,13 +42,13 @@ func TestTryMerge(t *testing.T) {
 
 	for idx, tc := range testCases {
 		ancestorSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
-		err = protojson.Unmarshal([]byte(tc.Ancestor), ancestorSchemaMetadata)
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Ancestor), ancestorSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		headSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
-		err = protojson.Unmarshal([]byte(tc.Head), headSchemaMetadata)
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Head), headSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		baseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
-		err := protojson.Unmarshal([]byte(tc.Base), baseSchemaMetadata)
+		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Base), baseSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		mergedSchemaMetadata, err := tryMerge(ancestorSchemaMetadata, headSchemaMetadata, baseSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
@@ -59,7 +60,7 @@ func TestTryMerge(t *testing.T) {
 			testCases[idx].Expected = strings.TrimSpace(s)
 		} else {
 			expectedSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
-			err = protojson.Unmarshal([]byte(tc.Expected), expectedSchemaMetadata)
+			err = common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Expected), expectedSchemaMetadata)
 			a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 			if diff := cmp.Diff(expectedSchemaMetadata, mergedSchemaMetadata, protocmp.Transform()); diff != "" {
 				a.Failf("Failed", "mismatch (-want +got):\n%s", diff)

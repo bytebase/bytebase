@@ -64,11 +64,20 @@ import type { RolloutAction } from "./common";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { issue, activeStage, activeTask, events, releaserCandidates } =
-  useIssueContext();
+const {
+  issue,
+  activeStage,
+  activeTask,
+  events,
+  releaserCandidates,
+  reviewContext,
+} = useIssueContext();
 
 const issueStatusActionList = computed(() => {
-  return getApplicableIssueStatusActionList(issue.value);
+  return getApplicableIssueStatusActionList(
+    issue.value,
+    reviewContext.status.value
+  );
 });
 
 const taskRolloutActionList = computed(() => {

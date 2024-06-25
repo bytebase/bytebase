@@ -78,6 +78,9 @@ export enum Engine {
   DORIS = "DORIS",
   HIVE = "HIVE",
   ELASTICSEARCH = "ELASTICSEARCH",
+  BIGQUERY = "BIGQUERY",
+  DYNAMODB = "DYNAMODB",
+  DATABRICKS = "DATABRICKS",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -149,6 +152,15 @@ export function engineFromJSON(object: any): Engine {
     case 21:
     case "ELASTICSEARCH":
       return Engine.ELASTICSEARCH;
+    case 22:
+    case "BIGQUERY":
+      return Engine.BIGQUERY;
+    case 23:
+    case "DYNAMODB":
+      return Engine.DYNAMODB;
+    case 24:
+    case "DATABRICKS":
+      return Engine.DATABRICKS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -202,6 +214,12 @@ export function engineToJSON(object: Engine): string {
       return "HIVE";
     case Engine.ELASTICSEARCH:
       return "ELASTICSEARCH";
+    case Engine.BIGQUERY:
+      return "BIGQUERY";
+    case Engine.DYNAMODB:
+      return "DYNAMODB";
+    case Engine.DATABRICKS:
+      return "DATABRICKS";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -254,6 +272,12 @@ export function engineToNumber(object: Engine): number {
       return 20;
     case Engine.ELASTICSEARCH:
       return 21;
+    case Engine.BIGQUERY:
+      return 22;
+    case Engine.DYNAMODB:
+      return 23;
+    case Engine.DATABRICKS:
+      return 24;
     case Engine.UNRECOGNIZED:
     default:
       return -1;

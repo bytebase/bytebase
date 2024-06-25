@@ -1,13 +1,14 @@
 import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import Home from "@/views/Home.vue";
-import SettingSidebar from "@/views/SettingSidebar.vue";
+import DashboardLandingPage from "@/views/DashboardLandingPage.vue";
+import MyIssues from "@/views/MyIssues.vue";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_HOME_MODULE,
+  WORKSPACE_ROUTE_MY_ISSUES,
   WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
@@ -27,12 +28,28 @@ import {
   WORKSPACE_ROUTE_SSO_CREATE,
   WORKSPACE_ROUTE_SSO_DETAIL,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
+  WORKSPACE_ROUTE_REVIEW_CENTER,
+  WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_ROLES,
+  WORKSPACE_ROUTE_IM,
 } from "./workspaceRoutes";
 
 const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "",
     name: WORKSPACE_HOME_MODULE,
+    components: {
+      content: DashboardLandingPage,
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
+  },
+  {
+    path: "issues",
+    name: WORKSPACE_ROUTE_MY_ISSUES,
     meta: {
       getQuickActionList: () => {
         return [
@@ -46,7 +63,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
       },
     },
     components: {
-      content: Home,
+      content: MyIssues,
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: {
@@ -104,6 +121,21 @@ const workspaceRoutes: RouteRecordRaw[] = [
     props: { content: true, leftSidebar: true },
   },
   {
+    path: "review-center",
+    name: WORKSPACE_ROUTE_REVIEW_CENTER,
+    meta: {
+      title: () => startCase(t("review-center.self")),
+    },
+    components: {
+      content: () => import("@/views/ReviewCenter/index.vue"),
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
+  },
+  {
     path: "export-center",
     name: WORKSPACE_ROUTE_EXPORT_CENTER,
     meta: {
@@ -142,7 +174,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: WORKSPACE_ROUTE_USER_PROFILE,
     components: {
       content: () => import("@/views/ProfileDashboard.vue"),
-      leftSidebar: SettingSidebar,
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: true,
   },
@@ -383,6 +415,36 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceMailDelivery.vue"),
+      },
+      {
+        path: "members",
+        name: WORKSPACE_ROUTE_MEMBERS,
+        meta: {
+          title: () => t("settings.sidebar.members-and-groups"),
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+        },
+        component: () => import("@/views/SettingWorkspaceMember.vue"),
+        props: true,
+      },
+      {
+        path: "roles",
+        name: WORKSPACE_ROUTE_ROLES,
+        meta: {
+          title: () => t("settings.sidebar.custom-roles"),
+          requiredWorkspacePermissionList: () => ["bb.roles.list"],
+        },
+        component: () => import("@/views/SettingWorkspaceRole.vue"),
+        props: true,
+      },
+      {
+        path: "im",
+        name: WORKSPACE_ROUTE_IM,
+        meta: {
+          title: () => t("settings.sidebar.im-integration"),
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+        },
+        component: () => import("@/views/SettingWorkspaceIM.vue"),
+        props: true,
       },
     ],
   },

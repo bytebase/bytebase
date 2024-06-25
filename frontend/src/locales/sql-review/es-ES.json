@@ -100,11 +100,11 @@
       }
     },
     "table-limit-size": {
-      "title": "Limite las operaciones DDL en tablas con grandes volúmenes de datos",
-      "description": "Configure el tamaño máximo de datos de las tablas para las que se puede ejecutar DDL. Nivel de error recomendado: advertencia",
+      "title": "Limitar operaciones DDL en tablas con gran número de filas",
+      "description": "Configurar el número máximo de filas en tablas para las cuales se puede ejecutar DDL. Nivel de error recomendado: advertencia",
       "component": {
         "number": {
-          "title": "Tamaño máximo de datos"
+          "title": "Recuento máximo de filas"
         }
       }
     },
@@ -278,6 +278,10 @@
       "title": "Prohibir el cambio del orden de las columnas en una tabla",
       "description": "Modificar el orden de las columnas puede hacer que algunas aplicaciones o vistas que dependen del orden predeterminado de la tabla original produzcan resultados inesperados, como \"select *\". Nivel de error sugerido: Advertencia"
     },
+    "column-disallow-drop": {
+      "title": "Prohibir eliminar columnas",
+      "description": "Se prohíbe eliminar columnas. Nivel de error sugerido: advertencia."
+    },
     "column-disallow-drop-in-index": {
       "title": "Prohibir eliminar columnas en el índice",
       "description": "Prohibir eliminar columnas en el índice. Nivel de error sugerido: Advertencia"
@@ -443,7 +447,7 @@
       "title": "Prohibir el uso de comparación de igualdad con NULL en la cláusula WHERE",
       "description": "El resultado de la comparación de igualdad con NULL siempre es NULL, lo que puede causar resultados inesperados. Nivel de error de sugerencia: Advertencia"
     },
-    "statement-where-disallow-using-function": {
+    "statement-where-disallow-functions-and-calculations": {
       "title": "No aplique funciones ni realice cálculos en campos indexados en la cláusula WHERE",
       "description": "Si aplica una función o realiza un cálculo en el campo indexado, la base de datos no puede usar el índice y tiene que escanear toda la tabla."
     },
@@ -504,6 +508,18 @@
       "title": "Verificar la existencia de una copia de seguridad previa antes de cambiar los datos",
       "description": "Esta regla verificará si se puede crear una copia de seguridad antes del cambio de datos. Para más detalles, contiene la existencia de la base de datos objetivo de la copia de seguridad y no permite la sentencia DDL."
     },
+    "statement-add-column-without-position": {
+      "title": "Prohibir añadir columnas en una posición especificada",
+      "description": "En algunos casos, usar FIRST/AFTER para añadir columnas en una posición especificada puede causar una reorganización de los datos (reescribiendo los datos originales). Nivel de recomendación: advertencia."
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "Prohibir DDL sin conexión",
+      "description": "Para evitar que los cambios en la base de datos afecten su negocio, por favor evite usar DDL sin conexión."
+    },
+    "statement-disallow-cross-db-queries": {
+      "title": "Prohibir consultas entre bases de datos",
+      "description": "Las consultas entre bases de datos aumentan el acoplamiento del sistema y pueden llevar a problemas de eficiencia. Nivel de error sugerido: Advertencia"
+    },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
       "description": "Algunos cambios pueden afectar las aplicaciones en ejecución, como modificar el nombre del objeto de la base de datos, agregar nuevas restricciones, etc. Esta regla puede evitar cambios descuidados que lleven al fallo de la aplicación existente. Nivel de error sugerido: Advertencia"
@@ -563,6 +579,10 @@
           "title": "Lista permitida"
         }
       }
+    },
+    "index-not-redundant": {
+      "title": "Prohibir índices redundantes",
+      "description": "El índice redundante puede resultar en pérdida de rendimiento y ocupar espacio adicional. Por ejemplo, el índice en las columnas (c1, c2) se tratará como índices redundantes si ya hay un índice en la columna (c1). Nivel de error sugerido: Advertencia"
     },
     "system-charset-allowlist": {
       "title": "Lista permitida de juegos de caracteres",

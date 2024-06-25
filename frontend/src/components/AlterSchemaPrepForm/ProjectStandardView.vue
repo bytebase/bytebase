@@ -98,11 +98,14 @@
               >
             </div>
             <div
-              class="flex items-center gap-x-1 textinfolabel ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
+              class="flex items-center gap-x-2 ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
             >
-              <InstanceV1EngineIcon :instance="database.instanceEntity" />
-              <span class="flex-1 whitespace-pre-wrap">
-                {{ instanceV1Name(database.instanceEntity) }}
+              <InstanceV1Name
+                :instance="database.instanceEntity"
+                :link="false"
+              />
+              <span class="textinfolabel">
+                {{ hostPortOfInstanceV1(database.instanceEntity) }}
               </span>
             </div>
           </label>
@@ -115,12 +118,12 @@
 <script lang="ts" setup>
 import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { reactive, computed, watch } from "vue";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { EnvironmentV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { Project } from "@/types/proto/v1/project_service";
-import { instanceV1Name } from "@/utils";
+import { hostPortOfInstanceV1 } from "@/utils";
 
 interface LocalState {
   selectedDatabaseUidListForEnvironment: Map<string, string[]>;

@@ -1,5 +1,7 @@
 export const WORKSPACE_HOME_MODULE = "workspace.home";
+export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
 export const WORKSPACE_ROUTE_SLOW_QUERY = "workspace.slow-query";
+export const WORKSPACE_ROUTE_REVIEW_CENTER = "workspace.review-center";
 export const WORKSPACE_ROUTE_EXPORT_CENTER = "workspace.export-center";
 export const WORKSPACE_ROUTE_ANOMALY_CENTER = "workspace.anomaly-center";
 export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";
@@ -19,6 +21,8 @@ export const WORKSPACE_ROUTE_RISK_CENTER = "workspace.risk-center";
 export const WORKSPACE_ROUTE_SENSITIVE_DATA = "workspace.sensitive-data";
 export const WORKSPACE_ROUTE_AUDIT_LOG = "workspace.audit-log";
 export const WORKSPACE_ROUTE_MAIL_DELIVERY = "workspace.mail-delivery";
+export const WORKSPACE_ROUTE_MEMBERS = "workspace.members";
+export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
 
 export const WORKSPACE_ROUTE_GITOPS = "workspace.gitops";
 export const WORKSPACE_ROUTE_GITOPS_CREATE = `${WORKSPACE_ROUTE_GITOPS}.create`;
@@ -27,3 +31,5 @@ export const WORKSPACE_ROUTE_GITOPS_DETAIL = `${WORKSPACE_ROUTE_GITOPS}.detail`;
 export const WORKSPACE_ROUTE_SSO = "workspace.sso";
 export const WORKSPACE_ROUTE_SSO_CREATE = `${WORKSPACE_ROUTE_SSO}.create`;
 export const WORKSPACE_ROUTE_SSO_DETAIL = `${WORKSPACE_ROUTE_SSO}.detail`;
+
+export const WORKSPACE_ROUTE_IM = "workspace.im";

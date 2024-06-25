@@ -47,7 +47,7 @@ import {
   checkCursorAtFirstLine,
   checkCursorAtLast,
   checkCursorAtLastLine,
-  checkEndsWithSemicolon,
+  checkIsEnterEndsStatement,
 } from "./utils";
 
 const props = defineProps({
@@ -179,13 +179,13 @@ const handleEditorReady = (
   });
 
   // Create an editor context value to check if the SQL ends with semicolon ";"
-  const endsWithSemicolon = useEditorContextKey(
+  const isEnterEndsStatement = useEditorContextKey(
     editor,
-    "endsWithSemicolon",
-    checkEndsWithSemicolon(editor)
+    "isEnterEndsStatement",
+    checkIsEnterEndsStatement(editor, language.value)
   );
   editor.onDidChangeModelContent(() => {
-    endsWithSemicolon.set(checkEndsWithSemicolon(editor));
+    isEnterEndsStatement.set(checkIsEnterEndsStatement(editor, language.value));
   });
   // Another editor context value to check if the cursor is at the end of the
   // editor.
@@ -209,7 +209,7 @@ const handleEditorReady = (
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "!readonly && endsWithSemicolon && cursorAtLast && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
+    "!readonly && isEnterEndsStatement && cursorAtLast && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
 
   const cursorAtFirstLine = useEditorContextKey(

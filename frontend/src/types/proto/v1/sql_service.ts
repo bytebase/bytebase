@@ -82,6 +82,8 @@ export interface QueryRequest {
    * Or it can be used to query a specific read-only data source.
    */
   dataSourceId: string;
+  /** Explain the statement. */
+  explain: boolean;
 }
 
 export interface QueryResponse {
@@ -369,6 +371,8 @@ export interface StringifyMetadataRequest {
     | undefined;
   /** The database engine of the schema string. */
   engine: Engine;
+  /** If false, we will build the raw common by classification in database config. */
+  classificationFromConfig: boolean;
 }
 
 export interface StringifyMetadataResponse {
@@ -483,6 +487,29 @@ export function queryHistory_TypeToNumber(object: QueryHistory_Type): number {
     default:
       return -1;
   }
+}
+
+export interface GenerateRestoreSQLRequest {
+  /**
+   * The name is the instance name to execute the query against.
+   * Format: instances/{instance}/databases/{databaseName}
+   */
+  name: string;
+  /** The original SQL statement. */
+  statement: string;
+  /**
+   * The data source to restore from.
+   * Format: instances/{instance}/databases/{databaseName}, for general engines.
+   * Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
+   */
+  backupDataSource: string;
+  /** The backup table name. */
+  backupTable: string;
+}
+
+export interface GenerateRestoreSQLResponse {
+  /** The restore SQL statement. */
+  statement: string;
 }
 
 function createBaseExecuteRequest(): ExecuteRequest {
@@ -846,7 +873,15 @@ export const AdminExecuteResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "" };
+  return {
+    name: "",
+    connectionDatabase: "",
+    statement: "",
+    limit: 0,
+    timeout: undefined,
+    dataSourceId: "",
+    explain: false,
+  };
 }
 
 export const QueryRequest = {
@@ -868,6 +903,9 @@ export const QueryRequest = {
     }
     if (message.dataSourceId !== "") {
       writer.uint32(50).string(message.dataSourceId);
+    }
+    if (message.explain === true) {
+      writer.uint32(56).bool(message.explain);
     }
     return writer;
   },
@@ -921,6 +959,13 @@ export const QueryRequest = {
 
           message.dataSourceId = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.explain = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -938,6 +983,7 @@ export const QueryRequest = {
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
       dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
+      explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
     };
   },
 
@@ -961,6 +1007,9 @@ export const QueryRequest = {
     if (message.dataSourceId !== "") {
       obj.dataSourceId = message.dataSourceId;
     }
+    if (message.explain === true) {
+      obj.explain = message.explain;
+    }
     return obj;
   },
 
@@ -977,6 +1026,7 @@ export const QueryRequest = {
       ? Duration.fromPartial(object.timeout)
       : undefined;
     message.dataSourceId = object.dataSourceId ?? "";
+    message.explain = object.explain ?? false;
     return message;
   },
 };
@@ -2524,7 +2574,7 @@ export const ParseMyBatisMapperResponse = {
 };
 
 function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
-  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED };
+  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED, classificationFromConfig: false };
 }
 
 export const StringifyMetadataRequest = {
@@ -2534,6 +2584,9 @@ export const StringifyMetadataRequest = {
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       writer.uint32(16).int32(engineToNumber(message.engine));
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(24).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -2559,6 +2612,13 @@ export const StringifyMetadataRequest = {
 
           message.engine = engineFromJSON(reader.int32());
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2572,6 +2632,9 @@ export const StringifyMetadataRequest = {
     return {
       metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -2582,6 +2645,9 @@ export const StringifyMetadataRequest = {
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
+    }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
     }
     return obj;
   },
@@ -2595,6 +2661,7 @@ export const StringifyMetadataRequest = {
       ? DatabaseMetadata.fromPartial(object.metadata)
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };
@@ -2992,6 +3059,167 @@ export const QueryHistory = {
       ? Duration.fromPartial(object.duration)
       : undefined;
     message.type = object.type ?? QueryHistory_Type.TYPE_UNSPECIFIED;
+    return message;
+  },
+};
+
+function createBaseGenerateRestoreSQLRequest(): GenerateRestoreSQLRequest {
+  return { name: "", statement: "", backupDataSource: "", backupTable: "" };
+}
+
+export const GenerateRestoreSQLRequest = {
+  encode(message: GenerateRestoreSQLRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.statement !== "") {
+      writer.uint32(18).string(message.statement);
+    }
+    if (message.backupDataSource !== "") {
+      writer.uint32(26).string(message.backupDataSource);
+    }
+    if (message.backupTable !== "") {
+      writer.uint32(34).string(message.backupTable);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GenerateRestoreSQLRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGenerateRestoreSQLRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.backupDataSource = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.backupTable = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GenerateRestoreSQLRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      backupDataSource: isSet(object.backupDataSource) ? globalThis.String(object.backupDataSource) : "",
+      backupTable: isSet(object.backupTable) ? globalThis.String(object.backupTable) : "",
+    };
+  },
+
+  toJSON(message: GenerateRestoreSQLRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (message.backupDataSource !== "") {
+      obj.backupDataSource = message.backupDataSource;
+    }
+    if (message.backupTable !== "") {
+      obj.backupTable = message.backupTable;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GenerateRestoreSQLRequest>): GenerateRestoreSQLRequest {
+    return GenerateRestoreSQLRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GenerateRestoreSQLRequest>): GenerateRestoreSQLRequest {
+    const message = createBaseGenerateRestoreSQLRequest();
+    message.name = object.name ?? "";
+    message.statement = object.statement ?? "";
+    message.backupDataSource = object.backupDataSource ?? "";
+    message.backupTable = object.backupTable ?? "";
+    return message;
+  },
+};
+
+function createBaseGenerateRestoreSQLResponse(): GenerateRestoreSQLResponse {
+  return { statement: "" };
+}
+
+export const GenerateRestoreSQLResponse = {
+  encode(message: GenerateRestoreSQLResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.statement !== "") {
+      writer.uint32(10).string(message.statement);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GenerateRestoreSQLResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGenerateRestoreSQLResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GenerateRestoreSQLResponse {
+    return { statement: isSet(object.statement) ? globalThis.String(object.statement) : "" };
+  },
+
+  toJSON(message: GenerateRestoreSQLResponse): unknown {
+    const obj: any = {};
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GenerateRestoreSQLResponse>): GenerateRestoreSQLResponse {
+    return GenerateRestoreSQLResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GenerateRestoreSQLResponse>): GenerateRestoreSQLResponse {
+    const message = createBaseGenerateRestoreSQLResponse();
+    message.statement = object.statement ?? "";
     return message;
   },
 };
@@ -3563,6 +3791,80 @@ export const SQLServiceDefinition = {
               97,
               116,
               97,
+            ]),
+          ],
+        },
+      },
+    },
+    generateRestoreSQL: {
+      name: "GenerateRestoreSQL",
+      requestType: GenerateRestoreSQLRequest,
+      requestStream: false,
+      responseType: GenerateRestoreSQLResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              58,
+              58,
+              1,
+              42,
+              34,
+              53,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              103,
+              101,
+              110,
+              101,
+              114,
+              97,
+              116,
+              101,
+              82,
+              101,
+              115,
+              116,
+              111,
+              114,
+              101,
+              83,
+              81,
+              76,
             ]),
           ],
         },

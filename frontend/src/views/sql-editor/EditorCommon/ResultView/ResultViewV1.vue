@@ -48,12 +48,18 @@
       </template>
       <template v-else-if="viewMode === 'ERROR'">
         <ErrorView :error="resultSet.error">
-          <template
-            v-if="resultSet.status === Status.PERMISSION_DENIED"
-            #suffix
-          >
+          <template #suffix>
             <HideInStandaloneMode>
-              <RequestQueryButton />
+              <RequestQueryButton
+                v-if="resultSet.status === Status.PERMISSION_DENIED"
+                :database="database ?? connectedDb"
+              />
+              <SyncDatabaseButton
+                v-else-if="resultSet.error.includes('resource not found')"
+                :type="'primary'"
+                :text="true"
+                :database="database"
+              />
             </HideInStandaloneMode>
           </template>
         </ErrorView>
@@ -106,12 +112,9 @@ import DetailPanel from "./DetailPanel.vue";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
 import RequestQueryButton from "./RequestQueryButton.vue";
+import SingleResultViewV1 from "./SingleResultViewV1.vue";
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
-
-const { default: SingleResultViewV1 } = await import(
-  "./SingleResultViewV1.vue"
-);
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
@@ -141,7 +144,8 @@ const props = defineProps({
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
-const { instance } = useConnectionOfCurrentSQLEditorTab();
+const { instance, database: connectedDb } =
+  useConnectionOfCurrentSQLEditorTab();
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref({
   show: false,

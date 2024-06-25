@@ -45,7 +45,9 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
 			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
 		},
-		CreateTime: timestamppb.New(time.Unix(plan.CreatedTs, 0)),
+		CreateTime:              timestamppb.New(time.Unix(plan.CreatedTs, 0)),
+		UpdateTime:              timestamppb.New(time.Unix(plan.UpdatedTs, 0)),
+		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
 	}
 
 	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
@@ -74,6 +76,7 @@ func convertToPlanSteps(steps []*storepb.PlanConfig_Step) []*v1pb.Plan_Step {
 
 func convertToPlanStep(step *storepb.PlanConfig_Step) *v1pb.Plan_Step {
 	return &v1pb.Plan_Step{
+		Title: step.Title,
 		Specs: convertToPlanSpecs(step.Specs),
 	}
 }
@@ -126,27 +129,15 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 	c := config.ChangeDatabaseConfig
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target:          c.Target,
-			Sheet:           c.Sheet,
-			Type:            convertToPlanSpecChangeDatabaseConfigType(c.Type),
-			SchemaVersion:   c.SchemaVersion,
-			RollbackEnabled: c.RollbackEnabled,
-			RollbackDetail:  convertToPlanSpecChangeDatabaseConfigRollbackDetail(c.RollbackDetail),
-			GhostFlags:      c.GhostFlags,
+			Target:        c.Target,
+			Sheet:         c.Sheet,
+			Type:          convertToPlanSpecChangeDatabaseConfigType(c.Type),
+			SchemaVersion: c.SchemaVersion,
+			GhostFlags:    c.GhostFlags,
 			PreUpdateBackupDetail: &v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail{
 				Database: c.PreUpdateBackupDetail.GetDatabase(),
 			},
 		},
-	}
-}
-
-func convertToPlanSpecChangeDatabaseConfigRollbackDetail(d *storepb.PlanConfig_ChangeDatabaseConfig_RollbackDetail) *v1pb.Plan_ChangeDatabaseConfig_RollbackDetail {
-	if d == nil {
-		return nil
-	}
-	return &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
-		RollbackFromIssue: d.RollbackFromIssue,
-		RollbackFromTask:  d.RollbackFromIssue,
 	}
 }
 
@@ -191,6 +182,7 @@ func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
 
 func convertPlanStep(step *v1pb.Plan_Step) *storepb.PlanConfig_Step {
 	return &storepb.PlanConfig_Step{
+		Title: step.Title,
 		Specs: convertPlanSpecs(step.Specs),
 	}
 }
@@ -256,7 +248,6 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Sheet:                 c.Sheet,
 			Type:                  storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
 			SchemaVersion:         c.SchemaVersion,
-			RollbackEnabled:       c.RollbackEnabled,
 			GhostFlags:            c.GhostFlags,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		},
@@ -349,12 +340,8 @@ func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type 
 	switch t {
 	case store.PlanCheckDatabaseStatementFakeAdvise:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE
-	case store.PlanCheckDatabaseStatementCompatibility:
-		return v1pb.PlanCheckRun_DATABASE_STATEMENT_COMPATIBILITY
 	case store.PlanCheckDatabaseStatementAdvise:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE
-	case store.PlanCheckDatabaseStatementType:
-		return v1pb.PlanCheckRun_DATABASE_STATEMENT_TYPE
 	case store.PlanCheckDatabaseStatementSummaryReport:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
 	case store.PlanCheckDatabaseConnect:
@@ -463,7 +450,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
 		if s, ok := v.(state.TaskRunExecutionStatus); ok {
 			t.ExecutionStatus = s.ExecutionStatus
-			t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
 			t.ExecutionDetail = s.ExecutionDetail
 		}
 	}
@@ -632,7 +618,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
 		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
+		Target:         common.FormatInstance(instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",
@@ -641,7 +627,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Sheet:        getResourceNameForSheet(project, payload.SheetID),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
-				Environment:  fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, payload.EnvironmentID),
+				Environment:  common.FormatEnvironment(payload.EnvironmentID),
 				Labels:       labels,
 			},
 		},
@@ -700,13 +686,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		return nil, errors.Errorf("database not found")
 	}
 
-	// HACK: task.Statement is not empty means that the statement comes from a database group target.
-	// we don't want to create new sheets every time so we pass the statement as sheet.
-	sheet := getResourceNameForSheet(project, payload.SheetID)
-	if task.Statement != "" {
-		sheet = task.Statement
-	}
-
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -719,7 +698,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
-				Sheet:         sheet,
+				Sheet:         getResourceNameForSheet(project, payload.SheetID),
 				SchemaVersion: payload.SchemaVersion,
 			},
 		},
@@ -765,23 +744,12 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	var rollbackSheetName string
-	if payload.RollbackSheetID != 0 {
-		rollbackSheetName = getResourceNameForSheet(project, payload.RollbackSheetID)
-	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
 	if database == nil {
 		return nil, errors.Errorf("database not found")
-	}
-
-	// HACK: task.Statement is not empty means that the statement comes from a database group target.
-	// we don't want to create new sheets every time so we pass the statement as sheet.
-	sheet := getResourceNameForSheet(project, payload.SheetID)
-	if task.Statement != "" {
-		sheet = task.Statement
 	}
 
 	v1pbTask := &v1pb.Task{
@@ -798,29 +766,9 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:             sheet,
-			SchemaVersion:     payload.SchemaVersion,
-			RollbackEnabled:   payload.RollbackEnabled,
-			RollbackSqlStatus: convertToRollbackSQLStatus(payload.RollbackSQLStatus),
-			RollbackError:     payload.RollbackError,
-			RollbackSheet:     rollbackSheetName,
-			RollbackFromIssue: "",
-			RollbackFromTask:  "",
+			Sheet:         getResourceNameForSheet(project, payload.SheetID),
+			SchemaVersion: payload.SchemaVersion,
 		},
-	}
-	if payload.RollbackFromIssueID != 0 && payload.RollbackFromTaskID != 0 {
-		rollbackFromIssue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{
-			UID: &payload.RollbackFromIssueID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get rollback issue %q", payload.RollbackFromIssueID)
-		}
-		rollbackFromTask, err := s.GetTaskV2ByID(ctx, payload.RollbackFromTaskID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get rollback task %q", payload.RollbackFromTaskID)
-		}
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromIssue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.IssueNamePrefix, rollbackFromIssue.UID)
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromTask = fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, rollbackFromIssue.Project.ResourceID, common.RolloutPrefix, rollbackFromTask.PipelineID, common.StagePrefix, rollbackFromTask.StageID, common.TaskPrefix, rollbackFromTask.ID)
 	}
 
 	v1pbTask.Payload = v1pbTaskPayload
@@ -909,20 +857,6 @@ func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
-	}
-}
-
-func convertToRollbackSQLStatus(status api.RollbackSQLStatus) v1pb.Task_DatabaseDataUpdate_RollbackSqlStatus {
-	switch status {
-	case api.RollbackSQLStatusPending:
-		return v1pb.Task_DatabaseDataUpdate_PENDING
-	case api.RollbackSQLStatusDone:
-		return v1pb.Task_DatabaseDataUpdate_DONE
-	case api.RollbackSQLStatusFailed:
-		return v1pb.Task_DatabaseDataUpdate_FAILED
-
-	default:
-		return v1pb.Task_DatabaseDataUpdate_ROLLBACK_SQL_STATUS_UNSPECIFIED
 	}
 }
 

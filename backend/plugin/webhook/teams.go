@@ -51,16 +51,16 @@ type TeamsWebhook struct {
 }
 
 func init() {
-	register("bb.plugin.webhook.teams", &TeamsReceiver{})
+	Register("bb.plugin.webhook.teams", &TeamsReceiver{})
 }
 
 // TeamsReceiver is the receiver for Teams.
 type TeamsReceiver struct {
 }
 
-func (*TeamsReceiver) post(context Context) error {
+func (*TeamsReceiver) Post(context Context) error {
 	factList := []TeamsWebhookSectionFact{}
-	for _, meta := range context.getMetaList() {
+	for _, meta := range context.GetMetaList() {
 		factList = append(factList, TeamsWebhookSectionFact(meta))
 	}
 
@@ -102,7 +102,7 @@ func (*TeamsReceiver) post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout: Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {

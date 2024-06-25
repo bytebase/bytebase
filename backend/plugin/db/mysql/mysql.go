@@ -42,6 +42,9 @@ var (
 	viewTableType = "VIEW"
 
 	_ db.Driver = (*Driver)(nil)
+
+	variableSetStmtRegexp  = regexp.MustCompile(`(?i)^SET\s+?`)
+	variableShowStmtRegexp = regexp.MustCompile(`(?i)^SHOW\s+?`)
 )
 
 func init() {
@@ -163,6 +166,7 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	pem, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -194,7 +198,7 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 	}
 
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, "us-east-1", connCfg.Username, cfg.Credentials)
+		ctx, dbEndpoint, connCfg.Region, connCfg.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
@@ -305,16 +309,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
-	if opts.BeginFunc != nil {
-		if err := opts.BeginFunc(ctx, conn); err != nil {
-			return 0, err
-		}
-	}
-
 	var totalCommands int
-	var chunks [][]base.SingleSQL
-	var originalIndex map[int]int
-	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+	var commands []base.SingleSQL
+	var originalIndex []int32
+	oneshot := true
+	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
@@ -323,30 +322,21 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
-		totalCommands = len(singleSQLs)
-		ret, err := util.ChunkedSQLScript(singleSQLs, common.MaxSheetChunksCount)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to chunk sql")
+		commands = singleSQLs
+		totalCommands = len(commands)
+		if totalCommands <= common.MaximumCommands {
+			oneshot = false
 		}
-		chunks = ret
-	} else {
-		chunks = [][]base.SingleSQL{
+	}
+	if oneshot {
+		commands = []base.SingleSQL{
 			{
-				base.SingleSQL{
-					Text: statement,
-				},
+				Text: statement,
 			},
 		}
-		originalIndex = map[int]int{0: 0}
+		originalIndex = []int32{0}
 	}
 
-	tx, err := conn.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin execute transaction")
-	}
-	defer tx.Rollback()
-
-	currentIndex := 0
 	var totalRowsAffected int64
 
 	if err := conn.Raw(func(driverConn any) error {
@@ -360,41 +350,27 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 		defer tx.Rollback()
 
-		for _, chunk := range chunks {
-			if len(chunk) == 0 {
-				continue
-			}
-			// Start the current chunk.
-
+		for i, command := range commands {
 			// Set the progress information for the current chunk.
 			if opts.UpdateExecutionStatus != nil {
 				opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
 					CommandsTotal:     int32(totalCommands),
-					CommandsCompleted: int32(currentIndex),
+					CommandsCompleted: int32(i),
 					CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(chunk[0].FirstStatementLine),
-						Column: int32(chunk[0].FirstStatementColumn),
+						Line:   int32(command.FirstStatementLine),
+						Column: int32(command.FirstStatementColumn),
 					},
 					CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(chunk[len(chunk)-1].LastLine),
-						Column: int32(chunk[len(chunk)-1].LastColumn),
+						Line:   int32(command.LastLine),
+						Column: int32(command.LastColumn),
 					},
 				})
 			}
 
-			chunkText, err := util.ConcatChunk(chunk)
-			if err != nil {
-				return err
-			}
-
-			var indexes []int32
-			for i := currentIndex; i < currentIndex+len(chunk); i++ {
-				indexes = append(indexes, int32(originalIndex[i]))
-			}
-
+			indexes := []int32{originalIndex[i]}
 			opts.LogCommandExecute(indexes)
 
-			sqlResult, err := exer.ExecContext(ctx, chunkText, nil)
+			sqlResult, err := exer.ExecContext(ctx, command.Text, nil)
 			if err != nil {
 				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 					slog.Info("cancel connection", slog.String("connectionID", connectionID))
@@ -408,12 +384,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				return &db.ErrorWithPosition{
 					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 					Start: &storepb.TaskRunResult_Position{
-						Line:   int32(chunk[0].FirstStatementLine),
-						Column: int32(chunk[0].FirstStatementColumn),
+						Line:   int32(command.FirstStatementLine),
+						Column: int32(command.FirstStatementColumn),
 					},
 					End: &storepb.TaskRunResult_Position{
-						Line:   int32(chunk[len(chunk)-1].LastLine),
-						Column: int32(chunk[len(chunk)-1].LastColumn),
+						Line:   int32(command.LastLine),
+						Column: int32(command.LastColumn),
 					},
 				}
 			}
@@ -428,8 +404,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			totalRowsAffected += rowsAffected
 
 			opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffectedInt32, "")
-
-			currentIndex += len(chunk)
 		}
 
 		if err := tx.Commit(); err != nil {
@@ -445,7 +419,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.ReadOnly {
+	if queryContext != nil && queryContext.ReadOnly {
 		queryContext.ReadOnly = d.getReadOnly()
 	}
 
@@ -501,30 +475,18 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 
 func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
-	isExplain := strings.HasPrefix(statement, "EXPLAIN")
-	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
-
-	stmt := statement
-	if !isExplain && !isSet && queryContext.Limit > 0 {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
-	}
-
-	if queryContext.SensitiveSchemaInfo != nil {
-		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("MySQL schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != "" {
-				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
-			}
+	isSet := variableSetStmtRegexp.MatchString(statement)
+	isShow := variableShowStmtRegexp.MatchString(statement)
+	if !isSet && !isShow {
+		if queryContext != nil && queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext != nil && queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, d.dbType, conn, stmt, queryContext)
+	result, err := util.Query(ctx, d.dbType, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}

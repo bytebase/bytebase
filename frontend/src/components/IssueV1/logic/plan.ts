@@ -13,7 +13,7 @@ import {
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import { InstanceResource } from "@/types/proto/v1/instance_service";
-import type { Plan_Spec } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import {
   extractDatabaseResourceName,
   extractDatabaseGroupName,
@@ -108,7 +108,8 @@ export const databaseEngineForSpec = async (
     }
   }
   if (extractDatabaseGroupName(target)) {
-    const dbGroup = await useDBGroupStore().getOrFetchDBGroupByName(target);
+    const dbGroupStore = useDBGroupStore();
+    const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(target);
     // Might be flaky: use the first database in the db group
     const dbName = head(dbGroup.matchedDatabases)?.name;
     if (dbName) {

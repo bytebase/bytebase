@@ -36,9 +36,11 @@ export const unknownProject = (): ComposedProject => {
   };
 };
 
-export const defaultProject = {
-  ...unknownProject(),
-  name: DEFAULT_PROJECT_V1_NAME,
-  uid: String(DEFAULT_PROJECT_UID),
-  title: "Default project",
+export const defaultProject = (): ComposedProject => {
+  return {
+    ...unknownProject(),
+    name: DEFAULT_PROJECT_V1_NAME,
+    uid: String(DEFAULT_PROJECT_UID),
+    title: "Default project",
+  };
 };

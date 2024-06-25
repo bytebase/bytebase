@@ -16,8 +16,9 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
-import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import {
+  useSettingV1Store,
   useCurrentUserV1,
   useSubscriptionV1Store,
   useDBSchemaV1Store,
@@ -40,6 +41,10 @@ import {
   updateColumnConfig,
   supportSetClassificationFromComment,
 } from "./utils";
+
+defineOptions({
+  name: "ColumnDataTable",
+});
 
 const props = defineProps({
   database: {
@@ -90,6 +95,7 @@ const engine = computed(() => {
 const currentUserV1 = useCurrentUserV1();
 const subscriptionV1Store = useSubscriptionV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
+const settingStore = useSettingV1Store();
 
 const hasSensitiveDataFeature = computed(() => {
   return (
@@ -113,20 +119,19 @@ const showSensitiveColumn = computed(() => {
   );
 });
 
-const databaseSchemaMetadata = computed(() => {
-  return dbSchemaStore.getDatabaseMetadata(props.database.name);
-});
-
 const showClassificationColumn = computed(() => {
   return !props.isExternalTable && props.classificationConfig;
 });
 
-const setClassificationFromComment = computed(() =>
-  supportSetClassificationFromComment(
+const setClassificationFromComment = computed(() => {
+  const classificationConfig = settingStore.getProjectClassification(
+    props.database.projectEntity.dataClassificationConfigId
+  );
+  return supportSetClassificationFromComment(
     engine.value,
-    databaseSchemaMetadata.value.classificationFromConfig
-  )
-);
+    classificationConfig?.classificationFromConfig ?? false
+  );
+});
 
 const showLabelsColumn = computed(() => {
   return !props.isExternalTable;
@@ -198,7 +203,7 @@ const columns = computed(() => {
       key: "classification",
       title: t("database.classification.self"),
       hide: !showClassificationColumn.value,
-      minWidth: 140,
+      width: 140,
       resizable: true,
       render: (column) => {
         const columnConfig = dbSchemaStore.getColumnConfig(

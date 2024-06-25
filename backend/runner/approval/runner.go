@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"sort"
 	"sync"
 	"time"
@@ -13,16 +14,16 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	celtypes "github.com/google/cel-go/common/types"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
@@ -34,23 +35,25 @@ import (
 
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
-	store           *store.Store
-	dbFactory       *dbfactory.DBFactory
-	stateCfg        *state.State
-	activityManager *activity.Manager
-	relayRunner     *relay.Runner
-	licenseService  enterprise.LicenseService
+	store          *store.Store
+	sheetManager   *sheet.Manager
+	dbFactory      *dbfactory.DBFactory
+	stateCfg       *state.State
+	webhookManager *webhook.Manager
+	relayRunner    *relay.Runner
+	licenseService enterprise.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterprise.LicenseService) *Runner {
+func NewRunner(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, relayRunner *relay.Runner, licenseService enterprise.LicenseService) *Runner {
 	return &Runner{
-		store:           store,
-		dbFactory:       dbFactory,
-		stateCfg:        stateCfg,
-		activityManager: activityManager,
-		relayRunner:     relayRunner,
-		licenseService:  licenseService,
+		store:          store,
+		sheetManager:   sheetManager,
+		dbFactory:      dbFactory,
+		stateCfg:       stateCfg,
+		webhookManager: webhookManager,
+		relayRunner:    relayRunner,
+		licenseService: licenseService,
 	}
 }
 
@@ -147,7 +150,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return nil, 0, true, nil
 		}
 
-		riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.licenseService, r.dbFactory, issue, risks)
+		riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, issue, risks)
 		if err != nil {
 			err = errors.Wrap(err, "failed to get issue risk level")
 			return nil, 0, false, err
@@ -182,10 +185,10 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	// Grant privilege and close issue similar to actions on issue approval.
 	if issue.Type == api.IssueGrantRequest && approvalTemplate == nil {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, r.activityManager, issue, payload.GrantRequest); err != nil {
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, r.store.GetSystemBotUser(ctx), ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
@@ -200,7 +203,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = []*storepb.ApprovalTemplate{approvalTemplate}
 	}
 
-	newApprovers, activityCreates, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
+	newApprovers, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to handle incoming approval steps")
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
@@ -219,26 +222,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	if err := func() error {
 		for _, ic := range issueComments {
-			if err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
-	}
-
-	// It's ok to fail to create activity.
-	if err := func() error {
-		for _, create := range activityCreates {
-			if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create activity after approving review", log.BBError(err))
 	}
 
 	if err := func() error {
@@ -259,25 +249,17 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err != nil {
 			return errors.Wrapf(err, "failed to get rollout policy")
 		}
-		payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
-			RolloutPolicy: policy,
-			StageName:     stages[0].Name,
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   r.store.GetSystemBotUser(ctx),
+			Type:    webhook.EventTypeIssueRolloutReady,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueRolloutReady: &webhook.EventIssueRolloutReady{
+				RolloutPolicy: policy,
+				StageName:     stages[0].Name,
+			},
 		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal activity payload")
-		}
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      *issue.PipelineUID,
-			Type:              api.ActivityNotifyPipelineRollout,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(payload),
-		}
-		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
-			return err
-		}
 		return nil
 	}(); err != nil {
 		slog.Error("failed to create rollout release notification activity", log.BBError(err))
@@ -291,32 +273,16 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if approvalStep == nil {
 			return nil
 		}
-		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
-			ApprovalStep: approvalStep,
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   r.store.GetSystemBotUser(ctx),
+			Type:    webhook.EventTypeIssueApprovalCreate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
+				ApprovalStep: approvalStep,
+			},
 		})
-		if err != nil {
-			return err
-		}
-		activityPayload, err := json.Marshal(api.ActivityIssueApprovalNotifyPayload{
-			ProtoPayload: string(protoPayload),
-		})
-		if err != nil {
-			return err
-		}
-
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueApprovalNotify,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(activityPayload),
-		}
-		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
-			return err
-		}
-
 		return nil
 	}(); err != nil {
 		slog.Error("failed to create approval step pending activity after creating review", log.BBError(err))
@@ -358,20 +324,43 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	return nil, nil
 }
 
-func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func getIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+	// sort by level DESC, higher risks go first.
+	sort.Slice(risks, func(i, j int) bool {
+		return risks[i].Level > risks[j].Level
+	})
+
 	switch issue.Type {
 	case api.IssueGrantRequest:
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
 	case api.IssueDatabaseGeneral:
-		return getDatabaseGeneralIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
+		return getDatabaseGeneralIssueRisk(ctx, s, sheetManager, licenseService, dbFactory, issue, risks)
 	case api.IssueDatabaseDataExport:
-		return getDatabaseDataExportIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
+		return getDatabaseDataExportIssueRisk(ctx, s, sheetManager, licenseService, dbFactory, issue, risks)
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
 }
 
-func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func getRiskSourceByTaskType(pipeline *store.PipelineMessage) store.RiskSource {
+	for _, stage := range pipeline.Stages {
+		for _, task := range stage.TaskList {
+			switch task.Type {
+			case api.TaskDatabaseCreate:
+				return store.RiskSourceDatabaseCreate
+			case api.TaskDatabaseSchemaUpdate,
+				api.TaskDatabaseSchemaUpdateSDL,
+				api.TaskDatabaseSchemaUpdateGhostSync:
+				return store.RiskSourceDatabaseSchemaUpdate
+			case api.TaskDatabaseDataUpdate:
+				return store.RiskSourceDatabaseDataUpdate
+			}
+		}
+	}
+	return store.RiskSourceUnknown
+}
+
+func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
@@ -412,31 +401,14 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 		}
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
 	// Conclude risk source from task types.
-	seenTaskType := map[api.TaskType]bool{}
-	for _, stage := range pipelineCreate.Stages {
-		for _, task := range stage.TaskList {
-			seenTaskType[task.Type] = true
-		}
-	}
-	riskSource := func() store.RiskSource {
-		if seenTaskType[api.TaskDatabaseCreate] {
-			return store.RiskSourceDatabaseCreate
-		}
-		if seenTaskType[api.TaskDatabaseSchemaUpdate] || seenTaskType[api.TaskDatabaseSchemaUpdateSDL] || seenTaskType[api.TaskDatabaseSchemaUpdateGhostSync] {
-			return store.RiskSourceDatabaseSchemaUpdate
-		}
-		if seenTaskType[api.TaskDatabaseDataUpdate] {
-			return store.RiskSourceDatabaseDataUpdate
-		}
-		return store.RiskSourceUnknown
-	}()
-
+	// TODO(d): use type from statement.
+	riskSource := getRiskSourceByTaskType(pipelineCreate)
 	// cannot conclude risk source
 	if riskSource == store.RiskSourceUnknown {
 		return 0, store.RiskSourceUnknown, true, nil
@@ -447,16 +419,17 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 	for _, run := range latestPlanCheckRun {
 		for _, result := range run.Result.GetResults() {
 			if result.GetCode() == common.SizeExceeded.Int32() {
-				var maxRiskLevel int32
+				// risks is sorted by level DESC, so we just need to return the 1st matched risk.
 				for _, risk := range risks {
+					if !risk.Active {
+						continue
+					}
 					if risk.Source != riskSource {
 						continue
 					}
-					if risk.Level > maxRiskLevel {
-						maxRiskLevel = risk.Level
-					}
+					return risk.Level, riskSource, true, nil
 				}
-				return maxRiskLevel, riskSource, true, nil
+				return 0, riskSource, true, nil
 			}
 		}
 	}
@@ -581,13 +554,16 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 			if maxRiskLevel < risk {
 				maxRiskLevel = risk
 			}
+			if level, _ := convertRiskLevel(maxRiskLevel); level == storepb.IssuePayloadApproval_HIGH {
+				return maxRiskLevel, riskSource, true, nil
+			}
 		}
 	}
 
 	return maxRiskLevel, riskSource, true, nil
 }
 
-func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
@@ -599,7 +575,7 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, license
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -688,6 +664,9 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, license
 			if maxRiskLevel < risk {
 				maxRiskLevel = risk
 			}
+			if level, _ := convertRiskLevel(maxRiskLevel); level == storepb.IssuePayloadApproval_HIGH {
+				return maxRiskLevel, riskSource, true, nil
+			}
 		}
 	}
 
@@ -715,11 +694,6 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 		return 0, riskSource, true, nil
 	}
 
-	// higher risks go first
-	sort.Slice(risks, func(i, j int) bool {
-		return risks[i].Level > risks[j].Level
-	})
-
 	e, err := cel.NewEnv(common.RiskFactors...)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, err
@@ -729,7 +703,11 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get query export factors")
 	}
-	expirationDays := payload.GrantRequest.Expiration.AsDuration().Hours() / 24
+	// Default to max float64 if expiration is not set. AKA no expiration.
+	expirationDays := math.MaxFloat64
+	if payload.GrantRequest.Expiration != nil {
+		expirationDays = payload.GrantRequest.Expiration.AsDuration().Hours() / 24
+	}
 	databases := []*store.DatabaseMessage{}
 	if len(factors.DatabaseNames) == 0 {
 		list, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{
@@ -809,9 +787,10 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-					if risk.Level > maxRisk {
-						maxRisk = risk.Level
-					}
+					maxRisk = risk.Level
+				}
+				if maxRisk > 0 {
+					break
 				}
 			}
 		} else if riskSource == store.RiskRequestQuery {
@@ -835,11 +814,16 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-					if risk.Level > maxRisk {
-						maxRisk = risk.Level
-					}
+					maxRisk = risk.Level
+				}
+				if maxRisk > 0 {
+					break
 				}
 			}
+		}
+		// We can stop the loop because the risk list is sorted by level DESC.
+		if maxRisk > 0 {
+			break
 		}
 	}
 

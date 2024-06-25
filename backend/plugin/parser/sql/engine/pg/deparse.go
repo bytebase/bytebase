@@ -117,8 +117,12 @@ func deparseComment(context DeparseContext, in *ast.CommentStmt, buf *strings.Bu
 	}
 
 	switch in.Type {
-	case ast.ObjectTypeTable:
-		if _, err := buf.WriteString("COMMENT ON TABLE \""); err != nil {
+	case ast.ObjectTypeTable, ast.ObjectTypeView:
+		typeText := "TABLE"
+		if in.Type == ast.ObjectTypeView {
+			typeText = "VIEW"
+		}
+		if _, err := fmt.Fprintf(buf, "COMMENT ON %s \"", typeText); err != nil {
 			return err
 		}
 		tableDef, ok := in.Object.(*ast.TableDef)

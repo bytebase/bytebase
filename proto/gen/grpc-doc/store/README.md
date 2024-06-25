@@ -29,12 +29,27 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
+- [store/common.proto](#store_common-proto)
+    - [PageToken](#bytebase-store-PageToken)
+    - [Position](#bytebase-store-Position)
+  
+    - [Engine](#bytebase-store-Engine)
+    - [ExportFormat](#bytebase-store-ExportFormat)
+    - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [VCSType](#bytebase-store-VCSType)
+  
+- [store/advice.proto](#store_advice-proto)
+    - [Advice](#bytebase-store-Advice)
+  
+    - [Advice.Status](#bytebase-store-Advice-Status)
+  
 - [store/audit_log.proto](#store_audit_log-proto)
     - [AuditLog](#bytebase-store-AuditLog)
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
 - [store/database.proto](#store_database-proto)
+    - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
     - [ColumnConfig](#bytebase-store-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
@@ -48,8 +63,10 @@
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
     - [FunctionConfig](#bytebase-store-FunctionConfig)
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
+    - [GenerationMetadata](#bytebase-store-GenerationMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
+    - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
     - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
     - [ProcedureConfig](#bytebase-store-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
@@ -57,6 +74,7 @@
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
+    - [SequenceMetadata](#bytebase-store-SequenceMetadata)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableConfig](#bytebase-store-TableConfig)
     - [TableMetadata](#bytebase-store-TableMetadata)
@@ -65,6 +83,7 @@
     - [ViewConfig](#bytebase-store-ViewConfig)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
+    - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
@@ -77,14 +96,6 @@
 - [store/changelist.proto](#store_changelist-proto)
     - [Changelist](#bytebase-store-Changelist)
     - [Changelist.Change](#bytebase-store-Changelist-Change)
-  
-- [store/common.proto](#store_common-proto)
-    - [PageToken](#bytebase-store-PageToken)
-  
-    - [Engine](#bytebase-store-Engine)
-    - [ExportFormat](#bytebase-store-ExportFormat)
-    - [MaskingLevel](#bytebase-store-MaskingLevel)
-    - [VCSType](#bytebase-store-VCSType)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
@@ -146,7 +157,6 @@
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
     - [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry)
     - [PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-PreUpdateBackupDetail)
-    - [PlanConfig.ChangeDatabaseConfig.RollbackDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
@@ -169,8 +179,6 @@
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
-    - [Binding](#bytebase-store-Binding)
-    - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
@@ -178,22 +186,31 @@
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
-    - [SQLReviewPolicy](#bytebase-store-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [TagPolicy](#bytebase-store-TagPolicy)
+    - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
+    - [Binding](#bytebase-store-Binding)
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
+    - [ProjectIamPolicy](#bytebase-store-ProjectIamPolicy)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
+- [store/project_webhook.proto](#store_project_webhook-proto)
+    - [ProjectWebhookPayload](#bytebase-store-ProjectWebhookPayload)
+  
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
+  
+- [store/review_config.proto](#store_review_config-proto)
+    - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
   
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
@@ -201,6 +218,10 @@
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [Announcement](#bytebase-store-Announcement)
+    - [AppIMSetting](#bytebase-store-AppIMSetting)
+    - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
+    - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
+    - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-store-DataClassificationSetting-DataClassificationConfig)
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
@@ -227,6 +248,7 @@
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
+    - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
     - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
@@ -255,6 +277,12 @@
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
+  
+- [store/user_group.proto](#store_user_group-proto)
+    - [UserGroupMember](#bytebase-store-UserGroupMember)
+    - [UserGroupPayload](#bytebase-store-UserGroupPayload)
+  
+    - [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role)
   
 - [store/vcs.proto](#store_vcs-proto)
     - [VCSConnector](#bytebase-store-VCSConnector)
@@ -617,6 +645,183 @@ convert to the expected struct there.
 
 
 
+<a name="store_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/common.proto
+
+
+
+<a name="bytebase-store-PageToken"></a>
+
+### PageToken
+Used internally for obfuscating the page token.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| limit | [int32](#int32) |  |  |
+| offset | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Position"></a>
+
+### Position
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+| DM | 15 |  |
+| RISINGWAVE | 16 |  |
+| OCEANBASE_ORACLE | 17 |  |
+| STARROCKS | 18 |  |
+| DORIS | 19 |  |
+| HIVE | 20 |  |
+| ELASTICSEARCH | 21 |  |
+| BIGQUERY | 22 |  |
+| DYNAMODB | 23 |  |
+| DATABRICKS | 24 |  |
+
+
+
+<a name="bytebase-store-ExportFormat"></a>
+
+### ExportFormat
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| CSV | 1 |  |
+| JSON | 2 |  |
+| SQL | 3 |  |
+| XLSX | 4 |  |
+
+
+
+<a name="bytebase-store-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
+
+
+
+<a name="bytebase-store-VCSType"></a>
+
+### VCSType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
+| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
+| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_advice-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/advice.proto
+
+
+
+<a name="bytebase-store-Advice"></a>
+
+### Advice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Advice.Status](#bytebase-store-Advice-Status) |  | The advice status. |
+| code | [int32](#int32) |  | The advice code. |
+| title | [string](#string) |  | The advice title. |
+| content | [string](#string) |  | The advice content. |
+| detail | [string](#string) |  | The advice detail. |
+| start_position | [Position](#bytebase-store-Position) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Advice-Status"></a>
+
+### Advice.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| SUCCESS | 1 |  |
+| WARNING | 2 |  |
+| ERROR | 3 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_audit_log-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -635,7 +840,7 @@ convert to the expected struct there.
 | parent | [string](#string) |  | The project or workspace the audit log belongs to. Formats: - projects/{project} - workspaces/{workspace} |
 | method | [string](#string) |  | e.g. /bytebase.v1.SQLService/Query |
 | resource | [string](#string) |  | resource name projects/{project} |
-| user | [string](#string) |  | Format: users/d@d.com |
+| user | [string](#string) |  | Format: users/{userUID}. |
 | severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
@@ -678,6 +883,22 @@ convert to the expected struct there.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/database.proto
+
+
+
+<a name="bytebase-store-CheckConstraintMetadata"></a>
+
+### CheckConstraintMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a check constraint. |
+| expression | [string](#string) |  | The expression is the expression of a check constraint. |
+
+
+
 
 
 
@@ -735,6 +956,7 @@ ColumnMetadata is the metadata for columns.
 | collation | [string](#string) |  | The collation is the collation of a column. |
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+| generation | [GenerationMetadata](#bytebase-store-GenerationMetadata) |  | The generation is for generated columns. |
 
 
 
@@ -751,7 +973,6 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | schema_configs | [SchemaConfig](#bytebase-store-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
-| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -805,6 +1026,7 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 | extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
 | datashare | [bool](#bool) |  | The database belongs to a datashare. |
 | service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
+| linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
 
 
 
@@ -895,7 +1117,7 @@ ForeignKeyMetadata is the metadata for foreign keys.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a function. |
-| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
 
 
@@ -919,6 +1141,22 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-store-GenerationMetadata"></a>
+
+### GenerationMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type) |  |  |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-IndexMetadata"></a>
 
 ### IndexMetadata
@@ -930,6 +1168,7 @@ IndexMetadata is the metadata for indexes.
 | name | [string](#string) |  | The name is the name of an index. |
 | expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
 | key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
+| descending | [bool](#bool) | repeated | The descending is the ordered descending of an index. |
 | type | [string](#string) |  | The type is the type of an index. |
 | unique | [bool](#bool) |  | The unique is whether the index is unique. |
 | primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
@@ -952,6 +1191,23 @@ InstanceRoleMetadata is the message for instance role.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
 | grant | [string](#string) |  | The grant display string on the instance. It&#39;s generated by database engine. |
+
+
+
+
+
+
+<a name="bytebase-store-LinkedDatabaseMetadata"></a>
+
+### LinkedDatabaseMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| username | [string](#string) |  |  |
+| host | [string](#string) |  |  |
 
 
 
@@ -985,7 +1241,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
-| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
 
 
@@ -1046,6 +1302,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
+| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 
 
 
@@ -1078,6 +1335,22 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
+
+
+
+
+
+
+<a name="bytebase-store-SequenceMetadata"></a>
+
+### SequenceMetadata
+SequenceMetadata is the metadata for sequences.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a sequence. |
+| data_type | [string](#string) |  | The data type of a sequence. |
 
 
 
@@ -1117,7 +1390,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | classification_id | [string](#string) |  |  |
-| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
@@ -1147,6 +1420,7 @@ TableMetadata is the metadata for tables.
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 | partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 
 
 
@@ -1206,7 +1480,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a view. |
-| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{email} |
+| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{userUID}. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
@@ -1232,6 +1506,19 @@ ViewMetadata is the metadata for views.
 
 
  
+
+
+<a name="bytebase-store-GenerationMetadata-Type"></a>
+
+### GenerationMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_VIRTUAL | 1 |  |
+| TYPE_STORED | 2 |  |
+
 
 
 <a name="bytebase-store-StreamMetadata-Mode"></a>
@@ -1400,114 +1687,6 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 
 
-<a name="store_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/common.proto
-
-
-
-<a name="bytebase-store-PageToken"></a>
-
-### PageToken
-Used internally for obfuscating the page token.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| limit | [int32](#int32) |  |  |
-| offset | [int32](#int32) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-Engine"></a>
-
-### Engine
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENGINE_UNSPECIFIED | 0 |  |
-| CLICKHOUSE | 1 |  |
-| MYSQL | 2 |  |
-| POSTGRES | 3 |  |
-| SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
-| TIDB | 6 |  |
-| MONGODB | 7 |  |
-| REDIS | 8 |  |
-| ORACLE | 9 |  |
-| SPANNER | 10 |  |
-| MSSQL | 11 |  |
-| REDSHIFT | 12 |  |
-| MARIADB | 13 |  |
-| OCEANBASE | 14 |  |
-| DM | 15 |  |
-| RISINGWAVE | 16 |  |
-| OCEANBASE_ORACLE | 17 |  |
-| STARROCKS | 18 |  |
-| DORIS | 19 |  |
-| HIVE | 20 |  |
-| ELASTICSEARCH | 21 |  |
-
-
-
-<a name="bytebase-store-ExportFormat"></a>
-
-### ExportFormat
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| FORMAT_UNSPECIFIED | 0 |  |
-| CSV | 1 |  |
-| JSON | 2 |  |
-| SQL | 3 |  |
-| XLSX | 4 |  |
-
-
-
-<a name="bytebase-store-MaskingLevel"></a>
-
-### MaskingLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_LEVEL_UNSPECIFIED | 0 |  |
-| NONE | 1 |  |
-| PARTIAL | 2 |  |
-| FULL | 3 |  |
-
-
-
-<a name="bytebase-store-VCSType"></a>
-
-### VCSType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
-| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
-| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
-| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="store_data_source-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1578,6 +1757,10 @@ Used internally for obfuscating the page token.
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
+| region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
+| account_id | [string](#string) |  | account_id is used by Databricks. |
+| warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
 
 
 
@@ -2148,8 +2331,6 @@ InstanceOptions is the option for instances.
 | to_description | [string](#string) | optional |  |
 | from_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
 | to_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
-| from_assignee | [string](#string) | optional | Format: users/{email} |
-| to_assignee | [string](#string) | optional | Format: users/{email} |
 
 
 
@@ -2314,8 +2495,6 @@ InstanceOptions is the option for instances.
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
-| rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. |
-| rollback_detail | [PlanConfig.ChangeDatabaseConfig.RollbackDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail) | optional |  |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | pre_update_backup_detail | [PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -2349,22 +2528,6 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail"></a>
-
-### PlanConfig.ChangeDatabaseConfig.RollbackDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rollback_from_task | [string](#string) |  | rollback_from_task is the task from which the rollback SQL statement is generated for this task. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| rollback_from_issue | [string](#string) |  | rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task. Format: projects/{project}/issues/{issue} |
 
 
 
@@ -2684,40 +2847,6 @@ Type is the database change type.
 
 
 
-<a name="bytebase-store-Binding"></a>
-
-### Binding
-Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#binding
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | Role that is assigned to the list of members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
-
-* `allUsers`: A special identifier that represents anyone. * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-
-
-
-
-
-
-<a name="bytebase-store-IamPolicy"></a>
-
-### IamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. |
-
-
-
-
-
-
 <a name="bytebase-store-MaskData"></a>
 
 ### MaskData
@@ -2765,7 +2894,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
 | member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+Format: users/{userUID} or groups/{group email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
 
 
@@ -2838,22 +2967,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
-<a name="bytebase-store-SQLReviewPolicy"></a>
-
-### SQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| rule_list | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
-
-
-
-
-
-
 <a name="bytebase-store-SQLReviewRule"></a>
 
 ### SQLReviewRule
@@ -2867,6 +2980,37 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy"></a>
+
+### TagPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy-TagsEntry"></a>
+
+### TagPolicy.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -2916,6 +3060,23 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
+<a name="bytebase-store-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+
+
+
+
+
+
 <a name="bytebase-store-Label"></a>
 
 ### Label
@@ -2944,6 +3105,21 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
 | force_issue_labels | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ProjectIamPolicy"></a>
+
+### ProjectIamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single project role. |
 
 
 
@@ -3003,6 +3179,37 @@ The type of target.
 
 
 
+<a name="store_project_webhook-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/project_webhook.proto
+
+
+
+<a name="bytebase-store-ProjectWebhookPayload"></a>
+
+### ProjectWebhookPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_query_history-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3020,6 +3227,37 @@ The type of target.
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_review_config-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_config.proto
+
+
+
+<a name="bytebase-store-ReviewConfigPayload"></a>
+
+### ReviewConfigPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sql_review_rules | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
 
 
 
@@ -3106,6 +3344,73 @@ The type of target.
 
 
 
+<a name="bytebase-store-AppIMSetting"></a>
+
+### AppIMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
+| feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
+| wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Feishu"></a>
+
+### AppIMSetting.Feishu
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Slack"></a>
+
+### AppIMSetting.Slack
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Wecom"></a>
+
+### AppIMSetting.Wecom
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| id | [string](#string) |  |  |
+| secret | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-DataClassificationSetting"></a>
 
 ### DataClassificationSetting
@@ -3133,6 +3438,7 @@ The type of target.
 | title | [string](#string) |  |  |
 | levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
 | classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
+| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -3518,6 +3824,10 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
 | announcement | [Announcement](#bytebase-store-Announcement) |  | The setting of custom announcement |
+| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
+| domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
+| enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
+| database_change_mode | [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode) |  | The workspace database change mode. |
 
 
 
@@ -3537,6 +3847,19 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ALERT_LEVEL_INFO | 1 |  |
 | ALERT_LEVEL_WARNING | 2 |  |
 | ALERT_LEVEL_CRITICAL | 3 |  |
+
+
+
+<a name="bytebase-store-DatabaseChangeMode"></a>
+
+### DatabaseChangeMode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
+| PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
+| EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
 
 
 
@@ -3900,6 +4223,68 @@ MFAConfig is the MFA configuration for a user.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_user_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/user_group.proto
+
+
+
+<a name="bytebase-store-UserGroupMember"></a>
+
+### UserGroupMember
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member | [string](#string) |  | Member is the principal who belong to this user group.
+
+Format: users/{userUID}. |
+| role | [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-UserGroupPayload"></a>
+
+### UserGroupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [UserGroupMember](#bytebase-store-UserGroupMember) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-UserGroupMember-Role"></a>
+
+### UserGroupMember.Role
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_UNSPECIFIED | 0 |  |
+| OWNER | 1 |  |
+| MEMBER | 2 |  |
+
 
  
 

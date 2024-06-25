@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -77,9 +78,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		ID: &principalID,
-	})
+	currentPrincipal, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find current principal")
 	}
@@ -206,8 +205,13 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 			if maskingException.Action != action {
 				continue
 			}
-			if maskingException.Member == currentPrincipal.Email {
-				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
+
+			users := utils.GetUsersByMember(ctx, s.store, maskingException.Member)
+			for _, user := range users {
+				if user.ID == currentPrincipal.ID {
+					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
+					break
+				}
 			}
 		}
 	}

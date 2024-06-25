@@ -54,7 +54,10 @@
               >
                 {{ $t("branch.merge-rebase.merge-branch") }}
               </NButton>
-              <NButton @click="handleGotoRebaseBranch">
+              <NButton
+                v-if="showRebaseBranchButton"
+                @click="handleGotoRebaseBranch"
+              >
                 {{ $t("branch.merge-rebase.rebase-branch") }}
               </NButton>
               <NButton
@@ -143,7 +146,7 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
+import { validateDatabaseMetadata } from "@/components/SchemaEditorLite";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
 import {
   PROJECT_V1_ROUTE_BRANCHES,
@@ -172,6 +175,7 @@ import {
   defer,
   extractProjectResourceName,
   hasProjectPermissionV2,
+  isOwnerOfProjectV1,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { provideSQLCheckContext } from "../SQLCheck";
@@ -259,12 +263,29 @@ const database = computedAsync(() => {
 
 const showMergeBranchButton = computed(() => {
   // main branches (parent-less branches) cannot be merged.
-  return !!parentBranch.value;
+  if (!parentBranch.value) {
+    return false;
+  }
+  // The branch's creator and project owners can merge feature branches into main branches.
+  return allowEdit.value;
+});
+
+const showRebaseBranchButton = computed(() => {
+  // For main branches: only project owners are allowed
+  if (!parentBranch.value) {
+    return isOwnerOfProjectV1(props.project.iamPolicy, currentUser.value);
+  }
+
+  // For feature branches: project owners and branch creator
+  return allowEdit.value;
 });
 
 // Only show apply to database button when the branch is main branch.
 const showApplyBranchButton = computed(() => {
-  return !parentBranch.value;
+  return (
+    !parentBranch.value &&
+    isOwnerOfProjectV1(props.project.iamPolicy, currentUser.value)
+  );
 });
 
 const rebuildMetadataEdit = () => {
@@ -536,7 +557,7 @@ const generateIssueName = (databaseNameList: string[]) => {
   } else {
     issueNameParts.push(`[${databaseNameList.length} databases]`);
   }
-  issueNameParts.push(`Alter schema`);
+  issueNameParts.push(`Edit schema`);
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);

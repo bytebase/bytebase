@@ -242,6 +242,14 @@ export interface DataSourceOptions {
   additionalAddresses: DataSourceOptions_Address[];
   /** replica_set is used for MongoDB replica set. */
   replicaSet: string;
+  /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
+  directConnection: boolean;
+  /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
+  region: string;
+  /** account_id is used by Databricks. */
+  accountId: string;
+  /** warehouse_id is used by Databricks. */
+  warehouseId: string;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -633,6 +641,10 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     saslConfig: undefined,
     additionalAddresses: [],
     replicaSet: "",
+    directConnection: false,
+    region: "",
+    accountId: "",
+    warehouseId: "",
   };
 }
 
@@ -682,6 +694,18 @@ export const DataSourceOptions = {
     }
     if (message.replicaSet !== "") {
       writer.uint32(122).string(message.replicaSet);
+    }
+    if (message.directConnection === true) {
+      writer.uint32(128).bool(message.directConnection);
+    }
+    if (message.region !== "") {
+      writer.uint32(138).string(message.region);
+    }
+    if (message.accountId !== "") {
+      writer.uint32(146).string(message.accountId);
+    }
+    if (message.warehouseId !== "") {
+      writer.uint32(154).string(message.warehouseId);
     }
     return writer;
   },
@@ -798,6 +822,34 @@ export const DataSourceOptions = {
 
           message.replicaSet = reader.string();
           continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.directConnection = reader.bool();
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.region = reader.string();
+          continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.accountId = reader.string();
+          continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.warehouseId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -836,6 +888,10 @@ export const DataSourceOptions = {
         ? object.additionalAddresses.map((e: any) => DataSourceOptions_Address.fromJSON(e))
         : [],
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
+      directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
+      region: isSet(object.region) ? globalThis.String(object.region) : "",
+      accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
+      warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
     };
   },
 
@@ -886,6 +942,18 @@ export const DataSourceOptions = {
     if (message.replicaSet !== "") {
       obj.replicaSet = message.replicaSet;
     }
+    if (message.directConnection === true) {
+      obj.directConnection = message.directConnection;
+    }
+    if (message.region !== "") {
+      obj.region = message.region;
+    }
+    if (message.accountId !== "") {
+      obj.accountId = message.accountId;
+    }
+    if (message.warehouseId !== "") {
+      obj.warehouseId = message.warehouseId;
+    }
     return obj;
   },
 
@@ -915,6 +983,10 @@ export const DataSourceOptions = {
     message.additionalAddresses = object.additionalAddresses?.map((e) => DataSourceOptions_Address.fromPartial(e)) ||
       [];
     message.replicaSet = object.replicaSet ?? "";
+    message.directConnection = object.directConnection ?? false;
+    message.region = object.region ?? "";
+    message.accountId = object.accountId ?? "";
+    message.warehouseId = object.warehouseId ?? "";
     return message;
   },
 };

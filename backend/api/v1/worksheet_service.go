@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -179,9 +178,7 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 			if creatorEmail == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
 			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-				Email: &creatorEmail,
-			})
+			user, err := s.store.GetUserByEmail(ctx, creatorEmail)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get user: %s", err.Error()))
 			}
@@ -193,8 +190,6 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 				worksheetFind.CreatorID = &user.ID
 			case comparatorTypeNotEqual:
 				worksheetFind.ExcludedCreatorID = &user.ID
-				worksheetFind.Visibilities = []store.WorkSheetVisibility{store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet}
-				worksheetFind.PrincipalID = &user.ID
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for creator", spec.operator))
 			}
@@ -209,6 +204,17 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 				worksheetFind.OrganizerPrincipalIDNotStarred = &principalID
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
+			}
+		case "visibility":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for starred", spec.operator))
+			}
+			for _, rawVisibility := range strings.Split(spec.value, " | ") {
+				visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[rawVisibility]))
+				if err != nil {
+					return nil, err
+				}
+				worksheetFind.Visibilities = append(worksheetFind.Visibilities, visibility)
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
@@ -465,7 +471,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		return true, nil
 	}
 
-	projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
+	projectRoles, err := findProjectRoles(ctx, s.store, worksheet.ProjectUID, user)
 	if err != nil {
 		return false, err
 	}
@@ -509,7 +515,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
 		// For project level visibility, users can read the worksheet as long as they're the project member.
-		projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
+		projectRoles, err := findProjectRoles(ctx, s.store, worksheet.ProjectUID, user)
 		if err != nil {
 			return false, err
 		}
@@ -517,14 +523,6 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	}
 
 	return false, nil
-}
-
-func (s *WorksheetService) findProjectRoles(ctx context.Context, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
-	if err != nil {
-		return nil, err
-	}
-	return utils.GetUserRolesMap(user, policy)
 }
 
 func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {

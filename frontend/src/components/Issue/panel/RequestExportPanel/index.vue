@@ -10,8 +10,8 @@
       class="w-[50rem] max-w-[100vw] relative"
     >
       <div class="w-full mx-auto space-y-4">
-        <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
+        <div class="w-full flex flex-row justify-start items-center gap-2">
+          <span class="flex items-center textlabel">
             {{ $t("common.project") }}
             <RequiredStar />
           </span>
@@ -19,6 +19,7 @@
             class="!w-60 shrink-0"
             :project="state.projectId"
             :filter="filterProject"
+            :disabled="Boolean(props.projectId)"
             @update:project="handleProjectSelect"
           />
         </div>
@@ -55,7 +56,6 @@
           </span>
           <ExpirationSelector
             class="grid-cols-3 sm:grid-cols-4 md:grid-cols-6"
-            :options="expireDaysOptions"
             :value="state.expireDays"
             @update="state.expireDays = $event"
           />
@@ -90,7 +90,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head, isUndefined } from "lodash-es";
+import { isUndefined } from "lodash-es";
 import { NButton, NInput, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -99,7 +99,6 @@ import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { ProjectSelect, DrawerContent, Drawer } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -107,16 +106,15 @@ import {
   pushNotification,
 } from "@/store";
 import type { DatabaseResource, ComposedProject } from "@/types";
-import { SYSTEM_BOT_EMAIL, UNKNOWN_ID, PresetRoleType } from "@/types";
+import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
-  extractProjectResourceName,
-  hasProjectPermissionV2,
-  issueSlug,
-  memberListInProjectV1,
-} from "@/utils";
+  GrantRequest,
+  Issue,
+  Issue_Type,
+} from "@/types/proto/v1/issue_service";
+import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
 interface LocalState {
@@ -155,25 +153,6 @@ const state = reactive<LocalState>({
   maxRowCount: 1000,
   description: "",
 });
-
-const expireDaysOptions = computed(() => [
-  {
-    value: 1,
-    label: t("common.date.days", { days: 1 }),
-  },
-  {
-    value: 3,
-    label: t("common.date.days", { days: 3 }),
-  },
-  {
-    value: 7,
-    label: t("common.date.days", { days: 7 }),
-  },
-  {
-    value: 15,
-    label: t("common.date.days", { days: 15 }),
-  },
-]);
 
 const allowCreate = computed(() => {
   if (!state.projectId) {
@@ -237,44 +216,39 @@ const doCreateIssue = async () => {
     title: generateIssueName(),
     description: state.description,
     type: Issue_Type.GRANT_REQUEST,
-    assignee: `users/${SYSTEM_BOT_EMAIL}`,
     grantRequest: {},
   });
 
-  // update issue's assignee to first project owner.
   const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
-  const memberList = memberListInProjectV1(project, project.iamPolicy);
-  const ownerList = memberList.filter((member) =>
-    member.roleList.includes(PresetRoleType.PROJECT_OWNER)
-  );
-  const projectOwner = head(ownerList);
-  if (projectOwner) {
-    newIssue.assignee = `users/${projectOwner.user.email}`;
-  }
-
   const expression: string[] = [];
-  const expireDays = state.expireDays;
-  expression.push(
-    `request.time < timestamp("${dayjs()
-      .add(expireDays, "days")
-      .toISOString()}")`
-  );
   expression.push(`request.row_limit <= ${state.maxRowCount}`);
   if (state.databaseResourceCondition) {
     expression.push(state.databaseResourceCondition);
   }
+  const expireDays = state.expireDays;
+  if (expireDays > 0) {
+    expression.push(
+      `request.time < timestamp("${dayjs()
+        .add(expireDays, "days")
+        .toISOString()}")`
+    );
+  }
 
-  const celExpressionString = expression.join(" && ");
-  newIssue.grantRequest = {
+  newIssue.grantRequest = GrantRequest.fromPartial({
     role: PresetRoleType.PROJECT_EXPORTER,
     user: `users/${currentUser.value.email}`,
-    condition: Expr.fromPartial({
+  });
+  if (expression.length > 0) {
+    const celExpressionString = expression.join(" && ");
+    newIssue.grantRequest.condition = Expr.fromPartial({
       expression: celExpressionString,
-    }),
-    expiration: Duration.fromPartial({
+    });
+  }
+  if (expireDays > 0) {
+    newIssue.grantRequest.expiration = Duration.fromPartial({
       seconds: expireDays * 24 * 60 * 60,
-    }),
-  };
+    });
+  }
 
   const createdIssue = await issueServiceClient.createIssue({
     parent: project.name,
@@ -289,11 +263,7 @@ const doCreateIssue = async () => {
 
   if (props.redirectToIssuePage) {
     const route = router.resolve({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project.name),
-        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
-      },
+      path: `/${createdIssue.name}`,
     });
     window.open(route.href, "_blank");
   }

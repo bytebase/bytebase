@@ -108,7 +108,7 @@ import {
   usePageMode,
 } from "@/store";
 import type { ComposedDatabase, ProjectPermission } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, DEFAULT_PROJECT_UID } from "@/types";
 import {
   Database,
   DatabaseMetadataView,
@@ -116,7 +116,7 @@ import {
 import {
   isArchivedDatabaseV1,
   instanceV1HasAlterSchema,
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   generateIssueName,
   hasProjectPermissionV2,
   extractProjectResourceName,
@@ -292,8 +292,9 @@ const generateMultiDb = async (
     | "bb.issue.database.data.export"
 ) => {
   if (
+    props.databases.length === 1 &&
     type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditorV1(props.databases) &&
+    allowUsingSchemaEditor(props.databases) &&
     !isStandaloneMode.value
   ) {
     schemaEditorContext.value.databaseIdList = [
@@ -391,6 +392,10 @@ const unAssignDatabases = async () => {
 
 const operationsInProjectDetail = computed(() => !!props.projectUid);
 
+const isInDefaultProject = computed(
+  () => props.projectUid === `${DEFAULT_PROJECT_UID}`
+);
+
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   if (!isStandaloneMode.value) {
@@ -449,7 +454,7 @@ const actions = computed((): DatabaseAction[] => {
           return getDisabledTooltip(action);
         },
       });
-    } else {
+    } else if (!isInDefaultProject.value) {
       resp.push({
         icon: h(UnlinkIcon),
         text: t("database.unassign"),

@@ -20,6 +20,8 @@ message Binding {
   string role = 1;
 
   // Specifies the principals requesting access for a Bytebase resource.
+  // For users, the member should be: user:{email}
+  // For groups, the member should be: group:{email}
   repeated string members = 2;
 
   // The condition that is associated with this binding.

@@ -28,7 +28,7 @@ type TableDropNamingConventionAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -54,9 +54,9 @@ func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -68,8 +68,8 @@ type namingDropTableConventionChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 }
@@ -86,12 +86,14 @@ func (checker *namingDropTableConventionChecker) EnterDropTable(ctx *mysql.DropT
 	for _, tableRef := range ctx.TableRefList().AllTableRef() {
 		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
 		if !checker.format.MatchString(tableName) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.TableDropNamingConventionMismatch,
+				Code:    advisor.TableDropNamingConventionMismatch.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, checker.format),
-				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				StartPosition: &storepb.Position{
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+				},
 			})
 		}
 	}

@@ -1,30 +1,32 @@
 - statement: INSERT INTO tech_book VALUES(1, "a");
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |-
     INSERT INTO tech_book VALUES(1, "a");
     INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand();
   want:
-    - status: WARN
+    - status: 2
       code: 1108
       title: statement.insert.disallow-order-by-rand
-      content: |-
-        "INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand();" uses ORDER BY RAND in the INSERT statement
-      line: 2
-      details: ""
+      content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand();" uses ORDER BY RAND in the INSERT statement'
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     INSERT INTO tech_book VALUES(1, "a");
     INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND() LIMIT 1;
   want:
-    - status: WARN
+    - status: 2
       code: 1108
       title: statement.insert.disallow-order-by-rand
-      content: |-
-        "INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND() LIMIT 1;" uses ORDER BY RAND in the INSERT statement
-      line: 2
-      details: ""
+      content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND() LIMIT 1;" uses ORDER BY RAND in the INSERT statement'
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

@@ -7,61 +7,113 @@
     />
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <div class="flex justify-between items-center">
-      <div class="flex-1 flex space-x-2">
-        <p class="text-lg font-medium leading-7 text-main">
-          <span>{{ $t("common.members") }}</span>
-          <span class="ml-1 font-normal text-control-light">
-            ({{ activeUserList.length }})
-          </span>
-        </p>
-        <div
-          v-if="showUpgradeInfo"
-          class="flex flex-row items-center space-x-1"
-        >
-          <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
-          <router-link
-            :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
-            class="text-lg accent-link"
+    <NTabs v-model:value="state.typeTab" type="line" animated>
+      <NTabPane name="members">
+        <template #tab>
+          <div class="flex-1 flex space-x-2">
+            <p class="text-lg font-medium leading-7 text-main">
+              <span>{{ $t("common.members") }}</span>
+              <span class="ml-1 font-normal text-control-light">
+                ({{ userStore.activeUserList.length }})
+              </span>
+            </p>
+            <div
+              v-if="showUpgradeInfo"
+              class="flex flex-row items-center space-x-1"
+            >
+              <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
+              <router-link
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+                class="text-lg accent-link"
+              >
+                {{ $t("settings.members.upgrade") }}
+              </router-link>
+            </div>
+          </div>
+        </template>
+      </NTabPane>
+
+      <NTabPane name="groups">
+        <template #tab>
+          <div>
+            <p class="text-lg font-medium leading-7 text-main">
+              <span>{{ $t("settings.members.groups.self") }}</span>
+              <span class="ml-1 font-normal text-control-light">
+                ({{ groupStore.groupList.length }})
+              </span>
+            </p>
+          </div>
+        </template>
+      </NTabPane>
+
+      <template #suffix>
+        <div class="flex items-center space-x-3">
+          <SearchBox v-model:value="state.activeUserFilterText" />
+
+          <NPopover :disabled="workspaceProfileSetting.domains.length > 0">
+            <template #trigger>
+              <NButton
+                v-if="allowCreateGroup"
+                :disabled="workspaceProfileSetting.domains.length === 0"
+                @click="handleCreateGroup"
+              >
+                <template #icon>
+                  <PlusIcon class="h-5 w-5" />
+                </template>
+                {{ $t(`settings.members.groups.add-group`) }}
+              </NButton>
+            </template>
+            <p>
+              {{ $t("settings.members.groups.workspace-domain-required") }}
+              <router-link
+                to="/setting/general#domain-restriction"
+                class="normal-link"
+              >
+                {{ $t("common.configure") }}
+              </router-link>
+            </p>
+          </NPopover>
+          <NButton
+            v-if="allowCreateUser"
+            type="primary"
+            class="capitalize"
+            @click="handleCreateUser"
           >
-            {{ $t("settings.members.upgrade") }}
-          </router-link>
+            <template #icon>
+              <PlusIcon class="h-5 w-5" />
+            </template>
+            {{ $t(`settings.members.add-member`) }}
+          </NButton>
         </div>
-      </div>
+      </template>
+    </NTabs>
 
-      <div>
-        <NButton
-          v-if="allowCreateUser"
-          type="primary"
-          class="capitalize"
-          @click="handleCreateUser"
-        >
-          <template #icon>
-            <PlusIcon class="h-5 w-5" />
-          </template>
-          {{ $t(`settings.members.add-member`) }}
-        </NButton>
-      </div>
-    </div>
-
-    <NTabs class="!mt-2" type="bar" animated>
+    <NTabs
+      v-if="state.typeTab === 'members'"
+      v-model:value="state.tab"
+      class="!mt-2"
+      type="bar"
+    >
       <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
         <UserDataTable
-          :user-list="activeUserList"
+          :user-list="filteredUserList"
           @update-user="handleUpdateUser"
+          @select-group="handleUpdateGroup"
         />
       </NTabPane>
       <NTabPane name="roles" :tab="$t('settings.members.view-by-roles')">
         <UserDataTableByRole
-          :user-list="activeUserList"
+          :user-list="filteredUserList"
           @update-user="handleUpdateUser"
         />
       </NTabPane>
-
-      <template #suffix>
-        <SearchBox v-model:value="state.activeUserFilterText" />
-      </template>
     </NTabs>
+    <UserDataTableByGroup
+      v-else
+      :groups="filteredGroupList"
+      :allow-edit="allowEditGroup"
+      @update-group="handleUpdateGroup"
+    />
 
     <div v-if="inactiveUserList.length > 0 || state.inactiveUserFilterText">
       <div>
@@ -96,15 +148,22 @@
     :user="state.editingUser"
     @close="state.showCreateUserDrawer = false"
   />
+  <CreateGroupDrawer
+    v-if="state.showCreateGroupDrawer"
+    :group="state.editingGroup"
+    @close="state.showCreateGroupDrawer = false"
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NTabs, NTabPane } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { NButton, NCheckbox, NTabs, NTabPane, NPopover } from "naive-ui";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter, RouterLink } from "vue-router";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
+import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import UserDataTableByRole from "@/components/User/Settings/UserDataTableByRole/index.vue";
 import { SearchBox } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
@@ -113,43 +172,101 @@ import {
   useCurrentUserV1,
   useUserStore,
   useUIStateStore,
+  useUserGroupStore,
+  useSettingV1Store,
 } from "@/store";
-import type { User } from "@/types/proto/v1/auth_service";
-import { UserType } from "@/types/proto/v1/auth_service";
-import { State } from "@/types/proto/v1/common";
+import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
   filterUserListByKeyword,
-} from "../types";
-import { hasWorkspacePermissionV2 } from "../utils";
+} from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
+import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
+import type { UserGroup } from "@/types/proto/v1/user_group";
+import { hasWorkspacePermissionV2 } from "@/utils";
+
+const tabList = ["members", "groups"] as const;
+type MemberTab = (typeof tabList)[number];
+const isMemberTab = (tab: any): tab is MemberTab => tabList.includes(tab);
+const defaultTab: MemberTab = "members";
 
 type LocalState = {
+  typeTab: MemberTab;
+  tab: "users" | "roles";
   activeUserFilterText: string;
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
   showCreateUserDrawer: boolean;
+  showCreateGroupDrawer: boolean;
   editingUser?: User;
+  editingGroup?: UserGroup;
 };
 
 const state = reactive<LocalState>({
+  typeTab: defaultTab,
+  tab: "users",
   activeUserFilterText: "",
   inactiveUserFilterText: "",
   showInactiveUserList: false,
   showCreateUserDrawer: false,
+  showCreateGroupDrawer: false,
 });
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const userStore = useUserStore();
+const groupStore = useUserGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const uiStateStore = useUIStateStore();
 const subscriptionV1Store = useSubscriptionV1Store();
+const settingV1Store = useSettingV1Store();
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const tab = hash.slice(1);
+    if (isMemberTab(tab)) {
+      state.typeTab = tab;
+    } else {
+      state.typeTab = defaultTab;
+    }
+  },
+  {
+    immediate: true,
+  }
+);
+
+watch(
+  () => state.typeTab,
+  (tab) => {
+    router.push({ hash: `#${tab}` });
+  }
+);
+
+const workspaceProfileSetting = computed(() =>
+  WorkspaceProfileSetting.fromPartial(
+    settingV1Store.workspaceProfileSetting || {}
+  )
+);
+
 const hasRBACFeature = computed(() =>
   subscriptionV1Store.hasFeature("bb.feature.rbac")
 );
 
+const allowCreateGroup = computed(() =>
+  hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.create")
+);
+
 const allowCreateUser = computed(() => {
   return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
+});
+
+const allowEditGroup = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.update");
 });
 
 onMounted(() => {
@@ -159,6 +276,15 @@ onMounted(() => {
       newState: true,
     });
   }
+
+  const name = route.query.name as string;
+  if (name?.startsWith(userGroupNamePrefix)) {
+    state.typeTab = "groups";
+    state.editingGroup = groupStore.groupList.find(
+      (group) => group.name === name
+    );
+    state.showCreateGroupDrawer = !!state.editingGroup;
+  }
 });
 
 const userList = computed(() => {
@@ -167,11 +293,22 @@ const userList = computed(() => {
   );
 });
 
-const activeUserList = computed(() => {
+const filteredUserList = computed(() => {
   return filterUserListByKeyword(
     userStore.activeUserList,
     state.activeUserFilterText
   );
+});
+
+const filteredGroupList = computed(() => {
+  const keyword = state.activeUserFilterText.trim().toLowerCase();
+  if (!keyword) return groupStore.groupList;
+  return groupStore.groupList.filter((group) => {
+    return (
+      group.title.toLowerCase().includes(keyword) ||
+      group.name.toLowerCase().includes(keyword)
+    );
+  });
 });
 
 const inactiveUserList = computed(() => {
@@ -228,6 +365,16 @@ const userCountAttention = computed((): string => {
 
   return `${status} ${upgrade}`;
 });
+
+const handleCreateGroup = () => {
+  state.editingGroup = undefined;
+  state.showCreateGroupDrawer = true;
+};
+
+const handleUpdateGroup = (group: UserGroup) => {
+  state.editingGroup = group;
+  state.showCreateGroupDrawer = true;
+};
 
 const handleCreateUser = () => {
   state.editingUser = undefined;

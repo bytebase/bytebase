@@ -94,6 +94,9 @@ export const supportedEngineV1List = () => {
     Engine.RISINGWAVE,
     Engine.HIVE,
     Engine.ELASTICSEARCH,
+    Engine.BIGQUERY,
+    Engine.DYNAMODB,
+    Engine.DATABRICKS,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -139,6 +142,9 @@ export const instanceV1HasCreateDatabase = (
   if (engine === Engine.ORACLE) return false;
   if (engine === Engine.DM) return false;
   if (engine === Engine.ELASTICSEARCH) return false;
+  if (engine === Engine.SPANNER) return false;
+  if (engine === Engine.BIGQUERY) return false;
+  if (engine === Engine.DYNAMODB) return false;
   return true;
 };
 
@@ -168,6 +174,7 @@ export const instanceV1HasSSL = (
     Engine.DORIS,
     Engine.MONGODB,
     Engine.ELASTICSEARCH,
+    Engine.MSSQL,
   ].includes(engine);
 };
 
@@ -287,6 +294,12 @@ export const engineNameV1 = (type: Engine): string => {
       return "Hive";
     case Engine.ELASTICSEARCH:
       return "Elasticsearch";
+    case Engine.BIGQUERY:
+      return "BigQuery";
+    case Engine.DYNAMODB:
+      return "DynamoDB";
+    case Engine.DATABRICKS:
+      return "Databricks";
   }
   return "";
 };

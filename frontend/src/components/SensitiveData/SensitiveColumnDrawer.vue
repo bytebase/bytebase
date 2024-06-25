@@ -121,19 +121,27 @@
             class="border compact"
           >
             <template #item="{ item, row }: AccessUserRow">
-              <div class="bb-grid-cell gap-x-2">
+              <div v-if="item.type === 'user'" class="bb-grid-cell gap-x-2">
                 <UserAvatar size="SMALL" :user="item.user" />
                 <div class="flex flex-col">
                   <router-link
-                    :to="`/users/${item.user.email}`"
+                    :to="{
+                      name: WORKSPACE_ROUTE_USER_PROFILE,
+                      params: {
+                        principalEmail: item.user!.email,
+                      },
+                    }"
                     class="normal-link"
                   >
-                    {{ item.user.title }}
+                    {{ item.user!.title }}
                   </router-link>
                   <span class="textinfolabel">
-                    {{ item.user.email }}
+                    {{ item.user!.email }}
                   </span>
                 </div>
+              </div>
+              <div v-else class="bb-grid-cell gap-x-1">
+                <GroupNameCell :group="item.group!" />
               </div>
               <div class="bb-grid-cell">
                 <NCheckbox
@@ -241,7 +249,7 @@
     </DrawerContent>
 
     <GrantAccessDrawer
-      :show="state.showGrantAccessDrawer"
+      v-if="state.showGrantAccessDrawer"
       :column-list="[props.column]"
       @dismiss="state.showGrantAccessDrawer = false"
     />
@@ -250,6 +258,7 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
+import { orderBy } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import {
@@ -263,18 +272,25 @@ import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
+import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
   useSettingV1Store,
   usePolicyV1Store,
   usePolicyByParentAndType,
   useUserStore,
+  useUserGroupStore,
   pushNotification,
   useCurrentUserV1,
   useDBSchemaV1Store,
+  extractGroupEmail,
 } from "@/store";
-import { getUserId } from "@/store/modules/v1/common";
-import { unknownUser } from "@/types";
+import {
+  getUserEmailInBinding,
+  getGroupEmailInBinding,
+  groupBindingPrefix,
+} from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
@@ -288,6 +304,7 @@ import {
   PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
+import type { UserGroup } from "@/types/proto/v1/user_group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import UserAvatar from "../User/UserAvatar.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
@@ -297,7 +314,9 @@ import type { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface AccessUser {
-  user: User;
+  type: "user" | "group";
+  group?: UserGroup;
+  user?: User;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   maskingLevel: MaskingLevel;
   expirationTimestamp?: number;
@@ -340,6 +359,7 @@ const MASKING_LEVELS = [
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const groupStore = useUserGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
@@ -361,7 +381,7 @@ const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 
 const getAccessUsers = (
   exception: MaskingExceptionPolicy_MaskingException
-): AccessUser => {
+): AccessUser | undefined => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const matches = expirationTimeRegex.exec(expression);
@@ -369,14 +389,35 @@ const getAccessUsers = (
     expirationTimestamp = new Date(matches[1]).getTime();
   }
 
-  const user = userStore.getUserByIdentifier(exception.member) ?? unknownUser();
-  return {
-    user,
+  const access: AccessUser = {
+    type: "user",
     maskingLevel: exception.maskingLevel,
     expirationTimestamp,
     supportActions: new Set([exception.action]),
     rawExpression: exception.condition?.expression ?? "",
   };
+
+  if (exception.member.startsWith(groupBindingPrefix)) {
+    access.type = "group";
+    access.group = groupStore.getGroupByIdentifier(exception.member);
+  } else {
+    access.type = "user";
+    access.user = userStore.getUserByIdentifier(exception.member);
+  }
+
+  if (!access.group && !access.user) {
+    return;
+  }
+
+  return access;
+};
+
+const getMemberBinding = (access: AccessUser): string => {
+  if (access.type === "user") {
+    return getUserEmailInBinding(access.user!.email);
+  }
+  const email = extractGroupEmail(access.group!.name);
+  return getGroupEmailInBinding(email);
 };
 
 const getExceptionIdentifier = (
@@ -409,25 +450,40 @@ const updateAccessUserList = (policy: Policy | undefined) => {
   // - 1 & 5 is merged: user1, action:export+action, level:FULL, expires at 2023-09-03
   // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
-  const userMap = new Map<string, AccessUser>();
+  const memberMap = new Map<string, AccessUser>();
   for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
     if (!isCurrentColumnException(exception, props.column)) {
       continue;
     }
     const identifier = getExceptionIdentifier(exception);
     const item = getAccessUsers(exception);
-    const id = `${item.user.name}:${identifier}`;
-    const target = userMap.get(id) ?? item;
-    if (userMap.has(id)) {
+    if (!item) {
+      continue;
+    }
+    const id = `${getMemberBinding(item)}:${identifier}`;
+    const target = memberMap.get(id) ?? item;
+    if (memberMap.has(id)) {
       for (const action of item.supportActions) {
         target.supportActions.add(action);
       }
     }
-    userMap.set(id, target);
+    memberMap.set(id, target);
   }
 
-  accessUserList.value = [...userMap.values()].sort(
-    (u1, u2) => getUserId(u1.user.name) - getUserId(u2.user.name)
+  accessUserList.value = orderBy(
+    [...memberMap.values()],
+    [
+      (access) => (access.type === "user" ? 1 : 0),
+      (access) => {
+        if (access.group) {
+          return access.group.name;
+        } else if (access.user) {
+          return access.user.name;
+        }
+        return "";
+      },
+    ],
+    ["desc", "desc"]
   );
 };
 
@@ -454,7 +510,7 @@ watch(
 const gridColumnList = computed(() => {
   const columns: BBGridColumn[] = [
     {
-      title: t("common.user"),
+      title: t("common.members"),
       width: "minmax(min-content, auto)",
     },
     {
@@ -636,7 +692,7 @@ const updateExceptionPolicy = async () => {
       exceptions.push({
         maskingLevel: accessUser.maskingLevel,
         action,
-        member: `user:${accessUser.user.email}`,
+        member: getMemberBinding(accessUser),
         condition: Expr.fromPartial({
           expression: expressions.join(" && "),
         }),

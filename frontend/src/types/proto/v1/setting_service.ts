@@ -2,6 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
+import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
@@ -62,6 +63,7 @@ export interface UpdateSettingRequest {
    */
   validateOnly: boolean;
   allowMissing: boolean;
+  updateMask: string[] | undefined;
 }
 
 /** The schema of setting. */
@@ -261,60 +263,26 @@ export function sMTPMailDeliverySettingValue_AuthenticationToNumber(
 }
 
 export interface AppIMSetting {
-  imType: AppIMSetting_IMType;
+  slack: AppIMSetting_Slack | undefined;
+  feishu: AppIMSetting_Feishu | undefined;
+  wecom: AppIMSetting_Wecom | undefined;
+}
+
+export interface AppIMSetting_Slack {
+  enabled: boolean;
+  token: string;
+}
+
+export interface AppIMSetting_Feishu {
+  enabled: boolean;
   appId: string;
   appSecret: string;
-  externalApproval: AppIMSetting_ExternalApproval | undefined;
 }
 
-export enum AppIMSetting_IMType {
-  IM_TYPE_UNSPECIFIED = "IM_TYPE_UNSPECIFIED",
-  FEISHU = "FEISHU",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function appIMSetting_IMTypeFromJSON(object: any): AppIMSetting_IMType {
-  switch (object) {
-    case 0:
-    case "IM_TYPE_UNSPECIFIED":
-      return AppIMSetting_IMType.IM_TYPE_UNSPECIFIED;
-    case 1:
-    case "FEISHU":
-      return AppIMSetting_IMType.FEISHU;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return AppIMSetting_IMType.UNRECOGNIZED;
-  }
-}
-
-export function appIMSetting_IMTypeToJSON(object: AppIMSetting_IMType): string {
-  switch (object) {
-    case AppIMSetting_IMType.IM_TYPE_UNSPECIFIED:
-      return "IM_TYPE_UNSPECIFIED";
-    case AppIMSetting_IMType.FEISHU:
-      return "FEISHU";
-    case AppIMSetting_IMType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function appIMSetting_IMTypeToNumber(object: AppIMSetting_IMType): number {
-  switch (object) {
-    case AppIMSetting_IMType.IM_TYPE_UNSPECIFIED:
-      return 0;
-    case AppIMSetting_IMType.FEISHU:
-      return 1;
-    case AppIMSetting_IMType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export interface AppIMSetting_ExternalApproval {
+export interface AppIMSetting_Wecom {
   enabled: boolean;
-  approvalDefinitionId: string;
+  id: string;
+  secret: string;
 }
 
 export interface AgentPluginSetting {
@@ -346,7 +314,17 @@ export interface WorkspaceProfileSetting {
     | Duration
     | undefined;
   /** The setting of custom announcement */
-  announcement: Announcement | undefined;
+  announcement:
+    | Announcement
+    | undefined;
+  /** The max duration for role expired. */
+  maximumRoleExpiration:
+    | Duration
+    | undefined;
+  /** The workspace domain, e.g. bytebase.com. */
+  domains: string[];
+  /** Only user and group from the domains can be created and login. */
+  enforceIdentityDomain: boolean;
 }
 
 export interface Announcement {
@@ -500,6 +478,12 @@ export interface DataClassificationSetting_DataClassificationConfig {
    * The id should in [0-9]+-[0-9]+-[0-9]+ format.
    */
   classification: { [key: string]: DataClassificationSetting_DataClassificationConfig_DataClassification };
+  /**
+   * If true, we will only store the classification in the config.
+   * Otherwise we will get the classification from table/column comment,
+   * and write back to the schema metadata.
+   */
+  classificationFromConfig: boolean;
 }
 
 export interface DataClassificationSetting_DataClassificationConfig_Level {
@@ -924,7 +908,7 @@ export const GetSettingResponse = {
 };
 
 function createBaseUpdateSettingRequest(): UpdateSettingRequest {
-  return { setting: undefined, validateOnly: false, allowMissing: false };
+  return { setting: undefined, validateOnly: false, allowMissing: false, updateMask: undefined };
 }
 
 export const UpdateSettingRequest = {
@@ -937,6 +921,9 @@ export const UpdateSettingRequest = {
     }
     if (message.allowMissing === true) {
       writer.uint32(24).bool(message.allowMissing);
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -969,6 +956,13 @@ export const UpdateSettingRequest = {
 
           message.allowMissing = reader.bool();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -983,6 +977,7 @@ export const UpdateSettingRequest = {
       setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined,
       validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
       allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
@@ -997,6 +992,9 @@ export const UpdateSettingRequest = {
     if (message.allowMissing === true) {
       obj.allowMissing = message.allowMissing;
     }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
@@ -1010,6 +1008,7 @@ export const UpdateSettingRequest = {
       : undefined;
     message.validateOnly = object.validateOnly ?? false;
     message.allowMissing = object.allowMissing ?? false;
+    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
@@ -1604,22 +1603,19 @@ export const SMTPMailDeliverySettingValue = {
 };
 
 function createBaseAppIMSetting(): AppIMSetting {
-  return { imType: AppIMSetting_IMType.IM_TYPE_UNSPECIFIED, appId: "", appSecret: "", externalApproval: undefined };
+  return { slack: undefined, feishu: undefined, wecom: undefined };
 }
 
 export const AppIMSetting = {
   encode(message: AppIMSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.imType !== AppIMSetting_IMType.IM_TYPE_UNSPECIFIED) {
-      writer.uint32(8).int32(appIMSetting_IMTypeToNumber(message.imType));
+    if (message.slack !== undefined) {
+      AppIMSetting_Slack.encode(message.slack, writer.uint32(10).fork()).ldelim();
     }
-    if (message.appId !== "") {
-      writer.uint32(18).string(message.appId);
+    if (message.feishu !== undefined) {
+      AppIMSetting_Feishu.encode(message.feishu, writer.uint32(18).fork()).ldelim();
     }
-    if (message.appSecret !== "") {
-      writer.uint32(26).string(message.appSecret);
-    }
-    if (message.externalApproval !== undefined) {
-      AppIMSetting_ExternalApproval.encode(message.externalApproval, writer.uint32(34).fork()).ldelim();
+    if (message.wecom !== undefined) {
+      AppIMSetting_Wecom.encode(message.wecom, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1632,32 +1628,25 @@ export const AppIMSetting = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.imType = appIMSetting_IMTypeFromJSON(reader.int32());
+          message.slack = AppIMSetting_Slack.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.appId = reader.string();
+          message.feishu = AppIMSetting_Feishu.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.appSecret = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.externalApproval = AppIMSetting_ExternalApproval.decode(reader, reader.uint32());
+          message.wecom = AppIMSetting_Wecom.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1670,30 +1659,22 @@ export const AppIMSetting = {
 
   fromJSON(object: any): AppIMSetting {
     return {
-      imType: isSet(object.imType)
-        ? appIMSetting_IMTypeFromJSON(object.imType)
-        : AppIMSetting_IMType.IM_TYPE_UNSPECIFIED,
-      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
-      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
-      externalApproval: isSet(object.externalApproval)
-        ? AppIMSetting_ExternalApproval.fromJSON(object.externalApproval)
-        : undefined,
+      slack: isSet(object.slack) ? AppIMSetting_Slack.fromJSON(object.slack) : undefined,
+      feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
+      wecom: isSet(object.wecom) ? AppIMSetting_Wecom.fromJSON(object.wecom) : undefined,
     };
   },
 
   toJSON(message: AppIMSetting): unknown {
     const obj: any = {};
-    if (message.imType !== AppIMSetting_IMType.IM_TYPE_UNSPECIFIED) {
-      obj.imType = appIMSetting_IMTypeToJSON(message.imType);
+    if (message.slack !== undefined) {
+      obj.slack = AppIMSetting_Slack.toJSON(message.slack);
     }
-    if (message.appId !== "") {
-      obj.appId = message.appId;
+    if (message.feishu !== undefined) {
+      obj.feishu = AppIMSetting_Feishu.toJSON(message.feishu);
     }
-    if (message.appSecret !== "") {
-      obj.appSecret = message.appSecret;
-    }
-    if (message.externalApproval !== undefined) {
-      obj.externalApproval = AppIMSetting_ExternalApproval.toJSON(message.externalApproval);
+    if (message.wecom !== undefined) {
+      obj.wecom = AppIMSetting_Wecom.toJSON(message.wecom);
     }
     return obj;
   },
@@ -1703,35 +1684,38 @@ export const AppIMSetting = {
   },
   fromPartial(object: DeepPartial<AppIMSetting>): AppIMSetting {
     const message = createBaseAppIMSetting();
-    message.imType = object.imType ?? AppIMSetting_IMType.IM_TYPE_UNSPECIFIED;
-    message.appId = object.appId ?? "";
-    message.appSecret = object.appSecret ?? "";
-    message.externalApproval = (object.externalApproval !== undefined && object.externalApproval !== null)
-      ? AppIMSetting_ExternalApproval.fromPartial(object.externalApproval)
+    message.slack = (object.slack !== undefined && object.slack !== null)
+      ? AppIMSetting_Slack.fromPartial(object.slack)
+      : undefined;
+    message.feishu = (object.feishu !== undefined && object.feishu !== null)
+      ? AppIMSetting_Feishu.fromPartial(object.feishu)
+      : undefined;
+    message.wecom = (object.wecom !== undefined && object.wecom !== null)
+      ? AppIMSetting_Wecom.fromPartial(object.wecom)
       : undefined;
     return message;
   },
 };
 
-function createBaseAppIMSetting_ExternalApproval(): AppIMSetting_ExternalApproval {
-  return { enabled: false, approvalDefinitionId: "" };
+function createBaseAppIMSetting_Slack(): AppIMSetting_Slack {
+  return { enabled: false, token: "" };
 }
 
-export const AppIMSetting_ExternalApproval = {
-  encode(message: AppIMSetting_ExternalApproval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const AppIMSetting_Slack = {
+  encode(message: AppIMSetting_Slack, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.enabled === true) {
       writer.uint32(8).bool(message.enabled);
     }
-    if (message.approvalDefinitionId !== "") {
-      writer.uint32(18).string(message.approvalDefinitionId);
+    if (message.token !== "") {
+      writer.uint32(18).string(message.token);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_ExternalApproval {
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Slack {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAppIMSetting_ExternalApproval();
+    const message = createBaseAppIMSetting_Slack();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1747,7 +1731,7 @@ export const AppIMSetting_ExternalApproval = {
             break;
           }
 
-          message.approvalDefinitionId = reader.string();
+          message.token = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1758,31 +1742,209 @@ export const AppIMSetting_ExternalApproval = {
     return message;
   },
 
-  fromJSON(object: any): AppIMSetting_ExternalApproval {
+  fromJSON(object: any): AppIMSetting_Slack {
     return {
       enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      approvalDefinitionId: isSet(object.approvalDefinitionId) ? globalThis.String(object.approvalDefinitionId) : "",
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
     };
   },
 
-  toJSON(message: AppIMSetting_ExternalApproval): unknown {
+  toJSON(message: AppIMSetting_Slack): unknown {
     const obj: any = {};
     if (message.enabled === true) {
       obj.enabled = message.enabled;
     }
-    if (message.approvalDefinitionId !== "") {
-      obj.approvalDefinitionId = message.approvalDefinitionId;
+    if (message.token !== "") {
+      obj.token = message.token;
     }
     return obj;
   },
 
-  create(base?: DeepPartial<AppIMSetting_ExternalApproval>): AppIMSetting_ExternalApproval {
-    return AppIMSetting_ExternalApproval.fromPartial(base ?? {});
+  create(base?: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
+    return AppIMSetting_Slack.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<AppIMSetting_ExternalApproval>): AppIMSetting_ExternalApproval {
-    const message = createBaseAppIMSetting_ExternalApproval();
+  fromPartial(object: DeepPartial<AppIMSetting_Slack>): AppIMSetting_Slack {
+    const message = createBaseAppIMSetting_Slack();
     message.enabled = object.enabled ?? false;
-    message.approvalDefinitionId = object.approvalDefinitionId ?? "";
+    message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Feishu(): AppIMSetting_Feishu {
+  return { enabled: false, appId: "", appSecret: "" };
+}
+
+export const AppIMSetting_Feishu = {
+  encode(message: AppIMSetting_Feishu, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    if (message.appId !== "") {
+      writer.uint32(18).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(26).string(message.appSecret);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Feishu {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Feishu();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Feishu {
+    return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_Feishu): unknown {
+    const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
+    if (message.appId !== "") {
+      obj.appId = message.appId;
+    }
+    if (message.appSecret !== "") {
+      obj.appSecret = message.appSecret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
+    return AppIMSetting_Feishu.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Feishu>): AppIMSetting_Feishu {
+    const message = createBaseAppIMSetting_Feishu();
+    message.enabled = object.enabled ?? false;
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Wecom(): AppIMSetting_Wecom {
+  return { enabled: false, id: "", secret: "" };
+}
+
+export const AppIMSetting_Wecom = {
+  encode(message: AppIMSetting_Wecom, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    if (message.secret !== "") {
+      writer.uint32(26).string(message.secret);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_Wecom {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Wecom();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.secret = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Wecom {
+    return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_Wecom): unknown {
+    const obj: any = {};
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.secret !== "") {
+      obj.secret = message.secret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
+    return AppIMSetting_Wecom.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Wecom>): AppIMSetting_Wecom {
+    const message = createBaseAppIMSetting_Wecom();
+    message.enabled = object.enabled ?? false;
+    message.id = object.id ?? "";
+    message.secret = object.secret ?? "";
     return message;
   },
 };
@@ -1870,6 +2032,9 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     gitopsWebhookUrl: "",
     tokenDuration: undefined,
     announcement: undefined,
+    maximumRoleExpiration: undefined,
+    domains: [],
+    enforceIdentityDomain: false,
   };
 }
 
@@ -1895,6 +2060,15 @@ export const WorkspaceProfileSetting = {
     }
     if (message.announcement !== undefined) {
       Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.maximumRoleExpiration !== undefined) {
+      Duration.encode(message.maximumRoleExpiration, writer.uint32(66).fork()).ldelim();
+    }
+    for (const v of message.domains) {
+      writer.uint32(74).string(v!);
+    }
+    if (message.enforceIdentityDomain === true) {
+      writer.uint32(80).bool(message.enforceIdentityDomain);
     }
     return writer;
   },
@@ -1955,6 +2129,27 @@ export const WorkspaceProfileSetting = {
 
           message.announcement = Announcement.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.maximumRoleExpiration = Duration.decode(reader, reader.uint32());
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.domains.push(reader.string());
+          continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.enforceIdentityDomain = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1975,6 +2170,13 @@ export const WorkspaceProfileSetting = {
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
+      maximumRoleExpiration: isSet(object.maximumRoleExpiration)
+        ? Duration.fromJSON(object.maximumRoleExpiration)
+        : undefined,
+      domains: globalThis.Array.isArray(object?.domains) ? object.domains.map((e: any) => globalThis.String(e)) : [],
+      enforceIdentityDomain: isSet(object.enforceIdentityDomain)
+        ? globalThis.Boolean(object.enforceIdentityDomain)
+        : false,
     };
   },
 
@@ -2001,6 +2203,15 @@ export const WorkspaceProfileSetting = {
     if (message.announcement !== undefined) {
       obj.announcement = Announcement.toJSON(message.announcement);
     }
+    if (message.maximumRoleExpiration !== undefined) {
+      obj.maximumRoleExpiration = Duration.toJSON(message.maximumRoleExpiration);
+    }
+    if (message.domains?.length) {
+      obj.domains = message.domains;
+    }
+    if (message.enforceIdentityDomain === true) {
+      obj.enforceIdentityDomain = message.enforceIdentityDomain;
+    }
     return obj;
   },
 
@@ -2020,6 +2231,12 @@ export const WorkspaceProfileSetting = {
     message.announcement = (object.announcement !== undefined && object.announcement !== null)
       ? Announcement.fromPartial(object.announcement)
       : undefined;
+    message.maximumRoleExpiration =
+      (object.maximumRoleExpiration !== undefined && object.maximumRoleExpiration !== null)
+        ? Duration.fromPartial(object.maximumRoleExpiration)
+        : undefined;
+    message.domains = object.domains?.map((e) => e) || [];
+    message.enforceIdentityDomain = object.enforceIdentityDomain ?? false;
     return message;
   },
 };
@@ -3040,7 +3257,7 @@ export const DataClassificationSetting = {
 };
 
 function createBaseDataClassificationSetting_DataClassificationConfig(): DataClassificationSetting_DataClassificationConfig {
-  return { id: "", title: "", levels: [], classification: {} };
+  return { id: "", title: "", levels: [], classification: {}, classificationFromConfig: false };
 }
 
 export const DataClassificationSetting_DataClassificationConfig = {
@@ -3063,6 +3280,9 @@ export const DataClassificationSetting_DataClassificationConfig = {
         writer.uint32(34).fork(),
       ).ldelim();
     });
+    if (message.classificationFromConfig === true) {
+      writer.uint32(40).bool(message.classificationFromConfig);
+    }
     return writer;
   },
 
@@ -3107,6 +3327,13 @@ export const DataClassificationSetting_DataClassificationConfig = {
             message.classification[entry4.key] = entry4.value;
           }
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3131,6 +3358,9 @@ export const DataClassificationSetting_DataClassificationConfig = {
           return acc;
         }, {})
         : {},
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -3153,6 +3383,9 @@ export const DataClassificationSetting_DataClassificationConfig = {
           obj.classification[k] = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(v);
         });
       }
+    }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
     }
     return obj;
   },
@@ -3178,6 +3411,7 @@ export const DataClassificationSetting_DataClassificationConfig = {
       }
       return acc;
     }, {});
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };

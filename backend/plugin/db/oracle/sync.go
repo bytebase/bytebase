@@ -90,14 +90,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
+	dbLinks, err := getDBLinks(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get db links from database %q", driver.databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:        driver.databaseName,
-		ServiceName: driver.serviceName,
+		Name:            driver.databaseName,
+		ServiceName:     driver.serviceName,
+		LinkedDatabases: dbLinks,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 		Name:   driver.databaseName,
@@ -105,6 +110,36 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Views:  viewMap[driver.databaseName],
 	})
 	return databaseMetadata, nil
+}
+
+func getDBLinks(txn *sql.Tx) ([]*storepb.LinkedDatabaseMetadata, error) {
+	query := `
+	SELECT DB_LINK, HOST, USERNAME
+	FROM all_db_links
+	ORDER BY DB_LINK`
+	slog.Debug("running get db link query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var result []*storepb.LinkedDatabaseMetadata
+	for rows.Next() {
+		dbLink := &storepb.LinkedDatabaseMetadata{}
+		if err := rows.Scan(&dbLink.Name, &dbLink.Host, &dbLink.Username); err != nil {
+			return nil, err
+		}
+		result = append(result, dbLink)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return result, nil
 }
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
@@ -147,6 +182,22 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
 	}
+	columnCommentMap, err := getTableColumnComments(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get table column comments")
+	}
+	for key, columns := range columnMap {
+		for _, column := range columns {
+			comment, ok := columnCommentMap[db.ColumnKey{Schema: key.Schema, Table: key.Table, Column: column.Name}]
+			if ok {
+				column.Comment = comment
+			}
+		}
+	}
+	tableCommentMap, err := getTableComments(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get table comments")
+	}
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := ""
@@ -185,6 +236,9 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
+		if comment, ok := tableCommentMap[db.TableKey{Schema: schemaName, Table: table.Name}]; ok {
+			table.Comment = comment
+		}
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
@@ -196,6 +250,89 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 	}
 
 	return tableMap, nil
+}
+
+func getTableComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
+	tableCommentMap := make(map[db.TableKey]string)
+
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COMMENTS IS NOT NULL
+		ORDER BY OWNER, TABLE_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER = '%s' AND COMMENTS IS NOT NULL
+		ORDER BY TABLE_NAME`, schemaName)
+	}
+	slog.Debug("running get table comments query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, tableName, comment string
+		if err := rows.Scan(&schemaName, &tableName, &comment); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		tableCommentMap[key] = comment
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return tableCommentMap, nil
+}
+
+func getTableColumnComments(txn *sql.Tx, schemaName string) (map[db.ColumnKey]string, error) {
+	columnCommentsMap := make(map[db.ColumnKey]string)
+
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COLUMN_NAME, COMMENTS
+		FROM all_col_comments
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COMMENTS IS NOT NULL
+		ORDER BY OWNER, TABLE_NAME, COLUMN_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COLUMN_NAME, COMMENTS
+		FROM all_col_comments
+		WHERE OWNER = '%s' AND COMMENTS IS NOT NULL
+		ORDER BY TABLE_NAME, COLUMN_NAME`, schemaName)
+	}
+	slog.Debug("running get table column comments query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var schemaName, tableName, columnName, comment string
+		if err := rows.Scan(&schemaName, &tableName, &columnName, &comment); err != nil {
+			return nil, err
+		}
+		key := db.ColumnKey{Schema: schemaName, Table: tableName, Column: columnName}
+		columnCommentsMap[key] = comment
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return columnCommentsMap, nil
 }
 
 // getTableColumns gets the columns of a table.

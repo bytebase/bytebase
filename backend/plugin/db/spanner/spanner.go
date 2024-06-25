@@ -18,6 +18,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -28,10 +29,6 @@ import (
 )
 
 var (
-	excludedDatabaseList = map[string]bool{
-		"bytebase": true,
-	}
-
 	dsnRegExp = regexp.MustCompile("projects/(?P<PROJECTGROUP>([a-z]|[-.:]|[0-9])+)/instances/(?P<INSTANCEGROUP>([a-z]|[-]|[0-9])+)/databases/(?P<DATABASEGROUP>([a-z]|[-]|[_]|[0-9])+)")
 
 	_ db.Driver = (*Driver)(nil)
@@ -64,17 +61,22 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	d.config = config
 	d.connCtx = config.ConnectionContext
+
+	var o []option.ClientOption
+	if config.AuthenticationType != storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
+		o = append(o, option.WithCredentialsJSON([]byte(config.Password)))
+	}
 	if config.Database != "" {
 		d.databaseName = d.config.Database
 		dsn := getDSN(d.config.Host, d.config.Database)
-		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
+		client, err := spanner.NewClient(ctx, dsn, o...)
 		if err != nil {
 			return nil, err
 		}
 		d.client = client
 	}
 
-	dbClient, err := spannerdb.NewDatabaseAdminClient(ctx, option.WithCredentialsJSON([]byte(config.Password)))
+	dbClient, err := spannerdb.NewDatabaseAdminClient(ctx, o...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +121,7 @@ func (*Driver) GetDB() *sql.DB {
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
-		stmts, err := sanitizeSQL(statement)
+		stmts, err := util.SanitizeSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to sanitize %v", statement)
 		}
@@ -136,14 +138,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	var rowCount int64
-	stmts, err := sanitizeSQL(statement)
+	stmts, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return 0, err
 	}
 
 	ddl := func() bool {
 		for _, stmt := range stmts {
-			if isDDL(stmt) {
+			if util.IsDDL(stmt) {
 				return true
 			}
 		}
@@ -261,14 +263,20 @@ func getDatabaseFromDSN(dsn string) (string, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	stmts, err := sanitizeSQL(statement)
+	if queryContext != nil && queryContext.Explain {
+		return nil, errors.New("Spanner does not support EXPLAIN")
+	}
+
+	stmts, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
 	var results []*v1pb.QueryResult
 	for _, statement := range stmts {
-		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		if queryContext != nil {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
 		result, err := d.querySingleSQL(ctx, statement)
 		if err != nil {
 			results = append(results, &v1pb.QueryResult{
@@ -314,7 +322,8 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 			return nil, err
 		}
 		result.Rows = append(result.Rows, rowData)
-		if proto.Size(result) > common.MaximumSQLResultSize {
+		n := len(result.Rows)
+		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 			result.Error = common.MaximumSQLResultSizeExceeded
 			result.Latency = durationpb.New(time.Since(startTime))
 			return result, nil
@@ -348,7 +357,7 @@ func readRow2(row *spanner.Row) (*v1pb.QueryRow, error) {
 
 // RunStatement executes a SQL statement.
 func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	stmts, err := sanitizeSQL(statement)
+	stmts, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +365,7 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 	var results []*v1pb.QueryResult
 	for _, statement := range stmts {
 		startTime := time.Now()
-		if isSelect(statement) {
+		if util.IsSelect(statement) {
 			result, err := d.querySingleSQL(ctx, statement)
 			if err != nil {
 				results = append(results, &v1pb.QueryResult{
@@ -368,7 +377,7 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 			continue
 		}
 
-		if isDDL(statement) {
+		if util.IsDDL(statement) {
 			op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
 				Database:   getDSN(d.config.Host, d.databaseName),
 				Statements: []string{statement},

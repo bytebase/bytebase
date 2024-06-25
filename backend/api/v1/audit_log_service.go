@@ -16,6 +16,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -23,18 +25,23 @@ import (
 
 type AuditLogService struct {
 	v1pb.UnimplementedAuditLogServiceServer
-	store      *store.Store
-	iamManager *iam.Manager
+	store          *store.Store
+	iamManager     *iam.Manager
+	licenseService enterprise.LicenseService
 }
 
-func NewAuditLogService(store *store.Store, iamManager *iam.Manager) *AuditLogService {
+func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseService enterprise.LicenseService) *AuditLogService {
 	return &AuditLogService{
-		store:      store,
-		iamManager: iamManager,
+		store:          store,
+		iamManager:     iamManager,
+		licenseService: licenseService,
 	}
 }
 
 func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.SearchAuditLogsRequest) (*v1pb.SearchAuditLogsResponse, error) {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureAuditLog); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
 	filter, serr := getSearchAuditLogsFilter(request.Filter)
 	if serr != nil {
 		return nil, serr.Err()
@@ -82,13 +89,20 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		nextPageToken = token
 	}
 
+	v1AuditLogs, err := convertToAuditLogs(ctx, s.store, auditLogs)
+	if err != nil {
+		return nil, err
+	}
 	return &v1pb.SearchAuditLogsResponse{
-		AuditLogs:     convertToAuditLogs(auditLogs),
+		AuditLogs:     v1AuditLogs,
 		NextPageToken: nextPageToken,
 	}, nil
 }
 
 func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureAuditLog); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
 	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
 		Filter:  request.Filter,
 		OrderBy: request.OrderBy,
@@ -141,26 +155,42 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 	return &v1pb.ExportAuditLogsResponse{Content: content}, nil
 }
 
-func convertToAuditLogs(auditLogs []*store.AuditLog) []*v1pb.AuditLog {
+func convertToAuditLogs(ctx context.Context, stores *store.Store, auditLogs []*store.AuditLog) ([]*v1pb.AuditLog, error) {
 	var ls []*v1pb.AuditLog
 	for _, log := range auditLogs {
-		ls = append(ls, convertToAuditLog(log))
+		l, err := convertToAuditLog(ctx, stores, log)
+		if err != nil {
+			return nil, err
+		}
+		ls = append(ls, l)
 	}
-	return ls
+	return ls, nil
 }
 
-func convertToAuditLog(l *store.AuditLog) *v1pb.AuditLog {
+func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditLog) (*v1pb.AuditLog, error) {
+	var user string
+	if l.Payload.User != "" {
+		uid, err := common.GetUserID(l.Payload.User)
+		if err != nil {
+			return nil, err
+		}
+		u, err := stores.GetUserByID(ctx, uid)
+		if err != nil {
+			return nil, err
+		}
+		user = common.FormatUserEmail(u.Email)
+	}
 	return &v1pb.AuditLog{
 		Name:       fmt.Sprintf("%s/%s%d", l.Payload.Parent, common.AuditLogPrefix, l.ID),
 		CreateTime: timestamppb.New(time.Unix(l.CreatedTs, 0)),
-		User:       l.Payload.User,
+		User:       user,
 		Method:     l.Payload.Method,
 		Severity:   convertToAuditLogSeverity(l.Payload.Severity),
 		Resource:   l.Payload.Resource,
 		Request:    l.Payload.Request,
 		Response:   l.Payload.Response,
 		Status:     l.Payload.Status,
-	}
+	}, nil
 }
 
 func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severity {

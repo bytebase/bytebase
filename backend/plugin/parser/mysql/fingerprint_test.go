@@ -12,6 +12,10 @@ func TestGetMySQLFingerprint(t *testing.T) {
 		want string
 	}{
 		{
+			stmt: "SELECT * FROM `mytable` UNION SELECT a, b  FROM `mytable`",
+			want: "select * from `mytable` union select a, b from `mytable`",
+		},
+		{
 			stmt: "-- this is comment\nSELECT * FROM `mytable`",
 			want: "select * from `mytable`",
 		},

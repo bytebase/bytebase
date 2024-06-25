@@ -37,8 +37,7 @@ const option = computed(() => props.option);
 const database = computed(() => {
   const { option } = props;
   if (option.level !== "database") return undefined;
-  const databaseId = option.value.replace("d-", "");
-  return useDatabaseV1Store().getDatabaseByUID(databaseId);
+  return useDatabaseV1Store().getDatabaseByName(option.value);
 });
 
 const environment = computed(() => {

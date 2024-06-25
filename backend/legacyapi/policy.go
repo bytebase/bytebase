@@ -21,14 +21,15 @@ type EnvironmentTierValue string
 // PolicyResourceType is the resource type for a policy.
 type PolicyResourceType string
 
+// ReservedTag is the reserved tags for bb.policy.tag.
+type ReservedTag string
+
 const (
 	// DefaultPolicyID is the ID of the default policy.
 	DefaultPolicyID int = 0
 
 	// PolicyTypeRollout is the rollout policy type.
 	PolicyTypeRollout PolicyType = "bb.policy.rollout"
-	// PolicyTypeSQLReview is the sql review policy type.
-	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
 	// PolicyTypeEnvironmentTier is the tier of an environment.
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeMasking is the masking policy type.
@@ -43,6 +44,10 @@ const (
 	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
 	// PolicyTypeRestrictIssueCreationForSQLReview is the policy type for restricting issue creation for SQL review.
 	PolicyTypeRestrictIssueCreationForSQLReview PolicyType = "bb.policy.restrict-issue-creation-for-sql-review"
+	// PolicyTypeProjectIAM is the policy for IAM in the project.
+	PolicyTypeProjectIAM PolicyType = "bb.policy.project-iam"
+	// PolicyTypeTag is the policy type for resource tags.
+	PolicyTypeTag PolicyType = "bb.policy.tag"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -71,20 +76,23 @@ const (
 	PolicyResourceTypeInstance PolicyResourceType = "INSTANCE"
 	// PolicyResourceTypeDatabase is the resource type for databases.
 	PolicyResourceTypeDatabase PolicyResourceType = "DATABASE"
+
+	// ReservedTagReviewConfig is the tag for review config.
+	ReservedTagReviewConfig ReservedTag = "bb.tag.review_config"
 )
 
 var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
-		PolicyTypeSQLReview:                         {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
+		PolicyTypeTag:                               {PolicyResourceTypeEnvironment, PolicyResourceTypeProject, PolicyResourceTypeDatabase},
 		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:                         {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment},
 		PolicyTypeMaskingRule:                       {PolicyResourceTypeWorkspace},
 		PolicyTypeMaskingException:                  {PolicyResourceTypeProject},
-		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace},
+		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace, PolicyResourceTypeProject},
 	}
 )
 

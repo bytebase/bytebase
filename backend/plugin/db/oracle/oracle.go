@@ -3,15 +3,17 @@ package oracle
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"regexp"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
 
 	// Import go-ora Oracle driver.
+
 	"github.com/pkg/errors"
 	goora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -45,6 +47,11 @@ type Driver struct {
 
 func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
+}
+
+// GetVersion gets the Oracle version.
+func (driver *Driver) GetVersion() (*plsqlparser.Version, error) {
+	return plsqlparser.ParseVersion(driver.connectionCtx.EngineVersion)
 }
 
 // Open opens a Oracle driver.
@@ -145,8 +152,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			})
 		}
 
+		indexes := []int32{int32(i)}
+		opts.LogCommandExecute(indexes)
+
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
+			opts.LogCommandResponse(indexes, 0, nil, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: &storepb.TaskRunResult_Position{
@@ -163,14 +174,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
+			rowsAffected = 0
 		}
+		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 		totalRowsAffected += rowsAffected
-	}
-
-	if opts.EndTransactionFunc != nil {
-		if err := opts.EndTransactionFunc(tx); err != nil {
-			return 0, errors.Wrapf(err, "failed to execute beforeCommitTx")
-		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -182,7 +189,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// Oracle does not support transaction isolation level for read-only queries.
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
@@ -218,47 +227,58 @@ func (driver *Driver) getOracleStatementWithResultLimit(stmt string, queryContex
 	if err != nil {
 		return "", err
 	}
-	switch {
-	case versionNumber < dbVersion12:
-		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
-	default:
-		res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
-		if err != nil {
-			return "", err
+	if queryContext != nil {
+		switch {
+		case versionNumber < dbVersion12:
+			return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
+		default:
+			res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
+			if err != nil {
+				return "", err
+			}
+			return res, nil
 		}
-		return res, nil
 	}
+
+	return stmt, nil
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
-	stmt := statement
-	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
-		var err error
-		stmt, err = driver.getOracleStatementWithResultLimit(stmt, queryContext)
+	if queryContext != nil && queryContext.Explain {
+		startTime := time.Now()
+		randNum, err := rand.Int(rand.Reader, big.NewInt(999))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate random statement ID")
+		}
+		randomID := fmt.Sprintf("%d%d", startTime.UnixMilli(), randNum.Int64())
+
+		statement = fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
+			return nil, err
+		}
+		explainQuery := fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
+		result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, explainQuery, queryContext)
+		if err != nil {
+			return nil, err
+		}
+		result.Latency = durationpb.New(time.Since(startTime))
+		result.Statement = statement
+		return result, nil
+	}
+
+	if queryContext != nil && queryContext.Limit > 0 {
+		stmt, err := driver.getOracleStatementWithResultLimit(statement, queryContext)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
 			stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
 		}
-	}
-
-	if queryContext.SensitiveSchemaInfo != nil {
-		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("Oracle schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != database.Name {
-				return nil, errors.Errorf("Oracle schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
-			}
-		}
+		statement = stmt
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -270,26 +290,4 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_ORACLE, conn, statement)
-}
-
-type oracleVersion struct {
-	first  int
-	second int
-}
-
-func parseVersion(banner string) (*oracleVersion, error) {
-	re := regexp.MustCompile(`(\d+)\.(\d+)`)
-	match := re.FindStringSubmatch(banner)
-	if len(match) >= 3 {
-		firstVersion, err := strconv.Atoi(match[1])
-		if err != nil {
-			return nil, errors.Errorf("failed to parse first version from banner: %s", banner)
-		}
-		secondVersion, err := strconv.Atoi(match[2])
-		if err != nil {
-			return nil, errors.Errorf("failed to parse second version from banner: %s", banner)
-		}
-		return &oracleVersion{first: firstVersion, second: secondVersion}, nil
-	}
-	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
 }

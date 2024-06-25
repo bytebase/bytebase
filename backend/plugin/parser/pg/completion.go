@@ -32,8 +32,8 @@ func init() {
 }
 
 // Completion is the entry point of PostgreSQL code completion.
-func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, l base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, l)
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	result, err := completer.completion()
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func Completion(ctx context.Context, statement string, caretLine int, caretOffse
 		return result, nil
 	}
 
-	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, l)
+	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	return trickyCompleter.completion()
 }
 
@@ -149,6 +149,7 @@ func newNoSeparatorRequired() map[int]bool {
 type Completer struct {
 	ctx                 context.Context
 	core                *base.CodeCompletionCore
+	scene               base.SceneType
 	parser              *pg.PostgreSQLParser
 	lexer               *pg.PostgreSQLLexer
 	scanner             *base.Scanner
@@ -168,7 +169,7 @@ type Completer struct {
 	caretTokenIsQuoted bool
 }
 
-func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
+func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	// For all PostgreSQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
@@ -185,18 +186,19 @@ func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, ca
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
-		getMetadata:         getMetadata,
+		defaultDatabase:     cCtx.DefaultDatabase,
+		getMetadata:         cCtx.Metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
 		cteCache:            make(map[int][]*base.VirtualTableReference),
 	}
 }
 
-func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
+func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all PostgreSQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
@@ -213,11 +215,12 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
-		getMetadata:         getMetadata,
+		defaultDatabase:     cCtx.DefaultDatabase,
+		getMetadata:         cCtx.Metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
 		cteCache:            make(map[int][]*base.VirtualTableReference),
@@ -239,7 +242,12 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
-	context := c.parser.Root()
+	var context antlr.ParserRuleContext
+	if c.scene == base.SceneTypeQuery {
+		context = c.parser.Selectstmt()
+	} else {
+		context = c.parser.Root()
+	}
 
 	candidates := c.core.CollectCandidates(caretIndex, context)
 
@@ -654,12 +662,14 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 	} else {
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: l.context.getMetadata,
+				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+			},
 			store.Engine_POSTGRES,
 			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Preparablestmt()),
 			l.context.defaultDatabase,
 			"",
-			l.context.getMetadata,
-			l.context.listDatabaseNames,
 			false,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
@@ -1018,12 +1028,14 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 				} else {
 					if span, err := base.GetQuerySpan(
 						l.context.ctx,
+						base.GetQuerySpanContext{
+							GetDatabaseMetadataFunc: l.context.getMetadata,
+							ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+						},
 						store.Engine_POSTGRES,
 						fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias),
 						l.context.defaultDatabase,
 						"",
-						l.context.getMetadata,
-						l.context.listDatabaseNames,
 						false,
 					); err == nil && len(span) == 1 {
 						for _, column := range span[0].Results {
@@ -1152,51 +1164,29 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 	input := antlr.NewInputStream(statement)
 	lexer := pg.NewPostgreSQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := pg.NewPostgreSQLParser(stream)
-	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{}
-	parserErrorListener := &base.ParseErrorListener{}
 	lexer.AddErrorListener(lexerErrorListener)
-	p.AddErrorListener(parserErrorListener)
 
-	lastLine, lastColumn, lastIndex := 0, 0, 0
-	num := 0
-	for {
-		if num > 10 {
-			// We only skip at most 10 SQL statements.
-			return statement, caretLine, caretOffset
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	latestSelect := 0
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	for _, token := range tokens {
+		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+			break
 		}
-		tree := p.Stmt()
-		if lexerErrorListener.Err != nil || parserErrorListener.Err != nil {
-			if num == 0 {
-				return statement, caretLine, caretOffset
-			}
-			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
-			newCaretOffset := caretOffset
-			if caretLine == lastLine {
-				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
-			}
-			return stream.GetTextFromInterval(antlr.NewInterval(lastIndex+1, stream.Size())), newCaretLine, newCaretOffset
+		if token.GetTokenType() == pg.PostgreSQLLexerSELECT && token.GetColumn() == 0 {
+			latestSelect = token.GetTokenIndex()
+			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
+			newCaretOffset = caretOffset
 		}
-		if tree.GetStop().GetLine() > caretLine || (tree.GetStop().GetLine() == caretLine && tree.GetStop().GetColumn() >= caretOffset) {
-			if num == 0 {
-				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
-				return statement, caretLine, caretOffset
-			}
-
-			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
-			newCaretOffset := caretOffset
-			if caretLine == lastLine {
-				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
-			}
-			return stream.GetTextFromInterval(antlr.NewInterval(tree.GetStart().GetTokenIndex(), stream.Size())), newCaretLine, newCaretOffset
-		}
-		num++
-		lastLine = tree.GetStop().GetLine()
-		lastColumn = tree.GetStop().GetColumn()
-		lastIndex = tree.GetStop().GetTokenIndex()
 	}
+
+	if latestSelect == 0 {
+		return statement, caretLine, caretOffset
+	}
+	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
 }
 
 func (c *Completer) listAllSchemas() []string {

@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -272,6 +272,9 @@ func TestSyncerForMySQL(t *testing.T) {
 							  "keyLength": [
 								 "-1"
 							  ],
+							  "descending": [
+							  	false
+							  ],
 							  "type":"BTREE",
 							  "unique":true,
 							  "primary":true,
@@ -322,6 +325,11 @@ func TestSyncerForMySQL(t *testing.T) {
 								-1,
 								-1,
 								-1
+							  ],
+							  "descending": [
+							  	false,
+								false,
+								false
 							  ],
 							  "type":"BTREE",
 							  "visible":true
@@ -404,6 +412,11 @@ func TestSyncerForMySQL(t *testing.T) {
 								-1,
 								-1,
 								-1
+							  ],
+							  "descending": [
+							  	false,
+								false,
+								false
 							  ],
 							  "type":"BTREE",
 							  "unique":true,
@@ -495,7 +508,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	var expectedSchemaMetadata v1pb.DatabaseMetadata
-	err = protojson.Unmarshal([]byte(expectedSchema), &expectedSchemaMetadata)
+	err = common.ProtojsonUnmarshaler.Unmarshal([]byte(expectedSchema), &expectedSchemaMetadata)
 	a.NoError(err)
 
 	diff := cmp.Diff(&expectedSchemaMetadata, latestSchemaMetadata, protocmp.Transform())

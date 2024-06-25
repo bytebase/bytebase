@@ -120,6 +120,8 @@
 
 # 🖖 Intro
 
+[![Watch the 30-second product video](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/product-video-thumbnail.webp)](https://www.youtube.com/watch?v=7UE78BufSLM)
+
 Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase). The Bytebase family consists of these tools:
 
 - [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
@@ -257,7 +259,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 ### Prerequisites
 
-- [Go](https://golang.org/doc/install) (1.21.6 or later)
+- [Go](https://golang.org/doc/install) (1.22.4 or later)
 - [pnpm](https://pnpm.io/installation)
 - [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
   ```bash
@@ -358,7 +360,6 @@ Both have web-based SQL clients. Additionally, Bytebase offers review workflow, 
 - [Bytebase vs CloudBeaver](https://www.bytebase.com/blog/bytebase-vs-cloudbeaver/)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,dbeaver/cloudbeaver&type=Date)](https://star-history.com/#bytebase/bytebase&dbeaver/cloudbeaver&Date)
-
 
 ## Bytebase vs DBeaver / Navicat
 

@@ -14,8 +14,10 @@ import (
 
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/store/model"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -23,23 +25,44 @@ const (
 	MaxSheetSize = 1024 * 1024
 	// MaxSheetCheckSize is the maximum size of a sheet for checking changes.
 	MaxSheetCheckSize = 1024 * 1024
-	// MaxSheetSizeForRollback is the maximum size of a sheet for rollback generator to run.
-	MaxSheetSizeForRollback = 8 * 1024 * 1024
-	// MaxBinlogSizeLimit defines the upper limit for scanning the binlog text body size in search of a transaction..
-	MaxBinlogSizeLimit = 32 * 1024 * 1024
-	// MaxChunksCount is the maximum number of chunks for a sheet.
-	MaxSheetChunksCount = 200
 	// The maximum number of bytes for sql results in response body.
 	// 100 MB.
 	MaximumSQLResultSize = 100 * 1024 * 1024
+	// MaximumCommands is the maximum number of commands that can be executed in a single transaction.
+	MaximumCommands = 200
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
 
-var MaximumSQLResultSizeExceeded = fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", MaximumSQLResultSize/1024/1024)
+var (
+	MaximumSQLResultSizeExceeded = fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", MaximumSQLResultSize/1024/1024)
+	StatementAdviseEngines       = map[storepb.Engine]bool{
+		storepb.Engine_MYSQL:            true,
+		storepb.Engine_TIDB:             true,
+		storepb.Engine_POSTGRES:         true,
+		storepb.Engine_ORACLE:           true,
+		storepb.Engine_OCEANBASE_ORACLE: true,
+		storepb.Engine_OCEANBASE:        true,
+		storepb.Engine_SNOWFLAKE:        true,
+		storepb.Engine_MSSQL:            true,
+		storepb.Engine_DYNAMODB:         true,
+	}
+	StatementReportEngines = map[storepb.Engine]bool{
+		storepb.Engine_POSTGRES:         true,
+		storepb.Engine_MYSQL:            true,
+		storepb.Engine_OCEANBASE:        true,
+		storepb.Engine_ORACLE:           true,
+		storepb.Engine_OCEANBASE_ORACLE: true,
+	}
+)
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+// ProtojsonMarshaler is a global protojson marshaler with DiscardUnknown set to true.
+//
+//nolint:forbidigo
+var ProtojsonUnmarshaler = protojson.UnmarshalOptions{DiscardUnknown: true}
 
 // RandomString returns a random string with length n.
 func RandomString(n int) (string, error) {

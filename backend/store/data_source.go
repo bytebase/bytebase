@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -44,8 +45,14 @@ type DataSourceMessage struct {
 	// (deprecated) Output only.
 	UID int
 	// external secret
-	ExternalSecret     *storepb.DataSourceExternalSecret
-	AuthenticationType storepb.DataSourceOptions_AuthenticationType
+	ExternalSecret      *storepb.DataSourceExternalSecret
+	AuthenticationType  storepb.DataSourceOptions_AuthenticationType
+	AdditionalAddresses []*storepb.DataSourceOptions_Address
+	ReplicaSet          string
+	DirectConnection    bool
+	Region              string
+	AccountID           string
+	WarehouseID         string
 }
 
 // Copy returns a copy of the data source message.
@@ -75,6 +82,10 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		ExternalSecret:                     m.ExternalSecret,
 		AuthenticationType:                 m.AuthenticationType,
 		SASLConfig:                         m.SASLConfig,
+		AdditionalAddresses:                m.AdditionalAddresses,
+		ReplicaSet:                         m.ReplicaSet,
+		DirectConnection:                   m.DirectConnection,
+		Region:                             m.Region,
 	}
 }
 
@@ -111,8 +122,14 @@ type UpdateDataSourceMessage struct {
 	RemoveExternalSecret bool
 	AuthenticationType   *storepb.DataSourceOptions_AuthenticationType
 	// SASLConfig.
-	SASLConfig       *storepb.SASLConfig
-	RemoveSASLConfig bool
+	SASLConfig        *storepb.SASLConfig
+	AdditionalAddress *[]*storepb.DataSourceOptions_Address
+	ReplicaSet        *string
+	RemoveSASLConfig  bool
+	DirectConnection  *bool
+	Region            *string
+	AccountID         *string
+	WarehouseID       *string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -160,8 +177,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			return nil, err
 		}
 		var dataSourceOptions storepb.DataSourceOptions
-		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := decoder.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
 			return nil, err
 		}
 		dataSourceMessage.SRV = dataSourceOptions.Srv
@@ -177,6 +193,12 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.ExternalSecret = dataSourceOptions.ExternalSecret
 		dataSourceMessage.SASLConfig = dataSourceOptions.SaslConfig
 		dataSourceMessage.AuthenticationType = dataSourceOptions.AuthenticationType
+		dataSourceMessage.AdditionalAddresses = dataSourceOptions.AdditionalAddresses
+		dataSourceMessage.ReplicaSet = dataSourceOptions.ReplicaSet
+		dataSourceMessage.DirectConnection = dataSourceOptions.DirectConnection
+		dataSourceMessage.Region = dataSourceOptions.Region
+		dataSourceMessage.AccountID = dataSourceOptions.AccountId
+		dataSourceMessage.WarehouseID = dataSourceOptions.WarehouseId
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -272,37 +294,37 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	// To view the json tag, please refer to the struct definition of storepb.DataSourceOptions.
 	var optionSet []string
 	if v := patch.SRV; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('srv', to_jsonb($%d::BOOLEAN))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('srv', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.AuthenticationDatabase; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationDatabase', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationDatabase', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SID; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sid', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sid', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ServiceName; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('serviceName', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('serviceName', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SSHHost; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshHost', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshHost', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SSHPort; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshPort', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshPort', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SSHUser; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshUser', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshUser', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SSHObfuscatedPassword; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshObfuscatedPassword', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshObfuscatedPassword', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SSHObfuscatedPrivateKey; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshObfuscatedPrivateKey', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshObfuscatedPrivateKey', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.AuthenticationPrivateKeyObfuscated; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationPrivateKeyObfuscated', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationPrivateKeyObfuscated', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.AuthenticationType; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationType', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationType', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ExternalSecret; v != nil {
 		protoBytes, err := protojson.Marshal(v)
@@ -321,6 +343,31 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, protoBytes)
 	} else if patch.RemoveSASLConfig {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, nil)
+	}
+	if v := patch.AdditionalAddress; v != nil {
+		partialDataSourceOptions := &storepb.DataSourceOptions{
+			AdditionalAddresses: *v,
+		}
+		protoBytes, err := protojson.Marshal(partialDataSourceOptions)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal additional address")
+		}
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('additionalAddresses', ($%d::JSONB)->'additionalAddresses')", len(args)+1)), append(args, protoBytes)
+	}
+	if v := patch.ReplicaSet; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('replicaSet', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.DirectConnection; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('directConnection', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Region; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('region', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.AccountID; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('accountID', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.WarehouseID; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseID', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
@@ -374,6 +421,12 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		ExternalSecret:                     dataSource.ExternalSecret,
 		AuthenticationType:                 dataSource.AuthenticationType,
 		SaslConfig:                         dataSource.SASLConfig,
+		AdditionalAddresses:                dataSource.AdditionalAddresses,
+		ReplicaSet:                         dataSource.ReplicaSet,
+		DirectConnection:                   dataSource.DirectConnection,
+		Region:                             dataSource.Region,
+		WarehouseId:                        dataSource.WarehouseID,
+		AccountId:                          dataSource.AccountID,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

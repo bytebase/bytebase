@@ -14,8 +14,7 @@ export const extractSQLRowValue = (value: RowValue | undefined) => {
   const plainObject = RowValue.toJSON(value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
-    console.debug("empty row value", value);
-    return null;
+    return undefined; // Will bi displayed as "UNSET"
   }
   if (keys.length > 1) {
     console.debug("mixed type in row value", value);

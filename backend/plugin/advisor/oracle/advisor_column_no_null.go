@@ -30,7 +30,7 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -57,7 +57,7 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 type columnNoNullListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	nullableColumns columnMap
@@ -65,8 +65,8 @@ type columnNoNullListener struct {
 	columnID        string
 }
 
-func (l *columnNoNullListener) generateAdvice() ([]advisor.Advice, error) {
-	advice := []advisor.Advice{}
+func (l *columnNoNullListener) generateAdvice() ([]*storepb.Advice, error) {
+	advice := []*storepb.Advice{}
 
 	var columnIDs []string
 	for columnID := range l.nullableColumns {
@@ -75,19 +75,21 @@ func (l *columnNoNullListener) generateAdvice() ([]advisor.Advice, error) {
 	sort.Strings(columnIDs)
 	for _, columnID := range columnIDs {
 		line := l.nullableColumns[columnID]
-		advice = append(advice, advisor.Advice{
+		advice = append(advice, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.ColumnCannotNull,
+			Code:    advisor.ColumnCannotNull.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Column %q is nullable, which is not allowed.", lastIdentifier(columnID)),
-			Line:    line,
+			StartPosition: &storepb.Position{
+				Line: int32(line),
+			},
 		})
 	}
 
 	if len(advice) == 0 {
-		advice = append(advice, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		advice = append(advice, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

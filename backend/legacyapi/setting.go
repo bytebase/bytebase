@@ -46,26 +46,6 @@ const (
 	SettingMaskingAlgorithm SettingName = "bb.workspace.masking-algorithm"
 )
 
-// IMType is the type of IM.
-type IMType string
-
-// IMTypeFeishu is IM feishu.
-const IMTypeFeishu IMType = "im.feishu"
-
-// ExternalApproval is the external approval setting for app IM.
-type ExternalApproval struct {
-	Enabled              bool   `json:"enabled"`
-	ApprovalDefinitionID string `json:"approvalDefinitionID"`
-}
-
-// SettingAppIMValue is the setting value of SettingAppIM type setting.
-type SettingAppIMValue struct {
-	IMType           IMType           `json:"imType"`
-	AppID            string           `json:"appId"`
-	AppSecret        string           `json:"appSecret"`
-	ExternalApproval ExternalApproval `json:"externalApproval"`
-}
-
 // SettingWorkspaceMailDeliveryValue is the setting value of SettingMailDelivery type setting.
 type SettingWorkspaceMailDeliveryValue struct {
 	SMTPServerHost         string                                         `json:"smtpServerHost"`

@@ -19,7 +19,9 @@ import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_se
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
+import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
+import { ReviewConfigServiceDefinition } from "@/types/proto/v1/review_config_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
@@ -27,6 +29,7 @@ import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
+import { UserGroupServiceDefinition } from "@/types/proto/v1/user_group";
 import { VCSConnectorServiceDefinition } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProviderServiceDefinition } from "@/types/proto/v1/vcs_provider_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
@@ -139,6 +142,11 @@ export const rolloutServiceClient = clientFactory.create(
   channel
 );
 
+export const planServiceClient = clientFactory.create(
+  PlanServiceDefinition,
+  channel
+);
+
 export const sqlServiceClient = clientFactory.create(
   SQLServiceDefinition,
   channel
@@ -191,6 +199,15 @@ export const changelistServiceClient = clientFactory.create(
 
 export const auditLogServiceClient = clientFactory.create(
   AuditLogServiceDefinition,
+  channel
+);
+
+export const userGroupServiceClient = clientFactory.create(
+  UserGroupServiceDefinition,
+  channel
+);
+export const reviewConfigServiceClient = clientFactory.create(
+  ReviewConfigServiceDefinition,
   channel
 );
 

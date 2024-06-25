@@ -237,6 +237,7 @@ ruleList:
       - OCEANBASE
       - MARIADB
       - TIDB
+      - ORACLE
   - type: statement.disallow-add-column-with-default
     category: STATEMENT
     engineList:
@@ -275,10 +276,11 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
-  - type: statement.where.disallow-using-function
+  - type: statement.where.disallow-functions-and-calculations
     category: STATEMENT
     engineList:
       - MYSQL
+      - MSSQL
   - type: statement.query.minimum-plan-level
     category: STATEMENT
     engineList:
@@ -344,6 +346,18 @@ ruleList:
       - MYSQL
       - POSTGRES
       - TIDB
+  - type: statement.add-column-without-position
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
+  - type: statement.disallow-offline-ddl
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
+  - type: statement.disallow-cross-db-queries
+    category: STATEMENT
+    engineList:
+      - MSSQL
   - type: naming.fully-qualified
     category: NAMING
     engineList:
@@ -590,6 +604,10 @@ ruleList:
       - TIDB
       - OCEANBASE
       - MARIADB
+  - type: column.disallow-drop
+    category: COLUMN
+    engineList:
+      - OCEANBASE
   - type: column.disallow-drop-in-index
     category: COLUMN
     engineList:
@@ -801,6 +819,10 @@ ruleList:
         payload:
           type: STRING_ARRAY
           default: []
+  - type: index.not-redundant
+    category: INDEX
+    engineList:
+      - MSSQL
   - type: system.charset.allowlist
     category: SYSTEM
     engineList:
@@ -840,6 +862,7 @@ ruleList:
     category: SYSTEM
     engineList:
       - MYSQL
+      - MSSQL
   - type: system.event.disallow-create
     category: SYSTEM
     engineList:
@@ -852,6 +875,7 @@ ruleList:
     category: SYSTEM
     engineList:
       - MYSQL
+      - MSSQL
   - type: system.function.disallowed-list
     category: SYSTEM
     engineList:

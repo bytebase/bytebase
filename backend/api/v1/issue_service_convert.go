@@ -54,7 +54,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		ApprovalFindingDone:  false,
 		ApprovalFindingError: "",
 		Subscribers:          nil,
-		Creator:              fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Creator.Email),
+		Creator:              common.FormatUserEmail(issue.Creator.Email),
 		CreateTime:           timestamppb.New(issue.CreatedTime),
 		UpdateTime:           timestamppb.New(issue.UpdatedTime),
 		Plan:                 "",
@@ -73,11 +73,11 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
 	}
 	if issue.Assignee != nil {
-		issueV1.Assignee = fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email)
+		issueV1.Assignee = common.FormatUserEmail(issue.Assignee.Email)
 	}
 
 	for _, subscriber := range issue.Subscribers {
-		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", common.UserNamePrefix, subscriber.Email))
+		issueV1.Subscribers = append(issueV1.Subscribers, common.FormatUserEmail(subscriber.Email))
 	}
 
 	if issuePayload.Approval != nil {
@@ -169,6 +169,19 @@ func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 		return v1pb.Issue_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToAPIIssueType(t v1pb.Issue_Type) (api.IssueType, error) {
+	switch t {
+	case v1pb.Issue_DATABASE_CHANGE:
+		return api.IssueDatabaseGeneral, nil
+	case v1pb.Issue_GRANT_REQUEST:
+		return api.IssueGrantRequest, nil
+	case v1pb.Issue_DATABASE_DATA_EXPORT:
+		return api.IssueDatabaseDataExport, nil
+	default:
+		return api.IssueType(""), errors.Errorf("invalid issue type %v", t)
 	}
 }
 
@@ -307,7 +320,7 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get user email from %q", v.User)
 	}
-	user, err := s.GetUser(ctx, &store.FindUserMessage{Email: &email})
+	user, err := s.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get user by email %q", email)
 	}
@@ -373,8 +386,6 @@ func convertToIssueCommentEventIssueUpdate(u *storepb.IssueCommentPayload_IssueU
 			ToDescription:   u.IssueUpdate.ToDescription,
 			FromStatus:      convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.FromStatus),
 			ToStatus:        convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.ToStatus),
-			FromAssignee:    u.IssueUpdate.FromAssignee,
-			ToAssignee:      u.IssueUpdate.ToAssignee,
 		},
 	}
 }

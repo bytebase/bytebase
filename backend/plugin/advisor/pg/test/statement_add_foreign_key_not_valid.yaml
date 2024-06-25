@@ -12,13 +12,14 @@
     );
     ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id);
   want:
-    - status: WARN
+    - status: 2
       code: 229
       title: statement.add-foreign-key-not-valid
       content: Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately
-      line: 12
-      column: 0
-      details: ""
+      detail: ""
+      startposition:
+        line: 12
+        column: 0
 - statement: |-
     CREATE TABLE task (
         id SERIAL PRIMARY KEY,
@@ -33,10 +34,9 @@
     );
     ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id) NOT VALID;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      column: 0
-      details: ""
+      detail: ""
+      startposition: null

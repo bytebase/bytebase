@@ -24,6 +24,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	pgquery "github.com/pganalyze/pg_query_go/v5"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -39,6 +41,9 @@ var (
 	driverName = "pgx"
 
 	_ db.Driver = (*Driver)(nil)
+
+	variableSetStmtRegexp  = regexp.MustCompile(`(?i)^SET\s+?`)
+	variableShowStmtRegexp = regexp.MustCompile(`(?i)^SHOW\s+?`)
 )
 
 func init() {
@@ -182,7 +187,7 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 
 	dbEndpoint := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, "us-east-1", conf.Username, cfg.Credentials)
+		ctx, dbEndpoint, conf.Region, conf.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
@@ -358,34 +363,76 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		return 0, err
 	}
-	singleSQLs, err := pgparser.SplitSQL(statement)
-	if err != nil {
-		return 0, err
+
+	var commands []base.SingleSQL
+	var originalIndex []int32
+	var isPlsql bool
+	oneshot := true
+	if len(statement) <= common.MaxSheetCheckSize {
+		singleSQLs, err := pgparser.SplitSQL(statement)
+		if err != nil {
+			return 0, err
+		}
+		commands, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
+
+		// If the statement is a single statement and is a PL/pgSQL block,
+		// we should execute it as a single statement without transaction.
+		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
+		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
+		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
+			isPlsql = true
+		}
+		if len(commands) <= common.MaximumCommands {
+			oneshot = false
+		}
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
+	if oneshot {
+		commands = []base.SingleSQL{
+			{
+				Text: statement,
+			},
+		}
+		originalIndex = []int32{0}
+	}
+
+	if isPlsql {
+		conn, err := driver.db.Conn(ctx)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to get connection")
+		}
+		defer conn.Close()
+
+		// USE SET SESSION ROLE to set the role for the current session.
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
+		opts.LogCommandExecute([]int32{0})
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
+			opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
+			return 0, err
+		}
+		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+
 		return 0, nil
 	}
 
 	var remainingSQLs []base.SingleSQL
-
-	remainingSQLsIndex := map[int]int{}
-	nonTransactionAndSetRoleStmtsIndex := map[int]int{}
+	var remainingSQLsIndex, nonTransactionAndSetRoleStmtsIndex []int
 
 	var nonTransactionAndSetRoleStmts []string
-	for i, singleSQL := range singleSQLs {
+	for i, singleSQL := range commands {
 		if isIgnoredStatement(singleSQL.Text) {
 			continue
 		}
 		if IsNonTransactionStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
 			continue
 		}
 
 		if isSetRoleStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
 		}
 
 		if isSuperuserStatement(singleSQL.Text) {
@@ -401,7 +448,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			singleSQL.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", singleSQL.Text, owner)
 		}
 		remainingSQLs = append(remainingSQLs, singleSQL)
-		remainingSQLsIndex[len(remainingSQLs)-1] = i
+		remainingSQLsIndex = append(remainingSQLsIndex, i)
 	}
 
 	totalRowsAffected := int64(0)
@@ -423,23 +470,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	defer conn.Close()
 
 	if len(remainingSQLs) != 0 {
-		var totalCommands int
-		var chunks [][]base.SingleSQL
-		if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
-			totalCommands = len(remainingSQLs)
-			ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
-			if err != nil {
-				return 0, errors.Wrapf(err, "failed to chunk sql")
-			}
-			chunks = ret
-		} else {
-			chunks = [][]base.SingleSQL{
-				remainingSQLs,
-			}
-		}
-		currentIndex := 0
+		totalCommands := len(remainingSQLs)
 
-		err := conn.Raw(func(driverConn any) error {
+		err = conn.Raw(func(driverConn any) error {
 			conn := driverConn.(*stdlib.Conn).Conn()
 
 			tx, err := conn.Begin(ctx)
@@ -453,39 +486,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				return err
 			}
 
-			for _, chunk := range chunks {
-				if len(chunk) == 0 {
-					continue
-				}
+			for i, command := range remainingSQLs {
 				// Start the current chunk.
 				// Set the progress information for the current chunk.
 				if opts.UpdateExecutionStatus != nil {
 					opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
 						CommandsTotal:     int32(totalCommands),
-						CommandsCompleted: int32(currentIndex),
+						CommandsCompleted: int32(i),
 						CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-							Line:   int32(chunk[0].FirstStatementLine),
-							Column: int32(chunk[0].FirstStatementColumn),
+							Line:   int32(command.FirstStatementLine),
+							Column: int32(command.FirstStatementColumn),
 						},
 						CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-							Line:   int32(chunk[len(chunk)-1].LastLine),
-							Column: int32(chunk[len(chunk)-1].LastColumn),
+							Line:   int32(command.LastLine),
+							Column: int32(command.LastColumn),
 						},
 					})
 				}
 
-				chunkText, err := util.ConcatChunk(chunk)
-				if err != nil {
-					return err
-				}
-
-				var indexes []int32
-				for i := currentIndex; i < currentIndex+len(chunk); i++ {
-					indexes = append(indexes, int32(remainingSQLsIndex[i]))
-				}
+				indexes := []int32{int32(originalIndex[remainingSQLsIndex[i]])}
 				opts.LogCommandExecute(indexes)
 
-				rr := tx.Conn().PgConn().Exec(ctx, chunkText)
+				rr := tx.Conn().PgConn().Exec(ctx, command.Text)
 				results, err := rr.ReadAll()
 				if err != nil {
 					opts.LogCommandResponse(indexes, 0, nil, err.Error())
@@ -493,12 +515,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 					return &db.ErrorWithPosition{
 						Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 						Start: &storepb.TaskRunResult_Position{
-							Line:   int32(chunk[0].FirstStatementLine),
-							Column: int32(chunk[0].FirstStatementColumn),
+							Line:   int32(command.FirstStatementLine),
+							Column: int32(command.FirstStatementColumn),
 						},
 						End: &storepb.TaskRunResult_Position{
-							Line:   int32(chunk[len(chunk)-1].LastLine),
-							Column: int32(chunk[len(chunk)-1].LastColumn),
+							Line:   int32(command.LastLine),
+							Column: int32(command.LastColumn),
 						},
 					}
 				}
@@ -513,7 +535,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffected, "")
 
 				totalRowsAffected += rowsAffected
-				currentIndex += len(chunk)
 			}
 
 			if err := tx.Commit(ctx); err != nil {
@@ -533,7 +554,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{int32(nonTransactionAndSetRoleStmtsIndex[i])}
+		indexes := []int32{int32(originalIndex[nonTransactionAndSetRoleStmtsIndex[i]])}
 		opts.LogCommandExecute(indexes)
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
 			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
@@ -657,10 +678,6 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
@@ -686,14 +703,18 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
-
-	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && !strings.HasPrefix(stmt, "SET") && queryContext.Limit > 0 {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+	isSet := variableSetStmtRegexp.MatchString(statement)
+	isShow := variableShowStmtRegexp.MatchString(statement)
+	if !isSet && !isShow {
+		if queryContext != nil && queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext != nil && queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -705,4 +726,21 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_POSTGRES, conn, statement)
+}
+
+func isPlSQLBlock(stmt string) bool {
+	tree, err := pgquery.Parse(stmt)
+	if err != nil {
+		return false
+	}
+
+	if len(tree.Stmts) != 1 {
+		return false
+	}
+
+	if _, ok := tree.Stmts[0].Stmt.Node.(*pgquery.Node_DoStmt); ok {
+		return true
+	}
+
+	return false
 }

@@ -29,9 +29,21 @@
           <NRadio value="PARENT">
             {{ $t("branch.source.parent-branch") }}
           </NRadio>
-          <NRadio value="BASELINE">
-            {{ $t("branch.source.baseline-version") }}
-          </NRadio>
+          <NTooltip :disabled="allowCreateBranchFromDatabase">
+            <template #trigger>
+              <NRadio
+                :disabled="!allowCreateBranchFromDatabase"
+                value="BASELINE"
+              >
+                {{ $t("branch.source.baseline-version") }}
+              </NRadio>
+            </template>
+            <template #default>
+              <div class="whitespace-nowrap">
+                {{ $t("common.permission-denied") }}
+              </div>
+            </template>
+          </NTooltip>
         </NRadioGroup>
       </div>
       <div v-if="source === 'PARENT'" class="contents">
@@ -88,19 +100,19 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
-import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
   useCurrentUserV1,
+  useDBSchemaV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import type { ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, isOwnerOfProjectV1 } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import BranchSelector from "./BranchSelector.vue";
 import { validateBranchName } from "./utils";
@@ -121,6 +133,8 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
+const dbSchemaStore = useDBSchemaV1Store();
+const me = useCurrentUserV1();
 const source = ref<Source>("PARENT");
 const databaseId = ref<string>();
 const parentBranchName = ref<string>();
@@ -129,6 +143,10 @@ const branchId = ref<string>("");
 const isPreparingBranch = ref(false);
 
 const EMPTY_BRANCH = Branch.fromPartial({});
+
+const allowCreateBranchFromDatabase = computed(() => {
+  return isOwnerOfProjectV1(props.project.iamPolicy, me.value);
+});
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
 const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
@@ -160,9 +178,10 @@ const prepareBranchFromDatabaseHead = async (uid: string) => {
 
   console.time("--fetch metadata");
   const database = databaseStore.getDatabaseByUID(uid);
-  const metadata = await databaseServiceClient.getDatabaseMetadata({
-    name: `${database.name}/metadata`,
+  const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database: database.name,
     view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    skipCache: true,
   });
   console.timeEnd("--fetch metadata");
 

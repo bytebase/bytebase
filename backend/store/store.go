@@ -7,17 +7,10 @@ import (
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store/model"
-)
-
-var (
-	protojsonUnmarshaler = protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}
 )
 
 // Store provides database access to all raw objects.
@@ -26,6 +19,7 @@ type Store struct {
 	profile *config.Profile
 
 	userIDCache            *lru.Cache[int, *UserMessage]
+	userEmailCache         *lru.Cache[string, *UserMessage]
 	environmentCache       *lru.Cache[string, *EnvironmentMessage]
 	environmentIDCache     *lru.Cache[int, *EnvironmentMessage]
 	instanceCache          *lru.Cache[string, *InstanceMessage]
@@ -34,8 +28,6 @@ type Store struct {
 	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
 	projectCache           *lru.Cache[string, *ProjectMessage]
 	projectIDCache         *lru.Cache[int, *ProjectMessage]
-	projectPolicyCache     *lru.Cache[string, *IAMPolicyMessage]
-	projectIDPolicyCache   *lru.Cache[int, *IAMPolicyMessage]
 	projectDeploymentCache *lru.Cache[int, *DeploymentConfigMessage]
 	policyCache            *lru.Cache[string, *PolicyMessage]
 	issueCache             *lru.Cache[int, *IssueMessage]
@@ -46,9 +38,9 @@ type Store struct {
 	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
 	databaseGroupIDCache   *lru.Cache[int64, *DatabaseGroupMessage]
-	schemaGroupCache       *lru.Cache[string, *SchemaGroupMessage]
 	vcsIDCache             *lru.Cache[int, *VCSProviderMessage]
 	rolesCache             *lru.Cache[string, *RoleMessage]
+	userGroupCache         *lru.Cache[string, *UserGroupMessage]
 
 	// Large objects.
 	sheetCache    *lru.Cache[int, string]
@@ -57,7 +49,11 @@ type Store struct {
 
 // New creates a new instance of Store.
 func New(db *DB, profile *config.Profile) (*Store, error) {
-	userIDCache, err := lru.New[int, *UserMessage](2048)
+	userIDCache, err := lru.New[int, *UserMessage](32768)
+	if err != nil {
+		return nil, err
+	}
+	userEmailCache, err := lru.New[string, *UserMessage](32768)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +65,11 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	instanceCache, err := lru.New[string, *InstanceMessage](2048)
+	instanceCache, err := lru.New[string, *InstanceMessage](32768)
 	if err != nil {
 		return nil, err
 	}
-	instanceIDCache, err := lru.New[int, *InstanceMessage](2048)
+	instanceIDCache, err := lru.New[int, *InstanceMessage](32768)
 	if err != nil {
 		return nil, err
 	}
@@ -85,19 +81,11 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	projectCache, err := lru.New[string, *ProjectMessage](128)
+	projectCache, err := lru.New[string, *ProjectMessage](32768)
 	if err != nil {
 		return nil, err
 	}
-	projectIDCache, err := lru.New[int, *ProjectMessage](128)
-	if err != nil {
-		return nil, err
-	}
-	projectPolicyCache, err := lru.New[string, *IAMPolicyMessage](128)
-	if err != nil {
-		return nil, err
-	}
-	projectIDPolicyCache, err := lru.New[int, *IAMPolicyMessage](128)
+	projectIDCache, err := lru.New[int, *ProjectMessage](32768)
 	if err != nil {
 		return nil, err
 	}
@@ -129,23 +117,19 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	risksCache, err := lru.New[int, []*RiskMessage](1)
+	risksCache, err := lru.New[int, []*RiskMessage](4)
 	if err != nil {
 		return nil, err
 	}
-	databaseGroupCache, err := lru.New[string, *DatabaseGroupMessage](10)
+	databaseGroupCache, err := lru.New[string, *DatabaseGroupMessage](1024)
 	if err != nil {
 		return nil, err
 	}
-	databaseGroupIDCache, err := lru.New[int64, *DatabaseGroupMessage](10)
+	databaseGroupIDCache, err := lru.New[int64, *DatabaseGroupMessage](1024)
 	if err != nil {
 		return nil, err
 	}
-	schemaGroupCache, err := lru.New[string, *SchemaGroupMessage](10)
-	if err != nil {
-		return nil, err
-	}
-	vcsIDCache, err := lru.New[int, *VCSProviderMessage](10)
+	vcsIDCache, err := lru.New[int, *VCSProviderMessage](1024)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +141,11 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbSchemaCache, err := lru.New[int, *model.DBSchema](100)
+	dbSchemaCache, err := lru.New[int, *model.DBSchema](128)
+	if err != nil {
+		return nil, err
+	}
+	userGroupCache, err := lru.New[string, *UserGroupMessage](1024)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +156,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 
 		// Cache.
 		userIDCache:            userIDCache,
+		userEmailCache:         userEmailCache,
 		environmentCache:       environmentCache,
 		environmentIDCache:     environmentIDCache,
 		instanceCache:          instanceCache,
@@ -176,8 +165,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		databaseIDCache:        databaseIDCache,
 		projectCache:           projectCache,
 		projectIDCache:         projectIDCache,
-		projectPolicyCache:     projectPolicyCache,
-		projectIDPolicyCache:   projectIDPolicyCache,
 		projectDeploymentCache: projectDeploymentCache,
 		policyCache:            policyCache,
 		issueCache:             issueCache,
@@ -188,11 +175,11 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		risksCache:             risksCache,
 		databaseGroupCache:     databaseGroupCache,
 		databaseGroupIDCache:   databaseGroupIDCache,
-		schemaGroupCache:       schemaGroupCache,
 		vcsIDCache:             vcsIDCache,
 		rolesCache:             rolesCache,
 		sheetCache:             sheetCache,
 		dbSchemaCache:          dbSchemaCache,
+		userGroupCache:         userGroupCache,
 	}, nil
 }
 
@@ -215,10 +202,6 @@ func getDatabaseCacheKey(instanceID, databaseName string) string {
 
 func getDatabaseGroupCacheKey(projectUID int, databaseGroupResourceID string) string {
 	return fmt.Sprintf("%d/%s", projectUID, databaseGroupResourceID)
-}
-
-func getSchemaGroupCacheKey(databaseGroupUID int64, schemaGroupResourceID string) string {
-	return fmt.Sprintf("%d/%s", databaseGroupUID, schemaGroupResourceID)
 }
 
 func getPlaceholders(start int, count int) string {

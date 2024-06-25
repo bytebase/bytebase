@@ -84,20 +84,7 @@ const issueStatusActionDropdownOptions = computed(() => {
 });
 
 const mergedDropdownActionList = computed(() => {
-  if (issueStatusActionDropdownOptions.value.length > 0) {
-    // When there are something to do with tasks, they will be shown as big
-    // buttons.
-    // Now we display issue-level actions as a dropdown together with "extra"
-    // actions.
-    return [
-      ...issueStatusActionDropdownOptions.value,
-      ...props.extraActionList,
-    ];
-  } else {
-    // When we have nothing to do with tasks, show issue-level actions as big
-    // buttons. And show only "extra" actions as a dropdown.
-    return [...props.extraActionList];
-  }
+  return [...issueStatusActionDropdownOptions.value, ...props.extraActionList];
 });
 
 const renderDropdownOption = ({

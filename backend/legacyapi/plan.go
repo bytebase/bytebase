@@ -97,8 +97,6 @@ const (
 	// - Developers can't create database.
 	// - Developers can't query and export data directly. They must request corresponding permissions first.
 	FeatureDBAWorkflow FeatureType = "bb.feature.dba-workflow"
-	// FeatureIMApproval integrates IM approval into Bytebase, allowing users approve Bytebase issues on the IM.
-	FeatureIMApproval FeatureType = "bb.feature.im.approval"
 	// FeatureMultiTenancy allows user to enable batch mode for the project.
 	//
 	// Batch mode allows user to track a group of homogeneous database changes together.
@@ -116,8 +114,6 @@ const (
 	//
 	// e.g. One can configure rules for database schema or SQL query.
 	FeatureSQLReview FeatureType = "bb.feature.sql-review"
-	// FeatureMybatisSQLReview allows review mybatis sql.
-	FeatureMybatisSQLReview FeatureType = "bb.feature.mybatis-sql-review"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
 	// FeatureEncryptedSecrets is a feature that allows user to setting the encrypted secrets for the database.
@@ -212,16 +208,12 @@ func (e FeatureType) Name() string {
 	// Change Workflow
 	case FeatureDBAWorkflow:
 		return "DBA workflow"
-	case FeatureIMApproval:
-		return "IM approval integration"
 	case FeatureMultiTenancy:
 		return "Multi-tenancy"
 	case FeatureOnlineMigration:
 		return "Online schema migration"
 	case FeatureSchemaDrift:
 		return "Schema drift"
-	case FeatureMybatisSQLReview:
-		return "Mybatis SQL review"
 	case FeatureSQLReview:
 		return "SQL review"
 	case FeatureTaskScheduleTime:
@@ -303,11 +295,9 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureBranding: {false, false, true},
 	// Change Workflow
 	FeatureDBAWorkflow:      {false, false, true},
-	FeatureIMApproval:       {false, false, true},
 	FeatureMultiTenancy:     {false, false, true},
 	FeatureOnlineMigration:  {false, true, true},
 	FeatureSchemaDrift:      {false, false, true},
-	FeatureMybatisSQLReview: {false, false, true},
 	FeatureSQLReview:        {true, true, true},
 	FeatureTaskScheduleTime: {false, true, true},
 	FeatureEncryptedSecrets: {false, true, true},
@@ -338,12 +328,10 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	// Security
 	FeatureExternalSecretManager: true,
 	// Change Workflow
-	FeatureIMApproval:       true,
 	FeatureSchemaDrift:      true,
 	FeatureEncryptedSecrets: true,
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,
-	FeatureMybatisSQLReview: true,
 	// Database management
 	FeatureReadReplicaConnection:      true,
 	FeatureInstanceSSHConnection:      true,

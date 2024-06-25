@@ -1,6 +1,14 @@
 <template>
   <div class="w-full flex flex-col justify-start items-start gap-y-4">
     <div class="w-full">
+      <NRadioGroup v-model:value="state.type" class="space-x-2">
+        <NRadio value="MEMBER">{{ $t("project.members.users") }}</NRadio>
+        <NRadio value="GROUP">
+          {{ $t("settings.members.groups.self") }}
+        </NRadio>
+      </NRadioGroup>
+    </div>
+    <div v-if="state.type === 'MEMBER'" class="w-full">
       <div class="flex items-center justify-between">
         {{ $t("project.members.select-users") }}
 
@@ -11,11 +19,26 @@
         </NButton>
       </div>
       <UserSelect
-        v-model:users="state.userUidList"
+        v-model:users="state.memberList"
         class="mt-2"
         :multiple="true"
         :include-all-users="true"
         :include-service-account="true"
+      />
+    </div>
+    <div v-else class="w-full">
+      <div class="flex items-center justify-between">
+        {{ $t("project.members.select-groups") }}
+        <NButton v-if="allowRemove" text @click="$emit('remove')">
+          <template #icon>
+            <heroicons:trash class="w-4 h-4" />
+          </template>
+        </NButton>
+      </div>
+      <UserGroupSelect
+        v-model:value="state.memberList"
+        class="mt-2"
+        :multiple="true"
       />
     </div>
     <div class="w-full">
@@ -64,7 +87,6 @@
       <span>{{ $t("common.expiration") }}</span>
       <ExpirationSelector
         class="grid-cols-3 sm:grid-cols-4"
-        :options="expireDaysOptions"
         :value="state.expireDays"
         @update="state.expireDays = $event"
       />
@@ -76,19 +98,33 @@
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { NInputNumber, NInput } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { NInputNumber, NInput, NRadioGroup, NRadio } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import ProjectRoleSelect from "@/components/v2/Select/ProjectRoleSelect.vue";
-import { useUserStore } from "@/store";
-import { getUserId } from "@/store/modules/v1/common";
+import { ProjectRoleSelect, UserGroupSelect } from "@/components/v2/Select";
+import {
+  useUserStore,
+  useUserGroupStore,
+  extractGroupEmail,
+  useSettingV1Store,
+} from "@/store";
+import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
-import { getUserEmailInBinding, PresetRoleType } from "@/types";
+import {
+  getUserEmailInBinding,
+  getGroupEmailInBinding,
+  groupBindingPrefix,
+  userBindingPrefix,
+  PresetRoleType,
+} from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
+import {
+  displayRoleTitle,
+  extractDatabaseResourceName,
+  extractUserUID,
+} from "@/utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -101,7 +137,8 @@ defineEmits<{
 }>();
 
 interface LocalState {
-  userUidList: string[];
+  type: "MEMBER" | "GROUP";
+  memberList: string[];
   role?: string;
   reason: string;
   expireDays: number;
@@ -113,83 +150,82 @@ interface LocalState {
   databaseId?: string;
 }
 
-const { t } = useI18n();
-const userStore = useUserStore();
-const state = reactive<LocalState>({
-  userUidList: [],
-  reason: "",
-  // Default is never expires.
-  expireDays: 0,
-  // Exporter options.
-  maxRowCount: 1000,
-});
-
-onMounted(() => {
-  if (props.binding) {
+const getInitialState = (): LocalState => {
+  const defaultState: LocalState = {
+    type: "MEMBER",
+    memberList: [],
+    reason: "",
+    // Default to never expire.
+    expireDays: 0,
+    maxRowCount: 1000,
+  };
+  const isMember = props.binding.members.some((member) =>
+    member.startsWith(userBindingPrefix)
+  );
+  if (isMember || props.binding.members.length === 0) {
+    defaultState.type = "MEMBER";
     const userUidList = [];
     for (const member of props.binding.members) {
-      let email = member;
-      if (member.startsWith("user:")) {
-        email = member.slice(5);
+      if (member.startsWith(groupBindingPrefix)) {
+        continue;
       }
-      const user = userStore.getUserByEmail(email);
+      const user = userStore.getUserByIdentifier(member);
       if (user) {
-        const userUid = getUserId(user.name);
-        userUidList.push(String(userUid));
+        userUidList.push(extractUserUID(user.name));
       }
     }
-    state.userUidList = userUidList;
+    defaultState.memberList = userUidList;
+  } else {
+    defaultState.type = "GROUP";
+    const groupNameList = [];
+    for (const member of props.binding.members) {
+      if (!member.startsWith(groupBindingPrefix)) {
+        continue;
+      }
+      const group = groupStore.getGroupByIdentifier(member);
+      if (!group) {
+        continue;
+      }
+      groupNameList.push(group.name);
+    }
+    defaultState.memberList = groupNameList;
   }
+
+  if (maximumRoleExpiration.value) {
+    defaultState.expireDays = maximumRoleExpiration.value;
+  }
+  return defaultState;
+};
+
+const maximumRoleExpiration = computed(() => {
+  const seconds =
+    settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds?.toNumber();
+  if (!seconds) {
+    return undefined;
+  }
+  return Math.floor(seconds / (60 * 60 * 24));
 });
 
-const expireDaysOptions = computed(() => {
-  if (state.role === PresetRoleType.PROJECT_EXPORTER) {
-    return [
-      {
-        value: 1,
-        label: t("common.date.days", { days: 1 }),
-      },
-      {
-        value: 3,
-        label: t("common.date.days", { days: 3 }),
-      },
-      {
-        value: 30,
-        label: t("common.date.days", { days: 30 }),
-      },
-      {
-        value: 90,
-        label: t("common.date.days", { days: 90 }),
-      },
-      {
-        value: 0,
-        label: t("project.members.never-expires"),
-      },
-    ];
+const userStore = useUserStore();
+const groupStore = useUserGroupStore();
+const settingV1Store = useSettingV1Store();
+const state = reactive<LocalState>(getInitialState());
+
+watch(
+  () => state.type,
+  (type) => {
+    if (
+      type === "MEMBER" &&
+      !state.memberList.every((m) => !m.startsWith(userGroupNamePrefix))
+    ) {
+      state.memberList = [];
+    } else if (
+      !state.memberList.every((m) => m.startsWith(userGroupNamePrefix))
+    ) {
+      state.memberList = [];
+    }
   }
-  return [
-    {
-      value: 7,
-      label: t("common.date.days", { days: 7 }),
-    },
-    {
-      value: 30,
-      label: t("common.date.days", { days: 30 }),
-    },
-    {
-      value: 90,
-      label: t("common.date.days", { days: 90 }),
-    },
-    {
-      value: 365,
-      label: t("common.date.years", { years: 1 }),
-    },
-    {
-      value: 0,
-      label: t("project.members.never-expires"),
-    },
-  ];
-});
+);
 
 watch(
   () => state.role,
@@ -206,10 +242,15 @@ watch(
   () => state,
   () => {
     const conditionName = generateConditionTitle();
-    if (state.userUidList) {
-      props.binding.members = state.userUidList.map((uid) => {
+    if (state.type === "MEMBER") {
+      props.binding.members = state.memberList.map((uid) => {
         const user = userStore.getUserById(uid);
         return getUserEmailInBinding(user!.email);
+      });
+    } else {
+      props.binding.members = state.memberList.map((group) => {
+        const email = extractGroupEmail(group);
+        return getGroupEmailInBinding(email);
       });
     }
     if (state.role) {
@@ -234,19 +275,11 @@ watch(
         expression.push(`request.row_limit <= ${state.maxRowCount}`);
       }
     }
-    if (expression.length > 0) {
-      props.binding.condition = Expr.create({
-        title: conditionName,
-        description: state.reason,
-        expression: expression.join(" && "),
-      });
-    } else {
-      props.binding.condition = Expr.create({
-        title: conditionName,
-        description: state.reason,
-        expression: undefined,
-      });
-    }
+    props.binding.condition = Expr.create({
+      title: conditionName,
+      description: state.reason,
+      expression: expression.length > 0 ? expression.join(" && ") : undefined,
+    });
   },
   {
     deep: true,
@@ -314,7 +347,7 @@ const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
 
 defineExpose({
   allowConfirm: computed(() => {
-    if (state.userUidList.length <= 0) {
+    if (state.memberList.length <= 0) {
       return false;
     }
     if ((!state.expireDays && state.expireDays !== 0) || state.expireDays < 0) {

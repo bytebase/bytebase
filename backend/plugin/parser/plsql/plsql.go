@@ -2,13 +2,49 @@ package plsql
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+type Version struct {
+	First  int
+	Second int
+}
+
+// GTE returns true if the version is greater than or equal to the base version.
+func (v *Version) GTE(base *Version) bool {
+	if v.First > base.First {
+		return true
+	}
+	if v.First == base.First {
+		return v.Second >= base.Second
+	}
+	return false
+}
+
+func ParseVersion(banner string) (*Version, error) {
+	re := regexp.MustCompile(`(\d+)\.(\d+)`)
+	match := re.FindStringSubmatch(banner)
+	if len(match) >= 3 {
+		firstVersion, err := strconv.Atoi(match[1])
+		if err != nil {
+			return nil, errors.Errorf("failed to parse first version from banner: %s", banner)
+		}
+		secondVersion, err := strconv.Atoi(match[2])
+		if err != nil {
+			return nil, errors.Errorf("failed to parse second version from banner: %s", banner)
+		}
+		return &Version{First: firstVersion, Second: secondVersion}, nil
+	}
+	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
+}
 
 // ParsePLSQL parses the given PLSQL.
 func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {
@@ -127,20 +163,25 @@ func NormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
 
 // NormalizeTableViewName normalizes the table name and schema name.
 // Return empty string if it's xml table.
-func NormalizeTableViewName(currentSchema string, ctx parser.ITableview_nameContext) (string, string) {
+func NormalizeTableViewName(currentSchema string, ctx parser.ITableview_nameContext) ([]string, string, string) {
 	if ctx.Identifier() == nil {
-		return "", ""
+		return nil, "", ""
+	}
+
+	var links []string
+	for _, link := range ctx.AllLink_name() {
+		links = append(links, NormalizeIdentifierContext(link.Identifier()))
 	}
 
 	identifier := NormalizeIdentifierContext(ctx.Identifier())
 
 	if ctx.Id_expression() == nil {
-		return currentSchema, identifier
+		return links, currentSchema, identifier
 	}
 
 	idExpression := NormalizeIDExpression(ctx.Id_expression())
 
-	return identifier, idExpression
+	return links, identifier, idExpression
 }
 
 // NormalizeColumnName returns the normalized column name from the given context.

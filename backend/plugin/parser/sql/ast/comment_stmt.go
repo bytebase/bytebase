@@ -5,6 +5,7 @@ type ObjectType int
 const (
 	ObjectTypeUndefined ObjectType = iota
 	ObjectTypeTable
+	ObjectTypeView
 	ObjectTypeColumn
 )
 

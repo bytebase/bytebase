@@ -3,9 +3,11 @@ package dm
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -153,12 +155,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		totalRowsAffected += rowsAffected
 	}
 
-	if opts.EndTransactionFunc != nil {
-		if err := opts.EndTransactionFunc(tx); err != nil {
-			return 0, errors.Wrapf(err, "failed to execute beforeCommitTx")
-		}
-	}
-
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit transaction")
 	}
@@ -168,7 +164,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// DM does not support transaction isolation level for read-only queries.(also like Oracle :)
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
@@ -194,33 +192,42 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func getDMStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
+func getDMStatementWithResultLimit(statement string, limit int) string {
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", statement, limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := singleSQL.Text
+	statement = strings.TrimRight(statement, " \n\t;")
 
-	stmt := statement
-	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getDMStatementWithResultLimit(stmt, queryContext.Limit)
-	}
-	if queryContext.SensitiveSchemaInfo != nil {
-		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("DM schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != database.Name {
-				return nil, errors.Errorf("DM schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
-			}
+	if queryContext != nil && queryContext.Explain {
+		startTime := time.Now()
+		randNum, err := rand.Int(rand.Reader, big.NewInt(999))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate random statement ID")
 		}
+		randomID := fmt.Sprintf("%d%d", startTime.UnixMilli(), randNum.Int64())
+
+		statement = fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
+			return nil, err
+		}
+		explainQuery := fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
+		result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, explainQuery, queryContext)
+		if err != nil {
+			return nil, err
+		}
+		result.Latency = durationpb.New(time.Since(startTime))
+		result.Statement = statement
+		return result, nil
+	}
+
+	if queryContext != nil && queryContext.Limit > 0 {
+		statement = getDMStatementWithResultLimit(statement, queryContext.Limit)
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_DM, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_DM, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}

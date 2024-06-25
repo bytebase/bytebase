@@ -10,16 +10,26 @@
       class="w-[72rem] max-w-[100vw] relative"
     >
       <div class="w-full flex flex-row justify-end items-center">
-        <NButton type="primary" @click="state.showAddMemberPanel = true">{{
-          $t("project.members.grant-access")
-        }}</NButton>
+        <NButton type="primary" @click="state.showAddMemberPanel = true">
+          {{ $t("project.members.grant-access") }}
+        </NButton>
       </div>
-      <template v-if="member.workspaceLevelProjectRoles.length > 0">
-        <p class="text-lg px-1 pb-2 w-full border-b mb-3">
+      <div v-if="binding.type === 'groups'" class="mb-6">
+        <div class="text-lg px-1 pb-1 w-full border-b mb-3">
+          <GroupNameCell :group="binding.group!" :show-icon="false" />
+        </div>
+        <div class="border rounded divide-y">
+          <div v-for="data in groupMembers" :key="data.user.name" class="p-2">
+            <GroupMemberNameCell :user="data.user" :role="data.role" />
+          </div>
+        </div>
+      </div>
+      <template v-if="binding.workspaceLevelProjectRoles.length > 0">
+        <p class="text-lg px-1 pb-1 w-full border-b mb-3">
           {{ $t("project.members.workspace-level-roles") }}
         </p>
         <div class="flex flex-row items-center flex-wrap gap-2">
-          <NTag v-for="role in member.workspaceLevelProjectRoles" :key="role">
+          <NTag v-for="role in binding.workspaceLevelProjectRoles" :key="role">
             <template #avatar>
               <NTooltip>
                 <template #trigger>
@@ -34,8 +44,8 @@
       </template>
       <template v-if="roleList.length > 0">
         <p
-          v-if="member.workspaceLevelProjectRoles.length > 0"
-          class="text-lg px-1 pb-2 w-full border-b mt-4"
+          v-if="binding.workspaceLevelProjectRoles.length > 0"
+          class="text-lg px-1 pb-1 w-full border-b mt-4 mb-3"
         >
           {{ $t("project.members.project-level-roles") }}
         </p>
@@ -169,6 +179,7 @@
   <EditProjectRolePanel
     v-if="editingBinding"
     :project="project"
+    :type="binding.type"
     :binding="editingBinding"
     @close="editingBinding = null"
   />
@@ -178,7 +189,7 @@
     :project="project"
     :bindings="[
       Binding.fromPartial({
-        members: [getUserEmailInBinding(member.user.email)],
+        members: [binding.binding],
       }),
     ]"
     @close="state.showAddMemberPanel = false"
@@ -193,16 +204,22 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridRow } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
+import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
+import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
+  extractGroupEmail,
+  extractUserEmail,
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
+  pushNotification,
 } from "@/store";
+import { userGroupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
-import { getUserEmailInBinding, PresetRoleType, PRESET_ROLES } from "@/types";
+import { PresetRoleType, PRESET_ROLES } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
@@ -211,8 +228,8 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import EditProjectRolePanel from "../EditProjectRolePanel.vue";
-import type { ProjectMember } from "../types";
+import type { ProjectBinding } from "../types";
+import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
 
@@ -231,10 +248,10 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
-  member: ProjectMember;
+  binding: ProjectBinding;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
@@ -258,13 +275,19 @@ const roleList = ref<
 const editingBinding = ref<Binding | null>(null);
 
 const panelTitle = computed(() => {
+  let email = props.binding.binding;
+  if (props.binding.type === "users") {
+    email = extractUserEmail(email);
+  } else {
+    email = extractGroupEmail(email);
+  }
   return t("project.members.edit", {
-    member: `${props.member.user.title}(${props.member.user.email})`,
+    member: `${props.binding.title} (${email})`,
   });
 });
 
 const allowRevokeMember = computed(() => {
-  if (props.member.projectRoleBindings.length === 0) {
+  if (props.binding.projectRoleBindings.length === 0) {
     return false;
   }
 
@@ -333,6 +356,9 @@ const allowRemoveRole = (role: string) => {
   if (props.project.state === State.DELETED) {
     return false;
   }
+  if (props.binding.type === "groups") {
+    return true;
+  }
 
   if (role === PresetRoleType.PROJECT_OWNER) {
     const ownerBindings = iamPolicy.value.bindings.filter(
@@ -346,6 +372,7 @@ const allowRemoveRole = (role: string) => {
       }
       members.push(
         ...((binding?.members || [])
+          .filter((member) => !member.startsWith(userGroupNamePrefix))
           .map((userIdentifier) => {
             return userStore.getUserByIdentifier(userIdentifier);
           })
@@ -364,7 +391,7 @@ const allowRemoveRole = (role: string) => {
 const handleDeleteRole = (role: string) => {
   const title = t("project.members.revoke-role-from-user", {
     role: displayRoleTitle(role),
-    user: props.member.user.title,
+    user: props.binding.title,
   });
   dialog.create({
     title: title,
@@ -372,15 +399,14 @@ const handleDeleteRole = (role: string) => {
     positiveText: t("common.revoke"),
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
-      const user = getUserEmailInBinding(props.member.user.email);
       const policy = cloneDeep(iamPolicy.value);
       for (const binding of policy.bindings) {
         if (binding.role !== role) {
           continue;
         }
-        if (binding.members.includes(user)) {
+        if (binding.members.includes(props.binding.binding)) {
           binding.members = binding.members.filter((member) => {
-            return member !== user;
+            return member !== props.binding.binding;
           });
         }
         if (binding.members.length === 0) {
@@ -393,6 +419,11 @@ const handleDeleteRole = (role: string) => {
         projectResourceName.value,
         policy
       );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
     },
   });
 };
@@ -410,7 +441,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
     displayRoleTitle(singleBinding.rawBinding.role);
   const title = t("project.members.revoke-role-from-user", {
     role: conditionName,
-    user: props.member.user.title,
+    user: props.binding.title,
   });
 
   dialog.create({
@@ -419,7 +450,6 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
     positiveText: t("common.revoke"),
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
-      const user = getUserEmailInBinding(props.member.user.email);
       const policy = cloneDeep(iamPolicy.value);
       const rawBinding = policy.bindings.find((binding) =>
         isEqual(binding, singleBinding.rawBinding)
@@ -429,7 +459,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
       }
 
       rawBinding.members = rawBinding.members.filter((member) => {
-        return member !== user;
+        return member !== props.binding.binding;
       });
 
       if (rawBinding.members.length === 0) {
@@ -446,7 +476,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
               );
             if (conditionExpr.databaseResources.length !== 0) {
               const newBinding = cloneDeep(rawBinding);
-              newBinding.members = [user];
+              newBinding.members = [props.binding.binding];
               newBinding.condition!.expression =
                 stringifyConditionExpression(conditionExpr);
               policy.bindings.push(newBinding);
@@ -459,16 +489,20 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
         projectResourceName.value,
         policy
       );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
     },
   });
 };
 
 const handleDeleteMember = async () => {
-  const user = getUserEmailInBinding(props.member.user.email);
   const policy = cloneDeep(iamPolicy.value);
   for (const binding of policy.bindings) {
     binding.members = binding.members.filter((member) => {
-      return member !== user;
+      return member !== props.binding.binding;
     });
   }
   policy.bindings = policy.bindings.filter(
@@ -478,6 +512,12 @@ const handleDeleteMember = async () => {
     projectResourceName.value,
     policy
   );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.deleted"),
+  });
+  emit("close");
 };
 
 const extractDatabaseName = (databaseResource?: DatabaseResource) => {
@@ -547,9 +587,7 @@ watch(
       singleBindingList: SingleBinding[];
     }[] = [];
     const rawBindingList = iamPolicy.value?.bindings?.filter((binding) => {
-      return binding.members.includes(
-        getUserEmailInBinding(props.member.user.email)
-      );
+      return binding.members.includes(props.binding.binding);
     });
     for (const rawBinding of rawBindingList) {
       const singleBindingList = [];
@@ -605,4 +643,22 @@ watch(
     immediate: true,
   }
 );
+
+const groupMembers = computed(() => {
+  if (props.binding.type !== "groups") {
+    return [];
+  }
+  const resp = [];
+  for (const member of props.binding.group?.members ?? []) {
+    const user = userStore.getUserByIdentifier(member.member);
+    if (!user) {
+      continue;
+    }
+    resp.push({
+      user,
+      role: member.role,
+    });
+  }
+  return resp;
+});
 </script>

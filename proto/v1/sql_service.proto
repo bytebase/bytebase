@@ -18,7 +18,7 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:query"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*}:query"
         body: "*"
       }
@@ -30,7 +30,7 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:execute"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*}:execute"
         body: "*"
       }
@@ -50,11 +50,11 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=instances/*}:export"
         body: "*"
       }
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{name=projects/*/issues/*}:export"
         body: "*"
       }
@@ -92,6 +92,13 @@ service SQLService {
   rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:stringifyMetadata"
+      body: "*"
+    };
+  }
+
+  rpc GenerateRestoreSQL(GenerateRestoreSQLRequest) returns (GenerateRestoreSQLResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:generateRestoreSQL"
       body: "*"
     };
   }
@@ -162,6 +169,9 @@ message QueryRequest {
   // It is used for querying admin data source even if the instance has read-only data sources.
   // Or it can be used to query a specific read-only data source.
   string data_source_id = 6;
+
+  // Explain the statement.
+  bool explain = 7;
 }
 
 message QueryResponse {
@@ -351,6 +361,8 @@ message StringifyMetadataRequest {
   DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
   // The database engine of the schema string.
   Engine engine = 2;
+  // If false, we will build the raw common by classification in database config.
+  bool classification_from_config = 3;
 }
 
 message StringifyMetadataResponse {
@@ -416,4 +428,26 @@ message QueryHistory {
   }
 
   Type type = 8;
+}
+
+message GenerateRestoreSQLRequest {
+  // The name is the instance name to execute the query against.
+  // Format: instances/{instance}/databases/{databaseName}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The original SQL statement.
+  string statement = 2;
+
+  // The data source to restore from.
+  // Format: instances/{instance}/databases/{databaseName}, for general engines.
+  // Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
+  string backup_data_source = 3;
+
+  // The backup table name.
+  string backup_table = 4;
+}
+
+message GenerateRestoreSQLResponse {
+  // The restore SQL statement.
+  string statement = 1;
 }

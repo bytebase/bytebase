@@ -27,18 +27,18 @@ import (
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/demo"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/migrator"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -47,7 +47,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/relay"
-	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -72,13 +71,12 @@ type Server struct {
 	schemaSyncer       *schemasync.Syncer
 	slowQuerySyncer    *slowquerysync.Syncer
 	mailSender         *mail.SlowQueryWeeklyMailSender
-	rollbackRunner     *rollbackrun.Runner
 	approvalRunner     *approval.Runner
 	relayRunner        *relay.Runner
 	runnerWG           sync.WaitGroup
 
-	activityManager *activity.Manager
-	iamManager      *iam.Manager
+	webhookManager *webhook.Manager
+	iamManager     *iam.Manager
 
 	licenseService enterprise.LicenseService
 
@@ -88,12 +86,14 @@ type Server struct {
 	muxServer       cmux.CMux
 	lspServer       *lsp.Server
 	store           *store.Store
+	sheetManager    *sheet.Manager
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
 	errorRecordRing api.ErrorRecordRing
 
 	// Stubs.
+	planService    *apiv1.PlanService
 	rolloutService *apiv1.RolloutService
 	issueService   *apiv1.IssueService
 
@@ -105,8 +105,6 @@ type Server struct {
 	pgBinDir string
 	// PG server stoppers.
 	stopper []func()
-
-	s3Client *bbs3.Client
 
 	// stateCfg is the shared in-momory state within the server.
 	stateCfg *state.State
@@ -130,10 +128,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	slog.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
-	slog.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
-	slog.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
-	slog.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
 	slog.Info("-----Config END-------")
 
 	serverStarted := false
@@ -214,6 +208,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 	}
 	s.store = storeInstance
+	s.sheetManager = sheet.NewManager(storeInstance)
 
 	s.stateCfg, err = state.New()
 	if err != nil {
@@ -236,7 +231,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = secret
-	s.activityManager = activity.NewManager(storeInstance)
+	s.webhookManager = webhook.NewManager(storeInstance)
 	s.iamManager, err = iam.NewManager(storeInstance)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
@@ -251,48 +246,33 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	gatewayModifier := auth.GatewayResponseModifier{TokenDuration: tokenDuration}
 	mux := grpcruntime.NewServeMux(grpcruntime.WithForwardResponseOption(gatewayModifier.Modify))
 
-	if profile.BackupBucket != "" {
-		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get credentials from file")
-		}
-		s3Client, err := bbs3.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create AWS S3 client")
-		}
-		s.s3Client = s3Client
-	}
-
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		s.rollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
 		s.mailSender = mail.NewSender(s.store, s.stateCfg)
-		s.relayRunner = relay.NewRunner(storeInstance, s.activityManager, s.stateCfg)
-		s.approvalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.activityManager, s.relayRunner, s.licenseService)
+		s.relayRunner = relay.NewRunner(storeInstance, s.webhookManager, s.stateCfg)
+		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.relayRunner, s.licenseService)
 
-		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.activityManager)
+		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager)
 		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
 		s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
-		statementTypeExecutor := plancheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
-		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementType, statementTypeExecutor)
-		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.dbFactory, s.licenseService)
+		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.sheetManager, s.dbFactory, s.licenseService)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
 		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
-		statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.dbFactory)
+		statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.sheetManager, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
 		// Metric reporter
@@ -357,13 +337,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	planService, rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
-	s.rolloutService, s.issueService = rolloutService, issueService
+	s.planService, s.rolloutService, s.issueService = planService, rolloutService, issueService
 	// GitOps webhook server.
-	gitOpsServer := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
+	gitOpsServer := gitops.NewService(s.store, s.dbFactory, s.stateCfg, s.licenseService, planService, rolloutService, issueService, s.sheetManager)
 
 	// Configure echo server routes.
 	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, mux, profile)
@@ -386,8 +366,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.slowQuerySyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.mailSender.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.rollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.approvalRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)

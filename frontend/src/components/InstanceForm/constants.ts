@@ -35,6 +35,10 @@ export const defaultPortForEngine = (engine: Engine) => {
     return "10000";
   } else if (engine == Engine.ELASTICSEARCH) {
     return "9200";
+  } else if (engine == Engine.DYNAMODB) {
+    return "";
+  } else if (engine == Engine.DATABRICKS) {
+    return "";
   }
   return "3306";
 };
@@ -77,6 +81,10 @@ export const EngineIconPath: Record<string, string> = {
     "@/assets/db-elasticsearch.svg",
     import.meta.url
   ).href,
+  [Engine.BIGQUERY]: new URL("@/assets/bigquery.svg", import.meta.url).href,
+  [Engine.DYNAMODB]: new URL("@/assets/db-dynamodb.svg", import.meta.url).href,
+  [Engine.DATABRICKS]: new URL("@/assets/db-databricks.svg", import.meta.url)
+    .href,
 };
 
 export const MongoDBConnectionStringSchemaList = [

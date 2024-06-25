@@ -5,6 +5,7 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/pkg/errors"
 
 	parser "github.com/bytebase/tsql-parser"
 
@@ -140,4 +141,81 @@ func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx parser.IExecute_st
 		ele = ele.AllExecute_statement_arg()[0]
 	}
 	return queue
+}
+
+type FullTableName struct {
+	LinkedServer string
+	Server       string
+	Database     string
+	Schema       string
+	Table        string
+}
+
+// full_table_name
+//
+//	: (linkedServer=id_ '.' '.' schema=id_   '.'
+//	|                       server=id_    '.' database=id_ '.'  schema=id_   '.'
+//	|                                         database=id_ '.'  schema=id_? '.'
+//	|                                                           schema=id_    '.')? table=id_
+//	;
+//
+// Rewrite full_table_name to avoid leading optional values.
+// full_table_name
+//
+//	: id_ (
+//	        dotID+
+//	        | doubleDotID dotID?
+//	    )?
+//	;
+//
+// For performance reason, we rewrite the full_table_name to the second form.
+// But it's hard to get the linkedServer, server, database, schema, and table separately.
+// So we use NormalizeFullTableName to get them.
+func NormalizeFullTableName(ctx parser.IFull_table_nameContext) (*FullTableName, error) {
+	fullTableName := FullTableName{}
+	if ctx == nil {
+		return &fullTableName, nil
+	}
+
+	id, _ := NormalizeTSQLIdentifier(ctx.Id_())
+	if ctx.DoubleDotID() != nil {
+		if len(ctx.AllDotID()) > 0 {
+			// linkedServer..schema.table
+			fullTableName.LinkedServer = id
+			fullTableName.Schema, _ = NormalizeTSQLIdentifier(ctx.DoubleDotID().Id_())
+			fullTableName.Table, _ = NormalizeTSQLIdentifier(ctx.DotID(0).Id_())
+		} else {
+			// database..table
+			fullTableName.Database = id
+			fullTableName.Table, _ = NormalizeTSQLIdentifier(ctx.DoubleDotID().Id_())
+		}
+	} else {
+		// dotID+
+		var ids []string
+		ids = append(ids, id)
+		for _, dotID := range ctx.AllDotID() {
+			id, _ = NormalizeTSQLIdentifier(dotID.Id_())
+			ids = append(ids, id)
+		}
+		switch len(ids) {
+		case 1:
+			fullTableName.Table = ids[0]
+		case 2:
+			fullTableName.Schema = ids[0]
+			fullTableName.Table = ids[1]
+		case 3:
+			fullTableName.Database = ids[0]
+			fullTableName.Schema = ids[1]
+			fullTableName.Table = ids[2]
+		case 4:
+			fullTableName.Server = ids[0]
+			fullTableName.Database = ids[1]
+			fullTableName.Schema = ids[2]
+			fullTableName.Table = ids[3]
+		default:
+			return nil, errors.New("invalid full table name")
+		}
+	}
+
+	return &fullTableName, nil
 }

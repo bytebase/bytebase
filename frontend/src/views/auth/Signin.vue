@@ -1,155 +1,37 @@
 <template>
-  <div class="mx-auto w-full max-w-sm">
-    <BytebaseLogo component="span" class="mx-auto" />
+  <template v-if="initialized">
+    <div class="mx-auto w-full max-w-sm">
+      <BytebaseLogo component="span" class="mx-auto" />
 
-    <div class="mt-8">
-      <NCard>
-        <NTabs
-          class="card-tabs"
-          default-value="standard"
-          size="small"
-          animated
-          pane-style="padding: 12px 0 0 0"
-        >
-          <NTabPane name="standard" tab="Standard">
-            <form class="space-y-6 px-1" @submit.prevent="trySignin()">
-              <div>
-                <label
-                  for="email"
-                  class="block text-sm font-medium leading-5 text-control"
-                >
-                  {{ $t("common.email") }}
-                  <span class="text-red-600">*</span>
-                </label>
-                <div class="mt-1 rounded-md shadow-sm">
-                  <BBTextField
-                    v-model:value="state.email"
-                    required
-                    :input-props="{
-                      id: 'email',
-                      autocomplete: 'on',
-                      type: 'email',
-                    }"
-                    placeholder="jim@example.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  for="password"
-                  class="flex justify-between text-sm font-medium leading-5 text-control"
-                >
-                  <div>
-                    {{ $t("common.password") }}
-                    <span class="text-red-600">*</span>
-                  </div>
-                  <router-link
-                    :to="{
-                      path: '/auth/password-forgot',
-                      query: {
-                        hint: route.query.hint,
-                      },
-                    }"
-                    class="text-sm font-normal text-control-light hover:underline focus:outline-none"
-                    tabindex="-1"
-                  >
-                    {{ $t("auth.sign-in.forget-password") }}
-                  </router-link>
-                </label>
-                <div
-                  class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
-                >
-                  <BBTextField
-                    v-model:value="state.password"
-                    :type="state.showPassword ? 'text' : 'password'"
-                    :input-props="{ id: 'password', autocomplete: 'on' }"
-                    required
-                  />
-                  <div
-                    class="hover:cursor-pointer absolute right-3"
-                    @click="
-                      () => {
-                        state.showPassword = !state.showPassword;
-                      }
-                    "
-                  >
-                    <EyeIcon v-if="state.showPassword" class="w-4 h-4" />
-                    <EyeOffIcon v-else class="w-4 h-4" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="w-full">
-                <NButton
-                  attr-type="submit"
-                  type="primary"
-                  :disabled="!allowSignin()"
-                  :loading="state.isLoading"
-                  size="large"
-                  style="width: 100%"
-                >
-                  {{ $t("common.sign-in") }}
-                </NButton>
-              </div>
-            </form>
-
-            <div class="mt-3">
-              <div
-                class="flex justify-center items-center text-sm text-control"
-              >
-                <template v-if="isDemo">
-                  <span class="text-accent">
-                    {{
-                      $t("auth.sign-in.demo-note", {
-                        username: "demo@example.com",
-                        password: "1024",
-                      })
-                    }}
-                  </span>
-                </template>
-                <template v-else-if="!disallowSignup">
-                  <span>
-                    {{ $t("auth.sign-in.new-user") }}
-                  </span>
-                  <router-link
-                    :to="{ name: AUTH_SIGNUP_MODULE }"
-                    class="accent-link px-2"
-                  >
-                    {{ $t("common.sign-up") }}
-                  </router-link>
-                </template>
-              </div>
-            </div>
-          </NTabPane>
-
-          <template
-            v-for="identityProvider in groupedIdentityProviderList"
-            :key="identityProvider.name"
+      <div class="mt-8">
+        <NCard>
+          <NTabs
+            class="card-tabs"
+            default-value="standard"
+            size="small"
+            animated
+            pane-style="padding: 12px 0 0 0"
           >
-            <NTabPane
-              v-if="identityProvider.type === IdentityProviderType.LDAP"
-              :name="identityProvider.name"
-              :tab="identityProvider.title"
-            >
-              <form
-                class="space-y-6"
-                @submit.prevent="trySignin(identityProvider.name)"
-              >
+            <NTabPane name="standard" tab="Standard">
+              <form class="space-y-6 px-1" @submit.prevent="trySignin()">
                 <div>
                   <label
                     for="email"
                     class="block text-sm font-medium leading-5 text-control"
                   >
-                    {{ $t("common.username") }}
+                    {{ $t("common.email") }}
                     <span class="text-red-600">*</span>
                   </label>
                   <div class="mt-1 rounded-md shadow-sm">
                     <BBTextField
                       v-model:value="state.email"
                       required
-                      placeholder="jim"
-                      :input-props="{ id: 'username', autocomplete: 'on' }"
+                      :input-props="{
+                        id: 'email',
+                        autocomplete: 'on',
+                        type: 'email',
+                      }"
+                      placeholder="jim@example.com"
                     />
                   </div>
                 </div>
@@ -163,6 +45,18 @@
                       {{ $t("common.password") }}
                       <span class="text-red-600">*</span>
                     </div>
+                    <router-link
+                      :to="{
+                        path: '/auth/password-forgot',
+                        query: {
+                          hint: route.query.hint,
+                        },
+                      }"
+                      class="text-sm font-normal text-control-light hover:underline focus:outline-none"
+                      tabindex="-1"
+                    >
+                      {{ $t("auth.sign-in.forget-password") }}
+                    </router-link>
                   </label>
                   <div
                     class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
@@ -191,58 +85,173 @@
                   <NButton
                     attr-type="submit"
                     type="primary"
-                    size="large"
-                    :disabled="!allowSignin(identityProvider.name)"
+                    :disabled="!allowSignin()"
                     :loading="state.isLoading"
+                    size="large"
                     style="width: 100%"
                   >
                     {{ $t("common.sign-in") }}
                   </NButton>
                 </div>
               </form>
-            </NTabPane>
-          </template>
-        </NTabs>
-      </NCard>
-    </div>
 
-    <div v-if="separatedIdentityProviderList.length > 0" class="mb-3 px-1">
-      <div class="relative my-4">
-        <div class="absolute inset-0 flex items-center" aria-hidden="true">
-          <div class="w-full border-t border-control-border"></div>
-        </div>
-        <div class="relative flex justify-center text-sm">
-          <span class="px-2 bg-white text-control">{{ $t("common.or") }}</span>
-        </div>
+              <div class="mt-3">
+                <div
+                  class="flex justify-center items-center text-sm text-control"
+                >
+                  <template v-if="isDemo">
+                    <span class="text-accent">
+                      {{
+                        $t("auth.sign-in.demo-note", {
+                          username: "demo@example.com",
+                          password: "1024",
+                        })
+                      }}
+                    </span>
+                  </template>
+                  <template v-else-if="!disallowSignup">
+                    <span>
+                      {{ $t("auth.sign-in.new-user") }}
+                    </span>
+                    <router-link
+                      :to="{ name: AUTH_SIGNUP_MODULE }"
+                      class="accent-link px-2"
+                    >
+                      {{ $t("common.sign-up") }}
+                    </router-link>
+                  </template>
+                </div>
+              </div>
+            </NTabPane>
+
+            <template
+              v-for="identityProvider in groupedIdentityProviderList"
+              :key="identityProvider.name"
+            >
+              <NTabPane
+                v-if="identityProvider.type === IdentityProviderType.LDAP"
+                :name="identityProvider.name"
+                :tab="identityProvider.title"
+              >
+                <form
+                  class="space-y-6"
+                  @submit.prevent="trySignin(identityProvider.name)"
+                >
+                  <div>
+                    <label
+                      for="email"
+                      class="block text-sm font-medium leading-5 text-control"
+                    >
+                      {{ $t("common.username") }}
+                      <span class="text-red-600">*</span>
+                    </label>
+                    <div class="mt-1 rounded-md shadow-sm">
+                      <BBTextField
+                        v-model:value="state.email"
+                        required
+                        placeholder="jim"
+                        :input-props="{ id: 'username', autocomplete: 'on' }"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      for="password"
+                      class="flex justify-between text-sm font-medium leading-5 text-control"
+                    >
+                      <div>
+                        {{ $t("common.password") }}
+                        <span class="text-red-600">*</span>
+                      </div>
+                    </label>
+                    <div
+                      class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
+                    >
+                      <BBTextField
+                        v-model:value="state.password"
+                        :type="state.showPassword ? 'text' : 'password'"
+                        :input-props="{ id: 'password', autocomplete: 'on' }"
+                        required
+                      />
+                      <div
+                        class="hover:cursor-pointer absolute right-3"
+                        @click="
+                          () => {
+                            state.showPassword = !state.showPassword;
+                          }
+                        "
+                      >
+                        <EyeIcon v-if="state.showPassword" class="w-4 h-4" />
+                        <EyeOffIcon v-else class="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="w-full">
+                    <NButton
+                      attr-type="submit"
+                      type="primary"
+                      size="large"
+                      :disabled="!allowSignin(identityProvider.name)"
+                      :loading="state.isLoading"
+                      style="width: 100%"
+                    >
+                      {{ $t("common.sign-in") }}
+                    </NButton>
+                  </div>
+                </form>
+              </NTabPane>
+            </template>
+          </NTabs>
+        </NCard>
       </div>
-      <template
-        v-for="identityProvider in separatedIdentityProviderList"
-        :key="identityProvider.name"
-      >
-        <div class="w-full mb-2">
-          <NButton
-            style="width: 100%"
-            size="large"
-            @click.prevent="trySigninWithIdentityProvider(identityProvider)"
-          >
-            {{
-              $t("auth.sign-in.sign-in-with-idp", {
-                idp: identityProvider.title,
-              })
-            }}
-          </NButton>
+
+      <div v-if="separatedIdentityProviderList.length > 0" class="mb-3 px-1">
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center" aria-hidden="true">
+            <div class="w-full border-t border-control-border"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-control">{{
+              $t("common.or")
+            }}</span>
+          </div>
         </div>
-      </template>
+        <template
+          v-for="identityProvider in separatedIdentityProviderList"
+          :key="identityProvider.name"
+        >
+          <div class="w-full mb-2">
+            <NButton
+              style="width: 100%"
+              size="large"
+              @click.prevent="trySigninWithIdentityProvider(identityProvider)"
+            >
+              {{
+                $t("auth.sign-in.sign-in-with-idp", {
+                  idp: identityProvider.title,
+                })
+              }}
+            </NButton>
+          </div>
+        </template>
+      </div>
     </div>
-  </div>
-  <AuthFooter />
+    <AuthFooter />
+  </template>
+  <template v-else>
+    <div class="inset-0 absolute flex flex-row justify-center items-center">
+      <BBSpin />
+    </div>
+  </template>
 </template>
 
 <script lang="ts" setup>
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton, NCard, NTabPane, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { AUTH_MFA_MODULE, AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
@@ -250,6 +259,7 @@ import {
   useAuthStore,
   useIdentityProviderStore,
 } from "@/store";
+import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { IdentityProviderType } from "@/types/proto/v1/idp_service";
 import { isValidEmail, openWindowForSSO } from "@/utils";
@@ -274,6 +284,7 @@ const state = reactive<LocalState>({
   showPassword: false,
   isLoading: false,
 });
+const initialized = ref(false);
 const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
 
 const separatedIdentityProviderList = computed(() =>
@@ -302,6 +313,20 @@ onMounted(async () => {
   state.showPassword = !!isDemo.value;
 
   await identityProviderStore.fetchIdentityProviderList();
+
+  // Check if there is an identity provider in the query string and try to sign in with it.
+  if (route.query["idp"]) {
+    const idpName = `${idpNamePrefix}${route.query["idp"] as string}`;
+    const identityProvider = identityProviderStore.identityProviderList.find(
+      (idp) => idp.name === idpName
+    );
+    if (identityProvider) {
+      await trySigninWithIdentityProvider(identityProvider);
+      // If we successfully signed in with the identity provider, return early.
+      return;
+    }
+  }
+  // Try to signin with example account in demo site.
   if (
     window.location.href.startsWith("https://demo.bytebase.com") &&
     isDemo.value &&
@@ -310,6 +335,7 @@ onMounted(async () => {
   ) {
     await trySignin();
   }
+  initialized.value = true;
 });
 
 const allowSignin = (idpName?: string) => {

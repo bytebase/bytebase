@@ -7,10 +7,6 @@ export const detailCellRowSpan = (entry: FlattenLogEntry) => {
     entry.commandExecute
   ) {
     const { commandExecute } = entry;
-    if (typeof commandExecute.affectedRows !== "undefined") {
-      // Has detailed affectedRows for each command
-      return 1;
-    }
     if (!commandExecute.raw.response) {
       // Not finished yet, combine several rows
       return commandExecute.raw.commandIndexes.length;
@@ -18,6 +14,10 @@ export const detailCellRowSpan = (entry: FlattenLogEntry) => {
     if (commandExecute.raw.response.error) {
       // Error, combine several rows
       return commandExecute.raw.commandIndexes.length;
+    }
+    if (typeof commandExecute.affectedRows !== "undefined") {
+      // Has detailed affectedRows for each command
+      return 1;
     }
   }
   return 1;

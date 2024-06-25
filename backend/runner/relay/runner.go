@@ -11,11 +11,10 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -25,10 +24,10 @@ import (
 )
 
 // NewRunner creates a new runner instance.
-func NewRunner(store *store.Store, activityManager *activity.Manager, stateCfg *state.State) *Runner {
+func NewRunner(store *store.Store, webhookManager *webhook.Manager, stateCfg *state.State) *Runner {
 	return &Runner{
 		store:                     store,
-		activityManager:           activityManager,
+		webhookManager:            webhookManager,
 		stateCfg:                  stateCfg,
 		Client:                    relayplugin.NewClient(),
 		CheckExternalApprovalChan: make(chan CheckExternalApprovalChanMessage, 100),
@@ -45,9 +44,9 @@ type CheckExternalApprovalChanMessage struct {
 
 // Runner is the runner for the relay.
 type Runner struct {
-	store           *store.Store
-	activityManager *activity.Manager
-	stateCfg        *state.State
+	store          *store.Store
+	webhookManager *webhook.Manager
+	stateCfg       *state.State
 
 	Client *relayplugin.Client
 
@@ -260,7 +259,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 		return errors.Wrapf(err, "failed to check if the approval is approved")
 	}
 
-	newApprovers, activityCreates, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.Client, issue, payload.Approval)
+	newApprovers, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.Client, issue, payload.Approval)
 	if err != nil {
 		return errors.Wrapf(err, "failed to handle incoming approval steps")
 	}
@@ -283,57 +282,20 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 				},
 			},
 		}
-		if err := r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		if _, err := r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, api.SystemBotID); err != nil {
 			return err
 		}
 		for _, ic := range issueComments {
-			if err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+			if _, err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
-	}
-
-	// It's ok to fail to create activity.
-	if err := func() error {
-		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
-			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
-				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
-					Status: storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED,
-				},
-			},
-			IssueName: issue.Title,
-		})
-		if err != nil {
-			return err
-		}
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueCommentCreate,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(activityPayload),
-		}
-		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-			return err
-		}
-
-		for _, create := range activityCreates {
-			if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create skipping steps activity after approving review", log.BBError(err))
 	}
 
 	if err := func() error {
@@ -344,32 +306,16 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 		if approvalStep == nil {
 			return nil
 		}
-		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
-			ApprovalStep: approvalStep,
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   r.store.GetSystemBotUser(ctx),
+			Type:    webhook.EventTypeIssueApprovalCreate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
+				ApprovalStep: approvalStep,
+			},
 		})
-		if err != nil {
-			return err
-		}
-		activityPayload, err := json.Marshal(api.ActivityIssueApprovalNotifyPayload{
-			ProtoPayload: string(protoPayload),
-		})
-		if err != nil {
-			return err
-		}
-
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueApprovalNotify,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(activityPayload),
-		}
-		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
-			return err
-		}
-
 		return nil
 	}(); err != nil {
 		slog.Error("failed to create approval step pending activity after creating review", log.BBError(err))
@@ -377,7 +323,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 
 	// Grant the privilege if the issue is approved.
 	if approved && issue.Type == api.IssueGrantRequest {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, r.activityManager, issue, payload.GrantRequest); err != nil {
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return errors.Wrapf(err, "failed to update project iam policy for grant request issue %q", issue.Title)
 		}
 	}
@@ -388,7 +334,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, r.store.GetSystemBotUser(ctx), ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
@@ -455,42 +401,13 @@ func (r *Runner) RejectExternalApprovalNode(ctx context.Context, issueUID int) e
 				},
 			},
 		}
-		return r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		_, err := r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
 		}, api.SystemBotID)
+		return err
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
-	}
-
-	// It's ok to fail to create activity.
-	if err := func() error {
-		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
-			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
-				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
-					Status: storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED,
-				},
-			},
-			IssueName: issue.Title,
-		})
-		if err != nil {
-			return err
-		}
-		create := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueCommentCreate,
-			Level:             api.ActivityInfo,
-			Comment:           "",
-			Payload:           string(activityPayload),
-		}
-		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create activity after rejecting review", log.BBError(err))
 	}
 
 	return nil

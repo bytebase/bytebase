@@ -172,9 +172,8 @@ func (dbs *DBSchema) FindIndex(schemaName string, tableName string, indexName st
 
 // DatabaseConfig is the config for a database.
 type DatabaseConfig struct {
-	name                     string
-	ClassificationFromConfig bool
-	internal                 map[string]*SchemaConfig
+	name     string
+	internal map[string]*SchemaConfig
 }
 
 // NewDatabaseConfig creates a new database config.
@@ -186,7 +185,6 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 		return databaseConfig
 	}
 	databaseConfig.name = config.Name
-	databaseConfig.ClassificationFromConfig = config.ClassificationFromConfig
 	for _, schema := range config.SchemaConfigs {
 		schemaConfig := &SchemaConfig{
 			internal: make(map[string]*TableConfig),
@@ -223,7 +221,7 @@ func (d *DatabaseConfig) RemoveSchemaConfig(name string) {
 }
 
 func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
-	config := &storepb.DatabaseConfig{Name: d.name, ClassificationFromConfig: d.ClassificationFromConfig}
+	config := &storepb.DatabaseConfig{Name: d.name}
 
 	for schemaName, sConfig := range d.internal {
 		schemaConfig := &storepb.SchemaConfig{Name: schemaName}
@@ -302,13 +300,15 @@ func (t *TableConfig) IsEmpty() bool {
 
 // DatabaseMetadata is the metadata for a database.
 type DatabaseMetadata struct {
-	internal map[string]*SchemaMetadata
+	internal       map[string]*SchemaMetadata
+	linkedDatabase map[string]*LinkedDatabaseMetadata
 }
 
 // NewDatabaseMetadata creates a new database metadata.
 func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMetadata {
 	databaseMetadata := &DatabaseMetadata{
-		internal: make(map[string]*SchemaMetadata),
+		internal:       make(map[string]*SchemaMetadata),
+		linkedDatabase: make(map[string]*LinkedDatabaseMetadata),
 	}
 	for _, schema := range metadata.Schemas {
 		schemaMetadata := &SchemaMetadata{
@@ -318,6 +318,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
 			internalFunctions:        make(map[string]*FunctionMetadata),
 			internalProcedures:       make(map[string]*ProcedureMetadata),
+			internalSequences:        make(map[string]*SequenceMetadata),
 		}
 		for _, table := range schema.Tables {
 			tables, names := buildTablesMetadata(table)
@@ -358,7 +359,19 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 				proto:      procedure,
 			}
 		}
+		for _, sequence := range schema.Sequences {
+			schemaMetadata.internalSequences[sequence.Name] = &SequenceMetadata{
+				proto: sequence,
+			}
+		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
+	}
+	for _, dbLink := range metadata.LinkedDatabases {
+		databaseMetadata.linkedDatabase[dbLink.Name] = &LinkedDatabaseMetadata{
+			name:     dbLink.Name,
+			username: dbLink.Username,
+			host:     dbLink.Host,
+		}
 	}
 	return databaseMetadata
 }
@@ -377,6 +390,29 @@ func (d *DatabaseMetadata) ListSchemaNames() []string {
 	return result
 }
 
+func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadata {
+	return d.linkedDatabase[name]
+}
+
+// LinkedDatabaseMetadata is the metadata for a linked database.
+type LinkedDatabaseMetadata struct {
+	name     string
+	username string
+	host     string
+}
+
+func (l *LinkedDatabaseMetadata) GetName() string {
+	return l.name
+}
+
+func (l *LinkedDatabaseMetadata) GetUsername() string {
+	return l.username
+}
+
+func (l *LinkedDatabaseMetadata) GetHost() string {
+	return l.host
+}
+
 // SchemaMetadata is the metadata for a schema.
 type SchemaMetadata struct {
 	internalTables           map[string]*TableMetadata
@@ -385,6 +421,7 @@ type SchemaMetadata struct {
 	internalMaterializedView map[string]*MaterializedViewMetadata
 	internalFunctions        map[string]*FunctionMetadata
 	internalProcedures       map[string]*ProcedureMetadata
+	internalSequences        map[string]*SequenceMetadata
 }
 
 // GetTable gets the schema by name.
@@ -414,6 +451,11 @@ func (s *SchemaMetadata) GetExternalTable(name string) *ExternalTableMetadata {
 // GetFunction gets the function by name.
 func (s *SchemaMetadata) GetFunction(name string) *FunctionMetadata {
 	return s.internalFunctions[name]
+}
+
+// GetSequence gets the sequence by name.
+func (s *SchemaMetadata) GetSequence(name string) *SequenceMetadata {
+	return s.internalSequences[name]
 }
 
 // ListTableNames lists the table names.
@@ -590,5 +632,13 @@ type ProcedureMetadata struct {
 }
 
 func (p *ProcedureMetadata) GetProto() *storepb.ProcedureMetadata {
+	return p.proto
+}
+
+type SequenceMetadata struct {
+	proto *storepb.SequenceMetadata
+}
+
+func (p *SequenceMetadata) GetProto() *storepb.SequenceMetadata {
 	return p.proto
 }

@@ -15,6 +15,7 @@
       }"
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
+      @update:advices="$emit('update:advices', $event)"
     >
       <template #result="{ advices, isRunning }">
         <template v-if="advices === undefined">
@@ -38,28 +39,36 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useTaskSheet } from "@/components/IssueV1/components/StatementSection/useTaskSheet";
-import { useIssueContext, databaseForTask ,specForTask} from "@/components/IssueV1/logic";
+import {
+  useIssueContext,
+  databaseForTask,
+  specForTask,
+  databaseForSpec,
+} from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
-import { Plan_ChangeDatabaseConfig_Type, Task_Type } from "@/types/proto/v1/rollout_service";
-import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Advice, CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils/util";
+import { useTaskSheet } from "../StatementSection/useTaskSheet";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 
-const { issue, selectedTask, events } = useIssueContext();
-const { sheetStatement } = useTaskSheet();
-const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
-});
+defineEmits<{
+  (event: "update:advices", advices: Advice[] | undefined): void;
+}>();
 
-const getStatement = async () => {
-  return {
-    statement: sheetStatement.value,
-    errors: [],
-  };
-};
+const { issue, selectedTask, selectedSpec, events } = useIssueContext();
+const { sheetStatement } = useTaskSheet();
+
+const rolloutMode = computed(() => !!issue.value.rollout);
+
+const database = computed(() => {
+  return rolloutMode.value
+    ? databaseForTask(issue.value, selectedTask.value)
+    : databaseForSpec(issue.value, selectedSpec.value);
+});
 
 const show = computed(() => {
   const type = selectedTask.value.type;
@@ -72,12 +81,22 @@ const show = computed(() => {
   return false;
 });
 
-const handleToggleOnlineMigration = (on: boolean, confirm: Defer<boolean>) => {
+const getStatement = async () => {
+  return {
+    statement: sheetStatement.value,
+    errors: [],
+  };
+};
+
+const handleToggleOnlineMigration = (
+  on: boolean,
+  confirm: Defer<boolean> | undefined
+) => {
   if (on) {
     events.emit("toggle-online-migration", {
       on: true,
     });
-    confirm.resolve(false);
+    confirm?.resolve(false);
   }
 };
 

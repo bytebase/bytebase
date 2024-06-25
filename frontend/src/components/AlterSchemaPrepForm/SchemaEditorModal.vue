@@ -38,6 +38,7 @@
           :targets="state.targets"
           :loading="state.isPreparingMetadata"
           :diff-when-ready="false"
+          :hide-last-updater="true"
         />
       </NTabPane>
       <NTabPane
@@ -93,6 +94,9 @@
         </template>
       </div>
       <div class="flex justify-end items-center space-x-3">
+        <NCheckbox v-model:checked="state.planOnly">
+          {{ $t("issue.sql-review-only") }}
+        </NCheckbox>
         <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
         </NButton>
@@ -119,19 +123,22 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
-import { NTabs, NTabPane, useDialog } from "naive-ui";
+import { NTabs, NCheckbox, NButton, NTabPane, useDialog } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch } from "vue";
 import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
+import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { databaseServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
   useNotificationStore,
+  useDBSchemaV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -164,6 +171,8 @@ interface LocalState {
   previewStatus: string;
   targets: EditTarget[];
   isUploadingFile: boolean;
+  // planOnly is used to indicate whether only to create plan.
+  planOnly: boolean;
 }
 
 const props = defineProps({
@@ -176,6 +185,10 @@ const props = defineProps({
     required: true,
   },
   newWindow: {
+    type: Boolean,
+    default: false,
+  },
+  planOnly: {
     type: Boolean,
     default: false,
   },
@@ -197,9 +210,11 @@ const state = reactive<LocalState>({
   previewStatus: "",
   targets: [],
   isUploadingFile: false,
+  planOnly: props.planOnly,
 });
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const { runSQLCheck } = provideSQLCheckContext();
 const $dialog = useDialog();
 
@@ -253,9 +268,10 @@ const prepareDatabaseMetadata = async () => {
   }[] = [];
   for (let i = 0; i < databaseList.value.length; i++) {
     const database = databaseList.value[i];
-    const metadata = await databaseServiceClient.getDatabaseMetadata({
-      name: `${database.name}/metadata`,
+    const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.name,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      skipCache: true,
     });
     targets.push({ database, metadata });
   }
@@ -473,17 +489,26 @@ const handlePreviewIssue = async () => {
       );
     } else {
       query.databaseList = databaseList.value.map((db) => db.name).join(",");
-      query.sqlList = JSON.stringify(statementList);
+
+      const sqlMap: Record<string, string> = {};
+      databaseList.value.forEach((db, i) => {
+        const sql = statementList[i];
+        sqlMap[db.name] = sql;
+      });
+      query.sqlMap = JSON.stringify(sqlMap);
       const databaseNameList = databaseList.value.map((db) => db.databaseName);
       query.name = generateIssueName(databaseNameList, !!query.ghost);
     }
   }
 
   const routeInfo = {
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: state.planOnly
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
       issueSlug: "create",
+      planSlug: "create",
     },
     query,
   };
@@ -509,7 +534,7 @@ const generateIssueName = (
   if (isOnlineMode) {
     issueNameParts.push("Online schema change");
   } else {
-    issueNameParts.push(`Alter schema`);
+    issueNameParts.push(`Edit schema`);
   }
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");

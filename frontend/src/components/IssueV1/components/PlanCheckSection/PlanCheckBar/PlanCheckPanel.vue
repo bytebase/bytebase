@@ -29,12 +29,12 @@ import { useI18n } from "vue-i18n";
 import { databaseForSpec, useIssueContext } from "@/components/IssueV1/logic";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import { UNKNOWN_ID } from "@/types";
+import { EMPTY_ID } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import { humanizeDate } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
@@ -121,7 +121,7 @@ watch(selectedPlanCheckRunList, (list) => {
 
 const environment = computed(() => {
   const spec = selectedSpec.value;
-  if (!spec || spec.id === String(UNKNOWN_ID)) {
+  if (!spec || spec.id === String(EMPTY_ID)) {
     return;
   }
   const database = databaseForSpec(issue.value, spec);

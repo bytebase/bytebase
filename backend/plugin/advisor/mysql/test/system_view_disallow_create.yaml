@@ -1,18 +1,18 @@
 - statement: CREATE TABLE t(a int);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
-- statement: |-
-    CREATE VIEW get_one AS SELECT 1;
+      detail: ""
+      startposition: null
+- statement: CREATE VIEW get_one AS SELECT 1;
   want:
-    - status: WARN
+    - status: 2
       code: 1601
       title: system.view.disallow-create
-      content: |-
-        View is forbidden, but "CREATE VIEW get_one AS SELECT 1;" creates
-      line: 1
-      details: ""
+      content: View is forbidden, but "CREATE VIEW get_one AS SELECT 1;" creates
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

@@ -18,8 +18,6 @@ import workspaceSettingRoutes, {
   SETTING_ROUTE_PROFILE,
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_GENERAL,
-  SETTING_ROUTE_WORKSPACE_MEMBER,
-  SETTING_ROUTE_WORKSPACE_ROLE,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
   SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
@@ -92,16 +90,6 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.general"),
           name: SETTING_ROUTE_WORKSPACE_GENERAL,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.members"),
-          name: SETTING_ROUTE_WORKSPACE_MEMBER,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.custom-roles"),
-          name: SETTING_ROUTE_WORKSPACE_ROLE,
           type: "route",
         },
         {

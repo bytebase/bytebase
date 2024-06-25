@@ -34,7 +34,7 @@ type ColumnCurrentTimeCountLimitAdvisor struct {
 }
 
 // Check checks for current time column count limit.
-func (*ColumnCurrentTimeCountLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnCurrentTimeCountLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -60,8 +60,8 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(ctx advisor.Context, _ string) 
 }
 
 type columnCurrentTimeCountLimitChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -75,7 +75,7 @@ type tableData struct {
 	line                     int
 }
 
-func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []advisor.Advice {
+func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.Advice {
 	var tableList []tableData
 	for _, table := range checker.tableSet {
 		tableList = append(tableList, table)
@@ -85,28 +85,32 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []advisor.Ad
 	})
 	for _, table := range tableList {
 		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.DefaultCurrentTimeColumnCountExceedsLimit,
+				Code:    advisor.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
-				Line:    table.line,
+				StartPosition: &storepb.Position{
+					Line: int32(table.line),
+				},
 			})
 		}
 		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.OnUpdateCurrentTimeColumnCountExceedsLimit,
+				Code:    advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
-				Line:    table.line,
+				StartPosition: &storepb.Position{
+					Line: int32(table.line),
+				},
 			})
 		}
 	}
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

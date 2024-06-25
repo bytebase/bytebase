@@ -33,8 +33,8 @@ func init() {
 }
 
 // Completion is the entry point of MySQL code completion.
-func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	result, err := completer.completion()
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func Completion(ctx context.Context, statement string, caretLine int, caretOffse
 		return result, nil
 	}
 
-	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	return trickyCompleter.completion()
 }
 
@@ -213,6 +213,7 @@ func newSynonyms() map[int][]string {
 type Completer struct {
 	ctx                 context.Context
 	core                *base.CodeCompletionCore
+	scene               base.SceneType
 	parser              *mysql.MySQLParser
 	lexer               *mysql.MySQLLexer
 	scanner             *base.Scanner
@@ -232,7 +233,7 @@ type Completer struct {
 	caretTokenIsQuoted bool
 }
 
-func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
+func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
@@ -249,19 +250,20 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
-		getMetadata:         metadata,
-		listDatabaseNames:   listDatabaseNames,
+		defaultDatabase:     cCtx.DefaultDatabase,
+		getMetadata:         cCtx.Metadata,
+		listDatabaseNames:   cCtx.ListDatabaseNames,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
 		cteCache:            make(map[int][]*base.VirtualTableReference),
 	}
 }
 
-func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
+func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
@@ -278,12 +280,13 @@ func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, ca
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
+		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
-		defaultDatabase:     defaultDatabase,
-		getMetadata:         metadata,
-		listDatabaseNames:   listDatabaseNames,
+		defaultDatabase:     cCtx.DefaultDatabase,
+		getMetadata:         cCtx.Metadata,
+		listDatabaseNames:   cCtx.ListDatabaseNames,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
 		cteCache:            make(map[int][]*base.VirtualTableReference),
@@ -303,7 +306,12 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
-	context := c.parser.Script()
+	var context antlr.ParserRuleContext
+	if c.scene == base.SceneTypeQuery {
+		context = c.parser.SelectStatement()
+	} else {
+		context = c.parser.Script()
+	}
 
 	candidates := c.core.CollectCandidates(caretIndex, context)
 
@@ -318,6 +326,8 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 			c.collectLeadingTableReferences(caretIndex, false /* forTableAlter */)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
+			c.takeReferencesSnapshot()
+			c.collectInsertTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			break
 		} else if ruleName == mysql.MySQLParserRULE_columnInternalRef {
@@ -646,12 +656,14 @@ func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpr
 		// User didn't specify the column list, so we need to fetch the column list from the database.
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: l.context.getMetadata,
+				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+			},
 			store.Engine_MYSQL,
 			fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
 			l.context.defaultDatabase,
 			"",
-			l.context.getMetadata,
-			l.context.listDatabaseNames,
 			false,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
@@ -887,6 +899,45 @@ func (c *Completer) takeReferencesSnapshot() {
 	}
 }
 
+func (c *Completer) collectInsertTableReferences(caretIndex int) {
+	c.scanner.Push()
+
+	c.scanner.SeekIndex(0)
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == mysql.MySQLLexerINSERT_SYMBOL || c.scanner.GetTokenType() == mysql.MySQLLexerINTO_SYMBOL
+		for !found {
+			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case mysql.MySQLLexerOPEN_PAR_SYMBOL:
+				level++
+			case mysql.MySQLLexerCLOSE_PAR_SYMBOL:
+				if level == 0 {
+					c.scanner.PopAndRestore()
+					return
+				}
+
+				level--
+			case mysql.MySQLLexerINSERT_SYMBOL, mysql.MySQLLexerINTO_SYMBOL:
+				found = true
+			}
+		}
+
+		if !found {
+			c.scanner.PopAndRestore()
+			return // No more INSERT clause found.
+		}
+
+		c.parseInsertTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == mysql.MySQLLexerINSERT_SYMBOL || c.scanner.GetTokenType() == mysql.MySQLLexerINTO_SYMBOL {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
 func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter bool) {
 	c.scanner.Push()
 
@@ -947,6 +998,44 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 				c.scanner.Forward(false /* skipHidden */)
 			}
 		}
+	}
+}
+
+func (c *Completer) parseInsertTableReferences(text string) {
+	input := antlr.NewInputStream(text)
+	lexer := mysql.NewMySQLLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, 0)
+	parser := mysql.NewMySQLParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.InsertStatement()
+
+	listener := &insertTableRefListener{
+		context: c,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+}
+
+type insertTableRefListener struct {
+	*mysql.BaseMySQLParserListener
+
+	context *Completer
+}
+
+func (l *insertTableRefListener) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if ctx.TableRef() != nil {
+		reference := &base.PhysicalTableReference{}
+		if ctx.TableRef().QualifiedIdentifier() != nil {
+			reference.Table = unquote(ctx.TableRef().QualifiedIdentifier().Identifier().GetText())
+			if ctx.TableRef().QualifiedIdentifier().DotIdentifier() != nil {
+				reference.Database = reference.Table
+				reference.Table = unquote(ctx.TableRef().QualifiedIdentifier().DotIdentifier().Identifier().GetText())
+			}
+		} else {
+			reference.Table = unquote(ctx.TableRef().DotIdentifier().Identifier().GetText())
+		}
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
 	}
 }
 
@@ -1037,12 +1126,14 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 			// User didn't specify the column list, so we should extract the column list from the select statement.
 			if span, err := base.GetQuerySpan(
 				l.context.ctx,
+				base.GetQuerySpanContext{
+					GetDatabaseMetadataFunc: l.context.getMetadata,
+					ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+				},
 				store.Engine_MYSQL,
 				fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
 				l.context.defaultDatabase,
 				"",
-				l.context.getMetadata,
-				l.context.listDatabaseNames,
 				false,
 			); err == nil && len(span) == 1 {
 				for _, column := range span[0].Results {
@@ -1160,51 +1251,29 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 	input := antlr.NewInputStream(statement)
 	lexer := mysql.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := mysql.NewMySQLParser(stream)
-	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{}
-	parserErrorListener := &base.ParseErrorListener{}
 	lexer.AddErrorListener(lexerErrorListener)
-	p.AddErrorListener(parserErrorListener)
 
-	lastLine, lastColumn, lastIndex := 0, 0, 0
-	num := 0
-	for {
-		if num > 10 {
-			// We only skip at most 10 SQL statements.
-			return statement, caretLine, caretOffset
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	latestSelect := 0
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	for _, token := range tokens {
+		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+			break
 		}
-		tree := p.SimpleStatement()
-		if lexerErrorListener.Err != nil || parserErrorListener.Err != nil {
-			if num == 0 {
-				return statement, caretLine, caretOffset
-			}
-			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
-			newCaretOffset := caretOffset
-			if caretLine == lastLine {
-				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
-			}
-			return stream.GetTextFromInterval(antlr.NewInterval(lastIndex+1, stream.Size())), newCaretLine, newCaretOffset
+		if token.GetTokenType() == mysql.MySQLLexerSELECT_SYMBOL && token.GetColumn() == 0 {
+			latestSelect = token.GetTokenIndex()
+			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
+			newCaretOffset = caretOffset
 		}
-		if tree.GetStop().GetLine() > caretLine || (tree.GetStop().GetLine() == caretLine && tree.GetStop().GetColumn() >= caretOffset) {
-			if num == 0 {
-				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
-				return statement, caretLine, caretOffset
-			}
-
-			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
-			newCaretOffset := caretOffset
-			if caretLine == lastLine {
-				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
-			}
-			return stream.GetTextFromInterval(antlr.NewInterval(tree.GetStart().GetTokenIndex(), stream.Size())), newCaretLine, newCaretOffset
-		}
-		num++
-		lastLine = tree.GetStop().GetLine()
-		lastColumn = tree.GetStop().GetColumn()
-		lastIndex = tree.GetStop().GetTokenIndex()
 	}
+
+	if latestSelect == 0 {
+		return statement, caretLine, caretOffset
+	}
+	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
 }
 
 func unquote(s string) string {

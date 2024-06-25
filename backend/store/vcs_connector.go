@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -123,7 +124,7 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 			return nil, err
 		}
 		var payload storepb.VCSConnector
-		if err := protojson.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), &payload); err != nil {
 			return nil, err
 		}
 		vcsConnector.Payload = &payload
@@ -197,13 +198,13 @@ func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnect
 
 	var payloadSet []string
 	if v := update.Branch; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('branch', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('branch', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := update.BaseDirectory; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('baseDirectory', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('baseDirectory', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := update.DatabaseGroup; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('databaseGroup', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('databaseGroup', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if len(payloadSet) != 0 {
 		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))

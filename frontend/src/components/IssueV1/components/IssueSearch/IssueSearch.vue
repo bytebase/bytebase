@@ -45,18 +45,7 @@ import { UIIssueFilterScopeIdList, SearchScopeIdList } from "@/utils";
 import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
-export type SearchComponent =
-  | "searchbox"
-  | "status"
-  | "type"
-  | "time-range"
-  | "project"
-  | "instance"
-  | "database"
-  | "assignee"
-  | "creator"
-  | "approver"
-  | "approval";
+export type SearchComponent = "searchbox" | "status" | "time-range";
 
 const props = withDefaults(
   defineProps<{

@@ -4,8 +4,8 @@ import { databaseServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
 import {
+  TableMetadata,
   DatabaseMetadata,
   DatabaseMetadataView,
   ColumnConfig,
@@ -238,6 +238,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     );
   };
 
+  const getDatabaseMetadataWithoutDefault = (
+    database: string,
+    view?: DatabaseMetadataView
+  ) => getCache(database, view)[0];
+
   /**
    *
    * @param database
@@ -249,7 +254,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     view?: DatabaseMetadataView
   ) => {
     return (
-      getCache(database, view)[0] ??
+      getDatabaseMetadataWithoutDefault(database, view) ??
       DatabaseMetadata.fromPartial({
         name: ensureDatabaseMetadataResourceName(database),
       })
@@ -276,7 +281,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       databaseName === String(UNKNOWN_ID) ||
       databaseName === String(EMPTY_ID)
     ) {
-      return DatabaseMetadata.fromJSON({
+      return DatabaseMetadata.fromPartial({
         name: ensureDatabaseMetadataResourceName(
           `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
         ),
@@ -365,6 +370,16 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     skipCache?: boolean;
     silent?: boolean;
   }) => {
+    const { databaseName } = extractDatabaseResourceName(database);
+    if (
+      databaseName === String(UNKNOWN_ID) ||
+      databaseName === String(EMPTY_ID)
+    ) {
+      return TableMetadata.fromPartial({
+        name: table,
+      });
+    }
+
     const metadataResourceName = ensureDatabaseMetadataResourceName(database);
 
     if (!skipCache) {
@@ -488,6 +503,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     getSchemaConfig,
     getTableConfig,
     getColumnConfig,
+    getDatabaseMetadataWithoutDefault,
     getDatabaseMetadata,
     getOrFetchDatabaseMetadata,
     getSchemaList,

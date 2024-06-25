@@ -219,24 +219,6 @@ VALUES
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
--- Project member
-CREATE TABLE project_member (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    project_id INTEGER NOT NULL REFERENCES project (id),
-    role TEXT NOT NULL,
-    principal_id INTEGER NOT NULL REFERENCES principal (id),
-    condition JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_project_member_project_id ON project_member(project_id);
-
-ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
-
 -- Project Hook
 CREATE TABLE project_webhook (
     id SERIAL PRIMARY KEY,
@@ -249,7 +231,8 @@ CREATE TABLE project_webhook (
     type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
     url TEXT NOT NULL,
-    activity_list TEXT ARRAY NOT NULL
+    activity_list TEXT ARRAY NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
@@ -506,7 +489,7 @@ ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 CREATE TABLE task_run_log (
     id BIGSERIAL PRIMARY KEY,
     task_run_id INTEGER NOT NULL REFERENCES task_run (id),
-    created_ts TIMESTAMP NOT NULL DEFAULT now(),
+    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -617,6 +600,7 @@ CREATE TABLE instance_change_history (
     instance_id INTEGER REFERENCES instance (id),
     -- NULL means an instance-level change.
     database_id INTEGER REFERENCES db (id),
+    project_id INTEGER REFERENCES project (id),
     -- issue_id is nullable because this field is backfilled and may not be present.
     issue_id INTEGER REFERENCES issue (id),
     -- Record the client version creating this change history. For Bytebase, we use its binary release version. Different Bytebase release might
@@ -917,25 +901,6 @@ CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON db_group(proje
 
 ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 
-CREATE TABLE schema_group (
-    id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    db_group_id BIGINT NOT NULL REFERENCES db_group (id),
-    resource_id TEXT NOT NULL,
-    placeholder TEXT NOT NULL DEFAULT '',
-    expression JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON schema_group(db_group_id, resource_id);
-
-CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON schema_group(db_group_id, placeholder);
-
-ALTER SEQUENCE schema_group_id_seq RESTART WITH 101;
-
 -- changelist table stores project changelists.
 CREATE TABLE changelist (
     id SERIAL PRIMARY KEY,
@@ -991,4 +956,28 @@ CREATE TABLE sql_lint_config (
   updater_id INTEGER NOT NULL REFERENCES principal (id),
   updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   config JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE user_group (
+  email TEXT PRIMARY KEY,
+  creator_id INTEGER NOT NULL REFERENCES principal (id),
+  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  updater_id INTEGER NOT NULL REFERENCES principal (id),
+  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  payload JSONB NOT NULL DEFAULT '{}'
+);
+
+-- review config table.
+CREATE TABLE review_config
+(
+    id TEXT NOT NULL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    name TEXT NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'
 );

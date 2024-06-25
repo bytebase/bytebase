@@ -117,8 +117,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
 		}, nil
-	case *pgquery.Node_VariableSetStmt:
-		// Skip the SET statement.
+	case *pgquery.Node_VariableSetStmt, *pgquery.Node_VariableShowStmt:
+		// Skip the SET statement and VARIABLE SHOW statement.
 		return &base.QuerySpan{
 			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
@@ -1276,7 +1276,8 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	view := schema.GetView(tableName)
 	materializedView := schema.GetMaterializedView(tableName)
 	foreignTable := schema.GetExternalTable(tableName)
-	if table == nil && view == nil && foreignTable == nil && materializedView == nil {
+	sequence := schema.GetSequence(tableName)
+	if table == nil && view == nil && foreignTable == nil && materializedView == nil && sequence == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.connectedDB,
 			Schema:   &schemaName,
@@ -1332,6 +1333,18 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			return nil, err
 		}
 		return &base.PhysicalView{
+			Server:   "",
+			Database: q.connectedDB,
+			Schema:   schemaName,
+			Name:     tableName,
+			Columns:  columns,
+		}, nil
+	}
+
+	if sequence != nil {
+		// The default columns for sequence in PostgreSQL.
+		columns := []string{"last_value", "log_cnt", "is_called"}
+		return &base.Sequence{
 			Server:   "",
 			Database: q.connectedDB,
 			Schema:   schemaName,

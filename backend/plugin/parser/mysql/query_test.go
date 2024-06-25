@@ -15,6 +15,14 @@ func TestValidateSQLForEditor(t *testing.T) {
 		err       bool
 	}{
 		{
+			statement: "SHOW CREATE TABLE bytebase;",
+			validate:  true,
+		},
+		{
+			statement: "DESC bytebase;",
+			validate:  true,
+		},
+		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
 			validate:  true,
 		},
@@ -205,7 +213,8 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := extractChangedResources("db", "", test.statement)
+		ast, _ := ParseMySQL(test.statement)
+		resources, err := extractChangedResources("db", "", ast[0])
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}

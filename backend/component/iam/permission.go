@@ -47,6 +47,11 @@ const (
 	PermissionRolesDelete                Permission = "bb.roles.delete"
 	PermissionRolesList                  Permission = "bb.roles.list"
 	PermissionRolesUpdate                Permission = "bb.roles.update"
+	PermissionUserGroupsCreate           Permission = "bb.userGroups.create"
+	PermissionUserGroupsDelete           Permission = "bb.userGroups.delete"
+	PermissionUserGroupsGet              Permission = "bb.userGroups.get"
+	PermissionUserGroupsList             Permission = "bb.userGroups.list"
+	PermissionUserGroupsUpdate           Permission = "bb.userGroups.update"
 	PermissionSettingsGet                Permission = "bb.settings.get"
 	PermissionSettingsList               Permission = "bb.settings.list"
 	PermissionSettingsSet                Permission = "bb.settings.set"
@@ -200,6 +205,11 @@ func PermissionExist(p Permission) bool {
 		PermissionRolesDelete,
 		PermissionRolesList,
 		PermissionRolesUpdate,
+		PermissionUserGroupsCreate,
+		PermissionUserGroupsDelete,
+		PermissionUserGroupsGet,
+		PermissionUserGroupsList,
+		PermissionUserGroupsUpdate,
 		PermissionRolloutsCreate,
 		PermissionRolloutsGet,
 		PermissionRolloutsPreview,
@@ -280,6 +290,11 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionRolesDelete,
 		PermissionRolesList,
 		PermissionRolesUpdate,
+		PermissionUserGroupsCreate,
+		PermissionUserGroupsDelete,
+		PermissionUserGroupsGet,
+		PermissionUserGroupsList,
+		PermissionUserGroupsUpdate,
 		PermissionSettingsGet,
 		PermissionSettingsList,
 		PermissionSettingsSet:

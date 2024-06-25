@@ -26,9 +26,9 @@ import {
   planSpecHasPlanChecks,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { EMPTY_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 import PlanCheckBar from "./PlanCheckBar";
 
@@ -39,7 +39,7 @@ const show = computed(() => {
   if (isCreating.value) {
     return false;
   }
-  if (selectedSpec.value.id === String(UNKNOWN_ID)) {
+  if (selectedSpec.value.id === String(EMPTY_ID)) {
     return false;
   }
   return planSpecHasPlanChecks(selectedSpec.value);
@@ -48,13 +48,9 @@ const show = computed(() => {
 const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks
   // - the creator of the issue
-  // - the assignee of the issue
   // - ones who have bb.planCheckRuns.run permission in the project
   const me = currentUser.value;
   if (extractUserResourceName(issue.value.creator) === me.email) {
-    return true;
-  }
-  if (extractUserResourceName(issue.value.assignee) === me.email) {
     return true;
   }
   if (
@@ -71,11 +67,11 @@ const allowRunChecks = computed(() => {
 
 const planCheckRunList = computed(() => {
   // If a task is selected, show plan checks for the task.
-  if (selectedTask.value && selectedTask.value.uid !== String(UNKNOWN_ID)) {
+  if (selectedTask.value && selectedTask.value.uid !== String(EMPTY_ID)) {
     return planCheckRunListForTask(issue.value, selectedTask.value);
   }
   // If a spec is selected, show plan checks for the spec.
-  if (selectedSpec.value && selectedSpec.value.id !== String(UNKNOWN_ID)) {
+  if (selectedSpec.value && selectedSpec.value.id !== String(EMPTY_ID)) {
     return planCheckRunListForSpec(issue.value, selectedSpec.value);
   }
   // Otherwise, show plan checks for the issue.
@@ -87,7 +83,7 @@ const runPlanChecks = async () => {
   if (!plan) return;
 
   try {
-    await rolloutServiceClient.runPlanChecks({
+    await planServiceClient.runPlanChecks({
       name: plan.name,
     });
   } catch (ex) {

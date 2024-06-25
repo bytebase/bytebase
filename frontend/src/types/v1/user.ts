@@ -33,6 +33,7 @@ export const allUsersUser = () => {
     name: `users/${ALL_USERS_USER_ID}`,
     title: "All users",
     email: ALL_USERS_USER_EMAIL,
+    userType: UserType.SYSTEM_BOT,
   };
 };
 
@@ -47,9 +48,17 @@ export const filterUserListByKeyword = (userList: User[], keyword: string) => {
   });
 };
 
+export const userBindingPrefix = "user:";
+
 export const getUserEmailInBinding = (email: string) => {
   if (email === ALL_USERS_USER_EMAIL) {
-    return ALL_USERS_USER_EMAIL;
+    return email;
   }
-  return `user:${email}`;
+  return `${userBindingPrefix}${email}`;
+};
+
+export const groupBindingPrefix = "group:";
+
+export const getGroupEmailInBinding = (email: string) => {
+  return `${groupBindingPrefix}${email}`;
 };

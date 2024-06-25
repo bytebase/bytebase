@@ -35,18 +35,24 @@
 
     <template #footer>
       <div class="flex-1 flex items-center justify-between">
-        <div>
-          <div
-            v-if="state.selectedDatabaseUidList.length > 0"
-            class="textinfolabel"
-          >
-            {{
-              $t("database.selected-n-databases", {
-                n: state.selectedDatabaseUidList.length,
-              })
-            }}
+        <NTooltip :disabled="state.selectedDatabaseUidList.length === 0">
+          <template #trigger>
+            <div class="textinfolabel">
+              {{
+                $t("database.selected-n-databases", {
+                  n: state.selectedDatabaseUidList.length,
+                })
+              }}
+            </div>
+          </template>
+          <div class="mx-2">
+            <ul class="list-disc">
+              <li v-for="db in selectedDatabaseList" :key="db.name">
+                {{ db.databaseName }}
+              </li>
+            </ul>
           </div>
-        </div>
+        </NTooltip>
         <div class="flex items-center gap-x-3">
           <NButton @click.prevent="$emit('dismiss')">
             {{ $t("common.cancel") }}
@@ -80,11 +86,12 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedInstance } from "@/types";
+import type { ComposedDatabase, ComposedInstance } from "@/types";
 import {
   DEFAULT_PROJECT_ID,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_INSTANCE_NAME,
+  defaultProject,
 } from "@/types";
 import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -105,6 +112,7 @@ interface LocalState {
 
 const props = defineProps<{
   projectId: string;
+  onSuccess?: (databases: ComposedDatabase[]) => void;
 }>();
 
 const emit = defineEmits<{
@@ -115,13 +123,9 @@ const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 
-const defaultProject = computed(() => {
-  return projectStore.getProjectByName(DEFAULT_PROJECT_V1_NAME);
-});
-
 const hasPermissionForDefaultProject = computed(() => {
   return hasProjectPermissionV2(
-    defaultProject.value,
+    defaultProject(),
     currentUserV1.value,
     "bb.projects.update"
   );
@@ -200,14 +204,16 @@ const filteredDatabaseList = computed(() => {
 
 const allowTransfer = computed(() => state.selectedDatabaseUidList.length > 0);
 
-const transferDatabase = async () => {
-  const databaseList = state.selectedDatabaseUidList.map((uid) =>
+const selectedDatabaseList = computed(() =>
+  state.selectedDatabaseUidList.map((uid) =>
     databaseStore.getDatabaseByUID(uid)
-  );
+  )
+);
 
+const transferDatabase = async () => {
   try {
     state.loading = true;
-    const updates = databaseList.map((db) => {
+    const updates = selectedDatabaseList.value.map((db) => {
       const targetProject = projectStore.getProjectByUID(props.projectId);
       const databasePatch = cloneDeep(db);
       databasePatch.project = targetProject.name;
@@ -217,21 +223,26 @@ const transferDatabase = async () => {
         updateMask,
       } as UpdateDatabaseRequest;
     });
-    await databaseStore.batchUpdateDatabases({
+    const updated = await databaseStore.batchUpdateDatabases({
       parent: "-",
       requests: updates,
     });
     const displayDatabaseName =
-      databaseList.length > 1
-        ? `${databaseList.length} databases`
-        : `'${databaseList[0].databaseName}'`;
+      selectedDatabaseList.value.length > 1
+        ? `${selectedDatabaseList.value.length} databases`
+        : `'${selectedDatabaseList.value[0].databaseName}'`;
+
+    if (props.onSuccess) {
+      props.onSuccess(updated);
+    } else {
+      emit("dismiss");
+    }
 
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: `Successfully transferred ${displayDatabaseName} to project '${project.value.title}'.`,
     });
-    emit("dismiss");
   } finally {
     state.loading = false;
   }

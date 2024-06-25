@@ -28,7 +28,7 @@ type ColumnTypeDisallowListAdvisor struct {
 }
 
 // Check checks for column type disallow list.
-func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -59,18 +59,18 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 type columnTypeDisallowListListener struct {
 	*parser.BasePlSqlParserListener
 
-	level           advisor.Status
+	level           storepb.Advice_Status
 	title           string
 	currentDatabase string
 	disallowList    []string
-	adviceList      []advisor.Advice
+	adviceList      []*storepb.Advice
 }
 
-func (l *columnTypeDisallowListListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *columnTypeDisallowListListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -93,23 +93,27 @@ func (l *columnTypeDisallowListListener) isDisallowType(tp parser.IDatatypeConte
 // EnterColumn_definition is called when production column_definition is entered.
 func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Column_definitionContext) {
 	if l.isDisallowType(ctx.Datatype()) {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.DisabledColumnType,
+			Code:    advisor.DisabledColumnType.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			Line:    ctx.Datatype().GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.Datatype().GetStart().GetLine()),
+			},
 		})
 	}
 	if ctx.Regular_id() != nil {
 		for _, tp := range l.disallowList {
 			if ctx.Regular_id().GetText() == tp {
-				l.adviceList = append(l.adviceList, advisor.Advice{
+				l.adviceList = append(l.adviceList, &storepb.Advice{
 					Status:  l.level,
-					Code:    advisor.DisabledColumnType,
+					Code:    advisor.DisabledColumnType.Int32(),
 					Title:   l.title,
 					Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-					Line:    ctx.Regular_id().GetStart().GetLine(),
+					StartPosition: &storepb.Position{
+						Line: int32(ctx.Regular_id().GetStart().GetLine()),
+					},
 				})
 				break
 			}
@@ -120,12 +124,14 @@ func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Colu
 // EnterModify_col_properties is called when production modify_col_properties is entered.
 func (l *columnTypeDisallowListListener) EnterModify_col_properties(ctx *parser.Modify_col_propertiesContext) {
 	if l.isDisallowType(ctx.Datatype()) {
-		l.adviceList = append(l.adviceList, advisor.Advice{
+		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
-			Code:    advisor.DisabledColumnType,
+			Code:    advisor.DisabledColumnType.Int32(),
 			Title:   l.title,
 			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			Line:    ctx.Datatype().GetStart().GetLine(),
+			StartPosition: &storepb.Position{
+				Line: int32(ctx.Datatype().GetStart().GetLine()),
+			},
 		})
 	}
 }

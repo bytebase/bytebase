@@ -75,6 +75,7 @@
         :resource-type="'branch'"
         :branch="virtualBranch"
         :loading="isLoadingVirtualBranch"
+        :show-last-updater="true"
       />
 
       <!-- used as a placeholder -->

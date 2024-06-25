@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -23,11 +22,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-
-	sc "github.com/bytebase/bytebase/backend/component/sheet"
 
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -185,16 +180,19 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 }
 
 func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
-	creatorID := api.SystemBotID
-	creatorName := common.FormatUserEmail(api.SystemBotEmail)
-	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
-	if err != nil {
-		slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
-	}
-	if user != nil {
-		creatorID = user.ID
-		creatorName = common.FormatUserEmail(user.Email)
-	}
+	user := func() *store.UserMessage {
+		user, err := s.store.GetUserByEmail(ctx, prInfo.email)
+		if err != nil {
+			slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
+			return s.store.GetSystemBotUser(ctx)
+		}
+		if user == nil {
+			return s.store.GetSystemBotUser(ctx)
+		}
+		return user
+	}()
+	creatorID := user.ID
+	creatorName := common.FormatUserUID(user.ID)
 
 	engine, err := s.getDatabaseEngineSample(ctx, project, vcsConnector)
 	if err != nil {
@@ -203,7 +201,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 
 	var sheets []int
 	for _, change := range prInfo.changes {
-		sheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
+		sheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  creatorID,
 			ProjectUID: project.UID,
 			Title:      change.path,
@@ -227,8 +225,8 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
 	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
 	childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
-	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
-		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+	plan, err := s.planService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+		Parent: common.FormatProject(project.ResourceID),
 		Plan: &v1pb.Plan{
 			Title: prInfo.title,
 			Steps: steps,
@@ -243,12 +241,12 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to create plan")
 	}
 	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
-		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Parent: common.FormatProject(project.ResourceID),
 		Issue: &v1pb.Issue{
 			Title:       prInfo.title,
 			Description: prInfo.description,
 			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+			Assignee:    common.FormatUserEmail(s.store.GetSystemBotUser(ctx).Email),
 			Plan:        plan.Name,
 		},
 	})
@@ -256,7 +254,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to create issue")
 	}
 	if _, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
-		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Parent: common.FormatProject(project.ResourceID),
 		Rollout: &v1pb.Rollout{
 			Plan: plan.Name,
 		},
@@ -268,18 +266,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	if err != nil {
 		return nil, err
 	}
-	// Create a project activity after successfully creating the issue from the push event.
-	activityPayload, err := json.Marshal(
-		api.ActivityProjectRepositoryPushPayload{
-			// TODO(d): fix this activity.
-			IssueID:   issueUID,
-			IssueName: issue.Title,
-		},
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity payload")
-	}
-
+	// Create audit log after successfully creating the issue from the push event.
 	if err := s.store.CreateAuditLog(ctx, &storepb.AuditLog{
 		Parent:   project.GetName(),
 		Method:   store.AuditLogMethodProjectRepositoryPush.String(),
@@ -293,18 +280,6 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		slog.Warn("failed to create audit log after creating issue from push event", "issueUID", issueUID)
 	}
 
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        creatorID,
-		ResourceContainer: project.GetName(),
-		ContainerUID:      project.UID,
-		Type:              api.ActivityProjectRepositoryPush,
-		Level:             api.ActivityInfo,
-		Comment:           fmt.Sprintf("Created issue %q.", issue.Title),
-		Payload:           string(activityPayload),
-	}
-	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-		return nil, errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
-	}
 	return issue, nil
 }
 

@@ -35,12 +35,16 @@ func FormatErrorWithQuery(err error, query string) error {
 // Query will execute a readonly / SELECT query.
 func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	// TODO(d): use a Redshift extraction for shared database.
-	if dbType == storepb.Engine_REDSHIFT && queryContext.ShareDB {
+	if dbType == storepb.Engine_REDSHIFT && queryContext != nil && queryContext.ShareDB {
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
 
 	startTime := time.Now()
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
+	readOnly := false
+	if queryContext != nil {
+		readOnly = queryContext.ReadOnly
+	}
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +194,10 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 				case "NULLUNIQUEIDENTIFIER":
 					scanArgs[i] = new(mssqldb.NullUniqueIdentifier)
 					continue
+				case "GEOMETRY":
+					scanArgs[i] = new(sql.NullString)
+					wantBytesValue[i] = true
+					continue
 				}
 			}
 			switch v {
@@ -199,7 +207,7 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 				scanArgs[i] = new(sql.NullBool)
 			case "INT", "INTEGER":
 				scanArgs[i] = new(sql.NullInt64)
-			case "FLOAT":
+			case "FLOAT", "DOUBLE":
 				scanArgs[i] = new(sql.NullFloat64)
 			case "BIT", "VARBIT":
 				wantBytesValue[i] = true
@@ -222,7 +230,8 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 		}
 
 		result.Rows = append(result.Rows, &rowData)
-		if proto.Size(result) > common.MaximumSQLResultSize {
+		n := len(result.Rows)
+		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 			result.Error = common.MaximumSQLResultSizeExceeded
 			return nil
 		}

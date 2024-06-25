@@ -1,84 +1,116 @@
 <template>
   <NDataTable
+    key="project-members"
     :columns="columns"
-    :data="members"
-    :row-key="(row) => row.user.email"
-    :striped="true"
+    :data="bindings"
+    :row-key="(row: ProjectBinding) => row.binding"
     :bordered="true"
+    :checked-row-keys="selectedBindings"
     @update:checked-row-keys="handleMemberSelection"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { DataTableColumn, DataTableRowKey } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedProject } from "@/types";
-import type { ProjectMember } from "../types";
+import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
+import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
+import { useUserStore } from "@/store";
+import { type ComposedProject, unknownUser } from "@/types";
+import type { ProjectBinding } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
 
 const props = defineProps<{
   project: ComposedProject;
-  members: ProjectMember[];
-  selectedMembers: string[];
+  bindings: ProjectBinding[];
+  selectedBindings: string[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-member", member: string): void;
-  (event: "update-selected-members", members: string[]): void;
+  (event: "update-binding", binding: ProjectBinding): void;
+  (event: "update-selected-bindings", bindings: string[]): void;
 }>();
 
 const { t } = useI18n();
+const userStore = useUserStore();
 
-const columns = computed(() => {
-  return [
-    {
-      type: "selection",
-      disabled: (projectMember: ProjectMember) => {
-        return projectMember.projectRoleBindings.length === 0;
+const columns = computed(
+  (): DataTableColumn<ProjectBinding & { hide?: boolean }>[] => {
+    return [
+      {
+        type: "selection",
+        disabled: (projectMember: ProjectBinding) => {
+          return projectMember.projectRoleBindings.length === 0;
+        },
       },
-    },
-    {
-      key: "account",
-      title: t("settings.members.table.account"),
-      width: "32rem",
-      render: (projectMember: ProjectMember) => {
-        return h(UserNameCell, {
-          projectMember,
-        });
+      {
+        type: "expand",
+        hide: !props.bindings.some((binding) => binding.type === "groups"),
+        expandable: (projectMember: ProjectBinding) =>
+          projectMember.type === "groups",
+        renderExpand: (projectMember: ProjectBinding) => {
+          return (
+            <div class="pl-20">
+              {projectMember.group!.members.map((member) => {
+                const user =
+                  userStore.getUserByIdentifier(member.member) ?? unknownUser();
+                return (
+                  <GroupMemberNameCell
+                    key={`${projectMember.group!.name}-${user.name}`}
+                    user={user}
+                  />
+                );
+              })}
+            </div>
+          );
+        },
       },
-    },
-    {
-      key: "roles",
-      title: t("settings.members.table.role"),
-      render: (projectMember: ProjectMember) => {
-        return h(UserRolesCell, {
-          projectMember,
-        });
+      {
+        key: "account",
+        title: t("settings.members.table.account"),
+        width: "32rem",
+        resizable: true,
+        render: (projectMember: ProjectBinding) => {
+          if (projectMember.type === "groups") {
+            return <GroupNameCell group={projectMember.group!} />;
+          }
+          return <UserNameCell projectMember={projectMember} />;
+        },
       },
-    },
-    {
-      key: "operations",
-      title: "",
-      width: "4rem",
-      render: (projectMember: ProjectMember) => {
-        return h(UserOperationsCell, {
-          project: props.project,
-          projectMember,
-          "onUpdate-user": () => {
-            emit("update-member", projectMember.user.email);
-          },
-        });
+      {
+        key: "roles",
+        title: t("settings.members.table.role"),
+        resizable: true,
+        render: (projectMember: ProjectBinding) => {
+          return h(UserRolesCell, {
+            projectRole: projectMember,
+          });
+        },
       },
-    },
-  ] as DataTableColumn<ProjectMember>[];
-});
+      {
+        key: "operations",
+        title: "",
+        width: "4rem",
+        render: (projectMember: ProjectBinding) => {
+          return h(UserOperationsCell, {
+            project: props.project,
+            projectMember,
+            "onUpdate-binding": () => {
+              emit("update-binding", projectMember);
+            },
+          });
+        },
+      },
+    ].filter((column) => !column.hide) as DataTableColumn<ProjectBinding>[];
+  }
+);
 
 const handleMemberSelection = (rowKeys: DataTableRowKey[]) => {
   const members = rowKeys as string[];
-  emit("update-selected-members", members);
+  emit("update-selected-bindings", members);
 };
 </script>

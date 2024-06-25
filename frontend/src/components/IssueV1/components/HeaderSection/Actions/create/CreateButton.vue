@@ -39,23 +39,29 @@ import {
   databaseEngineForSpec,
   databaseForTask,
   getLocalSheetByName,
+  isValidSpec,
   isValidStage,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useSQLCheckContext } from "@/components/SQLCheck";
-import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
+import {
+  issueServiceClient,
+  planServiceClient,
+  rolloutServiceClient,
+} from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan_ExportDataConfig } from "@/types/proto/v1/rollout_service";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
+import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
+  extractDatabaseGroupName,
   extractDeploymentConfigName,
   extractProjectResourceName,
   extractSheetUID,
@@ -90,10 +96,22 @@ const issueCreateErrorList = computed(() => {
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-  if (
-    !issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))
-  ) {
-    errorList.push("Missing SQL statement in some stages");
+  if (issue.value.rollout) {
+    if (
+      !issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))
+    ) {
+      errorList.push("Missing SQL statement in some stages");
+    }
+  } else {
+    if (issue.value.planEntity) {
+      if (
+        !issue.value.planEntity.steps.every((step) =>
+          step.specs.every((spec) => isValidSpec(spec))
+        )
+      ) {
+        errorList.push("Missing SQL statement in some specs");
+      }
+    }
   }
   if (
     issue.value.projectEntity.forceIssueLabels &&
@@ -131,6 +149,11 @@ const doCreateIssue = async () => {
       parent: issue.value.project,
       issue: issueCreate,
     });
+    const composedIssue: ComposedIssue = {
+      ...issue.value,
+      ...createdIssue,
+      planEntity: createdPlan,
+    };
 
     const createdRollout = await rolloutServiceClient.createRollout({
       parent: issue.value.project,
@@ -139,14 +162,8 @@ const doCreateIssue = async () => {
       },
     });
 
-    createdIssue.rollout = createdRollout.name;
-
-    const composedIssue: ComposedIssue = {
-      ...issue.value,
-      ...createdIssue,
-      planEntity: createdPlan,
-      rolloutEntity: createdRollout,
-    };
+    composedIssue.rollout = createdRollout.name;
+    composedIssue.rolloutEntity = createdRollout;
 
     await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {
@@ -203,8 +220,11 @@ const createSheets = async () => {
   const sheetNameMap = new Map<string, string>();
   for (let i = 0; i < pendingCreateSheetList.length; i++) {
     const sheet = pendingCreateSheetList[i];
-    if (extractDeploymentConfigName(sheet.database)) {
-      // If a sheet's target is a deploymentConfig, it should be unset
+    if (
+      extractDeploymentConfigName(sheet.database) ||
+      extractDatabaseGroupName(sheet.database)
+    ) {
+      // If a sheet's target is a deploymentConfig or a db group, it should be unset
       // since it actually doesn't belongs to any exact database.
       sheet.database = "";
     }
@@ -226,7 +246,7 @@ const createSheets = async () => {
 const createPlan = async () => {
   const plan = issue.value.planEntity;
   if (!plan) return;
-  const createdPlan = await rolloutServiceClient.createPlan({
+  const createdPlan = await planServiceClient.createPlan({
     parent: issue.value.project,
     plan,
   });

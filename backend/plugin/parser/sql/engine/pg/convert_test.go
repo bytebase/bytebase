@@ -64,6 +64,77 @@ func newExpression(expression ast.ExpressionNode, text string) ast.ExpressionNod
 	return expression
 }
 
+func TestPGVariableShowStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `SHOW TIME ZONE`,
+			want: []ast.Node{
+				&ast.VariableShowStmt{
+					Name: "timezone",
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     `SHOW TIME ZONE`,
+					LastLine: 1,
+				},
+			},
+		},
+
+		{
+			stmt: `SHOW myvar`,
+			want: []ast.Node{
+				&ast.VariableShowStmt{
+					Name: "myvar",
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     `SHOW myvar`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGConvertCreateViewStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `CREATE VIEW tech_book(a, b) AS SELECT * FROM book`,
+			want: []ast.Node{
+				&ast.CreateViewStmt{
+					Name: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "tech_book",
+					},
+					Aliases: []string{"a", "b"},
+					Select: &ast.SelectStmt{
+						FieldList: []ast.ExpressionNode{
+							newExpression(
+								&ast.ColumnNameDef{
+									Table:      &ast.TableDef{},
+									ColumnName: "*",
+								}, "*"),
+						},
+					},
+					Replace: false,
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     `CREATE VIEW tech_book(a, b) AS SELECT * FROM book`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
@@ -2259,11 +2330,11 @@ func TestCopyStmt(t *testing.T) {
 func TestUnconvertStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "SHOW TABLES",
+			stmt: "UNLISTEN *",
 			want: []ast.Node{&ast.UnconvertedStmt{}},
 			statementList: []base.SingleSQL{
 				{
-					Text:     "SHOW TABLES",
+					Text:     "UNLISTEN *",
 					LastLine: 1,
 				},
 			},

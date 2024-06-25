@@ -30,12 +30,12 @@ type OnlineMigrationAdvisor struct {
 }
 
 // Check checks for using gh-ost to migrate large tables.
-func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
-		return []advisor.Advice{
+		return []*storepb.Advice{
 			{
-				Status:  advisor.Success,
-				Code:    advisor.Ok,
+				Status:  storepb.Advice_SUCCESS,
+				Code:    advisor.Ok.Int32(),
 				Title:   "OK",
 				Content: "",
 			},
@@ -75,9 +75,9 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 			tableRows = table.GetRowCount()
 		}
 		if tableRows >= minRows {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.AdviseOnlineMigration,
+				Code:    advisor.AdviseOnlineMigration.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider enabling online migration", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
 			})
@@ -85,9 +85,9 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -98,8 +98,8 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 type useGhostChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 
 	currentDatabase  string

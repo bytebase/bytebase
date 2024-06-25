@@ -24,6 +24,7 @@
             </NButton>
             <NButton
               size="small"
+              type="primary"
               :disabled="props.code === state.code"
               @click="confirmEdit"
             >
@@ -35,6 +36,7 @@
           </template>
         </template>
       </div>
+      <slot name="header-suffix" />
     </div>
     <MonacoEditor
       :content="state.code"
@@ -42,6 +44,7 @@
       :auto-complete-context="{
         instance: db.instance,
         database: db.name,
+        scene: 'all',
       }"
       class="border w-full rounded flex-1 relative"
       @update:content="handleUpdateCode"

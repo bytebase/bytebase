@@ -1,6 +1,9 @@
 <template>
   <Drawer :show="showCreatePanel" @close="showCreatePanel = false">
-    <DrawerContent :title="$t('changelist.new')" class="w-[40rem] relative">
+    <DrawerContent
+      :title="$t('changelist.new')"
+      class="w-[40rem] max-w-[100vw] relative"
+    >
       <template #default>
         <div
           class="grid items-center gap-y-4 gap-x-4"
@@ -157,6 +160,7 @@ import { Engine } from "@/types/proto/v1/common";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractChangelistResourceName, setSheetStatement } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import { fallbackVersionForChange } from "../common";
 import { readUpload, type ParsedFile } from "../import";
 import { useChangelistDashboardContext } from "./context";
 
@@ -287,6 +291,7 @@ const doCreate = async () => {
     const changes = createdSheets.map((sheet) =>
       Change.fromPartial({
         sheet: sheet.name,
+        version: fallbackVersionForChange(),
       })
     );
 

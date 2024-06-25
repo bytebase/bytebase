@@ -93,6 +93,11 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.OrgPolicyService_CreatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_UpdatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_DeletePolicy_FullMethodName,
+		v1pb.ReviewConfigService_CreateReviewConfig_FullMethodName,
+		v1pb.ReviewConfigService_ListReviewConfigs_FullMethodName,
+		v1pb.ReviewConfigService_GetReviewConfig_FullMethodName,
+		v1pb.ReviewConfigService_UpdateReviewConfig_FullMethodName,
+		v1pb.ReviewConfigService_DeleteReviewConfig_FullMethodName,
 		v1pb.IdentityProviderService_GetIdentityProvider_FullMethodName,
 		v1pb.IdentityProviderService_CreateIdentityProvider_FullMethodName,
 		v1pb.IdentityProviderService_UpdateIdentityProvider_FullMethodName,
@@ -113,7 +118,12 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.RoleService_ListRoles_FullMethodName,
 		v1pb.RoleService_CreateRole_FullMethodName,
 		v1pb.RoleService_UpdateRole_FullMethodName,
-		v1pb.RoleService_DeleteRole_FullMethodName:
+		v1pb.RoleService_DeleteRole_FullMethodName,
+		v1pb.UserGroupService_CreateUserGroup_FullMethodName,
+		v1pb.UserGroupService_GetUserGroup_FullMethodName,
+		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
+		v1pb.UserGroupService_UpdateUserGroup_FullMethodName,
+		v1pb.UserGroupService_ListUserGroups_FullMethodName:
 		return nil, nil
 
 	case
@@ -158,13 +168,16 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.RolloutService_GetRollout_FullMethodName,
 		v1pb.RolloutService_CreateRollout_FullMethodName,
 		v1pb.RolloutService_PreviewRollout_FullMethodName,
-		v1pb.RolloutService_GetPlan_FullMethodName,
-		v1pb.RolloutService_CreatePlan_FullMethodName,
 		v1pb.RolloutService_ListTaskRuns_FullMethodName,
-		v1pb.RolloutService_GetTaskRunLog_FullMethodName,
-		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
-		v1pb.RolloutService_RunPlanChecks_FullMethodName:
+		v1pb.RolloutService_GetTaskRunLog_FullMethodName:
 		return p.getProjectIDsForRolloutService(ctx, req)
+
+	case
+		v1pb.PlanService_GetPlan_FullMethodName,
+		v1pb.PlanService_CreatePlan_FullMethodName,
+		v1pb.PlanService_ListPlanCheckRuns_FullMethodName,
+		v1pb.PlanService_RunPlanChecks_FullMethodName:
+		return p.getProjectIDsForPlanService(ctx, req)
 
 	case
 		v1pb.ProjectService_GetProject_FullMethodName,
@@ -184,10 +197,6 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.ProjectService_UpdateDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_DeleteDatabaseGroup_FullMethodName,
 
-		v1pb.ProjectService_GetSchemaGroup_FullMethodName,
-		v1pb.ProjectService_CreateSchemaGroup_FullMethodName,
-		v1pb.ProjectService_UpdateSchemaGroup_FullMethodName,
-		v1pb.ProjectService_DeleteSchemaGroup_FullMethodName,
 		v1pb.ProjectService_GetProjectProtectionRules_FullMethodName,
 		v1pb.ProjectService_UpdateProjectProtectionRules_FullMethodName:
 
@@ -322,6 +331,38 @@ func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req an
 	return uniq(projectIDs), nil
 }
 
+func (*ContextProvider) getProjectIDsForPlanService(_ context.Context, req any) ([]string, error) {
+	var projects, plans []string
+	switch r := req.(type) {
+	case *v1pb.GetPlanRequest:
+		plans = append(plans, r.GetName())
+	case *v1pb.CreatePlanRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.ListPlanCheckRunsRequest:
+		plans = append(plans, r.GetParent())
+	case *v1pb.RunPlanChecksRequest:
+		plans = append(plans, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, plan := range plans {
+		projectID, _, err := common.GetProjectIDPlanID(plan)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse plan %q", plan)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
+}
+
 func (*ContextProvider) getProjectIDsForBranchService(_ context.Context, req any) ([]string, error) {
 	var projects, branches []string
 	switch r := req.(type) {
@@ -352,7 +393,7 @@ func (*ContextProvider) getProjectIDsForBranchService(_ context.Context, req any
 }
 
 func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
-	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, schemaGroups, protectionRules []string
+	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, protectionRules []string
 
 	switch r := req.(type) {
 	case *v1pb.GetProjectRequest:
@@ -385,14 +426,6 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		databaseGroups = append(databaseGroups, r.GetDatabaseGroup().GetName())
 	case *v1pb.DeleteDatabaseGroupRequest:
 		databaseGroups = append(databaseGroups, r.GetName())
-	case *v1pb.GetSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetName())
-	case *v1pb.CreateSchemaGroupRequest:
-		databaseGroups = append(databaseGroups, r.GetParent())
-	case *v1pb.UpdateSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetSchemaGroup().GetName())
-	case *v1pb.DeleteSchemaGroupRequest:
-		schemaGroups = append(schemaGroups, r.GetName())
 	case *v1pb.GetProjectProtectionRulesRequest:
 		protectionRules = append(protectionRules, r.GetName())
 	case *v1pb.UpdateProjectProtectionRulesRequest:
@@ -426,13 +459,6 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		projectID, _, err := common.GetProjectIDDatabaseGroupID(databaseGroup)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse %q", databaseGroup)
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-	for _, schemaGroup := range schemaGroups {
-		projectID, _, _, err := common.GetProjectIDDatabaseGroupIDSchemaGroupID(schemaGroup)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse %q", schemaGroup)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}

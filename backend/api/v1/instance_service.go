@@ -853,6 +853,22 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			authType := convertToAuthenticationType(request.DataSource.AuthenticationType)
 			dataSource.AuthenticationType = authType
 			patch.AuthenticationType = &authType
+		case "additional_addresses":
+			additionalAddresses := convertToStoreAdditionalAddresses(request.DataSource.AdditionalAddresses)
+			dataSource.AdditionalAddresses = additionalAddresses
+			patch.AdditionalAddress = &additionalAddresses
+		case "replica_set":
+			dataSource.ReplicaSet = request.DataSource.ReplicaSet
+		case "direct_connection":
+			dataSource.DirectConnection = request.DataSource.DirectConnection
+		case "region":
+			dataSource.Region = request.DataSource.Region
+		case "account_id":
+			dataSource.AccountID = request.DataSource.AccountId
+			patch.AccountID = &request.DataSource.AccountId
+		case "warehouse_id":
+			dataSource.WarehouseID = request.DataSource.WarehouseId
+			patch.WarehouseID = &request.DataSource.WarehouseId
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1157,6 +1173,10 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			ExternalSecret:         externalSecret,
 			AuthenticationType:     authenticationType,
 			SaslConfig:             convertToV1DataSourceSaslConfig(ds.SASLConfig),
+			AdditionalAddresses:    convertToV1DataSourceAddresses(ds.AdditionalAddresses),
+			ReplicaSet:             ds.ReplicaSet,
+			DirectConnection:       ds.DirectConnection,
+			Region:                 ds.Region,
 		})
 	}
 
@@ -1254,6 +1274,28 @@ func convertToV1DataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLC
 	return storeSaslConfig
 }
 
+func convertToV1DataSourceAddresses(addresses []*storepb.DataSourceOptions_Address) []*v1pb.DataSource_Address {
+	res := make([]*v1pb.DataSource_Address, 0, len(addresses))
+	for _, address := range addresses {
+		res = append(res, &v1pb.DataSource_Address{
+			Host: address.Host,
+			Port: address.Port,
+		})
+	}
+	return res
+}
+
+func convertToStoreAdditionalAddresses(addresses []*v1pb.DataSource_Address) []*storepb.DataSourceOptions_Address {
+	res := make([]*storepb.DataSourceOptions_Address, 0, len(addresses))
+	for _, address := range addresses {
+		res = append(res, &storepb.DataSourceOptions_Address{
+			Host: address.Host,
+			Port: address.Port,
+		})
+	}
+	return res
+}
+
 func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) storepb.DataSourceOptions_AuthenticationType {
 	authenticationType := storepb.DataSourceOptions_AUTHENTICATION_UNSPECIFIED
 	switch authType {
@@ -1302,6 +1344,12 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		ExternalSecret:                     externalSecret,
 		SASLConfig:                         saslConfig,
 		AuthenticationType:                 convertToAuthenticationType(dataSource.AuthenticationType),
+		AdditionalAddresses:                convertToStoreAdditionalAddresses(dataSource.AdditionalAddresses),
+		ReplicaSet:                         dataSource.ReplicaSet,
+		DirectConnection:                   dataSource.DirectConnection,
+		Region:                             dataSource.Region,
+		AccountID:                          dataSource.AccountId,
+		WarehouseID:                        dataSource.WarehouseId,
 	}, nil
 }
 

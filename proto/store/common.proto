@@ -33,6 +33,9 @@ enum Engine {
   DORIS = 19;
   HIVE = 20;
   ELASTICSEARCH = 21;
+  BIGQUERY = 22;
+  DYNAMODB = 23;
+  DATABRICKS = 24;
 }
 
 enum VCSType {
@@ -60,4 +63,9 @@ enum ExportFormat {
   JSON = 2;
   SQL = 3;
   XLSX = 4;
+}
+
+message Position {
+  int32 line = 1;
+  int32 column = 2;
 }

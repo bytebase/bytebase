@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -174,17 +175,17 @@ func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*B
 		branch.Engine = storepb.Engine(engineTypeValue)
 
 		branchBase := &storepb.BranchSnapshot{}
-		if err := protojsonUnmarshaler.Unmarshal(base, branchBase); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(base, branchBase); err != nil {
 			return nil, err
 		}
 		branch.Base = branchBase
 		branchHead := &storepb.BranchSnapshot{}
-		if err := protojsonUnmarshaler.Unmarshal(head, branchHead); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(head, branchHead); err != nil {
 			return nil, err
 		}
 		branch.Head = branchHead
 		branchConfig := &storepb.BranchConfig{}
-		if err := protojsonUnmarshaler.Unmarshal(config, branchConfig); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(config, branchConfig); err != nil {
 			return nil, err
 		}
 		branch.Config = branchConfig

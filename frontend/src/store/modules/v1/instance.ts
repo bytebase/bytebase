@@ -58,14 +58,14 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     }
     return composedInstances;
   };
-  const fetchInstanceList = async (showDeleted = false) => {
+  const fetchInstanceList = async (showDeleted = false, parent?: string) => {
     const request = hasWorkspacePermissionV2(
       currentUser.value,
       "bb.instances.list"
     )
       ? instanceServiceClient.listInstances
       : instanceServiceClient.searchInstances;
-    const { instances } = await request({ showDeleted });
+    const { instances } = await request({ showDeleted, parent });
     const composed = await upsertInstances(instances);
     return composed;
   };
@@ -251,7 +251,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
 
 export const useInstanceV1List = (
   showDeleted: MaybeRef<boolean> = false,
-  forceUpdate = false
+  forceUpdate = false,
+  parent: MaybeRef<string | undefined> = undefined
 ) => {
   const store = useInstanceV1Store();
   const ready = ref(false);
@@ -262,7 +263,7 @@ export const useInstanceV1List = (
     }
 
     ready.value = false;
-    store.fetchInstanceList(unref(showDeleted)).then(() => {
+    store.fetchInstanceList(unref(showDeleted), unref(parent)).then(() => {
       ready.value = true;
     });
   });

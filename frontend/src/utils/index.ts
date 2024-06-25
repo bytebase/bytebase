@@ -1,7 +1,6 @@
 export * from "./css";
 export * from "./clipboard";
 export * from "./collections";
-export * from "./activity";
 export * from "./database";
 export * from "./environment";
 export * from "./instance";
@@ -27,7 +26,6 @@ export * from "./math";
 export * from "./idp";
 export * from "./id";
 export * from "./workspaceApprovalSetting";
-export * from "./projectIamPolicy";
 export * from "./slowQuery";
 export * from "./resource-composer";
 export * from "./TinyTimer";

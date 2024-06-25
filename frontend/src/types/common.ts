@@ -1,4 +1,3 @@
-import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import type { DataSource } from "./dataSource";
 import type { Database } from "./database";
@@ -207,8 +206,6 @@ const makeUnknown = (type: ResourceType) => {
     status: "DONE",
     type: "bb.issue.general",
     description: "",
-    assignee: UNKNOWN_PRINCIPAL,
-    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };
@@ -249,11 +246,11 @@ const makeUnknown = (type: ResourceType) => {
   };
 
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
-    id: UNKNOWN_ID,
+    id: `${UNKNOWN_ID}`,
     enforce: false,
     name: "",
     ruleList: [],
-    environment: EnvironmentV1.fromJSON({}),
+    resources: [],
   };
 
   switch (type) {
@@ -403,8 +400,6 @@ const makeEmpty = (type: ResourceType) => {
     status: "DONE",
     type: "bb.issue.general",
     description: "",
-    assignee: EMPTY_PRINCIPAL,
-    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };

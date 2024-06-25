@@ -35,7 +35,6 @@ const (
 	SheetIDPrefix              = "sheets/"
 	WorksheetIDPrefix          = "worksheets/"
 	DatabaseGroupNamePrefix    = "databaseGroups/"
-	SchemaGroupNamePrefix      = "schemaGroups/"
 	SchemaNamePrefix           = "schemas/"
 	TableNamePrefix            = "tables/"
 	ChangeHistoryPrefix        = "changeHistories/"
@@ -48,6 +47,8 @@ const (
 	ChangelistsPrefix          = "changelists/"
 	VCSConnectorPrefix         = "vcsConnectors/"
 	AuditLogPrefix             = "auditLogs/"
+	UserGroupPrefix            = "groups/"
+	ReviewConfigPrefix         = "reviewConfigs/"
 
 	SchemaSuffix          = "/schema"
 	MetadataSuffix        = "/metadata"
@@ -71,15 +72,6 @@ func GetProjectIDDatabaseGroupID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
-}
-
-// GetProjectIDDatabaseGroupIDSchemaGroupID returns the project ID, database group ID, and schema group ID from a resource name.
-func GetProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, DatabaseGroupNamePrefix, SchemaGroupNamePrefix)
-	if err != nil {
-		return "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // GetSchemaTableName returns the schema and table names from a resource name.
@@ -493,9 +485,18 @@ func GetWorksheetUID(name string) (int, error) {
 	}
 	sheetUID, err := strconv.Atoi(tokens[0])
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to convert sheet uid %q to int", tokens[1])
+		return 0, errors.Wrapf(err, "failed to convert worksheet uid %q to int", tokens[1])
 	}
 	return sheetUID, nil
+}
+
+// GetReviewConfigID returns the review config id from a resource name.
+func GetReviewConfigID(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, ReviewConfigPrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 var branchRegexp = regexp.MustCompile("^projects/([^/]+)/branches/(.+)$")
@@ -525,6 +526,15 @@ func GetWorkspaceProjectVCSConnectorID(name string) (string, string, string, err
 		return "", "", "", err
 	}
 	return tokens[0], tokens[1], tokens[2], nil
+}
+
+// GetUserGroupEmail returns the group email.
+func GetUserGroupEmail(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, UserGroupPrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 // TrimSuffix trims the suffix from the name and returns the trimmed name.
@@ -572,8 +582,24 @@ func FormatUserUID(uid int) string {
 	return fmt.Sprintf("%s%d", UserNamePrefix, uid)
 }
 
+func FormatGroupEmail(email string) string {
+	return fmt.Sprintf("%s%s", UserGroupPrefix, email)
+}
+
+func FormatReviewConfig(id string) string {
+	return fmt.Sprintf("%s%s", ReviewConfigPrefix, id)
+}
+
+func FormatEnvironment(resourceID string) string {
+	return fmt.Sprintf("%s%s", EnvironmentNamePrefix, resourceID)
+}
+
+func FormatInstance(resourceID string) string {
+	return fmt.Sprintf("%s%s", InstanceNamePrefix, resourceID)
+}
+
 func FormatDatabase(instance string, database string) string {
-	return fmt.Sprintf("%s%s/%s%s", InstanceNamePrefix, instance, DatabaseIDPrefix, database)
+	return fmt.Sprintf("%s/%s%s", FormatInstance(instance), DatabaseIDPrefix, database)
 }
 
 func FormatRole(role string) string {

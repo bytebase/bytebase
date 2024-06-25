@@ -98,6 +98,7 @@ type FindIssueMessage struct {
 	SubscriberID    *int
 	CreatedTsBefore *int64
 	CreatedTsAfter  *int64
+	Types           *[]api.IssueType
 
 	StatusList []api.IssueStatus
 	TaskTypes  *[]api.TaskType
@@ -114,6 +115,8 @@ type FindIssueMessage struct {
 	PermissionFilter *FindIssueMessagePermissionFilter
 
 	LabelList []string
+
+	NoPipeline bool
 }
 
 // GetIssueV2 gets issue by issue UID.
@@ -433,6 +436,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
+	if v := find.Types; v != nil {
+		where = append(where, fmt.Sprintf("issue.type = ANY($%d)", len(args)+1))
+		args = append(args, *v)
+	}
 	if v := find.Query; v != nil && *v != "" {
 		if tsQuery := getTsQuery(*v); tsQuery != "" {
 			from += fmt.Sprintf(` LEFT JOIN CAST($%d AS tsquery) AS query ON TRUE`, len(args)+1)
@@ -463,6 +470,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if len(find.LabelList) != 0 {
 		where = append(where, fmt.Sprintf("payload->'labels' ?& $%d::TEXT[]", len(args)+1))
 		args = append(args, find.LabelList)
+	}
+	if find.NoPipeline {
+		where = append(where, "issue.pipeline_id IS NULL")
 	}
 
 	var issues []*IssueMessage
@@ -555,7 +565,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal(payload, issue.Payload); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, issue.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal issue payload")
 		}
 		if err := json.Unmarshal(taskRunStatusCount, &issue.TaskStatusCount); err != nil {

@@ -174,7 +174,7 @@ const kbarActions = computed(() => {
   return [
     defineAction({
       id: "bb.navigation.global.settings",
-      name: "Settings",
+      name: t("common.settings"),
       section: t("kbar.navigation"),
       keywords: "navigation",
       perform: () => router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL }),

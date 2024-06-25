@@ -17,15 +17,6 @@
             🎈{{ $t("sql-review.unlock-full-feature") }}
           </NButton>
         </div>
-
-        <NButton
-          v-if="isCreating && allowApplyTaskStateToOthers"
-          :disabled="isEmpty(state.statement)"
-          size="tiny"
-          @click.prevent="applyTaskStateToOthers"
-        >
-          {{ $t("issue.apply-to-other-tasks") }}
-        </NButton>
       </div>
 
       <div
@@ -52,13 +43,13 @@
           <template v-if="!state.isEditing">
             <template v-if="shouldShowEditButton">
               <!-- for small size sheets, show full featured UI editing button group -->
-              <NTooltip :disabled="denyEditTaskReasons.length === 0">
+              <NTooltip :disabled="denyEditStatementReasons.length === 0">
                 <template #trigger>
                   <NButton
-                    v-if="!isTaskSheetOversize"
+                    v-if="!isSheetOversize"
                     size="tiny"
                     tag="div"
-                    :disabled="denyEditTaskReasons.length > 0"
+                    :disabled="denyEditStatementReasons.length > 0"
                     @click.prevent="beginEdit"
                   >
                     {{ $t("common.edit") }}
@@ -74,7 +65,7 @@
                   </SQLUploadButton>
                 </template>
                 <template #default>
-                  <ErrorList :errors="denyEditTaskReasons" />
+                  <ErrorList :errors="denyEditStatementReasons" />
                 </template>
               </NTooltip>
             </template>
@@ -113,7 +104,7 @@
     </div>
 
     <BBAttention
-      v-if="isTaskSheetOversize"
+      v-if="isSheetOversize"
       type="warning"
       :title="$t('issue.statement-from-sheet-warning')"
     >
@@ -136,11 +127,12 @@
         :auto-focus="false"
         :readonly="isEditorReadonly"
         :dialect="dialect"
-        :advices="isEditorReadonly ? markers : []"
+        :advices="isEditorReadonly || isCreating ? markers : []"
         :auto-height="{ min: 120, max: 240 }"
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
+          scene: 'all',
         }"
         @update:content="handleStatementChange"
       />
@@ -185,10 +177,11 @@
         :auto-focus="false"
         :readonly="isEditorReadonly"
         :dialect="dialect"
-        :advices="isEditorReadonly ? markers : []"
+        :advices="isEditorReadonly || isCreating ? markers : []"
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
+          scene: 'all',
         }"
         @update:content="handleStatementChange"
       />
@@ -208,7 +201,7 @@
     <div>sheetStatement.length: {{ sheetStatement.length }}</div>
     <div>sheet.title: {{ sheet?.title }}</div>
     <div>sheet.content.length: {{ sheet?.content?.length }}</div>
-    <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
+    <div>isTaskSheetOversize: {{ isSheetOversize }}</div>
     <div>isEditorReadonly: {{ isEditorReadonly }}</div>
     <div>state.isEditing: {{ state.isEditing }}</div>
   </div>
@@ -216,17 +209,16 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep, head, uniq } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { computed, h, reactive, ref, watch } from "vue";
+import { computed, h, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseForTask,
-  getLocalSheetByName,
   useIssueContext,
   allowUserToEditStatementForTask,
   stageForTask,
@@ -237,12 +229,13 @@ import {
   isDeploymentConfigChangeTaskV1,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
+  databaseForSpec,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import {
   hasFeature,
@@ -251,21 +244,24 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { SQLDialect } from "@/types";
-import { TaskTypeListWithStatement, dialectOfEngineV1 } from "@/types";
-import { TenantMode } from "@/types/proto/v1/project_service";
-import type { Plan_Spec, Task } from "@/types/proto/v1/rollout_service";
+import {
+  EMPTY_ID,
+  TaskTypeListWithStatement,
+  dialectOfEngineV1,
+} from "@/types";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Advice } from "@/types/proto/v1/sql_service";
 import {
   defer,
   flattenTaskV1List,
   getSheetStatement,
   setSheetStatement,
-  sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
   getStatementSize,
-  isDatabaseChangeRelatedIssue,
-  isDatabaseDataExportIssue,
+  sheetNameOfTaskV1,
 } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -278,11 +274,16 @@ type LocalState = EditState & {
   isUploadingFile: boolean;
 };
 
+const props = defineProps<{
+  advices?: Advice[];
+}>();
+
 const { t } = useI18n();
 const route = useRoute();
 const currentUser = useCurrentUserV1();
-const { events, isCreating, issue, selectedTask, formatOnSave } =
-  useIssueContext();
+const context = useIssueContext();
+const { events, isCreating, issue, selectedTask, selectedSpec, formatOnSave } =
+  context;
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
@@ -297,15 +298,19 @@ const state = reactive<LocalState>({
   isUploadingFile: false,
 });
 
+const rolloutMode = computed(() => !!issue.value.rollout);
+
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return rolloutMode.value
+    ? databaseForTask(issue.value, selectedTask.value)
+    : databaseForSpec(issue.value, selectedSpec.value);
 });
 
 const language = useInstanceV1EditorLanguage(
   computed(() => database.value.instanceEntity)
 );
 const filename = computed(() => {
-  const name = selectedTask.value.name || uuidv1();
+  const name = (rolloutMode.value && selectedTask.value.name) || uuidv1();
   const ext = extensionNameOfLanguage(language.value);
   return `${name}.${ext}`;
 });
@@ -316,16 +321,12 @@ const dialect = computed((): SQLDialect => {
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
-const { markers } = useSQLAdviceMarkers();
+const { markers } = useSQLAdviceMarkers(context, toRef(props, "advices"));
 
 const allowEditStatementWhenCreating = computed(() => {
   if (route.query.sheetId) {
     // Not allowed to edit pre-generated sheets
     // E.g., rollback DML
-    return false;
-  }
-  if (route.query.databaseGroupName) {
-    // Not allowed to edit SQL for grouping changes.
     return false;
   }
   if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
@@ -353,7 +354,7 @@ const isEditorReadonly = computed(() => {
   return (
     !state.isEditing ||
     // !allowEditStatement.value || // TODO
-    isTaskSheetOversize.value ||
+    isSheetOversize.value ||
     // isGroupingChangeIssue(issue.value as Issue) || // TODO
     false // TODO
   );
@@ -367,7 +368,7 @@ const {
   reset: resetTempEditState,
 } = useTempEditState(state);
 
-const isTaskSheetOversize = computed(() => {
+const isSheetOversize = computed(() => {
   if (isCreating.value) return false;
   if (state.isEditing) return false;
   if (!sheetReady.value) return false;
@@ -377,12 +378,14 @@ const isTaskSheetOversize = computed(() => {
   );
 });
 
-const denyEditTaskReasons = computed(() => {
-  return allowUserToEditStatementForTask(
-    issue.value,
-    selectedTask.value,
-    currentUser.value
-  );
+const denyEditStatementReasons = computed(() => {
+  return rolloutMode.value
+    ? allowUserToEditStatementForTask(
+        issue.value,
+        selectedTask.value,
+        currentUser.value
+      )
+    : [];
 });
 
 const shouldShowEditButton = computed(() => {
@@ -390,30 +393,16 @@ const shouldShowEditButton = computed(() => {
   if (isCreating.value) {
     return false;
   }
+  // If the issue is not open, don't show the edit button.
+  if (issue.value.status !== IssueStatus.OPEN) {
+    return false;
+  }
   // Will show another button group as [Upload][Cancel][Save]
   // while editing
   if (state.isEditing) {
     return false;
   }
-
   return true;
-});
-
-const allowApplyTaskStateToOthers = computed(() => {
-  if (!isCreating.value) {
-    return false;
-  }
-  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    return !isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value);
-  }
-
-  const taskList = flattenTaskV1List(issue.value.rolloutEntity);
-  // Allowed when more than one tasks need SQL statement or sheet.
-  const count = taskList.filter((task) =>
-    TaskTypeListWithStatement.includes(task.type)
-  ).length;
-
-  return count > 1;
 });
 
 const allowSaveSQL = computed((): boolean => {
@@ -500,6 +489,35 @@ const chooseUpdateStatementTarget = () => {
 
   if (targets.STAGE.length === 1 && targets.ALL.length === 1) {
     d.resolve({ target: "TASK", tasks: targets.TASK });
+    return d.promise;
+  }
+
+  const distinctSheetIds = uniq(
+    targets.ALL.map((task) => sheetNameOfTaskV1(task))
+  );
+  // For new multiple-database issues, one sheet is shared among multiple tasks
+  // So we should notice that the change will be applied to all tasks
+  if (distinctSheetIds.length === 1 && targets.ALL.length > 1) {
+    dialog.info({
+      title: t("issue.update-statement.self", { type: statementTitle.value }),
+      content: t(
+        "issue.update-statement.current-change-will-apply-to-all-tasks"
+      ),
+      type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      showIcon: false,
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      onPositiveClick: () => {
+        d.resolve({ target: "ALL", tasks: targets.ALL });
+      },
+      onNegativeClick: () => {
+        d.resolve({ target: "CANCELED", tasks: [] });
+      },
+    });
     return d.promise;
   }
 
@@ -630,57 +648,55 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
   }
 };
 
-const applyTaskStateToOthers = async () => {
-  const taskList = flattenTaskV1List(issue.value.rolloutEntity).filter((task) =>
-    TaskTypeListWithStatement.includes(task.type)
-  );
-  for (let i = 0; i < taskList.length; i++) {
-    const task = taskList[i];
-    const sheetName = sheetNameOfTaskV1(task);
-    if (!sheetName) continue;
-    const sheet = getLocalSheetByName(sheetName);
-    setSheetStatement(sheet, state.statement);
-  }
-};
-
 const updateStatement = async (statement: string) => {
-  // - find the task related plan/step/spec
-  // - create a new sheet
-  // - update sheet id in the spec
-
-  // Find the target editing task(s)
-  // default to selectedTask
-  // also ask whether to apply the change to all tasks in the stage.
-  const { target, tasks } = await chooseUpdateStatementTarget();
-
-  if (target === "CANCELED" || tasks.length === 0) {
-    cancelEdit();
-    return;
-  }
-
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
     notifyNotEditableLegacyIssue();
     return;
   }
 
-  const specs: Plan_Spec[] = [];
-  tasks.forEach((task) => {
-    const spec = specForTask(planPatch, task);
-    if (spec) {
-      specs.push(spec);
+  const specsIdList: string[] = [];
+  if (rolloutMode.value) {
+    // - find the task related plan/step/spec
+    // - create a new sheet
+    // - update sheet id in the spec
+
+    // Find the target editing task(s)
+    // default to selectedTask
+    // also ask whether to apply the change to all tasks in the stage.
+    const { target, tasks } = await chooseUpdateStatementTarget();
+
+    if (target === "CANCELED" || tasks.length === 0) {
+      cancelEdit();
+      return;
     }
-  });
-  const distinctSpecIds = new Set(specs.map((s) => s.id));
-  if (distinctSpecIds.size === 0) {
+
+    tasks.forEach((task) => {
+      const spec = specForTask(planPatch, task);
+      if (spec) {
+        specsIdList.push(spec.id);
+      }
+    });
+  } else {
+    const spec = selectedSpec.value;
+    if (!spec) {
+      notifyNotEditableLegacyIssue();
+      return;
+    }
+    specsIdList.push(spec.id);
+  }
+
+  const distinctSpecsIds = new Set(
+    specsIdList.filter((id) => id && id !== String(EMPTY_ID))
+  );
+  if (distinctSpecsIds.size === 0) {
     notifyNotEditableLegacyIssue();
     return;
   }
 
   const specsToPatch = planPatch.steps
     .flatMap((step) => step.specs)
-    .filter((spec) => distinctSpecIds.has(spec.id));
-
+    .filter((spec) => distinctSpecsIds.has(spec.id));
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: issue.value.title,
@@ -695,16 +711,16 @@ const updateStatement = async (statement: string) => {
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];
     let config = undefined;
-    if (isDatabaseChangeRelatedIssue(issue.value)) {
+    if (spec.changeDatabaseConfig) {
       config = spec.changeDatabaseConfig;
-    } else if (isDatabaseDataExportIssue(issue.value)) {
+    } else if (spec.exportDataConfig) {
       config = spec.exportDataConfig;
     }
     if (!config) continue;
     config.sheet = createdSheet.name;
   }
 
-  const updatedPlan = await rolloutServiceClient.updatePlan({
+  const updatedPlan = await planServiceClient.updatePlan({
     plan: planPatch,
     updateMask: ["steps"],
   });

@@ -26,7 +26,7 @@ type NamingIdentifierNoKeywordAdvisor struct {
 }
 
 // Check checks for identifier naming convention without keyword.
-func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -47,9 +47,9 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,8 +61,8 @@ type namingIdentifierNoKeywordChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 }
 
@@ -78,8 +78,8 @@ func (checker *namingIdentifierNoKeywordChecker) EnterPureIdentifier(ctx *mysql.
 	identifier := trimBackTicks(textNode.GetText())
 	advice := checker.checkIdentifier(identifier)
 	if advice != nil {
-		advice.Line = ctx.GetStart().GetLine()
-		checker.adviceList = append(checker.adviceList, *advice)
+		advice.StartPosition = &storepb.Position{Line: int32(ctx.GetStart().GetLine())}
+		checker.adviceList = append(checker.adviceList, advice)
 	}
 }
 
@@ -88,16 +88,16 @@ func (checker *namingIdentifierNoKeywordChecker) EnterIdentifierKeyword(ctx *mys
 	identifier := ctx.GetText()
 	advice := checker.checkIdentifier(identifier)
 	if advice != nil {
-		advice.Line = ctx.GetStart().GetLine()
-		checker.adviceList = append(checker.adviceList, *advice)
+		advice.StartPosition = &storepb.Position{Line: int32(ctx.GetStart().GetLine())}
+		checker.adviceList = append(checker.adviceList, advice)
 	}
 }
 
-func (checker *namingIdentifierNoKeywordChecker) checkIdentifier(identifier string) *advisor.Advice {
+func (checker *namingIdentifierNoKeywordChecker) checkIdentifier(identifier string) *storepb.Advice {
 	if isKeyword(identifier) {
-		return &advisor.Advice{
+		return &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NameIsKeywordIdentifier,
+			Code:    advisor.NameIsKeywordIdentifier.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
 		}

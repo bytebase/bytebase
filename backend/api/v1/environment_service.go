@@ -79,13 +79,20 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.ResourceExhausted, "current plan can create up to %d environments.", maximumEnvironmentLimit)
 	}
 
+	pendingCreate := &store.EnvironmentMessage{
+		ResourceID: request.EnvironmentId,
+		Title:      request.Environment.Title,
+		Order:      request.Environment.Order,
+		Protected:  request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED,
+	}
+	if pendingCreate.Protected {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
+	}
+
 	environment, err := s.store.CreateEnvironmentV2(ctx,
-		&store.EnvironmentMessage{
-			ResourceID: request.EnvironmentId,
-			Title:      request.Environment.Title,
-			Order:      request.Environment.Order,
-			Protected:  request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED,
-		},
+		pendingCreate,
 		principalID,
 	)
 	if err != nil {
@@ -124,6 +131,11 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 			patch.Order = &request.Environment.Order
 		case "tier":
 			protected := request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED
+			if protected {
+				if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
+					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+				}
+			}
 			patch.Protected = &protected
 		}
 	}
@@ -225,7 +237,7 @@ func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environme
 		tier = v1pb.EnvironmentTier_PROTECTED
 	}
 	return &v1pb.Environment{
-		Name:  fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
+		Name:  common.FormatEnvironment(environment.ResourceID),
 		Uid:   fmt.Sprintf("%d", environment.UID),
 		State: convertDeletedToState(environment.Deleted),
 		Title: environment.Title,

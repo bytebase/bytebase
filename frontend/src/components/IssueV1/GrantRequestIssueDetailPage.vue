@@ -8,14 +8,16 @@
 
     <div class="flex-1 flex flex-row">
       <div
-        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden px-4 py-2"
+        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden py-2"
       >
-        <GrantRequestExporterForm
-          v-if="requestRole === PresetRoleType.PROJECT_EXPORTER"
-        />
-        <GrantRequestQuerierForm
-          v-if="requestRole === PresetRoleType.PROJECT_QUERIER"
-        />
+        <div class="w-full px-4">
+          <GrantRequestExporterForm
+            v-if="requestRole === PresetRoleType.PROJECT_EXPORTER"
+          />
+          <GrantRequestQuerierForm
+            v-if="requestRole === PresetRoleType.PROJECT_QUERIER"
+          />
+        </div>
 
         <DescriptionSection />
 

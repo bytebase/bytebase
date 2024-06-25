@@ -8,10 +8,11 @@ import (
 	"io"
 	"log/slog"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
-	// Import go-ora Oracle driver.
+	// Import MSSQL driver.
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"github.com/pkg/errors"
@@ -39,6 +40,9 @@ func init() {
 type Driver struct {
 	db           *sql.DB
 	databaseName string
+
+	// certificate file path should be deleted if calling closed.
+	certFilePath string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -48,7 +52,7 @@ func newDriver(db.DriverConfig) db.Driver {
 // Open opens a MSSQL driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	query := url.Values{}
-	query.Add("app name", "Bytebase")
+	query.Add("app name", "bytebase")
 	if config.Database != "" {
 		query.Add("database", config.Database)
 	}
@@ -56,13 +60,51 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	// In order to be compatible with db servers that only support old versions of tls.
 	// See: https://github.com/microsoft/go-mssqldb/issues/33
 	query.Add("tlsmin", "1.0")
+
+	trustServerCertificate := "true"
+
+	var err error
+	if config.TLSConfig.SslCA != "" {
+		// We should not TrustServerCertificate in production environment, otherwise, TLS is susceptible
+		// to man-in-the middle attacks. TrustServerCertificate makes driver accepts any certificate presented by the server
+		// and any host name in that certificate.
+		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead' if
+		// TrustServerCertificate is false.
+		trustServerCertificate = "false"
+		// Driver reads the certificate from file instead of regarding it as certificate content.
+		// https://github.com/microsoft/go-mssqldb/blob/main/msdsn/conn_str.go#L159
+		// TODO(zp): Driver supports .der format also.
+		const pattern string = "cert-*.pem"
+		file, err := os.CreateTemp(os.TempDir(), pattern)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create temporary file with pattern %s", pattern)
+		}
+		fName := file.Name()
+		defer func() {
+			if err != nil {
+				_ = os.Remove(fName)
+			} else {
+				driver.certFilePath = fName
+			}
+		}()
+		_, err = file.WriteString(config.TLSConfig.SslCA)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to write certificate to file %s", fName)
+		}
+		if err = file.Close(); err != nil {
+			return nil, errors.Wrapf(err, "failed to close file %s", fName)
+		}
+		query.Add("certificate", fName)
+	}
+	query.Add("TrustServerCertificate", trustServerCertificate)
 	u := &url.URL{
 		Scheme:   "sqlserver",
 		User:     url.UserPassword(config.Username, config.Password),
 		Host:     fmt.Sprintf("%s:%s", config.Host, config.Port),
 		RawQuery: query.Encode(),
 	}
-	db, err := sql.Open("sqlserver", u.String())
+	var db *sql.DB
+	db, err = sql.Open("sqlserver", u.String())
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +115,12 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 
 // Close closes the driver.
 func (driver *Driver) Close(_ context.Context) error {
-	return driver.db.Close()
+	if driver.certFilePath != "" {
+		if err := os.Remove(driver.certFilePath); err != nil {
+			slog.Warn("failed to delete temporary file", slog.String("path", driver.certFilePath), slog.Any("error", err))
+		}
+	}
+	return nil
 }
 
 // Ping pings the database.
@@ -107,29 +154,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	totalAffectRows := int64(0)
 
-	// Split to batches to support some client commands like GO.
-	s := strings.Split(statement, "\n")
-	scanner := func() (string, error) {
-		if len(s) > 0 {
-			z := s[0]
-			s = s[1:]
-			return z, nil
-		}
-		return "", io.EOF
-	}
-	batch := tsqlbatch.NewBatch(scanner)
+	batch := NewBatch(statement)
 
-	for {
+	for idx := 0; ; {
 		command, err := batch.Next()
 		if err != nil {
 			if err == io.EOF {
 				// Try send the last batch to server.
 				v := batch.String()
 				if v != "" {
+					indexes := []int32{int32(idx)}
+					opts.LogCommandExecute(indexes)
 					rowsAffected, err := execute(ctx, tx, v)
 					if err != nil {
+						opts.LogCommandResponse(indexes, 0, nil, err.Error())
 						return 0, err
 					}
+					opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 					totalAffectRows += rowsAffected
 				}
 				break
@@ -143,11 +184,17 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		case *tsqlbatch.GoCommand:
 			stmt := batch.String()
 			// Try send the batch to server.
+
+			indexes := []int32{int32(idx)}
+			idx++
 			for i := uint(0); i < v.Count; i++ {
+				opts.LogCommandExecute(indexes)
 				rowsAffected, err := execute(ctx, tx, stmt)
 				if err != nil {
+					opts.LogCommandResponse(indexes, 0, nil, err.Error())
 					return 0, err
 				}
+				opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 				totalAffectRows += rowsAffected
 			}
 		default:
@@ -179,7 +226,9 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// MSSQL does not support transaction isolation level for read-only queries.
-	queryContext.ReadOnly = false
+	if queryContext != nil {
+		queryContext.ReadOnly = false
+	}
 
 	singleSQLs, err := tsqlparser.SplitSQL(statement)
 	if err != nil {
@@ -207,19 +256,19 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-
-	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
-		var err error
-		stmt, err = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
+	if queryContext != nil && queryContext.Explain {
+		statement = fmt.Sprintf("EXPLAIN %s", statement)
+	} else if queryContext != nil && queryContext.Limit > 0 {
+		stmt, err := getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
 			stmt = fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, queryContext.Limit)
 		}
+		statement = stmt
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_MSSQL, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_MSSQL, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -231,4 +280,18 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 // RunStatement runs a SQL statement.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_MSSQL, conn, statement)
+}
+
+func NewBatch(statement string) *tsqlbatch.Batch {
+	// Split to batches to support some client commands like GO.
+	s := strings.Split(statement, "\n")
+	scanner := func() (string, error) {
+		if len(s) > 0 {
+			z := s[0]
+			s = s[1:]
+			return z, nil
+		}
+		return "", io.EOF
+	}
+	return tsqlbatch.NewBatch(scanner)
 }

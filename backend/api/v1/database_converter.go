@@ -1,13 +1,17 @@
 package v1
 
 import (
+	"context"
+
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseMetadata {
+func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, filter *metadataFilter, optionalStores *store.Store) (*v1pb.DatabaseMetadata, error) {
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
@@ -132,12 +136,11 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 		})
 	}
 
-	databaseConfig := convertStoreDatabaseConfig(config, filter)
+	databaseConfig := convertStoreDatabaseConfig(ctx, config, filter, optionalStores)
 	if databaseConfig != nil {
 		m.SchemaConfigs = databaseConfig.SchemaConfigs
-		m.ClassificationFromConfig = databaseConfig.ClassificationFromConfig
 	}
-	return m
+	return m, nil
 }
 
 func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
@@ -174,6 +177,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 			Name:        index.Name,
 			Expressions: index.Expressions,
 			KeyLength:   index.KeyLength,
+			Descending:  index.Descending,
 			Type:        index.Type,
 			Unique:      index.Unique,
 			Primary:     index.Primary,
@@ -195,6 +199,15 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 			OnDelete:          foreignKey.OnDelete,
 			OnUpdate:          foreignKey.OnUpdate,
 			MatchType:         foreignKey.MatchType,
+		})
+	}
+	for _, check := range table.CheckConstraints {
+		if check == nil {
+			continue
+		}
+		t.CheckConstraints = append(t.CheckConstraints, &v1pb.CheckConstraintMetadata{
+			Name:       check.Name,
+			Expression: check.Expression,
 		})
 	}
 	return t
@@ -264,6 +277,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		Collation:    column.Collation,
 		Comment:      column.Comment,
 		UserComment:  column.UserComment,
+		Generation:   convertStoreGenerationMetadata(column.Generation),
 	}
 	if metadata.HasDefault {
 		switch value := column.DefaultValue.(type) {
@@ -282,10 +296,27 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 	return metadata
 }
 
-func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseConfig {
+func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1pb.GenerationMetadata {
+	if generation == nil {
+		return nil
+	}
+	meta := &v1pb.GenerationMetadata{
+		Expression: generation.Expression,
+	}
+	switch generation.Type {
+	case storepb.GenerationMetadata_TYPE_VIRTUAL:
+		meta.Type = v1pb.GenerationMetadata_TYPE_VIRTUAL
+	case storepb.GenerationMetadata_TYPE_STORED:
+		meta.Type = v1pb.GenerationMetadata_TYPE_STORED
+	default:
+		meta.Type = v1pb.GenerationMetadata_TYPE_UNSPECIFIED
+	}
+	return meta
+}
+
+func convertStoreDatabaseConfig(ctx context.Context, config *storepb.DatabaseConfig, filter *metadataFilter, optionalStores *store.Store) *v1pb.DatabaseConfig {
 	databaseConfig := &v1pb.DatabaseConfig{
-		Name:                     config.Name,
-		ClassificationFromConfig: config.ClassificationFromConfig,
+		Name: config.Name,
 	}
 	for _, schema := range config.SchemaConfigs {
 		if schema == nil {
@@ -304,60 +335,60 @@ func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadata
 			if filter != nil && filter.table != table.Name {
 				continue
 			}
-			s.TableConfigs = append(s.TableConfigs, convertStoreTableConfig(table))
+			s.TableConfigs = append(s.TableConfigs, convertStoreTableConfig(ctx, table, optionalStores))
 		}
 		for _, view := range schema.ViewConfigs {
 			if view == nil {
 				continue
 			}
-			s.ViewConfigs = append(s.ViewConfigs, convertStoreViewConfig(view))
+			s.ViewConfigs = append(s.ViewConfigs, convertStoreViewConfig(ctx, view, optionalStores))
 		}
 		for _, function := range schema.FunctionConfigs {
 			if function == nil {
 				continue
 			}
-			s.FunctionConfigs = append(s.FunctionConfigs, convertStoreFunctionConfig(function))
+			s.FunctionConfigs = append(s.FunctionConfigs, convertStoreFunctionConfig(ctx, function, optionalStores))
 		}
 		for _, procedure := range schema.ProcedureConfigs {
 			if procedure == nil {
 				continue
 			}
-			s.ProcedureConfigs = append(s.ProcedureConfigs, convertStoreProcedureConfig(procedure))
+			s.ProcedureConfigs = append(s.ProcedureConfigs, convertStoreProcedureConfig(ctx, procedure, optionalStores))
 		}
 		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
 	return databaseConfig
 }
 
-func convertStoreFunctionConfig(config *storepb.FunctionConfig) *v1pb.FunctionConfig {
+func convertStoreFunctionConfig(ctx context.Context, config *storepb.FunctionConfig, optionalStores *store.Store) *v1pb.FunctionConfig {
 	return &v1pb.FunctionConfig{
 		Name:       config.Name,
-		Updater:    config.Updater,
+		Updater:    getUpdaterFromUID(ctx, config.Updater, optionalStores),
 		UpdateTime: config.UpdateTime,
 	}
 }
 
-func convertStoreProcedureConfig(config *storepb.ProcedureConfig) *v1pb.ProcedureConfig {
+func convertStoreProcedureConfig(ctx context.Context, config *storepb.ProcedureConfig, optionalStores *store.Store) *v1pb.ProcedureConfig {
 	return &v1pb.ProcedureConfig{
 		Name:       config.Name,
-		Updater:    config.Updater,
+		Updater:    getUpdaterFromUID(ctx, config.Updater, optionalStores),
 		UpdateTime: config.UpdateTime,
 	}
 }
 
-func convertStoreViewConfig(config *storepb.ViewConfig) *v1pb.ViewConfig {
+func convertStoreViewConfig(ctx context.Context, config *storepb.ViewConfig, optionalStores *store.Store) *v1pb.ViewConfig {
 	return &v1pb.ViewConfig{
 		Name:       config.Name,
-		Updater:    config.Updater,
+		Updater:    getUpdaterFromUID(ctx, config.Updater, optionalStores),
 		UpdateTime: config.UpdateTime,
 	}
 }
 
-func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
+func convertStoreTableConfig(ctx context.Context, table *storepb.TableConfig, optionalStores *store.Store) *v1pb.TableConfig {
 	t := &v1pb.TableConfig{
 		Name:             table.Name,
 		ClassificationId: table.ClassificationId,
-		Updater:          table.Updater,
+		Updater:          getUpdaterFromUID(ctx, table.Updater, optionalStores),
 		UpdateTime:       table.UpdateTime,
 	}
 	for _, column := range table.ColumnConfigs {
@@ -378,7 +409,7 @@ func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	}
 }
 
-func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig) {
+func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetadata, optionalStores *store.Store) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error) {
 	m := &storepb.DatabaseSchemaMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
@@ -509,13 +540,14 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 	}
 
 	databaseConfig := convertV1DatabaseConfig(
+		ctx,
 		&v1pb.DatabaseConfig{
-			Name:                     metadata.Name,
-			SchemaConfigs:            metadata.SchemaConfigs,
-			ClassificationFromConfig: metadata.ClassificationFromConfig,
+			Name:          metadata.Name,
+			SchemaConfigs: metadata.SchemaConfigs,
 		},
+		optionalStores,
 	)
-	return m, databaseConfig
+	return m, databaseConfig, nil
 }
 
 func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
@@ -545,6 +577,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			Name:        index.Name,
 			Expressions: index.Expressions,
 			KeyLength:   index.KeyLength,
+			Descending:  index.Descending,
 			Type:        index.Type,
 			Unique:      index.Unique,
 			Primary:     index.Primary,
@@ -573,6 +606,15 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			continue
 		}
 		t.Partitions = append(t.Partitions, convertV1TablePartitionMetadata(partition))
+	}
+	for _, check := range table.CheckConstraints {
+		if check == nil {
+			continue
+		}
+		t.CheckConstraints = append(t.CheckConstraints, &storepb.CheckConstraintMetadata{
+			Name:       check.Name,
+			Expression: check.Expression,
+		})
 	}
 	return t
 }
@@ -624,6 +666,7 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		Comment:      column.Comment,
 		UserComment:  column.UserComment,
 		OnUpdate:     column.OnUpdate,
+		Generation:   convertV1GenerationMetadata(column.Generation),
 	}
 
 	if column.HasDefault {
@@ -639,10 +682,27 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 	return metadata
 }
 
-func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
+func convertV1GenerationMetadata(generation *v1pb.GenerationMetadata) *storepb.GenerationMetadata {
+	if generation == nil {
+		return nil
+	}
+	meta := &storepb.GenerationMetadata{
+		Expression: generation.Expression,
+	}
+	switch generation.Type {
+	case v1pb.GenerationMetadata_TYPE_VIRTUAL:
+		meta.Type = storepb.GenerationMetadata_TYPE_VIRTUAL
+	case v1pb.GenerationMetadata_TYPE_STORED:
+		meta.Type = storepb.GenerationMetadata_TYPE_STORED
+	default:
+		meta.Type = storepb.GenerationMetadata_TYPE_UNSPECIFIED
+	}
+	return meta
+}
+
+func convertV1DatabaseConfig(ctx context.Context, databaseConfig *v1pb.DatabaseConfig, optionalStores *store.Store) *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{
-		Name:                     databaseConfig.Name,
-		ClassificationFromConfig: databaseConfig.ClassificationFromConfig,
+		Name: databaseConfig.Name,
 	}
 	for _, schema := range databaseConfig.SchemaConfigs {
 		if schema == nil {
@@ -656,61 +716,60 @@ func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.Datab
 				continue
 			}
 
-			t := convertV1TableConfig(table)
-			s.TableConfigs = append(s.TableConfigs, t)
+			s.TableConfigs = append(s.TableConfigs, convertV1TableConfig(ctx, table, optionalStores))
 		}
 		for _, view := range schema.ViewConfigs {
 			if view == nil {
 				continue
 			}
-			s.ViewConfigs = append(s.ViewConfigs, convertV1ViewConfig(view))
+			s.ViewConfigs = append(s.ViewConfigs, convertV1ViewConfig(ctx, view, optionalStores))
 		}
 		for _, function := range schema.FunctionConfigs {
 			if function == nil {
 				continue
 			}
-			s.FunctionConfigs = append(s.FunctionConfigs, convertV1FunctionConfig(function))
+			s.FunctionConfigs = append(s.FunctionConfigs, convertV1FunctionConfig(ctx, function, optionalStores))
 		}
 		for _, procedure := range schema.ProcedureConfigs {
 			if procedure == nil {
 				continue
 			}
-			s.ProcedureConfigs = append(s.ProcedureConfigs, convertV1ProcedureConfig(procedure))
+			s.ProcedureConfigs = append(s.ProcedureConfigs, convertV1ProcedureConfig(ctx, procedure, optionalStores))
 		}
 		config.SchemaConfigs = append(config.SchemaConfigs, s)
 	}
 	return config
 }
 
-func convertV1ViewConfig(view *v1pb.ViewConfig) *storepb.ViewConfig {
+func convertV1ViewConfig(ctx context.Context, view *v1pb.ViewConfig, optionalStores *store.Store) *storepb.ViewConfig {
 	return &storepb.ViewConfig{
 		Name:       view.Name,
-		Updater:    view.Updater,
+		Updater:    getUpdaterFromEmail(ctx, view.Updater, optionalStores),
 		UpdateTime: view.UpdateTime,
 	}
 }
 
-func convertV1FunctionConfig(function *v1pb.FunctionConfig) *storepb.FunctionConfig {
+func convertV1FunctionConfig(ctx context.Context, function *v1pb.FunctionConfig, optionalStores *store.Store) *storepb.FunctionConfig {
 	return &storepb.FunctionConfig{
 		Name:       function.Name,
-		Updater:    function.Updater,
+		Updater:    getUpdaterFromEmail(ctx, function.Updater, optionalStores),
 		UpdateTime: function.UpdateTime,
 	}
 }
 
-func convertV1ProcedureConfig(procedure *v1pb.ProcedureConfig) *storepb.ProcedureConfig {
+func convertV1ProcedureConfig(ctx context.Context, procedure *v1pb.ProcedureConfig, optionalStores *store.Store) *storepb.ProcedureConfig {
 	return &storepb.ProcedureConfig{
 		Name:       procedure.Name,
-		Updater:    procedure.Updater,
+		Updater:    getUpdaterFromEmail(ctx, procedure.Updater, optionalStores),
 		UpdateTime: procedure.UpdateTime,
 	}
 }
 
-func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
+func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optionalStores *store.Store) *storepb.TableConfig {
 	t := &storepb.TableConfig{
 		Name:             table.Name,
 		ClassificationId: table.ClassificationId,
-		Updater:          table.Updater,
+		Updater:          getUpdaterFromEmail(ctx, table.Updater, optionalStores),
 		UpdateTime:       table.UpdateTime,
 	}
 	for _, column := range table.ColumnConfigs {
@@ -729,4 +788,34 @@ func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
 		Labels:           column.Labels,
 		ClassificationId: column.ClassificationId,
 	}
+}
+
+func getUpdaterFromUID(ctx context.Context, uidURI string, optionalStores *store.Store) string {
+	if optionalStores == nil {
+		return ""
+	}
+	uid, err := common.GetUserID(uidURI)
+	if err != nil {
+		return ""
+	}
+	user, err := optionalStores.GetUserByID(ctx, uid)
+	if err != nil {
+		return ""
+	}
+	return common.FormatUserEmail(user.Email)
+}
+
+func getUpdaterFromEmail(ctx context.Context, emailURI string, optionalStores *store.Store) string {
+	if optionalStores == nil {
+		return ""
+	}
+	email, err := common.GetUserEmail(emailURI)
+	if err != nil {
+		return ""
+	}
+	user, err := optionalStores.GetUserByEmail(ctx, email)
+	if err != nil {
+		return ""
+	}
+	return common.FormatUserUID(user.ID)
 }

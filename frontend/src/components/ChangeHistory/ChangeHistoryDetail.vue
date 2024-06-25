@@ -29,15 +29,11 @@
               >
               <router-link
                 :to="{
-                  name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-                  params: {
-                    projectId: extractProjectResourceName(changeHistory.issue),
-                    issueSlug: extractIssueUID(changeHistory.issue),
-                  },
+                  path: `/${changeHistory.issue}`,
                 }"
                 class="normal-link"
               >
-                {{ extractIssueUID(changeHistory.issue) }}
+                #{{ extractIssueUID(changeHistory.issue) }}
               </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.duration") }}</dt>
@@ -70,23 +66,19 @@
         <span class="flex items-center text-lg text-main capitalize">
           {{ $t("change-history.affected-tables") }}
         </span>
-        <div
-          class="w-full flex flex-row justify-start items-center gap-x-3 gap-y-2"
-        >
-          <div
-            v-for="affectedTable in affectedTables"
-            :key="`${affectedTable.schema}.${affectedTable.table}`"
+        <div>
+          <span
+            v-for="(affectedTable, i) in affectedTables"
+            :key="`${i}.${affectedTable.schema}.${affectedTable.table}`"
+            :class="[
+              'mr-3 mb-2',
+              !affectedTable.dropped
+                ? 'text-blue-600 cursor-pointer hover:opacity-80'
+                : 'mb-2 text-gray-400 italic',
+            ]"
+            @click="handleAffectedTableClick(affectedTable)"
+            >{{ getAffectedTableDisplayName(affectedTable) }}</span
           >
-            <span
-              :class="
-                !affectedTable.dropped
-                  ? 'text-blue-600 cursor-pointer hover:opacity-80'
-                  : 'text-gray-400 italic'
-              "
-              @click="handleAffectedTableClick(affectedTable)"
-              >{{ getAffectedTableDisplayName(affectedTable) }}</span
-            >
-          </div>
         </div>
       </div>
 
@@ -296,7 +288,6 @@ import { BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -324,7 +315,7 @@ import {
   toClipboard,
   getStatementSize,
   hasProjectPermissionV2,
-  extractProjectResourceName,
+  getAffectedTableDisplayName,
 } from "@/utils";
 
 interface LocalState {
@@ -415,18 +406,6 @@ watch(
 const switchShowDiff = async (showDiff: boolean) => {
   await fetchFullHistory();
   state.showDiff = showDiff;
-};
-
-const getAffectedTableDisplayName = (affectedTable: AffectedTable): string => {
-  const { schema, table, dropped } = affectedTable;
-  let name = table;
-  if (schema !== "") {
-    name = `${schema}.${table}`;
-  }
-  if (dropped) {
-    name = `${name} (deleted)`;
-  }
-  return name;
 };
 
 const handleAffectedTableClick = (affectedTable: AffectedTable): void => {

@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 func TestParseVersion(t *testing.T) {
@@ -26,9 +28,9 @@ func TestParseVersion(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		v, err := parseVersion(test.Banner)
+		v, err := plsql.ParseVersion(test.Banner)
 		require.NoError(t, err)
-		require.Equal(t, test.First, v.first)
-		require.Equal(t, test.Second, v.second)
+		require.Equal(t, test.First, v.First)
+		require.Equal(t, test.Second, v.Second)
 	}
 }

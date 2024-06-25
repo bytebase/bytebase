@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -47,6 +46,13 @@ type InstanceMetadata struct {
 type TableKey struct {
 	Schema string
 	Table  string
+}
+
+// ColumnKey is the map key for table metadata.
+type ColumnKey struct {
+	Schema string
+	Table  string
+	Column string
 }
 
 // IndexKey is the map key for table metadata.
@@ -137,6 +143,7 @@ type MigrationInfo struct {
 	// InstanceID nil is metadata database.
 	InstanceID *int
 	DatabaseID *int
+	ProjectUID *int
 	IssueUID   *int
 	CreatorID  int
 
@@ -177,15 +184,30 @@ type ConnectionConfig struct {
 	// AuthenticationDatabase is only supported for MongoDB now.
 	AuthenticationDatabase string
 	// SID and ServiceName are Oracle only.
-	SID                      string
-	ServiceName              string
-	SSHConfig                SSHConfig
+	SID         string
+	ServiceName string
+	SSHConfig   SSHConfig
+	// AuthenticationPrivateKey is used by Snowflake and Databricks (databricks access token).
 	AuthenticationPrivateKey string
 
 	ConnectionContext ConnectionContext
 
 	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
 	AuthenticationType storepb.DataSourceOptions_AuthenticationType
+
+	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
+	AdditionalAddresses []*storepb.DataSourceOptions_Address
+	ReplicaSet          string
+	DirectConnection    bool
+
+	// Region is the location of where the DB is, works for AWS RDS.
+	Region string
+
+	// AccountID is used by Databricks.
+	AccountID string
+
+	// WarehouseID is used by Databricks.
+	WarehouseID string
 }
 
 // SSHConfig is the configuration for connection over SSH.
@@ -210,11 +232,9 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit               int
-	ReadOnly            bool
-	SensitiveSchemaInfo *base.SensitiveSchemaInfo
-	// EnableSensitive will set to be true if the database instance has license.
-	EnableSensitive bool
+	Limit    int
+	Explain  bool
+	ReadOnly bool
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string
@@ -291,11 +311,8 @@ type Driver interface {
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
-	// Dump and restore
-	// Dump the database.
-	// The returned string is the JSON encoded metadata for the logical dump.
-	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-	Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error)
+	// Dump dumps the schema of database.
+	Dump(ctx context.Context, out io.Writer) (string, error)
 }
 
 // Register makes a database driver available by the provided type.
@@ -332,13 +349,7 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 
 // ExecuteOptions is the options for execute.
 type ExecuteOptions struct {
-	CreateDatabase     bool
-	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
-	EndTransactionFunc func(tx *sql.Tx) error
-	// ChunkedSubmission is the flag to indicate if we should use chunked submission for the statement.
-	// If true, we will submit each statement chunk, otherwise we will submit all statements in a batch.
-	// For both cases, we will use one transaction to wrap the statements.
-	ChunkedSubmission     bool
+	CreateDatabase        bool
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
 	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
 }

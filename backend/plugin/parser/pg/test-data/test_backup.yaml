@@ -1,0 +1,55 @@
+- input: |-
+    DELETE FROM t
+    USING test
+    WHERE t.c1 = 1 and t.a1 = test.a1;
+  result:
+    - statement: CREATE TABLE "backupSchema"."rollback_0_t" AS SELECT "t".* FROM t, test WHERE t.c1 = 1 and t.a1 = test.a1;
+      tablename: rollback_0_t
+      originalline: 1
+- input: |-
+    DELETE FROM test
+    USING test2
+    WHERE test.c1 = 1 and test.c1 = test2.c1;
+  result:
+    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test, test2 WHERE test.c1 = 1 and test.c1 = test2.c1;
+      tablename: rollback_0_test
+      originalline: 1
+- input: |-
+    UPDATE test
+    SET test.c1 = 2
+    FROM test2
+    WHERE test.c1 = 1 and test.c1 = test2.c1;
+  result:
+    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test, test2 WHERE test.c1 = 1 and test.c1 = test2.c1;
+      tablename: rollback_0_test
+      originalline: 1
+- input: |-
+    DELETE FROM test WHERE c1 = 1;
+    UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
+  result:
+    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE c1 = 1;
+      tablename: rollback_0_test
+      originalline: 1
+    - statement: CREATE TABLE "backupSchema"."rollback_1_test" AS SELECT "test".* FROM test WHERE test.c1 = 1;
+      tablename: rollback_1_test
+      originalline: 2
+- input: DELETE FROM test WHERE c1 = 1;
+  result:
+    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE c1 = 1;
+      tablename: rollback_0_test
+      originalline: 1
+- input: UPDATE test SET c1 = 1 WHERE c1=2;
+  result:
+    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE c1=2;
+      tablename: rollback_0_test
+      originalline: 1
+- input: |-
+    UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
+    UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
+  result:
+    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE test.c1 = 1;
+      tablename: rollback_0_test
+      originalline: 1
+    - statement: CREATE TABLE "backupSchema"."rollback_1_test" AS SELECT "test".* FROM test WHERE test.c1 = 5;
+      tablename: rollback_1_test
+      originalline: 2

@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -109,14 +110,25 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
+	reviewConfig, err := prodTemplateReviewConfigForPostgreSQL()
 	a.NoError(err)
+
+	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
+		ReviewConfig: reviewConfig,
+	})
+	a.NoError(err)
+	a.NotNil(createdConfig.Name)
+
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_SQL_REVIEW,
-			Policy: &v1pb.Policy_SqlReviewPolicy{
-				SqlReviewPolicy: reviewPolicy,
+			Type: v1pb.PolicyType_TAG,
+			Policy: &v1pb.Policy_TagPolicy{
+				TagPolicy: &v1pb.TagPolicy{
+					Tags: map[string]string{
+						string(api.ReservedTagReviewConfig): createdConfig.Name,
+					},
+				},
 			},
 		},
 	})
@@ -272,15 +284,25 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	reviewPolicy, err := prodTemplateSQLReviewPolicyForMySQL()
+	reviewConfig, err := prodTemplateReviewConfigForMySQL()
 	a.NoError(err)
+
+	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
+		ReviewConfig: reviewConfig,
+	})
+	a.NoError(err)
+	a.NotNil(createdConfig.Name)
 
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_SQL_REVIEW,
-			Policy: &v1pb.Policy_SqlReviewPolicy{
-				SqlReviewPolicy: reviewPolicy,
+			Type: v1pb.PolicyType_TAG,
+			Policy: &v1pb.Policy_TagPolicy{
+				TagPolicy: &v1pb.TagPolicy{
+					Tags: map[string]string{
+						string(api.ReservedTagReviewConfig): createdConfig.Name,
+					},
+				},
 			},
 		},
 	})
@@ -407,7 +429,7 @@ func readTestData(path string) ([]test, error) {
 		}
 		for _, r := range yamlTest.Result {
 			result := &v1pb.PlanCheckRun_Result{}
-			if err := protojson.Unmarshal([]byte(r), result); err != nil {
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(r), result); err != nil {
 				return nil, err
 			}
 			t.Result = append(t.Result, result)
@@ -457,7 +479,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	})
 	a.NoError(err)
 
-	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Steps: []*v1pb.Plan_Step{

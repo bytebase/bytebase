@@ -64,11 +64,7 @@ export const hasWorkspaceLevelProjectPermission = (
   const workspaceLevelPermissions = workspaceLevelRoles.flatMap((role) =>
     role ? role.permissions : []
   );
-  if (workspaceLevelPermissions.includes(permission)) {
-    return true;
-  }
-
-  return false;
+  return workspaceLevelPermissions.includes(permission);
 };
 
 // hasWorkspaceLevelProjectPermission checks if the user has the given permission on ANY project in the workspace.

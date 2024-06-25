@@ -76,7 +76,6 @@
     "role": {
       "self": "Rol"
     },
-    "assignee": "Asignado",
     "revert": "Revertir",
     "apply": "Aplicar",
     "reorder": "Reordenar",
@@ -210,7 +209,6 @@
     "restart": "Reiniciar",
     "want-help": "Buscar Ayuda",
     "operation": "Operación",
-    "rollback": "Revertir",
     "total": "Total",
     "discard-changes": "Descartar cambios",
     "error-message": "Mensaje de error",
@@ -274,7 +272,9 @@
     "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
     "configure-now": "Configurar ahora",
-    "connection": "Conexión"
+    "connection": "Conexión",
+    "permission-denied": "Permiso denegado",
+    "resource": "Recurso"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -336,7 +336,6 @@
       "warn": "Advertencia",
       "error": "Error"
     },
-    "earliest-allowed-time-no-modify": "No puedes modificar este campo porque no eres el asignado a la incidencia o no está pendiente por ejecutar.",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
       "bb-task-database-schema-update-ghost-cutover": "Cambiar de tabla",
@@ -357,16 +356,6 @@
     "skip-modal-title": "¿Saltar tarea [{name}]?",
     "task-checks": "Comprobaciones de tarea",
     "prior-backup": "Respaldo Previo",
-    "rollback": {
-      "sql-rollback": "Reversión SQL",
-      "failed": "Fallido",
-      "preview-rollback-issue": "Vista previa de incidencia para reversión",
-      "generating": "Generando",
-      "empty-rollback-statement": "La declaración de reversión está vacía",
-      "cancel-generating": "Cancelar la generación del SQL de reversión",
-      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}",
-      "maximum-size-tips": "El tamaño máximo de datos de retroceso admitido es de 32MB"
-    },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
     "apply-change-to-all-pending-tasks": {
       "title": "¿Aplicar cambio a todas las tareas pendientes?",
@@ -460,7 +449,7 @@
       "security-and-policy": "Seguridad y Política",
       "integration": "Integración",
       "general": "General",
-      "members": "Miembros",
+      "members-and-groups": "Miembros y grupos",
       "im-integration": "Integración de IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -499,13 +488,39 @@
       "table": {
         "account": "Cuenta",
         "role": "Rol",
+        "groups": "Grupos",
         "update-time": "Hora de Actualización",
         "granted-time": "Hora de Concesión",
         "roles": "Roles"
       },
+      "groups": {
+        "self": "Grupos",
+        "add-group": "Añadir grupo",
+        "update-group": "Grupo de actualización",
+        "delete-warning": "Se eliminará el grupo \"{name}\". Esta acción no se puede deshacer.",
+        "delete-warning-with-resources": "El grupo \"{name}\" lo utilizan los siguientes recursos:",
+        "form": {
+          "email": "Correo electrónico",
+          "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
+          "title": "Título",
+          "description": "Descripción",
+          "members": "Miembros",
+          "add-member": "Añadir miembro",
+          "role": {
+            "owner": "Propietario del grupo",
+            "member": "Miembro del grupo"
+          }
+        },
+        "n-members": "{n} miembros",
+        "group-members": "Miembros del grupo",
+        "group-roles": "Roles grupales",
+        "edit-group": "Editar grupo",
+        "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
+      },
       "action": {
         "deactivate": "Desactivar",
         "deactivate-confirm-title": "¿Estás seguro de que deseas desactivar?",
+        "delete-confirm-title": "¿Estás seguro de eliminar?",
         "deactivate-confirm-description": "Aún puedes reactivar más tarde",
         "reactivate": "Reactivar",
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
@@ -536,9 +551,7 @@
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador"
     },
     "im-integration": {
-      "enable": "Habilitar",
-      "description": "Permitir a los usuarios aprobar incidencias directamente desde IM.",
-      "feishu-updated-tip": "Integración con Feishu actualizada correctamente"
+      "description": "Envíe mensajes directos a los usuarios para eventos de problemas específicos. Funciona con el webhook del proyecto."
     },
     "sso": {
       "create": "Crear SSO",
@@ -635,6 +648,21 @@
           "hours": "Horas",
           "days": "Días",
           "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
+        },
+        "maximum-role-expiration": {
+          "self": "Caducidad máxima del rol",
+          "description": "La caducidad máxima de la función es el período máximo que se puede otorgar una función a un usuario.",
+          "days": "Días)",
+          "never-expires": "Nunca expira"
+        },
+        "domain-restriction": {
+          "self": "Dominio de espacio de trabajo",
+          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo.",
+          "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
+          "members-restriction": {
+            "self": "Restricción de miembros",
+            "description": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
+          }
         },
         "config-updated": "La configuración se ha actualizado.",
         "plugin": {
@@ -761,6 +789,11 @@
       },
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
+        "upload": "Subir algoritmo",
+        "upload-label": "Puede cargar un archivo de algoritmo con formato JSON.",
+        "override-title": "Anulación de datos de algoritmo",
+        "override-desc": "Los algoritmos existentes se anularán; deberá volver a configurar el algoritmo para tipos semánticos.",
+        "override-confirm": "Aún subiendo",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {
@@ -830,14 +863,14 @@
         "upload": "Subir clasificación",
         "upload-succeed": "Subida exitosa",
         "search": "Clasificación de búsqueda",
-        "label": "Puede cargar un archivo de clasificación con formato JSON.",
-        "view-example": "Ver ejemplo",
-        "json-format-example": "Ejemplo de formato JSON de clasificación",
+        "upload-label": "Puede cargar un archivo de clasificación con formato JSON.",
         "copy-succeed": "Copiar ejemplo correctamente",
         "override-title": "Anulación de datos de clasificación",
         "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
         "override-confirm": "Aún subiendo"
-      }
+      },
+      "json-format-example": "Ejemplo de formato JSON",
+      "view-example": "Ver ejemplo"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -891,10 +924,6 @@
     "sentence": {
       "created-issue": "incidencia creado",
       "commented": "comentado",
-      "reassigned-issue": "incidencia reasignada de {oldName} a {newName}",
-      "assigned-issue": "incidencia asignada a {newName}",
-      "unassigned-issue": "incidencia desasignada de {oldName}",
-      "invalid-assignee-update": "actualización de asignatario no válida",
       "changed-description": "cambio de descripción",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "unset-from": "eliminación de {name} de \"{oldValue}\"",
@@ -929,7 +958,8 @@
       "task": "Tarea",
       "stage": "Etapa"
     },
-    "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
+    "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)",
+    "restore": "Restaurar"
   },
   "issue": {
     "my-issues": "Mis Incidencias",
@@ -1010,10 +1040,6 @@
           "title": "Creador",
           "description": "Búsqueda por tema creador"
         },
-        "assignee": {
-          "title": "Cesionario",
-          "description": "Buscar por el responsable del problema"
-        },
         "subscriber": {
           "title": "Abonado",
           "description": "Buscar por suscriptor del problema"
@@ -1061,10 +1087,10 @@
       "updated": "Actualizado",
       "approver": "Aprobador",
       "creator": "Creador",
-      "assignee": "Asignado"
+      "current-approver": "Aprobador actual"
     },
     "stage-select": {
-      "active": "{name} (activo)"
+      "current": "{name} (actual)"
     },
     "not-allowed-to-operate-unassigned-database": "No se puede {operation} a bases de datos no asignadas.\nPrimero deben ser transferidas a un proyecto.",
     "migration-mode": {
@@ -1107,19 +1133,12 @@
     },
     "will-rollback": "Esta tarea revertirá {link}",
     "issue-link-with-task": "Incidencia {issue} - tarea {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "Enviar una solicitud de aprobación de {im} correctamente",
-      "send-attention-request-successfully": "Solicitar la atención del asignado {principal} con éxito",
-      "needs-attention": "Necesita atención",
-      "click-to-mark": "Haga clic para solicitar la atención del asignado"
-    },
     "sdl": {
       "schema-change": "Cambio de esquema",
       "generated-ddl-statements": "Declaraciones DDL generadas",
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
-    "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
@@ -1156,7 +1175,8 @@
         "selected-stage": "Etapa seleccionada",
         "all-tasks": "Todas las tareas"
       },
-      "current-change-will-apply-to-all-tasks-in-batch-mode": "En el modo por lotes, el cambio actual se aplicará a todas las tareas."
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "En el modo por lotes, el cambio actual se aplicará a todas las tareas.",
+      "current-change-will-apply-to-all-tasks": "El cambio actual se aplicará a todas las tareas."
     },
     "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase",
     "action-anyway": "{action} de todos modos",
@@ -1185,18 +1205,10 @@
       "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
     },
     "approval-requested": "Aprobación solicitada",
-    "assignee": {
-      "current-assignee": "Asignatario actual",
-      "workspace-admins": "Administrador del espacio de trabajo",
-      "workspace-dbas": "DBA",
-      "project-owners": "Propietarios del proyecto",
-      "releasers-of-current-stage": "Liberadores de la etapa actual.",
-      "approvers-of-current-step": "Aprobadores del paso actual"
-    },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
-    "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
+    "missing-sql-statement": "Sentencia SQL faltante.",
     "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
     "data-export": {
       "options": "Opciones de exportación",
@@ -1217,7 +1229,13 @@
         },
         "affected-rows-n": "Filas afectadas: {n}"
       }
-    }
+    },
+    "sql-review": {
+      "statement-type": "Tipo de declaración"
+    },
+    "sql-review-only": "Sólo revisión de SQL",
+    "create-issue": "Crear problema",
+    "this-plan-will-be-converted-to-a-new-issue": "Este plan se convertirá en una nueva edición."
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1399,6 +1417,7 @@
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
     },
+    "database-region": "Región de la base de datos",
     "external-secret-gcp": {
       "secret-name": "nombre completo secreto",
       "secret-name-tips": "El nombre secreto debería ser similar a \"projects/project-id/secrets/secret-id\"."
@@ -1446,11 +1465,12 @@
     "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
     "filter-instance-name": "Filtrar nombre de instancia",
     "grants": "Concesiones",
+    "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
     "all": "Todas las instancias",
-    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
+    "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
     "sync-mode": {
       "self": "Modo de sincronización",
       "database": {
@@ -1488,7 +1508,7 @@
     "production-environment": "Entorno de producción",
     "access-control": {
       "title": "Control de acceso",
-      "disable-copy-data-from-sql-editor": "Desactivar copiar datos desde el editor SQL"
+      "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)"
     }
   },
   "quick-start": {
@@ -1604,15 +1624,18 @@
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
     "affected-tables": "Tablas afectadas",
+    "select-affection-tables": "Seleccionar tablas afectadas",
     "view-full": "Ver completo"
   },
   "database": {
+    "sync-database": "Sincronizar base de datos",
     "select": "Seleccionar base de datos",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "La lista podría estar desactualizada y se actualiza aproximadamente cada 10 minutos",
     "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
     "filter-database": "Filtrar base de datos",
+    "filter-database-group": "Filtrar grupo de bases de datos",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-title": "Desasignar bases de datos",
@@ -1853,11 +1876,6 @@
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "overview": {
-      "view-all": "Ver todo",
-      "view-all-closed": "Ver todos los cerrados",
-      "recent-activity": "Actividades recientes @.lower:{'common.activities'}",
-      "in-progress": "En curso",
-      "recently-closed": "Recientemente cerrado",
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
       "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
     },
@@ -1888,6 +1906,11 @@
         "btn-text": "Eliminar este webhook",
         "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
       },
+      "direct-messages": "Mensajes directos",
+      "enable-direct-messages": "Habilitar mensajes directos",
+      "direct-messages-tip": "Una vez habilitado, Bytebase enviará mensajes directos a los usuarios relacionados (emparejados por correo electrónico).",
+      "direct-messages-warning": "Debes configurar {im} para que funcione.",
+      "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
       "activity-item": {
         "issue-creation": {
           "title": "Creación de incidencia",
@@ -1907,7 +1930,7 @@
         },
         "issue-info-change": {
           "title": "Cambio de información de incidencia",
-          "label": "Cuando cambia la información de la incidencia (por ejemplo, asignación, título, descripción)"
+          "label": "Cuando cambia la información de la incidencia (por ejemplo, título, descripción)"
         },
         "issue-comment-creation": {
           "title": "Creación de comentario de incidencia",
@@ -1967,7 +1990,7 @@
       "labels": {
         "issue-labels": "Etiquetas de problemas",
         "configure-labels": "Configurar etiquetas",
-        "force-issue-labels": "Forzar tener etiquetas para problemas"
+        "force-issue-labels": "Requerir etiquetas para todos los incidencias"
       }
     },
     "members": {
@@ -1977,13 +2000,14 @@
       "revoke-access": "Revocar acceso",
       "grant-access": "Conceder acceso",
       "edit": "Editar miembro - {member}",
-      "view-by-principals": "Ver por responsables",
+      "view-by-members": "Ver por miembros",
       "view-by-roles": "Ver por roles",
       "cannot-remove-last-owner": "No se puede eliminar el último propietario de un proyecto",
       "revoke-role-from-user": "Revocar '{role}' de '{user}'",
       "inactive-members": "Miembros inactivos",
       "show-inactive": "Mostrar miembros inactivos",
       "select-users": "Seleccionar usuarios",
+      "select-groups": "Seleccionar grupos",
       "assign-role": "Asignar rol",
       "assign-reason": "(Opcional) Razón",
       "never-expires": "Nunca caduca",
@@ -2167,8 +2191,11 @@
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
     "connection-string-schema": "Esquema de cadena de conexión",
+    "additional-node-addresses": "Direcciones de nodos adicionales",
+    "replica-set": "Conjunto de réplicas",
     "admin": "Admin",
-    "read-only": "Solo lectura"
+    "read-only": "Solo lectura",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2284,6 +2311,7 @@
       "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
     },
     "executing-query": "Ejecutando consulta",
+    "request-query": "Solicitar consulta",
     "grouping": "Agrupamiento",
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",
@@ -2309,7 +2337,8 @@
       "rows": "filas"
     },
     "n-per-page": "{n} / página",
-    "customize-tree-structure": "Personalizar la estructura del árbol"
+    "customize-tree-structure": "Personalizar la estructura del árbol",
+    "will-override-current-editing-statement": "Anulará la declaración de edición actual."
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2373,7 +2402,10 @@
       "expression": "Expresión",
       "zero": "0",
       "true": "True",
-      "false": "False"
+      "false": "False",
+      "null": "NULL",
+      "string": "Cadena",
+      "value": "Valor"
     },
     "nothing-changed-for-database": "Nada cambió para la base de datos {database}",
     "message": {
@@ -2717,6 +2749,7 @@
     "configure-policy": "Configurar política",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
+    "policy-create-failed": "No se pudo crear la política de revisión.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
@@ -2728,6 +2761,8 @@
     "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
     "not-available-for-free": "La regla no está disponible para {plan}",
     "unlock-full-feature": "Desbloquear más de 100 reglas de validación de SQL",
+    "search-by-name": "Buscar por nombre",
+    "no-linked-resources": "No hay recursos vinculados",
     "create": {
       "breadcrumb": "Crear política de revisión SQL",
       "basic-info": {
@@ -2736,8 +2771,8 @@
         "display-name-placeholder": "El nombre de la política de revisión",
         "display-name-default": "Política de revisión SQL",
         "display-name-label": "Un nombre para mostrar que ayuda a identificar entre diferentes políticas de revisión.",
-        "environments": "Entornos",
-        "environments-label": "Aplicar la política de revisión a los entornos seleccionados. Un entorno solo puede estar vinculado a una política.",
+        "attach-resource": "Adjuntar al recurso",
+        "attach-resource-label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política.",
         "environments-select": "Seleccionar entornos",
         "no-linked-environments": "Ningún entorno vinculado",
         "no-available-environment": "Ningún entorno disponible",
@@ -2884,7 +2919,8 @@
     "schema-group": "grupo de mesas",
     "changelist": "Lista de cambios",
     "vcs-provider": "Proveedor GitOps",
-    "vcs-connector": "Conector GitOps"
+    "vcs-connector": "Conector GitOps",
+    "review-config": "Revisar configuración"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -3239,7 +3275,9 @@
         "pattern": "{recurso} solo puede contener letras minúsculas, números y guiones. Debe comenzar con una letra minúscula.",
         "max-length": "{recurso} puede contener hasta {length} caracteres"
       },
-      "delete": "Eliminar rol"
+      "delete": "Eliminar rol",
+      "delete-warning": "Se eliminará el rol \"{name}\". Esta acción no se puede deshacer.",
+      "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:"
     },
     "select": "Seleccionar rol",
     "select-roles": "Seleccionar roles",
@@ -3297,13 +3335,6 @@
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
-    "matched-table": "Tabla coincidente",
-    "unmatched-table": "Tabla no coincidente",
-    "table-group": {
-      "self": "Grupo de tablas",
-      "create": "Crear grupo de tablas",
-      "edit": "Editar grupo de tablas"
-    },
     "condition": {
       "self": "Condición"
     },
@@ -3314,6 +3345,10 @@
   "export-center": {
     "self": "centro de exportacion",
     "permission-denied": "Permiso denegado"
+  },
+  "review-center": {
+    "self": "Centro de revisión",
+    "review-sql": "Revisar SQL"
   },
   "schema-designer": {
     "self": "Diseñador de esquemas",
@@ -3433,7 +3468,8 @@
       "change-history": {
         "tables": "Mesas"
       },
-      "source": "Fuente"
+      "source": "Fuente",
+      "filter": "Filtrar por problema o versión"
     },
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",
@@ -3515,6 +3551,9 @@
     "table-partition": {
       "drop-partition-confirm": "¿Eliminar partición de mesa?",
       "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
+    },
+    "last-update": {
+      "self": "Última actualización"
     }
   }
 }

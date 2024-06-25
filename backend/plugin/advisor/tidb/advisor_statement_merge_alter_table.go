@@ -27,7 +27,7 @@ type StatementMergeAlterTableAdvisor struct {
 }
 
 // Check checks for merging ALTER TABLE statements.
-func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -53,8 +53,8 @@ func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, _ string) ([]
 }
 
 type statementMergeAlterTableChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
 	title      string
 	text       string
 	line       int
@@ -98,7 +98,7 @@ func (*statementMergeAlterTableChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (checker *statementMergeAlterTableChecker) generateAdvice() []advisor.Advice {
+func (checker *statementMergeAlterTableChecker) generateAdvice() []*storepb.Advice {
 	var tableList []tableStatement
 	for _, table := range checker.tableMap {
 		tableList = append(tableList, table)
@@ -109,20 +109,22 @@ func (checker *statementMergeAlterTableChecker) generateAdvice() []advisor.Advic
 
 	for _, table := range tableList {
 		if table.count > 1 {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementRedundantAlterTable,
+				Code:    advisor.StatementRedundantAlterTable.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				Line:    table.lastLine,
+				StartPosition: &storepb.Position{
+					Line: int32(table.lastLine),
+				},
 			})
 		}
 	}
 
 	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})

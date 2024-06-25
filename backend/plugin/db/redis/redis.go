@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/shlex"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/multierr"
@@ -151,18 +152,18 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	lines := strings.Split(statement, "\n")
-	for i := range lines {
-		lines[i] = strings.Trim(lines[i], " \n\t\r")
-	}
-
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, line := range lines {
-			if line == "" {
+			fields, err := shlex.Split(line)
+			if err != nil {
+				return errors.Wrapf(err, "failed to split command %s", line)
+			}
+			if len(fields) == 0 {
 				continue
 			}
 			var input []any
-			for _, s := range strings.Split(line, " ") {
-				input = append(input, s)
+			for _, v := range fields {
+				input = append(input, v)
 			}
 			_ = p.Do(ctx, input...)
 		}
@@ -177,34 +178,31 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // Dump and restore
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
-func (*Driver) Dump(_ context.Context, _ io.Writer, schemaOnly bool) (string, error) {
-	if !schemaOnly {
-		return "", errors.New("redis: not supported")
-	}
+func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
 	return "", nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	startTime := time.Now()
-	l := strings.Split(statement, "\n")
-	for i := range l {
-		l[i] = strings.Trim(l[i], " \n\t\r")
-	}
-	var lines []string
-	for _, v := range l {
-		if v == "" {
-			continue
-		}
-		lines = append(lines, v)
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext != nil && queryContext.Explain {
+		return nil, errors.New("MongoDB does not support EXPLAIN")
 	}
 
+	startTime := time.Now()
+	lines := strings.Split(statement, "\n")
 	var cmds []*redis.Cmd
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, line := range lines {
+			fields, err := shlex.Split(line)
+			if err != nil {
+				return errors.Wrapf(err, "failed to split command %s", line)
+			}
+			if len(fields) == 0 {
+				continue
+			}
 			var input []any
-			for _, s := range strings.Split(line, " ") {
-				input = append(input, s)
+			for _, v := range fields {
+				input = append(input, v)
 			}
 			cmd := p.Do(ctx, input...)
 			cmds = append(cmds, cmd)
@@ -255,7 +253,8 @@ func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd) {
 	if ok {
 		for i, v := range l {
 			result.Rows = append(result.Rows, getResultRow(i+1, v))
-			if proto.Size(result) > common.MaximumSQLResultSize {
+			n := len(result.Rows)
+			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 				result.Error = common.MaximumSQLResultSizeExceeded
 				return
 			}

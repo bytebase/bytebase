@@ -346,11 +346,23 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if dbSchema != nil {
 		dbModelConfig = dbSchema.GetInternalConfig()
 	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &database.ProjectID,
+	})
+	if err != nil {
+		return errors.Wrapf(err, `failed to get project by id "%s"`, database.ProjectID)
+	}
+	classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
+	if err != nil {
+		return errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
+	}
+
 	if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_POSTGRES {
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
-		dbModelConfig.ClassificationFromConfig = true
+		classificationConfig.ClassificationFromConfig = true
 	}
-	if dbModelConfig.ClassificationFromConfig {
+	if classificationConfig.ClassificationFromConfig {
 		// Only set the user comment.
 		setUserCommentFromComment(databaseMetadata)
 	} else {
@@ -384,7 +396,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
 			var schemaBuf bytes.Buffer
-			if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
+			if _, err := driver.Dump(ctx, &schemaBuf); err != nil {
 				return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 			}
 			rawDump = schemaBuf.Bytes()

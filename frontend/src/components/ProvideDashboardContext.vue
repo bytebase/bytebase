@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watchEffect } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   useEnvironmentV1Store,
@@ -15,6 +15,7 @@ import {
   useUserStore,
   useUIStateStore,
   useDatabaseV1Store,
+  useUserGroupStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
@@ -26,16 +27,28 @@ const isLoading = ref<boolean>(true);
 const policyStore = usePolicyV1Store();
 const databaseStore = useDatabaseV1Store();
 
-watchEffect(async () => {
+const fetchInstances = async (project: string) => {
+  const parent = project ? `${projectNamePrefix}${project}` : undefined;
+  await useInstanceV1Store().fetchInstanceList(
+    /* !showDeleted */ false,
+    parent
+  );
+};
+
+const fetchDatabases = async (project: string) => {
   const filters = [`instance = "instances/-"`];
   // If `projectId` is provided in the route, filter the database list by the project.
-  if (route.params.projectId) {
-    filters.push(`project = "${projectNamePrefix}${route.params.projectId}"`);
+  if (project) {
+    filters.push(`project = "${projectNamePrefix}${project}"`);
   }
   await databaseStore.searchDatabases({
     filter: filters.join(" && "),
   });
-});
+};
+const fetchInstancesAndDatabases = async (project: string) => {
+  await fetchInstances(project);
+  await fetchDatabases(project);
+};
 
 onMounted(async () => {
   await router.isReady();
@@ -52,11 +65,20 @@ onMounted(async () => {
   // Then prepare the other resources.
   await Promise.all([
     useUserStore().fetchUserList(),
+    useUserGroupStore().fetchGroupList(),
     useEnvironmentV1Store().fetchEnvironments(),
-    useInstanceV1Store().fetchInstanceList(),
     useProjectV1Store().fetchProjectList(true /* showDeleted */),
   ]);
   await Promise.all([useUIStateStore().restoreState()]);
+  await fetchInstancesAndDatabases(route.params.projectId as string);
+
+  watch(
+    () => route.params.projectId,
+    (project) => {
+      fetchInstancesAndDatabases(project as string);
+    },
+    { immediate: false }
+  );
 
   isLoading.value = false;
 });

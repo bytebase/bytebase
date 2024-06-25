@@ -1,63 +1,68 @@
-- statement: "INSERT INTO tech_book SELECT * FROM tech_book;"
+- statement: INSERT INTO tech_book SELECT * FROM tech_book;
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: |
     INSERT INTO tech_book SELECT * FROM tech_book;
     INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1;
   want:
-    - status: WARN
+    - status: 2
       code: 1103
       title: statement.disallow-limit
-      content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1;" uses
-      line: 2
-      details: ""
+      content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1;" uses
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |
     INSERT INTO tech_book SELECT * FROM tech_book;
     INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;
   want:
-    - status: WARN
+    - status: 2
       code: 1103
       title: statement.disallow-limit
-      content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;" uses
-      line: 2
-      details: ""
+      content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;" uses
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |
     INSERT INTO tech_book SELECT * FROM tech_book;
     INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;
   want:
-    - status: WARN
+    - status: 2
       code: 1103
       title: statement.disallow-limit
-      content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;" uses
-      line: 2
-      details: ""
+      content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;" uses
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |
     UPDATE tech_book SET name = 'my name';
     UPDATE tech_book SET name = 'my name' LIMIT 10;
   want:
-    - status: WARN
+    - status: 2
       code: 1102
       title: statement.disallow-limit
-      content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "UPDATE tech_book SET name = 'my name' LIMIT 10;" uses
-      line: 2
-      details: ""
+      content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "UPDATE tech_book SET name = 'my name' LIMIT 10;" uses
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |
     DELETE FROM tech_book;
     DELETE FROM tech_book LIMIT 10;
   want:
-    - status: WARN
+    - status: 2
       code: 1106
       title: statement.disallow-limit
-      content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "DELETE FROM tech_book LIMIT 10;" uses
-      line: 2
-      details: ""
+      content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "DELETE FROM tech_book LIMIT 10;" uses
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

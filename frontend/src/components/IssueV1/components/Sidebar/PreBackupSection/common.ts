@@ -7,7 +7,7 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -41,7 +41,8 @@ export const usePreBackupContext = () => {
       engine !== Engine.MYSQL &&
       engine !== Engine.TIDB &&
       engine !== Engine.MSSQL &&
-      engine !== Engine.ORACLE
+      engine !== Engine.ORACLE &&
+      engine !== Engine.POSTGRES
     ) {
       return false;
     }
@@ -121,7 +122,7 @@ export const usePreBackupContext = () => {
         spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
       }
 
-      const updatedPlan = await rolloutServiceClient.updatePlan({
+      const updatedPlan = await planServiceClient.updatePlan({
         plan: planPatch,
         updateMask: ["steps"],
       });
@@ -139,9 +140,6 @@ export const usePreBackupContext = () => {
         await useIssueCommentStore().createIssueComment({
           issueName: issue.value.name,
           comment: `${action} prior backup for task [${issue.value.title}].`,
-          payload: {
-            issueName: issue.value.title,
-          },
         });
       } catch {
         // fail to comment won't be too bad

@@ -32,7 +32,7 @@ import {
 import type { ContextMenuButtonAction } from "@/components/v2";
 import { ContextMenuButton } from "@/components/v2";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { PlanCheckRun_Status } from "@/types/proto/v1/rollout_service";
+import { PlanCheckRun_Status } from "@/types/proto/v1/plan_service";
 
 defineEmits<{
   (event: "run-checks"): void;

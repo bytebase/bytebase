@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -22,8 +23,6 @@ const (
 	PlanCheckDatabaseStatementCompatibility PlanCheckRunType = "bb.plan-check.database.statement.compatibility"
 	// PlanCheckDatabaseStatementAdvise is the plan check type for schema system review policy.
 	PlanCheckDatabaseStatementAdvise PlanCheckRunType = "bb.plan-check.database.statement.advise"
-	// PlanCheckDatabaseStatementType is the plan check type for statement type.
-	PlanCheckDatabaseStatementType PlanCheckRunType = "bb.plan-check.database.statement.type"
 	// PlanCheckDatabaseStatementSummaryReport is the plan check type for statement summary report.
 	PlanCheckDatabaseStatementSummaryReport PlanCheckRunType = "bb.plan-check.database.statement.summary.report"
 	// PlanCheckDatabaseConnect is the plan check type for database connection.
@@ -181,10 +180,10 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 		); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
 			return nil, err
 		}
-		if err := protojson.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
 			return nil, err
 		}
 		planCheckRuns = append(planCheckRuns, &planCheckRun)

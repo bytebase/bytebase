@@ -1,17 +1,15 @@
 <template>
   <div class="flex justify-end">
-    <template v-if="allowEdit">
-      <NButton
-        v-if="allowUpdateUser(user)"
-        quaternary
-        circle
-        @click="$emit('update-user')"
-      >
-        <template #icon>
-          <PencilIcon class="w-4 h-auto" />
-        </template>
-      </NButton>
-    </template>
+    <NButton
+      v-if="allowUpdate"
+      quaternary
+      circle
+      @click="$emit('update-binding')"
+    >
+      <template #icon>
+        <PencilIcon class="w-4 h-auto" />
+      </template>
+    </NButton>
   </div>
 </template>
 
@@ -21,19 +19,18 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import type { ComposedProject } from "@/types";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import { SYSTEM_BOT_USER_NAME, unknownUser } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
-import type { ProjectMember } from "../../types";
+import type { ProjectBinding } from "../../types";
 
 const props = defineProps<{
   project: ComposedProject;
-  projectMember: ProjectMember;
+  projectMember: ProjectBinding;
 }>();
 
 defineEmits<{
-  (event: "update-user"): void;
+  (event: "update-binding"): void;
 }>();
 
 const currentUserV1 = useCurrentUserV1();
@@ -46,12 +43,15 @@ const allowEdit = computed(() => {
   );
 });
 
-const user = computed(() => props.projectMember.user);
+const allowUpdate = computed(() => {
+  if (props.projectMember.type === "groups") {
+    return allowEdit.value;
+  }
 
-const allowUpdateUser = (user: User) => {
+  const user = props.projectMember.user ?? unknownUser();
   if (user.name === SYSTEM_BOT_USER_NAME) {
     return false;
   }
   return allowEdit.value && user.state === State.ACTIVE;
-};
+});
 </script>

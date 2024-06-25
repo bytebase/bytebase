@@ -1,62 +1,74 @@
 - statement: CREATE TABLE t(a int);
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: CREATE TABLE t(a JSON, b BLOB, c TEXT);
   want:
-    - status: WARN
+    - status: 2
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
 - statement: |-
     CREATE TABLE t(d int);
     ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT);
   want:
-    - status: WARN
+    - status: 2
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(d int);
     ALTER TABLE t ADD COLUMN (a JSON, b JSON);
   want:
-    - status: WARN
+    - status: 2
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 2
-      details: ""
-    - status: WARN
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+    - status: 2
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`b` is
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(c int, b int);
     ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB;
   want:
-    - status: WARN
+    - status: 2
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
 - statement: |-
     CREATE TABLE t(c int, b int);
     ALTER TABLE t MODIFY COLUMN c JSON;
   want:
-    - status: WARN
+    - status: 2
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`c` is
-      line: 2
-      details: ""
+      detail: ""
+      startposition:
+        line: 2
+        column: 0

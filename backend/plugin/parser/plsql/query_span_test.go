@@ -8,9 +8,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -44,9 +44,13 @@ func TestGetQuerySpan(t *testing.T) {
 
 	for i, tc := range testCases {
 		metadata := &storepb.DatabaseSchemaMetadata{}
-		a.NoError(protojson.Unmarshal([]byte(tc.Metadata), metadata))
-		databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
-		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, tc.ConnectedDatabase, databaseMetadataGetter, databaseNamesLister, false)
+		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
+		databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+		result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc:       databaseMetadataGetter,
+			ListDatabaseNamesFunc:         databaseNamesLister,
+			GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
+		}, tc.Statement, tc.ConnectedDatabase, tc.ConnectedDatabase, false)
 		a.NoError(err)
 		a.NotNil(result)
 		resultYaml := result.ToYaml()
@@ -65,7 +69,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
-func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
 	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
@@ -83,5 +87,29 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 				names = append(names, metadata.Name)
 			}
 			return names, nil
+		}, func(_ context.Context, linkedDatabaseName string) (string, *model.DatabaseMetadata, error) {
+			var linkedDBInfo *storepb.LinkedDatabaseMetadata
+			for _, metadata := range databaseMetadata {
+				for _, linkedDatabase := range metadata.GetLinkedDatabases() {
+					if linkedDatabase.Name == linkedDatabaseName {
+						linkedDBInfo = linkedDatabase
+						break
+					}
+				}
+				if linkedDBInfo != nil {
+					break
+				}
+			}
+			if linkedDBInfo == nil {
+				return "", nil, errors.Errorf("linked database %q not found", linkedDatabaseName)
+			}
+
+			for _, metadata := range databaseMetadata {
+				if metadata.Name == linkedDBInfo.Username {
+					return metadata.Name, model.NewDatabaseMetadata(metadata), nil
+				}
+			}
+
+			return "", nil, errors.Errorf("database %q not found", linkedDBInfo.Username)
 		}
 }

@@ -100,11 +100,11 @@
       }
     },
     "table-limit-size": {
-      "title": "Limit DDL operations on tables with large data volumes",
-      "description": "Configure the maximum data size of tables for which DDL can be executed. Recommended error level: warning",
+      "title": "Limit DDL operations on tables with a large number of rows",
+      "description": "Configure the maximum number of rows in tables for which DDL can be executed. Recommended error level: warning",
       "component": {
         "number": {
-          "title": "Max data size"
+          "title": "Max row count"
         }
       }
     },
@@ -278,6 +278,10 @@
       "title": "Prohibit changing the order of columns in a table",
       "description": "Modifying the order of columns may cause some applications or views that depend on the default order of the original table to produce unexpected results, such as \"select *\". Suggested error level: Warning"
     },
+    "column-disallow-drop": {
+      "title": "Prohibit dropping columns",
+      "description": "Prohibit dropping columns. Suggested error level: Warning"
+    },
     "column-disallow-drop-in-index": {
       "title": "Prohibit dropping columns in index",
       "description": "Prohibit dropping columns in index. Suggested error level: Error"
@@ -443,7 +447,7 @@
       "title": "Prohibit using NULL equality comparison in WHERE clause",
       "description": "The result of NULL equality comparison is always NULL, which may cause unexpected results. Suggestion error level: Warning"
     },
-    "statement-where-disallow-using-function": {
+    "statement-where-disallow-functions-and-calculations": {
       "title": "Do not apply functions or perform calculations on indexed fields in the WHERE clause",
       "description": "If you apply a function or perform a calculation on the indexed field, the database cannot use the index and has to scan the entire table instead."
     },
@@ -504,6 +508,18 @@
       "title": "Check for prior backup before data change",
       "description": "This rule will check if a backup can be created before the data change. For more details, contains the backup target database exists and disallow the DDL statement."
     },
+    "statement-add-column-without-position": {
+      "title": "Check no position in ADD COLUMN clause",
+      "description": "In some cases, using FIRST/AFTER to add columns will cause data reorganization (rewriting all data). Suggested error level: Warning"
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "Disallow Offline DDL",
+      "description": "To prevent database changes from impacting your business, avoid using Offline DDL."
+    },
+    "statement-disallow-cross-db-queries": {
+      "title": "Disallow cross database queries",
+      "description": "Cross-database queries increase system coupling and can lead to efficiency issues. Suggested error level: Warning"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
@@ -563,6 +579,10 @@
           "title": "Allow list"
         }
       }
+    },
+    "index-not-redundant": {
+      "title": "Disallow redundant indexes",
+      "description": "Redundant index may result in performance loss and occupy additional space. For example, the index on columns (c1, c2) will be treated as redundant indexes if there is already a index on column (c1). Suggestion error level: Warning"
     },
     "system-charset-allowlist": {
       "title": "Allowable list of Charset",

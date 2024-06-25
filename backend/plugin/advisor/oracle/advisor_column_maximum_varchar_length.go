@@ -28,7 +28,7 @@ type ColumnMaximumVarcharLengthAdvisor struct {
 }
 
 // Check checks for maximum varchar length.
-func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -60,17 +60,17 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) (
 type columnMaximumVarcharLengthListener struct {
 	*parser.BasePlSqlParserListener
 
-	level      advisor.Status
+	level      storepb.Advice_Status
 	title      string
 	maximum    int
-	adviceList []advisor.Advice
+	adviceList []*storepb.Advice
 }
 
-func (l *columnMaximumVarcharLengthListener) generateAdvice() ([]advisor.Advice, error) {
+func (l *columnMaximumVarcharLengthListener) generateAdvice() ([]*storepb.Advice, error) {
 	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
+		l.adviceList = append(l.adviceList, &storepb.Advice{
+			Status:  storepb.Advice_SUCCESS,
+			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
@@ -100,11 +100,13 @@ func (l *columnMaximumVarcharLengthListener) EnterDatatype(ctx *parser.DatatypeC
 		}
 	}
 
-	l.adviceList = append(l.adviceList, advisor.Advice{
+	l.adviceList = append(l.adviceList, &storepb.Advice{
 		Status:  l.level,
-		Code:    advisor.VarcharLengthExceedsLimit,
+		Code:    advisor.VarcharLengthExceedsLimit.Int32(),
 		Title:   l.title,
 		Content: fmt.Sprintf("The maximum varchar length is %d.", l.maximum),
-		Line:    ctx.GetStart().GetLine(),
+		StartPosition: &storepb.Position{
+			Line: int32(ctx.GetStart().GetLine()),
+		},
 	})
 }

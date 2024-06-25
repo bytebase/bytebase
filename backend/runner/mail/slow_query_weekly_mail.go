@@ -12,14 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -93,7 +94,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	var storeValue storepb.SMTPMailDeliverySetting
-	if err := protojson.Unmarshal([]byte(mailSetting.Value), &storeValue); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(mailSetting.Value), &storeValue); err != nil {
 		slog.Error("Failed to unmarshal setting value", log.BBError(err))
 		return
 	}
@@ -108,7 +109,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 	if setting != nil {
 		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), settingValue); err != nil {
 			slog.Error("Failed to unmarshal setting value", log.BBError(err))
 			return
 		}
@@ -202,22 +203,21 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			continue
 		}
 
-		projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 		if err != nil {
 			slog.Error("Failed to get project policy", log.BBError(err))
 			continue
 		}
 
-		// TODO(p0ny): renovate this function to respect allUsers and CEL.
-		for _, binding := range projectPolicy.Bindings {
-			if binding.Role == api.ProjectOwner {
-				for _, member := range binding.Members {
-					apiValue.SMTPTo = member.Email
-					subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
-					if err := send(apiValue, subject, body); err != nil {
-						slog.Error("Failed to send need config slow query policy email", slog.String("user", member.Name), slog.String("email", member.Email), log.BBError(err))
-					}
-				}
+		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, projectPolicy)
+		for _, user := range users {
+			if user.ID == api.SystemBotID {
+				continue
+			}
+			apiValue.SMTPTo = user.Email
+			subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
+			if err := send(apiValue, subject, body); err != nil {
+				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 			}
 		}
 	}

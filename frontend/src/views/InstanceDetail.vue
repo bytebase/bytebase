@@ -32,7 +32,10 @@
 
     <NTabs>
       <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
-        <InstanceForm class="-mt-2" :instance="instance" />
+        <InstanceForm class="-mt-2" :instance="instance">
+          <InstanceFormBody />
+          <InstanceFormButtons class="sticky bottom-0 z-10" />
+        </InstanceForm>
       </NTabPane>
       <NTabPane name="DATABASES" :tab="$t('common.databases')">
         <div class="space-y-2">
@@ -75,9 +78,14 @@ import { useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { EngineIcon } from "@/components/Icon";
-import InstanceForm from "@/components/InstanceForm/";
+import {
+  InstanceForm,
+  Form as InstanceFormBody,
+  Buttons as InstanceFormButtons,
+} from "@/components/InstanceForm/";
 import { InstanceRoleTable, Drawer } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import { useBodyLayoutContext } from "@/layouts/common";
 import {
   pushNotification,
   useDBSchemaV1Store,
@@ -106,6 +114,9 @@ interface LocalState {
 const props = defineProps<{
   instanceId: string;
 }>();
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+overrideMainContainerClass("!pb-0");
 
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
@@ -161,6 +172,7 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
+      databaseStore.removeCacheByInstance(instance.value.name);
       databaseStore.searchDatabases({
         filter: `instance = "${instance.value.name}"`,
       });

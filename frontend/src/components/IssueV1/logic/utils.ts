@@ -11,8 +11,8 @@ import { unknownDatabase, UNKNOWN_ID } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { InstanceResource } from "@/types/proto/v1/instance_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan, Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Plan } from "@/types/proto/v1/plan_service";
+import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   defer,
   extractDatabaseResourceName,

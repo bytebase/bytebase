@@ -9,7 +9,6 @@ export const PROJECT_V1_ROUTE_DATABASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.d
 export const PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.change-history.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
-export const PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.table-group.detail`;
 export const PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG = `${PROJECT_V1_ROUTE_DASHBOARD}.deployment-config`;
 export const PROJECT_V1_ROUTE_BRANCHES = `${PROJECT_V1_ROUTE_DASHBOARD}.branch`;
 export const PROJECT_V1_ROUTE_BRANCH_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.detail`;
@@ -18,6 +17,7 @@ export const PROJECT_V1_ROUTE_BRANCH_MERGE = `${PROJECT_V1_ROUTE_DASHBOARD}.bran
 export const PROJECT_V1_ROUTE_BRANCH_REBASE = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.rebase`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
+export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE_DASHBOARD}.change-histories`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
@@ -34,6 +34,7 @@ export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.we
 export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
+export const PROJECT_V1_ROUTE_REVIEW_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
@@ -84,12 +85,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: ":databaseGroupName",
             name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
             component: () => import("@/views/DatabaseGroupDetail.vue"),
-            props: true,
-          },
-          {
-            path: ":databaseGroupName/table-groups/:schemaGroupName",
-            name: PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
-            component: () => import("@/views/SchemaGroupDetail.vue"),
             props: true,
           },
         ],
@@ -161,7 +156,6 @@ const projectV1Routes: RouteRecordRaw[] = [
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
                 "bb.branches.get",
-                "bb.branches.update",
               ],
             },
             component: () => import("@/views/branch/BranchMerge.vue"),
@@ -175,7 +169,6 @@ const projectV1Routes: RouteRecordRaw[] = [
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
                 "bb.branches.get",
-                "bb.branches.update",
               ],
             },
             component: () => import("@/views/branch/BranchRebase.vue"),
@@ -218,6 +211,16 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () => import("@/views/project/ProjectIssueDetail.vue"),
+        props: true,
+      },
+      {
+        path: "plans/:planSlug",
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+        meta: {
+          overrideTitle: true,
+          requiredProjectPermissionList: () => ["bb.projects.get"],
+        },
+        component: () => import("@/views/project/ProjectPlanDetail.vue"),
         props: true,
       },
       {
@@ -469,6 +472,19 @@ const projectV1Routes: RouteRecordRaw[] = [
           ],
         },
         component: () => import("@/views/ExportCenter/index.vue"),
+        props: true,
+      },
+      {
+        path: "review-center",
+        name: PROJECT_V1_ROUTE_REVIEW_CENTER,
+        meta: {
+          overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.issues.list",
+          ],
+        },
+        component: () => import("@/views/ReviewCenter/index.vue"),
         props: true,
       },
     ],

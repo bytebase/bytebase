@@ -8,13 +8,11 @@ import type { h } from "vue";
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import {
-  IssueCommentType,
   useUserStore,
+  IssueCommentType,
   type ComposedIssueComment,
 } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { SYSTEM_BOT_EMAIL } from "@/types";
-import { unknownUser } from "@/types";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -72,8 +70,6 @@ const renderActionSentence = () => {
       toDescription,
       fromStatus,
       toStatus,
-      fromAssignee,
-      toAssignee,
     } = IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
     if (fromTitle !== undefined && toTitle !== undefined) {
       return t("activity.sentence.changed-from-to", {
@@ -91,33 +87,6 @@ const renderActionSentence = () => {
         return t("activity.sentence.canceled-issue");
       } else if (toStatus === IssueStatus.OPEN) {
         return t("activity.sentence.reopened-issue");
-      }
-    } else if (fromAssignee !== undefined || toAssignee !== undefined) {
-      if (fromAssignee && toAssignee) {
-        const oldName = (
-          userStore.getUserByIdentifier(fromAssignee) ?? unknownUser()
-        ).title;
-        const newName = (
-          userStore.getUserByIdentifier(toAssignee) ?? unknownUser()
-        ).title;
-        return t("activity.sentence.reassigned-issue", {
-          oldName,
-          newName,
-        });
-      } else if (!fromAssignee && toAssignee) {
-        const newName = (
-          userStore.getUserByIdentifier(toAssignee) ?? unknownUser()
-        ).title;
-        return t("activity.sentence.assigned-issue", { newName });
-      } else if (fromAssignee && !toAssignee) {
-        const oldName = (
-          userStore.getUserByIdentifier(fromAssignee) ?? unknownUser()
-        ).title;
-        return t("activity.sentence.unassigned-issue", {
-          oldName,
-        });
-      } else {
-        return t("activity.sentence.invalid-assignee-update");
       }
     }
   } else if (issueComment.type === IssueCommentType.STAGE_END) {
@@ -260,7 +229,10 @@ const maybeAutomaticallyVerb = (
   issueComment: ComposedIssueComment,
   verb: string
 ): string => {
-  if (extractUserResourceName(issueComment.creator) !== SYSTEM_BOT_EMAIL) {
+  if (
+    extractUserResourceName(issueComment.creator) !==
+    userStore.systemBotUser?.email
+  ) {
     return verb;
   }
   return t("activity.sentence.xxx-automatically", {
@@ -277,7 +249,8 @@ type VerbTypeTarget = {
 
 const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
   const keypath =
-    extractUserResourceName(params.issueComment.creator) === SYSTEM_BOT_EMAIL
+    extractUserResourceName(params.issueComment.creator) ===
+    userStore.systemBotUser?.email
       ? "activity.sentence.verb-type-target-by-system-bot"
       : "activity.sentence.verb-type-target-by-people";
 

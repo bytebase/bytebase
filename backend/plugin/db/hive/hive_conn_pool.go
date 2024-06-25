@@ -85,6 +85,7 @@ func CreateHiveConnPool(
 func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 	pool.RWMutex.RLock()
 	if !pool.IsActivated {
+		pool.RWMutex.RUnlock()
 		return nil, errors.New("connection pool has been closed")
 	}
 	pool.RWMutex.RUnlock()
@@ -117,6 +118,7 @@ func (pool *FixedConnPool) Put(conn *gohive.Connection) {
 	pool.RWMutex.RLock()
 	if !pool.IsActivated {
 		conn.Close()
+		pool.RWMutex.RUnlock()
 		return
 	}
 	pool.RWMutex.RUnlock()
@@ -130,10 +132,12 @@ func (pool *FixedConnPool) Put(conn *gohive.Connection) {
 
 func (pool *FixedConnPool) Destroy() error {
 	pool.RWMutex.Lock()
+
 	if pool.IsActivated {
 		pool.IsActivated = false
 		close(pool.Connections)
 	} else {
+		pool.RWMutex.Unlock()
 		return errors.New("connection pool has been closed already")
 	}
 	pool.RWMutex.Unlock()

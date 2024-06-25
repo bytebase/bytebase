@@ -22,19 +22,18 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	textunicode "golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -51,20 +50,13 @@ func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceT
 
 // isMatchExpression checks whether a databases matches the query.
 // labels is a mapping from database label key to value.
-func isMatchExpression(labels map[string]string, expression *api.LabelSelectorRequirement) bool {
+func isMatchExpression(labels map[string]string, expression *store.LabelSelectorRequirement) bool {
 	switch expression.Operator {
-	case api.InOperatorType:
-		value, ok := labels[expression.Key]
-		if !ok {
-			return false
-		}
-		for _, exprValue := range expression.Values {
-			if exprValue == value {
-				return true
-			}
-		}
-		return false
-	case api.ExistsOperatorType:
+	case store.InOperatorType:
+		return checkLabelIn(labels, expression)
+	case store.NotInOperatorType:
+		return !checkLabelIn(labels, expression)
+	case store.ExistsOperatorType:
 		_, ok := labels[expression.Key]
 		return ok
 	default:
@@ -72,7 +64,21 @@ func isMatchExpression(labels map[string]string, expression *api.LabelSelectorRe
 	}
 }
 
-func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSelectorRequirement) bool {
+func checkLabelIn(labels map[string]string, expression *store.LabelSelectorRequirement) bool {
+	value, ok := labels[expression.Key]
+	if !ok {
+		return false
+	}
+
+	for _, exprValue := range expression.Values {
+		if exprValue == value {
+			return true
+		}
+	}
+	return false
+}
+
+func isMatchExpressions(labels map[string]string, expressionList []*store.LabelSelectorRequirement) bool {
 	// Empty expression list matches no databases.
 	if len(expressionList) == 0 {
 		return false
@@ -86,9 +92,44 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 	return true
 }
 
+// ValidateAndGetDeploymentSchedule validates and returns the deployment schedule.
+// Note: this validation only checks whether the payloads is a valid json, however, invalid field name errors are ignored.
+func ValidateDeploymentSchedule(schedule *store.Schedule) error {
+	for _, d := range schedule.Deployments {
+		if d.Name == "" {
+			return common.Errorf(common.Invalid, "Deployment name must not be empty")
+		}
+		hasEnv := false
+		for _, e := range d.Spec.Selector.MatchExpressions {
+			switch e.Operator {
+			case store.InOperatorType, store.NotInOperatorType:
+				if len(e.Values) == 0 {
+					return common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
+				}
+			case store.ExistsOperatorType:
+				if len(e.Values) > 0 {
+					return common.Errorf(common.Invalid, "expression key %q with %q operator shouldn't have values", e.Key, e.Operator)
+				}
+			default:
+				return common.Errorf(common.Invalid, "expression key %q has invalid operator %q", e.Key, e.Operator)
+			}
+			if e.Key == api.EnvironmentLabelKey {
+				hasEnv = true
+				if e.Operator != store.InOperatorType || len(e.Values) != 1 {
+					return common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", api.EnvironmentLabelKey, store.InOperatorType)
+				}
+			}
+		}
+		if !hasEnv {
+			return common.Errorf(common.Invalid, "deployment should contain %q label", api.EnvironmentLabelKey)
+		}
+	}
+	return nil
+}
+
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
-func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
+func GetDatabaseMatrixFromDeploymentSchedule(schedule *store.Schedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
 	var matrix [][]*store.DatabaseMessage
 
 	// idToLabels maps databaseID -> label key -> label value
@@ -211,7 +252,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
 	// See https://bytebase.com/blog/what-is-database-schema-drift
-	if _, err := driver.Dump(ctx, &prevSchemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, &prevSchemaBuf); err != nil {
 		opts.LogSchemaDumpEnd(err.Error())
 		return "", "", err
 	}
@@ -283,7 +324,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	opts.LogSchemaDumpStart()
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, &afterSchemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, &afterSchemaBuf); err != nil {
 		// We will ignore the dump error if the database is dropped.
 		if strings.Contains(err.Error(), "not found") {
 			return insertedID, "", nil
@@ -408,47 +449,23 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 // HandleIncomingApprovalSteps handles incoming approval steps.
 // - Blocks approval steps if no user can approve the step.
 // - creates external approvals for external approval nodes.
-func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.ActivityMessage, []*store.IssueCommentMessage, error) {
+func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.IssueCommentMessage, error) {
 	if len(approval.ApprovalTemplates) == 0 {
-		return nil, nil, nil, nil
-	}
-
-	getActivityCreate := func(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status, comment string) (*store.ActivityMessage, error) {
-		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
-			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
-				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
-					Status: status,
-				},
-			},
-			IssueName: issue.Title,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      issue.UID,
-			Type:              api.ActivityIssueCommentCreate,
-			Level:             api.ActivityInfo,
-			Comment:           comment,
-			Payload:           string(activityPayload),
-		}, nil
+		return nil, nil, nil
 	}
 
 	var approvers []*storepb.IssuePayloadApproval_Approver
-	var activities []*store.ActivityMessage
 	var issueComments []*store.IssueCommentMessage
 
 	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
-		return nil, nil, nil, nil
+		return nil, nil, nil
 	}
 	if len(step.Nodes) != 1 {
-		return nil, nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+		return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
 	if step.Type != storepb.ApprovalStep_ANY {
-		return nil, nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
+		return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 	}
 	node := step.Nodes[0]
 	if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
@@ -457,12 +474,6 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 				Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
 				PrincipalId: api.SystemBotID,
 			})
-
-			activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			activities = append(activities, activity)
 
 			issueComments = append(issueComments, &store.IssueCommentMessage{
 				IssueUID: issue.UID,
@@ -476,7 +487,7 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 			})
 		}
 	}
-	return approvers, activities, issueComments, nil
+	return approvers, issueComments, nil
 }
 
 func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, externalNodeID string) error {
@@ -530,11 +541,12 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 }
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
-func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, activityManager *activity.Manager, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
-	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
+	policy, err := stores.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get project policy for project %q", issue.Project.UID)
 	}
+
 	var newConditionExpr string
 	if grantRequest.Condition != nil {
 		newConditionExpr = grantRequest.Condition.Expression
@@ -553,7 +565,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		return status.Errorf(codes.Internal, "user %v not found", userID)
 	}
 	for _, binding := range policy.Bindings {
-		if binding.Role != api.Role(grantRequest.Role) {
+		if binding.Role != grantRequest.Role {
 			continue
 		}
 		var oldConditionExpr string
@@ -564,34 +576,39 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 			continue
 		}
 		// Append
-		binding.Members = append(binding.Members, newUser)
+		binding.Members = append(binding.Members, common.FormatUserUID(newUser.ID))
 		updated = true
 		break
 	}
-	roleID := api.Role(strings.TrimPrefix(grantRequest.Role, "roles/"))
 	if !updated {
 		condition := grantRequest.Condition
+		if condition == nil {
+			condition = &expr.Expr{}
+		}
 		condition.Description = fmt.Sprintf("#%d", issue.UID)
-		policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
-			Role:      roleID,
-			Members:   []*store.UserMessage{newUser},
+		policy.Bindings = append(policy.Bindings, &storepb.Binding{
+			Role:      grantRequest.Role,
+			Members:   []string{common.FormatUserUID(newUser.ID)},
 			Condition: condition,
 		})
 	}
-	if _, err := stores.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
+
+	policyPayload, err := protojson.Marshal(policy)
+	if err != nil {
 		return err
 	}
-	// Post project IAM policy update activity.
-	if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
-		CreatorUID:        api.SystemBotID,
-		ResourceContainer: issue.Project.GetName(),
-		ContainerUID:      issue.Project.UID,
-		Type:              api.ActivityProjectMemberCreate,
-		Level:             api.ActivityInfo,
-		Comment:           fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, roleID),
-	}, &activity.Metadata{}); err != nil {
-		slog.Warn("Failed to create project activity", log.BBError(err))
+	if _, err := stores.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       issue.Project.UID,
+		ResourceType:      api.PolicyResourceTypeProject,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeProjectIAM,
+		InheritFromParent: false,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, api.SystemBotID); err != nil {
+		return err
 	}
+
 	return nil
 }
 
@@ -654,7 +671,7 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 		res, _, err := prog.ContextEval(ctx, map[string]any{
 			"resource": map[string]any{
 				"database_name":    database.DatabaseName,
-				"environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID),
+				"environment_name": common.FormatEnvironment(database.EffectiveEnvironmentID),
 				"instance_id":      database.InstanceID,
 			},
 		})
@@ -675,103 +692,74 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 	return matches, unmatches, nil
 }
 
-// GetMatchedAndUnmatchedTablesInSchemaGroup returns the matched and unmatched tables in the given schema group.
-func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *model.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
-	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var matched []string
-	var unmatched []string
-
-	for _, schema := range dbSchema.GetMetadata().Schemas {
-		for _, table := range schema.Tables {
-			res, _, err := prog.ContextEval(ctx, map[string]any{
-				"resource": map[string]any{
-					"table_name": table.Name,
-				},
-			})
-			if err != nil {
-				return nil, nil, status.Errorf(codes.Internal, err.Error())
-			}
-
-			val, err := res.ConvertToNative(reflect.TypeOf(false))
-			if err != nil {
-				return nil, nil, status.Errorf(codes.Internal, "expect bool result")
-			}
-
-			if boolVal, ok := val.(bool); ok && boolVal {
-				matched = append(matched, table.Name)
-			} else {
-				unmatched = append(unmatched, table.Name)
-			}
-		}
-	}
-	return matched, unmatched, nil
-}
-
-// ChangeIssueStatus changes the status of an issue.
-func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager *activity.Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
-	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
-	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
-	}
-
-	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-		OldStatus: issue.Status,
-		NewStatus: newStatus,
-		IssueName: updatedIssue.Title,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        updaterID,
-		ResourceContainer: issue.Project.GetName(),
-		ContainerUID:      issue.UID,
-		Type:              api.ActivityIssueStatusUpdate,
-		Level:             api.ActivityInfo,
-		Comment:           comment,
-		Payload:           string(payload),
-	}
-	if _, err := activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: updatedIssue,
-	}); err != nil {
-		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
-	}
-	return nil
-}
-
-// GetUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
-// the condition of role binding is respected and evaluated with request.time=time.Now().
-func GetUserRoles(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) ([]api.Role, error) {
-	var roles []api.Role
-	roles = append(roles, user.Roles...)
-
+// GetUserIAMPolicyBindings return the valid bindings for the user.
+func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.ProjectIamPolicy) []*storepb.Binding {
+	userIDFullName := common.FormatUserUID(user.ID)
 	currentTime := time.Now()
-	for _, projectPolicy := range projectPolicies {
-		for _, binding := range projectPolicy.Bindings {
-			hasUser := false
-			for _, member := range binding.Members {
-				if member.ID == user.ID || member.Email == api.AllUsers {
-					hasUser = true
-					break
+
+	var bindings []*storepb.Binding
+	for _, binding := range policy.Bindings {
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), currentTime)
+		if err != nil {
+			slog.Error("failed to eval binding condition", slog.String("expression", binding.Condition.GetExpression()), log.BBError(err))
+			continue
+		}
+		if !ok {
+			continue
+		}
+
+		hasUser := false
+		for _, member := range binding.Members {
+			if member == api.AllUsers {
+				hasUser = true
+				break
+			}
+			if userIDFullName == member {
+				hasUser = true
+				break
+			}
+			if strings.HasPrefix(member, common.UserGroupPrefix) {
+				groupEmail, err := common.GetUserGroupEmail(member)
+				if err != nil {
+					slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
+					continue
+				}
+				group, err := stores.GetUserGroup(ctx, groupEmail)
+				if err != nil {
+					slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
+					continue
+				}
+				if group == nil {
+					slog.Error("cannot found group", slog.String("group", member))
+					continue
+				}
+				for _, member := range group.Payload.Members {
+					if userIDFullName == member.Member {
+						hasUser = true
+						break
+					}
 				}
 			}
-			if !hasUser {
-				continue
-			}
+		}
+		if hasUser {
+			bindings = append(bindings, binding)
+		}
+	}
+	return bindings
+}
 
-			ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), currentTime)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to evaluate binding condition")
-			}
-			if !ok {
-				continue
-			}
+// getUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
+// the condition of role binding is respected and evaluated with request.time=time.Now().
+// the returned role name should in the roles/{id} format.
+func getUserRoles(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) ([]string, error) {
+	var roles []string
+	for _, userRole := range user.Roles {
+		roles = append(roles, common.FormatRole(userRole.String()))
+	}
 
+	for _, projectPolicy := range projectPolicies {
+		bindings := GetUserIAMPolicyBindings(ctx, stores, user, projectPolicy)
+		for _, binding := range bindings {
 			roles = append(roles, binding.Role)
 		}
 	}
@@ -781,29 +769,29 @@ func GetUserRoles(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMe
 }
 
 // See GetUserRoles.
-func GetUserRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[api.Role]bool, error) {
-	roles, err := GetUserRoles(user, projectPolicies...)
+func GetUserRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[api.Role]bool, error) {
+	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err
 	}
 
 	rolesMap := make(map[api.Role]bool)
 	for _, role := range roles {
-		rolesMap[role] = true
+		rolesMap[api.Role(strings.TrimPrefix(role, "roles/"))] = true
 	}
 	return rolesMap, nil
 }
 
 // See GetUserRoles. The returned map key format is roles/{role}.
-func GetUserFormattedRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[string]bool, error) {
-	roles, err := GetUserRoles(user, projectPolicies...)
+func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[string]bool, error) {
+	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err
 	}
 
 	rolesMap := make(map[string]bool)
 	for _, role := range roles {
-		rolesMap[common.FormatRole(role.String())] = true
+		rolesMap[role] = true
 	}
 	return rolesMap, nil
 }

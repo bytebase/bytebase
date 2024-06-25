@@ -1,6 +1,13 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
-  <template v-if="basicInfo.engine !== Engine.SPANNER">
+  <template
+    v-if="
+      basicInfo.engine !== Engine.SPANNER &&
+      basicInfo.engine !== Engine.BIGQUERY &&
+      basicInfo.engine !== Engine.DYNAMODB &&
+      basicInfo.engine !== Engine.DATABRICKS
+    "
+  >
     <div
       v-if="
         basicInfo.engine === Engine.MYSQL ||
@@ -136,6 +143,24 @@
           :placeholder="
             basicInfo.engine === Engine.CLICKHOUSE ? $t('common.default') : ''
           "
+        />
+      </div>
+      <div
+        v-if="
+          dataSource.authenticationType ===
+          DataSource_AuthenticationType.AWS_RDS_IAM
+        "
+        class="mt-4 sm:col-span-3 sm:col-start-1"
+      >
+        <label for="username" class="textlabel block">
+          {{ $t("instance.database-region") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <NInput
+          v-model:value="dataSource.region"
+          class="mt-2 w-full"
+          :disabled="!allowEdit"
+          :placeholder="'database region, for example, us-east-1'"
         />
       </div>
       <div
@@ -473,12 +498,36 @@
       </div>
     </div>
   </template>
-  <SpannerCredentialInput
-    v-else
-    v-model:value="dataSource.updatedPassword"
-    :write-only="!isCreating"
-    class="mt-4 sm:col-span-3 sm:col-start-1"
-  />
+  <template
+    v-if="
+      basicInfo.engine === Engine.SPANNER ||
+      basicInfo.engine === Engine.BIGQUERY
+    "
+  >
+    <div class="mt-2 sm:col-span-3 sm:col-start-1">
+      <NRadioGroup
+        v-model:value="dataSource.authenticationType"
+        class="textlabel"
+        :disabled="!allowEdit"
+      >
+        <NRadio :value="DataSource_AuthenticationType.PASSWORD">
+          {{ $t("common.credentials") }}
+        </NRadio>
+        <NRadio :value="DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM">
+          {{ $t("instance.password-type.google-iam") }}
+        </NRadio>
+      </NRadioGroup>
+    </div>
+
+    <GcpCredentialInput
+      v-if="
+        dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+      "
+      v-model:value="dataSource.updatedPassword"
+      :write-only="!isCreating"
+      class="mt-4 sm:col-span-3 sm:col-start-1"
+    />
+  </template>
 
   <template v-if="basicInfo.engine === Engine.ORACLE">
     <OracleSIDAndServiceNameInput
@@ -511,6 +560,54 @@
 MIIEvQ...
 -----END PRIVATE KEY-----"
         :allow-edit="allowEdit"
+      />
+    </div>
+  </template>
+
+  <template v-if="basicInfo.engine === Engine.DATABRICKS">
+    <div>
+      <div class="textlabel black mt-4">Warehouse ID</div>
+      <NInput
+        v-model:value="dataSource.warehouseId"
+        class="mt-2"
+        :disabled="!allowEdit"
+      />
+    </div>
+    <div class="mt-2 sm:col-span-3 sm:col-start-1">
+      <NRadioGroup v-model:value="databricksAuth">
+        <NRadio :value="'PASSWORD'"> Password </NRadio>
+        <NRadio :value="'ACCESS_TOKEN'"> Access Token </NRadio>
+      </NRadioGroup>
+    </div>
+
+    <div v-if="databricksAuth === 'PASSWORD'">
+      <div class="textlabel black mt-4">Username</div>
+      <NInput
+        v-model:value="dataSource.username"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+      />
+      <div class="textlabel black mt-4">Password</div>
+      <NInput
+        v-model:value="dataSource.password"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+      />
+      <div class="textlabel black mt-4">Account ID</div>
+      <NInput
+        v-model:value="dataSource.accountId"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+        placeholder="optional"
+      />
+    </div>
+    <div v-else>
+      <div class="textlabel black mt-4">Token</div>
+      <NInput
+        v-model:value="dataSource.authenticationPrivateKey"
+        class="mt-2 w-full"
+        :disabled="!allowEdit"
+        placeholder="personal access token"
       />
     </div>
   </template>
@@ -689,7 +786,7 @@ import {
   NUploadDragger,
   type UploadFileInfo,
 } from "naive-ui";
-import { watch, reactive, computed } from "vue";
+import { watch, reactive, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto/v1/common";
@@ -707,8 +804,7 @@ import {
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
-import { useInstanceSpecs } from "../specs";
-import SpannerCredentialInput from "./SpannerCredentialInput.vue";
+import GcpCredentialInput from "./GcpCredentialInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
 
@@ -722,6 +818,7 @@ const props = defineProps<{
 
 const {
   instance,
+  specs,
   isCreating,
   allowEdit,
   basicInfo,
@@ -738,7 +835,7 @@ const {
   showAuthenticationDatabase,
   hasReadonlyReplicaHost,
   hasReadonlyReplicaPort,
-} = useInstanceSpecs();
+} = specs;
 
 const state = reactive<LocalState>({
   passwordType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
@@ -757,6 +854,8 @@ watch(
   },
   { immediate: true, deep: true }
 );
+
+const databricksAuth = ref("PASSWORD");
 
 const hiveAuthentication = computed(() => {
   return props.dataSource.saslConfig?.krbConfig ? "KERBEROS" : "PASSWORD";

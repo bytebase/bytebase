@@ -15,6 +15,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	// 1MB.
+	contentLengthLimit = 1024 * 1024
+)
+
 func newEmptyCompletionList() *lsp.CompletionList {
 	return &lsp.CompletionList{
 		IsIncomplete: false,
@@ -33,6 +38,10 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	if err != nil {
 		return nil, err
 	}
+	if len(content) > contentLengthLimit {
+		// We don't want to parse a huge file.
+		return newEmptyCompletionList(), nil
+	}
 	_, valid, why := offsetForPosition(content, params.Position)
 	if !valid {
 		return nil, errors.Errorf("invalid position %d:%d (%s)", params.Position.Line, params.Position.Character, why)
@@ -47,11 +56,17 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		// Nothing.
 	case storepb.Engine_MSSQL:
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_SNOWFLAKE:
+	case storepb.Engine_DYNAMODB:
 	default:
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
 	}
-	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc, h.ListDatabaseNamesFunc)
+	candidates, err := base.Completion(ctx, engine, base.CompletionContext{
+		Scene:             h.getScene(),
+		DefaultDatabase:   defaultDatabase,
+		Metadata:          h.GetDatabaseMetadataFunc,
+		ListDatabaseNames: h.ListDatabaseNamesFunc,
+	}, string(content), params.Position.Line+1, params.Position.Character)
 	if err != nil {
 		// return errors will close the websocket connection, so we just log the error and return empty completion list.
 		slog.Error("Failed to get completion candidates", "err", err)
@@ -80,16 +95,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	}, nil
 }
 
-func generateSortText(params lsp.CompletionParams, candidate base.Candidate) string {
-	switch params.Context.TriggerCharacter {
-	case ".", " ", "\n":
-		return generateSortTextAfterDot(candidate)
-	default:
-		return string(candidate.Type) + candidate.Text
-	}
-}
-
-func generateSortTextAfterDot(candidate base.Candidate) string {
+func generateSortText(_ lsp.CompletionParams, candidate base.Candidate) string {
 	switch candidate.Type {
 	case base.CandidateTypeColumn:
 		return "01" + candidate.Text
@@ -101,6 +107,13 @@ func generateSortTextAfterDot(candidate base.Candidate) string {
 		return "04" + candidate.Text
 	case base.CandidateTypeFunction:
 		return "05" + candidate.Text
+	case base.CandidateTypeKeyword:
+		switch candidate.Text {
+		case "SELECT", "SHOW", "SET", "FROM", "WHERE":
+			return "09" + candidate.Text
+		default:
+			return "10" + candidate.Text
+		}
 	default:
 		return "10" + string(candidate.Type) + candidate.Text
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	database "github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -117,12 +119,37 @@ var (
 			},
 		},
 	}
+	MockMSSQLDatabase = &storepb.DatabaseSchemaMetadata{
+		Name: "master",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "dbo",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "pokes",
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_0",
+								Expressions: []string{"c1", "c2", "c3"},
+							},
+							{
+								Name:        "idx_1",
+								Expressions: []string{"c10", "c20"},
+							},
+						},
+					},
+					{Name: "pokes2"},
+					{Name: "pokes3"},
+				},
+			},
+		},
+	}
 )
 
 // TestCase is the data struct for test.
 type TestCase struct {
-	Statement string   `yaml:"statement"`
-	Want      []Advice `yaml:"want"`
+	Statement string            `yaml:"statement"`
+	Want      []*storepb.Advice `yaml:"want"`
 }
 
 type testCatalog struct {
@@ -134,7 +161,7 @@ func (c *testCatalog) GetFinder() *catalog.Finder {
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
-func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, schemaMetadata *storepb.DatabaseSchemaMetadata, record bool) {
+func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, needMetaData bool, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -155,7 +182,23 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err, rule)
 
+	sm := sheet.NewManager(nil)
 	for i, tc := range tests {
+		// Add engine types here for mocked database metadata.
+		var schemaMetadata *storepb.DatabaseSchemaMetadata
+		curDB := "TEST_DB"
+		if needMetaData {
+			switch dbType {
+			case storepb.Engine_POSTGRES:
+				schemaMetadata = MockPostgreSQLDatabase
+			case storepb.Engine_MSSQL:
+				curDB = "master"
+				schemaMetadata = MockMSSQLDatabase
+			default:
+				panic(fmt.Sprintf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)]))
+			}
+		}
+
 		database := MockMySQLDatabase
 		if dbType == storepb.Engine_POSTGRES {
 			database = MockPostgreSQLDatabase
@@ -180,15 +223,15 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Catalog:         &testCatalog{finder: finder},
 			Driver:          nil,
 			Context:         context.Background(),
-			CurrentDatabase: "TEST_DB",
+			CurrentDatabase: curDB,
 			DBSchema:        schemaMetadata,
 		}
 
-		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
+		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)
 		// Sort adviceList by (line, content)
 		sort.Slice(adviceList, func(i, j int) bool {
-			if adviceList[i].Line != adviceList[j].Line {
-				return adviceList[i].Line < adviceList[j].Line
+			if adviceList[i].GetStartPosition().Line != adviceList[j].GetStartPosition().Line {
+				return adviceList[i].GetStartPosition().Line < adviceList[j].GetStartPosition().Line
 			}
 			return adviceList[i].Content < adviceList[j].Content
 		})
@@ -266,7 +309,7 @@ func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetad
 }
 
 // Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
+func (*MockDriver) Dump(_ context.Context, _ io.Writer) (string, error) {
 	return "", nil
 }
 
@@ -363,11 +406,13 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleFunctionDisallowCreate,
 		SchemaRuleStatementCreateSpecifySchema,
 		SchemaRuleStatementCheckSetRoleVariable,
-		SchemaRuleStatementWhereDisallowUsingFunction,
+		SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
 		SchemaRuleStatementDisallowMixDDLDML,
 		SchemaRuleStatementPriorBackupCheck,
 		SchemaRuleStatementJoinStrictColumnAttrs,
-		SchemaRuleTableDisallowSetCharset:
+		SchemaRuleTableDisallowSetCharset,
+		SchemaRuleStatementDisallowCrossDBQueries,
+		SchemaRuleIndexNotRedundant:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",

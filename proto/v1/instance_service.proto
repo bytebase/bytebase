@@ -21,7 +21,7 @@ service InstanceService {
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
     option (google.api.http) = {
       get: "/v1/instances"
-      additional_bindings {get: "/v1/{parent=projects/*}/instances"}
+      additional_bindings: {get: "/v1/{parent=projects/*}/instances"}
     };
     option (google.api.method_signature) = "";
   }
@@ -29,7 +29,7 @@ service InstanceService {
   rpc SearchInstances(SearchInstancesRequest) returns (SearchInstancesResponse) {
     option (google.api.http) = {
       get: "/v1/instances:search"
-      additional_bindings {get: "/v1/{parent=projects/*}/instances:search"}
+      additional_bindings: {get: "/v1/{parent=projects/*}/instances:search"}
     };
     option (google.api.method_signature) = "";
   }
@@ -102,7 +102,7 @@ service InstanceService {
       post: "/v1/{parent=instances/*}:syncSlowQueries"
       body: "*"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{parent=projects/*}:syncSlowQueries"
         body: "*"
       }
@@ -369,7 +369,7 @@ message DataSource {
   string host = 8;
   string port = 9;
   string database = 10;
-  // srv and authentication_database are used for MongoDB.
+  // srv, authentication_database and replica_set are used for MongoDB.
   bool srv = 11;
   string authentication_database = 12;
   // sid and service_name are used for Oracle.
@@ -414,6 +414,17 @@ message DataSource {
   repeated Address additional_addresses = 24 [(google.api.field_behavior) = OPTIONAL];
   // replica_set is used for MongoDB replica set.
   string replica_set = 25;
+
+  // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
+  bool direct_connection = 26;
+
+  // region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
+  string region = 27;
+
+  // account_id is used by Databricks.
+  string account_id = 28;
+  // warehouse_id is used by Databricks.
+  string warehouse_id = 29;
 }
 
 enum DataSourceType {

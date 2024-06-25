@@ -3,9 +3,7 @@ package v1
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"slices"
 	"sort"
@@ -20,13 +18,11 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -40,6 +36,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -317,38 +314,30 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 }
 
 func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
-	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-		ProjectID: &projectID,
+	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.Errorf("cannot found project %s", projectID)
+	}
+
+	policy, err := s.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
 	}
 
 	expressionDBsFromAllRoles := make(map[string]bool)
-	for _, binding := range policy.Bindings {
-		hasUser := false
-		for _, member := range binding.Members {
-			if member.ID == user.ID || member.Email == api.AllUsers {
-				hasUser = true
-				break
-			}
-		}
-		if !hasUser {
-			continue
-		}
+	bindings := utils.GetUserIAMPolicyBindings(ctx, s, user, policy)
 
-		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
+	for _, binding := range bindings {
+		permissions, err := iamManager.GetPermissions(ctx, binding.Role)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
 		}
 		if !slices.Contains(permissions, needPermission) {
-			continue
-		}
-		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to eval binding condition")
-		}
-		if !ok {
 			continue
 		}
 
@@ -481,11 +470,6 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if project != nil {
-		if err := s.createTransferProjectActivity(ctx, project, principalID, databaseMessage); err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-	}
 
 	database, err := s.convertToDatabase(ctx, updatedDatabase)
 	if err != nil {
@@ -600,9 +584,6 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
 		for _, databaseMessage := range updatedDatabases {
 			database, err := s.convertToDatabase(ctx, databaseMessage)
 			if err != nil {
@@ -670,7 +651,10 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		filter = &metadataFilter{schema: schema, table: table}
 	}
-	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), dbSchema.GetConfig(), filter)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), filter, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	// Set effective masking level only if filter is set for a table.
@@ -776,11 +760,10 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	for _, path := range request.UpdateMask.Paths {
 		if path == "schema_configs" {
 			databaseMetadata := request.GetDatabaseMetadata()
-			databaseConfig := convertV1DatabaseConfig(&v1pb.DatabaseConfig{
-				Name:                     databaseName,
-				SchemaConfigs:            databaseMetadata.GetSchemaConfigs(),
-				ClassificationFromConfig: databaseMetadata.ClassificationFromConfig,
-			})
+			databaseConfig := convertV1DatabaseConfig(ctx, &v1pb.DatabaseConfig{
+				Name:          databaseName,
+				SchemaConfigs: databaseMetadata.GetSchemaConfigs(),
+			}, nil /* optionalStores */)
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err
 			}
@@ -795,7 +778,10 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), dbSchema.GetConfig(), nil /* filter */)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), nil /* filter */, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 	return v1pbMetadata, nil
 }
@@ -946,29 +932,23 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
 	}
 
+	nextPageToken := ""
 	if len(changeHistories) == limitPlusOne {
-		nextPageToken, err := getPageToken(limit, offset+limit)
+		nextPageToken, err = getPageToken(limit, offset+limit)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		converted, err := convertToChangeHistories(changeHistories[:limit])
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
-		}
-		return &v1pb.ListChangeHistoriesResponse{
-			ChangeHistories: converted,
-			NextPageToken:   nextPageToken,
-		}, nil
+		changeHistories = changeHistories[:limit]
 	}
 
 	// no subsequent pages
-	converted, err := convertToChangeHistories(changeHistories)
+	converted, err := s.convertToChangeHistories(ctx, changeHistories)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
 	}
 	return &v1pb.ListChangeHistoriesResponse{
 		ChangeHistories: converted,
-		NextPageToken:   "",
+		NextPageToken:   nextPageToken,
 	}, nil
 }
 
@@ -1024,7 +1004,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if len(changeHistory) > 1 {
 		return nil, status.Errorf(codes.Internal, "expect to find one change history, got %d", len(changeHistory))
 	}
-	converted, err := convertToChangeHistory(changeHistory[0])
+	converted, err := s.convertToChangeHistory(ctx, changeHistory[0])
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert change history, error: %v", err)
 	}
@@ -1184,10 +1164,10 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	return engine, nil
 }
 
-func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {
+func (s *DatabaseService) convertToChangeHistories(ctx context.Context, h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {
 	var changeHistories []*v1pb.ChangeHistory
 	for _, history := range h {
-		converted, err := convertToChangeHistory(history)
+		converted, err := s.convertToChangeHistory(ctx, history)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert change history")
 		}
@@ -1196,7 +1176,7 @@ func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.
 	return changeHistories, nil
 }
 
-func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
+func (s *DatabaseService) convertToChangeHistory(ctx context.Context, h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
 	v1pbHistory := &v1pb.ChangeHistory{
 		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
 		Uid:               h.UID,
@@ -1219,11 +1199,19 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
 		Issue:             "",
 	}
-	if h.SheetID != nil {
-		v1pbHistory.StatementSheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.SheetIDPrefix, *h.SheetID)
+	var projectID string
+	if h.ProjectUID != nil {
+		p, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: h.ProjectUID})
+		if err != nil {
+			return nil, err
+		}
+		projectID = p.ResourceID
 	}
-	if h.IssueUID != nil {
-		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.IssueNamePrefix, *h.IssueUID)
+	if h.SheetID != nil && projectID != "" {
+		v1pbHistory.StatementSheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.SheetIDPrefix, *h.SheetID)
+	}
+	if h.IssueUID != nil && projectID != "" {
+		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.IssueNamePrefix, *h.IssueUID)
 	}
 	if h.Payload != nil && h.Payload.ChangedResources != nil {
 		v1pbHistory.ChangedResources = convertToChangedResources(h.Payload.ChangedResources)
@@ -1845,10 +1833,10 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	}
 	environment, effectiveEnvironment := "", ""
 	if database.EnvironmentID != "" {
-		environment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EnvironmentID)
+		environment = common.FormatEnvironment(database.EnvironmentID)
 	}
 	if database.EffectiveEnvironmentID != "" {
-		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
+		effectiveEnvironment = common.FormatEnvironment(database.EffectiveEnvironmentID)
 	}
 	instanceResource, err := convertToInstanceResource(instance)
 	if err != nil {
@@ -1871,47 +1859,6 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 type metadataFilter struct {
 	schema string
 	table  string
-}
-
-func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, newProject *store.ProjectMessage, updaterID int, databases ...*store.DatabaseMessage) error {
-	var creates []*store.ActivityMessage
-	for _, database := range databases {
-		oldProject, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-		if err != nil {
-			return err
-		}
-		bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
-			DatabaseID:   database.UID,
-			DatabaseName: database.DatabaseName,
-		})
-		if err != nil {
-			return err
-		}
-		creates = append(creates,
-			&store.ActivityMessage{
-				CreatorUID:        updaterID,
-				ResourceContainer: oldProject.GetName(),
-				ContainerUID:      oldProject.UID,
-				Type:              api.ActivityProjectDatabaseTransfer,
-				Level:             api.ActivityInfo,
-				Comment:           fmt.Sprintf("Transferred out database %q to project %q.", database.DatabaseName, newProject.Title),
-				Payload:           string(bytes),
-			},
-			&store.ActivityMessage{
-				CreatorUID:        updaterID,
-				ResourceContainer: newProject.GetName(),
-				ContainerUID:      newProject.UID,
-				Type:              api.ActivityProjectDatabaseTransfer,
-				Level:             api.ActivityInfo,
-				Comment:           fmt.Sprintf("Transferred in database %q from project %q.", database.DatabaseName, oldProject.Title),
-				Payload:           string(bytes),
-			},
-		)
-	}
-	if _, err := s.store.BatchCreateActivityV2(ctx, creates); err != nil {
-		slog.Warn("failed to create activities for database project updates", log.BBError(err))
-	}
-	return nil
 }
 
 func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, instanceID, databaseName string) []*v1pb.Secret {
@@ -2300,7 +2247,7 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 			retErr = err
 			continue
 		}
-		if err := protojson.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
 			retErr = err
 			continue
 		}

@@ -13,8 +13,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -28,19 +28,19 @@ const (
 
 // SchedulerV2 is the V2 scheduler for task run.
 type SchedulerV2 struct {
-	store           *store.Store
-	stateCfg        *state.State
-	activityManager *activity.Manager
-	executorMap     map[api.TaskType]Executor
+	store          *store.Store
+	stateCfg       *state.State
+	webhookManager *webhook.Manager
+	executorMap    map[api.TaskType]Executor
 }
 
 // NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(store *store.Store, stateCfg *state.State, activityManager *activity.Manager) *SchedulerV2 {
+func NewSchedulerV2(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager) *SchedulerV2 {
 	return &SchedulerV2{
-		store:           store,
-		stateCfg:        stateCfg,
-		activityManager: activityManager,
-		executorMap:     map[api.TaskType]Executor{},
+		store:          store,
+		stateCfg:       stateCfg,
+		webhookManager: webhookManager,
+		executorMap:    map[api.TaskType]Executor{},
 	}
 }
 
@@ -229,10 +229,18 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, api.SystemBotID); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
-	}
 
-	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, []*store.TaskMessage{task}, issue, "", api.SystemBotID); err != nil {
-		slog.Error("failed to create activities for running tasks", log.BBError(err))
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   s.store.GetSystemBotUser(ctx),
+			Type:    webhook.EventTypeTaskRunStatusUpdate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+				Title:  issue.Title,
+				Status: api.TaskRunPending.String(),
+			},
+		})
 	}
 
 	return nil
@@ -512,7 +520,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
 
-		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunFailed)
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunFailed, taskRunResult.Detail)
 		return
 	}
 
@@ -560,7 +568,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
 
-		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunDone)
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunDone, "")
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
 	}
@@ -646,10 +654,11 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							},
 						},
 					}
-					return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 						IssueUID: issue.UID,
 						Payload:  p,
 					}, api.SystemBotID)
+					return err
 				}(); err != nil {
 					slog.Warn("failed to create issue comment", log.BBError(err))
 				}
@@ -657,29 +666,17 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				// every task in the stage terminated
 				// create "stage ends" activity.
 				if err := func() error {
-					createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-						StageID:               taskStage.ID,
-						StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
-						IssueName:             issue.Title,
-						StageName:             taskStage.Name,
-					}
-					bytes, err := json.Marshal(createActivityPayload)
-					if err != nil {
-						return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
-					}
-					activityCreate := &store.ActivityMessage{
-						CreatorUID:        api.SystemBotID,
-						ResourceContainer: issue.Project.GetName(),
-						ContainerUID:      *issue.PipelineUID,
-						Type:              api.ActivityPipelineStageStatusUpdate,
-						Level:             api.ActivityInfo,
-						Payload:           string(bytes),
-					}
-					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-						Issue: issue,
-					}); err != nil {
-						return errors.Wrap(err, "failed to create activity")
-					}
+					s.webhookManager.CreateEvent(ctx, &webhook.Event{
+						Actor:   s.store.GetSystemBotUser(ctx),
+						Type:    webhook.EventTypeStageStatusUpdate,
+						Comment: "",
+						Issue:   webhook.NewIssue(issue),
+						Project: webhook.NewProject(issue.Project),
+						StageStatusUpdate: &webhook.EventStageStatusUpdate{
+							StageTitle: taskStage.Name,
+							StageUID:   taskStage.ID,
+						},
+					})
 					return nil
 				}(); err != nil {
 					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
@@ -693,25 +690,17 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					if err != nil {
 						return errors.Wrapf(err, "failed to get rollout policy")
 					}
-					payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
-						RolloutPolicy: policy,
-						StageName:     nextStage.Name,
+					s.webhookManager.CreateEvent(ctx, &webhook.Event{
+						Actor:   s.store.GetSystemBotUser(ctx),
+						Type:    webhook.EventTypeIssueRolloutReady,
+						Comment: "",
+						Issue:   webhook.NewIssue(issue),
+						Project: webhook.NewProject(issue.Project),
+						IssueRolloutReady: &webhook.EventIssueRolloutReady{
+							RolloutPolicy: policy,
+							StageName:     nextStage.Name,
+						},
 					})
-					if err != nil {
-						return errors.Wrapf(err, "failed to marshal activity payload")
-					}
-					create := &store.ActivityMessage{
-						CreatorUID:        api.SystemBotID,
-						ResourceContainer: issue.Project.GetName(),
-						ContainerUID:      nextStage.PipelineID,
-						Type:              api.ActivityNotifyPipelineRollout,
-						Level:             api.ActivityInfo,
-						Comment:           "",
-						Payload:           string(payload),
-					}
-					if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
-						return err
-					}
 					return nil
 				}(); err != nil {
 					slog.Error("failed to create rollout release notification activity", log.BBError(err))
@@ -734,7 +723,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 						fromStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[issue.Status.String()])
 						toStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[updatedIssue.Status.String()])
-						if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+						if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 							IssueUID: issue.UID,
 							Payload: &storepb.IssueCommentPayload{
 								Event: &storepb.IssueCommentPayload_IssueUpdate_{
@@ -748,28 +737,13 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 						}
 
-						payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-							OldStatus: issue.Status,
-							NewStatus: updatedIssue.Status,
-							IssueName: updatedIssue.Title,
+						s.webhookManager.CreateEvent(ctx, &webhook.Event{
+							Actor:   s.store.GetSystemBotUser(ctx),
+							Type:    webhook.EventTypeIssueStatusUpdate,
+							Comment: "",
+							Issue:   webhook.NewIssue(updatedIssue),
+							Project: webhook.NewProject(updatedIssue.Project),
 						})
-						if err != nil {
-							return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
-						}
-						activityCreate := &store.ActivityMessage{
-							CreatorUID:        api.SystemBotID,
-							ResourceContainer: updatedIssue.Project.GetName(),
-							ContainerUID:      updatedIssue.UID,
-							Type:              api.ActivityIssueStatusUpdate,
-							Level:             api.ActivityInfo,
-							Comment:           "",
-							Payload:           string(payload),
-						}
-						if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-							Issue: updatedIssue,
-						}); err != nil {
-							return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
-						}
 
 						return nil
 					}(); err != nil {
@@ -786,7 +760,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 	}
 }
 
-func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus api.TaskRunStatus) {
+func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus api.TaskRunStatus, errDetail string) {
 	if err := func() error {
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
 			PipelineID: &task.PipelineID,
@@ -797,31 +771,18 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 		if issue == nil {
 			return nil
 		}
-
-		createActivityPayload := api.ActivityPipelineTaskRunStatusUpdatePayload{
-			TaskID:    task.ID,
-			NewStatus: newStatus,
-			IssueName: issue.Title,
-			TaskName:  task.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal ActivityPipelineTaskRunStatusUpdatePayload payload")
-		}
-		activityCreate := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      task.PipelineID,
-			Type:              api.ActivityPipelineTaskRunStatusUpdate,
-			Level:             api.ActivityInfo,
-			Payload:           string(bytes),
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return errors.Wrap(err, "failed to create activity")
-		}
-
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   s.store.GetSystemBotUser(ctx),
+			Type:    webhook.EventTypeTaskRunStatusUpdate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+				Title:  task.Name,
+				Status: newStatus.String(),
+				Detail: errDetail,
+			},
+		})
 		return nil
 	}(); err != nil {
 		slog.Error("failed to create activity for task run status update", log.BBError(err))

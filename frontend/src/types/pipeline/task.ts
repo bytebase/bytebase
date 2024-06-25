@@ -3,7 +3,6 @@ import type { Database } from "../database";
 import type {
   DatabaseId,
   InstanceId,
-  IssueId,
   ProjectId,
   SheetId,
   TaskId,
@@ -66,7 +65,6 @@ export type TaskDatabaseSchemaUpdatePayload = {
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
-  schemaGroupName?: string;
 };
 
 export type TaskDatabaseSchemaUpdateSDLPayload = {
@@ -87,20 +85,11 @@ export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
   skippedReason: string;
 };
 
-export type RollbackSQLStatus = "PENDING" | "DONE" | "FAILED";
-
 export type TaskDatabaseDataUpdatePayload = {
   skipped: boolean;
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
-  schemaGroupName?: string;
-  rollbackEnabled: boolean;
-  rollbackSqlStatus?: RollbackSQLStatus;
-  rollbackSheetId?: SheetId;
-  rollbackError?: string;
-  rollbackFromIssueId?: IssueId;
-  rollbackFromTaskId?: TaskId;
 };
 
 export type TaskPayload =
@@ -173,13 +162,11 @@ export type TaskCreate = {
   characterSet?: string;
   collation?: string;
   earliestAllowedTs: number;
-  rollbackEnabled?: boolean;
 };
 
 export type TaskPatch = {
   sheetId?: SheetId;
   earliestAllowedTs?: number;
-  rollbackEnabled?: boolean;
   updatedTs?: number;
 };
 
@@ -232,7 +219,6 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.syntax"
   | "bb.task-check.database.statement.compatibility"
   | "bb.task-check.database.statement.advise"
-  | "bb.task-check.database.statement.type"
   | "bb.task-check.database.connect"
   | "bb.task-check.database.ghost.sync"
   | "bb.task-check.issue.lgtm"

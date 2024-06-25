@@ -1,5 +1,5 @@
 <template>
-  <DrawerContent>
+  <DrawerContent class="max-w-[100vw]">
     <template #header>
       <div class="flex flex-col gap-y-1">
         <span>
@@ -167,8 +167,7 @@
                 <AdvancedSearch
                   v-model:params="state.params"
                   :autofocus="false"
-                  :placeholder="$t('database.filter-database')"
-                  :scope-options="scopeOptions"
+                  :placeholder="$t('database.filter-database-group')"
                 />
                 <DatabaseGroupDataTable
                   :database-group-list="filteredDatabaseGroupList"
@@ -194,22 +193,35 @@
     <template #footer>
       <div class="flex-1 flex items-center justify-between">
         <div>
-          <div
+          <NTooltip
             v-if="
               flattenSelectedDatabaseUidList.length > 0 &&
               state.alterType === 'MULTI_DB'
             "
-            class="textinfolabel"
           >
-            {{
-              $t("database.selected-n-databases", {
-                n: flattenSelectedDatabaseUidList.length,
-              })
-            }}
-          </div>
+            <template #trigger>
+              <div class="textinfolabel">
+                {{
+                  $t("database.selected-n-databases", {
+                    n: flattenSelectedDatabaseUidList.length,
+                  })
+                }}
+              </div>
+            </template>
+            <div class="mx-2">
+              <ul class="list-disc">
+                <li v-for="db in flattenSelectedDatabaseList" :key="db.name">
+                  {{ db.databaseName }}
+                </li>
+              </ul>
+            </div>
+          </NTooltip>
         </div>
 
         <div class="flex items-center justify-end gap-x-3">
+          <NCheckbox v-if="!props.planOnly" v-model:checked="state.planOnly">
+            {{ $t("issue.sql-review-only") }}
+          </NCheckbox>
           <NButton @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>
@@ -250,14 +262,8 @@
     v-if="state.showSchemaEditorModal"
     :database-id-list="schemaEditorContext.databaseIdList"
     :alter-type="state.alterType"
+    :plan-only="state.planOnly"
     @close="state.showSchemaEditorModal = false"
-  />
-
-  <DatabaseGroupPrevEditorModal
-    v-if="state.showDatabaseGroupPrevModal"
-    :issue-type="type"
-    :database-group-name="state.selectedDatabaseGroupName!"
-    @close="state.showDatabaseGroupPrevModal = false"
   />
 </template>
 
@@ -270,6 +276,7 @@ import {
   NRadio,
   NInputGroup,
   NInputGroupLabel,
+  NCheckbox,
 } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive, ref, watch, watchEffect, h } from "vue";
@@ -278,7 +285,10 @@ import { useRouter } from "vue-router";
 import { DatabaseGroupDataTable } from "@/components/DatabaseGroup";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   hasFeature,
   useCurrentUserV1,
@@ -287,18 +297,15 @@ import {
   useEnvironmentV1List,
   useProjectV1Store,
   useDBGroupStore,
+  usePageMode,
 } from "@/store";
-import type {
-  ComposedDatabase,
-  ComposedDatabaseGroup,
-  FeatureType,
-} from "@/types";
+import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import type { SearchParams } from "@/utils";
 import {
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
@@ -307,10 +314,10 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
 } from "@/utils";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import AdvancedSearch from "../AdvancedSearch";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import { DatabaseLabelFilter, DrawerContent } from "../v2";
-import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
 import ProjectStandardView from "./ProjectStandardView.vue";
 import ProjectTenantView from "./ProjectTenantView.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
@@ -325,8 +332,9 @@ type LocalState = {
   selectedDatabaseUidList: Set<string>;
   showSchemaEditorModal: boolean;
   selectedDatabaseGroupName?: string;
-  showDatabaseGroupPrevModal: boolean;
   params: SearchParams;
+  // planOnly is used to indicate whether only to create plan.
+  planOnly: boolean;
 };
 
 const props = defineProps({
@@ -340,6 +348,10 @@ const props = defineProps({
     >,
     required: true,
   },
+  planOnly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["dismiss"]);
@@ -350,6 +362,9 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
+const pageMode = usePageMode();
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const featureModalContext = ref<{
   feature?: FeatureType;
@@ -369,11 +384,11 @@ const state = reactive<LocalState>({
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   selectedLabels: [],
-  showDatabaseGroupPrevModal: false,
   params: {
     query: "",
     scopes: [],
   },
+  planOnly: props.planOnly,
 });
 
 const scopeOptions = useCommonSearchScopeOptions(
@@ -450,22 +465,26 @@ watch(
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
-const { ready } = useSearchDatabaseV1List({
-  filter: "instance = instances/-",
-});
+const { ready } = useSearchDatabaseV1List(
+  computed(() => {
+    const filters = ["instance = instances/-"];
+    const project = selectedProject.value;
+    if (project) {
+      filters.push(`project = ${project.name}`);
+    }
+    return {
+      filter: filters.join(" && "),
+    };
+  })
+);
 
 const prepareDatabaseGroupList = async () => {
-  let list: ComposedDatabaseGroup[] = [];
   if (selectedProject.value) {
-    list = await dbGroupStore.getOrFetchDBGroupListByProjectName(
+    await dbGroupStore.getOrFetchDBGroupListByProjectName(
       selectedProject.value.name
     );
   } else {
-    list = await dbGroupStore.fetchAllDatabaseGroupList();
-  }
-
-  for (const group of list) {
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(group.name);
+    await dbGroupStore.fetchAllDatabaseGroupList();
   }
 };
 
@@ -488,34 +507,36 @@ const rawDatabaseList = computed(() => {
 });
 
 const filteredDatabaseList = computed(() => {
-  let list = [...rawDatabaseList.value];
-
-  list = list.filter((db) => {
-    if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-      return (
-        extractEnvironmentResourceName(db.effectiveEnvironment) ===
+  const list = rawDatabaseList.value.filter((db) => {
+    if (
+      selectedEnvironment.value !== `${UNKNOWN_ID}` &&
+      extractEnvironmentResourceName(db.effectiveEnvironment) !==
         selectedEnvironment.value
-      );
+    ) {
+      return false;
     }
-    if (selectedInstance.value !== `${UNKNOWN_ID}`) {
-      return (
-        extractInstanceResourceName(db.instance) === selectedInstance.value
-      );
+    if (
+      selectedInstance.value !== `${UNKNOWN_ID}` &&
+      extractInstanceResourceName(db.instance) !== selectedInstance.value
+    ) {
+      return false;
     }
-    return filterDatabaseV1ByKeyword(db, state.params.query.trim(), [
-      "name",
-      "environment",
-      "instance",
-      "project",
-    ]);
-  });
 
-  const labels = state.selectedLabels;
-  if (labels.length > 0) {
-    list = list.filter((db) => {
-      return labels.some((kv) => db.labels[kv.key] === kv.value);
-    });
-  }
+    const filterByKeyword = filterDatabaseV1ByKeyword(
+      db,
+      state.params.query.trim(),
+      ["name", "environment", "instance", "project"]
+    );
+    if (!filterByKeyword) {
+      return false;
+    }
+
+    if (state.selectedLabels.length > 0) {
+      return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
+    }
+
+    return true;
+  });
 
   return sortDatabaseV1List(list);
 });
@@ -576,21 +597,52 @@ const allowGenerateMultiDb = computed(() => {
   }
 });
 
+const previewDatabaseGroupIssue = () => {
+  if (!state.selectedDatabaseGroupName) {
+    // Should not reach here.
+    return;
+  }
+
+  const databaseGroup = dbGroupStore.getDBGroupByName(
+    state.selectedDatabaseGroupName
+  );
+  if (!databaseGroup) {
+    console.error("Database group not found");
+    return;
+  }
+
+  router.push(
+    generateDatabaseGroupIssueRoute(
+      props.type,
+      databaseGroup,
+      "",
+      state.planOnly
+    )
+  );
+};
+
+const flattenSelectedDatabaseList = computed(() =>
+  flattenSelectedDatabaseUidList.value.map(
+    (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
+  )
+);
+
 // Also works when single db selected.
 const generateMultiDb = async () => {
   if (
     state.databaseSelectedTab === "DATABASE_GROUP" &&
     state.selectedDatabaseGroupName
   ) {
-    state.showDatabaseGroupPrevModal = true;
+    previewDatabaseGroupIssue();
     return;
   }
 
-  const selectedDatabaseList = flattenSelectedDatabaseUidList.value.map(
-    (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
-  );
-
-  if (isEditSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
+  if (
+    flattenSelectedDatabaseList.value.length === 1 &&
+    isEditSchema.value &&
+    allowUsingSchemaEditor(flattenSelectedDatabaseList.value) &&
+    !isStandaloneMode.value
+  ) {
     schemaEditorContext.value.databaseIdList = [
       ...flattenSelectedDatabaseUidList.value,
     ];
@@ -607,15 +659,21 @@ const generateMultiDb = async () => {
     template: props.type,
     name: generateIssueName(
       props.type,
-      selectedDatabaseList.map((db) => db.databaseName)
+      flattenSelectedDatabaseList.value.map((db) => db.databaseName)
     ),
-    databaseList: selectedDatabaseList.map((db) => db.name).join(","),
+    databaseList: flattenSelectedDatabaseList.value
+      .map((db) => db.name)
+      .join(","),
   };
+
   router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: state.planOnly
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.name),
       issueSlug: "create",
+      planSlug: "create",
     },
     query,
   });
@@ -650,23 +708,11 @@ const handleDatabaseGroupsSelectionChanged = (
 ): void => {
   const databaseGroupName = head(Array.from(databaseGroupNames));
   if (!databaseGroupName) return;
-  selectDatabaseGroup(databaseGroupName, true);
-};
-
-const selectDatabaseGroup = async (
-  databaseGroupName: string,
-  showModal = false
-) => {
   if (!hasDatabaseGroupFeature.value) {
     featureModalContext.value.feature = "bb.feature.database-grouping";
     return;
   }
-
   state.selectedDatabaseGroupName = databaseGroupName;
-
-  if (showModal) {
-    state.showDatabaseGroupPrevModal = true;
-  }
 };
 
 const generateTenant = async () => {
@@ -674,7 +720,7 @@ const generateTenant = async () => {
     state.databaseSelectedTab === "DATABASE_GROUP" &&
     state.selectedDatabaseGroupName
   ) {
-    state.showDatabaseGroupPrevModal = true;
+    previewDatabaseGroupIssue();
     return;
   }
 
@@ -694,7 +740,7 @@ const generateTenant = async () => {
     const databaseList = databaseV1Store.databaseListByProject(
       selectedProject.value.name
     );
-    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = databaseList
         .filter((database) => database.syncState === State.ACTIVE)
         .map((database) => database.uid);
@@ -717,7 +763,7 @@ const generateTenant = async () => {
         databaseList.push(database);
       }
     }
-    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = [
         ...flattenSelectedDatabaseUidList.value,
       ];
@@ -736,10 +782,13 @@ const generateTenant = async () => {
   emit("dismiss");
 
   router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: state.planOnly
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(selectedProject.value.name),
       issueSlug: "create",
+      planSlug: "create",
     },
     query,
   });

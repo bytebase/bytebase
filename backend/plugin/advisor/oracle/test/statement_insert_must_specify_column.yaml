@@ -1,16 +1,18 @@
 - statement: INSERT INTO tech_book(id, name) VALUES (1, '1')
   want:
-    - status: SUCCESS
+    - status: 1
       code: 0
       title: OK
       content: ""
-      line: 0
-      details: ""
+      detail: ""
+      startposition: null
 - statement: INSERT INTO tech_book VALUES (1, '1')
   want:
-    - status: WARN
+    - status: 2
       code: 1107
       title: statement.insert.must-specify-column
       content: INSERT statement should specify column name.
-      line: 1
-      details: ""
+      detail: ""
+      startposition:
+        line: 1
+        column: 0

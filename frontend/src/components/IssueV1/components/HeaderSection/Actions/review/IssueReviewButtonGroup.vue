@@ -97,7 +97,10 @@ const issueReviewActionList = computed(() => {
 });
 
 const issueStatusActionList = computed(() => {
-  return getApplicableIssueStatusActionList(issue.value);
+  return getApplicableIssueStatusActionList(
+    issue.value,
+    reviewContext.status.value
+  );
 });
 const forceRolloutActionList = computed((): ExtraActionOption[] => {
   // If it's not a database change related issue, no force rollout actions.

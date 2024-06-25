@@ -20,6 +20,9 @@ export const EngineTypeList = [
   "OCEANBASE",
   "DM",
   "RISINGWAVE",
+  "BIGQUERY",
+  "DYNAMODB",
+  "DATABRICKS",
 ] as const;
 
 export type EngineType = (typeof EngineTypeList)[number];
@@ -56,6 +59,12 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.DM;
     case "RISINGWAVE":
       return Engine.RISINGWAVE;
+    case "BIGQUERY":
+      return Engine.BIGQUERY;
+    case "DYNAMODB":
+      return Engine.DYNAMODB;
+    case "DATABRICKS":
+      return Engine.DATABRICKS;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -96,7 +105,14 @@ export function defaultCharset(type: EngineType): string {
       return "UNICODE";
     case "RISINGWAVE":
       return "UTF8";
+    case "BIGQUERY":
+      return "";
+    case "DYNAMODB":
+      return "";
+    case "DATABRICKS":
+      return "";
   }
+  return "";
 }
 
 export function engineName(type: EngineType): string {
@@ -131,7 +147,14 @@ export function engineName(type: EngineType): string {
       return "DM";
     case "RISINGWAVE":
       return "RisingWave";
+    case "BIGQUERY":
+      return "BigQuery";
+    case "DYNAMODB":
+      return "DynamoDB";
+    case "DATABRICKS":
+      return "Databricks";
   }
+  return "";
 }
 
 export function defaultCollation(type: EngineType): string {
@@ -164,6 +187,12 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "DM":
       return "BINARY_CI";
+    case "BIGQUERY":
+      return "";
+    case "DYNAMODB":
+      return "";
+    case "DATABRICKS":
+      return "";
   }
 }
 

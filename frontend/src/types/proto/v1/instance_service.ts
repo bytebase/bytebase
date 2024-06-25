@@ -508,7 +508,7 @@ export interface DataSource {
   host: string;
   port: string;
   database: string;
-  /** srv and authentication_database are used for MongoDB. */
+  /** srv, authentication_database and replica_set are used for MongoDB. */
   srv: boolean;
   authenticationDatabase: string;
   /** sid and service_name are used for Oracle. */
@@ -548,6 +548,14 @@ export interface DataSource {
   additionalAddresses: DataSource_Address[];
   /** replica_set is used for MongoDB replica set. */
   replicaSet: string;
+  /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
+  directConnection: boolean;
+  /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
+  region: string;
+  /** account_id is used by Databricks. */
+  accountId: string;
+  /** warehouse_id is used by Databricks. */
+  warehouseId: string;
 }
 
 export enum DataSource_AuthenticationType {
@@ -2462,6 +2470,10 @@ function createBaseDataSource(): DataSource {
     saslConfig: undefined,
     additionalAddresses: [],
     replicaSet: "",
+    directConnection: false,
+    region: "",
+    accountId: "",
+    warehouseId: "",
   };
 }
 
@@ -2541,6 +2553,18 @@ export const DataSource = {
     }
     if (message.replicaSet !== "") {
       writer.uint32(202).string(message.replicaSet);
+    }
+    if (message.directConnection === true) {
+      writer.uint32(208).bool(message.directConnection);
+    }
+    if (message.region !== "") {
+      writer.uint32(218).string(message.region);
+    }
+    if (message.accountId !== "") {
+      writer.uint32(226).string(message.accountId);
+    }
+    if (message.warehouseId !== "") {
+      writer.uint32(234).string(message.warehouseId);
     }
     return writer;
   },
@@ -2727,6 +2751,34 @@ export const DataSource = {
 
           message.replicaSet = reader.string();
           continue;
+        case 26:
+          if (tag !== 208) {
+            break;
+          }
+
+          message.directConnection = reader.bool();
+          continue;
+        case 27:
+          if (tag !== 218) {
+            break;
+          }
+
+          message.region = reader.string();
+          continue;
+        case 28:
+          if (tag !== 226) {
+            break;
+          }
+
+          message.accountId = reader.string();
+          continue;
+        case 29:
+          if (tag !== 234) {
+            break;
+          }
+
+          message.warehouseId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2773,6 +2825,10 @@ export const DataSource = {
         ? object.additionalAddresses.map((e: any) => DataSource_Address.fromJSON(e))
         : [],
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
+      directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
+      region: isSet(object.region) ? globalThis.String(object.region) : "",
+      accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
+      warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
     };
   },
 
@@ -2853,6 +2909,18 @@ export const DataSource = {
     if (message.replicaSet !== "") {
       obj.replicaSet = message.replicaSet;
     }
+    if (message.directConnection === true) {
+      obj.directConnection = message.directConnection;
+    }
+    if (message.region !== "") {
+      obj.region = message.region;
+    }
+    if (message.accountId !== "") {
+      obj.accountId = message.accountId;
+    }
+    if (message.warehouseId !== "") {
+      obj.warehouseId = message.warehouseId;
+    }
     return obj;
   },
 
@@ -2890,6 +2958,10 @@ export const DataSource = {
       : undefined;
     message.additionalAddresses = object.additionalAddresses?.map((e) => DataSource_Address.fromPartial(e)) || [];
     message.replicaSet = object.replicaSet ?? "";
+    message.directConnection = object.directConnection ?? false;
+    message.region = object.region ?? "";
+    message.accountId = object.accountId ?? "";
+    message.warehouseId = object.warehouseId ?? "";
     return message;
   },
 };

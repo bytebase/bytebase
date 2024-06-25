@@ -26,7 +26,7 @@ export const useChangelistDashboardContext = () => {
 };
 
 export const provideChangelistDashboardContext = (
-  project: string = "projects/-"
+  project: Ref<string> = ref("projects/-")
 ) => {
   const context: ChangelistDashboardContext = {
     filter: ref({

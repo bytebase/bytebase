@@ -17,10 +17,10 @@ service OrgPolicyService {
     option (google.api.http) = {
       get: "/v1/{name=policies/*}"
 
-      additional_bindings {get: "/v1/{name=projects/*/policies/*}"}
-      additional_bindings {get: "/v1/{name=environments/*/policies/*}"}
-      additional_bindings {get: "/v1/{name=instances/*/policies/*}"}
-      additional_bindings {get: "/v1/{name=instances/*/databases/*/policies/*}"}
+      additional_bindings: {get: "/v1/{name=projects/*/policies/*}"}
+      additional_bindings: {get: "/v1/{name=environments/*/policies/*}"}
+      additional_bindings: {get: "/v1/{name=instances/*/policies/*}"}
+      additional_bindings: {get: "/v1/{name=instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
   }
@@ -29,10 +29,10 @@ service OrgPolicyService {
     option (google.api.http) = {
       get: "/v1/policies"
 
-      additional_bindings {get: "/v1/{parent=projects/*}/policies"}
-      additional_bindings {get: "/v1/{parent=environments/*}/policies"}
-      additional_bindings {get: "/v1/{parent=instances/*}/policies"}
-      additional_bindings {get: "/v1/{parent=instances/*/databases/*}/policies"}
+      additional_bindings: {get: "/v1/{parent=projects/*}/policies"}
+      additional_bindings: {get: "/v1/{parent=environments/*}/policies"}
+      additional_bindings: {get: "/v1/{parent=instances/*}/policies"}
+      additional_bindings: {get: "/v1/{parent=instances/*/databases/*}/policies"}
     };
     option (google.api.method_signature) = "";
   }
@@ -42,19 +42,19 @@ service OrgPolicyService {
       post: "/v1/policies"
       body: "policy"
 
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{parent=projects/*}/policies"
         body: "policy"
       }
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{parent=environments/*}/policies"
         body: "policy"
       }
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{parent=instances/*}/policies"
         body: "policy"
       }
-      additional_bindings {
+      additional_bindings: {
         post: "/v1/{parent=instances/*/databases/*}/policies"
         body: "policy"
       }
@@ -67,19 +67,19 @@ service OrgPolicyService {
       patch: "/v1/{policy.name=policies/*}"
       body: "policy"
 
-      additional_bindings {
+      additional_bindings: {
         patch: "/v1/{policy.name=projects/*/policies/*}"
         body: "policy"
       }
-      additional_bindings {
+      additional_bindings: {
         patch: "/v1/{policy.name=environments/*/policies/*}"
         body: "policy"
       }
-      additional_bindings {
+      additional_bindings: {
         patch: "/v1/{policy.name=instances/*/policies/*}"
         body: "policy"
       }
-      additional_bindings {
+      additional_bindings: {
         patch: "/v1/{policy.name=instances/*/databases/*/policies/*}"
         body: "policy"
       }
@@ -91,10 +91,10 @@ service OrgPolicyService {
     option (google.api.http) = {
       delete: "/v1/{name=policies/*}"
 
-      additional_bindings {delete: "/v1/{name=projects/*/policies/*}"}
-      additional_bindings {delete: "/v1/{name=environments/*/policies/*}"}
-      additional_bindings {delete: "/v1/{name=instances/*/policies/*}"}
-      additional_bindings {delete: "/v1/{name=instances/*/databases/*/policies/*}"}
+      additional_bindings: {delete: "/v1/{name=projects/*/policies/*}"}
+      additional_bindings: {delete: "/v1/{name=environments/*/policies/*}"}
+      additional_bindings: {delete: "/v1/{name=instances/*/policies/*}"}
+      additional_bindings: {delete: "/v1/{name=instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
   }
@@ -183,7 +183,7 @@ message ListPoliciesResponse {
 }
 
 message Policy {
-  reserved 7, 10;
+  reserved 7, 10, 11;
 
   // The name of the policy.
   // Format: {resource name}/policies/{policy type}
@@ -203,12 +203,12 @@ message Policy {
   oneof policy {
     RolloutPolicy rollout_policy = 19;
     MaskingPolicy masking_policy = 9;
-    SQLReviewPolicy sql_review_policy = 11;
     SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
     MaskingRulePolicy masking_rule_policy = 17;
     MaskingExceptionPolicy masking_exception_policy = 18;
     RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
+    TagPolicy tag_policy = 21;
   }
 
   bool enforce = 13;
@@ -221,17 +221,17 @@ message Policy {
 }
 
 enum PolicyType {
-  reserved 2, 6;
+  reserved 2, 4, 6;
 
   POLICY_TYPE_UNSPECIFIED = 0;
   ROLLOUT_POLICY = 11;
-  SQL_REVIEW = 4;
   MASKING = 5;
   SLOW_QUERY = 7;
   DISABLE_COPY_DATA = 8;
   MASKING_RULE = 9;
   MASKING_EXCEPTION = 10;
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
+  TAG = 13;
 }
 
 enum PolicyResourceType {
@@ -273,11 +273,6 @@ message MaskData {
   string partial_masking_algorithm_id = 6;
 }
 
-message SQLReviewPolicy {
-  string name = 1;
-  repeated SQLReviewRule rules = 2;
-}
-
 message SQLReviewRule {
   string type = 1;
   SQLReviewRuleLevel level = 2;
@@ -309,7 +304,8 @@ message MaskingExceptionPolicy {
 
     // Member is the principal who bind to this exception policy instance.
     //
-    // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+    // - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+    // - `group:{email}`: An email address for group.
     string member = 3;
 
     // The condition that is associated with this exception policy instance.
@@ -333,4 +329,10 @@ message MaskingRulePolicy {
 
 message RestrictIssueCreationForSQLReviewPolicy {
   bool disallow = 1;
+}
+
+message TagPolicy {
+  // tags is the key - value map for resources.
+  // for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
+  map<string, string> tags = 1;
 }

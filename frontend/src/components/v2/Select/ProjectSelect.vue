@@ -7,21 +7,28 @@
     :filterable="true"
     :filter="filterByName"
     :disabled="disabled"
+    :render-label="renderLabel"
     class="bb-project-select"
     style="width: 12rem"
     @update:value="$emit('update:project', $event)"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { intersection } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useCurrentUserV1, useProjectV1Store, useProjectV1List } from "@/store";
 import type { ComposedProject } from "@/types";
-import { DEFAULT_PROJECT_ID, UNKNOWN_ID, unknownProject } from "@/types";
+import {
+  DEFAULT_PROJECT_ID,
+  UNKNOWN_ID,
+  unknownProject,
+  defaultProject,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
@@ -42,6 +49,7 @@ const props = withDefaults(
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
+    useResourceId?: boolean;
     filter?: (project: ComposedProject, index: number) => boolean;
   }>(),
   {
@@ -56,6 +64,7 @@ const props = withDefaults(
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
+    useResourceId: false,
     filter: () => true,
   }
 );
@@ -81,7 +90,7 @@ const { projectList } = useProjectV1List();
 const rawProjectList = computed(() => {
   return projectList.value.filter((project) => {
     if (project.uid === String(DEFAULT_PROJECT_ID)) {
-      return props.includeDefaultProject;
+      return false;
     }
     return (
       props.allowedProjectTenantModeList.includes(project.tenantMode) &&
@@ -90,10 +99,14 @@ const rawProjectList = computed(() => {
   });
 });
 
+const getValue = (project: Project): string => {
+  return props.useResourceId ? project.name : project.uid;
+};
+
 const isOrphanValue = computed(() => {
   if (props.project === undefined) return false;
 
-  return !rawProjectList.value.find((proj) => proj.uid === props.project);
+  return !rawProjectList.value.find((proj) => getValue(proj) === props.project);
 });
 
 const combinedProjectList = computed(() => {
@@ -101,7 +114,7 @@ const combinedProjectList = computed(() => {
     if (props.includeArchived) return true;
     if (project.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (project.uid === props.project) return true;
+    if (getValue(project) === props.project) return true;
     return false;
   });
 
@@ -139,6 +152,13 @@ const combinedProjectList = computed(() => {
     list.unshift(dummyProject);
   }
 
+  if (
+    props.project === String(DEFAULT_PROJECT_ID) ||
+    props.includeDefaultProject
+  ) {
+    list.unshift({ ...defaultProject() });
+  }
+
   if (props.project === String(UNKNOWN_ID) || props.includeAll) {
     const dummyAll = {
       ...unknownProject(),
@@ -154,7 +174,7 @@ const options = computed(() => {
   return combinedProjectList.value.map<ProjectSelectOption>((project) => {
     return {
       project,
-      value: project.uid,
+      value: getValue(project),
       label:
         project.uid === String(DEFAULT_PROJECT_ID)
           ? t("common.unassigned")
@@ -175,4 +195,9 @@ const filterByName = (pattern: string, option: SelectOption) => {
 };
 
 watchEffect(prepare);
+
+const renderLabel = (option: SelectOption) => {
+  const { project } = option as ProjectSelectOption;
+  return <ProjectNameCell project={project} mode="ALL_SHORT" />;
+};
 </script>

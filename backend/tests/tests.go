@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -122,7 +123,9 @@ type controller struct {
 	grpcConn                  *grpc.ClientConn
 	issueServiceClient        v1pb.IssueServiceClient
 	rolloutServiceClient      v1pb.RolloutServiceClient
+	planServiceClient         v1pb.PlanServiceClient
 	orgPolicyServiceClient    v1pb.OrgPolicyServiceClient
+	reviewConfigServiceClient v1pb.ReviewConfigServiceClient
 	projectServiceClient      v1pb.ProjectServiceClient
 	vcsConnectorServiceClient v1pb.VCSConnectorServiceClient
 	authServiceClient         v1pb.AuthServiceClient
@@ -224,10 +227,10 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err != nil {
 		return nil, err
 	}
-	if err := ctl.initWorkspaceProfile(metaCtx); err != nil {
+	if err := ctl.setLicense(metaCtx); err != nil {
 		return nil, err
 	}
-	if err := ctl.setLicense(metaCtx); err != nil {
+	if err := ctl.initWorkspaceProfile(metaCtx); err != nil {
 		return nil, err
 	}
 	for _, environment := range []string{"test", "prod"} {
@@ -293,6 +296,12 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 				},
 			},
 		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{
+				"value.workspace_profile_setting_value.disallow_signup",
+				"value.workspace_profile_setting_value.external_url",
+			},
+		},
 	})
 	return err
 }
@@ -312,7 +321,6 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) compon
 		ResourceDir:          resourceDir,
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
 	}
 }
 
@@ -330,7 +338,6 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 		ResourceDir:                resourceDir,
 		AppRunnerInterval:          1 * time.Second,
 		BackupRunnerInterval:       10 * time.Second,
-		BackupStorageBackend:       api.BackupStorageBackendLocal,
 		PgURL:                      pgURL,
 		TestOnlySkipOnboardingData: skipOnboardingData,
 	}
@@ -382,7 +389,9 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.grpcConn = grpcConn
 	ctl.issueServiceClient = v1pb.NewIssueServiceClient(ctl.grpcConn)
 	ctl.rolloutServiceClient = v1pb.NewRolloutServiceClient(ctl.grpcConn)
+	ctl.planServiceClient = v1pb.NewPlanServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
+	ctl.reviewConfigServiceClient = v1pb.NewReviewConfigServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.vcsConnectorServiceClient = v1pb.NewVCSConnectorServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)

@@ -35,6 +35,8 @@ message DatabaseSchemaMetadata {
 
   // The service name of the database. It's the Oracle specific concept.
   string service_name = 7;
+
+  repeated LinkedDatabaseMetadata linked_databases = 8;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -67,6 +69,9 @@ message SchemaMetadata {
 
   // The materialized_views is the list of materialized views in a schema.
   repeated MaterializedViewMetadata materialized_views = 9;
+
+  // The sequences is the list of sequences in a schema.
+  repeated SequenceMetadata sequences = 10;
 }
 
 message TaskMetadata {
@@ -189,6 +194,17 @@ message TableMetadata {
 
   // The partitions is the list of partitions in a table.
   repeated TablePartitionMetadata partitions = 15;
+
+  // The check_constraints is the list of check constraints in a table.
+  repeated CheckConstraintMetadata check_constraints = 16;
+}
+
+message CheckConstraintMetadata {
+  // The name is the name of a check constraint.
+  string name = 1;
+
+  // The expression is the expression of a check constraint.
+  string expression = 2;
 }
 
 message ExternalTableMetadata {
@@ -293,6 +309,20 @@ message ColumnMetadata {
 
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 12;
+
+  // The generation is for generated columns.
+  GenerationMetadata generation = 14;
+}
+
+message GenerationMetadata {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_VIRTUAL = 1;
+    TYPE_STORED = 2;
+  }
+
+  Type type = 1;
+  string expression = 2;
 }
 
 // ViewMetadata is the metadata for views.
@@ -367,6 +397,9 @@ message IndexMetadata {
   // The key_lengths are the ordered key lengths of an index.
   // If the key length is not specified, it's -1.
   repeated int64 key_length = 9;
+
+  // The descending is the ordered descending of an index.
+  repeated bool descending = 10;
 
   // The type is the type of an index.
   string type = 3;
@@ -458,15 +491,12 @@ message SecretItem {
 }
 
 message DatabaseConfig {
+  reserved 3;
+
   string name = 1;
 
   // The schema_configs is the list of configs for schemas in a database.
   repeated SchemaConfig schema_configs = 2;
-
-  // If true, we will only store the classification in the config.
-  // Otherwise we will get the classification from table/column comment,
-  // and write back to the schema metadata.
-  bool classification_from_config = 3;
 }
 
 message SchemaConfig {
@@ -494,7 +524,7 @@ message TableConfig {
   string classification_id = 3;
 
   // The last updater of the table in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the table is updated in branch.
@@ -506,7 +536,7 @@ message FunctionConfig {
   string name = 1;
 
   // The last updater of the function in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the function is updated in branch.
@@ -518,7 +548,7 @@ message ProcedureConfig {
   string name = 1;
 
   // The last updater of the procedure in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the procedure is updated in branch.
@@ -530,7 +560,7 @@ message ViewConfig {
   string name = 1;
 
   // The last updater of the view in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the view is updated in branch.
@@ -547,4 +577,21 @@ message ColumnConfig {
   map<string, string> labels = 3;
 
   string classification_id = 4;
+}
+
+message LinkedDatabaseMetadata {
+  string name = 1;
+
+  string username = 2;
+
+  string host = 3;
+}
+
+// SequenceMetadata is the metadata for sequences.
+message SequenceMetadata {
+  // The name of a sequence.
+  string name = 1;
+
+  // The data type of a sequence.
+  string data_type = 2;
 }

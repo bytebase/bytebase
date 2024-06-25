@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -26,23 +28,33 @@ type PlanMessage struct {
 	CreatedTs  int64
 	UpdaterUID int
 	UpdatedTs  int64
+
+	PlanCheckRunStatusCount map[string]int32
 }
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID        *int64
-	ProjectID  *string
-	ProjectIDs *[]string
-	PipelineID *int
+	UID             *int64
+	ProjectID       *string
+	ProjectIDs      *[]string
+	CreatorID       *int
+	PipelineID      *int
+	CreatedTsBefore *int64
+	CreatedTsAfter  *int64
 
 	Limit  *int
 	Offset *int
+
+	NoIssue    bool
+	NoPipeline bool
 }
 
 // UpdatePlanMessage is the message to update a plan.
 type UpdatePlanMessage struct {
 	UID         int64
 	PipelineUID *int
+	Name        *string
+	Description *string
 	Config      *storepb.PlanConfig
 	UpdaterID   int
 }
@@ -134,6 +146,22 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.created_ts < $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.created_ts > $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.NoIssue; v {
+		where = append(where, "issue.id IS NULL")
+	}
+	if v := find.NoPipeline; v {
+		where = append(where, "plan.pipeline_id IS NULL")
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			plan.id,
@@ -145,11 +173,30 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.pipeline_id,
 			plan.name,
 			plan.description,
-			plan.config
+			plan.config,
+			COALESCE(plan_check_run_status_count.status_count, '{}'::jsonb)
 		FROM plan
 		LEFT JOIN project on plan.project_id = project.id
+		LEFT JOIN issue on plan.id = issue.plan_id
+		LEFT JOIN LATERAL (
+			SELECT
+				jsonb_object_agg(a.status, a.count) AS status_count
+			FROM (
+				SELECT
+					e->>'status' AS status,
+					COUNT(*) AS count
+				FROM (
+					SELECT DISTINCT ON (plan_check_run.type, plan_check_run.config->>'instanceUid', plan_check_run.config->>'databaseName')
+						jsonb_array_elements(plan_check_run.result->'results') e
+					FROM plan_check_run
+					WHERE plan_check_run.plan_id = plan.id
+					ORDER BY plan_check_run.type, plan_check_run.config->>'instanceUid', plan_check_run.config->>'databaseName', plan_check_run.id DESC
+				) r
+				GROUP BY e->>'status'
+			) a
+		) plan_check_run_status_count ON TRUE
 		WHERE %s
-		ORDER BY id ASC
+		ORDER BY id DESC
 	`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
@@ -175,7 +222,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		plan := PlanMessage{
 			Config: &storepb.PlanConfig{},
 		}
-		var config []byte
+		var config, statusCount []byte
 		if err := rows.Scan(
 			&plan.UID,
 			&plan.CreatorUID,
@@ -187,11 +234,15 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			&plan.Name,
 			&plan.Description,
 			&config,
+			&statusCount,
 		); err != nil {
 			return nil, errors.Wrap(err, "failed to scan plan")
 		}
-		if err := protojson.Unmarshal(config, plan.Config); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
+		}
+		if err := json.Unmarshal(statusCount, &plan.PlanCheckRunStatusCount); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal plan check run status count")
 		}
 		plans = append(plans, &plan)
 	}
@@ -209,6 +260,12 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 // UpdatePlan updates an existing plan.
 func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
 	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Description; v != nil {
+		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Config; v != nil {
 		config, err := protojson.Marshal(v)
 		if err != nil {

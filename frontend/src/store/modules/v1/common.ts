@@ -12,7 +12,6 @@ export const settingNamePrefix = "settings/";
 export const sheetNamePrefix = "sheets/";
 export const worksheetNamePrefix = "worksheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
-export const schemaGroupNamePrefix = "schemaGroups/";
 export const vcsProviderPrefix = "vcsProviders/";
 export const vcsConnectorPrefix = "vcsConnectors/";
 export const logNamePrefix = "logs/";
@@ -22,6 +21,8 @@ export const branchNamePrefix = "branches/";
 export const ssoNamePrefix = "idps/";
 export const protectionRulesSuffix = "/protectionRules";
 export const issueCommentNamePrefix = "issueComments/";
+export const userGroupNamePrefix = "groups/";
+export const reviewConfigNamePrefix = "reviewConfigs/";
 
 export const getNameParentTokens = (
   name: string,
@@ -119,22 +120,6 @@ export const getProjectNameAndDatabaseGroupName = (name: string): string[] => {
   return tokens;
 };
 
-export const getProjectNameAndDatabaseGroupNameAndSchemaGroupName = (
-  name: string
-): string[] => {
-  const tokens = getNameParentTokens(name, [
-    projectNamePrefix,
-    databaseGroupNamePrefix,
-    schemaGroupNamePrefix,
-  ]);
-
-  if (tokens.length !== 3) {
-    return ["", "", ""];
-  }
-
-  return tokens;
-};
-
 export const getProjectPathByLegacyProject = (project: Project): string => {
   return `${projectNamePrefix}${project.resourceId}`;
 };
@@ -189,4 +174,14 @@ export const getIssueCommentId = (name: string) => {
     return "";
   }
   return tokens[2];
+};
+
+export const getReviewConfigId = (name: string) => {
+  const tokens = getNameParentTokens(name, [reviewConfigNamePrefix]);
+  return tokens[0];
+};
+
+export const isDatabaseName = (name: string): boolean => {
+  const regex = /^instances\/([^/]+)\/databases\/(.+)$/;
+  return regex.test(name);
 };

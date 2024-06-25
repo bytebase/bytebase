@@ -15,6 +15,7 @@ import {
   HomeIcon,
   DatabaseIcon,
   DownloadIcon,
+  SearchCodeIcon,
   ShieldAlertIcon,
   GalleryHorizontalEndIcon,
   LayersIcon,
@@ -34,7 +35,7 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
-  WORKSPACE_HOME_MODULE,
+  WORKSPACE_ROUTE_MY_ISSUES,
   WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
@@ -47,6 +48,11 @@ import {
   WORKSPACE_ROUTE_GITOPS,
   WORKSPACE_ROUTE_SSO,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
+  WORKSPACE_ROUTE_REVIEW_CENTER,
+  WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_ROLES,
+  WORKSPACE_ROUTE_USER_PROFILE,
+  WORKSPACE_ROUTE_IM,
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import type { WorkspacePermission } from "@/types";
@@ -71,6 +77,14 @@ const getItemClass = (item: SidebarItem): string[] => {
   const classes: string[] = [];
   if (isActiveRoute) {
     classes.push("router-link-active", "bg-link-hover");
+    return classes;
+  }
+  if (
+    item.name === WORKSPACE_ROUTE_MEMBERS &&
+    current?.toString() === WORKSPACE_ROUTE_USER_PROFILE
+  ) {
+    classes.push("router-link-active", "bg-link-hover");
+    return classes;
   }
   return classes;
 };
@@ -143,12 +157,12 @@ const filterSidebarByPermissions = (
 const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
   const sidebarList: DashboardSidebarItem[] = [
     {
-      navigationId: "bb.navigation.home",
+      navigationId: "bb.navigation.my-issues",
       title: t("issue.my-issues"),
       icon: h(HomeIcon),
-      name: WORKSPACE_HOME_MODULE,
+      name: WORKSPACE_ROUTE_MY_ISSUES,
       type: "route",
-      shortcuts: [],
+      shortcuts: ["g", "m", "i"],
     },
     {
       navigationId: "bb.navigation.projects",
@@ -187,6 +201,19 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: "",
     },
     {
+      navigationId: "bb.navigation.review-center",
+      title: t("review-center.self"),
+      icon: h(SearchCodeIcon),
+      name: WORKSPACE_ROUTE_REVIEW_CENTER,
+      type: "route",
+      shortcuts: ["g", "r", "c"],
+      hide: !hasProjectPermissionV2(
+        undefined,
+        currentUserV1.value,
+        "bb.projects.getIamPolicy"
+      ),
+    },
+    {
       navigationId: "bb.navigation.export-center",
       title: t("export-center.self"),
       icon: h(DownloadIcon),
@@ -212,6 +239,16 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       icon: h(ShieldCheck),
       type: "div",
       children: [
+        {
+          title: t("settings.sidebar.members-and-groups"),
+          name: WORKSPACE_ROUTE_MEMBERS,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.custom-roles"),
+          name: WORKSPACE_ROUTE_ROLES,
+          type: "route",
+        },
         {
           title: t("sql-review.title"),
           name: WORKSPACE_ROUTE_SQL_REVIEW,
@@ -271,6 +308,11 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           name: WORKSPACE_ROUTE_MAIL_DELIVERY,
           type: "route",
         },
+        {
+          title: t("settings.sidebar.im-integration"),
+          name: WORKSPACE_ROUTE_IM,
+          type: "route",
+        },
       ],
     },
   ];
@@ -281,7 +323,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
 const navigationKbarActions = computed((): Action[] => {
   return dashboardSidebarItemList.value
     .reduce((list, item) => {
-      if (!item.children) {
+      if (!item.children || item.children.length === 0) {
         if (item.navigationId && item.name && !item.hide) {
           list.push(item);
         }

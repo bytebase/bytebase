@@ -18,7 +18,6 @@ import type { ComposedProject } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Stage } from "@/types/proto/v1/rollout_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -26,26 +25,25 @@ import {
   Plan_ExportDataConfig,
   Plan_Spec,
   Plan_Step,
-  Rollout,
-  Task_Type,
-} from "@/types/proto/v1/rollout_service";
-import { Sheet, SheetPayload } from "@/types/proto/v1/sheet_service";
+} from "@/types/proto/v1/plan_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
+import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
+import { SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,
   extractSheetUID,
   generateSQLForChangeToDatabase,
   getSheetStatement,
   hasProjectPermissionV2,
-  setSheetNameForTask,
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
 import { nextUID } from "../base";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
-import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
+import { getLocalSheetByName } from "../sheet";
 
 export type InitialSQL = {
-  sqlList?: string[];
+  sqlMap?: Record<string, string>;
   sql?: string;
 };
 
@@ -57,8 +55,10 @@ type CreateIssueParams = {
   branch?: string;
 };
 
-export const createIssueSkeleton = async (query: Record<string, string>) => {
-  const route = useRoute();
+export const createIssueSkeleton = async (
+  route: ReturnType<typeof useRoute>,
+  query: Record<string, string>
+) => {
   const projectName = route.params.projectId as string;
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `${projectNamePrefix}${projectName}`
@@ -71,7 +71,7 @@ export const createIssueSkeleton = async (query: Record<string, string>) => {
     databaseUIDList,
     project,
     query,
-    initialSQL: extractInitialSQLListFromQuery(query),
+    initialSQL: extractInitialSQLFromQuery(query),
     branch: query.branch || undefined,
   };
 
@@ -158,7 +158,10 @@ export const buildPlan = async (params: CreateIssueParams) => {
     }
   } else {
     // build standard plan
-    plan.steps = await buildSteps(databaseUIDList, params, undefined);
+    // Use dedicated sheets if sqlMap is specified.
+    // Share ONE sheet if otherwise.
+    const sheetUID = hasInitialSQL(params.initialSQL) ? undefined : nextUID();
+    plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
   }
   return plan;
 };
@@ -195,10 +198,9 @@ export const buildSteps = async (
     const { databases } = stageList[i];
     for (let j = 0; j < databases.length; j++) {
       const db = databases[j];
-      const sqlIndex = databaseUIDList.findIndex((uid) => uid === db.uid);
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
-      maybeSetInitialSQLForSpec(spec, sqlIndex, params);
+      maybeSetInitialSQLForSpec(spec, db.name, params);
       maybeSetInitialDatabaseConfigForSpec(spec, params);
     }
     steps.push(step);
@@ -210,18 +212,14 @@ export const buildStepsForDatabaseGroup = async (
   params: CreateIssueParams,
   databaseGroupName: string
 ) => {
-  // Create sheet from SQL template in URL query
-  // The sheet will be used when previewing rollout
+  // Create a local sheet for editing during preview
+  // apply sql from URL if needed
   const sql = params.initialSQL.sql ?? "";
-  const sheetCreate = Sheet.fromPartial({
-    ...createEmptyLocalSheet(),
-    engine: await databaseEngineForSpec(params.project, databaseGroupName),
-  });
-  setSheetStatement(sheetCreate, sql);
-  const sheet = await useSheetV1Store().createSheet(
-    params.project.name,
-    sheetCreate
-  );
+  const sheetUID = nextUID();
+  const sheetName = `${params.project.name}/sheets/${sheetUID}`;
+  const sheet = getLocalSheetByName(sheetName);
+  sheet.engine = await databaseEngineForSpec(params.project, databaseGroupName);
+  setSheetStatement(sheet, sql);
 
   const spec = await buildSpecForTarget(
     databaseGroupName,
@@ -244,7 +242,7 @@ export const buildStepsViaDeploymentConfig = async (
     params,
     sheetUID
   );
-  maybeSetInitialSQLForSpec(spec, 0, params);
+  maybeSetInitialSQLForSpec(spec, "", params);
   maybeSetInitialDatabaseConfigForSpec(spec, params);
   const step = Plan_Step.fromPartial({
     specs: [spec],
@@ -417,44 +415,12 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
     });
   });
 
-  await maybeWrapStatementsAsSheets(plan, rollout, params);
-
   return reactive(rollout);
-};
-
-const maybeWrapStatementsAsSheets = (
-  plan: Plan,
-  rollout: Rollout,
-  params: CreateIssueParams
-) => {
-  const { query } = params;
-  if (!query.databaseGroupName) {
-    return;
-  }
-  const { stages } = rollout;
-  for (let i = 0; i < stages.length; i++) {
-    const stage = stages[i];
-    const { tasks } = stage;
-    for (let j = 0; j < tasks.length; j++) {
-      const task = tasks[j];
-      // For database group changes, tasks returned by previewRollout
-      // have `sheet` fields actually generated SQL statements instead
-      // of sheet names.
-      // So we create a local sheet for each task and set the statement
-      // to the local task.
-      const statement = sheetNameOfTaskV1(task);
-      const sheetName = `${params.project.name}/sheets/${nextUID()}`;
-      const sheet = getLocalSheetByName(sheetName);
-      sheet.database = task.target;
-      setSheetStatement(sheet, statement);
-      setSheetNameForTask(task, sheetName);
-    }
-  }
 };
 
 const maybeSetInitialSQLForSpec = (
   spec: Plan_Spec,
-  index: number,
+  key: string,
   params: CreateIssueParams
 ) => {
   const sheet = sheetNameForSpec(spec);
@@ -464,8 +430,8 @@ const maybeSetInitialSQLForSpec = (
     // If the sheet is a remote sheet, ignore initial SQL in URL query
     return;
   }
-  // Priority: sqlList[index] -> sql -> nothing
-  const sql = params.initialSQL.sqlList?.[index] ?? params.initialSQL.sql ?? "";
+  // Priority: sqlMap[key] -> sql -> nothing
+  const sql = params.initialSQL.sqlMap?.[key] ?? params.initialSQL.sql ?? "";
   if (sql) {
     const sheetEntity = getLocalSheetByName(sheet);
     setSheetStatement(sheetEntity, sql);
@@ -505,22 +471,18 @@ const maybeSetInitialDatabaseConfigForSpec = async (
   }
 };
 
-const extractInitialSQLListFromQuery = (
+const extractInitialSQLFromQuery = (
   query: Record<string, string>
-): {
-  sqlList?: string[];
-  sql?: string;
-} => {
-  const sqlListJSON = query.sqlList;
-  if (sqlListJSON && sqlListJSON.startsWith("[") && sqlListJSON.endsWith("]")) {
+): InitialSQL => {
+  const sqlMapJSON = query.sqlMap;
+  if (sqlMapJSON && sqlMapJSON.startsWith("{") && sqlMapJSON.endsWith("}")) {
     try {
-      const sqlList = JSON.parse(sqlListJSON) as string[];
-      if (Array.isArray(sqlList)) {
-        if (sqlList.every((maybeSQL) => typeof maybeSQL === "string")) {
-          return {
-            sqlList,
-          };
-        }
+      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
+      const keys = Object.keys(sqlMap);
+      if (keys.every((key) => typeof sqlMap[key] === "string")) {
+        return {
+          sqlMap,
+        };
       }
     } catch {
       // Nothing
@@ -533,6 +495,19 @@ const extractInitialSQLListFromQuery = (
     };
   }
   return {};
+};
+
+const hasInitialSQL = (initialSQL?: InitialSQL) => {
+  if (!initialSQL) {
+    return false;
+  }
+  if (typeof initialSQL.sql === "string") {
+    return true;
+  }
+  if (typeof initialSQL.sqlMap === "object") {
+    return true;
+  }
+  return false;
 };
 
 export const prepareDatabaseList = async (
@@ -592,6 +567,31 @@ export const isValidStage = (stage: Stage): boolean => {
         if (getSheetStatement(sheet).length === 0) {
           return false;
         }
+      }
+    }
+  }
+  return true;
+};
+
+export const isValidSpec = (spec: Plan_Spec): boolean => {
+  if (spec.changeDatabaseConfig || spec.exportDataConfig) {
+    const sheetName = sheetNameForSpec(spec);
+    if (!sheetName) {
+      return false;
+    }
+    const uid = extractSheetUID(sheetName);
+    if (uid.startsWith("-")) {
+      const sheet = getLocalSheetByName(sheetName);
+      if (getSheetStatement(sheet).length === 0) {
+        return false;
+      }
+    } else {
+      const sheet = useSheetV1Store().getSheetByName(sheetName);
+      if (!sheet) {
+        return false;
+      }
+      if (getSheetStatement(sheet).length === 0) {
+        return false;
       }
     }
   }

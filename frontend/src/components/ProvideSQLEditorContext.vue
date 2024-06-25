@@ -14,7 +14,10 @@
       {{ editorStore.allowViewALLProjects }}
     </li>
   </teleport>
-  <slot />
+
+  <Suspense>
+    <router-view />
+  </Suspense>
 </template>
 
 <script lang="ts" setup>
@@ -23,7 +26,6 @@ import { debounce, head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
@@ -39,6 +41,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
+  useUserGroupStore,
   pushNotification,
   useFilterStore,
 } from "@/store";
@@ -83,6 +86,7 @@ const instanceStore = useInstanceV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
+const groupStore = useUserGroupStore();
 const { isFetching: isFetchingWorksheet } = useSheetContext();
 const { filter } = useFilterStore();
 const {
@@ -175,7 +179,6 @@ const prepareDatabases = async () => {
   const databaseList = (
     await databaseStore.searchDatabases({
       filter: filters.join(" && "),
-      permission: "bb.databases.query",
     })
   ).filter((db) => db.syncState === State.ACTIVE);
 
@@ -591,7 +594,7 @@ const restoreLastVisitedSidebarTab = () => {
 
 onMounted(async () => {
   editorStore.projectContextReady = false;
-  await initializeProjects();
+  await Promise.all([initializeProjects(), groupStore.fetchGroupList()]);
   await prepareInstances();
   await prepareDatabases();
   tabStore.maybeInitProject(editorStore.project);
@@ -623,6 +626,4 @@ onMounted(async () => {
   await initializeConnectionFromQuery();
   syncURLWithConnection();
 });
-
-useEmitteryEventListener;
 </script>

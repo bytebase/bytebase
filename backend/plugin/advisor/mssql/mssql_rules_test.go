@@ -9,7 +9,7 @@ import (
 )
 
 func TestMSSQLRules(t *testing.T) {
-	snowflakeRules := []advisor.SQLReviewRuleType{
+	mssqlRules := []advisor.SQLReviewRuleType{
 		advisor.SchemaRuleStatementNoSelectAll,
 		advisor.SchemaRuleTableNaming,
 		advisor.SchemaRuleTableNameNoKeyword,
@@ -25,9 +25,22 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleSchemaBackwardCompatibility,
 		advisor.SchemaRuleRequiredColumn,
 		advisor.SchemaRuleColumnTypeDisallowList,
+		advisor.SchemaRuleFunctionDisallowCreate,
+		advisor.SchemaRuleProcedureDisallowCreate,
+		advisor.SchemaRuleStatementDisallowCrossDBQueries,
+		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
+		advisor.SchemaRuleIndexNotRedundant,
 	}
 
-	for _, rule := range snowflakeRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, nil, false /* record */)
+	for _, rule := range mssqlRules {
+		_, needMockData := advisorNeedMockData[rule]
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, needMockData, false /* record */)
 	}
+}
+
+// Add SQL review type here if you need metadata for test.
+var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
+	advisor.SchemaRuleStatementDisallowCrossDBQueries: true,
+	advisor.SchemaRuleSchemaBackwardCompatibility:     true,
+	advisor.SchemaRuleIndexNotRedundant:               true,
 }

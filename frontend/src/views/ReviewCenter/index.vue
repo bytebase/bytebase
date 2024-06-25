@@ -1,0 +1,195 @@
+<template>
+  <div :class="['w-full', !specificProject && 'px-4']">
+    <div
+      class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
+    >
+      <div class="flex flex-1 max-w-full items-center gap-x-2">
+        <AdvancedSearch
+          v-model:params="state.params"
+          class="flex-1"
+          :readonly-scopes="readonlyScopes"
+          :scope-options="scopeOptions"
+        />
+        <NDropdown
+          trigger="hover"
+          :options="planCreationButtonOptions"
+          :disabled="!allowToCreatePlan"
+          @select="state.selectedPlanOnlyType = $event"
+        >
+          <NButton type="primary" :disabled="!allowToCreatePlan">{{
+            $t("review-center.review-sql")
+          }}</NButton>
+        </NDropdown>
+      </div>
+    </div>
+
+    <div class="relative w-full mt-4 min-h-[20rem]">
+      <PagedPlanTable
+        v-model:loading="state.loading"
+        v-model:loading-more="state.loadingMore"
+        :session-key="'review-center'"
+        :plan-find="mergedPlanFind"
+        :page-size="50"
+        :compose-issue-config="{ withPlan: true }"
+      >
+        <template #table="{ planList, loading }">
+          <PlanDataTable
+            :loading="loading"
+            :plan-list="planList"
+            :show-project="!specificProject"
+          />
+        </template>
+      </PagedPlanTable>
+    </div>
+  </div>
+
+  <Drawer
+    :auto-focus="true"
+    :show="state.selectedPlanOnlyType !== undefined"
+    @close="state.selectedPlanOnlyType = undefined"
+  >
+    <AlterSchemaPrepForm
+      :project-id="specificProject?.uid"
+      :type="state.selectedPlanOnlyType!"
+      :plan-only="true"
+      @dismiss="state.selectedPlanOnlyType = undefined"
+    />
+  </Drawer>
+</template>
+
+<script lang="ts" setup>
+import { NButton, NDropdown, type DropdownOption } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
+import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
+import PagedPlanTable from "@/components/Plan/components/PagedPlanTable.vue";
+import PlanDataTable from "@/components/Plan/components/PlanDataTable";
+import { Drawer } from "@/components/v2";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
+import {
+  extractProjectResourceName,
+  hasPermissionToCreatePlanInProject,
+  type SearchParams,
+  type SearchScope,
+  type SearchScopeId,
+} from "@/utils";
+
+const props = defineProps<{
+  projectId?: string;
+}>();
+
+interface LocalState {
+  params: SearchParams;
+  loading: boolean;
+  loadingMore: boolean;
+  selectedPlanOnlyType?:
+    | "bb.issue.database.schema.update"
+    | "bb.issue.database.data.update";
+}
+
+const specificProject = computed(() => {
+  return props.projectId
+    ? projectV1Store.getProjectByName(`${projectNamePrefix}${props.projectId}`)
+    : undefined;
+});
+
+const readonlyScopes = computed((): SearchScope[] => {
+  if (!specificProject.value) {
+    return [];
+  }
+  return [
+    {
+      id: "project",
+      value: extractProjectResourceName(specificProject.value.name),
+    },
+  ];
+});
+
+const defaultSearchParams = () => {
+  const params: SearchParams = {
+    query: "",
+    scopes: [...readonlyScopes.value],
+  };
+  return params;
+};
+
+const { t } = useI18n();
+const currentUser = useCurrentUserV1();
+const projectV1Store = useProjectV1Store();
+const state = reactive<LocalState>({
+  params: defaultSearchParams(),
+  loading: false,
+  loadingMore: false,
+});
+
+const planCreationButtonOptions = computed((): DropdownOption[] => {
+  return [
+    {
+      label: `${t("database.edit-schema")} (DDL)`,
+      key: "bb.issue.database.schema.update",
+    },
+    {
+      label: `${t("database.change-data")} (DML)`,
+      key: "bb.issue.database.data.update",
+    },
+  ];
+});
+
+const supportedScopes = computed(() => {
+  // TODO(steven): support more scopes in backend and frontend: instance, database, planCheckRunStatus
+  const supportedScopes: SearchScopeId[] = [];
+  if (!specificProject.value) {
+    supportedScopes.unshift("project");
+  }
+  return supportedScopes;
+});
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => state.params),
+  supportedScopes.value
+);
+
+const planSearchParams = computed(() => {
+  // Default scopes with type and creator.
+  const defaultScopes = [
+    {
+      id: "creator",
+      value: currentUser.value.email,
+    },
+  ];
+  // If specific project is provided, add project scope.
+  if (specificProject.value) {
+    defaultScopes.push({
+      id: "project",
+      value: extractProjectResourceName(specificProject.value.name),
+    });
+  }
+  return {
+    scopes: [...state.params.scopes, ...defaultScopes],
+  } as SearchParams;
+});
+
+const mergedPlanFind = computed(() => {
+  return buildPlanFindBySearchParams(planSearchParams.value, {
+    hasIssue: false,
+    hasPipeline: false,
+  });
+});
+
+const allowToCreatePlan = computed(() => {
+  if (specificProject.value) {
+    return hasPermissionToCreatePlanInProject(
+      specificProject.value,
+      currentUser.value
+    );
+  }
+
+  return projectV1Store.projectList.some((project) =>
+    hasPermissionToCreatePlanInProject(project, currentUser.value)
+  );
+});
+</script>

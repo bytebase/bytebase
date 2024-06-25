@@ -14,7 +14,6 @@ import (
 var (
 	mux                     sync.Mutex
 	queryValidators         = make(map[storepb.Engine]ValidateSQLForEditorFunc)
-	fieldMaskers            = make(map[storepb.Engine]GetMaskedFieldsFunc)
 	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
 	resourcesGetters        = make(map[storepb.Engine]ExtractResourceListFunc)
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
@@ -23,24 +22,26 @@ var (
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	affectedRows            = make(map[storepb.Engine]GetAffectedRowsFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
+	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
-type GetMaskedFieldsFunc func(string, string, *SensitiveSchemaInfo) ([]SensitiveField, error)
-type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource, error)
+type ExtractChangedResourcesFunc func(string, string, any) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
-type CompletionFunc func(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc, listDatabaseNames ListDatabaseNamesFunc) ([]Candidate, error)
+type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
-type GetQuerySpanFunc func(ctx context.Context, statement, database, schema string, metadataFunc GetDatabaseMetadataFunc, listDatabaseFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) (*QuerySpan, error)
+type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
 
 // GetAffectedRows is the interface of getting the affected rows for a statement.
 type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
 
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
-type TransformDMLToSelectFunc func(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
+type TransformDMLToSelectFunc func(ctx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
+
+type GenerateRestoreSQLFunc func(statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -81,27 +82,6 @@ func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentS
 	return f(currentDatabase, currentSchema, sql)
 }
 
-func RegisterGetMaskedFieldsFunc(engine storepb.Engine, f GetMaskedFieldsFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := fieldMaskers[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	fieldMaskers[engine] = f
-}
-
-func ExtractSensitiveField(engine storepb.Engine, statement string, currentDatabase string, schemaInfo *SensitiveSchemaInfo) ([]SensitiveField, error) {
-	if schemaInfo == nil {
-		return nil, nil
-	}
-
-	f, ok := fieldMaskers[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(statement, currentDatabase, schemaInfo)
-}
-
 func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {
 	mux.Lock()
 	defer mux.Unlock()
@@ -112,12 +92,12 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, ast any) ([]SchemaResource, error) {
 	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(currentDatabase, currentSchema, sql)
+	return f(currentDatabase, currentSchema, ast)
 }
 
 func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
@@ -166,12 +146,12 @@ func RegisterCompleteFunc(engine storepb.Engine, f CompletionFunc) {
 }
 
 // Completion returns the completion candidates for the statement.
-func Completion(ctx context.Context, engine storepb.Engine, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc, listDatabaseNames ListDatabaseNamesFunc) ([]Candidate, error) {
+func Completion(ctx context.Context, engine storepb.Engine, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error) {
 	f, ok := completers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+	return f(ctx, cCtx, statement, caretLine, caretOffset)
 }
 
 func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
@@ -184,7 +164,7 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 }
 
 // GetQuerySpan gets the span of a query.
-func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database, schema string, getMetadataFunc GetDatabaseMetadataFunc, listDatabaseNamesFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.Engine, statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
 		return nil, nil
@@ -198,7 +178,7 @@ func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, databas
 		if stmt.Empty {
 			continue
 		}
-		result, err := f(ctx, stmt.Text, database, schema, getMetadataFunc, listDatabaseNamesFunc, ignoreCaseSensitive)
+		result, err := f(ctx, gCtx, stmt.Text, database, schema, ignoreCaseSensitive)
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
 			var resourceNotFound *parsererror.ResourceNotFoundError
@@ -246,10 +226,27 @@ func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectF
 }
 
 // TransformDMLToSelect transforms the DML statement to SELECT statement.
-func TransformDMLToSelect(engine storepb.Engine, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
+func TransformDMLToSelect(engine storepb.Engine, ctx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
 	f, ok := transformDMLToSelect[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(statement, sourceDatabase, targetDatabase, tablePrefix)
+	return f(ctx, statement, sourceDatabase, targetDatabase, tablePrefix)
+}
+
+func RegisterGenerateRestoreSQL(engine storepb.Engine, f GenerateRestoreSQLFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := generateRestoreSQL[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	generateRestoreSQL[engine] = f
+}
+
+func GenerateRestoreSQL(engine storepb.Engine, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
+	f, ok := generateRestoreSQL[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(statement, backupDatabase, backupTable, originalDatabase, originalTable)
 }

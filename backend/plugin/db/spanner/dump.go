@@ -10,10 +10,7 @@ import (
 )
 
 // Dump dumps the database.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
-	if !schemaOnly {
-		return "", errors.New("Dump can only dump schemas")
-	}
+func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	instance, err := d.SyncInstance(ctx)
 	if err != nil {
 		return "", err
