@@ -18,8 +18,8 @@ export interface Project {
   forceIssueLabels: boolean;
   /** Allow modifying statement after issue is created. */
   allowModifyStatement: boolean;
-  /** Enable auto close issue. */
-  autoCloseIssue: boolean;
+  /** Enable auto resolve issue. */
+  autoResolveIssue: boolean;
 }
 
 export interface ProtectionRule {
@@ -258,7 +258,7 @@ function createBaseProject(): Project {
     issueLabels: [],
     forceIssueLabels: false,
     allowModifyStatement: false,
-    autoCloseIssue: false,
+    autoResolveIssue: false,
   };
 }
 
@@ -276,8 +276,8 @@ export const Project = {
     if (message.allowModifyStatement === true) {
       writer.uint32(32).bool(message.allowModifyStatement);
     }
-    if (message.autoCloseIssue === true) {
-      writer.uint32(40).bool(message.autoCloseIssue);
+    if (message.autoResolveIssue === true) {
+      writer.uint32(40).bool(message.autoResolveIssue);
     }
     return writer;
   },
@@ -322,7 +322,7 @@ export const Project = {
             break;
           }
 
-          message.autoCloseIssue = reader.bool();
+          message.autoResolveIssue = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -345,7 +345,7 @@ export const Project = {
       allowModifyStatement: isSet(object.allowModifyStatement)
         ? globalThis.Boolean(object.allowModifyStatement)
         : false,
-      autoCloseIssue: isSet(object.autoCloseIssue) ? globalThis.Boolean(object.autoCloseIssue) : false,
+      autoResolveIssue: isSet(object.autoResolveIssue) ? globalThis.Boolean(object.autoResolveIssue) : false,
     };
   },
 
@@ -363,8 +363,8 @@ export const Project = {
     if (message.allowModifyStatement === true) {
       obj.allowModifyStatement = message.allowModifyStatement;
     }
-    if (message.autoCloseIssue === true) {
-      obj.autoCloseIssue = message.autoCloseIssue;
+    if (message.autoResolveIssue === true) {
+      obj.autoResolveIssue = message.autoResolveIssue;
     }
     return obj;
   },
@@ -378,7 +378,7 @@ export const Project = {
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];
     message.forceIssueLabels = object.forceIssueLabels ?? false;
     message.allowModifyStatement = object.allowModifyStatement ?? false;
-    message.autoCloseIssue = object.autoCloseIssue ?? false;
+    message.autoResolveIssue = object.autoResolveIssue ?? false;
     return message;
   },
 };

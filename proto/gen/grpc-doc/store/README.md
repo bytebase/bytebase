@@ -3106,7 +3106,7 @@ Format: users/{userUID} or groups/{group email} |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
 | force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
 | allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
-| auto_close_issue | [bool](#bool) |  | Enable auto close issue. |
+| auto_resolve_issue | [bool](#bool) |  | Enable auto resolve issue. |
 
 
 

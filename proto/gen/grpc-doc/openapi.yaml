@@ -11710,9 +11710,9 @@ components:
                 allowModifyStatement:
                     type: boolean
                     description: Allow modifying statement after issue is created.
-                autoCloseIssue:
+                autoResolveIssue:
                     type: boolean
-                    description: Enable auto close issue.
+                    description: Enable auto resolve issue.
         ProtectionRule:
             type: object
             properties:
