@@ -28,10 +28,7 @@ import {
   useRoleStore,
   useSettingV1Store,
 } from "@/store";
-import {
-  PolicyResourceType,
-  PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 
@@ -71,7 +68,9 @@ const prepare = async () => {
     }),
     policyV1Store.fetchPolicies({
       resourceType: PolicyResourceType.ENVIRONMENT,
-      policyType: PolicyType.DISABLE_COPY_DATA,
+    }),
+    policyV1Store.fetchPolicies({
+      resourceType: PolicyResourceType.PROJECT,
     }),
   ]);
   ready.value = true;
