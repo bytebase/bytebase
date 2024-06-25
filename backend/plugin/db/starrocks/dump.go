@@ -229,7 +229,7 @@ type eventSchema struct {
 // getTablesTx gets all tables of a database using the provided transaction.
 func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
-	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
+	query := fmt.Sprintf("SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = '%s';", dbName)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err

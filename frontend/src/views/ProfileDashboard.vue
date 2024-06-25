@@ -260,7 +260,11 @@ import {
   useCurrentUserV1,
   useUserStore,
 } from "@/store";
-import { unknownUser, SYSTEM_BOT_EMAIL, ALL_USERS_USER_EMAIL } from "@/types";
+import {
+  unknownUser,
+  SYSTEM_BOT_USER_NAME,
+  ALL_USERS_USER_EMAIL,
+} from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
@@ -344,7 +348,7 @@ const passwordMismatch = computed(() => {
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
 const allowEdit = computed(() => {
   if (
-    user.value.email === SYSTEM_BOT_EMAIL ||
+    user.value.name === SYSTEM_BOT_USER_NAME ||
     user.value.email === ALL_USERS_USER_EMAIL
   ) {
     return false;

@@ -12,6 +12,64 @@ import { PlanType, planTypeFromJSON, planTypeToJSON, planTypeToNumber } from "./
 
 export const protobufPackage = "bytebase.v1";
 
+export enum DatabaseChangeMode {
+  DATABASE_CHANGE_MODE_UNSPECIFIED = "DATABASE_CHANGE_MODE_UNSPECIFIED",
+  /**
+   * PIPELINE - A more advanced database change process, including custom approval workflows and other advanced features.
+   * Default to this mode.
+   */
+  PIPELINE = "PIPELINE",
+  /** EDITOR - A simple database change process in SQL editor. Users can execute SQL directly. */
+  EDITOR = "EDITOR",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function databaseChangeModeFromJSON(object: any): DatabaseChangeMode {
+  switch (object) {
+    case 0:
+    case "DATABASE_CHANGE_MODE_UNSPECIFIED":
+      return DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED;
+    case 1:
+    case "PIPELINE":
+      return DatabaseChangeMode.PIPELINE;
+    case 2:
+    case "EDITOR":
+      return DatabaseChangeMode.EDITOR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DatabaseChangeMode.UNRECOGNIZED;
+  }
+}
+
+export function databaseChangeModeToJSON(object: DatabaseChangeMode): string {
+  switch (object) {
+    case DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED:
+      return "DATABASE_CHANGE_MODE_UNSPECIFIED";
+    case DatabaseChangeMode.PIPELINE:
+      return "PIPELINE";
+    case DatabaseChangeMode.EDITOR:
+      return "EDITOR";
+    case DatabaseChangeMode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function databaseChangeModeToNumber(object: DatabaseChangeMode): number {
+  switch (object) {
+    case DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED:
+      return 0;
+    case DatabaseChangeMode.PIPELINE:
+      return 1;
+    case DatabaseChangeMode.EDITOR:
+      return 2;
+    case DatabaseChangeMode.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface ListSettingsRequest {
   /**
    * The maximum number of settings to return. The service may return fewer than
@@ -325,6 +383,8 @@ export interface WorkspaceProfileSetting {
   domains: string[];
   /** Only user and group from the domains can be created and login. */
   enforceIdentityDomain: boolean;
+  /** The workspace database change mode. */
+  databaseChangeMode: DatabaseChangeMode;
 }
 
 export interface Announcement {
@@ -2035,6 +2095,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     maximumRoleExpiration: undefined,
     domains: [],
     enforceIdentityDomain: false,
+    databaseChangeMode: DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
   };
 }
 
@@ -2069,6 +2130,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.enforceIdentityDomain === true) {
       writer.uint32(80).bool(message.enforceIdentityDomain);
+    }
+    if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
+      writer.uint32(88).int32(databaseChangeModeToNumber(message.databaseChangeMode));
     }
     return writer;
   },
@@ -2150,6 +2214,13 @@ export const WorkspaceProfileSetting = {
 
           message.enforceIdentityDomain = reader.bool();
           continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.databaseChangeMode = databaseChangeModeFromJSON(reader.int32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2177,6 +2248,9 @@ export const WorkspaceProfileSetting = {
       enforceIdentityDomain: isSet(object.enforceIdentityDomain)
         ? globalThis.Boolean(object.enforceIdentityDomain)
         : false,
+      databaseChangeMode: isSet(object.databaseChangeMode)
+        ? databaseChangeModeFromJSON(object.databaseChangeMode)
+        : DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
     };
   },
 
@@ -2212,6 +2286,9 @@ export const WorkspaceProfileSetting = {
     if (message.enforceIdentityDomain === true) {
       obj.enforceIdentityDomain = message.enforceIdentityDomain;
     }
+    if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
+      obj.databaseChangeMode = databaseChangeModeToJSON(message.databaseChangeMode);
+    }
     return obj;
   },
 
@@ -2237,6 +2314,7 @@ export const WorkspaceProfileSetting = {
         : undefined;
     message.domains = object.domains?.map((e) => e) || [];
     message.enforceIdentityDomain = object.enforceIdentityDomain ?? false;
+    message.databaseChangeMode = object.databaseChangeMode ?? DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED;
     return message;
   },
 };

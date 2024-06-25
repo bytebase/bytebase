@@ -62,3 +62,17 @@ type VirtualTableReference struct {
 }
 
 func (*VirtualTableReference) isTableReference() {}
+
+type SceneType string
+
+const (
+	SceneTypeAll   SceneType = "ALL"
+	SceneTypeQuery SceneType = "QUERY"
+)
+
+type CompletionContext struct {
+	Scene             SceneType
+	DefaultDatabase   string
+	Metadata          GetDatabaseMetadataFunc
+	ListDatabaseNames ListDatabaseNamesFunc
+}

@@ -281,8 +281,8 @@ func getTablesTx(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*TableSch
 		slog.Error("failed to get table collations", log.BBError(err))
 	}
 	var tables []*TableSchema
-	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
-	rows, err := txn.Query(query)
+	query := "SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?;"
+	rows, err := txn.Query(query, dbName)
 	if err != nil {
 		return nil, err
 	}

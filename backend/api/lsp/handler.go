@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -101,6 +102,20 @@ func (h *Handler) getInstanceID() string {
 		return ""
 	}
 	return id
+}
+
+func (h *Handler) getScene() base.SceneType {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.metadata == nil {
+		return base.SceneTypeAll
+	}
+	switch h.metadata.Scene {
+	case "query":
+		return base.SceneTypeQuery
+	default:
+		return base.SceneTypeAll
+	}
 }
 
 func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
