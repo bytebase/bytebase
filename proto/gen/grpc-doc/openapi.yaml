@@ -10571,6 +10571,7 @@ components:
                     type: string
                 keytab:
                     type: string
+                    format: bytes
                 kdcHost:
                     type: string
                 kdcPort:
