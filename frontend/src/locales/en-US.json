@@ -706,6 +706,16 @@
         "restrict-issue-creation-for-sql-review": {
           "title": "Prohibit issue creation for SQL review with errors",
           "description": "Once enabled, users are only allowed to create issues if the SQL review does not contain any errors."
+        },
+        "database-change-mode": {
+          "self": "Database Change Mode",
+          "description": "Controls how users perform database schema migrations. Issue mode uses issue/task workflows with custom approvals for a structured process. SQL Editor mode allows direct SQL execution in a SQL editor for quick and simple changes.",
+          "issue-mode": {
+            "self": "Issue Mode"
+          },
+          "sql-editor-mode": {
+            "self": "SQL Editor Mode"
+          }
         }
       }
     },
