@@ -312,8 +312,8 @@ message Project {
   bool force_issue_labels = 14;
   // Allow modifying statement after issue is created.
   bool allow_modify_statement = 15;
-  // Enable auto close issue.
-  bool auto_close_issue = 16;
+  // Enable auto resolve issue.
+  bool auto_resolve_issue = 16;
 }
 
 enum Workflow {
