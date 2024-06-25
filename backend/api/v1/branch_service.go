@@ -704,6 +704,9 @@ func (s *BranchService) getNewBaseFromRebaseRequest(ctx context.Context, request
 		filteredNewBaseMetadata := filterDatabaseMetadataByEngine(databaseMetadata, instance.Engine)
 		defaultStoreSourceSchema := extractDefaultSchemaForOracleBranch(instance.Engine, filteredNewBaseMetadata)
 		sourceSchema, err := schema.GetDesignSchema(instance.Engine, defaultStoreSourceSchema, "" /* baseline*/, filteredNewBaseMetadata)
+		if err != nil {
+			return nil, "", nil, status.Errorf(codes.Internal, err.Error())
+		}
 
 		return databaseSchema.GetMetadata(), sourceSchema, databaseSchema.GetConfig(), nil
 	}
