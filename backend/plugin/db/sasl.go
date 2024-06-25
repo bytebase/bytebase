@@ -41,8 +41,9 @@ type KerberosEnv struct {
 var (
 	_            SASLConfig = &KerberosConfig{}
 	singletonEnv            = KerberosEnv{
-		KrbConfPath:  "/tmp/krb5.conf",
-		KeytabPath:   "/tmp/tmp.keytab",
+		KrbConfPath: "/tmp/krb5.conf",
+		KeytabPath:  "/tmp/tmp.keytab",
+		// be careful of your environment variables.
 		KinitBinPath: "kinit",
 		realms:       map[string]Realm{},
 		krbEnvMutex:  &sync.Mutex{},
@@ -63,33 +64,40 @@ var (
 	KrbConfEnvVarFmt = "KRB5_CONFIG=%s"
 )
 
+// let users manually solve the resource competition problem.
+func KrbEnvLock() {
+	singletonEnv.krbEnvMutex.Lock()
+}
+
+func KrbEnvUnlock() {
+	singletonEnv.krbEnvMutex.Unlock()
+}
+
 func (krbConfig *KerberosConfig) InitEnv() error {
 	// KDCs can use either 'tcp' or 'udp' as their transport protocol.
 	if krbConfig.Realm.KDCTransportProtocol != "udp" && krbConfig.Realm.KDCTransportProtocol != "tcp" {
 		return errors.Errorf("invalid transport protocol for KDC connection: %s", krbConfig.Realm.KDCTransportProtocol)
 	}
 
-	singletonEnv.krbEnvMutex.Lock()
-	defer singletonEnv.krbEnvMutex.Unlock()
-
-	// // Create tmp krb5.conf.
+	// Create tmp krb5.conf.
 	if err := singletonEnv.AddRealm(krbConfig.Realm); err != nil {
 		return err
 	}
 
 	// Save .keytab file as a temporary file.
-	keytabFile, err := os.Create(singletonEnv.KeytabPath)
-	if err != nil {
+	if err := func() error {
+		keytabFile, err := os.Create(singletonEnv.KeytabPath)
+		if err != nil {
+			return err
+		}
+		defer keytabFile.Close()
+		if n, err := keytabFile.Write(krbConfig.Keytab); err != nil || n != len(krbConfig.Keytab) {
+			return err
+		}
+		return keytabFile.Sync()
+	}(); err != nil {
 		return err
 	}
-
-	if n, err := keytabFile.Write(krbConfig.Keytab); err != nil || n != len(krbConfig.Keytab) {
-		return err
-	}
-	if err = keytabFile.Sync(); err != nil {
-		return err
-	}
-	keytabFile.Close()
 
 	// kinit -kt {keytab file path} {principal}.
 	var cmd *exec.Cmd
@@ -139,11 +147,8 @@ func (*KerberosEnv) AddRealm(realm Realm) error {
 	if _, err = file.WriteString(kdcConnStr); err != nil {
 		return err
 	}
-	if err = file.Sync(); err != nil {
-		return err
-	}
 
-	return nil
+	return file.Sync()
 }
 
 // check whether Kerberos is enabled and its settings are valid.
