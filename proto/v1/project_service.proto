@@ -308,7 +308,12 @@ message Project {
 
   repeated Label issue_labels = 13;
 
+  // Force issue labels to be used when creating an issue.
   bool force_issue_labels = 14;
+  // Disable modify statement after issue creation.
+  bool disable_modify_statement = 15;
+  // Disable auto close issue.
+  bool disable_auto_close_issue = 16;
 }
 
 enum Workflow {
