@@ -8696,7 +8696,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | enabled | [bool](#bool) |  |  |
-| id | [string](#string) |  |  |
+| corp_id | [string](#string) |  |  |
+| agent_id | [string](#string) |  |  |
 | secret | [string](#string) |  |  |
 
 
