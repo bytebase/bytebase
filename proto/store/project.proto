@@ -20,7 +20,7 @@ message Project {
   // Allow modifying statement after issue is created.
   bool allow_modify_statement = 4;
   // Enable auto close issue.
-  bool enable_auto_close_issue = 5;
+  bool auto_close_issue = 5;
 }
 
 message ProtectionRule {
