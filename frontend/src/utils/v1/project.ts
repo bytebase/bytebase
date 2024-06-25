@@ -14,6 +14,20 @@ import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import type { Project } from "@/types/proto/v1/project_service";
+import { convertFromExpr } from "@/utils/issue/cel";
+
+export const isBindingPolicyExpired = (binding: Binding): boolean => {
+  if (binding.parsedExpr?.expr) {
+    const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
+    if (conditionExpr.expiredTime) {
+      const expiration = new Date(conditionExpr.expiredTime);
+      if (expiration < new Date()) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
 
 export const extractProjectResourceName = (name: string) => {
   const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;
@@ -31,6 +45,9 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
 
   const projectBindingRoles = iamPolicy.bindings
     .filter((binding) => {
+      if (isBindingPolicyExpired(binding)) {
+        return false;
+      }
       for (const member of binding.members) {
         if (member === ALL_USERS_USER_EMAIL) {
           return true;
@@ -80,6 +97,10 @@ export const isViewerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
 };
 
 export const getUserEmailListInBinding = (binding: Binding): string[] => {
+  if (isBindingPolicyExpired(binding)) {
+    return [];
+  }
+
   const groupStore = useUserGroupStore();
   const userStore = useUserStore();
   const emailList = [];
@@ -111,6 +132,10 @@ export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
   // rolesMapByEmail is Map<email, role list>
   const rolesMapByEmail = new Map<string, Set<string>>();
   for (const binding of iamPolicy.bindings) {
+    if (isBindingPolicyExpired(binding)) {
+      continue;
+    }
+
     const emails = getUserEmailListInBinding(binding);
 
     for (const email of emails) {
