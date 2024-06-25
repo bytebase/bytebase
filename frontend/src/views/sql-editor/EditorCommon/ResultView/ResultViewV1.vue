@@ -199,9 +199,18 @@ const disallowCopyingData = computed(() => {
     return false;
   }
 
-  const environment = instance.value.environment;
+  if (props.database) {
+    const projectLevelPolicy = policyStore.getPolicyByParentAndType({
+      parentPath: props.database?.project,
+      policyType: PolicyType.DISABLE_COPY_DATA,
+    });
+    if (projectLevelPolicy?.disableCopyDataPolicy?.active) {
+      return true;
+    }
+  }
+
   const policy = policyStore.getPolicyByParentAndType({
-    parentPath: environment,
+    parentPath: instance.value.environment,
     policyType: PolicyType.DISABLE_COPY_DATA,
   });
   if (policy?.disableCopyDataPolicy?.active) {
