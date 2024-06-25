@@ -11,7 +11,11 @@
       </template>
       {{ displayRoleTitle(role) }}
     </NTag>
-    <NTag v-for="binding in projectRoleBindings" :key="binding.role">
+    <NTag
+      v-for="binding in projectRoleBindings"
+      :key="binding.role"
+      :class="isBindingPolicyExpired(binding) ? 'line-through' : ''"
+    >
       {{ displayRoleTitle(binding.role) }}
     </NTag>
   </div>
@@ -22,7 +26,7 @@ import { orderBy } from "lodash-es";
 import { Building2Icon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { displayRoleTitle, sortRoles } from "@/utils";
+import { displayRoleTitle, sortRoles, isBindingPolicyExpired } from "@/utils";
 import type { ProjectRole } from "../../types";
 
 const props = defineProps<{
