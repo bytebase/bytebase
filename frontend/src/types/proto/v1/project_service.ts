@@ -402,7 +402,12 @@ export interface Project {
   webhooks: Webhook[];
   dataClassificationConfigId: string;
   issueLabels: Label[];
+  /** Force issue labels to be used when creating an issue. */
   forceIssueLabels: boolean;
+  /** Allow modifying statement after issue is created. */
+  allowModifyStatement: boolean;
+  /** Enable auto close issue. */
+  autoCloseIssue: boolean;
 }
 
 export interface AddWebhookRequest {
@@ -2286,6 +2291,8 @@ function createBaseProject(): Project {
     dataClassificationConfigId: "",
     issueLabels: [],
     forceIssueLabels: false,
+    allowModifyStatement: false,
+    autoCloseIssue: false,
   };
 }
 
@@ -2323,6 +2330,12 @@ export const Project = {
     }
     if (message.forceIssueLabels === true) {
       writer.uint32(112).bool(message.forceIssueLabels);
+    }
+    if (message.allowModifyStatement === true) {
+      writer.uint32(120).bool(message.allowModifyStatement);
+    }
+    if (message.autoCloseIssue === true) {
+      writer.uint32(128).bool(message.autoCloseIssue);
     }
     return writer;
   },
@@ -2411,6 +2424,20 @@ export const Project = {
 
           message.forceIssueLabels = reader.bool();
           continue;
+        case 15:
+          if (tag !== 120) {
+            break;
+          }
+
+          message.allowModifyStatement = reader.bool();
+          continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.autoCloseIssue = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2437,6 +2464,10 @@ export const Project = {
         ? object.issueLabels.map((e: any) => Label.fromJSON(e))
         : [],
       forceIssueLabels: isSet(object.forceIssueLabels) ? globalThis.Boolean(object.forceIssueLabels) : false,
+      allowModifyStatement: isSet(object.allowModifyStatement)
+        ? globalThis.Boolean(object.allowModifyStatement)
+        : false,
+      autoCloseIssue: isSet(object.autoCloseIssue) ? globalThis.Boolean(object.autoCloseIssue) : false,
     };
   },
 
@@ -2475,6 +2506,12 @@ export const Project = {
     if (message.forceIssueLabels === true) {
       obj.forceIssueLabels = message.forceIssueLabels;
     }
+    if (message.allowModifyStatement === true) {
+      obj.allowModifyStatement = message.allowModifyStatement;
+    }
+    if (message.autoCloseIssue === true) {
+      obj.autoCloseIssue = message.autoCloseIssue;
+    }
     return obj;
   },
 
@@ -2494,6 +2531,8 @@ export const Project = {
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];
     message.forceIssueLabels = object.forceIssueLabels ?? false;
+    message.allowModifyStatement = object.allowModifyStatement ?? false;
+    message.autoCloseIssue = object.autoCloseIssue ?? false;
     return message;
   },
 };
