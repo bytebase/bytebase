@@ -35,11 +35,17 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { defineAsyncComponent } from "vue";
+import { computed, defineAsyncComponent, watch } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import { useInstanceV1Store, usePageMode, useSQLEditorTabStore } from "@/store";
+import {
+  useInstanceV1Store,
+  usePageMode,
+  useSQLEditorTabStore,
+  useSettingV1Store,
+} from "@/store";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   EditorAction,
   ConnectionPathBar,
@@ -83,4 +89,26 @@ const handleApplyStatement = async (
     });
   }
 };
+
+const allowStandardMode = computed(() => {
+  return (
+    useSettingV1Store().workspaceProfileSetting?.databaseChangeMode ===
+    DatabaseChangeMode.EDITOR
+  );
+});
+
+watch(
+  [() => tab.value, allowStandardMode],
+  ([tab, allowStandardMode]) => {
+    if (!tab) return;
+    // Fallback to READONLY mode if standard mode is not allowed.
+    if (!allowStandardMode && tab.mode === "STANDARD") {
+      tab.mode = "READONLY";
+    }
+  },
+  {
+    immediate: true,
+    deep: false,
+  }
+);
 </script>
