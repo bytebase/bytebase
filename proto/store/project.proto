@@ -19,8 +19,8 @@ message Project {
   bool force_issue_labels = 3;
   // Allow modifying statement after issue is created.
   bool allow_modify_statement = 4;
-  // Enable auto close issue.
-  bool auto_close_issue = 5;
+  // Enable auto resolve issue.
+  bool auto_resolve_issue = 5;
 }
 
 message ProtectionRule {
