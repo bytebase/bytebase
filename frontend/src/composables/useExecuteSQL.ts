@@ -272,7 +272,7 @@ const useExecuteSQL = () => {
   };
 
   return {
-    executeReadonly: execute,
+    execute,
   };
 };
 

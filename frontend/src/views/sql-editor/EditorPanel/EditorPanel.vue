@@ -56,10 +56,10 @@ const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { showAIChatBox } = useSQLEditorContext();
 const pageMode = usePageMode();
 
-const { executeReadonly } = useExecuteSQL();
+const { execute } = useExecuteSQL();
 
 const handleExecute = (params: SQLEditorQueryParams) => {
-  executeReadonly(params);
+  execute(params);
 };
 
 const handleApplyStatement = async (

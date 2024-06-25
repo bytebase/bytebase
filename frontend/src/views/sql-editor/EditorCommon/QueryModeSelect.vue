@@ -1,7 +1,7 @@
 <template>
   <NPopover placement="bottom" trigger="click">
     <template #trigger>
-      <NButton size="small">
+      <NButton size="small" :disabled="disabled">
         {{ $t(`sql-editor.tab-mode.${tab.mode.toLowerCase()}`) }}
       </NButton>
     </template>
@@ -38,6 +38,10 @@
 import { NButton, NPopover, NRadioGroup } from "naive-ui";
 import { computed } from "vue";
 import { useSQLEditorTabStore } from "@/store";
+
+defineProps<{
+  disabled?: boolean;
+}>();
 
 const tabStore = useSQLEditorTabStore();
 

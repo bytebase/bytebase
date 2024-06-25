@@ -49,7 +49,7 @@
         </span>
       </NButton>
       <ResultLimitSelect />
-      <QueryModeSelect v-if="showQueryModeSelect && allowQuery" />
+      <QueryModeSelect v-if="showQueryModeSelect" :disabled="isExecutingSQL" />
     </div>
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
@@ -142,7 +142,7 @@ const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
-const { events } = useSQLEditorContext();
+const { standardModeEnabled, events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
@@ -161,7 +161,7 @@ const isEmptyStatement = computed(() => {
 const isExecutingSQL = computed(
   () => currentTab.value?.queryContext?.status === "EXECUTING"
 );
-const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
@@ -252,12 +252,10 @@ const showQueryModeSelect = computed(() => {
   if (!tab) {
     return false;
   }
-  return (
-    !!instance &&
-    !!database &&
-    tab.mode !== "ADMIN" &&
-    actuatorStore.customTheme !== "lixiang"
-  );
+  if (!standardModeEnabled.value) {
+    return false;
+  }
+  return tab.mode !== "ADMIN" && actuatorStore.customTheme !== "lixiang";
 });
 
 const handleRunQuery = () => {
