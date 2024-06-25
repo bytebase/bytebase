@@ -3104,7 +3104,9 @@ Format: users/{userUID} or groups/{group email} |
 | ----- | ---- | ----- | ----------- |
 | protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
-| force_issue_labels | [bool](#bool) |  |  |
+| force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
+| allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
+| auto_resolve_issue | [bool](#bool) |  | Enable auto resolve issue. |
 
 
 

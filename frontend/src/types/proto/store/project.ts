@@ -14,7 +14,12 @@ export interface Label {
 export interface Project {
   protectionRules: ProtectionRule[];
   issueLabels: Label[];
+  /** Force issue labels to be used when creating an issue. */
   forceIssueLabels: boolean;
+  /** Allow modifying statement after issue is created. */
+  allowModifyStatement: boolean;
+  /** Enable auto resolve issue. */
+  autoResolveIssue: boolean;
 }
 
 export interface ProtectionRule {
@@ -248,7 +253,13 @@ export const Label = {
 };
 
 function createBaseProject(): Project {
-  return { protectionRules: [], issueLabels: [], forceIssueLabels: false };
+  return {
+    protectionRules: [],
+    issueLabels: [],
+    forceIssueLabels: false,
+    allowModifyStatement: false,
+    autoResolveIssue: false,
+  };
 }
 
 export const Project = {
@@ -261,6 +272,12 @@ export const Project = {
     }
     if (message.forceIssueLabels === true) {
       writer.uint32(24).bool(message.forceIssueLabels);
+    }
+    if (message.allowModifyStatement === true) {
+      writer.uint32(32).bool(message.allowModifyStatement);
+    }
+    if (message.autoResolveIssue === true) {
+      writer.uint32(40).bool(message.autoResolveIssue);
     }
     return writer;
   },
@@ -293,6 +310,20 @@ export const Project = {
 
           message.forceIssueLabels = reader.bool();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.allowModifyStatement = reader.bool();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.autoResolveIssue = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -311,6 +342,10 @@ export const Project = {
         ? object.issueLabels.map((e: any) => Label.fromJSON(e))
         : [],
       forceIssueLabels: isSet(object.forceIssueLabels) ? globalThis.Boolean(object.forceIssueLabels) : false,
+      allowModifyStatement: isSet(object.allowModifyStatement)
+        ? globalThis.Boolean(object.allowModifyStatement)
+        : false,
+      autoResolveIssue: isSet(object.autoResolveIssue) ? globalThis.Boolean(object.autoResolveIssue) : false,
     };
   },
 
@@ -325,6 +360,12 @@ export const Project = {
     if (message.forceIssueLabels === true) {
       obj.forceIssueLabels = message.forceIssueLabels;
     }
+    if (message.allowModifyStatement === true) {
+      obj.allowModifyStatement = message.allowModifyStatement;
+    }
+    if (message.autoResolveIssue === true) {
+      obj.autoResolveIssue = message.autoResolveIssue;
+    }
     return obj;
   },
 
@@ -336,6 +377,8 @@ export const Project = {
     message.protectionRules = object.protectionRules?.map((e) => ProtectionRule.fromPartial(e)) || [];
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];
     message.forceIssueLabels = object.forceIssueLabels ?? false;
+    message.allowModifyStatement = object.allowModifyStatement ?? false;
+    message.autoResolveIssue = object.autoResolveIssue ?? false;
     return message;
   },
 };
