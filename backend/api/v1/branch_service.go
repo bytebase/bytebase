@@ -555,18 +555,15 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		return nil, err
 	}
 
-	newBaseMetadata, newBaseSchema, newBaseConfig, err := s.getNewBaseFromRebaseRequest(ctx, request)
+	filteredNewBaseMetadata, newBaseSchema, newBaseConfig, err := s.getFilteredNewBaseFromRebaseRequest(ctx, request)
 	if err != nil {
 		return nil, err
 	}
-	filteredNewBaseMetadata := filterDatabaseMetadataByEngine(newBaseMetadata, baseBranch.Engine)
 
-	var newHeadSchema string
 	var newHeadMetadata *storepb.DatabaseSchemaMetadata
 	var newHeadConfig *storepb.DatabaseConfig
 	if request.MergedSchema != "" {
-		newHeadSchema = request.MergedSchema
-		newHeadMetadata, err = schema.ParseToMetadata(storepb.Engine(baseBranch.Engine), "" /* defaultSchemaName */, newHeadSchema)
+		newHeadMetadata, err = schema.ParseToMetadata(storepb.Engine(baseBranch.Engine), "" /* defaultSchemaName */, request.MergedSchema)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
@@ -611,22 +608,21 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		if newHeadMetadata == nil {
 			return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
 		}
-		filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
 		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
+	}
 
-		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), newHeadMetadata)
-		newHeadSchema, err = schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, "", newHeadMetadata)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
-		}
+	filteredNewHeadMetadata := filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
+	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), newHeadMetadata)
+	newHeadSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, "", filteredNewHeadMetadata)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert new head metadata to schema string, %v", err)
 	}
 
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	filteredNewHeadMetadata := filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(newBaseMetadata, filteredNewHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID))
+	updateConfigBranchUpdateInfo(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID))
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -669,7 +665,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_Branch{Branch: v1Branch}}, nil
 }
 
-func (s *BranchService) getNewBaseFromRebaseRequest(ctx context.Context, request *v1pb.RebaseBranchRequest) (*storepb.DatabaseSchemaMetadata, string, *storepb.DatabaseConfig, error) {
+func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context, request *v1pb.RebaseBranchRequest) (*storepb.DatabaseSchemaMetadata, string, *storepb.DatabaseConfig, error) {
 	if request.SourceDatabase != "" {
 		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.SourceDatabase)
 		if err != nil {
@@ -708,7 +704,7 @@ func (s *BranchService) getNewBaseFromRebaseRequest(ctx context.Context, request
 			return nil, "", nil, status.Errorf(codes.Internal, err.Error())
 		}
 
-		return databaseSchema.GetMetadata(), sourceSchema, databaseSchema.GetConfig(), nil
+		return filteredNewBaseMetadata, sourceSchema, databaseSchema.GetConfig(), nil
 	}
 
 	if request.SourceBranch != "" {
