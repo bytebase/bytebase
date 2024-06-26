@@ -320,7 +320,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 			if _, ok := m[column.Name]; !ok {
 				definition := fmt.Sprintf("%s | %s", table, column.Type)
 				if !column.Nullable {
-					definition += " | NOT NULL"
+					definition += ", NOT NULL"
 				}
 				comment := column.UserComment
 				m[column.Name] = base.Candidate{
