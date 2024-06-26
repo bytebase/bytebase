@@ -2,11 +2,11 @@ UPDATE project
 SET setting = jsonb_set(
     jsonb_set(
         setting, 
-        '{allow_modify_statement}', 
+        '{allowModifyStatement}', 
         'true', 
         true
     ),
-    '{auto_resolve_issue}', 
+    '{autoResolveIssue}', 
     'true', 
     true
 ) WHERE id != 1;
