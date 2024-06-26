@@ -92,12 +92,11 @@
             {{ $t("settings.profile.email") }}
           </dt>
           <dd class="mt-1 text-sm text-main">
-            <NInput
+            <EmailInput
               v-if="state.editing"
+              v-model:value="state.editingUser!.email"
               size="large"
-              :value="state.editingUser?.email"
-              :input-props="{ autocomplete: 'off', type: 'email' }"
-              @update:value="updateUser('email', $event)"
+              :domain="workspaceDomain"
             />
             <template v-else>
               {{ user.email }}
@@ -241,12 +240,13 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { cloneDeep, isEmpty, isEqual } from "lodash-es";
+import { cloneDeep, head, isEmpty, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NInput, NDropdown } from "naive-ui";
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import EmailInput from "@/components/EmailInput.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
@@ -258,6 +258,7 @@ import {
   useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
+  useSettingV1Store,
   useUserStore,
 } from "@/store";
 import {
@@ -285,6 +286,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const actuatorStore = useActuatorV1Store();
+const settingV1Store = useSettingV1Store();
 const authStore = useAuthStore();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
@@ -297,6 +299,10 @@ const state = reactive<LocalState>({
 });
 
 const editNameTextField = ref<InstanceType<typeof NInput>>();
+
+const workspaceDomain = computed(() =>
+  head(settingV1Store.workspaceProfileSetting?.domains)
+);
 
 const keyboardHandler = (e: KeyboardEvent) => {
   if (state.editing) {
