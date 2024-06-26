@@ -206,6 +206,9 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		if indexes[i].primary {
 			return true
 		}
+		if indexes[j].primary {
+			return false
+		}
 		return indexes[i].name < indexes[j].name
 	})
 
