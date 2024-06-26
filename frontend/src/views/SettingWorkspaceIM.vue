@@ -218,7 +218,7 @@ const imList = computed(() => {
         );
       },
     },
-  ].filter((item) => !item.hide);
+  ];
 });
 
 const dataChanged = computed(() => {
