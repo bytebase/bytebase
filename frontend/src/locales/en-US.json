@@ -1997,10 +1997,24 @@
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
       },
-      "labels": {
-        "issue-labels": "Issue Labels",
-        "configure-labels": "Configure labels",
-        "force-issue-labels": "Require labels for all issues"
+      "issue-related": {
+        "self": "Issue related",
+        "labels": {
+          "self": "Labels",
+          "configure-labels": "Configure labels",
+          "force-issue-labels": {
+            "self": "Require labels for all issues",
+            "description": "Require at least one label when creating issues."
+          }
+        },
+        "allow-modify-statement": {
+          "self": "Allow modify statement",
+          "description": "Allow users to modify the statement of the issue after creation."
+        },
+        "auto-resolve-issue": {
+          "self": "Auto resolve issue",
+          "description": "Automatically resolve the issue after all tasks are completed."
+        }
       }
     },
     "members": {
