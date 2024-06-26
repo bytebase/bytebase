@@ -549,7 +549,7 @@
     --
     CREATE TABLE `t5` (
       `a` int NOT NULL COMMENT 'this is comment',
-      `b` VARCHAR(20) NOT NULL,
+      `b` varchar(20) NOT NULL,
       `c` int NOT NULL,
       `d` text,
       PRIMARY KEY (`a`),
@@ -618,6 +618,11 @@
                   "nullable":  true,
                   "type":  "int",
                   "defaultExpression": "AUTO_INCREMENT"
+                },
+                {
+                  "name":  "b",
+                  "nullable":  true,
+                  "type":  "int(11)"
                 }
               ]
             },
@@ -660,7 +665,8 @@
     }
   result: |
     CREATE TABLE `t1` (
-      `a` int primary key AUTO_INCREMENT
+      `a` int primary key AUTO_INCREMENT,
+      `b` int
     );
     CREATE TABLE `t2` (
       `a` int AUTO_INCREMENT primary key
