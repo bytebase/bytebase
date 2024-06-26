@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -81,7 +82,7 @@ const (
 )
 
 // tryMerge merges other metadata to current metadata, always returns a non-nil metadata if no error occurs.
-func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, error) {
+func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, engine storepb.Engine) (*storepb.DatabaseSchemaMetadata, error) {
 	ancestor, head, base = proto.Clone(ancestor).(*storepb.DatabaseSchemaMetadata), proto.Clone(head).(*storepb.DatabaseSchemaMetadata), proto.Clone(base).(*storepb.DatabaseSchemaMetadata)
 
 	if ancestor == nil {
@@ -98,7 +99,7 @@ func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata) (*storepb.Da
 		return nil, errors.Wrap(err, "failed to diff between ancestor and base")
 	}
 
-	if conflict, msg := diffBetweenAncestorAndBase.tryMerge(diffBetweenAncestorAndHead); conflict {
+	if conflict, msg := diffBetweenAncestorAndBase.tryMerge(diffBetweenAncestorAndHead, engine); conflict {
 		return nil, errors.Errorf("merge conflict: %s", msg)
 	}
 
@@ -118,13 +119,13 @@ type metadataDiffRootNode struct {
 }
 
 // tryMerge merges other root node to current root node, stop and return error if conflict occurs.
-func (mr *metadataDiffRootNode) tryMerge(other *metadataDiffRootNode) (bool, string) {
+func (mr *metadataDiffRootNode) tryMerge(other *metadataDiffRootNode, engine storepb.Engine) (bool, string) {
 	for _, schema := range mr.schemas {
 		otherSchema, in := other.schemas[schema.name]
 		if !in {
 			continue
 		}
-		conflict, msg := schema.tryMerge(otherSchema)
+		conflict, msg := schema.tryMerge(otherSchema, engine)
 		if conflict {
 			return true, msg
 		}
@@ -168,7 +169,7 @@ type metadataDiffSchemaNode struct {
 	// SchemaMetadata contains other object types, likes function, view etc. But we do not support them yet.
 }
 
-func (n *metadataDiffSchemaNode) tryMerge(other *metadataDiffSchemaNode) (bool, string) {
+func (n *metadataDiffSchemaNode) tryMerge(other *metadataDiffSchemaNode, engine storepb.Engine) (bool, string) {
 	if other == nil {
 		return true, "other node check conflict with schema node not be nil"
 	}
@@ -199,7 +200,7 @@ func (n *metadataDiffSchemaNode) tryMerge(other *metadataDiffSchemaNode) (bool, 
 		if !in {
 			continue
 		}
-		conflict, msg := tableNode.tryMerge(otherTableNode)
+		conflict, msg := tableNode.tryMerge(otherTableNode, engine)
 		if conflict {
 			return true, msg
 		}
@@ -386,7 +387,7 @@ type metadataDiffTableNode struct {
 	partitionsMap  map[string]*metadataDiffPartitionNode
 }
 
-func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, string) {
+func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode, engine storepb.Engine) (bool, string) {
 	if other == nil {
 		return true, "other node check conflict with table node must not be nil"
 	}
@@ -445,7 +446,7 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if !in {
 			continue
 		}
-		conflict, msg := columnNode.tryMerge(otherColumnNode)
+		conflict, msg := columnNode.tryMerge(otherColumnNode, engine)
 		if conflict {
 			return true, msg
 		}
@@ -648,7 +649,7 @@ type metadataDiffColumnNode struct {
 	head *storepb.ColumnMetadata
 }
 
-func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, string) {
+func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode, engine storepb.Engine) (bool, string) {
 	if other == nil {
 		return true, "other node check conflict with column node must not be nil"
 	}
@@ -665,7 +666,7 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 	}
 
 	if n.action == diffActionCreate {
-		if n.head.Type != other.head.Type {
+		if !isColumnTypeEqual(n.head.Type, other.head.Type, engine) {
 			return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.head.Type, other.head.Type)
 		}
 		if !compareColumnDefaultValue(n.head.DefaultValue, other.head.DefaultValue) {
@@ -682,9 +683,9 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		}
 	}
 	if n.action == diffActionUpdate {
-		if other.base.Type != other.head.Type {
-			if n.base.Type != n.head.Type {
-				if n.head.Type != other.head.Type {
+		if !isColumnTypeEqual(other.base.Type, other.head.Type, engine) {
+			if !isColumnTypeEqual(n.base.Type, n.head.Type, engine) {
+				if !isColumnTypeEqual(n.head.Type, other.head.Type, engine) {
 					return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.head.Type, other.head.Type)
 				}
 			} else {
@@ -1990,4 +1991,15 @@ func diffPartitionMetadata(base, head *storepb.TablePartitionMetadata) (*metadat
 	}
 
 	return partitionNode, nil
+}
+
+func isColumnTypeEqual(a, b string, engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_MYSQL:
+		canonicalA := mysql.GetColumnTypeCanonicalSynonym(a)
+		canonicalB := mysql.GetColumnTypeCanonicalSynonym(b)
+		return strings.EqualFold(canonicalA, canonicalB)
+	default:
+		return strings.EqualFold(a, b)
+	}
 }

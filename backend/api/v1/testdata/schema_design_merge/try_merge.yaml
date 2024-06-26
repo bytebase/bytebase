@@ -116,45 +116,45 @@
     }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "defaultNull":  true,
-                  "nullable":  true,
-                  "type":  "int"
+                  "name": "id",
+                  "position": 1,
+                  "defaultNull": true,
+                  "nullable": true,
+                  "type": "int"
                 }
               ],
-              "engine":  "InnoDB",
-              "collation":  "utf8mb4_0900_ai_ci",
-              "dataSize":  "16384"
+              "engine": "InnoDB",
+              "collation": "utf8mb4_0900_ai_ci",
+              "dataSize": "16384"
             }
           ],
-          "views":  [
+          "views": [
             {
-              "name":  "v1",
-              "definition":  "select `t`.`id` AS `id` from `t`"
+              "name": "v1",
+              "definition": "select `t`.`id` AS `id` from `t`"
             }
           ],
-          "functions":  [
+          "functions": [
             {
-              "name":  "CalcIncome2",
-              "definition":  "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome2`( starting_value INT ) RETURNS int(11)\n    DETERMINISTIC\nBEGIN\n\n   DECLARE          income INT;\n\n   SET           income = 0;\n\n   label1: WHILE            income <= 3000 DO\n     SET income = income + starting_value;\n   END WHILE    label1;\n\n   RETURN income;\n\nEND"
+              "name": "CalcIncome2",
+              "definition": "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome2`( starting_value INT ) RETURNS int(11)\n    DETERMINISTIC\nBEGIN\n\n   DECLARE          income INT;\n\n   SET           income = 0;\n\n   label1: WHILE            income <= 3000 DO\n     SET income = income + starting_value;\n   END WHILE    label1;\n\n   RETURN income;\n\nEND"
             },
             {
-              "name":  "CalcIncome",
-              "definition":  "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int(11)\n    DETERMINISTIC\nBEGIN\n\n   DECLARE          income INT;\n\n   SET           income = 0;\n\n   label1: WHILE            income <= 3000 DO\n     SET income = income + starting_value;\n   END WHILE    label1;\n\n   RETURN income;\n\nEND"
+              "name": "CalcIncome",
+              "definition": "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int(11)\n    DETERMINISTIC\nBEGIN\n\n   DECLARE          income INT;\n\n   SET           income = 0;\n\n   label1: WHILE            income <= 3000 DO\n     SET income = income + starting_value;\n   END WHILE    label1;\n\n   RETURN income;\n\nEND"
             }
           ],
-          "procedures":  [
+          "procedures": [
             {
-              "name":  "citycount",
-              "definition":  "CREATE DEFINER=`root`@`%` PROCEDURE `citycount`(IN country CHAR(3), OUT cities INT)\nBEGIN\n         SELECT           1000 INTO cities;\n       END"
+              "name": "citycount",
+              "definition": "CREATE DEFINER=`root`@`%` PROCEDURE `citycount`(IN country CHAR(3), OUT cities INT)\nBEGIN\n         SELECT           1000 INTO cities;\n       END"
             }
           ]
         }
@@ -352,40 +352,40 @@
      }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "employee",
-              "columns":  [
+              "name": "employee",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "defaultNull":  true,
-                  "nullable":  true,
-                  "type":  "INT"
+                  "name": "id",
+                  "position": 1,
+                  "defaultNull": true,
+                  "nullable": true,
+                  "type": "INT"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "id"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ],
-              "partitions":  [
+              "partitions": [
                 {
-                  "name":  "p1",
-                  "type":  "RANGE",
-                  "expression":  "`id`",
-                  "value":  "10 "
+                  "name": "p1",
+                  "type": "RANGE",
+                  "expression": "`id`",
+                  "value": "10 "
                 }
               ]
             }
@@ -725,121 +725,121 @@
     }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "name":  "public",
-          "tables":  [
+          "name": "public",
+          "tables": [
             {
-              "name":  "employee",
-              "columns":  [
+              "name": "employee",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "c",
-                  "position":  2,
-                  "type":  "int"
+                  "name": "c",
+                  "position": 2,
+                  "type": "int"
                 },
                 {
-                  "name":  "gender",
-                  "position":  3,
-                  "type":  "char(1)"
+                  "name": "gender",
+                  "position": 3,
+                  "type": "char(1)"
                 },
                 {
-                  "name":  "debit_card_number",
-                  "position":  4,
-                  "type":  "varchar(255)"
+                  "name": "debit_card_number",
+                  "position": 4,
+                  "type": "varchar(255)"
                 },
                 {
-                  "name":  "credit_card_number",
-                  "position":  5,
-                  "type":  "varchar(255)"
+                  "name": "credit_card_number",
+                  "position": 5,
+                  "type": "varchar(255)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "id"
                   ],
-                  "type":  "btree",
-                  "unique":  true,
-                  "primary":  true
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true
                 },
                 {
-                  "name":  "t_c_plus_5_uniq_idx",
-                  "expressions":  [
+                  "name": "t_c_plus_5_uniq_idx",
+                  "expressions": [
                     "((`c` + 5))"
                   ],
-                  "unique":  true,
-                  "visible":  true
+                  "unique": true,
+                  "visible": true
                 }
               ]
             },
             {
-              "name":  "address",
-              "columns":  [
+              "name": "address",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "address",
-                  "position":  2,
-                  "type":  "varchar(255)"
+                  "name": "address",
+                  "position": 2,
+                  "type": "varchar(255)"
                 },
                 {
-                  "name":  "employee_id",
-                  "position":  3,
-                  "type":  "integer"
+                  "name": "employee_id",
+                  "position": 3,
+                  "type": "integer"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "id"
                   ],
-                  "primary":  true
+                  "primary": true
                 }
               ],
-              "foreignKeys":  [
+              "foreignKeys": [
                 {
-                  "name":  "address-fk-sc4rcmkp",
-                  "columns":  [
+                  "name": "address-fk-sc4rcmkp",
+                  "columns": [
                     "employee_id"
                   ],
-                  "referencedSchema":  "public",
-                  "referencedTable":  "employee",
-                  "referencedColumns":  [
+                  "referencedSchema": "public",
+                  "referencedTable": "employee",
+                  "referencedColumns": [
                     "id"
                   ]
                 }
               ]
             },
             {
-              "name":  "hiring_date",
-              "columns":  [
+              "name": "hiring_date",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "employee_id",
-                  "position":  2,
-                  "type":  "integer"
+                  "name": "employee_id",
+                  "position": 2,
+                  "type": "integer"
                 }
               ]
             }
           ]
         }
       ],
-      "characterSet":  "UTF8",
-      "collation":  "en_US.utf8"
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
 - description: Add different column on the same table
   ancestor: |-
@@ -920,35 +920,35 @@
     }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "name":  "public",
-          "tables":  [
+          "name": "public",
+          "tables": [
             {
-              "name":  "employee",
-              "columns":  [
+              "name": "employee",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "gender",
-                  "position":  2,
-                  "type":  "char(1)"
+                  "name": "gender",
+                  "position": 2,
+                  "type": "char(1)"
                 },
                 {
-                  "name":  "name",
-                  "position":  3,
-                  "type":  "varchar(255)"
+                  "name": "name",
+                  "position": 3,
+                  "type": "varchar(255)"
                 }
               ]
             }
           ]
         }
       ],
-      "characterSet":  "UTF8",
-      "collation":  "en_US.utf8"
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
 - description: Add index in base
   ancestor: |-
@@ -1043,39 +1043,39 @@
     }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "name":  "public",
-          "tables":  [
+          "name": "public",
+          "tables": [
             {
-              "name":  "employee",
-              "columns":  [
+              "name": "employee",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "name",
-                  "position":  2,
-                  "type":  "text"
+                  "name": "name",
+                  "position": 2,
+                  "type": "text"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "address_name_idx",
-                  "expressions":  [
+                  "name": "address_name_idx",
+                  "expressions": [
                     "name"
                   ],
-                  "visible":  true
+                  "visible": true
                 }
               ]
             }
           ]
         }
       ],
-      "characterSet":  "UTF8",
-      "collation":  "en_US.utf8"
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
 - description: Create different table
   ancestor: |-
@@ -1164,45 +1164,45 @@
     }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "name":  "public",
-          "tables":  [
+          "name": "public",
+          "tables": [
             {
-              "name":  "employee",
-              "columns":  [
+              "name": "employee",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 }
               ]
             },
             {
-              "name":  "address",
-              "columns":  [
+              "name": "address",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 }
               ]
             },
             {
-              "name":  "salary",
-              "columns":  [
+              "name": "salary",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 }
               ]
             }
           ]
         }
       ],
-      "characterSet":  "UTF8",
-      "collation":  "en_US.utf8"
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
 - description: no change
   ancestor: |-
@@ -1273,6 +1273,29 @@
     }
   expected: |-
     {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "employee",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
+    }
+- description: Integer Synonyms
+  ancestor: |-
+    {
       "schemas":  [
         {
           "name":  "public",
@@ -1283,7 +1306,7 @@
                 {
                   "name":  "id",
                   "position":  1,
-                  "type":  "integer"
+                  "type":  "int"
                 }
               ]
             }
@@ -1292,4 +1315,70 @@
       ],
       "characterSet":  "UTF8",
       "collation":  "en_US.utf8"
+    }
+  head: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "int"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  base: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "int(11)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  expected: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "employee",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int(11)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
