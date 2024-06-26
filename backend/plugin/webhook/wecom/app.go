@@ -176,7 +176,6 @@ func (p *provider) do(ctx context.Context, method string, url *url.URL, data []b
 		}
 
 		b, cont, err := func() ([]byte, bool, error) {
-
 			q := url.Query()
 			q.Set("access_token", p.token)
 			url.RawQuery = q.Encode()
