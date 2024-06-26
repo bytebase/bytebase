@@ -671,6 +671,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 			}
 
+			// Check project setting for modify statement.
+			if len(taskPatchList) > 0 && doUpdateSheet && !project.Setting.AllowModifyStatement {
+				return nil, status.Errorf(codes.FailedPrecondition, "modify statement is not allowed for project %s", project.Title)
+			}
+
 			for _, taskPatch := range taskPatchList {
 				task := tasksMap[taskPatch.ID]
 				if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
