@@ -45,7 +45,7 @@
         <NButton
           v-else
           tertiary
-          size="small"
+          size="tiny"
           @click.prevent="$emit('reset-service-key', user)"
         >
           <template #icon>
@@ -59,6 +59,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useCurrentUserV1 } from "@/store";
