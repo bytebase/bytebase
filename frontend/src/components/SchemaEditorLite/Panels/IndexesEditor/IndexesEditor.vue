@@ -33,6 +33,7 @@ import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import type {
   DatabaseMetadata,
   IndexMetadata,
@@ -171,6 +172,11 @@ const columns = computed(() => {
       className: "checkbox-cell",
       render: (index) => {
         const allowTurnOnOrOffPrimary = () => {
+          // Do not allow to edit primary key for TiDB.
+          if (props.db.instanceEntity.engine === Engine.TIDB) {
+            return false;
+          }
+
           if (index.primary) return true;
           return !props.table.indexes.some((idx) => idx.primary);
         };
