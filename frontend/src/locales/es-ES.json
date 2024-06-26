@@ -2353,7 +2353,11 @@
     },
     "n-per-page": "{n} / página",
     "customize-tree-structure": "Personalizar la estructura del árbol",
-    "will-override-current-editing-statement": "Anulará la declaración de edición actual."
+    "will-override-current-editing-statement": "Anulará la declaración de edición actual.",
+    "standard-mode": {
+      "self": "Modo estandar"
+    },
+    "to-enable-standard-mode": "para habilitar el modo estándar"
   },
   "schema-editor": {
     "self": "Editor de esquema",
