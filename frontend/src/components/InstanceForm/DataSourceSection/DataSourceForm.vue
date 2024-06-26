@@ -592,8 +592,8 @@ MIIEvQ...
       <div class="textlabel black mt-4">Password</div>
       <NInput
         type="password"
-        show-password-on="click"
         v-model:value="dataSource.password"
+        show-password-on="click"
         class="mt-2 w-full"
         :disabled="!allowEdit"
       />
