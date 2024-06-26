@@ -318,9 +318,16 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 		tableMetadata := schemaMetadata.GetTable(table)
 		for _, column := range tableMetadata.GetColumns() {
 			if _, ok := m[column.Name]; !ok {
+				definition := fmt.Sprintf("%s | %s", table, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				comment := column.UserComment
 				m[column.Name] = base.Candidate{
-					Type: base.CandidateTypeColumn,
-					Text: c.quotedIdentifierIfNeeded(column.Name),
+					Type:       base.CandidateTypeColumn,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
+					Definition: definition,
+					Comment:    comment,
 				}
 			}
 		}
@@ -581,7 +588,7 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	c.parser.Reset()
 	var context antlr.ParserRuleContext
 	if c.scene == base.SceneTypeQuery {
-		context = c.parser.Select_statement()
+		context = c.parser.Select_statement_standalone()
 	} else {
 		context = c.parser.Tsql_file()
 	}
