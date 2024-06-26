@@ -42,6 +42,17 @@ func newProvider(corpID, agentID, secret string) (*provider, error) {
 	}, nil
 }
 
+func Validate(ctx context.Context, corpID, agentID, secret string) error {
+	p, err := newProvider(corpID, agentID, secret)
+	if err != nil {
+		return err
+	}
+	if err := p.refreshToken(ctx); err != nil {
+		return errors.Wrapf(err, "failed to refresh token")
+	}
+	return nil
+}
+
 type accessTokenResponse struct {
 	ErrCode     int    `json:"errcode"`
 	ErrMsg      string `json:"errmsg"`
@@ -158,19 +169,21 @@ func (p *provider) do(ctx context.Context, method string, url *url.URL, data []b
 		}
 	}
 	const maxRetries = 3
+	urlRedacted := url.String()
 	for i := 0; i < maxRetries; i++ {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 
 		b, cont, err := func() ([]byte, bool, error) {
+
 			q := url.Query()
 			q.Set("access_token", p.token)
 			url.RawQuery = q.Encode()
 
 			req, err := http.NewRequestWithContext(ctx, method, url.String(), bytes.NewReader(data))
 			if err != nil {
-				return nil, false, errors.Wrapf(err, "failed to construct %s %s", method, url)
+				return nil, false, errors.Wrapf(err, "failed to construct %s %s", method, urlRedacted)
 			}
 
 			req.Header.Set("Content-Type", "application/json; charset=utf-8")
@@ -182,12 +195,12 @@ func (p *provider) do(ctx context.Context, method string, url *url.URL, data []b
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
-				return nil, false, errors.Errorf("received non-200 HTTP code %d for %s %s", resp.StatusCode, method, url)
+				return nil, false, errors.Errorf("received non-200 HTTP code %d for %s %s", resp.StatusCode, method, urlRedacted)
 			}
 
 			b, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return nil, false, errors.Wrapf(err, "failed to read body of %s %s", method, url)
+				return nil, false, errors.Wrapf(err, "failed to read body of %s %s", method, urlRedacted)
 			}
 
 			var response struct {
@@ -216,5 +229,5 @@ func (p *provider) do(ctx context.Context, method string, url *url.URL, data []b
 		}
 		return b, nil
 	}
-	return nil, errors.Errorf("exceeds max retries for %s %s", method, url)
+	return nil, errors.Errorf("exceeds max retries for %s %s", method, urlRedacted)
 }
