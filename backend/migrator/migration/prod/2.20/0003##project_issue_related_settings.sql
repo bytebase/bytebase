@@ -3,10 +3,8 @@ SET setting = jsonb_set(
     jsonb_set(
         setting, 
         '{allowModifyStatement}', 
-        'true', 
-        true
+        'true'
     ),
     '{autoResolveIssue}', 
-    'true', 
-    true
+    'true'
 ) WHERE id != 1;
