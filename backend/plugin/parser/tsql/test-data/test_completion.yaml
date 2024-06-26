@@ -27,11 +27,11 @@
       comment: ""
     - text: EmployeeId
       type: COLUMN
-      definition: ""
+      definition: Address | int, NOT NULL
       comment: ""
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: Employees | int, NOT NULL
       comment: ""
     - text: IdAlias
       type: COLUMN
@@ -39,22 +39,22 @@
       comment: ""
     - text: Name
       type: COLUMN
-      definition: ""
+      definition: Employees | varchar, NOT NULL
       comment: ""
     - text: Street
       type: COLUMN
-      definition: ""
+      definition: Address | varchar, NOT NULL
       comment: ""
 - description: Table alias referenced by select item
   input: SELECT tableAlias.| FROM Employees AS tableAlias;
   want:
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: Employees | int, NOT NULL
       comment: ""
     - text: Name
       type: COLUMN
-      definition: ""
+      definition: Employees | varchar, NOT NULL
       comment: ""
 - description: Full column name considering CTE
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT MyCTE_01.| FROM MyCTE_01;
@@ -96,19 +96,19 @@
       comment: ""
     - text: EmployeeId
       type: COLUMN
-      definition: ""
+      definition: Address | int, NOT NULL
       comment: ""
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: Employees | int, NOT NULL
       comment: ""
     - text: Name
       type: COLUMN
-      definition: ""
+      definition: Employees | varchar, NOT NULL
       comment: ""
     - text: Street
       type: COLUMN
-      definition: ""
+      definition: Address | varchar, NOT NULL
       comment: ""
 - description: Asterisk appearred in select item list
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT |.* FROM MyCTE_01 JOIN dbo.Address ON MyCTE_01.EmployeeID = dbo.Address.EmployeeID
@@ -143,19 +143,19 @@
       comment: ""
     - text: EmployeeId
       type: COLUMN
-      definition: ""
+      definition: Address | int, NOT NULL
       comment: ""
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: Employees | int, NOT NULL
       comment: ""
     - text: Name
       type: COLUMN
-      definition: ""
+      definition: Employees | varchar, NOT NULL
       comment: ""
     - text: Street
       type: COLUMN
-      definition: ""
+      definition: Address | varchar, NOT NULL
       comment: ""
 - description: Completion should not consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
@@ -166,11 +166,11 @@
       comment: ""
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: SalaryLevel | int, NOT NULL
       comment: ""
     - text: SalaryUpBound
       type: COLUMN
-      definition: ""
+      definition: SalaryLevel | int, NOT NULL
       comment: ""
 - description: Completion should consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM |
@@ -205,19 +205,19 @@
       comment: ""
     - text: EmployeeId
       type: COLUMN
-      definition: ""
+      definition: Address | int, NOT NULL
       comment: ""
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: Employees | int, NOT NULL
       comment: ""
     - text: Name
       type: COLUMN
-      definition: ""
+      definition: Employees | varchar, NOT NULL
       comment: ""
     - text: Street
       type: COLUMN
-      definition: ""
+      definition: Address | varchar, NOT NULL
       comment: ""
 - description: Completion table in specify schema
   input: SELECT * FROM dbo.|
@@ -232,19 +232,19 @@
       comment: ""
     - text: EmployeeId
       type: COLUMN
-      definition: ""
+      definition: Address | int, NOT NULL
       comment: ""
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: Employees | int, NOT NULL
       comment: ""
     - text: Name
       type: COLUMN
-      definition: ""
+      definition: Employees | varchar, NOT NULL
       comment: ""
     - text: Street
       type: COLUMN
-      definition: ""
+      definition: Address | varchar, NOT NULL
       comment: ""
 - description: Completion table for simple select
   input: SELECT * FROM |
@@ -275,17 +275,17 @@
       comment: ""
     - text: EmployeeId
       type: COLUMN
-      definition: ""
+      definition: Address | int, NOT NULL
       comment: ""
     - text: Id
       type: COLUMN
-      definition: ""
+      definition: Employees | int, NOT NULL
       comment: ""
     - text: Name
       type: COLUMN
-      definition: ""
+      definition: Employees | varchar, NOT NULL
       comment: ""
     - text: Street
       type: COLUMN
-      definition: ""
+      definition: Address | varchar, NOT NULL
       comment: ""
