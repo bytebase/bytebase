@@ -16,6 +16,8 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -1314,7 +1316,8 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf io.StringWriter) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
+	columnCanonicalType := mysqldb.GetColumnTypeCanonicalSynonym(strings.ToLower(c.tp))
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, columnCanonicalType)); err != nil {
 		return err
 	}
 	if !c.nullable {
