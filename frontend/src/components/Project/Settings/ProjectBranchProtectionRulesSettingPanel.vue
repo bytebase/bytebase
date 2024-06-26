@@ -56,7 +56,7 @@ import { ref } from "vue";
 import { useProjectBranchProtectionRules } from "@/store/modules/v1/projectProtectionRoles";
 import type { ComposedProject } from "@/types";
 import type { ProtectionRule } from "@/types/proto/v1/project_service";
-import CreateProjectBranchProtectionRulePanel from "./CreateProjectBranchProtectionRulePanel.vue";
+import CreateProjectBranchProtectionRulePanel from "../CreateProjectBranchProtectionRulePanel.vue";
 
 const props = defineProps<{
   project: ComposedProject;

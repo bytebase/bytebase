@@ -61,7 +61,6 @@ import {
   AppIMSetting_Slack,
   AppIMSetting_Wecom,
 } from "@/types/proto/v1/setting_service";
-import { isDev } from "@/utils";
 
 interface LocalState {
   selectedTab: Webhook_Type;
@@ -179,7 +178,6 @@ const imList = computed(() => {
       name: t("common.wecom"),
       type: Webhook_Type.TYPE_WECOM,
       enabled: state.setting.wecom?.enabled,
-      hide: !isDev(),
       render: () => {
         return (
           <div class="space-y-4">
@@ -220,7 +218,7 @@ const imList = computed(() => {
         );
       },
     },
-  ].filter((item) => !item.hide);
+  ];
 });
 
 const dataChanged = computed(() => {

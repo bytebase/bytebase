@@ -87,29 +87,11 @@
           :allow-edit="allowEdit"
         />
 
-        <div v-if="!create" class="flex flex-col gap-y-2">
-          <div class="textlabel flex items-center space-x-1">
-            <label>
-              {{ $t("environment.access-control.title") }}
-            </label>
-            <FeatureBadge feature="bb.feature.access-control" />
-          </div>
-          <div>
-            <div class="inline-flex items-center gap-x-2">
-              <Switch
-                :value="disableCopyDataPolicy"
-                :text="true"
-                :disabled="!allowEditDisableCopyData"
-                @update:value="upsertPolicy"
-              />
-              <span class="textlabel">{{
-                $t(
-                  "environment.access-control.disable-copy-data-from-sql-editor"
-                )
-              }}</span>
-            </div>
-          </div>
-        </div>
+        <AccessControlConfigure
+          v-if="!create"
+          :resource="environment.name"
+          :allow-edit="allowEdit"
+        />
       </template>
     </div>
 
@@ -156,8 +138,6 @@ import { Status } from "nice-grpc-common";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  hasFeature,
-  pushNotification,
   useEnvironmentV1List,
   useEnvironmentV1Store,
   usePolicyV1Store,
@@ -192,21 +172,6 @@ const {
 } = useEnvironmentFormContext();
 const policyStore = usePolicyV1Store();
 const environmentList = useEnvironmentV1List();
-
-const disableCopyDataPolicy = computed(() => {
-  const policies = policyStore.policyList.filter(
-    (policy) =>
-      policy.resourceType === PolicyResourceType.ENVIRONMENT &&
-      policy.type === PolicyType.DISABLE_COPY_DATA &&
-      policy.resourceUid === environment.value.uid &&
-      policy.disableCopyDataPolicy?.active
-  );
-  return policies.length > 0;
-});
-
-const allowEditDisableCopyData = computed(() => {
-  return hasPermission("bb.policies.update");
-});
 
 const allowArchive = computed(() => {
   return (
@@ -253,26 +218,6 @@ const validateResourceId = async (
     }
   }
   return [];
-};
-
-const upsertPolicy = async (on: boolean) => {
-  if (!hasFeature("bb.feature.access-control")) {
-    state.value.missingRequiredFeature = "bb.feature.access-control";
-    return;
-  }
-
-  await policyStore.createPolicy(environment.value.name, {
-    type: PolicyType.DISABLE_COPY_DATA,
-    resourceType: PolicyResourceType.ENVIRONMENT,
-    disableCopyDataPolicy: {
-      active: on,
-    },
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
 };
 
 const archiveEnvironment = () => {

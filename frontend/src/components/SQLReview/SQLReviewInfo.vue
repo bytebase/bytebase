@@ -16,6 +16,13 @@
         <NRadio value="environment">{{ $t("common.environment") }}</NRadio>
         <NRadio value="project">{{ $t("common.project") }}</NRadio>
       </NRadioGroup>
+      <BBAttention type="info" class="my-2">
+        {{
+          $t(
+            `sql-review.create.basic-info.attach-resource-info-${attachResourceType}`
+          )
+        }}
+      </BBAttention>
       <EnvironmentSelect
         v-if="attachResourceType === 'environment'"
         class="mt-2"

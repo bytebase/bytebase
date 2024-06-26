@@ -1997,10 +1997,24 @@
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
       },
-      "labels": {
-        "issue-labels": "Issue Labels",
-        "configure-labels": "Configure labels",
-        "force-issue-labels": "Require labels for all issues"
+      "issue-related": {
+        "self": "Issue related",
+        "labels": {
+          "self": "Labels",
+          "configure-labels": "Configure labels",
+          "force-issue-labels": {
+            "self": "Require labels for all issues",
+            "description": "Require at least one label when creating issues."
+          }
+        },
+        "allow-modify-statement": {
+          "self": "Allow modify statement",
+          "description": "Allow users to modify the statement of the issue after creation."
+        },
+        "auto-resolve-issue": {
+          "self": "Auto resolve issue",
+          "description": "Automatically resolve the issue after all tasks are completed."
+        }
       }
     },
     "members": {
@@ -2791,11 +2805,9 @@
         "display-name-default": "SQL review policy",
         "display-name-label": "A display name to help identifying among different review policies.",
         "attach-resource": "Attach to resource",
-        "attach-resource-label": "Apply the review policy to the selected resource. One resource can only link one policy.",
-        "environments-select": "Select environments",
-        "no-linked-environments": "No linked environment",
-        "no-available-environment": "No available environment",
-        "no-available-environment-desc": "No available environment. One environment can only link one SQL review policy.",
+        "attach-resource-label": "Apply the review policy to the selected resource. One resource can only link one policy. The database will use the SQL review policy attached to the project, otherwise fallback to the environment policy.",
+        "attach-resource-info-environment": "The SQL review policy will effect all databases belongs to the selected environment.",
+        "attach-resource-info-project": "The SQL review policy will effect all databases belongs to the selected project. The SQL review policy for environment will be ignored.",
         "choose-template": "Choose template"
       },
       "configure-rule": {

@@ -1794,7 +1794,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | primary | [string](#string) |  |  |
 | instance | [string](#string) |  |  |
 | realm | [string](#string) |  |  |
-| keytab | [string](#string) |  |  |
+| keytab | [bytes](#bytes) |  |  |
 | kdc_host | [string](#string) |  |  |
 | kdc_port | [string](#string) |  |  |
 | kdc_transport_protocol | [string](#string) |  |  |
