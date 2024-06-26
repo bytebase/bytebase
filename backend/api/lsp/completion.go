@@ -83,7 +83,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 			},
 			Kind:          convertLSPCompletionItemKind(candidate.Type),
 			Documentation: candidate.Comment,
-			SortText:      generateSortText(params, candidate),
+			SortText:      generateSortText(params, engine, candidate),
 			InsertText:    candidate.Text,
 		}
 		items = append(items, completionItem)
@@ -95,27 +95,52 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	}, nil
 }
 
-func generateSortText(_ lsp.CompletionParams, candidate base.Candidate) string {
-	switch candidate.Type {
-	case base.CandidateTypeColumn:
-		return "01" + candidate.Text
-	case base.CandidateTypeSchema:
-		return "02" + candidate.Text
-	case base.CandidateTypeTable, base.CandidateTypeForeignTable:
-		return "03" + candidate.Text
-	case base.CandidateTypeView, base.CandidateTypeMaterializedView:
-		return "04" + candidate.Text
-	case base.CandidateTypeFunction:
-		return "05" + candidate.Text
-	case base.CandidateTypeKeyword:
-		switch candidate.Text {
-		case "SELECT", "SHOW", "SET", "FROM", "WHERE":
-			return "09" + candidate.Text
+func generateSortText(_ lsp.CompletionParams, engine storepb.Engine, candidate base.Candidate) string {
+	switch engine {
+	case storepb.Engine_MSSQL:
+		switch candidate.Type {
+		case base.CandidateTypeSchema:
+			return "01" + candidate.Text
+		case base.CandidateTypeTable, base.CandidateTypeForeignTable:
+			return "02" + candidate.Text
+		case base.CandidateTypeView, base.CandidateTypeMaterializedView:
+			return "03" + candidate.Text
+		case base.CandidateTypeColumn:
+			return "04" + candidate.Text
+		case base.CandidateTypeFunction:
+			return "05" + candidate.Text
+		case base.CandidateTypeKeyword:
+			switch candidate.Text {
+			case "SELECT", "SHOW", "SET", "FROM", "WHERE":
+				return "09" + candidate.Text
+			default:
+				return "10" + candidate.Text
+			}
 		default:
-			return "10" + candidate.Text
+			return "10" + string(candidate.Type) + candidate.Text
 		}
 	default:
-		return "10" + string(candidate.Type) + candidate.Text
+		switch candidate.Type {
+		case base.CandidateTypeColumn:
+			return "01" + candidate.Text
+		case base.CandidateTypeSchema:
+			return "02" + candidate.Text
+		case base.CandidateTypeTable, base.CandidateTypeForeignTable:
+			return "03" + candidate.Text
+		case base.CandidateTypeView, base.CandidateTypeMaterializedView:
+			return "04" + candidate.Text
+		case base.CandidateTypeFunction:
+			return "05" + candidate.Text
+		case base.CandidateTypeKeyword:
+			switch candidate.Text {
+			case "SELECT", "SHOW", "SET", "FROM", "WHERE":
+				return "09" + candidate.Text
+			default:
+				return "10" + candidate.Text
+			}
+		default:
+			return "10" + string(candidate.Type) + candidate.Text
+		}
 	}
 }
 
