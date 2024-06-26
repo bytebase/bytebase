@@ -44,6 +44,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to aliyun ACR
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: https://registry.cn-shanghai.aliyuncs.com
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          password: ${{ secrets.ALIYUN_PASSWORD }}
       - uses: depot/setup-action@v1
       - name: Build and push
         id: bytebase_build
