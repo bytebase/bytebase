@@ -687,7 +687,6 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode, engine 
 			if !isColumnTypeEqual(n.base.Type, n.head.Type, engine) {
 				if !isColumnTypeEqual(n.head.Type, other.head.Type, engine) {
 					return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.head.Type, other.head.Type)
-
 				}
 			} else {
 				n.head.Type = other.head.Type
