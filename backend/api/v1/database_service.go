@@ -376,7 +376,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	if request.Database == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "database must be set")
 	}
-	if request.UpdateMask == nil {
+	if len(request.GetUpdateMask().GetPaths()) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
