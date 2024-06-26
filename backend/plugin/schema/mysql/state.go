@@ -198,8 +198,13 @@ func (t *tableState) toString(buf io.StringWriter) error {
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}
+	// Our sync query is ordered by index name, and our UI only support append-only
+	// create index, to avoid introducing text diff, sorting by name instead of id.
 	sort.Slice(indexes, func(i, j int) bool {
-		return indexes[i].id < indexes[j].id
+		if indexes[i].primary {
+			return true
+		}
+		return indexes[i].name < indexes[j].name
 	})
 
 	for i, index := range indexes {
@@ -218,7 +223,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		foreignKeys = append(foreignKeys, fk)
 	}
 	sort.Slice(foreignKeys, func(i, j int) bool {
-		return foreignKeys[i].id < foreignKeys[j].id
+		return foreignKeys[i].name < foreignKeys[j].name
 	})
 
 	for i, fk := range foreignKeys {
