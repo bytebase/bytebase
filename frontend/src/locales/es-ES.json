@@ -1997,10 +1997,24 @@
         "no-protection-rule-configured": "No hay regla de protección configurada",
         "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
       },
-      "labels": {
-        "issue-labels": "Etiquetas de problemas",
-        "configure-labels": "Configurar etiquetas",
-        "force-issue-labels": "Requerir etiquetas para todos los incidencias"
+      "issue-related": {
+        "self": "Problema relacionado",
+        "labels": {
+          "self": "Etiquetas",
+          "configure-labels": "Configurar etiquetas",
+          "force-issue-labels": {
+            "self": "Requerir etiquetas para todos los problemas",
+            "description": "Exija al menos una etiqueta al crear problemas."
+          }
+        },
+        "allow-modify-statement": {
+          "self": "Permitir modificar declaración",
+          "description": "Permitir a los usuarios modificar la declaración del problema después de su creación."
+        },
+        "auto-resolve-issue": {
+          "self": "Problema de resolución automática",
+          "description": "Resuelva automáticamente el problema después de completar todas las tareas."
+        }
       }
     },
     "members": {
