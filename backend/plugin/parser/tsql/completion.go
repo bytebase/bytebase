@@ -588,7 +588,7 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	c.parser.Reset()
 	var context antlr.ParserRuleContext
 	if c.scene == base.SceneTypeQuery {
-		context = c.parser.Select_statement()
+		context = c.parser.Select_statement_standalone()
 	} else {
 		context = c.parser.Tsql_file()
 	}
