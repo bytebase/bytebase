@@ -110,9 +110,11 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "Id",
+								Type: "int",
 							},
 							{
 								Name: "Name",
+								Type: "varchar",
 							},
 						},
 					},
@@ -121,9 +123,11 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "EmployeeId",
+								Type: "int",
 							},
 							{
 								Name: "Street",
+								Type: "varchar",
 							},
 						},
 					},
@@ -137,9 +141,11 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "Id",
+								Type: "int",
 							},
 							{
 								Name: "SalaryUpBound",
+								Type: "int",
 							},
 						},
 					},
@@ -158,9 +164,11 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "Id",
+								Type: "int",
 							},
 							{
 								Name: "ParentName",
+								Type: "varchar",
 							},
 						},
 					},
