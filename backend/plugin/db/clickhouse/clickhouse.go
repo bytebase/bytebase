@@ -4,6 +4,7 @@ package clickhouse
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -333,11 +334,11 @@ func readRowsForClickhouse(result *v1pb.QueryResult, rows *sql.Rows, columnTypes
 		for i := range cols {
 			// handle TUPLE ARRAY MAP
 			if v, ok := cols[i].(*any); ok && v != nil {
-				value, err := structpb.NewValue(*v)
+				value, err := json.Marshal(v)
 				if err != nil {
-					return errors.Errorf("failed to convert value to structpb.Value: %v", err)
+					return errors.Wrapf(err, "failed to marshal value")
 				}
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_ValueValue{ValueValue: value}})
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(value)}})
 				continue
 			}
 
