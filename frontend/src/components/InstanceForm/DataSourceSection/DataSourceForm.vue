@@ -242,6 +242,8 @@
               {{ $t("instance.no-password") }}
             </NCheckbox>
             <NInput
+              type="password"
+              show-password-on="click"
               class="w-full"
               :input-props="{ autocomplete: 'off' }"
               :placeholder="
@@ -589,7 +591,9 @@ MIIEvQ...
       />
       <div class="textlabel black mt-4">Password</div>
       <NInput
+        type="password"
         v-model:value="dataSource.password"
+        show-password-on="click"
         class="mt-2 w-full"
         :disabled="!allowEdit"
       />

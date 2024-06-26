@@ -1997,10 +1997,24 @@
         "no-protection-rule-configured": "ブランチ保護ルールは構成されていません。",
         "only-apply-to-main-branches": "メインブランチでのみ有効です"
       },
-      "labels": {
-        "issue-labels": "作業指示タグ",
-        "configure-labels": "タグを構成する",
-        "force-issue-labels": "すべての作業命令にラベルを付けることを要求する"
+      "issue-related": {
+        "self": "問題関連",
+        "labels": {
+          "self": "ラベル",
+          "configure-labels": "ラベルを設定する",
+          "force-issue-labels": {
+            "self": "すべての問題にラベルが必要",
+            "description": "問題を作成するときは、少なくとも 1 つのラベルが必要です。"
+          }
+        },
+        "allow-modify-statement": {
+          "self": "ステートメントの変更を許可する",
+          "description": "ユーザーが作成後に問題の説明を変更できるようにします。"
+        },
+        "auto-resolve-issue": {
+          "self": "自動解決の問題",
+          "description": "すべてのタスクが完了すると、問題が自動的に解決されます。"
+        }
       }
     },
     "members": {

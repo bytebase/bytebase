@@ -364,10 +364,10 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('region', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.AccountID; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('accountID', $%d::TEXT)", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('accountId', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.WarehouseID; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseID', $%d::TEXT)", len(args)+1)), append(args, *v)
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseId', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))

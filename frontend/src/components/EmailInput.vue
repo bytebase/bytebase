@@ -1,9 +1,18 @@
 <template>
   <NInputGroup v-if="showDomainLabel">
-    <NInput v-model:value="state.shortValue" :readonly="readonly" />
-    <NInputGroupLabel> @{{ domain }} </NInputGroupLabel>
+    <NInput
+      v-model:value="state.shortValue"
+      :size="size"
+      :readonly="readonly"
+    />
+    <NInputGroupLabel :size="size"> @{{ domain }} </NInputGroupLabel>
   </NInputGroup>
-  <NInput v-else v-model:value="state.value" :readonly="readonly" />
+  <NInput
+    v-else
+    v-model:value="state.value"
+    :size="size"
+    :readonly="readonly"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -19,11 +28,13 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
+    size: "small" | "medium" | "large";
     domain?: string;
     value?: string;
     readonly?: boolean;
   }>(),
   {
+    size: "medium",
     domain: undefined,
     value: "",
     readonly: false,
