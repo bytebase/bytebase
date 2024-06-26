@@ -242,6 +242,8 @@
               {{ $t("instance.no-password") }}
             </NCheckbox>
             <NInput
+              type="password"
+              show-password-on="click"
               class="w-full"
               :input-props="{ autocomplete: 'off' }"
               :placeholder="
