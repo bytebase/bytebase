@@ -145,6 +145,7 @@ export const instanceV1HasCreateDatabase = (
   if (engine === Engine.SPANNER) return false;
   if (engine === Engine.BIGQUERY) return false;
   if (engine === Engine.DYNAMODB) return false;
+  if (engine == Engine.DATABRICKS) return false;
   return true;
 };
 

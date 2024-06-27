@@ -65,6 +65,9 @@ export const allowUserToEditStatementForTask = (
   if (issue.status !== IssueStatus.OPEN) {
     denyReasons.push("The issue is not open");
   }
+  if (!issue.projectEntity.allowModifyStatement) {
+    denyReasons.push("Cannot edit statement after issue created");
+  }
 
   if (task.type === Task_Type.DATABASE_CREATE) {
     // For standard mode projects, we are not allowed to edit the database

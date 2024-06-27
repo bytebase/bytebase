@@ -86,7 +86,10 @@
               <template #item="{ item }: SingleBindingRow">
                 <div class="bb-grid-cell">
                   <span
-                    class="text-blue-600 cursor-pointer hover:opacity-80"
+                    :class="[
+                      'text-blue-600 cursor-pointer hover:opacity-80',
+                      checkRoleExpired(item) ? 'line-through' : '',
+                    ]"
                     @click="editingBinding = item.rawBinding"
                   >
                     {{
@@ -119,8 +122,10 @@
                     {{ extractTableName(item.databaseResource) }}
                   </div>
                 </template>
-                <div class="bb-grid-cell">
-                  {{ extractExpiration(item.expiration) }}
+                <div class="bb-grid-cell flex items-center space-x-1">
+                  <span :class="checkRoleExpired(item) ? 'line-through' : ''">
+                    {{ extractExpiration(item.expiration) }}
+                  </span>
                   <RoleExpiredTip v-if="checkRoleExpired(item)" />
                 </div>
                 <div class="bb-grid-cell">

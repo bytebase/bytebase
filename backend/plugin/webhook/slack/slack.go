@@ -124,7 +124,7 @@ func GetBlocks(context webhook.Context) []Block {
 }
 
 func (*Receiver) Post(context webhook.Context) error {
-	if len(context.MentionUsers) > 0 {
+	if context.DirectMessage && len(context.MentionUsers) > 0 {
 		postDirectMessage(context)
 		return nil
 	}

@@ -2,14 +2,19 @@ package wecom
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
@@ -26,8 +31,8 @@ type WebhookMarkdown struct {
 
 // Webhook is the API message for WeCom webhook.
 type Webhook struct {
-	MessageType string          `json:"msgtype"`
-	Markdown    WebhookMarkdown `json:"markdown"`
+	MessageType string           `json:"msgtype"`
+	Markdown    *WebhookMarkdown `json:"markdown"`
 }
 
 func init() {
@@ -38,7 +43,7 @@ func init() {
 type Receiver struct {
 }
 
-func (*Receiver) Post(context webhook.Context) error {
+func getMessageCard(context webhook.Context) *WebhookMarkdown {
 	metaStrList := []string{}
 	for _, meta := range context.GetMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
@@ -58,12 +63,23 @@ func (*Receiver) Post(context webhook.Context) error {
 	if context.Description != "" {
 		content = fmt.Sprintf("# %s%s\n> %s\n\n%s\n[View in Bytebase](%s)", status, context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
+	return &WebhookMarkdown{
+		Content: content,
+	}
+}
 
+func (r *Receiver) Post(context webhook.Context) error {
+	if context.DirectMessage && len(context.MentionUsers) > 0 {
+		r.sendDirectMessage(context)
+		return nil
+	}
+	return r.sendMessage(context)
+}
+
+func (*Receiver) sendMessage(context webhook.Context) error {
 	post := Webhook{
 		MessageType: "markdown",
-		Markdown: WebhookMarkdown{
-			Content: content,
-		},
+		Markdown:    getMessageCard(context),
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
@@ -104,4 +120,62 @@ func (*Receiver) Post(context webhook.Context) error {
 	}
 
 	return nil
+}
+
+func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) {
+	wecom := webhookCtx.IMSetting.GetWecom()
+	if wecom == nil {
+		return
+	}
+	p, err := newProvider(wecom.GetCorpId(), wecom.GetAgentId(), wecom.GetSecret())
+	if err != nil {
+		slog.Error("failed to get wecom provider", log.BBError(err))
+	}
+
+	ctx := context.Background()
+
+	sent := map[string]bool{}
+
+	if err := common.Retry(ctx, func() error {
+		var errs error
+		var users, userEmails []string
+
+		for _, u := range webhookCtx.MentionUsers {
+			if sent[u.Email] {
+				continue
+			}
+
+			err := func() error {
+				userID, err := p.getUserIDByEmail(ctx, u.Email)
+				if err != nil {
+					if strings.Contains(err.Error(), "errcode 46004") {
+						return nil
+					}
+					return errors.Wrapf(err, "failed to get user id by email %v", u.Email)
+				}
+				users = append(users, userID)
+				userEmails = append(userEmails, u.Email)
+
+				return nil
+			}()
+
+			multierr.AppendInto(&errs, err)
+		}
+		if len(users) == 0 {
+			return nil
+		}
+
+		if err := p.sendMessage(ctx, users, getMessageCard(webhookCtx)); err != nil {
+			err = errors.Wrapf(err, "failed to send message")
+			multierr.AppendInto(&errs, err)
+		} else {
+			for _, email := range userEmails {
+				sent[email] = true
+			}
+		}
+
+		return errs
+	}); err != nil {
+		slog.Warn("failed to send direct message to wecom users", log.BBError(err))
+	}
 }

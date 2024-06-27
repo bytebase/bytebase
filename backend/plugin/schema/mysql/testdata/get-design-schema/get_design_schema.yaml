@@ -549,15 +549,15 @@
     --
     CREATE TABLE `t5` (
       `a` int NOT NULL COMMENT 'this is comment',
-      `b` VARCHAR(20) NOT NULL,
+      `b` varchar(20) NOT NULL,
       `c` int NOT NULL,
       `d` text,
       PRIMARY KEY (`a`),
-      UNIQUE KEY `t_c_uniq_idx` (`c`),
-      UNIQUE KEY `t_c_plus_5_uniq_idx` (((`c` + 5))),
-      UNIQUE KEY `t_c_plus_5_t_c_plus_3_uniq_idx` (((`c` + 5)),((`c` + 3))),
       KEY `idx_c` (`c`),
       KEY `idx_d` (`d`),
+      UNIQUE KEY `t_c_plus_5_t_c_plus_3_uniq_idx` (((`c` + 5)),((`c` + 3))),
+      UNIQUE KEY `t_c_plus_5_uniq_idx` (((`c` + 5))),
+      UNIQUE KEY `t_c_uniq_idx` (`c`),
       KEY `t_d_fulltext_idx` (`d`)
     ) COMMENT 'this is comment with '' escaped';
 
@@ -618,6 +618,11 @@
                   "nullable":  true,
                   "type":  "int",
                   "defaultExpression": "AUTO_INCREMENT"
+                },
+                {
+                  "name":  "b",
+                  "nullable":  true,
+                  "type":  "int(11)"
                 }
               ]
             },
@@ -660,7 +665,8 @@
     }
   result: |
     CREATE TABLE `t1` (
-      `a` int primary key AUTO_INCREMENT
+      `a` int primary key AUTO_INCREMENT,
+      `b` int
     );
     CREATE TABLE `t2` (
       `a` int AUTO_INCREMENT primary key

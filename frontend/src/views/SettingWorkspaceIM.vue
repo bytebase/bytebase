@@ -61,7 +61,6 @@ import {
   AppIMSetting_Slack,
   AppIMSetting_Wecom,
 } from "@/types/proto/v1/setting_service";
-import { isDev } from "@/utils";
 
 interface LocalState {
   selectedTab: Webhook_Type;
@@ -179,18 +178,28 @@ const imList = computed(() => {
       name: t("common.wecom"),
       type: Webhook_Type.TYPE_WECOM,
       enabled: state.setting.wecom?.enabled,
-      hide: !isDev(),
       render: () => {
         return (
           <div class="space-y-4">
             <div>
-              <div class="textlabel">ID</div>
+              <div class="textlabel">Corp ID</div>
               <BBTextField
                 class="mt-2"
                 placeholder={t("common.write-only")}
-                value={state.setting.wecom?.id ?? ""}
+                value={state.setting.wecom?.corpId ?? ""}
                 onUpdate:value={(val: string) => {
-                  state.setting.wecom!.id = val;
+                  state.setting.wecom!.corpId = val;
+                }}
+              />
+            </div>
+            <div>
+              <div class="textlabel">Agent ID</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.wecom?.agentId ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.wecom!.agentId = val;
                 }}
               />
             </div>
@@ -209,7 +218,7 @@ const imList = computed(() => {
         );
       },
     },
-  ].filter((item) => !item.hide);
+  ];
 });
 
 const dataChanged = computed(() => {
@@ -241,7 +250,7 @@ const canSave = computed(() => {
     case Webhook_Type.TYPE_DINGTALK:
       return !!state.setting.feishu?.appId && !!state.setting.feishu?.appSecret;
     case Webhook_Type.TYPE_WECOM:
-      return !!state.setting.wecom?.id && !!state.setting.wecom?.secret;
+      return !!state.setting.wecom?.corpId && !!state.setting.wecom?.agentId && !!state.setting.wecom?.secret;
     default:
       return false;
   }

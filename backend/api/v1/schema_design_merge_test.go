@@ -50,7 +50,7 @@ func TestTryMerge(t *testing.T) {
 		baseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
 		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Base), baseSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
-		mergedSchemaMetadata, err := tryMerge(ancestorSchemaMetadata, headSchemaMetadata, baseSchemaMetadata)
+		mergedSchemaMetadata, err := tryMerge(ancestorSchemaMetadata, headSchemaMetadata, baseSchemaMetadata, storepb.Engine_MYSQL)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		a.NotNil(mergedSchemaMetadata, "test case %d: %s, mergedSchemaMetadata should not be nil if there is no error", idx, tc.Description)
 

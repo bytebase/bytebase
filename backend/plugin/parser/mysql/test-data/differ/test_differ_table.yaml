@@ -1,6 +1,13 @@
 - oldSchema: |
     CREATE TABLE `t1` (`id` INT);
   newSchema: |
+    CREATE TABLE `t1` (`id` INT, UNIQUE KEY `uk` (`id`));
+  diff: |+
+    CREATE UNIQUE INDEX `uk` ON `t1`(`id`);
+
+- oldSchema: |
+    CREATE TABLE `t1` (`id` INT);
+  newSchema: |
     CREATE TABLE `t2` (`id` INT);
   diff: |+
     DROP TABLE IF EXISTS `t1`;

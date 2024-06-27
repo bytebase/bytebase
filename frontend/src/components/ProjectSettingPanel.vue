@@ -7,7 +7,7 @@
         :project="project"
         :allow-edit="allowEdit"
       />
-      <ProjectIssueLabelsSettingPanel
+      <ProjectIssueRelatedSettingPanel
         :project="project"
         :allow-edit="allowEdit"
       />
@@ -21,8 +21,12 @@
 <script lang="ts" setup>
 import type { ComposedProject } from "@/types";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
-import ProjectGeneralSettingPanel from "./Project/ProjectGeneralSettingPanel.vue";
-import ProjectSecuritySettingPanel from "./Project/ProjectSecuritySettingPanel.vue";
+import {
+  ProjectBranchProtectionRulesSettingPanel,
+  ProjectGeneralSettingPanel,
+  ProjectSecuritySettingPanel,
+  ProjectIssueRelatedSettingPanel,
+} from "./Project/Settings/";
 
 defineProps<{
   project: ComposedProject;

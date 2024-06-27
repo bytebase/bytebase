@@ -258,6 +258,22 @@ export const useSearchDatabaseV1List = (
   return { databaseList, ready };
 };
 
+export const useDatabaseV1ListByProject = (
+  project: MaybeRef<string | undefined>
+) => {
+  const store = useDatabaseV1Store();
+
+  const databaseList = computed(() => {
+    const proj = unref(project);
+    if (proj) {
+      return store.databaseListByProject(proj);
+    }
+    return store.databaseList;
+  });
+
+  return { databaseList };
+};
+
 export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   const store = useDatabaseV1Store();
   const ready = ref(true);

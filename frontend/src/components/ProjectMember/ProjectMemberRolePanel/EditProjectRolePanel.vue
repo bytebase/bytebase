@@ -123,8 +123,8 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import { NButton, NDatePicker, NInput, NInputNumber } from "naive-ui";
-import { computed, reactive, ref } from "vue";
-import { onMounted } from "vue";
+import { computed, reactive, ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
@@ -134,6 +134,7 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
   useUserGroupStore,
+  pushNotification,
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import {
@@ -171,6 +172,7 @@ interface LocalState {
   databaseId?: string;
 }
 
+const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const userStore = useUserStore();
 const groupStore = useUserGroupStore();
@@ -341,6 +343,12 @@ const handleUpdateRole = async () => {
     projectResourceName.value,
     policy
   );
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
 
   emit("close");
 };
