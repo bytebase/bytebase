@@ -3303,6 +3303,7 @@
     },
     "select": "选择角色",
     "select-roles": "选择角色",
+    "default-workspace-role": "用户将默认获得“工作区成员”角色",
     "title": "称谓",
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",
