@@ -231,7 +231,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		}
 		// Sync all databases in the instance asynchronously.
 		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
-		s.stateCfg.InstanceSyncTickleChan <- 0
+		select {
+		case s.stateCfg.InstanceSyncTickleChan <- 0:
+		default:
+		}
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
@@ -648,9 +651,15 @@ func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.B
 			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
 		}
 		// Sync all databases in the instance asynchronously.
-		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
+		select {
+		case s.stateCfg.InstanceSyncTickleChan <- 0:
+		default:
+		}
 	}
-	s.stateCfg.InstanceSyncTickleChan <- 0
+	select {
+	case s.stateCfg.InstanceSyncTickleChan <- 0:
+	default:
+	}
 
 	return &v1pb.BatchSyncInstanceResponse{}, nil
 }
