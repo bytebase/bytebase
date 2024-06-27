@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"strconv"
 	"strings"
@@ -21,7 +20,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -90,26 +88,6 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 	}
 	d.rdb = redis.NewUniversalClient(options)
-
-	clusterEnabled, err := d.getClusterEnabled(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// switch to cluster if cluster is enabled.
-	// TODO(zp): Remove host hack in 2.21.0.
-	if clusterEnabled && !strings.Contains(addr, "tencentcbd.com") {
-		if err := d.rdb.Close(); err != nil {
-			slog.Warn("failed to close redis driver when switching to redis cluster driver", log.BBError(err))
-		}
-		d.rdb = redis.NewClusterClient(&redis.ClusterOptions{
-			Addrs:     []string{addr},
-			Username:  config.Username,
-			Password:  config.Password,
-			TLSConfig: tlsConfig,
-			ReadOnly:  config.ReadOnly,
-		})
-	}
 
 	return d, nil
 }
