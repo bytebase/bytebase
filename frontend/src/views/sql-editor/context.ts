@@ -2,7 +2,6 @@ import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import {
-  useActuatorV1Store,
   useSQLEditorStore,
   useSettingV1Store,
 } from "@/store";
