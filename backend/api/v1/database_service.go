@@ -1623,8 +1623,12 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
 
-	switch user.Role {
+	switch role {
 	case api.WorkspaceAdmin, api.WorkspaceDBA:
 		canAccessDBs = databases
 	case api.WorkspaceMember:
@@ -1638,7 +1642,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			}
 		}
 	default:
-		return nil, status.Errorf(codes.PermissionDenied, "unknown role %q", user.Role)
+		return nil, status.Errorf(codes.PermissionDenied, "unknown role %q", role)
 	}
 
 	result := &v1pb.ListSlowQueriesResponse{}

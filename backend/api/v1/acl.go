@@ -15,6 +15,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
@@ -45,7 +46,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	}
 	if user != nil {
 		// Store workspace role into context.
-		ctx = context.WithValue(ctx, common.RoleContextKey, user.Role)
+		ctx = context.WithValue(ctx, common.RoleContextKey, utils.BackfillRoleFromRoles(user.Roles))
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 	}
 
@@ -73,7 +74,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	}
 	if user != nil {
 		// Store workspace role into context.
-		ctx = context.WithValue(ctx, common.RoleContextKey, user.Role)
+		ctx = context.WithValue(ctx, common.RoleContextKey, utils.BackfillRoleFromRoles(user.Roles))
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		ss = overrideStream{ServerStream: ss, childCtx: ctx}
 	}
@@ -127,7 +128,6 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 
 	// If RBAC feature is not enabled, all users are treated as OWNER.
 	if in.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
-		user.Role = api.WorkspaceAdmin
 		user.Roles = uniq(append(user.Roles, api.WorkspaceAdmin))
 	}
 	return user, nil
