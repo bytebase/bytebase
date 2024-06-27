@@ -22,7 +22,6 @@ var systemBotUser = &UserMessage{
 	Name:  "Bytebase",
 	Email: api.SystemBotEmail,
 	Type:  api.SystemBot,
-	Role:  api.WorkspaceAdmin,
 	Roles: []api.Role{api.WorkspaceAdmin},
 }
 
@@ -51,12 +50,10 @@ type UpdateUserMessage struct {
 type UserMessage struct {
 	ID int
 	// Email must be lower case.
-	Email        string
-	Name         string
-	Type         api.PrincipalType
-	PasswordHash string
-	// TODO(p0ny): deprecate Role in favor of Roles.
-	Role          api.Role
+	Email         string
+	Name          string
+	Type          api.PrincipalType
+	PasswordHash  string
 	Roles         []api.Role
 	MemberDeleted bool
 	MFAConfig     *storepb.MFAConfig
@@ -239,8 +236,6 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			userMessage.Roles = append(userMessage.Roles, api.WorkspaceAdmin)
 		}
 
-		userMessage.Role = backfillRoleFromRoles(userMessage.Roles)
-
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
@@ -331,7 +326,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		PasswordHash: create.PasswordHash,
 		Phone:        create.Phone,
 		Roles:        roles,
-		Role:         backfillRoleFromRoles(roles),
 	}
 	s.userIDCache.Add(user.ID, user)
 	s.userEmailCache.Add(user.Email, user)
@@ -466,25 +460,6 @@ func (s *Store) updateUserRoles(ctx context.Context, tx *Tx, userUID int, roles 
 	}
 
 	return nil
-}
-
-func backfillRoleFromRoles(roles []api.Role) api.Role {
-	admin, dba := false, false
-	for _, r := range roles {
-		if r == api.WorkspaceAdmin {
-			admin = true
-		}
-		if r == api.WorkspaceDBA {
-			dba = true
-		}
-	}
-	if admin {
-		return api.WorkspaceAdmin
-	}
-	if dba {
-		return api.WorkspaceDBA
-	}
-	return api.WorkspaceMember
 }
 
 func uniq[T comparable](array []T) []T {
