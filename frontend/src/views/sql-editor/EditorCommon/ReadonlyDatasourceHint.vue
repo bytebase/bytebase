@@ -46,10 +46,6 @@ const me = useCurrentUserV1();
 const router = useRouter();
 const { itemList: settingItemList } = useSettingItems();
 
-const isAdminMode = computed(() => {
-  return tabStore.currentTab?.mode === "ADMIN";
-});
-
 const allowManageInstance = computed(() => {
   return hasWorkspacePermissionV2(me.value, "bb.instances.update");
 });
@@ -64,7 +60,7 @@ const hasReadonlyDataSource = computed(() => {
 
 const showReadonlyDatasourceHint = computed(() => {
   return (
-    !isAdminMode.value &&
+    tabStore.currentTab?.mode === "READONLY" &&
     props.instance.uid !== String(UNKNOWN_ID) &&
     !hasReadonlyDataSource.value
   );
