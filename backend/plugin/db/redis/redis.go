@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"strconv"
 	"strings"
@@ -21,7 +20,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -48,7 +46,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens the redis driver.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
@@ -90,25 +88,6 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 	}
 	d.rdb = redis.NewUniversalClient(options)
-
-	clusterEnabled, err := d.getClusterEnabled(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// switch to cluster if cluster is enabled.
-	if clusterEnabled {
-		if err := d.rdb.Close(); err != nil {
-			slog.Warn("failed to close redis driver when switching to redis cluster driver", log.BBError(err))
-		}
-		d.rdb = redis.NewClusterClient(&redis.ClusterOptions{
-			Addrs:     []string{addr},
-			Username:  config.Username,
-			Password:  config.Password,
-			TLSConfig: tlsConfig,
-			ReadOnly:  config.ReadOnly,
-		})
-	}
 
 	return d, nil
 }
