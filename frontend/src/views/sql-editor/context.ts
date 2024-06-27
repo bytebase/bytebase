@@ -67,7 +67,6 @@ export const provideSQLEditorContext = () => {
     events: new Emittery(),
     standardModeEnabled: computed(() => {
       return (
-        useActuatorV1Store().customTheme !== "lixiang" &&
         useSettingV1Store().workspaceProfileSetting?.databaseChangeMode ===
           DatabaseChangeMode.EDITOR
       );
