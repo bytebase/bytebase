@@ -1,7 +1,7 @@
 <template>
   <Drawer @close="$emit('close')">
     <DrawerContent
-      class="w-96 max-w-[100vw]"
+      class="w-[40rem] max-w-[100vw]"
       :title="
         isCreating
           ? $t('settings.members.add-member')
@@ -65,20 +65,17 @@
               :domain="workspaceDomain"
             />
           </NFormItem>
-          <NFormItem :label="$t('settings.members.table.roles')" required>
-            <div class="w-full">
+          <NFormItem :label="$t('settings.members.table.roles')">
+            <div class="w-full space-y-1">
+              <span class="textinfolabel text-sm">
+                {{ $t("role.default-workspace-role") }}
+              </span>
               <NSelect
                 v-model:value="state.user.roles"
                 multiple
                 :options="availableRoleOptions"
                 :placeholder="$t('role.select-roles')"
               />
-              <p
-                v-if="state.user.roles.length > 0 && !hasWorkspaceRole"
-                class="textinfolabel mt-1 !text-red-600"
-              >
-                {{ $t("settings.members.workspace-role-at-least-one") }}
-              </p>
             </div>
           </NFormItem>
           <template v-if="state.user.userType === UserType.USER">
@@ -223,12 +220,21 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const initUser = () => {
+  const user = props.user ? cloneDeep(props.user) : emptyUser();
+  return {
+    ...user,
+    roles: user.roles.filter((r) => r !== PresetRoleType.WORKSPACE_MEMBER),
+  };
+};
+
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
+
 const state = reactive<LocalState>({
   isRequesting: false,
-  user: cloneDeep(props.user) || emptyUser(),
+  user: initUser(),
   passwordConfirm: "",
 });
 
@@ -239,7 +245,9 @@ const availableRoleOptions = computed(
         type: "group",
         key: "workspace-roles",
         label: t("role.workspace-roles"),
-        children: PRESET_WORKSPACE_ROLES.map((role) => ({
+        children: PRESET_WORKSPACE_ROLES.filter(
+          (role) => role !== PresetRoleType.WORKSPACE_MEMBER
+        ).map((role) => ({
           label: displayRoleTitle(role),
           value: role,
         })),
@@ -276,10 +284,6 @@ const availableRoleOptions = computed(
   }
 );
 
-const hasWorkspaceRole = computed(() => {
-  return state.user.roles.some((role) => PRESET_WORKSPACE_ROLES.includes(role));
-});
-
 const workspaceDomain = computed(() => {
   if (!settingV1Store.workspaceProfileSetting?.enforceIdentityDomain) {
     return undefined;
@@ -297,11 +301,7 @@ const passwordMismatch = computed(() => {
 });
 
 const allowConfirm = computed(() => {
-  if (
-    !state.user.email ||
-    state.user.roles.length === 0 ||
-    !hasWorkspaceRole.value
-  ) {
+  if (!state.user.email) {
     return false;
   }
   if (
