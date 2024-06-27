@@ -63,23 +63,10 @@ type accessTokenResponse struct {
 	Expire      int    `json:"expires_in"`
 }
 
-type cacheKey struct {
-	corpID string
-	secret string
-}
-
 type tokenValue struct {
 	token    string
 	expireAt time.Time
 }
-
-var tokenCache = func() *lru.Cache[cacheKey, *tokenValue] {
-	cache, err := lru.New[cacheKey, *tokenValue](5)
-	if err != nil {
-		panic(err)
-	}
-	return cache
-}()
 
 func getToken(ctx context.Context, c *http.Client, corpID, secret string) (*tokenValue, error) {
 	url, err := url.Parse("https://qyapi.weixin.qq.com/cgi-bin/gettoken")
@@ -122,31 +109,6 @@ func getToken(ctx context.Context, c *http.Client, corpID, secret string) (*toke
 		token:    payload.AccessToken,
 		expireAt: time.Now().Add(time.Second * time.Duration(payload.Expire)),
 	}, nil
-}
-
-var tokenCacheLock sync.Mutex
-
-func getTokenCached(ctx context.Context, c *http.Client, corpID, secret string) (string, error) {
-	tokenCacheLock.Lock()
-	defer tokenCacheLock.Unlock()
-
-	key := cacheKey{
-		corpID: corpID,
-		secret: secret,
-	}
-
-	token, ok := tokenCache.Get(key)
-	if ok && time.Now().Before(token.expireAt.Add(-time.Minute)) {
-		return token.token, nil
-	}
-
-	token, err := getToken(ctx, c, corpID, secret)
-	if err != nil {
-		return "", err
-	}
-	tokenCache.Add(key, token)
-
-	return token.token, nil
 }
 
 func (p *provider) refreshToken(ctx context.Context) error {
@@ -285,4 +247,42 @@ func (p *provider) do(ctx context.Context, method string, url *url.URL, data []b
 		return b, nil
 	}
 	return nil, errors.Errorf("exceeds max retries for %s %s", method, urlRedacted)
+}
+
+type cacheKey struct {
+	corpID string
+	secret string
+}
+
+var tokenCache = func() *lru.Cache[cacheKey, *tokenValue] {
+	cache, err := lru.New[cacheKey, *tokenValue](5)
+	if err != nil {
+		panic(err)
+	}
+	return cache
+}()
+
+var tokenCacheLock sync.Mutex
+
+func getTokenCached(ctx context.Context, c *http.Client, corpID, secret string) (string, error) {
+	tokenCacheLock.Lock()
+	defer tokenCacheLock.Unlock()
+
+	key := cacheKey{
+		corpID: corpID,
+		secret: secret,
+	}
+
+	token, ok := tokenCache.Get(key)
+	if ok && time.Now().Before(token.expireAt.Add(-time.Minute)) {
+		return token.token, nil
+	}
+
+	token, err := getToken(ctx, c, corpID, secret)
+	if err != nil {
+		return "", err
+	}
+	tokenCache.Add(key, token)
+
+	return token.token, nil
 }
