@@ -203,3 +203,24 @@ func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *st
 	}
 	return rolesMap, nil
 }
+
+// BackfillRoleFromRoles finds the highest workspace level role from roles.
+func BackfillRoleFromRoles(roles []api.Role) api.Role {
+	admin, dba := false, false
+	for _, r := range roles {
+		if r == api.WorkspaceAdmin {
+			admin = true
+			break
+		}
+		if r == api.WorkspaceDBA {
+			dba = true
+		}
+	}
+	if admin {
+		return api.WorkspaceAdmin
+	}
+	if dba {
+		return api.WorkspaceDBA
+	}
+	return api.WorkspaceMember
+}
