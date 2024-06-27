@@ -3303,6 +3303,7 @@
     },
     "select": "役割の選択",
     "select-roles": "役割の選択",
+    "default-workspace-role": "ユーザーにはデフォルトで「ワークスペースメンバー」の役割が与えられます",
     "title": "タイトル",
     "select-role": "役割の選択",
     "expired-tip": "役割の有効期限が切れている可能性があります。",

@@ -3303,6 +3303,7 @@
     },
     "select": "Select role",
     "select-roles": "Select roles",
+    "default-workspace-role": "Users will get the \"Workspace Member\" role by default",
     "title": "Title",
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",

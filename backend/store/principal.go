@@ -236,6 +236,10 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			userMessage.Roles = append(userMessage.Roles, api.WorkspaceAdmin)
 		}
 
+		if !containsWorkspaceRole(userMessage.Roles) {
+			userMessage.Roles = append(userMessage.Roles, api.WorkspaceMember)
+		}
+
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
@@ -293,9 +297,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 
 	roles := create.Roles
-	if len(roles) == 0 {
-		roles = []api.Role{api.WorkspaceMember}
-	}
 	firstMember := count == 0
 	// Grant the member Owner role if there is no existing member.
 	if firstMember {
@@ -303,15 +304,17 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 	roles = uniq(roles)
 
-	if _, err := tx.ExecContext(ctx, `
+	if len(roles) > 0 {
+		if _, err := tx.ExecContext(ctx, `
 		INSERT INTO member (
 			creator_id,
 			updater_id,
 			role,
 			principal_id
 		) SELECT $1, $2, unnest($3::text[]), $4`,
-		creatorID, creatorID, roles, userID); err != nil {
-		return nil, errors.Wrapf(err, "failed to insert members")
+			creatorID, creatorID, roles, userID); err != nil {
+			return nil, errors.Wrapf(err, "failed to insert members")
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -475,4 +478,13 @@ func uniq[T comparable](array []T) []T {
 	}
 
 	return res
+}
+
+func containsWorkspaceRole(roles []api.Role) bool {
+	for _, role := range roles {
+		if strings.HasPrefix(role.String(), "workspace") {
+			return true
+		}
+	}
+	return false
 }
