@@ -3303,6 +3303,7 @@
     },
     "select": "Seleccionar rol",
     "select-roles": "Seleccionar roles",
+    "default-workspace-role": "Los usuarios obtendrán el rol de \"Miembro del espacio de trabajo\" de forma predeterminada.",
     "title": "Título",
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
