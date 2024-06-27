@@ -73,7 +73,7 @@ func New() (*State, error) {
 		InstanceOutstandingConnections:       make(map[int]int),
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
-		InstanceSyncTickleChan:               make(chan int, 1000),
+		InstanceSyncTickleChan:               make(chan int, 50000),
 		PlanCheckTickleChan:                  make(chan int, 1000),
 		TaskRunTickleChan:                    make(chan int, 1000),
 		ExpireCache:                          expireCache,
