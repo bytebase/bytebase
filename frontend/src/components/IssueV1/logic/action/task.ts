@@ -31,7 +31,7 @@ export const CancelableTaskTypeList: Task_Type[] = [
   Task_Type.DATABASE_DATA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
-  // Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC, // on the way
+  Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
 ];
 
 export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {
@@ -60,10 +60,9 @@ export const getApplicableTaskRolloutActionList = (
   return list.filter((action) => {
     if (action === "CANCEL") {
       return CancelableTaskTypeList.includes(task.type);
-      return task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC;
     }
     if (action === "RETRY") {
-      // RETRYing gh-ost cut-over task is not allowed (yet).
+      // RETRYing gh-ost cut-over task is not allowed.
       if (task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER) {
         return false;
       }
