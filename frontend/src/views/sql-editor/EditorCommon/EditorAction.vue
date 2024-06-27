@@ -255,7 +255,7 @@ const showQueryModeSelect = computed(() => {
   if (!standardModeEnabled.value) {
     return false;
   }
-  return tab.mode !== "ADMIN" && actuatorStore.customTheme !== "lixiang";
+  return tab.mode !== "ADMIN";
 });
 
 const handleRunQuery = () => {
