@@ -12,7 +12,7 @@ import {
 import {
   useDatabaseV1Store,
   useInstanceV1List,
-  useSearchDatabaseV1List,
+  useDatabaseV1ListByProject,
   useEnvironmentV1List,
   useProjectV1List,
 } from "@/store";
@@ -48,19 +48,9 @@ export const useCommonSearchScopeOptions = (
   const { instanceList } = useInstanceV1List(
     /* !showDeleted */ false,
     /* !forceUpdate */ false,
-    /* parent */ computed(() => project.value)
+    /* parent */ project
   );
-  const { databaseList } = useSearchDatabaseV1List(
-    computed(() => {
-      const filters = ["instance = instances/-"];
-      if (project.value) {
-        filters.push(`project = ${project.value}`);
-      }
-      return {
-        filter: filters.join(" && "),
-      };
-    })
-  );
+  const { databaseList } = useDatabaseV1ListByProject(project);
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
