@@ -89,7 +89,7 @@ var (
 		PolicyTypeTag:                               {PolicyResourceTypeEnvironment, PolicyResourceTypeProject, PolicyResourceTypeDatabase},
 		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:                         {PolicyResourceTypeInstance},
-		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment},
+		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
 		PolicyTypeMaskingRule:                       {PolicyResourceTypeWorkspace},
 		PolicyTypeMaskingException:                  {PolicyResourceTypeProject},
 		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace, PolicyResourceTypeProject},
