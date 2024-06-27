@@ -97,7 +97,8 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 
 	// switch to cluster if cluster is enabled.
-	if clusterEnabled {
+	// TODO(zp): Remove host hack in 2.21.0.
+	if clusterEnabled && !strings.Contains(addr, "tencentcbd.com") {
 		if err := d.rdb.Close(); err != nil {
 			slog.Warn("failed to close redis driver when switching to redis cluster driver", log.BBError(err))
 		}
