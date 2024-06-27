@@ -9,7 +9,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
 )
 
@@ -47,7 +50,7 @@ func Validate(ctx context.Context, corpID, agentID, secret string) error {
 	if err != nil {
 		return err
 	}
-	if err := p.refreshToken(ctx); err != nil {
+	if _, err := getToken(ctx, p.c, p.corpID, p.secret); err != nil {
 		return errors.Wrapf(err, "failed to refresh token")
 	}
 	return nil
@@ -60,45 +63,60 @@ type accessTokenResponse struct {
 	Expire      int    `json:"expires_in"`
 }
 
-func (p *provider) refreshToken(ctx context.Context) error {
+type tokenValue struct {
+	token    string
+	expireAt time.Time
+}
+
+func getToken(ctx context.Context, c *http.Client, corpID, secret string) (*tokenValue, error) {
 	url, err := url.Parse("https://qyapi.weixin.qq.com/cgi-bin/gettoken")
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse url")
+		return nil, errors.Wrapf(err, "failed to parse url")
 	}
 	q := url.Query()
-	q.Set("corpid", p.corpID)
-	q.Set("corpsecret", p.secret)
+	q.Set("corpid", corpID)
+	q.Set("corpsecret", secret)
 	url.RawQuery = q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
-		return errors.Wrapf(err, "construct GET %s", url)
+		return nil, errors.Wrapf(err, "construct GET %s", url)
 	}
-	resp, err := p.c.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "GET %s", url)
+		return nil, errors.Wrapf(err, "GET %s", url)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("received non-200 HTTP status code %d", resp.StatusCode)
+		return nil, errors.Errorf("received non-200 HTTP status code %d", resp.StatusCode)
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errors.Wrapf(err, "read boyd of POST %s", url)
+		return nil, errors.Wrapf(err, "read body of POST %s", url)
 	}
 
 	var payload accessTokenResponse
 	if err := json.Unmarshal(b, &payload); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal")
+		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
 	if payload.ErrCode != 0 {
-		return errors.Errorf("response errcode %d, errmsg %s", payload.ErrCode, payload.ErrMsg)
+		return nil, errors.Errorf("response errcode %d, errmsg %s", payload.ErrCode, payload.ErrMsg)
 	}
 
-	p.token = payload.AccessToken
+	return &tokenValue{
+		token:    payload.AccessToken,
+		expireAt: time.Now().Add(time.Second * time.Duration(payload.Expire)),
+	}, nil
+}
 
+func (p *provider) refreshToken(ctx context.Context) error {
+	token, err := getTokenCached(ctx, p.c, p.corpID, p.secret)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get token")
+	}
+	p.token = token
 	return nil
 }
 
@@ -229,4 +247,42 @@ func (p *provider) do(ctx context.Context, method string, url *url.URL, data []b
 		return b, nil
 	}
 	return nil, errors.Errorf("exceeds max retries for %s %s", method, urlRedacted)
+}
+
+type cacheKey struct {
+	corpID string
+	secret string
+}
+
+var tokenCache = func() *lru.Cache[cacheKey, *tokenValue] {
+	cache, err := lru.New[cacheKey, *tokenValue](5)
+	if err != nil {
+		panic(err)
+	}
+	return cache
+}()
+
+var tokenCacheLock sync.Mutex
+
+func getTokenCached(ctx context.Context, c *http.Client, corpID, secret string) (string, error) {
+	tokenCacheLock.Lock()
+	defer tokenCacheLock.Unlock()
+
+	key := cacheKey{
+		corpID: corpID,
+		secret: secret,
+	}
+
+	token, ok := tokenCache.Get(key)
+	if ok && time.Now().Before(token.expireAt.Add(-time.Minute)) {
+		return token.token, nil
+	}
+
+	token, err := getToken(ctx, c, corpID, secret)
+	if err != nil {
+		return "", err
+	}
+	tokenCache.Add(key, token)
+
+	return token.token, nil
 }
