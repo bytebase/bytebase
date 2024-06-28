@@ -16,7 +16,9 @@
           </template>
         </Suspense>
       </template>
-      <Welcome v-else />
+      <template v-else>
+        <Welcome />
+      </template>
     </template>
 
     <Suspense>
@@ -85,12 +87,12 @@ const handleApplyStatement = async (
 };
 
 watch(
-  [() => tab.value, standardModeEnabled],
-  ([tab, standardModeEnabled]) => {
-    if (!tab) return;
-    // Fallback to READONLY mode if standard mode is not allowed.
-    if (!standardModeEnabled && tab.mode === "STANDARD") {
-      tab.mode = "READONLY";
+  [() => tab.value?.id, standardModeEnabled],
+  () => {
+    if (!tab.value) return;
+    // Fallback to READONLY mode if standard.value mode is not allowed.
+    if (!standardModeEnabled.value && tab.value.mode === "STANDARD") {
+      tab.value.mode = "READONLY";
     }
   },
   {
