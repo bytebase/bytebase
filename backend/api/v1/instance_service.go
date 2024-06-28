@@ -1186,6 +1186,7 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			ReplicaSet:             ds.ReplicaSet,
 			DirectConnection:       ds.DirectConnection,
 			Region:                 ds.Region,
+			WarehouseId:            ds.WarehouseID,
 		})
 	}
 
