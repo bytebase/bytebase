@@ -112,25 +112,19 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		return
 	}
 
-	s.stateCfg.Lock()
 	maximumConnections := int(instance.Options.GetMaximumConnections())
 	if maximumConnections == 0 {
 		maximumConnections = state.DefaultInstanceMaximumConnections
 	}
-	if s.stateCfg.InstanceOutstandingConnections[instanceUID] >= maximumConnections {
-		s.stateCfg.Unlock()
+	if s.stateCfg.InstanceOutstandingConnections.Increment(instanceUID, maximumConnections) {
 		return
 	}
-	s.stateCfg.InstanceOutstandingConnections[instanceUID]++
-	s.stateCfg.Unlock()
 
 	s.stateCfg.RunningPlanChecks.Store(planCheckRun.UID, true)
 	go func() {
 		defer func() {
 			s.stateCfg.RunningPlanChecks.Delete(planCheckRun.UID)
-			s.stateCfg.Lock()
-			s.stateCfg.InstanceOutstandingConnections[instanceUID]--
-			s.stateCfg.Unlock()
+			s.stateCfg.InstanceOutstandingConnections.Decrement(instanceUID)
 		}()
 		results, err := runExecutorOnce(ctx, executor, planCheckRun.Config)
 		if err != nil {

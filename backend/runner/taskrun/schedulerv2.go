@@ -368,13 +368,9 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		if maximumConnections == 0 {
 			maximumConnections = state.DefaultInstanceMaximumConnections
 		}
-		s.stateCfg.Lock()
-		if s.stateCfg.InstanceOutstandingConnections[task.InstanceID] >= maximumConnections {
-			s.stateCfg.Unlock()
+		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
 			continue
 		}
-		s.stateCfg.InstanceOutstandingConnections[task.InstanceID]++
-		s.stateCfg.Unlock()
 
 		s.stateCfg.RunningTaskRuns.Store(taskRun.ID, true)
 		if task.DatabaseID != nil {
@@ -394,9 +390,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		if task.DatabaseID != nil {
 			s.stateCfg.RunningDatabaseMigration.Delete(*task.DatabaseID)
 		}
-		s.stateCfg.Lock()
-		s.stateCfg.InstanceOutstandingConnections[task.InstanceID]--
-		s.stateCfg.Unlock()
+		s.stateCfg.InstanceOutstandingConnections.Decrement(task.InstanceID)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
