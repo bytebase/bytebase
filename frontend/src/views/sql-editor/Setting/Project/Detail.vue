@@ -23,7 +23,6 @@
         :database-list="databaseList"
         :custom-click="true"
         :show-selection="false"
-        :show-sql-editor-button="false"
         :row-clickable="false"
       />
     </div>

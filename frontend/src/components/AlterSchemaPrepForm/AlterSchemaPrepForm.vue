@@ -151,7 +151,6 @@
                 </div>
                 <DatabaseV1Table
                   mode="ALL_SHORT"
-                  :show-sql-editor-button="false"
                   :database-list="selectableDatabaseList"
                   @update:selected-databases="handleDatabasesSelectionChanged"
                 />
