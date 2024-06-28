@@ -156,7 +156,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
 	}
 	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
-	greaterThan5_7 := semVersion.GT(semver.MustParse("5.7.9999"))
+	atLeast8_0_16 := semVersion.GE(semver.MustParse("8.0.16"))
 
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
@@ -332,7 +332,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 
 	// Check constraints info.
 	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
-	if greaterThan5_7 {
+	if atLeast8_0_16 {
 		checkQuery := `
 		SELECT
 			tc.TABLE_NAME,
