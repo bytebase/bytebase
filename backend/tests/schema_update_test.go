@@ -173,6 +173,7 @@ func TestGetLatestSchema(t *testing.T) {
 								Name:      "book",
 								Engine:    "InnoDB",
 								Collation: "utf8mb4_general_ci",
+								Charset:   "utf8mb4",
 								DataSize:  16384,
 								Columns: []*v1pb.ColumnMetadata{
 									{
