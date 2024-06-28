@@ -17,7 +17,10 @@
             {{ section.title }}
           </h1>
         </div>
-        <ChangeHistoryDataTable :change-histories="section.list" />
+        <ChangeHistoryDataTable
+          :key="`${section.title}-${i}`"
+          :change-histories="section.list"
+        />
       </div>
     </template>
     <NoDataPlaceholder v-else>

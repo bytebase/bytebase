@@ -133,6 +133,10 @@ export const provideInstanceFormContext = (baseContext: {
         if (!ds.sid && !ds.serviceName) {
           return false;
         }
+      } else if (basicInfo.value.engine === Engine.DATABRICKS) {
+        if (!ds.warehouseId) {
+          return false;
+        }
       }
 
       if (ds.saslConfig?.krbConfig) {
