@@ -73,6 +73,7 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, driverCtx context
 
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Migrate, statement, version, &payload.SheetID)
+	// sync database schema anyways
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
