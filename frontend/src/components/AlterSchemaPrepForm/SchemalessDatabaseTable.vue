@@ -11,7 +11,6 @@
       :schemaless="true"
       :database-list="databaseList"
       :show-selection="false"
-      :show-sql-editor-button="false"
     />
   </div>
 </template>
