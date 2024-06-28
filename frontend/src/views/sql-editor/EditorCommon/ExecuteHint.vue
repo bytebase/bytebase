@@ -45,9 +45,7 @@
           @click="handleClickActionButton"
         >
           <template v-if="actions.action === 'CREATE_ISSUE'">
-            {{
-              isDDL ? $t("database.edit-schema") : $t("database.change-data")
-            }}
+            {{ descriptions.action }}
           </template>
           <template v-if="actions.action === 'STANDARD_MODE'">
             {{ $t("sql-editor.standard-mode.self") }}
@@ -133,7 +131,7 @@ const descriptions = computed(() => {
   };
   const { admin, action } = actions.value;
   if (action === "CREATE_ISSUE") {
-    descriptions.action = isDDL
+    descriptions.action = isDDL.value
       ? t("database.edit-schema")
       : t("database.change-data");
     descriptions.reaction = t("sql-editor.and-submit-an-issue");
