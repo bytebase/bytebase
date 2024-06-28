@@ -2371,7 +2371,8 @@
     "standard-mode": {
       "self": "标准模式"
     },
-    "to-enable-standard-mode": "来开启标准模式"
+    "to-enable-standard-mode": "来开启标准模式",
+    "add-a-new-instance": "添加实例"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
