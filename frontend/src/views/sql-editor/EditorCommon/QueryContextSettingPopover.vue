@@ -103,7 +103,9 @@ const renderLabel: SelectRenderLabel = (option) => {
     {
       class: "w-full",
     },
-    children
+    {
+      default: () => children,
+    }
   );
 };
 

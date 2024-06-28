@@ -1,8 +1,12 @@
 import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
-import { inject, provide, ref } from "vue";
-import { useSQLEditorStore } from "@/store";
+import { computed, inject, provide, ref } from "vue";
+import {
+  useSQLEditorStore,
+  useSettingV1Store,
+} from "@/store";
 import type { ComposedDatabase, SQLEditorTab } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
@@ -37,6 +41,7 @@ export type SQLEditorContext = {
       }
     | undefined
   >;
+  standardModeEnabled: Ref<boolean>;
 
   events: SQLEditorEvents;
 
@@ -59,6 +64,12 @@ export const provideSQLEditorContext = () => {
     showAIChatBox: ref(false),
     schemaViewer: ref(undefined),
     events: new Emittery(),
+    standardModeEnabled: computed(() => {
+      return (
+        useSettingV1Store().workspaceProfileSetting?.databaseChangeMode ===
+          DatabaseChangeMode.EDITOR
+      );
+    }),
 
     maybeSwitchProject: (project) => {
       if (editorStore.project !== project) {

@@ -2298,7 +2298,12 @@
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "tab-mode": {
       "readonly": "読み取り専用",
-      "admin": "管理者"
+      "admin": "管理者",
+      "standard": "標準",
+      "description": {
+        "standard": "DDL および DML ステートメントを許可します。",
+        "readonly": "SELECT、SHOW、SET ステートメントを許可します。"
+      }
     },
     "close-sheet": "ワークシートを閉じる",
     "connect": "接続する",
@@ -2362,7 +2367,11 @@
     },
     "n-per-page": "{n} / ページ",
     "customize-tree-structure": "ツリー構造をカスタマイズする",
-    "will-override-current-editing-statement": "現在の編集ステートメントをオーバーライドします。"
+    "will-override-current-editing-statement": "現在の編集ステートメントをオーバーライドします。",
+    "standard-mode": {
+      "self": "標準モード"
+    },
+    "to-enable-standard-mode": "標準モードを有効にするには"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

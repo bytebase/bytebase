@@ -49,6 +49,7 @@
         </span>
       </NButton>
       <ResultLimitSelect />
+      <QueryModeSelect v-if="showQueryModeSelect" :disabled="isExecutingSQL" />
     </div>
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
@@ -124,6 +125,7 @@ import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
+import QueryModeSelect from "./QueryModeSelect.vue";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
 import SharePopover from "./SharePopover.vue";
 
@@ -140,7 +142,7 @@ const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
-const { events } = useSQLEditorContext();
+const { standardModeEnabled, events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
@@ -243,6 +245,17 @@ const showQueryContextSettingPopover = computed(() => {
     tab.mode !== "ADMIN" &&
     actuatorStore.customTheme === "lixiang"
   );
+});
+
+const showQueryModeSelect = computed(() => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return false;
+  }
+  if (!standardModeEnabled.value) {
+    return false;
+  }
+  return tab.mode !== "ADMIN";
 });
 
 const handleRunQuery = () => {
