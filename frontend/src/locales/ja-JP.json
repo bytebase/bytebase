@@ -2371,7 +2371,8 @@
     "standard-mode": {
       "self": "標準モード"
     },
-    "to-enable-standard-mode": "標準モードを有効にするには"
+    "to-enable-standard-mode": "標準モードを有効にするには",
+    "add-a-new-instance": "新しいインスタンスを追加する"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
