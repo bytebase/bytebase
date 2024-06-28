@@ -377,6 +377,9 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		s.stateCfg.Unlock()
 
 		s.stateCfg.RunningTaskRuns.Store(taskRun.ID, true)
+		if task.DatabaseID != nil {
+			s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, true)
+		}
 		go s.runTaskRunOnce(ctx, taskRun, task, executor)
 	}
 
@@ -399,9 +402,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	driverCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
-	if task.DatabaseID != nil {
-		s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, true)
-	}
 
 	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
 
