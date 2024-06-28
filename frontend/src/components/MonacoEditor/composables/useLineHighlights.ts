@@ -17,28 +17,36 @@ export const useLineHighlights = (
 
   watchEffect((onCleanup) => {
     const opts = unref(options);
-    const decorators = editor.createDecorationsCollection(
-      opts.map((opt) => {
-        return {
-          range: new monaco.Range(opt.lineNumber, 1, opt.lineNumber, Infinity),
-          options: {
-            isWholeLine: true,
-            inlineClassName: opt.className,
-            overviewRuler: opt.overviewRuler
-              ? {
-                  color: opt.overviewRuler.color,
-                  position:
-                    OverviewRulerPositionMap[opt.overviewRuler.position],
-                }
-              : undefined,
-            stickiness:
-              monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-          },
-        };
-      })
-    );
-    onCleanup(() => {
-      decorators.clear();
+    requestAnimationFrame(() => {
+      const decorators = editor.createDecorationsCollection(
+        opts.map((opt) => {
+          return {
+            range: new monaco.Range(
+              opt.lineNumber,
+              1,
+              opt.lineNumber,
+              Infinity
+            ),
+            options: {
+              isWholeLine: true,
+              inlineClassName: opt.className,
+              overviewRuler: opt.overviewRuler
+                ? {
+                    color: opt.overviewRuler.color,
+                    position:
+                      OverviewRulerPositionMap[opt.overviewRuler.position],
+                  }
+                : undefined,
+              stickiness:
+                monaco.editor.TrackedRangeStickiness
+                  .NeverGrowsWhenTypingAtEdges,
+            },
+          };
+        })
+      );
+      onCleanup(() => {
+        decorators.clear();
+      });
     });
   });
 };
