@@ -434,6 +434,9 @@ message TableMetadata {
   // The collation is the collation of a table.
   string collation = 5;
 
+  // The character set of table.
+  string charset = 17;
+
   // The row_count is the estimated number of rows of a table.
   int64 row_count = 6;
 

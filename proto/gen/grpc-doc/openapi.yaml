@@ -13131,6 +13131,9 @@ components:
                 collation:
                     type: string
                     description: The collation is the collation of a table.
+                charset:
+                    type: string
+                    description: The character set of table.
                 rowCount:
                     type: string
                     description: The row_count is the estimated number of rows of a table.
