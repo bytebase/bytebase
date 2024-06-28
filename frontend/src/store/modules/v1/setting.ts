@@ -77,6 +77,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
     },
     async fetchSettingList() {
       const { settings } = await settingServiceClient.listSettings({});
+      // console.log(JSON.stringify(settings, null, "  "));
       for (const setting of settings) {
         this.settingMapByName.set(setting.name, setting);
       }

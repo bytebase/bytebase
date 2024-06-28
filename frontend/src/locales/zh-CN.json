@@ -2298,7 +2298,12 @@
     "rows-upper-limit": "到达查询结果条数上限",
     "tab-mode": {
       "readonly": "只读",
-      "admin": "管理员"
+      "admin": "管理员",
+      "standard": "标准",
+      "description": {
+        "standard": "支持 DDL 和 DML 语句。",
+        "readonly": "支持 SELECT、SHOW 和 SET 语句。"
+      }
     },
     "close-sheet": "关闭工作表",
     "connect": "连接",
@@ -2362,7 +2367,11 @@
     },
     "n-per-page": "{n} / 页",
     "customize-tree-structure": "自定义树结构",
-    "will-override-current-editing-statement": "将会覆盖当前的编辑中语句。"
+    "will-override-current-editing-statement": "将会覆盖当前的编辑中语句。",
+    "standard-mode": {
+      "self": "标准模式"
+    },
+    "to-enable-standard-mode": "来开启标准模式"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

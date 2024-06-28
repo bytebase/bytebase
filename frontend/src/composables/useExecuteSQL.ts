@@ -83,13 +83,17 @@ const useExecuteSQL = () => {
     tab.queryContext.status = "IDLE";
   };
 
-  const executeReadonly = async (params: SQLEditorQueryParams) => {
+  const execute = async (params: SQLEditorQueryParams) => {
     if (!preflight(params)) {
       return cleanup();
     }
 
     const tab = tabStore.currentTab;
     if (!tab) {
+      return;
+    }
+    const { mode } = tab;
+    if (mode === "ADMIN") {
       return;
     }
     const queryContext = tab.queryContext!;
@@ -147,9 +151,9 @@ const useExecuteSQL = () => {
     };
 
     const { abortController } = queryContext;
+    const sqlStore = useSQLStore();
     queryContext.beginTimestampMS = Date.now();
     for (const database of batchQueryDatabases) {
-      const isUnknownDatabase = database.uid === String(UNKNOWN_ID);
       if (abortController.signal.aborted) {
         // Once any one of the batch queries is aborted, don't go further
         // and mock an "Aborted" result for the rest queries.
@@ -162,26 +166,42 @@ const useExecuteSQL = () => {
         });
         continue;
       }
-      const instance = isUnknownDatabase
-        ? params.connection.instance
-        : database.instance;
-      const dataSourceId =
-        instance === params.connection.instance
-          ? params.connection.dataSourceId ?? ""
-          : "";
 
       try {
-        const resultSet = await useSQLStore().queryReadonly(
-          {
-            name: database.name,
-            connectionDatabase: database.databaseName, // deprecated field, remove me later
-            dataSourceId: dataSourceId,
-            statement: params.statement,
-            limit: sqlEditorStore.resultRowsLimit,
-            explain: params.explain,
-          },
-          abortController.signal
-        );
+        let resultSet: SQLResultSetV1;
+        if (mode === "READONLY") {
+          const isUnknownDatabase = database.uid === String(UNKNOWN_ID);
+          const instance = isUnknownDatabase
+            ? params.connection.instance
+            : database.instance;
+          const dataSourceId =
+            instance === params.connection.instance
+              ? params.connection.dataSourceId ?? ""
+              : "";
+          resultSet = await sqlStore.queryReadonly(
+            {
+              name: database.name,
+              connectionDatabase: database.databaseName, // deprecated field, remove me later
+              dataSourceId: dataSourceId,
+              statement: params.statement,
+              limit: sqlEditorStore.resultRowsLimit,
+              explain: params.explain,
+              timeout: undefined, // TODO: make this param configurable
+            },
+            abortController.signal
+          );
+        } else {
+          resultSet = await sqlStore.executeStandard(
+            {
+              name: database.name,
+              statement: params.statement,
+              limit: sqlEditorStore.resultRowsLimit,
+              timeout: undefined, // TODO: make this param configurable
+            },
+            abortController.signal
+          );
+        }
+
         let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
         let adviceNotifyMessage = "";
         for (const advice of resultSet.advices) {
@@ -252,7 +272,7 @@ const useExecuteSQL = () => {
   };
 
   return {
-    executeReadonly,
+    execute,
   };
 };
 

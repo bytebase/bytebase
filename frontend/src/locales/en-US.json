@@ -2298,7 +2298,12 @@
     "rows-upper-limit": "reached the limit of query results",
     "tab-mode": {
       "readonly": "Read-only",
-      "admin": "Admin"
+      "admin": "Admin",
+      "standard": "Standard",
+      "description": {
+        "standard": "Allow DDL and DML statements.",
+        "readonly": "Allow SELECT, SHOW and SET statements."
+      }
     },
     "close-sheet": "Close sheet",
     "connect": "Connect",
@@ -2362,7 +2367,11 @@
     },
     "n-per-page": "{n} / page",
     "customize-tree-structure": "Customize tree structure",
-    "will-override-current-editing-statement": "Will override current editing statement."
+    "will-override-current-editing-statement": "Will override current editing statement.",
+    "standard-mode": {
+      "self": "Standard mode"
+    },
+    "to-enable-standard-mode": "to enable the standard mode"
   },
   "schema-editor": {
     "self": "Schema Editor",

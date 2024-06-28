@@ -310,7 +310,7 @@ const runQuery = async (
   statement: string
 ) => {
   const tabStore = useSQLEditorTabStore();
-  const { executeReadonly } = useExecuteSQL();
+  const { execute } = useExecuteSQL();
   const tab: CoreSQLEditorTab = {
     connection: {
       instance: database.instance,
@@ -345,7 +345,7 @@ const runQuery = async (
     );
   }
   await nextTick();
-  executeReadonly({
+  execute({
     statement,
     connection: { ...tab.connection },
     explain: false,
