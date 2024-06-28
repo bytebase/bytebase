@@ -479,8 +479,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	mergedSchemaBytes := []byte(mergedSchema)
 
+	reconcileMetadata(mergedMetadata, baseBranch.Engine)
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
-	reconcileMetadata(filteredMergedMetadata, baseBranch.Engine)
 	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, common.FormatUserUID(user.ID))
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
@@ -579,7 +579,6 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig.ClassificationFromConfig)
 		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
-		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata, baseBranch.Engine)
 		if err != nil {
@@ -613,6 +612,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
 	}
 
+	reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	filteredNewHeadMetadata := filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
 	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), newHeadMetadata)
 	newHeadSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, "", filteredNewHeadMetadata)
@@ -1294,6 +1294,16 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 		for _, table := range schema.Tables {
 			if engine == storepb.Engine_MYSQL {
 				reconcileMySQLPartitionMetadata(table.Partitions, "")
+			}
+			if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
+				for _, column := range table.Columns {
+					// If the column can take NULL as a value, the column is defined with an explicit DEFAULT NULL clause.
+					if column.Nullable && column.DefaultValue == nil {
+						column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
+							DefaultNull: true,
+						}
+					}
+				}
 			}
 		}
 	}

@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -1998,6 +1999,10 @@ func isColumnTypeEqual(a, b string, engine storepb.Engine) bool {
 	case storepb.Engine_MYSQL:
 		canonicalA := mysql.GetColumnTypeCanonicalSynonym(a)
 		canonicalB := mysql.GetColumnTypeCanonicalSynonym(b)
+		return strings.EqualFold(canonicalA, canonicalB)
+	case storepb.Engine_TIDB:
+		canonicalA := tidb.GetColumnTypeCanonicalSynonym(a)
+		canonicalB := tidb.GetColumnTypeCanonicalSynonym(b)
 		return strings.EqualFold(canonicalA, canonicalB)
 	default:
 		return strings.EqualFold(a, b)
