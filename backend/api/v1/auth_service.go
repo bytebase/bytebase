@@ -200,10 +200,6 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 		userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
 	}
-	// If no role is specified, we default to workspace member.
-	if len(userMessage.Roles) == 0 {
-		userMessage.Roles = append(userMessage.Roles, api.WorkspaceMember)
-	}
 	// If multiple roles are specified, checks if the current user is workspace admin.
 	if len(userMessage.Roles) > 1 {
 		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)

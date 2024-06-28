@@ -1,8 +1,8 @@
 <template>
   <NPopover v-if="showReadonlyDatasourceHint" trigger="hover">
     <template #trigger>
-      <heroicons-outline:information-circle
-        class="h-5 w-5 flex-shrink-0 text-info"
+      <TriangleAlertIcon
+        class="h-4 w-4 flex-shrink-0 text-info"
         v-bind="$attrs"
       />
     </template>
@@ -26,12 +26,16 @@
 </template>
 
 <script setup lang="ts">
+import { TriangleAlertIcon } from "lucide-vue-next";
 import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, useSQLEditorTabStore } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";
 
 const props = defineProps<{
   instance: ComposedInstance;
@@ -39,10 +43,8 @@ const props = defineProps<{
 
 const tabStore = useSQLEditorTabStore();
 const me = useCurrentUserV1();
-
-const isAdminMode = computed(() => {
-  return tabStore.currentTab?.mode === "ADMIN";
-});
+const router = useRouter();
+const { itemList: settingItemList } = useSettingItems();
 
 const allowManageInstance = computed(() => {
   return hasWorkspacePermissionV2(me.value, "bb.instances.update");
@@ -58,13 +60,25 @@ const hasReadonlyDataSource = computed(() => {
 
 const showReadonlyDatasourceHint = computed(() => {
   return (
-    !isAdminMode.value &&
+    tabStore.currentTab?.mode === "READONLY" &&
     props.instance.uid !== String(UNKNOWN_ID) &&
     !hasReadonlyDataSource.value
   );
 });
 
 const gotoInstanceDetailPage = () => {
-  window.open(`/${props.instance.name}`);
+  const { name } = props.instance;
+  if (
+    settingItemList.value.findIndex(
+      (item) => item.name === SQL_EDITOR_SETTING_INSTANCE_MODULE
+    ) >= 0
+  ) {
+    router.push({
+      name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
+      hash: `#${name}`,
+    });
+  } else {
+    window.open(`/${props.instance.name}`);
+  }
 };
 </script>

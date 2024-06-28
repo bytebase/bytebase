@@ -86,10 +86,9 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 		SELECT
 			count(DISTINCT principal.id)
 		FROM principal
-		LEFT JOIN member ON principal.id = member.principal_id
-		WHERE principal.row_status = $1 AND (principal.type = $2 OR principal.type = $3) AND member.row_status = $4`
+		WHERE principal.row_status = $1 AND (principal.type = $2 OR principal.type = $3)`
 	var count int
-	if err := tx.QueryRowContext(ctx, query, api.Normal, api.EndUser, api.ServiceAccount, api.Normal).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, api.Normal, api.EndUser, api.ServiceAccount).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}

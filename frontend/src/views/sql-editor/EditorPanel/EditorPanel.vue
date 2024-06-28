@@ -35,7 +35,7 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, watch } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import { useInstanceV1Store, usePageMode, useSQLEditorTabStore } from "@/store";
@@ -53,13 +53,13 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
-const { showAIChatBox } = useSQLEditorContext();
+const { showAIChatBox, standardModeEnabled } = useSQLEditorContext();
 const pageMode = usePageMode();
 
-const { executeReadonly } = useExecuteSQL();
+const { execute } = useExecuteSQL();
 
 const handleExecute = (params: SQLEditorQueryParams) => {
-  executeReadonly(params);
+  execute(params);
 };
 
 const handleApplyStatement = async (
@@ -83,4 +83,19 @@ const handleApplyStatement = async (
     });
   }
 };
+
+watch(
+  [() => tab.value, standardModeEnabled],
+  ([tab, standardModeEnabled]) => {
+    if (!tab) return;
+    // Fallback to READONLY mode if standard mode is not allowed.
+    if (!standardModeEnabled && tab.mode === "STANDARD") {
+      tab.mode = "READONLY";
+    }
+  },
+  {
+    immediate: true,
+    deep: false,
+  }
+);
 </script>
