@@ -127,7 +127,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
     const sidebarList: ProjectSidebarItem[] = [
       {
         title: t("common.database"),
-        icon: h(Database),
+        icon: () => h(Database),
         type: "div",
         expand: true,
         children: [
@@ -167,20 +167,20 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
       {
         title: t("common.issues"),
         path: PROJECT_V1_ROUTE_ISSUES,
-        icon: h(CircleDot),
+        icon: () => h(CircleDot),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("review-center.self"),
-        icon: h(SearchCodeIcon),
+        icon: () => h(SearchCodeIcon),
         path: PROJECT_V1_ROUTE_REVIEW_CENTER,
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("export-center.self"),
-        icon: h(DownloadIcon),
+        icon: () => h(DownloadIcon),
         path: PROJECT_V1_ROUTE_EXPORT_CENTER,
         type: "div",
         hide: isDefaultProject.value,
@@ -188,27 +188,27 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
       {
         title: t("common.branches"),
         path: PROJECT_V1_ROUTE_BRANCHES,
-        icon: h(GitBranch),
+        icon: () => h(GitBranch),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("changelist.changelists"),
         path: PROJECT_V1_ROUTE_CHANGELISTS,
-        icon: h(PencilRuler),
+        icon: () => h(PencilRuler),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("database.sync-schema.title"),
         path: PROJECT_V1_ROUTE_SYNC_SCHEMA,
-        icon: h(RefreshCcw),
+        icon: () => h(RefreshCcw),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("settings.sidebar.integration"),
-        icon: h(Link),
+        icon: () => h(Link),
         type: "div",
         hide: isDefaultProject.value,
         expand: true,
@@ -227,7 +227,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
       },
       {
         title: t("common.manage"),
-        icon: h(Users),
+        icon: () => h(Users),
         type: "div",
         hide: isDefaultProject.value,
         expand: true,
@@ -246,7 +246,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
       },
       {
         title: t("common.setting"),
-        icon: h(Settings),
+        icon: () => h(Settings),
         path: PROJECT_V1_ROUTE_SETTINGS,
         type: "div",
         hide: isDefaultProject.value,

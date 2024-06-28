@@ -84,7 +84,7 @@ export interface SidebarItem {
   name?: string;
   // path is required if the type is div or link
   path?: string;
-  icon?: VNode;
+  icon?: () => VNode;
   hide?: boolean;
   type: "route" | "div" | "divider" | "link";
   expand?: boolean;
