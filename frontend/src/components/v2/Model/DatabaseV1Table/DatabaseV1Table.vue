@@ -53,14 +53,12 @@ const props = withDefaults(
     singleSelection?: boolean;
     schemaless?: boolean;
     customClick?: boolean;
-    showSqlEditorButton?: boolean;
     rowClickable?: boolean;
   }>(),
   {
     mode: "ALL",
     bordered: true,
     showSelection: true,
-    showSqlEditorButton: true,
     rowClickable: true,
   }
 );
@@ -93,12 +91,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.name"),
     resizable: true,
     render: (data) => {
-      return (
-        <DatabaseNameCell
-          database={data as ComposedDatabase}
-          showSQLEditorButton={props.showSqlEditorButton}
-        />
-      );
+      return <DatabaseNameCell database={data as ComposedDatabase} />;
     },
   };
   const ENVIRONMENT: DatabaseDataTableColumn = {
