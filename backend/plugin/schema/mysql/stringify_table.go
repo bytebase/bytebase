@@ -284,7 +284,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata) err
 
 	// Handle auto_increment.
 	if isAutoIncrement(column) {
-		if _, err := fmt.Fprintf(buf, " AUTO_INCREMENT"); err != nil {
+		if _, err := buf.WriteString(" " + autoIncrementSymbol); err != nil {
 			return err
 		}
 	}
