@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -514,7 +515,8 @@ func (c *columnState) hasAutoRand() bool {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
+	columnCanonicalType := tidb.GetColumnTypeCanonicalSynonym(strings.ToLower(c.tp))
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, columnCanonicalType)); err != nil {
 		return err
 	}
 	if !c.nullable {
