@@ -43,21 +43,17 @@
           :text-class="link ? 'hover:underline' : ''"
         />
       </template>
-
-      <SQLEditorButtonV1 v-if="showSQLEditorButton" :database="database" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 
 withDefaults(
   defineProps<{
     database: ComposedDatabase;
-    showSQLEditorButton?: boolean;
     link?: boolean;
   }>(),
   {
