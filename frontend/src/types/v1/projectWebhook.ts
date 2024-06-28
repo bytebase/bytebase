@@ -1,5 +1,4 @@
 import { t } from "@/plugins/i18n";
-import { isDev } from "@/utils";
 import { EMPTY_ID } from "../const";
 import {
   Activity_Type,
@@ -78,7 +77,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       urlPrefix: "https://qyapi.weixin.qq.com",
       urlPlaceholder: "https://qyapi.weixin.qq.com/cgi-bin/webhook/...",
       docUrl: "https://open.work.weixin.qq.com/help2/pc/14931",
-      supportDirectMessage: isDev(),
+      supportDirectMessage: true,
     },
     {
       type: Webhook_Type.TYPE_CUSTOM,
