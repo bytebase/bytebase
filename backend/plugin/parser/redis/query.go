@@ -20,7 +20,6 @@ var readCommands = map[string]bool{
 	"hmget":         true,
 	"hlen":          true,
 	"hvals":         true,
-	"info":          true,
 	"lindex":        true,
 	"llen":          true,
 	"lrange":        true,
