@@ -427,17 +427,20 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	// Query table info.
 	tableQuery := `
 		SELECT
-			TABLE_NAME,
-			TABLE_TYPE,
-			IFNULL(ENGINE, ''),
-			IFNULL(TABLE_COLLATION, ''),
-			IFNULL(TABLE_ROWS, 0),
-			IFNULL(DATA_LENGTH, 0),
-			IFNULL(INDEX_LENGTH, 0),
-			IFNULL(DATA_FREE, 0),
-			IFNULL(CREATE_OPTIONS, ''),
-			IFNULL(TABLE_COMMENT, '')
-		FROM information_schema.TABLES
+			TABLES.TABLE_NAME,
+			TABLES.TABLE_TYPE,
+			IFNULL(TABLES.ENGINE, ''),
+			IFNULL(TABLES.TABLE_COLLATION, ''),
+			IFNULL(TABLES.TABLE_ROWS, 0),
+			IFNULL(TABLES.DATA_LENGTH, 0),
+			IFNULL(TABLES.INDEX_LENGTH, 0),
+			IFNULL(TABLES.DATA_FREE, 0),
+			IFNULL(TABLES.CREATE_OPTIONS, ''),
+			IFNULL(TABLES.TABLE_COMMENT, ''),
+			IFNULL(CCSA.CHARACTER_SET_NAME, '')
+		FROM information_schema.TABLES TABLES
+		LEFT JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA
+		ON TABLES.TABLE_COLLATION = CCSA.COLLATION_NAME
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
@@ -446,7 +449,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	defer tableRows.Close()
 	for tableRows.Next() {
-		var tableName, tableType, engine, collation, createOptions, comment string
+		var tableName, tableType, engine, collation, createOptions, comment, charset string
 		var rowCount, dataSize, indexSize, dataFree int64
 		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
 		var tableCollation sql.NullString
@@ -461,6 +464,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&dataFree,
 			&createOptions,
 			&comment,
+			&charset,
 		); err != nil {
 			return nil, err
 		}
@@ -483,6 +487,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				Comment:          comment,
 				Partitions:       partitionTables[key],
 				CheckConstraints: checkMap[key],
+				Charset:          charset,
 			}
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String

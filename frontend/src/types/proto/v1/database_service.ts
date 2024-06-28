@@ -460,6 +460,8 @@ export interface TableMetadata {
   engine: string;
   /** The collation is the collation of a table. */
   collation: string;
+  /** The character set of table. */
+  charset: string;
   /** The row_count is the estimated number of rows of a table. */
   rowCount: Long;
   /** The data_size is the estimated data size of a table. */
@@ -3590,6 +3592,7 @@ function createBaseTableMetadata(): TableMetadata {
     indexes: [],
     engine: "",
     collation: "",
+    charset: "",
     rowCount: Long.ZERO,
     dataSize: Long.ZERO,
     indexSize: Long.ZERO,
@@ -3619,6 +3622,9 @@ export const TableMetadata = {
     }
     if (message.collation !== "") {
       writer.uint32(42).string(message.collation);
+    }
+    if (message.charset !== "") {
+      writer.uint32(138).string(message.charset);
     }
     if (!message.rowCount.isZero()) {
       writer.uint32(48).int64(message.rowCount);
@@ -3694,6 +3700,13 @@ export const TableMetadata = {
           }
 
           message.collation = reader.string();
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.charset = reader.string();
           continue;
         case 6:
           if (tag !== 48) {
@@ -3785,6 +3798,7 @@ export const TableMetadata = {
         : [],
       engine: isSet(object.engine) ? globalThis.String(object.engine) : "",
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
+      charset: isSet(object.charset) ? globalThis.String(object.charset) : "",
       rowCount: isSet(object.rowCount) ? Long.fromValue(object.rowCount) : Long.ZERO,
       dataSize: isSet(object.dataSize) ? Long.fromValue(object.dataSize) : Long.ZERO,
       indexSize: isSet(object.indexSize) ? Long.fromValue(object.indexSize) : Long.ZERO,
@@ -3820,6 +3834,9 @@ export const TableMetadata = {
     }
     if (message.collation !== "") {
       obj.collation = message.collation;
+    }
+    if (message.charset !== "") {
+      obj.charset = message.charset;
     }
     if (!message.rowCount.isZero()) {
       obj.rowCount = (message.rowCount || Long.ZERO).toString();
@@ -3864,6 +3881,7 @@ export const TableMetadata = {
     message.indexes = object.indexes?.map((e) => IndexMetadata.fromPartial(e)) || [];
     message.engine = object.engine ?? "";
     message.collation = object.collation ?? "";
+    message.charset = object.charset ?? "";
     message.rowCount = (object.rowCount !== undefined && object.rowCount !== null)
       ? Long.fromValue(object.rowCount)
       : Long.ZERO;
