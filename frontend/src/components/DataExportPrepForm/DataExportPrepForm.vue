@@ -28,7 +28,6 @@
           <DatabaseV1Table
             mode="ALL_SHORT"
             :database-list="filteredDatabaseList"
-            :show-sql-editor-button="false"
             :single-selection="true"
             @update:selected-databases="handleDatabasesSelectionChanged"
           />
