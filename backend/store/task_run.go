@@ -220,17 +220,17 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 	}
 	defer tx.Rollback()
 
+	attempts, err := s.getTaskNextAttempt(ctx, tx, taskIDs)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get task next attempt")
+	}
+
 	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []api.TaskRunStatus{api.TaskRunPending, api.TaskRunRunning, api.TaskRunDone})
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if task runs exist")
 	}
 	if exist {
 		return errors.Errorf("cannot create pending task runs because there are pending/running/done task runs")
-	}
-
-	attempts, err := s.getTaskNextAttempt(ctx, tx, taskIDs)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get task next attempt")
 	}
 
 	if err := s.createPendingTaskRunsTx(ctx, tx, attempts, creates); err != nil {
