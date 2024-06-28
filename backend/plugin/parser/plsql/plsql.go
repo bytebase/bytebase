@@ -50,11 +50,13 @@ func addSemicolonIfNeeded(sql string) string {
 	defer func() {
 		slog.Debug("addSemicolonIfNeeded 2")
 	}()
-	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(sql))
+	input := antlr.NewInputStream(sql)
+	lexer := parser.NewPlSqlLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	stream.Fill()
 	tokens := stream.GetAllTokens()
 	for i := len(tokens) - 1; i >= 0; i-- {
+		slog.Debug("add semicolon: ", slog.Int("i", i))
 		if tokens[i].GetChannel() != antlr.TokenDefaultChannel || tokens[i].GetTokenType() == parser.PlSqlParserEOF {
 			continue
 		}
@@ -64,7 +66,8 @@ func addSemicolonIfNeeded(sql string) string {
 			return sql
 		}
 
-		return stream.GetTextFromInterval(antlr.NewInterval(0, tokens[i].GetTokenIndex())) + ";"
+		return input.GetText(0, tokens[i].GetStop()) + ";"
+		// return stream.GetTextFromInterval(antlr.NewInterval(0, tokens[i].GetTokenIndex())) + ";"
 	}
 	return sql
 }
