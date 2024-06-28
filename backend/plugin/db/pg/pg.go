@@ -369,6 +369,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var isPlsql bool
 	oneshot := true
 	// HACK(p0ny): always split for pg
+	//nolint
 	if true || len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
 		if err != nil {
@@ -384,11 +385,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			isPlsql = true
 		}
 		// HACK(p0ny): always split for pg
+		//nolint
 		if false && len(commands) <= common.MaximumCommands {
 			oneshot = false
 		}
 	}
 	// HACK(p0ny): always split for pg
+	//nolint
 	if false && oneshot {
 		commands = []base.SingleSQL{
 			{
