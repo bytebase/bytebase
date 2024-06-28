@@ -71,7 +71,7 @@ const gotoInstanceDetailPage = () => {
   if (
     settingItemList.value.findIndex(
       (item) => item.name === SQL_EDITOR_SETTING_INSTANCE_MODULE
-    )
+    ) >= 0
   ) {
     router.push({
       name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
