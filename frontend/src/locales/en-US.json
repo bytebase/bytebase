@@ -2371,7 +2371,8 @@
     "standard-mode": {
       "self": "Standard mode"
     },
-    "to-enable-standard-mode": "to enable the standard mode"
+    "to-enable-standard-mode": "to enable the standard mode",
+    "add-a-new-instance": "Add a new instance"
   },
   "schema-editor": {
     "self": "Schema Editor",
