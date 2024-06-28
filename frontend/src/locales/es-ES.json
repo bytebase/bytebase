@@ -2371,7 +2371,8 @@
     "standard-mode": {
       "self": "Modo estandar"
     },
-    "to-enable-standard-mode": "para habilitar el modo estándar"
+    "to-enable-standard-mode": "para habilitar el modo estándar",
+    "add-a-new-instance": "Agregar una nueva instancia"
   },
   "schema-editor": {
     "self": "Editor de esquema",
