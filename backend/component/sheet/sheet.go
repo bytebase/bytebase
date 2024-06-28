@@ -101,7 +101,8 @@ func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb
 		}
 		return nil
 	}
-	if len(singleSQLs) > common.MaximumCommands {
+	// HACK(p0ny): always split for pg
+	if len(singleSQLs) > common.MaximumCommands && engine != storepb.Engine_POSTGRES {
 		return nil
 	}
 
