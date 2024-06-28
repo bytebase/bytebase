@@ -294,7 +294,7 @@ const generateConditionTitle = () => {
   let conditionSuffix = "";
   if (
     state.role === PresetRoleType.PROJECT_QUERIER ||
-    state.role === PresetRoleType.PROJECT_QUERIER
+    state.role === PresetRoleType.PROJECT_EXPORTER
   ) {
     if (!state.databaseResources || state.databaseResources.length === 0) {
       conditionSuffix = `${conditionSuffix} All`;
