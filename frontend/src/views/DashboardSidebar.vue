@@ -159,7 +159,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.my-issues",
       title: t("issue.my-issues"),
-      icon: h(HomeIcon),
+      icon: () => h(HomeIcon),
       name: WORKSPACE_ROUTE_MY_ISSUES,
       type: "route",
       shortcuts: ["g", "m", "i"],
@@ -167,7 +167,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.projects",
       title: t("common.projects"),
-      icon: h(GalleryHorizontalEndIcon),
+      icon: () => h(GalleryHorizontalEndIcon),
       name: PROJECT_V1_ROUTE_DASHBOARD,
       type: "route",
       shortcuts: ["g", "p"],
@@ -175,7 +175,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.instances",
       title: t("common.instances"),
-      icon: h(LayersIcon),
+      icon: () => h(LayersIcon),
       name: INSTANCE_ROUTE_DASHBOARD,
       type: "route",
       shortcuts: ["g", "i"],
@@ -183,7 +183,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.databases",
       title: t("common.databases"),
-      icon: h(DatabaseIcon),
+      icon: () => h(DatabaseIcon),
       name: DATABASE_ROUTE_DASHBOARD,
       type: "route",
       shortcuts: ["g", "d"],
@@ -191,7 +191,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.environments",
       title: t("common.environments"),
-      icon: h(SquareStackIcon),
+      icon: () => h(SquareStackIcon),
       name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
       type: "route",
       shortcuts: ["g", "e"],
@@ -203,7 +203,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.review-center",
       title: t("review-center.self"),
-      icon: h(SearchCodeIcon),
+      icon: () => h(SearchCodeIcon),
       name: WORKSPACE_ROUTE_REVIEW_CENTER,
       type: "route",
       shortcuts: ["g", "r", "c"],
@@ -216,7 +216,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.export-center",
       title: t("export-center.self"),
-      icon: h(DownloadIcon),
+      icon: () => h(DownloadIcon),
       name: WORKSPACE_ROUTE_EXPORT_CENTER,
       type: "route",
       shortcuts: ["g", "x", "c"],
@@ -229,14 +229,14 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       navigationId: "bb.navigation.anomaly-center",
       title: t("anomaly-center"),
-      icon: h(ShieldAlertIcon),
+      icon: () => h(ShieldAlertIcon),
       name: WORKSPACE_ROUTE_ANOMALY_CENTER,
       type: "route",
       shortcuts: ["g", "a", "c"],
     },
     {
       title: t("settings.sidebar.security-and-policy"),
-      icon: h(ShieldCheck),
+      icon: () => h(ShieldCheck),
       type: "div",
       children: [
         {
@@ -290,7 +290,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     },
     {
       title: t("settings.sidebar.integration"),
-      icon: h(LinkIcon),
+      icon: () => h(LinkIcon),
       type: "div",
       children: [
         {

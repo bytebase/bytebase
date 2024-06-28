@@ -70,7 +70,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
   const list: SidebarItem[] = [
     {
       title: t("settings.sidebar.account"),
-      icon: h(UserCircle),
+      icon: () => h(UserCircle),
       type: "div",
       expand: true,
       children: [
@@ -83,7 +83,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
     },
     {
       title: t("settings.sidebar.workspace"),
-      icon: h(Building),
+      icon: () => h(Building),
       type: "div",
       expand: true,
       children: [
@@ -106,7 +106,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
     },
     {
       title: t("common.archived"),
-      icon: h(Archive),
+      icon: () => h(Archive),
       name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
       type: "route",
     },
