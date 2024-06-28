@@ -3155,6 +3155,7 @@ TableMetadata is the metadata for tables.
 | indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
 | engine | [string](#string) |  | The engine is the engine of a table. |
 | collation | [string](#string) |  | The collation is the collation of a table. |
+| charset | [string](#string) |  | The character set of table. |
 | row_count | [int64](#int64) |  | The row_count is the estimated number of rows of a table. |
 | data_size | [int64](#int64) |  | The data_size is the estimated data size of a table. |
 | index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
