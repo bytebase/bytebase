@@ -568,7 +568,10 @@ MIIEvQ...
 
   <template v-if="basicInfo.engine === Engine.DATABRICKS">
     <div>
-      <div class="textlabel black mt-4">Warehouse ID</div>
+      <div class="textlabel black mt-4">
+        Warehouse ID
+        <span class="text-red-600">*</span>
+      </div>
       <NInput
         v-model:value="dataSource.warehouseId"
         class="mt-2"
@@ -577,25 +580,32 @@ MIIEvQ...
     </div>
     <div class="mt-2 sm:col-span-3 sm:col-start-1">
       <NRadioGroup v-model:value="databricksAuth">
-        <NRadio :value="'PASSWORD'"> Password </NRadio>
+        <NRadio :value="'PASSWORD'">
+          {{ $t("common.password") }}
+        </NRadio>
         <NRadio :value="'ACCESS_TOKEN'"> Access Token </NRadio>
       </NRadioGroup>
     </div>
 
     <div v-if="databricksAuth === 'PASSWORD'">
-      <div class="textlabel black mt-4">Username</div>
+      <div class="textlabel black mt-4">
+        {{ $t("common.username") }}
+      </div>
       <NInput
         v-model:value="dataSource.username"
         class="mt-2 w-full"
         :disabled="!allowEdit"
       />
-      <div class="textlabel black mt-4">Password</div>
+      <div class="textlabel black mt-4">
+        {{ $t("common.password") }}
+      </div>
       <NInput
         v-model:value="dataSource.password"
         type="password"
         show-password-on="click"
         class="mt-2 w-full"
         :disabled="!allowEdit"
+        :placeholder="$t('instance.password-write-only')"
       />
       <div class="textlabel black mt-4">Account ID</div>
       <NInput
@@ -606,7 +616,10 @@ MIIEvQ...
       />
     </div>
     <div v-else>
-      <div class="textlabel black mt-4">Token</div>
+      <div class="textlabel black mt-4">
+        Token
+        <span class="text-red-600">*</span>
+      </div>
       <NInput
         v-model:value="dataSource.authenticationPrivateKey"
         class="mt-2 w-full"
