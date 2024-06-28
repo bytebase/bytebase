@@ -1,10 +1,7 @@
 import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
-import {
-  useSQLEditorStore,
-  useSettingV1Store,
-} from "@/store";
+import { useSQLEditorStore, useSettingV1Store } from "@/store";
 import type { ComposedDatabase, SQLEditorTab } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
@@ -67,7 +64,7 @@ export const provideSQLEditorContext = () => {
     standardModeEnabled: computed(() => {
       return (
         useSettingV1Store().workspaceProfileSetting?.databaseChangeMode ===
-          DatabaseChangeMode.EDITOR
+        DatabaseChangeMode.EDITOR
       );
     }),
 
