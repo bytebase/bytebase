@@ -73,6 +73,12 @@ func StringifyTable(metadata *storepb.TableMetadata) (string, error) {
 		return "", err
 	}
 
+	if metadata.Charset != "" {
+		if _, err := fmt.Fprintf(&buf, " DEFAULT CHARSET=%s", metadata.Charset); err != nil {
+			return "", err
+		}
+	}
+
 	if metadata.Collation != "" {
 		if _, err := fmt.Fprintf(&buf, " COLLATE=%s", metadata.Collation); err != nil {
 			return "", err

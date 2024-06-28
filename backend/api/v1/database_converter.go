@@ -155,6 +155,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 		CreateOptions: table.CreateOptions,
 		Comment:       table.Comment,
 		UserComment:   table.UserComment,
+		Charset:       table.Charset,
 	}
 	for _, partition := range table.Partitions {
 		if partition == nil {
@@ -562,6 +563,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		CreateOptions: table.CreateOptions,
 		Comment:       table.Comment,
 		UserComment:   table.UserComment,
+		Charset:       table.Charset,
 	}
 	for _, column := range table.Columns {
 		if column == nil {
