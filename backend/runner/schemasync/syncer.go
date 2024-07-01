@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"github.com/sourcegraph/conc/pool"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,6 +35,7 @@ const (
 	schemaSyncInterval = 1 * time.Minute
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
+	MaximumOutstanding  = 100
 )
 
 // NewSyncer creates a schema syncer.
@@ -96,6 +98,8 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			slog.Error("Instance syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
+
+	wp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
 		slog.Error("Failed to retrieve instances", log.BBError(err))
@@ -103,6 +107,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	}
 	now := time.Now()
 	for _, instance := range instances {
+		instance := instance
 		interval := getOrDefaultSyncInterval(instance)
 		if interval == defaultSyncInterval {
 			continue
@@ -115,13 +120,16 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 
-		slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
-		if _, err := s.SyncInstance(ctx, instance); err != nil {
-			slog.Debug("Failed to sync instance",
-				slog.String("instance", instance.ResourceID),
-				slog.String("error", err.Error()))
-		}
+		wp.Go(func() {
+			slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
+			if _, err := s.SyncInstance(ctx, instance); err != nil {
+				slog.Debug("Failed to sync instance",
+					slog.String("instance", instance.ResourceID),
+					slog.String("error", err.Error()))
+			}
+		})
 	}
+	wp.Wait()
 
 	instancesMap := map[string]*store.InstanceMessage{}
 	for _, instance := range instances {
