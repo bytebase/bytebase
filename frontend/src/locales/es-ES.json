@@ -983,12 +983,14 @@
         "cancel": "¿Cancelar todo el incidencia?",
         "reopen": "¿Reabrir incidencia?",
         "title": "{action} {type} [{name}]?",
-        "action-to-stage": "{action} etapa ({n} tareas)"
+        "action-to-stage": "{action} etapa ({n} tareas)",
+        "close": "¿Cerrar el problema?"
       },
       "dropdown": {
         "resolve": "Resolver incidencia",
         "cancel": "Cancelar incidencia",
-        "reopen": "Reabrir incidencia"
+        "reopen": "Reabrir incidencia",
+        "close": "Cerrar problema"
       },
       "form": {
         "note": "Nota",
@@ -1134,7 +1136,9 @@
       "reopen": "Reabrir",
       "reopened": "reabierto",
       "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",
-      "successfully-updated-n-issues": "Incidencia actualizada correctamente {n} | Incidencias actualizadas correctamente {n}"
+      "successfully-updated-n-issues": "Incidencia actualizada correctamente {n} | Incidencias actualizadas correctamente {n}",
+      "closed": "cerrado",
+      "close": "Cerca"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "El cambio se aplicará a todas las tareas",
@@ -2337,7 +2341,8 @@
     "batch-query": {
       "batch": "Lote",
       "select-database": "Seleccione la base de datos a continuación",
-      "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
+      "description": "Consulta por lotes {count} bases de datos adicionales en {project}.",
+      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
     "executing-query": "Ejecutando consulta",
     "request-query": "Solicitar consulta",

@@ -20,18 +20,18 @@
   </TooltipButton>
 
   <TooltipButton
-    :disabled="!isActionApplicableForAllIssues('CANCEL')"
+    :disabled="!isActionApplicableForAllIssues('CLOSE')"
     tooltip-mode="DISABLED-ONLY"
-    @click="startBatchIssueStatusAction('CANCEL')"
+    @click="startBatchIssueStatusAction('CLOSE')"
   >
     <template #default>
-      {{ $t("issue.batch-transition.cancel") }}
+      {{ $t("issue.batch-transition.close") }}
     </template>
     <template #tooltip>
       <div class="whitespace-nowrap">
         {{
           $t("issue.batch-transition.not-allowed-tips", {
-            operation: $t("issue.batch-transition.cancelled"),
+            operation: $t("issue.batch-transition.closed"),
           })
         }}
       </div>

@@ -983,12 +983,14 @@
         "cancel": "Cancel this entire issue?",
         "reopen": "Reopen issue?",
         "title": "{action} {type} [{name}]?",
-        "action-to-stage": "{action} stage ({n} tasks)"
+        "action-to-stage": "{action} stage ({n} tasks)",
+        "close": "Close issue?"
       },
       "dropdown": {
         "resolve": "Resolve issue",
         "cancel": "Cancel issue",
-        "reopen": "Reopen issue"
+        "reopen": "Reopen issue",
+        "close": "Close issue"
       },
       "form": {
         "note": "Note",
@@ -1134,7 +1136,9 @@
       "reopen": "Reopen",
       "reopened": "reopened",
       "action-n-issues": "{action} {n} issue | {action} {n} issues",
-      "successfully-updated-n-issues": "Successfully updated {n} issue | Successfully updated {n} issues"
+      "successfully-updated-n-issues": "Successfully updated {n} issue | Successfully updated {n} issues",
+      "closed": "closed",
+      "close": "Close"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
@@ -2337,7 +2341,8 @@
     "batch-query": {
       "batch": "Batch",
       "select-database": "Select database below",
-      "description": "Batch query {count} additional databases under {project}."
+      "description": "Batch query {count} additional databases under {project}.",
+      "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
     "executing-query": "Executing query",
     "request-query": "Request query",

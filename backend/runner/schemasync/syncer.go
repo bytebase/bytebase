@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"github.com/sourcegraph/conc/pool"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,6 +35,7 @@ const (
 	schemaSyncInterval = 1 * time.Minute
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
+	MaximumOutstanding  = 100
 )
 
 // NewSyncer creates a schema syncer.
@@ -74,9 +76,6 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return true
 				}
 				// Sync all databases for instance.
-				if _, err := s.SyncInstance(ctx, instance); err != nil {
-					slog.Error("failed to sync instance", log.BBError(err))
-				}
 				s.syncAllDatabases(ctx, instance)
 				return true
 			})
@@ -96,6 +95,8 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			slog.Error("Instance syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
+
+	wp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
 		slog.Error("Failed to retrieve instances", log.BBError(err))
@@ -103,6 +104,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	}
 	now := time.Now()
 	for _, instance := range instances {
+		instance := instance
 		interval := getOrDefaultSyncInterval(instance)
 		if interval == defaultSyncInterval {
 			continue
@@ -115,13 +117,16 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 
-		slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
-		if _, err := s.SyncInstance(ctx, instance); err != nil {
-			slog.Debug("Failed to sync instance",
-				slog.String("instance", instance.ResourceID),
-				slog.String("error", err.Error()))
-		}
+		wp.Go(func() {
+			slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
+			if _, err := s.SyncInstance(ctx, instance); err != nil {
+				slog.Debug("Failed to sync instance",
+					slog.String("instance", instance.ResourceID),
+					slog.String("error", err.Error()))
+			}
+		})
 	}
+	wp.Wait()
 
 	instancesMap := map[string]*store.InstanceMessage{}
 	for _, instance := range instances {
@@ -133,7 +138,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		slog.Error("Failed to retrieve databases", log.BBError(err))
 		return
 	}
+	dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 	for _, database := range databases {
+		database := database
 		if database.SyncState != api.OK {
 			continue
 		}
@@ -153,13 +160,18 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		if now.Before(nextSyncTime) {
 			continue
 		}
-		if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-			slog.Debug("Failed to sync database schema",
-				slog.String("instance", instance.ResourceID),
-				slog.String("databaseName", database.DatabaseName),
-				log.BBError(err))
-		}
+
+		dbwp.Go(func() {
+			slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
+			if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+				slog.Debug("Failed to sync database schema",
+					slog.String("instance", instance.ResourceID),
+					slog.String("databaseName", database.DatabaseName),
+					log.BBError(err))
+			}
+		})
 	}
+	dbwp.Wait()
 }
 
 func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {

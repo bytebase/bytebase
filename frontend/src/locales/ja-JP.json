@@ -983,12 +983,14 @@
         "cancel": "作業指示全体をキャンセルしますか?",
         "reopen": "作業指示を再開しますか?",
         "title": "{action}{type} [{name}]?",
-        "action-to-stage": "{action} ステージ ({n} 個のタスク)"
+        "action-to-stage": "{action} ステージ ({n} 個のタスク)",
+        "close": "問題を閉じますか?"
       },
       "dropdown": {
         "resolve": "作業指示を完了する",
         "cancel": "作業指示をキャンセルする",
-        "reopen": "再開"
+        "reopen": "再開",
+        "close": "問題を閉じる"
       },
       "form": {
         "note": "ノート",
@@ -1134,7 +1136,9 @@
       "reopen": "再開",
       "reopened": "再開",
       "action-n-issues": "{action} {n} 枚のチケット",
-      "successfully-updated-n-issues": "{n} 個のチケットが正常に更新されました"
+      "successfully-updated-n-issues": "{n} 個のチケットが正常に更新されました",
+      "closed": "閉まっている",
+      "close": "近い"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "変更は他のすべてのタスクに適用されます",
@@ -2337,7 +2341,8 @@
     "batch-query": {
       "batch": "バッチ",
       "select-database": "以下のデータベースを選択してください",
-      "description": "{project} の下にある {count} データベースをバッチクエリします。"
+      "description": "{project} の下にある {count} データベースをバッチクエリします。",
+      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
     "executing-query": "クエリの実行",
     "request-query": "リクエストクエリ",

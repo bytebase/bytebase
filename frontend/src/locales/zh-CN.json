@@ -983,12 +983,14 @@
         "cancel": "取消整个工单?",
         "reopen": "重开工单？",
         "title": "{action}{type} [{name}]？",
-        "action-to-stage": "{action}阶段（{n}个任务）"
+        "action-to-stage": "{action}阶段（{n}个任务）",
+        "close": "关闭工单？"
       },
       "dropdown": {
         "resolve": "完成工单",
         "cancel": "取消工单",
-        "reopen": "重开"
+        "reopen": "重开",
+        "close": "关闭工单"
       },
       "form": {
         "note": "笔记",
@@ -1134,7 +1136,9 @@
       "reopen": "重开",
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",
-      "successfully-updated-n-issues": "成功更新 {n} 个工单"
+      "successfully-updated-n-issues": "成功更新 {n} 个工单",
+      "closed": "关闭",
+      "close": "关闭"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
@@ -2337,7 +2341,8 @@
     "batch-query": {
       "batch": "批量",
       "select-database": "选择下面的数据库",
-      "description": "批量查询 {project} 下的 {count} 个数据库。"
+      "description": "批量查询 {project} 下的 {count} 个数据库。",
+      "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
     "executing-query": "执行查询",
     "request-query": "请求查询",
