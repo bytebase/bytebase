@@ -2,8 +2,10 @@
   <NPopselect
     v-if="visible"
     :options="options"
+    :virtual-scroll="true"
     trigger="click"
     placement="right-start"
+    style="min-width: 12rem; max-width: 24rem"
     @update:value="handleSelect"
   >
     <NButton size="small" style="--n-padding: 4px">
@@ -55,6 +57,9 @@ const options = computed(() => {
   }));
   if (label.length === 0) {
     return preset;
+  }
+  if (preset.length === 0) {
+    return label;
   }
   return [
     {
