@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/bigquery v1.61.0
 	cloud.google.com/go/cloudsqlconn v1.11.0
 	cloud.google.com/go/secretmanager v1.13.2
-	cloud.google.com/go/spanner v1.63.0
+	cloud.google.com/go/spanner v1.64.0
 	gitee.com/chunanyong/dm v1.8.15
 	github.com/ClickHouse/clickhouse-go/v2 v2.26.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
