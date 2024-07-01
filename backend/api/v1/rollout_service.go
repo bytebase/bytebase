@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -754,8 +755,18 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 // GetPipelineCreate gets a pipeline create message from a plan.
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	transformedSteps := steps
-	if len(steps) == 1 && len(steps[0].Specs) == 1 {
-		spec := steps[0].Specs[0]
+	// Flatten all specs from steps.
+	var specs []*storepb.PlanConfig_Spec
+	for _, step := range steps {
+		specs = append(specs, step.Specs...)
+	}
+
+	// The following case should has only one spec.
+	// * ChangeDatabaseConfig with deploymentConfig/databaseGroup target;
+	// * CreateDatabaseConfig;
+	// * ExportDataConfig.
+	if len(specs) == 1 {
+		spec := specs[0]
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
 			if _, _, err := common.GetProjectIDDeploymentConfigID(config.Target); err == nil {
 				stepsFromDeploymentConfig, err := transformDeploymentConfigTargetToSteps(ctx, s, spec, config, project)
@@ -772,6 +783,85 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				transformedSteps = stepsFromDatabaseGroup
 			}
 		}
+		// Skip to transform the spec if it's CreateDatabaseConfig or ExportDataConfig.
+	} else {
+		// For multiple specs, we will try to rebuild the steps based on the deployment config.
+		deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get deployment config")
+		}
+		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
+			return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
+		}
+		// Get all databases from specs.
+		var databases []*store.DatabaseMessage
+		for _, spec := range specs {
+			if config := spec.GetChangeDatabaseConfig(); config != nil {
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(config.Target)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				}
+				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:   &instanceID,
+					DatabaseName: &databaseName,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, err.Error())
+				}
+				if database == nil {
+					return nil, status.Errorf(codes.NotFound, "database %v not found", config.Target)
+				}
+				databases = append(databases, database)
+			}
+		}
+		// Calculate the matrix of databases based on the deployment schedule.
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, databases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
+		}
+
+		seenSpecID := map[string]bool{}
+		var steps []*storepb.PlanConfig_Step
+		for i, databases := range matrix {
+			if len(databases) == 0 {
+				continue
+			}
+
+			step := &storepb.PlanConfig_Step{
+				Title: deploymentConfig.Schedule.Deployments[i].Name,
+			}
+			for _, database := range databases {
+				var targetSpecs []*storepb.PlanConfig_Spec
+				for _, spec := range specs {
+					if seenSpecID[spec.Id] {
+						continue
+					}
+					if config := spec.GetChangeDatabaseConfig(); config != nil {
+						if common.FormatDatabase(database.InstanceID, database.DatabaseName) == config.Target {
+							seenSpecID[spec.Id] = true
+							targetSpecs = append(targetSpecs, spec)
+							break
+						}
+					}
+				}
+				for _, spec := range targetSpecs {
+					s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+					if !ok {
+						return nil, errors.Errorf("failed to clone, got %T", s)
+					}
+					proto.Merge(s, &storepb.PlanConfig_Spec{
+						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+								Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+							},
+						},
+					})
+					step.Specs = append(step.Specs, s)
+				}
+			}
+			steps = append(steps, step)
+		}
+		transformedSteps = steps
 	}
 
 	pipelineCreate := &store.PipelineMessage{
