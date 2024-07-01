@@ -87,13 +87,19 @@ import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import type { TabFilterItem } from "@/components/v2";
 import type { ComposedProject } from "@/types";
-import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import type {
+  SearchParams,
+  SearchScope,
+  SearchScopeId,
+  SemanticIssueStatus,
+} from "@/utils";
 import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
+  getSemanticIssueStatusFromSearchParams,
   getValueFromSearchParams,
   upsertScope,
 } from "@/utils";
@@ -149,6 +155,22 @@ const storedTab = useLocalStorage<TabValue>(
   } as UseStorageOptions<TabValue>
 );
 
+const storedStatus = useLocalStorage<SemanticIssueStatus>(
+  "bb.project.issue-list-status",
+  "OPEN",
+  {
+    serializer: {
+      read(raw: SemanticIssueStatus) {
+        if (!["OPEN", "CLOSED"].includes(raw)) return "OPEN";
+        return raw;
+      },
+      write(value) {
+        return value;
+      },
+    },
+  } as UseStorageOptions<SemanticIssueStatus>
+);
+
 const keyForTab = (tab: TabValue) => {
   if (tab === "WAITING_APPROVAL") return "project-issues-waiting-approval";
   if (tab === "WAITING_ROLLOUT") return "project-issues-waiting-rollout";
@@ -160,7 +182,10 @@ const keyForTab = (tab: TabValue) => {
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
-    scopes: [...readonlyScopes.value, { id: "status", value: "OPEN" }],
+    scopes: [
+      ...readonlyScopes.value,
+      { id: "status", value: storedStatus.value },
+    ],
   };
   return params;
 };
@@ -339,5 +364,12 @@ watch(
     }
   },
   { deep: true }
+);
+
+watch(
+  () => getSemanticIssueStatusFromSearchParams(state.params),
+  (status) => {
+    storedStatus.value = status;
+  }
 );
 </script>
