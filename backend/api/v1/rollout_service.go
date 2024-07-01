@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -831,7 +830,6 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				Title: deploymentConfig.Schedule.Deployments[i].Name,
 			}
 			for _, database := range databases {
-				var targetSpecs []*storepb.PlanConfig_Spec
 				for _, spec := range specs {
 					if seenSpecID[spec.Id] {
 						continue
@@ -839,24 +837,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 					if config := spec.GetChangeDatabaseConfig(); config != nil {
 						if common.FormatDatabase(database.InstanceID, database.DatabaseName) == config.Target {
 							seenSpecID[spec.Id] = true
-							targetSpecs = append(targetSpecs, spec)
-							break
+							step.Specs = append(step.Specs, spec)
 						}
 					}
-				}
-				for _, spec := range targetSpecs {
-					s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
-					if !ok {
-						return nil, errors.Errorf("failed to clone, got %T", s)
-					}
-					proto.Merge(s, &storepb.PlanConfig_Spec{
-						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-								Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
-							},
-						},
-					})
-					step.Specs = append(step.Specs, s)
 				}
 			}
 			steps = append(steps, step)
