@@ -177,8 +177,8 @@ importers:
         specifier: 3.17.5
         version: 3.17.5
       vscode-ws-jsonrpc:
-        specifier: 3.3.1
-        version: 3.3.1
+        specifier: 3.3.2
+        version: 3.3.2
       vue:
         specifier: 3.4.31
         version: 3.4.31(typescript@5.5.2)
@@ -3808,8 +3808,8 @@ packages:
   vscode-uri@3.0.8:
     resolution: {integrity: sha512-AyFQ0EVmsOZOlAnxoFOGOq1SQDWAB7C6aqMGS23svWAllfOaxbuFvcT8D1i8z3Gyn8fraVeZNNmN6e9bxxXkKw==}
 
-  vscode-ws-jsonrpc@3.3.1:
-    resolution: {integrity: sha512-6eBDPCzB6X32oCH4bG42IQ8xf7L200VPU5GT77fKGzlIZJCvWwFeZG7hj2kJPMKUMuuHHh0VeZIonzwAQrVq+g==}
+  vscode-ws-jsonrpc@3.3.2:
+    resolution: {integrity: sha512-jxGHxAuow67sNRkkS2svsW00ZACX+Zrbury9Au2A22px6sg4pe858Nnnwvtg0Pm4D0L/W9Yzn7N7X3R/RIMxsQ==}
     engines: {node: '>=16.11.0', npm: '>=8.0.0'}
 
   vue-clipboard3@2.0.0:
@@ -7659,7 +7659,7 @@ snapshots:
 
   vscode-uri@3.0.8: {}
 
-  vscode-ws-jsonrpc@3.3.1:
+  vscode-ws-jsonrpc@3.3.2:
     dependencies:
       vscode-jsonrpc: 8.2.1
 
