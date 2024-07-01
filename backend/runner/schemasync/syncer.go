@@ -139,6 +139,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		return
 	}
 	for _, database := range databases {
+		database := database
 		if database.SyncState != api.OK {
 			continue
 		}
