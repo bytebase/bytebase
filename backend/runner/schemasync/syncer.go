@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	schemaSyncInterval          = 1 * time.Minute
+	schemaSyncInterval          = 10 * time.Minute
 	databaseSyncCheckerInterval = 1 * time.Second
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
