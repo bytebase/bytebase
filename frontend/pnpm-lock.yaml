@@ -106,7 +106,7 @@ importers:
         version: 0.2.6
       nice-grpc-web:
         specifier: ^3.3.2
-        version: 3.3.3(ws@8.17.1)
+        version: 3.3.4(ws@8.17.1)
       node-sql-parser:
         specifier: 5.1.0
         version: 5.1.0
@@ -2907,8 +2907,8 @@ packages:
   nice-grpc-error-details@0.2.6:
     resolution: {integrity: sha512-a/cTnwoCYGlWuj2s21WVPDcVvpRLjbChKACc1sCrXBeCvslpZAzoeXJBTKdLMpGlHY7WtfUM6cKWR7SX4Kl72g==}
 
-  nice-grpc-web@3.3.3:
-    resolution: {integrity: sha512-sVz8n3tRwk8Iy8Lppek0qD1HFGexvy0915/uiXfQvOTUDHCsTJqcIEjmSQWLO6FZtZMwVMtPXrs9WZMNDrkcyQ==}
+  nice-grpc-web@3.3.4:
+    resolution: {integrity: sha512-L8UQC/jQ8jAXmPM76On2CDDSDPxIfV8ltXu2anEUKYUdrqMMYZwnUVw3s2fo5p6dotIR6qyVLR9qSXvDOeMmPA==}
 
   node-fetch@2.6.7:
     resolution: {integrity: sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==}
@@ -6760,7 +6760,7 @@ snapshots:
       nice-grpc-common: 2.0.2
       protobufjs: 7.3.2
 
-  nice-grpc-web@3.3.3(ws@8.17.1):
+  nice-grpc-web@3.3.4(ws@8.17.1):
     dependencies:
       abort-controller-x: 0.4.3
       isomorphic-ws: 5.0.0(ws@8.17.1)
