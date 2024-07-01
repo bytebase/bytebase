@@ -5,14 +5,8 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
-import {
-  EMPTY_ID,
-  emptyStage,
-  emptyTask,
-  TaskTypeListWithStatement,
-} from "@/types";
+import { EMPTY_ID, emptyStage, emptyTask } from "@/types";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { Task_Type, Stage, Task } from "@/types/proto/v1/rollout_service";
 import { emptyPlanSpec } from "@/types/v1/issue/plan";
 import {
@@ -51,7 +45,6 @@ export const useBaseIssueContext = (
 
   const plan = computed(() => issue.value.planEntity);
   const rollout = computed(() => issue.value.rolloutEntity);
-  const project = computed(() => issue.value.projectEntity);
   const specs = computed(() => flattenSpecList(plan.value));
 
   const activeStage = computed((): Stage => {
@@ -190,21 +183,6 @@ export const useBaseIssueContext = (
       ].includes(task.type);
     });
   });
-  const isTenantMode = computed((): boolean => {
-    // To sync databases schema in tenant mode, we use normal project logic to create issue.
-    if (isCreating.value && route.query.batch !== "1") return false;
-    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED)
-      return false;
-
-    // We support single database migration in tenant mode projects.
-    // So a pipeline should be tenant mode when it contains more
-    // than one tasks.
-    return (
-      flattenTaskV1List(rollout.value).filter((task) =>
-        TaskTypeListWithStatement.includes(task.type)
-      ).length > 1
-    );
-  });
   const isLegacyIssue = computed(() => {
     return !issue.value.plan && !issue.value.planEntity;
   });
@@ -216,7 +194,6 @@ export const useBaseIssueContext = (
   return {
     phase,
     isGhostMode,
-    isTenantMode,
     isLegacyIssue,
     events,
     releaserCandidates,

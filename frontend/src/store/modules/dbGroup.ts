@@ -19,10 +19,7 @@ import type {
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { DatabaseGroup } from "@/types/proto/v1/project_service";
-import {
-  DatabaseGroupView,
-  TenantMode,
-} from "@/types/proto/v1/project_service";
+import { DatabaseGroupView } from "@/types/proto/v1/project_service";
 import {
   batchConvertParsedExprToCELString,
   batchConvertCELStringToParsedExpr,
@@ -319,10 +316,6 @@ export const useDatabaseInGroupFilter = (
 
   const databaseGroups = computedAsync(
     async () => {
-      if (unref(project).tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-        return [];
-      }
-
       const response = await projectServiceClient.listDatabaseGroups({
         parent: unref(project).name,
       });

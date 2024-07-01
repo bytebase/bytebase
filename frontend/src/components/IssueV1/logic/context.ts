@@ -47,7 +47,6 @@ export type IssueContext = {
   issue: Ref<ComposedIssue>;
   phase: Ref<IssuePhase>;
   isGhostMode: Ref<boolean>;
-  isTenantMode: Ref<boolean>;
   isLegacyIssue: Ref<boolean>;
   releaserCandidates: Ref<User[]>;
 

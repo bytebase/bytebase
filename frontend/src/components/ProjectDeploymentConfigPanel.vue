@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full space-y-6">
+  <div v-if="state.ready" class="w-full space-y-6">
     <DeploymentMatrix
-      v-if="state.ready && state.deployment"
+      v-if="state.deployment"
       class="w-full !px-0 overflow-x-auto"
       :project="project"
       :deployment="state.deployment"
@@ -15,65 +15,55 @@
         {{ $t("common.deployment-config") }}
       </div>
 
-      <template v-if="state.ready">
-        <BBAttention
-          v-if="state.deployment === undefined"
-          type="warning"
-          :title="$t('common.deployment-config')"
-          :description="
-            $t('deployment-config.this-is-example-deployment-config')
-          "
-        >
-        </BBAttention>
+      <BBAttention
+        v-if="state.deployment === undefined"
+        type="warning"
+        :title="$t('common.deployment-config')"
+        :description="$t('deployment-config.this-is-example-deployment-config')"
+      >
+      </BBAttention>
+      <div v-else>
+        <DeploymentConfigTool
+          v-if="state.deployment.schedule"
+          :schedule="state.deployment.schedule"
+          :allow-edit="allowEdit"
+          :database-list="databaseList"
+        />
+        <div class="pt-4 border-t flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <NButton v-if="allowEdit" @click="addStage">
+              {{ $t("deployment-config.add-stage") }}
+            </NButton>
+          </div>
+          <div v-if="allowEdit" class="flex items-center space-x-2">
+            <NButton
+              v-if="isDeploymentConfigDirty"
+              @click="revertDeploymentConfig"
+            >
+              {{ $t("common.revert") }}
+            </NButton>
+            <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
+              <template #trigger>
+                <NButton
+                  type="primary"
+                  :disabled="!allowUpdateDeploymentConfig"
+                  @click="updateDeploymentConfig"
+                >
+                  {{ $t("common.update") }}
+                </NButton>
+              </template>
 
-        <div v-else>
-          <DeploymentConfigTool
-            v-if="state.deployment.schedule"
-            :schedule="state.deployment.schedule"
-            :allow-edit="allowEdit"
-            :database-list="databaseList"
-          />
-          <div class="pt-4 border-t flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-              <NButton v-if="allowEdit" @click="addStage">
-                {{ $t("deployment-config.add-stage") }}
-              </NButton>
-            </div>
-            <div v-if="allowEdit" class="flex items-center space-x-2">
-              <NButton
-                v-if="isDeploymentConfigDirty"
-                @click="revertDeploymentConfig"
-              >
-                {{ $t("common.revert") }}
-              </NButton>
-              <NPopover
-                v-if="allowEdit"
-                :disabled="!state.error"
-                trigger="hover"
-              >
-                <template #trigger>
-                  <NButton
-                    type="primary"
-                    :disabled="!allowUpdateDeploymentConfig"
-                    @click="updateDeploymentConfig"
-                  >
-                    {{ $t("common.update") }}
-                  </NButton>
-                </template>
-
-                <span v-if="state.error" class="text-error">
-                  {{ $t(state.error) }}
-                </span>
-              </NPopover>
-            </div>
+              <span v-if="state.error" class="text-error">
+                {{ $t(state.error) }}
+              </span>
+            </NPopover>
           </div>
         </div>
-      </template>
-
-      <div v-else class="flex justify-center items-center py-10">
-        <BBSpin />
       </div>
     </div>
+  </div>
+  <div v-else class="flex justify-center items-center py-10">
+    <BBSpin />
   </div>
 </template>
 
@@ -123,9 +113,9 @@ const props = defineProps({
   },
 });
 
-const deploymentConfigV1Store = useDeploymentConfigV1Store();
 const { t } = useI18n();
 const dialog = useDialog();
+const deploymentConfigV1Store = useDeploymentConfigV1Store();
 
 const state = reactive<LocalState>({
   ready: false,
