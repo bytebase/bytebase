@@ -108,8 +108,8 @@ importers:
         specifier: ^3.3.2
         version: 3.3.4(ws@8.17.1)
       node-sql-parser:
-        specifier: 5.1.0
-        version: 5.1.0
+        specifier: 5.2.0
+        version: 5.2.0
       normalize-wheel:
         specifier: ^1.0.1
         version: 1.0.1
@@ -2898,8 +2898,8 @@ packages:
   node-releases@2.0.14:
     resolution: {integrity: sha512-y10wOWt8yZpqXmOgRo77WaHEmhYQYGNA6y421PKsKYWEK8aW+cqAphborZDhqfyKrbZEN92CN1X2KbafY2s7Yw==}
 
-  node-sql-parser@5.1.0:
-    resolution: {integrity: sha512-vrJ+Pl7fiWftEq7Tu/+kXQpDAx5c6YyQXB5/IINrjYR1we8HEkuSJtqCbsNrLwbnEVfzq4m0Nuo1CLMoeIenTA==}
+  node-sql-parser@5.2.0:
+    resolution: {integrity: sha512-lO/9ox0fLl47ksqlwGrorXm8BD+5UbxvUhj6T1XiCXnvoVwWWn7gC2l396p9OXNii19dc4MkyTN3XeJGNUZ8jw==}
     engines: {node: '>=8'}
 
   nopt@7.2.1:
@@ -6699,7 +6699,7 @@ snapshots:
 
   node-releases@2.0.14: {}
 
-  node-sql-parser@5.1.0:
+  node-sql-parser@5.2.0:
     dependencies:
       '@types/pegjs': 0.10.6
       big-integer: 1.6.52
