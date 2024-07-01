@@ -16,13 +16,13 @@ import {
 } from "@/utils";
 import { isTaskFinished } from "..";
 
-export type IssueStatusAction = "RESOLVE" | "CANCEL" | "REOPEN";
+export type IssueStatusAction = "RESOLVE" | "CLOSE" | "REOPEN";
 
 export const IssueStatusActionToIssueStatusMap: Record<
   IssueStatusAction,
   IssueStatus
 > = {
-  CANCEL: IssueStatus.CANCELED,
+  CLOSE: IssueStatus.CANCELED,
   REOPEN: IssueStatus.OPEN,
   RESOLVE: IssueStatus.DONE,
 };
@@ -31,7 +31,7 @@ export const PossibleIssueStatusActionMap: Record<
   IssueStatus,
   IssueStatusAction[]
 > = {
-  [IssueStatus.OPEN]: ["RESOLVE", "CANCEL"],
+  [IssueStatus.OPEN]: ["RESOLVE", "CLOSE"],
   [IssueStatus.DONE]: ["REOPEN"],
   [IssueStatus.CANCELED]: ["REOPEN"],
 
@@ -76,8 +76,8 @@ export const issueStatusActionDisplayName = (action: IssueStatusAction) => {
   switch (action) {
     case "RESOLVE":
       return t("issue.status-transition.dropdown.resolve");
-    case "CANCEL":
-      return t("issue.status-transition.dropdown.cancel");
+    case "CLOSE":
+      return t("issue.status-transition.dropdown.close");
     case "REOPEN":
       return t("issue.status-transition.dropdown.reopen");
   }
@@ -91,7 +91,7 @@ export const issueStatusActionButtonProps = (
       return {
         type: "success",
       };
-    case "CANCEL":
+    case "CLOSE":
       return {
         type: "default",
       };
