@@ -9,6 +9,9 @@ import {
   WebSocketMessageWriter,
   toSocket,
 } from "vscode-ws-jsonrpc";
+import { h } from "vue";
+import { pushNotification } from "@/store";
+import LearnMoreLink from "../LearnMoreLink.vue";
 
 export const createLanguageClient = (
   transports: MessageTransports
@@ -59,20 +62,41 @@ export const createWebSocketAndStartClient = (
   languageClient: Promise<MonacoLanguageClient>;
 } => {
   const webSocket = new WebSocket(url);
-  const languageClient = new Promise<MonacoLanguageClient>((resolve) => {
-    webSocket.onopen = () => {
-      const socket = toSocket(webSocket);
-      const reader = new WebSocketMessageReader(socket);
-      const writer = new WebSocketMessageWriter(socket);
-      const languageClient = createLanguageClient({
-        reader,
-        writer,
-      });
-      languageClient.start();
-      reader.onClose(() => languageClient.stop());
-      resolve(languageClient);
-    };
-  });
+  const languageClient = new Promise<MonacoLanguageClient>(
+    (resolve, reject) => {
+      webSocket.onopen = () => {
+        const socket = toSocket(webSocket);
+        const reader = new WebSocketMessageReader(socket);
+        const writer = new WebSocketMessageWriter(socket);
+        const languageClient = createLanguageClient({
+          reader,
+          writer,
+        });
+        languageClient.start();
+        reader.onClose(() => languageClient.stop());
+        resolve(languageClient);
+      };
+      webSocket.onerror = (e: any) => {
+        console.error("[MonacoLanguageClient] WebSocket error", e);
+        const message = typeof e.message === "string" ? e.message : "";
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: "Error",
+          description: () => {
+            return [
+              h("p", {}, `Error occurred when initializing WebSocket`),
+              message ? h("p", {}, message) : null,
+              h(LearnMoreLink, {
+                url: "https://www.bytebase.com/docs/administration/production-setup/#enable-https-and-websocket",
+              }),
+            ];
+          },
+        });
+        reject(e);
+      };
+    }
+  );
 
   return {
     webSocket,

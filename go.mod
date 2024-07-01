@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/cloudsqlconn v1.9.0
 	cloud.google.com/go/secretmanager v1.13.2
 	cloud.google.com/go/spanner v1.63.0
-	gitee.com/chunanyong/dm v1.8.14
+	gitee.com/chunanyong/dm v1.8.15
 	github.com/ClickHouse/clickhouse-go/v2 v2.25.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/antlr4-go/antlr/v4 v4.13.1
@@ -37,7 +37,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/websocket v1.5.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/gosimple/slug v1.14.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
