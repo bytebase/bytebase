@@ -21,44 +21,9 @@
       </div>
     </template>
     <template v-else>
-      <div
-        v-if="batchQueryDatabases.length > 0"
-        class="w-full flex flex-row justify-start items-center p-2 pb-0 gap-2 shrink-0 overflow-x-auto hide-scrollbar"
-      >
-        <NTooltip
-          v-for="database in databases"
-          :key="database.name"
-          trigger="hover"
-        >
-          <template #trigger>
-            <NButton
-              secondary
-              strong
-              size="small"
-              :type="selectedDatabase === database ? 'primary' : 'default'"
-              @click="selectedDatabase = database"
-            >
-              <InstanceV1EngineIcon
-                :instance="database.instanceEntity"
-                :tooltip="false"
-              />
-              <span class="mx-2 opacity-60">{{
-                database.effectiveEnvironmentEntity.title
-              }}</span>
-              <span>{{ database.databaseName }}</span>
-              <Info
-                v-if="isDatabaseQueryFailed(database)"
-                class="ml-1 text-yellow-600 w-4 h-auto"
-              />
-              <X
-                class="ml-1 text-gray-400 w-4 h-auto hover:text-gray-600"
-                @click.stop="handleCloseSingleResultView(database)"
-              />
-            </NButton>
-          </template>
-          {{ database.instanceEntity.title }}
-        </NTooltip>
-      </div>
+      <BatchQuerySelect
+        v-model:selected-database="selectedDatabase"
+      />
       <template v-if="!selectedResultSet">
         <div
           class="w-full h-full flex flex-col justify-center items-center text-sm"
@@ -79,29 +44,16 @@
 
 <script lang="ts" setup>
 import { useTimestamp } from "@vueuse/core";
-import { head } from "lodash-es";
-import { Info, X } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
-import { computed, ref, watch } from "vue";
-import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
+import { NButton } from "naive-ui";
+import { computed, ref } from "vue";
+import { useSQLEditorTabStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { ResultViewV1 } from "../EditorCommon/";
+import BatchQuerySelect from "./BatchQuerySelect.vue";
 
 const tabStore = useSQLEditorTabStore();
-const databaseStore = useDatabaseV1Store();
 const selectedDatabase = ref<ComposedDatabase>();
 
-const batchQueryDatabases = computed(() => {
-  return tabStore.currentTab?.batchQueryContext?.databases || [];
-});
-const queriedDatabaseNames = computed(() =>
-  Array.from(tabStore.currentTab?.queryContext?.results.keys() || [])
-);
-const databases = computed(() => {
-  return queriedDatabaseNames.value.map((databaseName) => {
-    return databaseStore.getDatabaseByName(databaseName);
-  });
-});
 const selectedResultSet = computed(() => {
   return tabStore.currentTab?.queryContext?.results.get(
     selectedDatabase.value?.name || ""
@@ -123,30 +75,7 @@ const queryElapsedTime = computed(() => {
   return `${(elapsedMS / 1000).toFixed(1)}s`;
 });
 
-const isDatabaseQueryFailed = (database: ComposedDatabase) => {
-  const resultSet = tabStore.currentTab?.queryContext?.results.get(
-    database.name || ""
-  );
-  // If there is any error in the result set, we consider the query failed.
-  return resultSet?.error || resultSet?.results.find((result) => result.error);
-};
-
 const cancelQuery = () => {
   tabStore.currentTab?.queryContext?.abortController.abort();
 };
-
-const handleCloseSingleResultView = (database: ComposedDatabase) => {
-  tabStore.currentTab?.queryContext?.results.delete(database.name || "");
-};
-
-// Auto select the first database when the databases are ready.
-watch(
-  () => databases.value,
-  () => {
-    selectedDatabase.value = head(databases.value);
-  },
-  {
-    immediate: true,
-  }
-);
 </script>

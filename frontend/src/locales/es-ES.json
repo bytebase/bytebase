@@ -2341,7 +2341,8 @@
     "batch-query": {
       "batch": "Lote",
       "select-database": "Seleccione la base de datos a continuación",
-      "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
+      "description": "Consulta por lotes {count} bases de datos adicionales en {project}.",
+      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
     "executing-query": "Ejecutando consulta",
     "request-query": "Solicitar consulta",

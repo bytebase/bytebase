@@ -2341,7 +2341,8 @@
     "batch-query": {
       "batch": "批量",
       "select-database": "选择下面的数据库",
-      "description": "批量查询 {project} 下的 {count} 个数据库。"
+      "description": "批量查询 {project} 下的 {count} 个数据库。",
+      "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
     "executing-query": "执行查询",
     "request-query": "请求查询",

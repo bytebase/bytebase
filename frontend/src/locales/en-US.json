@@ -2341,7 +2341,8 @@
     "batch-query": {
       "batch": "Batch",
       "select-database": "Select database below",
-      "description": "Batch query {count} additional databases under {project}."
+      "description": "Batch query {count} additional databases under {project}.",
+      "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
     "executing-query": "Executing query",
     "request-query": "Request query",
