@@ -335,7 +335,7 @@ importers:
         version: 3.2.5
       protobufjs:
         specifier: ^7.2.5
-        version: 7.3.0
+        version: 7.3.2
       rollup:
         specifier: 4.18.0
         version: 4.18.0
@@ -3204,8 +3204,8 @@ packages:
   proto-list@1.2.4:
     resolution: {integrity: sha512-vtK/94akxsTMhe0/cbfpR+syPuszcuwhqVjJq26CuNDgFGj682oRBXOP5MJpv2r7JtE8MsiepGIqvvOTBwn2vA==}
 
-  protobufjs@7.3.0:
-    resolution: {integrity: sha512-YWD03n3shzV9ImZRX3ccbjqLxj7NokGN0V/ESiBV5xWqrommYHYiihuIyavq03pWSGqlyvYUFmfoMKd+1rPA/g==}
+  protobufjs@7.3.2:
+    resolution: {integrity: sha512-RXyHaACeqXeqAKGLDl68rQKbmObRsTIn4TYVUUug1KfS47YWCo5MacGITEryugIgZqORCvJWEk4l449POg5Txg==}
     engines: {node: '>=12.0.0'}
 
   proxy-from-env@1.1.0:
@@ -6748,7 +6748,7 @@ snapshots:
     dependencies:
       long: 5.2.3
       nice-grpc-common: 2.0.2
-      protobufjs: 7.3.0
+      protobufjs: 7.3.2
 
   nice-grpc-web@3.3.3(ws@8.17.0):
     dependencies:
@@ -7092,7 +7092,7 @@ snapshots:
 
   proto-list@1.2.4: {}
 
-  protobufjs@7.3.0:
+  protobufjs@7.3.2:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
       '@protobufjs/base64': 1.1.2
@@ -7524,12 +7524,12 @@ snapshots:
   ts-proto-descriptors@1.16.0:
     dependencies:
       long: 5.2.3
-      protobufjs: 7.3.0
+      protobufjs: 7.3.2
 
   ts-proto@1.176.1:
     dependencies:
       case-anything: 2.1.13
-      protobufjs: 7.3.0
+      protobufjs: 7.3.2
       ts-poet: 6.9.0
       ts-proto-descriptors: 1.16.0
 
