@@ -57,7 +57,7 @@
     "normalize-wheel": "^1.0.1",
     "pev2": "1.11.0",
     "pinia": "2.1.7",
-    "pouchdb": "^8.0.1",
+    "pouchdb": "^9.0.0",
     "pouchdb-find": "^8.0.1",
     "qrcode": "^1.5.3",
     "qs": "6.12.1",
