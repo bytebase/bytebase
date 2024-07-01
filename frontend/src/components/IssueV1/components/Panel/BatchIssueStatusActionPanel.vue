@@ -48,10 +48,10 @@
           {{ $t("common.cancel") }}
         </NButton>
         <NButton
-          v-bind="issueStatusActionButtonProps(action)"
+          v-bind="confirmButtonProps"
           @click="handleConfirm(action, comment)"
         >
-          {{ issueStatusActionDisplayName(action) }}
+          {{ $t("common.confirm") }}
         </NButton>
       </div>
     </template>
@@ -101,6 +101,15 @@ const title = computed(() => {
     action: issueStatusActionDisplayName(action),
     n: props.issueList.length,
   });
+});
+
+const confirmButtonProps = computed(() => {
+  if (!props.action) return {};
+  const p = issueStatusActionButtonProps(props.action);
+  if (p.type === "default") {
+    p.type = "primary";
+  }
+  return p;
 });
 
 const handleConfirm = async (
