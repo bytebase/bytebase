@@ -352,8 +352,8 @@ importers:
         specifier: 5.5.2
         version: 5.5.2
       unplugin-icons:
-        specifier: 0.18.5
-        version: 0.18.5(@vue/compiler-sfc@3.4.31)(vue-template-compiler@2.7.16)
+        specifier: 0.19.0
+        version: 0.19.0(@vue/compiler-sfc@3.4.31)(vue-template-compiler@2.7.16)
       unplugin-vue-components:
         specifier: 0.26.0
         version: 0.26.0(@babel/parser@7.24.7)(rollup@4.18.0)(vue@3.4.31(typescript@5.5.2))
@@ -3641,8 +3641,8 @@ packages:
     resolution: {integrity: sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg==}
     engines: {node: '>= 4.0.0'}
 
-  unplugin-icons@0.18.5:
-    resolution: {integrity: sha512-KVNAohXbZ7tVcG1C3p6QaC7wU9Qrj7etv4XvsMMJAxr5LccQZ+Iuv5LOIv/7GtqXaGN1BuFCqRO1ErsHEgEXdQ==}
+  unplugin-icons@0.19.0:
+    resolution: {integrity: sha512-u5g/gIZPZEj1wUGEQxe9nzftOSqmblhusc+sL3cawIRoIt/xWpE6XYcPOfAeFTYNjSbRrX/3QiX89PFiazgU1w==}
     peerDependencies:
       '@svgr/core': '>=7.0.0'
       '@svgx/core': ^1.0.1
@@ -7483,7 +7483,7 @@ snapshots:
 
   universalify@0.2.0: {}
 
-  unplugin-icons@0.18.5(@vue/compiler-sfc@3.4.31)(vue-template-compiler@2.7.16):
+  unplugin-icons@0.19.0(@vue/compiler-sfc@3.4.31)(vue-template-compiler@2.7.16):
     dependencies:
       '@antfu/install-pkg': 0.3.3
       '@antfu/utils': 0.7.8
