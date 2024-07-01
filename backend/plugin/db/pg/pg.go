@@ -427,9 +427,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	var nonTransactionAndSetRoleStmts []string
 	for i, singleSQL := range commands {
-		if isIgnoredStatement(singleSQL.Text) {
-			continue
-		}
 		if IsNonTransactionStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
 			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
@@ -601,13 +598,6 @@ func isSuperuserStatement(stmt string) bool {
 		return true
 	}
 	return false
-}
-
-func isIgnoredStatement(stmt string) bool {
-	// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
-	// We don't have privileges to comment on the extension and have to ignore it.
-	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
-	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
 }
 
 var (
