@@ -19,7 +19,7 @@ import TaskRunTable from "./TaskRunTable.vue";
 
 type ViewMode = "SINGLE" | "MERGED";
 
-const { issue, selectedTask, isGhostMode, isTenantMode } = useIssueContext();
+const { issue, selectedTask, isGhostMode } = useIssueContext();
 
 /**
  * MERGED mode: merge all tasks' activities into one table
@@ -27,7 +27,6 @@ const { issue, selectedTask, isGhostMode, isTenantMode } = useIssueContext();
  */
 const mode = computed((): ViewMode => {
   if (isGhostMode.value) return "MERGED";
-  if (isTenantMode.value) return "SINGLE";
   return "SINGLE";
 });
 
