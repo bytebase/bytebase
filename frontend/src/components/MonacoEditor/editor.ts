@@ -39,15 +39,30 @@ const initializeTheme = () => {
   state.themeInitialized = true;
 };
 
+const initializeNewLSP = async () => {
+  const { initializeLSPClient } = await import("./lsp-client");
+  await initializeLSPClient();
+};
+
+const initializeLegacyLSP = async () => {
+  const { useLanguageClient } = await import("@/plugins/sql-lsp/client");
+  const { start } = useLanguageClient();
+  start();
+};
+
 const initialize = async () => {
   await initializeMonacoServices();
+
   if (shouldUseNewLSP()) {
-    const { initializeLSPClient } = await import("./lsp-client");
-    await initializeLSPClient();
+    try {
+      await initializeNewLSP();
+    } catch (err) {
+      console.error("[MonacoEditor] initialize", err);
+
+      await initializeLegacyLSP();
+    }
   } else {
-    const { useLanguageClient } = await import("@/plugins/sql-lsp/client");
-    const { start } = useLanguageClient();
-    start();
+    await initializeLegacyLSP();
   }
 
   initializeTheme();
@@ -93,7 +108,7 @@ export const defaultEditorOptions =
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       renderValidationDecorations: "on",
       // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
-      accessibilitySupport: 'off',
+      accessibilitySupport: "off",
       theme: "bb",
       tabSize: 2,
       insertSpaces: true,
@@ -128,7 +143,7 @@ export const defaultDiffEditorOptions =
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       enableSplitViewResizing: false,
       // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
-      accessibilitySupport: 'off',
+      accessibilitySupport: "off",
       renderValidationDecorations: "on",
       theme: "bb",
       autoClosingQuotes: "always",
