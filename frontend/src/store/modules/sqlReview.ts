@@ -3,7 +3,12 @@ import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { reviewConfigServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import type { SchemaPolicyRule, SQLReviewPolicy, MaybeRef } from "@/types";
+import type {
+  SchemaPolicyRule,
+  SQLReviewPolicy,
+  MaybeRef,
+  ComposedDatabase,
+} from "@/types";
 import {
   PolicyType,
   policyTypeToJSON,
@@ -326,5 +331,39 @@ export const useReviewPolicyByResource = (
   return computed(() => {
     if (!unref(resourcePath)) return undefined;
     return store.getReviewPolicyByResouce(unref(resourcePath)!);
+  });
+};
+
+export const useReviewPolicyForDatabase = (
+  database: MaybeRef<ComposedDatabase | undefined>
+) => {
+  const store = useSQLReviewStore();
+
+  watchEffect(async () => {
+    if (!unref(database)) return;
+
+    const reviewForProject = await store.getOrFetchReviewPolicyByResource(
+      unref(database)!.project
+    );
+    if (reviewForProject) {
+      return;
+    }
+
+    await store.getOrFetchReviewPolicyByResource(
+      unref(database)!.effectiveEnvironment
+    );
+  });
+
+  return computed(() => {
+    if (!unref(database)) return undefined;
+    const reviewForProject = store.getReviewPolicyByResouce(
+      unref(database)!.project
+    );
+    if (reviewForProject) {
+      return reviewForProject;
+    }
+    return store.getReviewPolicyByResouce(
+      unref(database)!.effectiveEnvironment
+    );
   });
 };

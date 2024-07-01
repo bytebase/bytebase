@@ -1,0 +1,76 @@
+id: bb.sql-review.sample
+ruleList:
+  - type: database.drop-empty-database
+    level: ERROR
+    engine: MYSQL
+  - type: database.drop-empty-database
+    level: ERROR
+    engine: TIDB
+  - type: database.drop-empty-database
+    level: ERROR
+    engine: OCEANBASE
+  - type: database.drop-empty-database
+    level: ERROR
+    engine: MARIADB
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+    engine: MYSQL
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+    engine: TIDB
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+    engine: POSTGRES
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+    engine: OCEANBASE
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+    engine: SNOWFLAKE
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+    engine: MSSQL
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+    engine: MARIADB
+  - type: column.no-null
+    level: WARNING
+    engine: MYSQL
+  - type: column.no-null
+    level: WARNING
+    engine: TIDB
+  - type: column.no-null
+    level: WARNING
+    engine: POSTGRES
+  - type: column.no-null
+    level: WARNING
+    engine: ORACLE
+  - type: column.no-null
+    level: WARNING
+    engine: OCEANBASE_ORACLE
+  - type: column.no-null
+    level: WARNING
+    engine: OCEANBASE
+  - type: column.no-null
+    level: WARNING
+    engine: SNOWFLAKE
+  - type: column.no-null
+    level: WARNING
+    engine: MSSQL
+  - type: column.no-null
+    level: WARNING
+    engine: MARIADB

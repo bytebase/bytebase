@@ -5,9 +5,9 @@
         <span class="text-xl text-main font-semibold">
           {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
         </span>
-        <span class="text-control-light text-md ml-1"
-          >({{ category.ruleList.length }})</span
-        >
+        <span class="text-control-light text-md ml-1">
+          ({{ category.ruleList.length }})
+        </span>
       </div>
       <BBGrid
         :column-list="columnList"
@@ -15,7 +15,7 @@
         :row-clickable="false"
         class="border hidden lg:grid"
       >
-        <template #item="{ item: rule }: { item: RuleTemplate }">
+        <template #item="{ item: rule }: { item: RuleTemplateV2 }">
           <div class="bb-grid-cell justify-center">
             <NSwitch
               size="small"
@@ -57,9 +57,6 @@
             >
               <heroicons-outline:external-link class="w-4 h-4" />
             </a>
-          </div>
-          <div class="bb-grid-cell gap-x-2">
-            <RuleEngineIcons :rule="rule" />
           </div>
           <div class="bb-grid-cell">
             <RuleLevelSwitch
@@ -146,9 +143,6 @@
               />
             </div>
           </div>
-          <div class="flex gap-x-2 items-center">
-            <RuleEngineIcons :rule="rule" />
-          </div>
           <RuleLevelSwitch
             class="text-xs"
             :level="rule.level"
@@ -183,7 +177,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { useCurrentPlan } from "@/store";
-import type { RuleTemplate } from "@/types";
+import type { RuleTemplateV2 } from "@/types";
 import {
   convertToCategoryList,
   getRuleLocalization,
@@ -191,17 +185,17 @@ import {
   planTypeToString,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { PayloadForEngine } from "./RuleConfigComponents";
+import type { PayloadValueType } from "./RuleConfigComponents";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
 
 type LocalState = {
-  activeRule: RuleTemplate | undefined;
+  activeRule: RuleTemplateV2 | undefined;
 };
 
 const props = withDefaults(
   defineProps<{
-    ruleList?: RuleTemplate[];
+    ruleList?: RuleTemplateV2[];
     editable: boolean;
   }>(),
   {
@@ -213,11 +207,15 @@ const props = withDefaults(
 const emit = defineEmits<{
   (
     event: "payload-change",
-    rule: RuleTemplate,
-    payload: PayloadForEngine
+    rule: RuleTemplateV2,
+    payload: PayloadValueType[]
   ): void;
-  (event: "level-change", rule: RuleTemplate, level: SQLReviewRuleLevel): void;
-  (event: "comment-change", rule: RuleTemplate, comment: string): void;
+  (
+    event: "level-change",
+    rule: RuleTemplateV2,
+    level: SQLReviewRuleLevel
+  ): void;
+  (event: "comment-change", rule: RuleTemplateV2, comment: string): void;
 }>();
 
 const { t } = useI18n();
@@ -238,7 +236,6 @@ const columnList = computed((): BBGridColumn[] => {
       class: "justify-center",
     },
     { title: t("common.name"), width: "1fr" },
-    { title: t("common.databases"), width: "12rem" },
     { title: t("sql-review.level.name"), width: "12rem" },
     {
       title: t("common.operations"),
@@ -249,15 +246,15 @@ const columnList = computed((): BBGridColumn[] => {
   return columns;
 });
 
-const isRuleAvailable = (rule: RuleTemplate) => {
+const isRuleAvailable = (rule: RuleTemplateV2) => {
   return ruleIsAvailableInSubscription(rule.type, currentPlan.value);
 };
 
-const setActiveRule = (rule: RuleTemplate) => {
+const setActiveRule = (rule: RuleTemplateV2) => {
   state.activeRule = rule;
 };
 
-const toggleActivity = (rule: RuleTemplate, on: boolean) => {
+const toggleActivity = (rule: RuleTemplateV2, on: boolean) => {
   emit(
     "level-change",
     rule,
@@ -265,13 +262,13 @@ const toggleActivity = (rule: RuleTemplate, on: boolean) => {
   );
 };
 
-const updatePayload = (rule: RuleTemplate, payload: PayloadForEngine) => {
+const updatePayload = (rule: RuleTemplateV2, payload: PayloadValueType[]) => {
   emit("payload-change", rule, payload);
 };
-const updateLevel = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
+const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRuleLevel) => {
   emit("level-change", rule, level);
 };
-const updateComment = (rule: RuleTemplate, comment: string) => {
+const updateComment = (rule: RuleTemplateV2, comment: string) => {
   emit("comment-change", rule, comment);
 };
 </script>

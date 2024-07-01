@@ -1,23 +1,37 @@
 <template>
-  <TabFilter
+  <NTabs
     :value="state.selectedTab"
-    :items="tabItemList"
+    :size="'small'"
+    :type="'segment'"
     @update:value="
       (val: string) => {
         state.selectedTab = val;
         $emit('update:value', val == 'all' ? undefined : state.selectedTab);
       }
     "
-  />
+  >
+    <NTabPane v-for="data in tabItemList" :key="data.value" :name="data.value">
+      <template #tab>
+        {{ data.label }}
+      </template>
+      <template #default>
+        <slot :rule-list="data.ruleList" />
+      </template>
+    </NTabPane>
+  </NTabs>
 </template>
 
 <script lang="ts" setup>
+import { NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import type { RuleTemplateV2 } from "@/types";
+import { convertToCategoryList } from "@/types";
 
 export interface CategoryFilterItem {
   id: string;
   name: string;
+  ruleList: RuleTemplateV2[];
 }
 
 interface LocalState {
@@ -27,7 +41,7 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     value?: string;
-    categoryList: CategoryFilterItem[];
+    ruleList: RuleTemplateV2[];
   }>(),
   {
     value: undefined,
@@ -56,13 +70,15 @@ const tabItemList = computed(() => {
     {
       value: "all",
       label: t("common.all"),
+      ruleList: props.ruleList,
     },
   ];
   list.push(
-    ...props.categoryList.map((category) => {
+    ...convertToCategoryList(props.ruleList).map((category) => {
       return {
         value: category.id,
-        label: category.name,
+        label: t(`sql-review.category.${category.id.toLowerCase()}`),
+        ruleList: category.ruleList,
       };
     })
   );

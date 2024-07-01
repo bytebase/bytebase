@@ -16,13 +16,13 @@ import {
 } from "@/components/InputWithTemplate";
 import type {
   RuleConfigComponent,
-  RuleTemplate,
+  RuleTemplateV2,
   TemplatePayload,
 } from "@/types";
 import { getRuleLocalizationKey } from "@/types";
 
 const props = defineProps<{
-  rule: RuleTemplate;
+  rule: RuleTemplateV2;
   config: RuleConfigComponent;
   value: string;
   disabled: boolean;
