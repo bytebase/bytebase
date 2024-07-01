@@ -138,6 +138,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		slog.Error("Failed to retrieve databases", log.BBError(err))
 		return
 	}
+	dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 	for _, database := range databases {
 		database := database
 		if database.SyncState != api.OK {
@@ -160,7 +161,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 
-		wp.Go(func() {
+		dbwp.Go(func() {
 			slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
 			if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 				slog.Debug("Failed to sync database schema",
@@ -170,7 +171,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			}
 		})
 	}
-	wp.Wait()
+	dbwp.Wait()
 }
 
 func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
