@@ -78,10 +78,7 @@ export const createWebSocketAndStartClient = (
       };
       webSocket.onerror = (e: any) => {
         console.error("[MonacoLanguageClient] WebSocket error", e);
-        const message =
-          Object.hasOwn(e, "message") && typeof e.message === "string"
-            ? e.message
-            : "";
+        const message = typeof e.message === "string" ? e.message : "";
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
