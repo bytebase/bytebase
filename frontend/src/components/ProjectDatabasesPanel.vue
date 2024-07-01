@@ -16,14 +16,12 @@
         :placement="'left-start'"
       />
     </div>
-
     <div class="space-y-2">
       <DatabaseOperations
         v-if="showDatabaseOperations"
         :project-uid="project.uid"
         :databases="selectedDatabases"
       />
-
       <DatabaseV1Table
         mode="PROJECT"
         :database-list="filteredDatabaseList"
