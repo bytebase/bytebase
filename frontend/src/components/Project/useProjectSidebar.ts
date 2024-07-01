@@ -41,7 +41,6 @@ import { useCurrentUserV1 } from "@/store";
 import type { ComposedProject } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import type { ProjectPermission } from "@/types";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -57,10 +56,6 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
 
   const isDefaultProject = computed((): boolean => {
     return project.value.name === DEFAULT_PROJECT_V1_NAME;
-  });
-
-  const isTenantProject = computed((): boolean => {
-    return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
   });
 
   const getFlattenProjectV1Routes = (
@@ -145,7 +140,6 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
             title: t("common.deployment-config"),
             path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
             type: "div",
-            hide: !isTenantProject.value,
           },
           {
             title: t("common.change-history"),
