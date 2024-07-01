@@ -122,7 +122,7 @@ const handleToggleShow = async (show: boolean) => {
 };
 
 // Calculate the max-height of the pane
-// to prevent it to be too-height to overflow the bottom of the screen
+// to prevent it to be too long to overflow the bottom of the screen
 watch(popoverPaneBounding.top, (top) => {
   if (!top) {
     // Cannot calculate max-height
