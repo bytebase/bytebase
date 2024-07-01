@@ -199,6 +199,13 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 			if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 				return nil
 			}
+			// Skip "COMMENT ON EXTENSION" till we can support it.
+			// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
+			// We don't have privileges to comment on the extension and have to ignore it.
+			if strings.HasPrefix(line, "COMMENT ON EXTENSION ") {
+				previousLineEmpty = true
+				return nil
+			}
 			// Skip comment lines.
 			if strings.HasPrefix(line, "--") {
 				previousLineComment = true
