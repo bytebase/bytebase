@@ -76,9 +76,6 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return true
 				}
 				// Sync all databases for instance.
-				if _, err := s.SyncInstance(ctx, instance); err != nil {
-					slog.Error("failed to sync instance", log.BBError(err))
-				}
 				s.syncAllDatabases(ctx, instance)
 				return true
 			})
@@ -161,13 +158,18 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		if now.Before(nextSyncTime) {
 			continue
 		}
-		if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-			slog.Debug("Failed to sync database schema",
-				slog.String("instance", instance.ResourceID),
-				slog.String("databaseName", database.DatabaseName),
-				log.BBError(err))
-		}
+
+		wp.Go(func() {
+			slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
+			if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+				slog.Debug("Failed to sync database schema",
+					slog.String("instance", instance.ResourceID),
+					slog.String("databaseName", database.DatabaseName),
+					log.BBError(err))
+			}
+		})
 	}
+	wp.Wait()
 }
 
 func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
