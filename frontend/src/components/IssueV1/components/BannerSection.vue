@@ -55,7 +55,11 @@ import {
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
+import {
+  activeTaskInRollout,
+  isDatabaseChangeRelatedIssue,
+  isIssueActuallyRolledout,
+} from "@/utils";
 import {
   useIssueContext,
   isUnfinishedResolvedTask as checkUnfinishedResolvedTask,
@@ -67,6 +71,7 @@ const { status: reviewStatus } = reviewContext;
 const showPendingReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
+  if (isIssueActuallyRolledout(issue.value)) return false;
   return reviewStatus.value === Issue_Approver_Status.PENDING;
 });
 
