@@ -1,4 +1,3 @@
-import { pullAt, cloneDeep, groupBy } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import type { Engine } from "@/types/proto/v1/common";
 import { engineFromJSON } from "@/types/proto/v1/common";
@@ -57,18 +56,6 @@ export interface TemplatePayload {
   default: string;
   templateList: string[];
   value?: string;
-}
-
-interface IndividualConfigPayload {
-  [key: string]: {
-    default: any;
-    value?: any;
-  };
-}
-
-export interface IndividualConfigForEngine {
-  engine: Engine;
-  payload: IndividualConfigPayload;
 }
 
 // RuleConfigComponent is the rule configuration options and default value.
@@ -151,37 +138,40 @@ export interface SQLReviewPolicy {
   resources: string[];
 }
 
-// RuleTemplate is the rule template. Used by the frontend
-export interface RuleTemplate {
+// RuleTemplateV2 is the rule template. Used by the frontend
+export interface RuleTemplateV2 {
   type: string;
   category: string;
-  engineList: Engine[];
-  componentList: RuleConfigComponent[];
-  individualConfigList: IndividualConfigForEngine[];
+  engine: Engine;
   level: SQLReviewRuleLevel;
+  componentList: RuleConfigComponent[];
   comment?: string;
 }
 
-// SQLReviewPolicyTemplate is the rule template set
-export interface SQLReviewPolicyTemplate {
+// SQLReviewPolicyTemplateV2 is the rule template set
+export interface SQLReviewPolicyTemplateV2 {
   id: string;
-  ruleList: RuleTemplate[];
+  ruleList: RuleTemplateV2[];
 }
 
-// Build the frontend template list based on schema and template.
-export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
-  const ruleSchemaMap = (sqlReviewSchema.ruleList as RuleTemplate[]).reduce(
-    (map, ruleSchema) => {
-      map.set(ruleSchema.type, {
-        ...ruleSchema,
-        componentList: ruleSchema.componentList || [],
-        individualConfigList: ruleSchema.individualConfigList || [],
-      });
-      return map;
-    },
-    new Map<string, RuleTemplate>()
-  );
+export const ruleTemplateMapV2 = (sqlReviewSchema as RuleTemplateV2[]).reduce(
+  (map, ruleSchema) => {
+    if (!map.has(ruleSchema.type)) {
+      map.set(ruleSchema.type, new Map());
+    }
+    const engine = engineFromJSON(ruleSchema.engine);
+    map.get(ruleSchema.type)?.set(engine, {
+      ...ruleSchema,
+      engine,
+      componentList: ruleSchema.componentList || [],
+    });
+    return map;
+  },
+  new Map<string, Map<Engine, RuleTemplateV2>>()
+);
 
+// Build the frontend template list based on schema and template.
+export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
   interface PayloadObject {
     [key: string]: any;
   }
@@ -195,74 +185,37 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
       type: string;
       level: SQLReviewRuleLevel;
       payload?: PayloadObject;
-      engine?: Engine;
+      engine: Engine;
     }[];
   }[];
 
   return templateList.map((template) => {
-    const ruleList: RuleTemplate[] = [];
+    const ruleList: RuleTemplateV2[] = [];
 
-    const groupRuleList = groupBy(template.ruleList, (rule) => rule.type);
-    for (const [ruleType, groupList] of Object.entries(groupRuleList)) {
-      const ruleTemplate = ruleSchemaMap.get(ruleType);
+    for (const rule of template.ruleList) {
+      const ruleTemplate = ruleTemplateMapV2
+        .get(rule.type)
+        ?.get(engineFromJSON(rule.engine));
       if (!ruleTemplate) {
         continue;
       }
 
-      const individualConfigList = cloneDeep(
-        ruleTemplate.individualConfigList || []
-      );
-      let componentList = cloneDeep(ruleTemplate.componentList);
-      let level = SQLReviewRuleLevel.DISABLED;
-
-      for (const rule of groupList) {
-        level = rule.level;
-        const index = individualConfigList.findIndex(
-          (config) => config.engine === rule.engine
-        );
-        if (index >= 0) {
-          // Override individual config for specific engine.
-          individualConfigList[index] = {
-            ...individualConfigList[index],
-            // Note: it's important to convert string type engine to enum.
-            engine: engineFromJSON(individualConfigList[index].engine),
-            payload: Object.assign(
-              {},
-              individualConfigList[index].payload,
-              Object.entries(rule.payload ?? {}).reduce((obj, [key, val]) => {
-                obj[key] = {
-                  default: val,
-                };
-                return obj;
-              }, {} as PayloadObject)
-            ),
-          };
-        } else if (!rule.engine) {
-          // Using template rule payload to override the component list.
-          componentList = ruleTemplate.componentList.map((component) => {
-            if (rule.payload && rule.payload[component.key]) {
-              return {
-                ...component,
-                payload: {
-                  ...component.payload,
-                  default: rule.payload[component.key],
-                },
-              };
-            }
-            return component;
-          });
-        }
-      }
-
       ruleList.push({
         ...ruleTemplate,
-        level: sQLReviewRuleLevelFromJSON(level),
-        componentList,
-        individualConfigList,
-        // Note: it's important to convert string type engine to enum.
-        engineList: ruleTemplate.engineList.map((engine) =>
-          engineFromJSON(engine)
-        ),
+        level: sQLReviewRuleLevelFromJSON(rule.level),
+        // Using template rule payload to override the component list.
+        componentList: ruleTemplate.componentList.map((component) => {
+          if (rule.payload && rule.payload[component.key]) {
+            return {
+              ...component,
+              payload: {
+                ...component.payload,
+                default: rule.payload[component.key],
+              },
+            };
+          }
+          return component;
+        }),
       });
     }
 
@@ -273,33 +226,14 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
   });
 })();
 
-export const findRuleTemplate = (type: string) => {
-  for (let i = 0; i < TEMPLATE_LIST.length; i++) {
-    const template = TEMPLATE_LIST[i];
-    const rule = template.ruleList.find((rule) => rule.type === type);
-    if (rule) return rule;
-  }
-  return undefined;
-};
-
-export const ruleTemplateMap: Map<string, RuleTemplate> = TEMPLATE_LIST.reduce(
-  (map, template) => {
-    for (const rule of template.ruleList) {
-      map.set(rule.type, rule);
-    }
-    return map;
-  },
-  new Map<string, RuleTemplate>()
-);
-
 interface RuleCategory {
   id: string;
-  ruleList: RuleTemplate[];
+  ruleList: RuleTemplateV2[];
 }
 
 // convertToCategoryList will reduce RuleTemplate list to RuleCategory list.
 export const convertToCategoryList = (
-  ruleList: RuleTemplate[]
+  ruleList: RuleTemplateV2[]
 ): RuleCategory[] => {
   const dict = ruleList.reduce(
     (dict, rule) => {
@@ -318,42 +252,21 @@ export const convertToCategoryList = (
   return Object.values(dict);
 };
 
-const mergeRulePayloadAsIndividualConfig = (
-  individualConfig: IndividualConfigForEngine,
-  rule: SchemaPolicyRule
-): IndividualConfigForEngine => {
-  const payload = cloneDeep(individualConfig.payload);
-  for (const [key, val] of Object.entries(rule.payload ?? {})) {
-    if (!payload[key]) {
-      continue;
-    }
-    payload[key].value = val;
-  }
-  return {
-    ...individualConfig,
-    payload,
-  };
-};
-
 // The convertPolicyRuleToRuleTemplate will convert the review policy rule to rule template for frontend useage.
 // Will throw exception if we don't implement the payload handler for specific type of rule.
 export const convertPolicyRuleToRuleTemplate = (
-  policyRuleList: SchemaPolicyRule[],
-  ruleTemplate: RuleTemplate
-): RuleTemplate => {
-  if (
-    policyRuleList.length === 0 ||
-    policyRuleList[0].type !== ruleTemplate.type
-  ) {
+  policyRule: SchemaPolicyRule,
+  ruleTemplate: RuleTemplateV2
+): RuleTemplateV2 => {
+  if (policyRule.type !== ruleTemplate.type) {
     throw new Error(
       `The rule type is not same. policyRule:${ruleTemplate.type}, ruleTemplate:${ruleTemplate.type}`
     );
   }
 
-  let policyRule: SchemaPolicyRule | undefined = policyRuleList[0];
-
-  const res = {
+  const res: RuleTemplateV2 = {
     ...ruleTemplate,
+    engine: policyRule.engine,
     level: policyRule.level,
     comment: policyRule.comment,
   };
@@ -363,21 +276,6 @@ export const convertPolicyRuleToRuleTemplate = (
     return res;
   }
 
-  const individualConfigList: IndividualConfigForEngine[] = [];
-  for (const individualConfig of ruleTemplate.individualConfigList) {
-    const index = policyRuleList.findIndex(
-      (rule) => rule.engine == individualConfig.engine
-    );
-    if (index >= 0) {
-      const individualRule = policyRuleList[index];
-      pullAt(policyRuleList, index);
-      individualConfigList.push(
-        mergeRulePayloadAsIndividualConfig(individualConfig, individualRule)
-      );
-    }
-  }
-
-  policyRule = policyRuleList[0];
   const payload = policyRule?.payload ?? {};
 
   const stringComponent = componentList.find(
@@ -413,7 +311,6 @@ export const convertPolicyRuleToRuleTemplate = (
             } as StringPayload,
           },
         ],
-        individualConfigList,
       };
     // Following rules require STRING component.
     case "table.drop-naming-convention":
@@ -432,7 +329,6 @@ export const convertPolicyRuleToRuleTemplate = (
             } as StringPayload,
           },
         ],
-        individualConfigList,
       };
     // Following rules require STRING and NUMBER component.
     case "naming.column":
@@ -460,7 +356,6 @@ export const convertPolicyRuleToRuleTemplate = (
             } as NumberPayload,
           },
         ],
-        individualConfigList,
       };
     // Following rules require TEMPLATE component.
     case "naming.index.pk":
@@ -479,7 +374,6 @@ export const convertPolicyRuleToRuleTemplate = (
             } as TemplatePayload,
           },
         ],
-        individualConfigList,
       };
     // Following rules require TEMPLATE and NUMBER component.
     case "naming.index.idx":
@@ -507,7 +401,6 @@ export const convertPolicyRuleToRuleTemplate = (
             } as NumberPayload,
           },
         ],
-        individualConfigList,
       };
     // Following rules require BOOLEAN component.
     case "naming.identifier.case":
@@ -522,7 +415,6 @@ export const convertPolicyRuleToRuleTemplate = (
             payload: booleanComponent.payload,
           },
         ],
-        individualConfigList,
       };
     case "column.required": {
       const requiredColumnComponent = componentList[0];
@@ -544,7 +436,6 @@ export const convertPolicyRuleToRuleTemplate = (
             payload: requiredColumnPayload,
           },
         ],
-        individualConfigList,
       };
     }
     // Following rules require STRING_ARRAY component.
@@ -571,7 +462,6 @@ export const convertPolicyRuleToRuleTemplate = (
             payload: stringArrayPayload,
           },
         ],
-        individualConfigList,
       };
     }
     // Following rules require BOOLEAN and NUMBER component.
@@ -599,7 +489,6 @@ export const convertPolicyRuleToRuleTemplate = (
             } as NumberPayload,
           },
         ],
-        individualConfigList,
       };
     // Following rules require NUMBER component.
     case "statement.insert.row-limit":
@@ -632,7 +521,6 @@ export const convertPolicyRuleToRuleTemplate = (
             } as NumberPayload,
           },
         ],
-        individualConfigList,
       };
   }
 
@@ -641,7 +529,7 @@ export const convertPolicyRuleToRuleTemplate = (
 
 const mergeIndividualConfigAsRule = (
   base: SchemaPolicyRule,
-  template: RuleTemplate
+  template: RuleTemplateV2
 ): SchemaPolicyRule => {
   const componentList = template.componentList ?? [];
   const stringPayload = componentList.find((c) => c.payload.type === "STRING")
@@ -798,30 +686,19 @@ const mergeIndividualConfigAsRule = (
 // The convertRuleTemplateToPolicyRule will convert rule template to review policy rule for backend useage.
 // Will throw exception if we don't implement the payload handler for specific type of rule.
 export const convertRuleTemplateToPolicyRule = (
-  rule: RuleTemplate
-): SchemaPolicyRule[] => {
-  const baseList: SchemaPolicyRule[] = rule.engineList.map((engine) => ({
+  rule: RuleTemplateV2
+): SchemaPolicyRule => {
+  const base: SchemaPolicyRule = {
     type: rule.type,
     level: rule.level,
-    engine,
+    engine: rule.engine,
     comment: rule.comment ?? "",
-  }));
+  };
   if ((rule.componentList?.length ?? 0) === 0) {
-    return baseList;
+    return base;
   }
 
-  return baseList.map((base) => {
-    const result = mergeIndividualConfigAsRule(base, rule);
-    const individualConfig = (rule.individualConfigList || []).find(
-      (config) => config.engine === base.engine
-    );
-    if (individualConfig && result.payload) {
-      for (const [key, val] of Object.entries(individualConfig.payload)) {
-        (result.payload as any)[key] = val.value ?? val.default;
-      }
-    }
-    return result;
-  });
+  return mergeIndividualConfigAsRule(base, rule);
 };
 
 export const getRuleLocalizationKey = (type: string): string => {

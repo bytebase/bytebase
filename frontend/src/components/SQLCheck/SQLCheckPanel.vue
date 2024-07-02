@@ -10,7 +10,7 @@
   >
     <PlanCheckDetail
       :plan-check-run="planCheckRun"
-      :environment="environment"
+      :database="database"
       :is-latest="true"
       @close="$emit('close')"
     >
@@ -97,10 +97,6 @@ watchEffect(async () => {
     restrictIssueCreationForSqlReviewPolicy.value = true;
     return;
   }
-});
-
-const environment = computed(() => {
-  return database.effectiveEnvironmentEntity.name;
 });
 
 const planCheckRun = computed((): PlanCheckRun => {

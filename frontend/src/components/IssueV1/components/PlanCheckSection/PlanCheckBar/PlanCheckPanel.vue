@@ -15,7 +15,7 @@
     <PlanCheckDetail
       v-if="selectedPlanCheckRun"
       :plan-check-run="selectedPlanCheckRun"
-      :environment="environment"
+      :database="database"
       :is-latest="isLatestPlanCheckRun"
       @close="$emit('close')"
     />
@@ -119,12 +119,11 @@ watch(selectedPlanCheckRunList, (list) => {
   selectedPlanCheckRunUID.value = first(list)?.uid;
 });
 
-const environment = computed(() => {
+const database = computed(() => {
   const spec = selectedSpec.value;
   if (!spec || spec.id === String(EMPTY_ID)) {
     return;
   }
-  const database = databaseForSpec(issue.value, spec);
-  return database.effectiveEnvironmentEntity.name;
+  return databaseForSpec(issue.value, spec);
 });
 </script>

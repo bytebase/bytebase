@@ -97,8 +97,8 @@
 <script lang="ts" setup>
 import { computed, watch } from "vue";
 import { useSQLReviewPolicyList } from "@/store";
-import type { SQLReviewPolicyTemplate } from "@/types";
-import { TEMPLATE_LIST as builtInTemplateList } from "@/types";
+import type { SQLReviewPolicyTemplateV2 } from "@/types";
+import { TEMPLATE_LIST_V2 as builtInTemplateList } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { rulesToTemplate } from "./utils";
 
@@ -106,7 +106,7 @@ const props = withDefaults(
   defineProps<{
     title?: string;
     required?: boolean;
-    selectedTemplate?: SQLReviewPolicyTemplate | undefined;
+    selectedTemplate?: SQLReviewPolicyTemplateV2 | undefined;
   }>(),
   {
     title: "",
@@ -116,12 +116,12 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "select-template", template: SQLReviewPolicyTemplate): void;
+  (event: "select-template", template: SQLReviewPolicyTemplateV2): void;
   (
     event: "templates-change",
     templateList: {
-      policy: SQLReviewPolicyTemplate[];
-      builtin: SQLReviewPolicyTemplate[];
+      policy: SQLReviewPolicyTemplateV2[];
+      builtin: SQLReviewPolicyTemplateV2[];
     }
   ): void;
 }>();
@@ -129,16 +129,14 @@ const emit = defineEmits<{
 const reviewPolicyList = useSQLReviewPolicyList();
 
 const reviewPolicyTemplateList = computed(() => {
-  return reviewPolicyList.value.map((policy) =>
-    rulesToTemplate(policy, false /* withDisabled=false */)
-  );
+  return reviewPolicyList.value.map((r) => rulesToTemplate(r, false));
 });
 
-const isSelectedTemplate = (template: SQLReviewPolicyTemplate) => {
+const isSelectedTemplate = (template: SQLReviewPolicyTemplateV2) => {
   return template.id === props.selectedTemplate?.id;
 };
 
-const enabledRuleCount = (template: SQLReviewPolicyTemplate) => {
+const enabledRuleCount = (template: SQLReviewPolicyTemplateV2) => {
   return template.ruleList.filter(
     (rule) => rule.level !== SQLReviewRuleLevel.DISABLED
   ).length;

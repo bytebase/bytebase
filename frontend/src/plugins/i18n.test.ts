@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { sQLReviewRuleLevelToJSON } from "@/types/proto/v1/org_policy_service";
-import { TEMPLATE_LIST, getRuleLocalizationKey } from "../types/sqlReview";
+import { TEMPLATE_LIST_V2, getRuleLocalizationKey } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 
 describe("Test i18n messages", () => {
@@ -38,7 +38,7 @@ describe("Test i18n for SQL review", () => {
   expect(!!i18nForSQLReview["engine"]).toBe(true);
   expect(!!i18nForSQLReview["category"]).toBe(true);
 
-  for (const template of TEMPLATE_LIST) {
+  for (const template of TEMPLATE_LIST_V2) {
     describe(`check i18n for template ${template.id}`, () => {
       const key = `${template.id.split(".").join("-")}`;
       expect(!!i18nForSQLReview["template"][key]).toBe(true);
@@ -59,11 +59,11 @@ describe("Test i18n for SQL review", () => {
             ]
           ).toBe(true);
 
-          for (const engine of rule.engineList) {
-            expect(
-              !!i18nForSQLReview["engine"][engineToJSON(engine).toLowerCase()]
-            ).toBe(true);
-          }
+          expect(
+            !!i18nForSQLReview["engine"][
+              engineToJSON(rule.engine).toLowerCase()
+            ]
+          ).toBe(true);
 
           for (const component of rule.componentList) {
             expect(!!i18nForSQLReview["rule"][key]["component"]).toBe(true);
