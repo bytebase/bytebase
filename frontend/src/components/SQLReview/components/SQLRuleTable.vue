@@ -163,9 +163,7 @@
       :rule="state.activeRule"
       :disabled="!isRuleAvailable(state.activeRule)"
       @cancel="state.activeRule = undefined"
-      @update:payload="updatePayload(state.activeRule!, $event)"
-      @update:level="updateLevel(state.activeRule!, $event)"
-      @update:comment="updateComment(state.activeRule!, $event)"
+      @update:rule="onRuleChanged"
     />
   </div>
 </template>
@@ -176,7 +174,6 @@ import { NSwitch } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { useCurrentPlan } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
 import {
@@ -186,7 +183,6 @@ import {
   planTypeToString,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { PayloadValueType } from "./RuleConfigComponents";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
 
@@ -256,18 +252,14 @@ const toggleActivity = (rule: RuleTemplateV2, on: boolean) => {
   );
 };
 
-const updatePayload = (rule: RuleTemplateV2, data: PayloadValueType[]) => {
-  if (!rule.componentList) {
+const onRuleChanged = (update: Partial<RuleTemplateV2>) => {
+  if (!state.activeRule) {
     return;
   }
-  emit("rule-change", rule, payloadValueListToComponentList(rule, data));
+  emit("rule-change", state.activeRule, update);
 };
 
 const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRuleLevel) => {
   emit("rule-change", rule, { level });
-};
-
-const updateComment = (rule: RuleTemplateV2, comment: string) => {
-  emit("rule-change", rule, { comment });
 };
 </script>

@@ -34,7 +34,7 @@
       </template>
       <template #1>
         <SQLReviewConfig
-          :selected-rule-list="state.selectedRuleList"
+          :rule-map-by-engine="state.selectedRuleMapByEngine"
           @rule-change="change"
         />
       </template>
@@ -63,12 +63,13 @@ import type {
   RuleTemplateV2,
   SQLReviewPolicyTemplateV2,
   SQLReviewPolicy,
-  SchemaPolicyRule,
 } from "@/types";
 import {
-  convertRuleTemplateToPolicyRule,
+  getRuleMapByEngine,
+  convertRuleMapToPolicyRuleList,
   ruleIsAvailableInSubscription,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
@@ -80,7 +81,7 @@ interface LocalState {
   name: string;
   resourceId: string;
   attachedResources: string[];
-  selectedRuleList: RuleTemplateV2[];
+  selectedRuleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
   selectedTemplate: SQLReviewPolicyTemplateV2 | undefined;
   ruleUpdated: boolean;
   pendingApplyTemplate: SQLReviewPolicyTemplateV2 | undefined;
@@ -123,7 +124,7 @@ const state = reactive<LocalState>({
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   resourceId: props.policy ? getReviewConfigId(props.policy.id) : "",
   attachedResources: props.selectedResources,
-  selectedRuleList: [...props.selectedRuleList],
+  selectedRuleMapByEngine: getRuleMapByEngine(props.selectedRuleList),
   selectedTemplate: props.policy
     ? rulesToTemplate(props.policy, false)
     : undefined,
@@ -147,15 +148,17 @@ const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   state.selectedTemplate = template;
   state.pendingApplyTemplate = undefined;
 
-  state.selectedRuleList = template.ruleList.map((rule) => ({
-    ...rule,
-    level: ruleIsAvailableInSubscription(
-      rule.type,
-      subscriptionStore.currentPlan
-    )
-      ? rule.level
-      : SQLReviewRuleLevel.DISABLED,
-  }));
+  state.selectedRuleMapByEngine = getRuleMapByEngine(
+    template.ruleList.map((rule) => ({
+      ...rule,
+      level: ruleIsAvailableInSubscription(
+        rule.type,
+        subscriptionStore.currentPlan
+      )
+        ? rule.level
+        : SQLReviewRuleLevel.DISABLED,
+    }))
+  );
 };
 
 const onCancel = () => {
@@ -175,10 +178,10 @@ const allowNext = computed((): boolean => {
         !!state.name &&
         !!state.resourceId &&
         state.attachedResources.length > 0 &&
-        state.selectedRuleList.length > 0
+        state.selectedRuleMapByEngine.size > 0
       );
     case CONFIGURE_RULE_STEP:
-      return state.selectedRuleList.length > 0;
+      return state.selectedRuleMapByEngine.size > 0;
     case PREVIEW_STEP:
       return true;
   }
@@ -214,14 +217,9 @@ const tryFinishSetup = async () => {
     });
   }
 
-  const ruleList: SchemaPolicyRule[] = [];
-  for (const rule of state.selectedRuleList) {
-    ruleList.push(convertRuleTemplateToPolicyRule(rule));
-  }
-
   const upsert = {
     title: state.name,
-    ruleList,
+    ruleList: convertRuleMapToPolicyRuleList(state.selectedRuleMapByEngine),
     resources: state.attachedResources,
   };
 
@@ -281,17 +279,16 @@ const change = (rule: RuleTemplateV2, overrides: Partial<RuleTemplateV2>) => {
     return;
   }
 
-  const index = state.selectedRuleList.findIndex(
-    (r) => r.type === rule.type && r.engine === rule.engine
-  );
-  if (index < 0) {
+  const selectedRule = state.selectedRuleMapByEngine
+    .get(rule.engine)
+    ?.get(rule.type);
+  if (!selectedRule) {
     return;
   }
-  const newRule = {
-    ...state.selectedRuleList[index],
-    ...overrides,
-  };
-  state.selectedRuleList[index] = newRule;
+  state.selectedRuleMapByEngine
+    .get(rule.engine)
+    ?.set(rule.type, Object.assign(selectedRule, overrides));
+
   state.ruleUpdated = true;
 };
 </script>
