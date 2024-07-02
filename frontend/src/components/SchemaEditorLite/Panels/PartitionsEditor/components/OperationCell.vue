@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <NPopconfirm v-if="status === 'created'" @positive-click="$emit('drop')">
+    <NPopconfirm v-if="allowDrop" @positive-click="$emit('drop')">
       <template #trigger>
         <MiniActionButton tag="div">
           <TrashIcon class="w-4 h-4" />
@@ -51,6 +51,7 @@ import { PartitionTypesSupportSubPartition } from "../common";
 const props = defineProps<{
   partition: TablePartitionMetadata;
   parent?: TablePartitionMetadata;
+  tableStatus: EditStatus;
   status: EditStatus;
 }>();
 defineEmits<{
@@ -58,6 +59,10 @@ defineEmits<{
   (event: "restore"): void;
   (event: "add-sub"): void;
 }>();
+
+const allowDrop = computed(() => {
+  return props.tableStatus === "created" || props.status === "created";
+});
 
 const allowAddSub = computed(() => {
   const { partition, parent } = props;
