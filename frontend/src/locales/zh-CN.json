@@ -274,7 +274,8 @@
     "configure-now": "现在配置",
     "connection": "连接",
     "permission-denied": "您没有权限执行此操作",
-    "resource": "资源"
+    "resource": "资源",
+    "closed": "已关闭"
   },
   "error-page": {
     "go-back-home": "回到主页"
