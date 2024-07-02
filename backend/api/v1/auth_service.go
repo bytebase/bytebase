@@ -193,12 +193,30 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		Type:         principalType,
 		PasswordHash: string(passwordHash),
 	}
-	for _, role := range request.User.Roles {
-		roleID, err := common.GetRoleID(role)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{})
+	if err != nil {
+		return nil, err
+	}
+	firstUser := true
+	for _, user := range users {
+		if user.ID >= 100 {
+			firstUser = false
+			break
 		}
-		userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
+	}
+	if !firstUser {
+		rolePtr := ctx.Value(common.RoleContextKey)
+		if rolePtr == nil || rolePtr.(api.Role) != api.WorkspaceAdmin {
+			return nil, status.Errorf(codes.InvalidArgument, "cannot specify roles")
+		}
+		for _, role := range request.User.Roles {
+			roleID, err := common.GetRoleID(role)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
+		}
 	}
 	// If multiple roles are specified, checks if the current user is workspace admin.
 	if len(userMessage.Roles) > 1 {
@@ -319,6 +337,9 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
 			passwordPatch = &password
 		case "roles":
+			if role != api.WorkspaceAdmin {
+				return nil, status.Errorf(codes.PermissionDenied, "only workspace admin can update roles")
+			}
 			// Check if the user is the only workspace admin.
 			if slices.Contains(user.Roles, api.WorkspaceAdmin) && !slices.Contains(request.User.Roles, common.FormatRole(api.WorkspaceAdmin.String())) {
 				workspaceAdmin, userType := api.WorkspaceAdmin, api.EndUser
