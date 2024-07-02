@@ -109,6 +109,7 @@
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
+    - [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType)
   
 - [store/db_group.proto](#store_db_group-proto)
     - [DatabaseGroupPayload](#bytebase-store-DatabaseGroupPayload)
@@ -1768,6 +1769,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
 | master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
 | master_obfuscated_password | [string](#string) |  |  |
+| redis_type | [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType) |  |  |
 
 
 
@@ -1879,6 +1881,20 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | PASSWORD | 1 |  |
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
+
+
+
+<a name="bytebase-store-DataSourceOptions-RedisType"></a>
+
+### DataSourceOptions.RedisType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_TYPE_UNSPECIFIED | 0 |  |
+| STANDALONE | 1 |  |
+| SENTINEL | 2 |  |
+| CLUSTER | 3 |  |
 
 
  
