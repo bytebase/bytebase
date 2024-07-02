@@ -82,7 +82,7 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		startTime := time.Now()
-		if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
+		if engineType == storepb.Engine_MYSQL && mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
 			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
 			if err != nil {
 				return nil, err
