@@ -274,7 +274,8 @@
     "configure-now": "今すぐ設定する",
     "connection": "接続する",
     "permission-denied": "許可が拒否されました",
-    "resource": "リソース"
+    "resource": "リソース",
+    "closed": "閉まっている"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
