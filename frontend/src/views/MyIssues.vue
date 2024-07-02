@@ -52,13 +52,6 @@
     </IssueSearch>
 
     <div class="relative min-h-[20rem]">
-      <div
-        v-if="state.loading && !state.loadingMore"
-        class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
-      >
-        <BBSpin />
-      </div>
-
       <PagedIssueTableV1
         :key="keyForTab(tab)"
         v-model:loading="state.loading"
