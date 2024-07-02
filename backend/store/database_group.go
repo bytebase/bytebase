@@ -12,12 +12,12 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // DatabaseGroupMessage is the message for database groups.
 type DatabaseGroupMessage struct {
 	// Output only fields.
-	//
 	UID       int64
 	CreatedTs int64
 	UpdatedTs int64
@@ -25,11 +25,11 @@ type DatabaseGroupMessage struct {
 	UpdaterID int
 
 	// Normal fields.
-	//
 	ProjectUID  int
 	ResourceID  string
 	Placeholder string
 	Expression  *expr.Expr
+	Payload     *storepb.DatabaseGroupPayload
 }
 
 // FindDatabaseGroupMessage is the message for finding database group.
@@ -43,6 +43,7 @@ type FindDatabaseGroupMessage struct {
 type UpdateDatabaseGroupMessage struct {
 	Placeholder *string
 	Expression  *expr.Expr
+	Payload     *storepb.DatabaseGroupPayload
 }
 
 // DeleteDatabaseGroup deletes a database group.
@@ -139,7 +140,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 	return databaseGroups[0], nil
 }
 
-func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
+func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ProjectUID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
@@ -150,19 +151,23 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
+	fields := []string{
+		"id",
+		"created_ts",
+		"updated_ts",
+		"creator_id",
+		"updater_id",
+		"project_id",
+		"resource_id",
+		"placeholder",
+		"expression",
+	}
+	// TODO(steven): remove me before production.
+	if s.profile.Mode == common.ReleaseModeDev {
+		fields = append(fields, "payload")
+	}
 
-	query := fmt.Sprintf(`SELECT
-		id,
-		created_ts,
-		updated_ts,
-		creator_id,
-		updater_id,
-		project_id,
-		resource_id,
-		placeholder,
-		expression
-	FROM db_group WHERE %s ORDER BY id DESC;`, strings.Join(where, " AND "))
-
+	query := fmt.Sprintf(`SELECT %s FROM db_group WHERE %s ORDER BY id DESC;`, strings.Join(fields, ","), strings.Join(where, " AND "))
 	var databaseGroups []*DatabaseGroupMessage
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -171,8 +176,8 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	defer rows.Close()
 	for rows.Next() {
 		var databaseGroup DatabaseGroupMessage
-		var stringExpr string
-		if err := rows.Scan(
+		var exprBytes, payloadBytes []byte
+		dest := []any{
 			&databaseGroup.UID,
 			&databaseGroup.CreatedTs,
 			&databaseGroup.UpdatedTs,
@@ -181,13 +186,24 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 			&databaseGroup.ProjectUID,
 			&databaseGroup.ResourceID,
 			&databaseGroup.Placeholder,
-			&stringExpr,
-		); err != nil {
+			&exprBytes,
+		}
+		if s.profile.Mode == common.ReleaseModeDev {
+			dest = append(dest, &payloadBytes)
+		}
+		if err := rows.Scan(dest...); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
 		var expression expr.Expr
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(stringExpr), &expression); err != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(exprBytes, &expression); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal expression")
+		}
+		if s.profile.Mode == common.ReleaseModeDev {
+			var payload storepb.DatabaseGroupPayload
+			if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
+				return nil, errors.Wrapf(err, "failed to unmarshal payload")
+			}
+			databaseGroup.Payload = &payload
 		}
 		databaseGroup.Expression = &expression
 		databaseGroups = append(databaseGroups, &databaseGroup)
