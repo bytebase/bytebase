@@ -35,9 +35,7 @@
       <template #1>
         <SQLReviewConfig
           :selected-rule-list="state.selectedRuleList"
-          @level-change="onLevelChange"
-          @payload-change="onPayloadChange"
-          @comment-change="onCommentChange"
+          @rule-change="change"
         />
       </template>
     </StepTab>
@@ -62,13 +60,12 @@ import {
   getReviewConfigId,
 } from "@/store/modules/v1/common";
 import type {
-  RuleTemplate,
-  SQLReviewPolicyTemplate,
+  RuleTemplateV2,
+  SQLReviewPolicyTemplateV2,
   SQLReviewPolicy,
   SchemaPolicyRule,
 } from "@/types";
 import {
-  convertToCategoryList,
   convertRuleTemplateToPolicyRule,
   ruleIsAvailableInSubscription,
 } from "@/types";
@@ -83,10 +80,10 @@ interface LocalState {
   name: string;
   resourceId: string;
   attachedResources: string[];
-  selectedRuleList: RuleTemplate[];
-  selectedTemplate: SQLReviewPolicyTemplate | undefined;
+  selectedRuleList: RuleTemplateV2[];
+  selectedTemplate: SQLReviewPolicyTemplateV2 | undefined;
   ruleUpdated: boolean;
-  pendingApplyTemplate: SQLReviewPolicyTemplate | undefined;
+  pendingApplyTemplate: SQLReviewPolicyTemplateV2 | undefined;
 }
 
 const props = withDefaults(
@@ -94,7 +91,7 @@ const props = withDefaults(
     policy?: SQLReviewPolicy;
     name?: string;
     selectedResources: string[];
-    selectedRuleList?: RuleTemplate[];
+    selectedRuleList?: RuleTemplateV2[];
   }>(),
   {
     policy: undefined,
@@ -128,7 +125,7 @@ const state = reactive<LocalState>({
   attachedResources: props.selectedResources,
   selectedRuleList: [...props.selectedRuleList],
   selectedTemplate: props.policy
-    ? rulesToTemplate(props.policy, false /* withDisabled=false */)
+    ? rulesToTemplate(props.policy, false)
     : undefined,
   ruleUpdated: false,
   pendingApplyTemplate: undefined,
@@ -143,31 +140,22 @@ const allowChangeAttachedResource = computed(() => {
   return props.selectedResources.length === 0;
 });
 
-const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
+const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   if (!template) {
     return;
   }
   state.selectedTemplate = template;
   state.pendingApplyTemplate = undefined;
 
-  const categoryList = convertToCategoryList(template.ruleList);
-  state.selectedRuleList = categoryList.reduce<RuleTemplate[]>(
-    (res, category) => {
-      res.push(
-        ...category.ruleList.map((rule) => ({
-          ...rule,
-          level: ruleIsAvailableInSubscription(
-            rule.type,
-            subscriptionStore.currentPlan
-          )
-            ? rule.level
-            : SQLReviewRuleLevel.DISABLED,
-        }))
-      );
-      return res;
-    },
-    []
-  );
+  state.selectedRuleList = template.ruleList.map((rule) => ({
+    ...rule,
+    level: ruleIsAvailableInSubscription(
+      rule.type,
+      subscriptionStore.currentPlan
+    )
+      ? rule.level
+      : SQLReviewRuleLevel.DISABLED,
+  }));
 };
 
 const onCancel = () => {
@@ -228,7 +216,7 @@ const tryFinishSetup = async () => {
 
   const ruleList: SchemaPolicyRule[] = [];
   for (const rule of state.selectedRuleList) {
-    ruleList.push(...convertRuleTemplateToPolicyRule(rule));
+    ruleList.push(convertRuleTemplateToPolicyRule(rule));
   }
 
   const upsert = {
@@ -274,7 +262,7 @@ const tryFinishSetup = async () => {
   onCancel();
 };
 
-const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {
+const tryApplyTemplate = (template: SQLReviewPolicyTemplateV2) => {
   if (state.ruleUpdated || props.policy) {
     if (template.id === state.selectedTemplate?.id) {
       state.pendingApplyTemplate = undefined;
@@ -286,14 +274,16 @@ const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {
   onTemplateApply(template);
 };
 
-const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
+const change = (rule: RuleTemplateV2, overrides: Partial<RuleTemplateV2>) => {
   if (
     !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
   ) {
     return;
   }
 
-  const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
+  const index = state.selectedRuleList.findIndex(
+    (r) => r.type === rule.type && r.engine === rule.engine
+  );
   if (index < 0) {
     return;
   }
@@ -303,17 +293,5 @@ const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
   };
   state.selectedRuleList[index] = newRule;
   state.ruleUpdated = true;
-};
-
-const onPayloadChange = (rule: RuleTemplate, update: Partial<RuleTemplate>) => {
-  change(rule, update);
-};
-
-const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
-  change(rule, { level });
-};
-
-const onCommentChange = (rule: RuleTemplate, comment: string) => {
-  change(rule, { comment });
 };
 </script>

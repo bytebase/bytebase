@@ -9,12 +9,16 @@
   >
     <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
       <div class="space-y-1">
-        <h3 class="text-lg text-control font-medium">
-          {{ $t("common.name") }}
-        </h3>
+        <div class="flex items-center space-x-2">
+          <div>
+            <RuleEngineIcon :engine="rule.engine" />
+          </div>
+          <h3 class="text-lg text-control font-medium">
+            {{ $t("common.name") }}
+          </h3>
+        </div>
         <div class="textinfolabel flex items-center gap-x-2">
           {{ getRuleLocalization(rule.type).title }}
-          <RuleEngineIcons :rule="rule" />
           <a
             :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
             target="__blank"
@@ -32,7 +36,7 @@
           <NSwitch
             :disabled="disabled"
             :value="state.level !== SQLReviewRuleLevel.DISABLED"
-            @update-value="(val) => toggleActivity(rule, val)"
+            @update-value="toggleActivity"
           />
         </div>
       </div>
@@ -74,13 +78,6 @@
           {{ displayDescription }}
         </div>
       </div>
-      <RuleEngineTabFilter
-        v-if="rule.individualConfigList.length > 0"
-        :selected="state.selectedEngine"
-        :engine-list="rule.engineList"
-        :individual-engine-list="rule.individualConfigList.map((c) => c.engine)"
-        @update:engine="(val: Engine) => (state.selectedEngine = val)"
-      />
       <div
         v-for="(config, index) in rule.componentList"
         :key="index"
@@ -91,54 +88,44 @@
         </p>
         <StringComponent
           v-if="config.payload.type === 'STRING'"
-          :value="state.payload.get(state.selectedEngine)![index] as string"
+          :value="state.payload[index] as string"
           :config="config"
           :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
+          @update:value="state.payload[index] = $event"
         />
         <NumberComponent
           v-if="config.payload.type === 'NUMBER'"
-          :value="state.payload.get(state.selectedEngine)![index] as number"
+          :value="state.payload[index] as number"
           :config="config"
           :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
+          @update:value="state.payload[index] = $event"
         />
         <BooleanComponent
           v-else-if="config.payload.type == 'BOOLEAN'"
           :rule="rule"
-          :value="state.payload.get(state.selectedEngine)![index] as boolean"
+          :value="state.payload[index] as boolean"
           :config="config"
           :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
+          @update:value="state.payload[index] = $event"
         />
         <StringArrayComponent
           v-else-if="
             config.payload.type == 'STRING_ARRAY' &&
-            Array.isArray(state.payload.get(state.selectedEngine)![index])
+            Array.isArray(state.payload[index])
           "
-          :value="state.payload.get(state.selectedEngine)![index] as string[]"
+          :value="state.payload[index] as string[]"
           :config="config"
           :disabled="disabled"
           :editable="editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
+          @update:value="state.payload[index] = $event"
         />
         <TemplateComponent
           v-else-if="config.payload.type == 'TEMPLATE'"
           :rule="rule"
-          :value="state.payload.get(state.selectedEngine)![index] as string"
+          :value="state.payload[index] as string"
           :config="config"
           :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
+          @update:value="state.payload[index] = $event"
         />
       </div>
       <div
@@ -160,14 +147,10 @@
 import { NSwitch } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { RuleConfigComponent, RuleTemplate } from "@/types/sqlReview";
+import type { RuleConfigComponent, RuleTemplateV2 } from "@/types/sqlReview";
 import { getRuleLocalization, getRuleLocalizationKey } from "@/types/sqlReview";
-import type {
-  PayloadValueType,
-  PayloadForEngine,
-} from "./RuleConfigComponents";
+import type { PayloadValueType } from "./RuleConfigComponents";
 import {
   StringComponent,
   NumberComponent,
@@ -175,25 +158,23 @@ import {
   StringArrayComponent,
   TemplateComponent,
 } from "./RuleConfigComponents";
-import RuleEngineIcons from "./RuleEngineIcons.vue";
-import RuleEngineTabFilter from "./RuleEngineTabFilter.vue";
+import RuleEngineIcon from "./RuleEngineIcon.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
-  payload: PayloadForEngine;
+  payload: PayloadValueType[];
   level: SQLReviewRuleLevel;
   comment: string;
-  selectedEngine: Engine;
 };
 
 const props = defineProps<{
   editable: boolean;
-  rule: RuleTemplate;
+  rule: RuleTemplateV2;
   disabled: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:payload", payload: PayloadForEngine): void;
+  (event: "update:payload", payload: PayloadValueType[]): void;
   (event: "update:level", level: SQLReviewRuleLevel): void;
   (event: "update:comment", comment: string): void;
   (event: "cancel"): void;
@@ -201,12 +182,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const getRulePayload = () => {
-  const { componentList, individualConfigList, engineList } = props.rule;
-  const resp: PayloadForEngine = new Map();
+const getRulePayload = (): PayloadValueType[] => {
+  const { componentList } = props.rule;
 
   if (componentList.length === 0) {
-    return resp;
+    return [];
   }
 
   const basePayload = componentList.reduce<
@@ -219,33 +199,7 @@ const getRulePayload = () => {
     return list;
   }, []);
 
-  if (engineList.length > individualConfigList.length) {
-    resp.set(
-      Engine.ENGINE_UNSPECIFIED,
-      basePayload.map((val) => val.value)
-    );
-  }
-
-  for (const individualConfig of individualConfigList) {
-    const individualPayload = [...basePayload];
-    for (const key of Object.keys(individualConfig.payload)) {
-      const index = individualPayload.findIndex((val) => val.key === key);
-      if (index >= 0) {
-        individualPayload[index] = {
-          ...individualPayload[index],
-          value:
-            individualConfig.payload[key].value ??
-            individualConfig.payload[key].default,
-        };
-      }
-    }
-    resp.set(
-      individualConfig.engine,
-      individualPayload.map((val) => val.value)
-    );
-  }
-
-  return resp;
+  return basePayload.map((val) => val.value);
 };
 
 const state = reactive<LocalState>({
@@ -253,7 +207,6 @@ const state = reactive<LocalState>({
   level: props.rule.level,
   comment:
     props.rule.comment || getRuleLocalization(props.rule.type).description,
-  selectedEngine: Engine.ENGINE_UNSPECIFIED,
 });
 
 const displayDescription = computed(() => {
@@ -267,7 +220,7 @@ const configTitle = (config: RuleConfigComponent): string => {
   return t(key);
 };
 
-const toggleActivity = (rule: RuleTemplate, on: boolean) => {
+const toggleActivity = (on: boolean) => {
   state.level = on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED;
 };
 

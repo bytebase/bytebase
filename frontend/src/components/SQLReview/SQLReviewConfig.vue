@@ -1,70 +1,45 @@
 <template>
-  <div>
-    <SQLRuleFilter
-      :rule-list="selectedRuleList"
-      :params="filterParams"
-      v-on="filterEvents"
-    />
-    <SQLRuleTable
-      class="w-full"
-      :rule-list="filteredRuleList"
-      :editable="true"
-      @level-change="onLevelChange"
-      @payload-change="onPayloadChange"
-      @comment-change="onCommentChange"
-    />
-  </div>
+  <SQLReviewTabsByEngine :rule-list="selectedRuleList">
+    <template
+      #default="{
+        ruleList: ruleListFilteredByEngine,
+        engine,
+      }: {
+        ruleList: RuleTemplateV2[];
+        engine: Engine;
+      }"
+    >
+      <SQLRuleTableWithFilter
+        :engine="engine"
+        :rule-list="ruleListFilteredByEngine"
+        :editable="true"
+        @rule-change="onRuleChange"
+      />
+    </template>
+  </SQLReviewTabsByEngine>
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
-import { toRef } from "vue";
-import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { RuleTemplate } from "@/types/sqlReview";
-import {
-  SQLRuleTable,
-  SQLRuleFilter,
-  useSQLRuleFilter,
-  payloadValueListToComponentList,
-} from "./components/";
-import type { PayloadForEngine } from "./components/RuleConfigComponents";
+import type { Engine } from "@/types/proto/v1/common";
+import type { RuleTemplateV2 } from "@/types/sqlReview";
 
-const props = defineProps({
-  selectedRuleList: {
-    required: true,
-    type: Object as PropType<RuleTemplate[]>,
-  },
-});
+defineProps<{
+  selectedRuleList: RuleTemplateV2[];
+}>();
 
 const emit = defineEmits<{
   (event: "apply-template", index: number): void;
   (
-    event: "payload-change",
-    rule: RuleTemplate,
-    update: Partial<RuleTemplate>
+    event: "rule-change",
+    rule: RuleTemplateV2,
+    update: Partial<RuleTemplateV2>
   ): void;
-  (event: "level-change", rule: RuleTemplate, level: SQLReviewRuleLevel): void;
-  (event: "comment-change", rule: RuleTemplate, comment: string): void;
 }>();
 
-const {
-  params: filterParams,
-  events: filterEvents,
-  filteredRuleList,
-} = useSQLRuleFilter(toRef(props, "selectedRuleList"));
-
-const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
-  if (!rule.componentList) {
-    return;
-  }
-  emit("payload-change", rule, payloadValueListToComponentList(rule, data));
-};
-
-const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
-  emit("level-change", rule, level);
-};
-
-const onCommentChange = (rule: RuleTemplate, comment: string) => {
-  emit("comment-change", rule, comment);
+const onRuleChange = (
+  rule: RuleTemplateV2,
+  overrides: Partial<RuleTemplateV2>
+) => {
+  emit("rule-change", rule, overrides);
 };
 </script>

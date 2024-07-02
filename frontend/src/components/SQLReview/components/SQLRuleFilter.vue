@@ -1,61 +1,71 @@
 <template>
-  <div class="space-y-5">
-    <SQLReviewCategorySummaryFilter
-      class="mt-6 mb-4"
+  <div class="space-y-3">
+    <SQLReviewCategoryTabFilter
+      :value="params.selectedCategory"
       :rule-list="ruleList"
-      :is-checked-engine="(engine) => params.checkedEngine.has(engine)"
-      :is-checked-level="(level) => params.checkedLevel.has(level)"
-      @toggle-checked-engine="$emit('toggle-checked-engine', $event)"
-      @toggle-checked-level="$emit('toggle-checked-level', $event)"
-    />
-    <div
-      class="flex flex-row sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between gap-y-2 gap-x-2 border-t border-control-border pt-4"
+      @update:value="$emit('change-category', $event)"
     >
-      <SQLReviewCategoryTabFilter
-        :value="params.selectedCategory"
-        :category-list="categoryFilterList"
-        @update:value="$emit('change-category', $event)"
-      />
-      <SearchBox
-        ref="searchField"
-        :value="params.searchText"
-        :placeholder="$t('common.filter-by-name')"
-        @update:value="$emit('change-search-text', $event)"
-      />
-    </div>
+      <template
+        #default="{
+          ruleList: ruleListFilteredByCategory,
+        }: {
+          ruleList: RuleTemplateV2[];
+        }"
+      >
+        <div class="flex items-center justify-between">
+          <SQLReviewCategorySummaryFilter
+            :rule-list="ruleListFilteredByCategory"
+            :is-checked-level="(level) => params.checkedLevel.has(level)"
+            @toggle-checked-level="$emit('toggle-checked-level', $event)"
+          />
+          <SearchBox
+            ref="searchField"
+            :value="params.searchText"
+            :placeholder="$t('common.filter-by-name')"
+            @update:value="$emit('change-search-text', $event)"
+          />
+        </div>
+        <slot :rule-list="ruleListFilteredByCategory.filter(filterRule)" />
+      </template>
+    </SQLReviewCategoryTabFilter>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import type { RuleTemplate } from "@/types";
-import { convertToCategoryList } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
+import type { RuleTemplateV2 } from "@/types";
+import { getRuleLocalization } from "@/types";
 import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import SQLReviewCategorySummaryFilter from "./SQLReviewCategorySummaryFilter.vue";
-import type { CategoryFilterItem } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
 import type { SQLRuleFilterParams } from "./useSQLRuleFilter";
 
 const props = defineProps<{
-  ruleList: RuleTemplate[];
+  ruleList: RuleTemplateV2[];
   params: SQLRuleFilterParams;
 }>();
 
 defineEmits<{
-  (event: "toggle-checked-engine", engine: Engine): void;
   (event: "toggle-checked-level", level: SQLReviewRuleLevel): void;
   (event: "change-category", category: string | undefined): void;
   (event: "change-search-text", keyword: string): void;
 }>();
 
-const { t } = useI18n();
+const filterRule = (rule: RuleTemplateV2) => {
+  if (props.params.checkedLevel.size > 0) {
+    if (!props.params.checkedLevel.has(rule.level)) {
+      return false;
+    }
+  }
+  return filterRuleByKeyword(rule, props.params.searchText);
+};
 
-const categoryFilterList = computed((): CategoryFilterItem[] => {
-  return convertToCategoryList(props.ruleList).map((c) => ({
-    id: c.id,
-    name: t(`sql-review.category.${c.id.toLowerCase()}`),
-  }));
-});
+const filterRuleByKeyword = (rule: RuleTemplateV2, searchText: string) => {
+  const keyword = searchText.trim().toLowerCase();
+  if (!keyword) return true;
+  if (rule.type.toLowerCase().includes(keyword)) return true;
+  const localization = getRuleLocalization(rule.type);
+  if (localization.title.toLowerCase().includes(keyword)) return true;
+  if (localization.description.toLowerCase().includes(keyword)) return true;
+  return false;
+};
 </script>
