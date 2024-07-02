@@ -6,5 +6,5 @@ title: "Thành viên không gian" là gì?
 
 #### Tìm hiểu thêm
 
-- [Quản lý thành viên](https://www.bytebase.com/docs/get-started/step-by-step/manage-members)
+- [Quản lý thành viên](https://bytebase.cc/docs/get-started/step-by-step/register-accounts/#manage-members-eg-update-password)
 - [Vai trò và quyền RBAC](https://www.bytebase.com/docs/concepts/roles-and-permissions)
