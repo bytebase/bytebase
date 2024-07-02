@@ -100,8 +100,17 @@ const {
   disableDiffColoring,
   markEditStatus,
   getPartitionStatus,
+  getTableStatus,
   removeEditStatus,
 } = useSchemaEditorContext();
+
+const tableStatus = computed(() => {
+  return getTableStatus(props.db, {
+    database: props.database,
+    schema: props.schema,
+    table: props.table,
+  });
+});
 
 const metadataForPartition = (partition: TablePartitionMetadata) => {
   return {
@@ -122,6 +131,10 @@ const allowEditPartition = (partition: TablePartitionMetadata) => {
   if (props.readonly) {
     return false;
   }
+  if (tableStatus.value === "created") {
+    return true;
+  }
+
   const status = statusForPartition(partition);
   return status === "created";
 };
@@ -258,22 +271,29 @@ const columns = computed(() => {
       hide: props.readonly,
       className: "!px-0",
       render: (item) => {
-        const status = statusForPartition(item.partition);
         return (
           <OperationCell
             partition={item.partition}
             parent={item.parent}
-            status={status}
+            tableStatus={tableStatus.value}
+            status={statusForPartition(item.partition)}
             onDrop={() => {
               const status = statusForPartition(item.partition);
-              if (status === "created") {
-                // For newly created partitions, we remove it directly
+              if (tableStatus.value === "created" || status === "created") {
+                // For newly created partitions, or partitions in newly created
+                // tables, we remove them directly.
                 if (item.parent) {
+                  // Removing a subpartition from its parent
                   pull(item.parent.subpartitions, item.partition);
                 } else {
+                  // Removing a partition will also remove all its subpartitions
                   pull(props.table.partitions, item.partition);
                 }
               } else {
+                // For existed partitions, don't actually drop it, but keep
+                // a snapshot so that we could restore it later.
+                // This feature actually doesn't work by now, since we don't
+                // allow to drop existed partitions yet.
                 markStatus(item.partition, "dropped");
                 item.partition.subpartitions?.forEach((subpartition) => {
                   markStatus(subpartition, "dropped");
