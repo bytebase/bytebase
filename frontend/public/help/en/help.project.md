@@ -12,4 +12,4 @@ title: What is 'project' ?
 
 - [Create a Project](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
 - [UI Workflow](https://www.bytebase.com/docs/change-database/change-workflow)
-- [GitOps workflow](https://www.bytebase.com/docs/vcs-integration/enable-gitops-workflow)
+- [GitOps workflow](https://www.bytebase.com/docs/vcs-integration/overview/)
