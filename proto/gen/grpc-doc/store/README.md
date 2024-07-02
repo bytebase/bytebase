@@ -1901,7 +1901,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| tenant | [bool](#bool) |  |  |
+| multitenancy | [bool](#bool) |  |  |
 
 
 

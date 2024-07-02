@@ -5,17 +5,17 @@ import _m0 from "protobufjs/minimal";
 export const protobufPackage = "bytebase.store";
 
 export interface DatabaseGroupPayload {
-  tenant: boolean;
+  multitenancy: boolean;
 }
 
 function createBaseDatabaseGroupPayload(): DatabaseGroupPayload {
-  return { tenant: false };
+  return { multitenancy: false };
 }
 
 export const DatabaseGroupPayload = {
   encode(message: DatabaseGroupPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.tenant === true) {
-      writer.uint32(8).bool(message.tenant);
+    if (message.multitenancy === true) {
+      writer.uint32(8).bool(message.multitenancy);
     }
     return writer;
   },
@@ -32,7 +32,7 @@ export const DatabaseGroupPayload = {
             break;
           }
 
-          message.tenant = reader.bool();
+          message.multitenancy = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -44,13 +44,13 @@ export const DatabaseGroupPayload = {
   },
 
   fromJSON(object: any): DatabaseGroupPayload {
-    return { tenant: isSet(object.tenant) ? globalThis.Boolean(object.tenant) : false };
+    return { multitenancy: isSet(object.multitenancy) ? globalThis.Boolean(object.multitenancy) : false };
   },
 
   toJSON(message: DatabaseGroupPayload): unknown {
     const obj: any = {};
-    if (message.tenant === true) {
-      obj.tenant = message.tenant;
+    if (message.multitenancy === true) {
+      obj.multitenancy = message.multitenancy;
     }
     return obj;
   },
@@ -60,7 +60,7 @@ export const DatabaseGroupPayload = {
   },
   fromPartial(object: DeepPartial<DatabaseGroupPayload>): DatabaseGroupPayload {
     const message = createBaseDatabaseGroupPayload();
-    message.tenant = object.tenant ?? false;
+    message.multitenancy = object.multitenancy ?? false;
     return message;
   },
 };

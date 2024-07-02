@@ -536,7 +536,7 @@ func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx 
 	var matchedDatabases []*store.DatabaseMessage
 	for _, dbGroup := range dbGroups {
 		// TODO(steven): move this filter into FindDatabaseGroupMessage.
-		if !dbGroup.Payload.Tenant {
+		if !dbGroup.Payload.Multitenancy {
 			continue
 		}
 
