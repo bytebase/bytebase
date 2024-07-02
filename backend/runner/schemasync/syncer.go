@@ -32,8 +32,9 @@ import (
 )
 
 const (
-	schemaSyncInterval          = 10 * time.Minute
-	databaseSyncCheckerInterval = 1 * time.Second
+	instanceSyncInterval        = 15 * time.Minute
+	databaseSyncCheckerInterval = 5 * time.Second
+	syncTimeout                 = 15 * time.Minute
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
 	MaximumOutstanding  = 100
@@ -68,8 +69,8 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	sp := pool.New()
 	sp.Go(func() {
-		slog.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
-		ticker := time.NewTicker(schemaSyncInterval)
+		slog.Debug(fmt.Sprintf("Schema syncer started and will run every %v", instanceSyncInterval))
+		ticker := time.NewTicker(instanceSyncInterval)
 		defer ticker.Stop()
 
 		for {
@@ -230,7 +231,9 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	defer driver.Close(ctx)
 	s.upsertInstanceConnectionAnomaly(ctx, instance, nil)
 
-	instanceMeta, err := driver.SyncInstance(ctx)
+	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
+	defer cancelFunc()
+	instanceMeta, err := driver.SyncInstance(deadlineCtx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
@@ -335,7 +338,9 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	defer driver.Close(ctx)
 	s.upsertDatabaseConnectionAnomaly(ctx, instance, database, nil)
 	// Sync database schema
-	databaseMetadata, err := driver.SyncDBSchema(ctx)
+	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
+	defer cancelFunc()
+	databaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
