@@ -461,6 +461,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
 	}
 	// Otherwise, we will try to find a peer tenant database from all databases in the project.
+	// TODO(steven): remove me.
 	if len(matchedDatabases) == 0 {
 		allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 			ProjectID: &project.ResourceID,
