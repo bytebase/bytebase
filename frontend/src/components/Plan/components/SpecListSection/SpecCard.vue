@@ -50,16 +50,6 @@
         relatedDatabaseGroup.databaseGroupName
       }}</span>
     </div>
-    <div
-      v-else-if="isDeploymentConfigChangeSpec(spec)"
-      class="flex items-center"
-    >
-      <TenantIcon class="w-4 h-auto" />
-      <span class="text-gray-500 text-sm truncate ml-1 mr-2">
-        {{ project.title }}
-      </span>
-      <span class="text-sm">{{ $t("common.deployment-config") }}</span>
-    </div>
     <!-- Fallback -->
     <div v-else class="flex items-center gap-2 text-sm">Unknown type</div>
   </div>
@@ -70,7 +60,6 @@ import { isEqual } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed, onMounted } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
-import TenantIcon from "@/components/TenantIcon.vue";
 import { useDBGroupStore } from "@/store";
 import {
   PlanCheckRun_Result_Status,
@@ -82,7 +71,6 @@ import {
   isDatabaseChangeSpec,
   usePlanContext,
   isGroupingChangeSpec,
-  isDeploymentConfigChangeSpec,
   planCheckRunListForSpec,
   planCheckRunSummaryForCheckRunList,
 } from "../../logic";
@@ -93,8 +81,6 @@ const props = defineProps<{
 
 const { isCreating, plan, selectedSpec, events } = usePlanContext();
 const dbGroupStore = useDBGroupStore();
-
-const project = computed(() => plan.value.projectEntity);
 
 const specClass = computed(() => {
   const classes: string[] = [];

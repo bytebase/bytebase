@@ -405,7 +405,6 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		var result []base.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.GetMetadata().Name {
-				// Schema tenant mode allows cross-database query, we should check the corresponding database.
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
 					DatabaseName:        &resource.Database,

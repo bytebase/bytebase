@@ -1,7 +1,6 @@
 package taskrun
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -21,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -167,26 +164,13 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 			UpdateTime:      time.Now(),
 		})
 
-	environmentID := instance.EnvironmentID
-	if payload.EnvironmentID != "" {
-		environmentID = payload.EnvironmentID
-	}
-	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
-	if err != nil {
-		return true, nil, err
-	}
-	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	peerDatabase, peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, environment, instance, project, task, taskRunUID, database)
-	if err != nil {
-		return true, nil, err
-	}
-
+	schemaVersion := &model.Version{}
 	syncStatus := api.OK
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  payload.DatabaseName,
 		SyncState:     &syncStatus,
-		SchemaVersion: &peerSchemaVersion,
+		SchemaVersion: schemaVersion,
 	}, api.SystemBotID); err != nil {
 		return true, nil, err
 	}
@@ -206,25 +190,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		UID:       sheet.UID,
 		UpdaterID: api.SystemBotID,
 	}
-
-	if peerSchema != "" {
-		// Better displaying schema in the task.
-		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
-		if err != nil {
-			return true, nil, err
-		}
-		fullSchema := fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, peerSchema)
-
-		sheetPatch.Statement = &fullSchema
-	}
 	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
 	}
 	if _, err := exec.store.PatchSheet(ctx, sheetPatch); err != nil {
 		return true, nil, errors.Wrapf(err, "failed to update sheet %d after executing the task", sheet.UID)
 	}
-
-	exec.reconcilePlan(ctx, project, database, peerDatabase)
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		slog.Error("failed to sync database schema",
@@ -234,10 +205,10 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		)
 	}
 
-	storedVersion, err := peerSchemaVersion.Marshal()
+	storedVersion, err := schemaVersion.Marshal()
 	if err != nil {
 		slog.Error("failed to convert database schema version",
-			slog.String("version", peerSchemaVersion.Version),
+			slog.String("version", schemaVersion.Version),
 			log.BBError(err),
 		)
 	}
@@ -245,285 +216,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		Detail:  fmt.Sprintf("Created database %q", payload.DatabaseName),
 		Version: storedVersion,
 	}, nil
-}
-
-// reconcilePlan adds the created database to other plans,
-// if the project has tenant mode enabled
-// if the issue is open
-// if the plan uses a deploymentConfig
-// if peer database task is not done
-// if the peer database task type is schemaUpdate.
-func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *store.ProjectMessage, createdDatabase *store.DatabaseMessage, peerDatabase *store.DatabaseMessage) {
-	if peerDatabase == nil {
-		return
-	}
-	if project.TenantMode != api.TenantModeTenant {
-		return
-	}
-
-	issues, err := exec.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		ProjectID:   &project.ResourceID,
-		DatabaseUID: &peerDatabase.UID,
-		StatusList:  []api.IssueStatus{api.IssueOpen},
-		TaskTypes:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate},
-	})
-	if err != nil {
-		slog.Debug("failed to list issues", log.BBError(err))
-		return
-	}
-	for _, issue := range issues {
-		err := func() error {
-			plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: issue.PipelineUID})
-			if err != nil {
-				return errors.Wrapf(err, "failed to get plan for issue %d, pipeline %d", issue.UID, issue.PipelineUID)
-			}
-			if plan == nil {
-				return errors.Wrapf(err, "plan not found for issue %d, pipeline %d", issue.UID, issue.PipelineUID)
-			}
-			if len(plan.Config.GetSteps()) != 1 {
-				return nil
-			}
-			if len(plan.Config.Steps[0].GetSpecs()) != 1 {
-				return nil
-			}
-			spec := plan.Config.Steps[0].Specs[0]
-			c := spec.GetChangeDatabaseConfig()
-			if c == nil {
-				return nil
-			}
-			if _, _, err := common.GetProjectIDDeploymentConfigID(c.Target); err != nil {
-				// continue because this is not a plan that uses deployment config.
-				//nolint:nilerr
-				return nil
-			}
-
-			// We somehow reconciled the plan before, so we just return.
-			tasks, err := exec.store.ListTasks(ctx, &api.TaskFind{
-				PipelineID: issue.PipelineUID,
-				DatabaseID: &createdDatabase.UID,
-			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to list tasks for created database %q", createdDatabase.DatabaseName)
-			}
-			if len(tasks) > 0 {
-				return nil
-			}
-
-			tasks, err = exec.store.ListTasks(ctx, &api.TaskFind{
-				PipelineID: issue.PipelineUID,
-				DatabaseID: &peerDatabase.UID,
-			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to list tasks for peer database %q", peerDatabase.DatabaseName)
-			}
-
-			var creates []*store.TaskMessage
-			for _, task := range tasks {
-				if task.LatestTaskRunStatus == api.TaskRunDone {
-					continue
-				}
-				switch task.Type {
-				case api.TaskDatabaseSchemaUpdate:
-				default:
-					continue
-				}
-				taskCreate := &store.TaskMessage{
-					CreatorID:         api.SystemBotID,
-					UpdaterID:         api.SystemBotID,
-					PipelineID:        task.PipelineID,
-					StageID:           task.StageID,
-					Name:              fmt.Sprintf("Copied task for database %q from %q", createdDatabase.DatabaseName, peerDatabase.DatabaseName),
-					InstanceID:        task.InstanceID,
-					DatabaseID:        &createdDatabase.UID,
-					Type:              task.Type,
-					EarliestAllowedTs: task.EarliestAllowedTs,
-					Payload:           task.Payload,
-				}
-				creates = append(creates, taskCreate)
-			}
-			if _, err := exec.store.CreateTasksV2(ctx, creates...); err != nil {
-				return errors.Wrapf(err, "failed to create tasks")
-			}
-			return nil
-		}()
-		if err != nil {
-			slog.Error("failed to reconcile plan", log.BBError(err))
-		}
-	}
-}
-
-func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (*store.DatabaseMessage, model.Version, string, error) {
-	if project.TenantMode != api.TenantModeTenant {
-		return nil, model.Version{}, "", nil
-	}
-
-	peerDatabase, schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project, database)
-	if err != nil {
-		return nil, model.Version{}, "", err
-	}
-	if schema == "" {
-		return nil, model.Version{}, "", nil
-	}
-
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-	if err != nil {
-		return nil, model.Version{}, "", err
-	}
-	defer driver.Close(ctx)
-
-	// TODO(d): support semantic versioning.
-	mi := &db.MigrationInfo{
-		InstanceID:     &task.InstanceID,
-		CreatorID:      task.CreatorID,
-		ReleaseVersion: exec.profile.Version,
-		Version:        schemaVersion,
-		Namespace:      database.DatabaseName,
-		Database:       database.DatabaseName,
-		DatabaseID:     &database.UID,
-		Environment:    environment.ResourceID,
-		Source:         db.UI,
-		Type:           db.Migrate,
-		Description:    "Create database",
-	}
-	creator, err := exec.store.GetUserByID(ctx, task.CreatorID)
-	if err != nil {
-		// If somehow we unable to find the principal, we just emit the error since it's not
-		// critical enough to fail the entire operation.
-		slog.Error("Failed to fetch creator for composing the migration info",
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	} else {
-		mi.Creator = creator.Name
-	}
-	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		// If somehow we unable to find the issue, we just emit the error since it's not
-		// critical enough to fail the entire operation.
-		slog.Error("Failed to fetch containing issue for composing the migration info",
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	}
-	mi.ProjectUID = &project.UID
-	// TODO(d): how could issue be nil?
-	if issue == nil {
-		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
-		slog.Error(err.Error(),
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	} else {
-		mi.IssueUID = &issue.UID
-	}
-
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, taskRunUID, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {
-		return nil, model.Version{}, "", err
-	}
-	return peerDatabase, schemaVersion, schema, nil
-}
-
-func getConnectionStatement(dbType storepb.Engine, databaseName string) (string, error) {
-	switch dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case storepb.Engine_MSSQL:
-		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
-		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
-	case storepb.Engine_CLICKHOUSE:
-		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case storepb.Engine_SNOWFLAKE:
-		return fmt.Sprintf("USE DATABASE %s;\n", databaseName), nil
-	case storepb.Engine_SQLITE:
-		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case storepb.Engine_MONGODB:
-		// We embed mongosh to execute the mongodb statement, and `use` statement is not effective in mongosh.
-		// We will connect to the specified database by specifying the database name in the connection string.
-		return "", nil
-	case storepb.Engine_REDSHIFT:
-		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
-	case storepb.Engine_SPANNER:
-		return "", nil
-	}
-
-	return "", errors.Errorf("unsupported database type %s", dbType)
-}
-
-// getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
-// It's used for creating a database in a tenant mode project.
-// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-// Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (*store.DatabaseMessage, model.Version, string, error) {
-	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
-		ProjectID: &project.ResourceID,
-		Engine:    &instance.Engine,
-	})
-	if err != nil {
-		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
-	}
-	var databases []*store.DatabaseMessage
-	for _, d := range allDatabases {
-		if d.UID != database.UID {
-			databases = append(databases, d)
-		}
-	}
-
-	deploymentConfig, err := stores.GetDeploymentConfigV2(ctx, project.UID)
-	if err != nil {
-		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
-	}
-	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
-		return nil, model.Version{}, "", errors.Errorf("Failed to get deployment schedule")
-	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, databases)
-	if err != nil {
-		return nil, model.Version{}, "", errors.Errorf("Failed to create deployment pipeline")
-	}
-	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
-	if similarDB == nil {
-		return nil, model.Version{}, "", nil
-	}
-	similarDBInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &similarDB.InstanceID})
-	if err != nil {
-		return nil, model.Version{}, "", err
-	}
-
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB, db.ConnectionContext{})
-	if err != nil {
-		return nil, model.Version{}, "", err
-	}
-	defer driver.Close(ctx)
-	schemaVersion, err := getLatestDoneSchemaVersion(ctx, stores, similarDBInstance.UID, similarDB.UID, similarDB.DatabaseName)
-	if err != nil {
-		return nil, model.Version{}, "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
-	}
-
-	var schemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, &schemaBuf); err != nil {
-		return nil, model.Version{}, "", err
-	}
-	return similarDB, schemaVersion, schemaBuf.String(), nil
-}
-
-// GetLatestDoneSchemaVersion gets the latest schema version for a database.
-func getLatestDoneSchemaVersion(ctx context.Context, stores *store.Store, instanceID int, databaseID int, databaseName string) (model.Version, error) {
-	// TODO(d): support semantic versioning.
-	limit := 1
-	done := db.Done
-	history, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		InstanceID: &instanceID,
-		DatabaseID: &databaseID,
-		Status:     &done,
-		Limit:      &limit,
-	})
-	if err != nil {
-		return model.Version{}, errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
-	}
-	if len(history) == 0 {
-		return model.Version{}, nil
-	}
-	return history[0].Version, nil
 }
 
 func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmentID string) *store.DatabaseMessage {

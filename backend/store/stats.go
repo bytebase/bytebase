@@ -143,9 +143,9 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 	return res, nil
 }
 
-// CountProjectGroupByTenantModeAndWorkflow counts the number of projects and group by tenant mode and workflow type.
+// CountProjectGroupByWorkflow counts the number of projects and group by workflow type.
 // Used by the metric collector.
-func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
+func (s *Store) CountProjectGroupByWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -155,19 +155,17 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	rows, err := tx.QueryContext(ctx, `
 		WITH project_workflow AS (
 			SELECT
-				project.tenant_mode as tenant_mode,
 				project.row_status as row_status,
 				(SELECT COUNT(1) FROM vcs_connector WHERE project.id = vcs_connector.project_id) > 0 AS has_connector
 			FROM project
 			WHERE resource_id != 'default'
 		)
 		SELECT
-			tenant_mode,
 			has_connector,
 			row_status,
 			COUNT(*)
 		FROM project_workflow
-		GROUP BY tenant_mode, has_connector, row_status`,
+		GROUP BY has_connector, row_status`,
 	)
 	if err != nil {
 		return nil, err
@@ -178,7 +176,7 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	for rows.Next() {
 		var metric metric.ProjectCountMetric
 		var hasConnector bool
-		if err := rows.Scan(&metric.TenantMode, &hasConnector, &metric.RowStatus, &metric.Count); err != nil {
+		if err := rows.Scan(&hasConnector, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, err
 		}
 		workflow := v1pb.Workflow_UI

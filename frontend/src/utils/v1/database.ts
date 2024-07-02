@@ -151,12 +151,7 @@ export const isTableQueryable = (
   return false;
 };
 
-type DatabaseV1FilterFields =
-  | "name"
-  | "project"
-  | "instance"
-  | "environment"
-  | "tenant";
+type DatabaseV1FilterFields = "name" | "project" | "instance" | "environment";
 export function filterDatabaseV1ByKeyword(
   db: ComposedDatabase,
   keyword: string,
@@ -194,13 +189,6 @@ export function filterDatabaseV1ByKeyword(
     db.effectiveEnvironmentEntity.title.toLowerCase().includes(keyword)
   ) {
     return true;
-  }
-
-  if (columns.includes("tenant")) {
-    const tenantValue = db.labels["tenant"] ?? "";
-    if (tenantValue.toLowerCase().includes(keyword)) {
-      return true;
-    }
   }
 
   return false;

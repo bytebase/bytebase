@@ -300,8 +300,6 @@ message Project {
 
   Workflow workflow = 6;
 
-  TenantMode tenant_mode = 8;
-
   repeated Webhook webhooks = 11;
 
   string data_classification_config_id = 12;
@@ -320,12 +318,6 @@ enum Workflow {
   WORKFLOW_UNSPECIFIED = 0;
   UI = 1;
   VCS = 2;
-}
-
-enum TenantMode {
-  TENANT_MODE_UNSPECIFIED = 0;
-  TENANT_MODE_DISABLED = 1;
-  TENANT_MODE_ENABLED = 2;
 }
 
 message AddWebhookRequest {

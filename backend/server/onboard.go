@@ -26,7 +26,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ResourceID: "project-sample",
 		Title:      "Sample Project",
 		Key:        "SAM",
-		TenantMode: api.TenantModeDisabled,
 	}, userID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding project")

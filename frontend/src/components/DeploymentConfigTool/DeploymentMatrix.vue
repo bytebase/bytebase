@@ -78,7 +78,6 @@ const filteredDatabaseList = computed(() => {
       "name",
       "environment",
       "instance",
-      "tenant",
     ]);
   });
 });
