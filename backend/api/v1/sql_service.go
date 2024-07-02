@@ -866,7 +866,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, instance *st
 			}
 			if instanceMeta != nil {
 				for _, dataSource := range instanceMeta.DataSources {
-					if dataSource.Host == linkedMeta.GetHost() {
+					if strings.Contains(linkedMeta.GetHost(), dataSource.Host) {
 						linkedDatabase = database
 						break
 					}
