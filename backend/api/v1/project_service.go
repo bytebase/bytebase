@@ -1525,12 +1525,17 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) api.ProjectTenantMod
 }
 
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
+	setting := &storepb.Project{
+		AllowModifyStatement: project.AllowModifyStatement,
+		AutoResolveIssue:     project.AutoResolveIssue,
+	}
 	tenantMode := convertToProjectTenantMode(project.TenantMode)
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
 		Title:      project.Title,
 		Key:        project.Key,
 		TenantMode: tenantMode,
+		Setting:    setting,
 	}, nil
 }
 
