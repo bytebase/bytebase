@@ -539,18 +539,21 @@ func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx 
 			continue
 		}
 
-		matched, err := utils.CheckDatabaseGroupMatch(ctx, dbGroup, database)
+		isMatched, err := utils.CheckDatabaseGroupMatch(ctx, dbGroup, database)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
 		}
-		if matched {
-			matched, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, dbGroup, allDatabases)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
-			}
-			if len(matched) > 0 {
-				matchedDatabases = matched
-			}
+		// If current database is not matched, continue to the next database group.
+		if !isMatched {
+			continue
+		}
+
+		matchedDb, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, dbGroup, allDatabases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
+		}
+		if len(matchedDb) > 0 {
+			matchedDatabases = matchedDb
 		}
 	}
 	return matchedDatabases, nil
