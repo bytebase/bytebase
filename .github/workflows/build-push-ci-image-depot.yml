@@ -33,8 +33,8 @@ jobs:
         working-directory: frontend
       - name: Run pnpm release build
         run: |
-          cp backend/plugin/advisor/config/* frontend/src/types
           cp backend/enterprise/api/plan.yaml frontend/src/types
+          cp backend/component/iam/permission.yaml frontend/src/types/iam
           export BB_GIT_COMMIT_ID_FE=${{ env.GIT_COMMIT }}
           pnpm --dir ./frontend i && pnpm --dir ./frontend release
       - name: Login to DockerHub

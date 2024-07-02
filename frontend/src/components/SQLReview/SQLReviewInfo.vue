@@ -126,7 +126,7 @@ import {
   projectNamePrefix,
   isDatabaseName,
 } from "@/store/modules/v1/common";
-import type { SQLReviewPolicyTemplate } from "@/types";
+import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -140,7 +140,7 @@ const props = defineProps<{
   resourceId: string;
   attachedResources: string[];
   isCreate: boolean;
-  selectedTemplate?: SQLReviewPolicyTemplate;
+  selectedTemplate?: SQLReviewPolicyTemplateV2;
   isEdit: boolean;
   allowChangeAttachedResource: boolean;
 }>();
@@ -149,7 +149,7 @@ const emit = defineEmits<{
   (event: "name-change", name: string): void;
   (event: "resource-id-change", resourceId: string): void;
   (event: "attached-resources-change", resourceId: string[]): void;
-  (event: "select-template", template: SQLReviewPolicyTemplate): void;
+  (event: "select-template", template: SQLReviewPolicyTemplateV2): void;
 }>();
 
 const sqlReviewStore = useSQLReviewStore();
@@ -187,8 +187,8 @@ const filterResource = (name: string): boolean => {
 };
 
 const onTemplatesChange = (templates: {
-  policy: SQLReviewPolicyTemplate[];
-  builtin: SQLReviewPolicyTemplate[];
+  policy: SQLReviewPolicyTemplateV2[];
+  builtin: SQLReviewPolicyTemplateV2[];
 }) => {
   if (!props.selectedTemplate) {
     emit("select-template", templates.policy[0] ?? templates.builtin[0]);

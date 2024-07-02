@@ -15,7 +15,7 @@
     <PlanCheckDetail
       v-if="selectedPlanCheckRun"
       :plan-check-run="selectedPlanCheckRun"
-      :environment="environment"
+      :database="database"
       :is-latest="isLatestPlanCheckRun"
       @close="$emit('close')"
     />
@@ -27,6 +27,7 @@ import { first, orderBy } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { databaseForSpec } from "@/components/Plan/logic";
+import { usePlanContext } from "@/components/Plan/logic";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
 import { EMPTY_ID } from "@/types";
@@ -38,7 +39,6 @@ import {
 import { humanizeDate } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
-import { usePlanContext } from "@/components/Plan/logic";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
@@ -120,12 +120,11 @@ watch(selectedPlanCheckRunList, (list) => {
   selectedPlanCheckRunUID.value = first(list)?.uid;
 });
 
-const environment = computed(() => {
+const database = computed(() => {
   const spec = selectedSpec.value;
   if (!spec || spec.id === String(EMPTY_ID)) {
     return;
   }
-  const database = databaseForSpec(plan.value, spec);
-  return database.effectiveEnvironmentEntity.name;
+  return databaseForSpec(plan.value, spec);
 });
 </script>

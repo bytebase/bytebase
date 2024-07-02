@@ -11,11 +11,11 @@
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { RuleConfigComponent, RuleTemplate } from "@/types";
+import type { RuleConfigComponent, RuleTemplateV2 } from "@/types";
 import { getRuleLocalizationKey } from "@/types/sqlReview";
 
 const props = defineProps<{
-  rule: RuleTemplate;
+  rule: RuleTemplateV2;
   config: RuleConfigComponent;
   value: boolean;
   disabled: boolean;
