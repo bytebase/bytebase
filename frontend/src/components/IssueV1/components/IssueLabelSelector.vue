@@ -27,7 +27,7 @@
           }"
           class="textinfolabel normal-link mb-4"
         >
-          {{ $t("project.settings.labels.configure-labels") }}
+          {{ $t("project.settings.issue-related.labels.configure-labels") }}
         </router-link>
       </div>
     </template>
