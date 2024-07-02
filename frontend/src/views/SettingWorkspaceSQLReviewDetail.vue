@@ -65,13 +65,16 @@
       </div>
     </div>
 
-    <SQLReviewTabsByEngine class="mt-5" :rule-list="state.ruleList">
+    <SQLReviewTabsByEngine
+      class="mt-5"
+      :rule-map-by-engine="state.ruleMapByEngine"
+    >
       <template
-        #default="{ ruleList, engine }: { ruleList: RuleTemplateV2[]; engine: Engine; }"
+        #default="{ ruleList: ruleListFilteredByEngine, engine }: { ruleList: RuleTemplateV2[]; engine: Engine; }"
       >
         <SQLRuleTableWithFilter
           :engine="engine"
-          :rule-list="ruleList"
+          :rule-list="ruleListFilteredByEngine"
           :editable="hasPermission"
           @rule-change="markChange"
         />
@@ -132,7 +135,6 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
 import { computed, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -148,8 +150,10 @@ import {
 import type { RuleTemplateV2 } from "@/types";
 import {
   unknown,
+  UNKNOWN_ID,
+  getRuleMapByEngine,
   ruleIsAvailableInSubscription,
-  convertRuleTemplateToPolicyRule,
+  convertRuleMapToPolicyRuleList,
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -163,7 +167,7 @@ interface LocalState {
   showEnableModal: boolean;
   selectedCategory?: string;
   editMode: boolean;
-  ruleList: RuleTemplateV2[];
+  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
   rulesUpdated: boolean;
   updating: boolean;
   editingTitle: boolean;
@@ -179,7 +183,7 @@ const state = reactive<LocalState>({
   showDisableModal: false,
   showEnableModal: false,
   editMode: false,
-  ruleList: [],
+  ruleMapByEngine: new Map(),
   rulesUpdated: false,
   updating: false,
   editingTitle: false,
@@ -201,7 +205,7 @@ const reviewPolicy = computed(() => {
 });
 
 const ruleListOfPolicy = computed((): RuleTemplateV2[] => {
-  if (!reviewPolicy.value) {
+  if (reviewPolicy.value.id === `${UNKNOWN_ID}`) {
     return [];
   }
   return rulesToTemplate(reviewPolicy.value, true).ruleList;
@@ -210,7 +214,7 @@ const ruleListOfPolicy = computed((): RuleTemplateV2[] => {
 watch(
   ruleListOfPolicy,
   (ruleList) => {
-    state.ruleList = cloneDeep(ruleList);
+    state.ruleMapByEngine = getRuleMapByEngine(ruleList);
   },
   { immediate: true }
 );
@@ -251,20 +255,19 @@ const markChange = (
     return;
   }
 
-  const index = state.ruleList.findIndex((r) => r.type === rule.type);
-  if (index < 0) {
+  const selectedRule = state.ruleMapByEngine.get(rule.engine)?.get(rule.type);
+  if (!selectedRule) {
     return;
   }
-  const newRule = {
-    ...state.ruleList[index],
-    ...overrides,
-  };
-  state.ruleList[index] = newRule;
+  state.ruleMapByEngine
+    .get(rule.engine)
+    ?.set(rule.type, Object.assign(selectedRule, overrides));
+
   state.rulesUpdated = true;
 };
 
 const onCancelChanges = () => {
-  state.ruleList = cloneDeep(ruleListOfPolicy.value);
+  state.ruleMapByEngine = getRuleMapByEngine(ruleListOfPolicy.value);
   state.rulesUpdated = false;
 };
 
@@ -276,7 +279,7 @@ const onApplyChanges = async () => {
     await store.updateReviewPolicy({
       id: policy.id,
       title: policy.name,
-      ruleList: state.ruleList.map(convertRuleTemplateToPolicyRule),
+      ruleList: convertRuleMapToPolicyRuleList(state.ruleMapByEngine),
     });
     state.rulesUpdated = false;
     pushUpdatedNotify();

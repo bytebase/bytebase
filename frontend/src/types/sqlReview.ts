@@ -154,20 +154,25 @@ export interface SQLReviewPolicyTemplateV2 {
   ruleList: RuleTemplateV2[];
 }
 
-export const ruleTemplateMapV2 = (sqlReviewSchema as RuleTemplateV2[]).reduce(
-  (map, ruleSchema) => {
-    if (!map.has(ruleSchema.type)) {
-      map.set(ruleSchema.type, new Map());
+export const getRuleMapByEngine = (
+  ruleList: RuleTemplateV2[]
+): Map<Engine, Map<string, RuleTemplateV2>> => {
+  return ruleList.reduce((map, rule) => {
+    const engine = engineFromJSON(rule.engine);
+    if (!map.has(engine)) {
+      map.set(engine, new Map());
     }
-    const engine = engineFromJSON(ruleSchema.engine);
-    map.get(ruleSchema.type)?.set(engine, {
-      ...ruleSchema,
+    map.get(engine)?.set(rule.type, {
+      ...rule,
       engine,
-      componentList: ruleSchema.componentList || [],
+      componentList: rule.componentList || [],
     });
     return map;
-  },
-  new Map<string, Map<Engine, RuleTemplateV2>>()
+  }, new Map<Engine, Map<string, RuleTemplateV2>>());
+};
+
+export const ruleTemplateMapV2 = getRuleMapByEngine(
+  sqlReviewSchema as RuleTemplateV2[]
 );
 
 // Build the frontend template list based on schema and template.
@@ -194,8 +199,8 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
 
     for (const rule of template.ruleList) {
       const ruleTemplate = ruleTemplateMapV2
-        .get(rule.type)
-        ?.get(engineFromJSON(rule.engine));
+        .get(engineFromJSON(rule.engine))
+        ?.get(rule.type);
       if (!ruleTemplate) {
         continue;
       }
@@ -683,9 +688,23 @@ const mergeIndividualConfigAsRule = (
   throw new Error(`Invalid rule ${template.type}`);
 };
 
+export const convertRuleMapToPolicyRuleList = (
+  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>
+): SchemaPolicyRule[] => {
+  const resp: SchemaPolicyRule[] = [];
+
+  for (const mapByType of ruleMapByEngine.values()) {
+    for (const rule of mapByType.values()) {
+      resp.push(convertRuleTemplateToPolicyRule(rule));
+    }
+  }
+
+  return resp;
+};
+
 // The convertRuleTemplateToPolicyRule will convert rule template to review policy rule for backend useage.
 // Will throw exception if we don't implement the payload handler for specific type of rule.
-export const convertRuleTemplateToPolicyRule = (
+const convertRuleTemplateToPolicyRule = (
   rule: RuleTemplateV2
 ): SchemaPolicyRule => {
   const base: SchemaPolicyRule = {
