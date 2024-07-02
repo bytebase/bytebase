@@ -6,5 +6,5 @@ title: ワークスペース・メンバー」とは？
 
 #### Learn more
 
-- [ワークスペース・メンバーの管理](https://www.bytebase.com/docs/get-started/step-by-step/manage-members)
+- [ワークスペース・メンバーの管理](https://bytebase.cc/docs/get-started/step-by-step/register-accounts/#manage-members-eg-update-password)
 - [役割と権限（RBAC）](https://www.bytebase.com/docs/concepts/roles-and-permissions)
