@@ -47,6 +47,17 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
+	if len(stmtList) > 1 {
+		return []*storepb.Advice{
+			{
+				Status:  storepb.Advice_SUCCESS,
+				Code:    advisor.Ok.Int32(),
+				Title:   "OK",
+				Content: "skip because there are more than one statement",
+			},
+		}, nil
+	}
+
 	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
@@ -57,53 +68,59 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 	if err != nil {
 		return nil, err
 	}
-	checker := &useGhostChecker{
-		level:            level,
-		title:            string(ctx.Rule.Type),
-		currentDatabase:  ctx.CurrentDatabase,
-		changedResources: make(map[string]base.SchemaResource),
-	}
-
-	for _, stmt := range stmtList {
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
-	}
-
 	dbSchema := model.NewDBSchema(ctx.DBSchema, nil, nil)
-	for _, resource := range checker.changedResources {
-		var tableRows int64
-		if table := dbSchema.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table); table != nil {
-			tableRows = table.GetRowCount()
+
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmtList {
+		checker := &useGhostChecker{
+			level:            level,
+			title:            string(ctx.Rule.Type),
+			currentDatabase:  ctx.CurrentDatabase,
+			changedResources: make(map[string]base.SchemaResource),
 		}
-		if tableRows >= minRows {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.AdviseOnlineMigration.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider enabling online migration", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
-			})
+
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+
+		if !checker.ghostCompatible {
+			continue
+		}
+
+		for _, resource := range checker.changedResources {
+			var tableRows int64
+			if table := dbSchema.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table); table != nil {
+				tableRows = table.GetRowCount()
+			}
+			if tableRows >= minRows {
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  checker.level,
+					Code:    advisor.AdviseOnlineMigration.Int32(),
+					Title:   checker.title,
+					Content: fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider enabling online migration", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
+				})
+			}
 		}
 	}
 
-	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+	if len(adviceList) == 0 {
+		adviceList = append(adviceList, &storepb.Advice{
 			Status:  storepb.Advice_SUCCESS,
 			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
 		})
 	}
-	return checker.adviceList, nil
+	return adviceList, nil
 }
 
 type useGhostChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+	level storepb.Advice_Status
+	title string
 
 	currentDatabase  string
 	changedResources map[string]base.SchemaResource
+	ghostCompatible  bool
 }
 
 func (c *useGhostChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
@@ -119,4 +136,8 @@ func (c *useGhostChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	}
 	resource.Table = table
 	c.changedResources[resource.String()] = resource
+}
+
+func (c *useGhostChecker) EnterAlterTableActions(ctx *mysql.AlterTableActionsContext) {
+	c.ghostCompatible = ctx.AlterCommandList() != nil || ctx.PartitionClause() != nil || ctx.RemovePartitioning() != nil
 }
