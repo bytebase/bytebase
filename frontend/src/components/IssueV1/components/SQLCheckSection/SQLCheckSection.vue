@@ -13,6 +13,9 @@
       :button-props="{
         size: 'tiny',
       }"
+      :highlight-row-filter="
+        (row) => row.checkResult.title === 'advice.online-migration'
+      "
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
       @update:advices="$emit('update:advices', $event)"
@@ -26,7 +29,7 @@
         <SQLCheckBadge v-else :is-running="isRunning" :advices="advices" />
       </template>
 
-      <template #row-extra="{ row, confirm }">
+      <template #row-title-extra="{ row, confirm }">
         <OnlineMigrationAdviceExtra
           v-if="row.checkResult.title === 'advice.online-migration'"
           :row="row"
