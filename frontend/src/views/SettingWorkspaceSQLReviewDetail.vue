@@ -204,7 +204,7 @@ const ruleListOfPolicy = computed((): RuleTemplateV2[] => {
   if (!reviewPolicy.value) {
     return [];
   }
-  return rulesToTemplate(reviewPolicy.value).ruleList;
+  return rulesToTemplate(reviewPolicy.value, true).ruleList;
 });
 
 watch(

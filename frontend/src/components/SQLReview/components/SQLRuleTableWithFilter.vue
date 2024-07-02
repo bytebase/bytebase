@@ -4,10 +4,12 @@
     :params="filterParams"
     v-on="filterEvents"
   >
-    <template #default="{ ruleList }: { ruleList: RuleTemplateV2[] }">
+    <template
+      #default="{ ruleList: filteredRuleList }: { ruleList: RuleTemplateV2[] }"
+    >
       <SQLRuleTable
-        v-if="ruleList.length > 0"
-        :rule-list="ruleList"
+        v-if="filteredRuleList.length > 0"
+        :rule-list="filteredRuleList"
         :editable="editable"
         @level-change="onLevelChange"
         @payload-change="onPayloadChange"

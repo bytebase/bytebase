@@ -129,7 +129,7 @@ const emit = defineEmits<{
 const reviewPolicyList = useSQLReviewPolicyList();
 
 const reviewPolicyTemplateList = computed(() => {
-  return reviewPolicyList.value.map(rulesToTemplate);
+  return reviewPolicyList.value.map((r) => rulesToTemplate(r, false));
 });
 
 const isSelectedTemplate = (template: SQLReviewPolicyTemplateV2) => {

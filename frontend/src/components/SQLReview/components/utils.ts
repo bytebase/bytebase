@@ -4,10 +4,15 @@ import type {
   SQLReviewPolicy,
 } from "@/types";
 import { convertPolicyRuleToRuleTemplate, ruleTemplateMapV2 } from "@/types";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import type { PayloadValueType } from "./RuleConfigComponents";
 
-export const rulesToTemplate = (review: SQLReviewPolicy) => {
+export const rulesToTemplate = (
+  review: SQLReviewPolicy,
+  withDisabled: boolean
+) => {
   const ruleTemplateList: RuleTemplateV2[] = [];
+  const usedRule = new Set();
 
   for (const rule of review.ruleList) {
     const ruleTemplate = ruleTemplateMapV2.get(rule.type)?.get(rule.engine);
@@ -15,9 +20,24 @@ export const rulesToTemplate = (review: SQLReviewPolicy) => {
       continue;
     }
 
+    usedRule.add(rule.type);
     const data = convertPolicyRuleToRuleTemplate(rule, ruleTemplate);
     if (data) {
       ruleTemplateList.push(data);
+    }
+  }
+
+  if (withDisabled) {
+    for (const [key, map] of ruleTemplateMapV2.entries()) {
+      if (usedRule.has(key)) {
+        continue;
+      }
+      for (const rule of map.values()) {
+        ruleTemplateList.push({
+          ...rule,
+          level: SQLReviewRuleLevel.DISABLED,
+        });
+      }
     }
   }
 

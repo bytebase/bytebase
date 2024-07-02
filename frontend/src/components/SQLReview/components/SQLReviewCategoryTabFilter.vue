@@ -2,7 +2,7 @@
   <NTabs
     :value="state.selectedTab"
     :size="'small'"
-    :type="'segment'"
+    :type="tabType"
     @update:value="
       (val: string) => {
         state.selectedTab = val;
@@ -22,17 +22,12 @@
 </template>
 
 <script lang="ts" setup>
+import { useWindowSize } from "@vueuse/core";
 import { NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";
 import { convertToCategoryList } from "@/types";
-
-export interface CategoryFilterItem {
-  id: string;
-  name: string;
-  ruleList: RuleTemplateV2[];
-}
 
 interface LocalState {
   selectedTab: string;
@@ -56,6 +51,15 @@ const { t } = useI18n();
 
 const state = reactive<LocalState>({
   selectedTab: "all",
+});
+
+const { width: winWidth } = useWindowSize();
+
+const tabType = computed(() => {
+  if (winWidth.value >= 1000) {
+    return "segment";
+  }
+  return "line";
 });
 
 watch(

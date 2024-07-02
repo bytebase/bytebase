@@ -5,10 +5,16 @@
       :rule-list="ruleList"
       @update:value="$emit('change-category', $event)"
     >
-      <template #default="{ ruleList }: { ruleList: RuleTemplateV2[] }">
+      <template
+        #default="{
+          ruleList: ruleListFilteredByCategory,
+        }: {
+          ruleList: RuleTemplateV2[];
+        }"
+      >
         <div class="flex items-center justify-between">
           <SQLReviewCategorySummaryFilter
-            :rule-list="ruleList"
+            :rule-list="ruleListFilteredByCategory"
             :is-checked-level="(level) => params.checkedLevel.has(level)"
             @toggle-checked-level="$emit('toggle-checked-level', $event)"
           />
@@ -19,7 +25,7 @@
             @update:value="$emit('change-search-text', $event)"
           />
         </div>
-        <slot :rule-list="ruleList.filter(filterRule)" />
+        <slot :rule-list="ruleListFilteredByCategory.filter(filterRule)" />
       </template>
     </SQLReviewCategoryTabFilter>
   </div>

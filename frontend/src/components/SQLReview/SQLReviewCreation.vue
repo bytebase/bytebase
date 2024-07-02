@@ -124,7 +124,9 @@ const state = reactive<LocalState>({
   resourceId: props.policy ? getReviewConfigId(props.policy.id) : "",
   attachedResources: props.selectedResources,
   selectedRuleList: [...props.selectedRuleList],
-  selectedTemplate: props.policy ? rulesToTemplate(props.policy) : undefined,
+  selectedTemplate: props.policy
+    ? rulesToTemplate(props.policy, false)
+    : undefined,
   ruleUpdated: false,
   pendingApplyTemplate: undefined,
 });

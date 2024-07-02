@@ -2,7 +2,7 @@
   <SQLReviewTabsByEngine :rule-list="selectedRuleList">
     <template
       #default="{
-        ruleList,
+        ruleList: ruleListFilteredByEngine,
         engine,
       }: {
         ruleList: RuleTemplateV2[];
@@ -11,7 +11,7 @@
     >
       <SQLRuleTableWithFilter
         :engine="engine"
-        :rule-list="ruleList"
+        :rule-list="ruleListFilteredByEngine"
         :editable="true"
         @rule-change="onRuleChange"
       />
