@@ -17,8 +17,6 @@ const DefaultInstanceMaximumConnections = 10
 
 // State is the state for all in-memory states within the server.
 type State struct {
-	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
-	InstanceSyncs sync.Map // map[instance.ID]*store.InstanceMessage
 	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
 	InstanceSlowQuerySyncChan chan *InstanceSlowQuerySyncMessage
 
@@ -51,8 +49,6 @@ type State struct {
 	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
 	TaskSkippedOrDoneChan chan int
 
-	// InstanceSyncTickleChan is the tickler for syncing instances.
-	InstanceSyncTickleChan chan int
 	// PlanCheckTickleChan is the tickler for plan check scheduler.
 	PlanCheckTickleChan chan int
 	// TaskRunTickleChan is the tickler for task run scheduler.
@@ -71,7 +67,6 @@ func New() (*State, error) {
 		InstanceOutstandingConnections:       &connectionLimiter{connections: map[int]int{}},
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
-		InstanceSyncTickleChan:               make(chan int, 50000),
 		PlanCheckTickleChan:                  make(chan int, 1000),
 		TaskRunTickleChan:                    make(chan int, 1000),
 		ExpireCache:                          expireCache,
