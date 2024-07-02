@@ -12,16 +12,20 @@
       :plan-check-run="planCheckRun"
       :database="database"
       :is-latest="false"
+      :highlight-row-filter="highlightRowFilter"
       @close="$emit('close')"
     >
       <template #row-extra="{ row }">
         <slot name="row-extra" :row="row" />
       </template>
+      <template #row-title-extra="{ row }">
+        <slot name="row-title-extra" :row="row" />
+      </template>
     </PlanCheckDetail>
 
     <div
       v-if="confirm"
-      class="flex flex-row justify-end items-center gap-x-3 mt-4"
+      class="flex flex-row justify-end items-center gap-x-3 mt-3"
     >
       <NButton @click="confirm!.resolve(false)">
         {{ $t("issue.sql-check.back-to-edit") }}
@@ -53,13 +57,16 @@ import {
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";
-import PlanCheckDetail from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
+import PlanCheckDetail, {
+  type PlanCheckDetailTableRow,
+} from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 
 const { advices, database } = defineProps<{
   database: ComposedDatabase;
   advices: Advice[];
   overrideTitle?: string;
   confirm?: Defer<boolean>;
+  highlightRowFilter?: (row: PlanCheckDetailTableRow) => boolean;
 }>();
 
 defineEmits<{

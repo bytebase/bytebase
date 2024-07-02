@@ -110,6 +110,9 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
   
+- [store/db_group.proto](#store_db_group-proto)
+    - [DatabaseGroupPayload](#bytebase-store-DatabaseGroupPayload)
+  
 - [store/export_archive.proto](#store_export_archive-proto)
     - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
   
@@ -1762,6 +1765,9 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
 | account_id | [string](#string) |  | account_id is used by Databricks. |
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
+| master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
+| master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
+| master_obfuscated_password | [string](#string) |  |  |
 
 
 
@@ -1874,6 +1880,37 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_db_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/db_group.proto
+
+
+
+<a name="bytebase-store-DatabaseGroupPayload"></a>
+
+### DatabaseGroupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| multitenancy | [bool](#bool) |  |  |
+
+
+
+
+
+ 
 
  
 

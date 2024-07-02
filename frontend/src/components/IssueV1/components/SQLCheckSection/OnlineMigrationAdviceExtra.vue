@@ -1,12 +1,16 @@
 <template>
-  <div v-if="allowEnableGhost">
-    <div class="normal-link inline-block" @click="enableGhost">
-      {{ $t("task.online-migration.enable") }}
-    </div>
-  </div>
+  <NButton
+    v-if="allowEnableGhost"
+    size="small"
+    type="primary"
+    @click="enableGhost"
+  >
+    {{ $t("task.online-migration.enable") }}
+  </NButton>
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { isGroupingChangeTaskV1, useIssueContext } from "../../logic";
 import { type PlanCheckDetailTableRow } from "../PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
