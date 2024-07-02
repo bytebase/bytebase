@@ -110,6 +110,9 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
   
+- [store/db_group.proto](#store_db_group-proto)
+    - [DatabaseGroupPayload](#bytebase-store-DatabaseGroupPayload)
+  
 - [store/export_archive.proto](#store_export_archive-proto)
     - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
   
@@ -1874,6 +1877,37 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_db_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/db_group.proto
+
+
+
+<a name="bytebase-store-DatabaseGroupPayload"></a>
+
+### DatabaseGroupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| multitenancy | [bool](#bool) |  |  |
+
+
+
+
+
+ 
 
  
 
