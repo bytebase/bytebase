@@ -141,6 +141,9 @@ const state = reactive<LocalState>({
     ...emptyProject(),
     title: "New Project",
     key: randomString(3).toUpperCase(),
+    // Default to enabled for new project.
+    allowModifyStatement: true,
+    autoResolveIssue: true,
   },
   resourceId: "",
   showFeatureModal: false,
