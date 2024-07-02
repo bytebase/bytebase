@@ -414,17 +414,12 @@ export class DiffMerge {
           mergedPartitions.push(targetPartition);
           context.markEditStatusByKey(key, "created");
 
-          // Then mark all its subpartitions as 'created'
-          for (let j = 0; j < targetPartition.subpartitions.length; j++) {
-            const targetSubPartition = targetPartition.subpartitions[j];
-            const key = keyForResourceName({
-              database: database.name,
-              schema: targetSchema.name,
-              table: targetTable.name,
-              partition: targetSubPartition.name,
-            });
-            context.markEditStatusByKey(key, "created");
-          }
+          // Then mark all its subpartitions as 'created', by performing
+          // a diff from empty array to targetPartition.subpartitions
+          doMergePartitions(
+            /* sourcePartitions */ [],
+            targetPartition.subpartitions
+          );
         }
       }
       return mergedPartitions;
