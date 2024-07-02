@@ -95,7 +95,7 @@
               )
             "
           >
-            L{{ row.checkResult.sqlReviewReport.line }}
+            Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
 
