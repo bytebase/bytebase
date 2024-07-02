@@ -63,7 +63,7 @@
               :level="rule.level"
               :disabled="!isRuleAvailable(rule)"
               :editable="editable"
-              @level-change="$emit('level-change', rule, $event)"
+              @level-change="updateLevel(rule, $event)"
             />
           </div>
           <div class="bb-grid-cell justify-center">
@@ -148,7 +148,7 @@
             :level="rule.level"
             :disabled="!isRuleAvailable(rule)"
             :editable="editable"
-            @level-change="$emit('level-change', rule, $event)"
+            @level-change="updateLevel(rule, $event)"
           />
           <p class="textinfolabel">
             {{ getRuleLocalization(rule.type).description }}
@@ -176,6 +176,7 @@ import { NSwitch } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
+import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { useCurrentPlan } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
 import {
@@ -206,16 +207,10 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (
-    event: "payload-change",
+    event: "rule-change",
     rule: RuleTemplateV2,
-    payload: PayloadValueType[]
+    update: Partial<RuleTemplateV2>
   ): void;
-  (
-    event: "level-change",
-    rule: RuleTemplateV2,
-    level: SQLReviewRuleLevel
-  ): void;
-  (event: "comment-change", rule: RuleTemplateV2, comment: string): void;
 }>();
 
 const { t } = useI18n();
@@ -255,20 +250,24 @@ const setActiveRule = (rule: RuleTemplateV2) => {
 };
 
 const toggleActivity = (rule: RuleTemplateV2, on: boolean) => {
-  emit(
-    "level-change",
+  updateLevel(
     rule,
     on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED
   );
 };
 
-const updatePayload = (rule: RuleTemplateV2, payload: PayloadValueType[]) => {
-  emit("payload-change", rule, payload);
+const updatePayload = (rule: RuleTemplateV2, data: PayloadValueType[]) => {
+  if (!rule.componentList) {
+    return;
+  }
+  emit("rule-change", rule, payloadValueListToComponentList(rule, data));
 };
+
 const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRuleLevel) => {
-  emit("level-change", rule, level);
+  emit("rule-change", rule, { level });
 };
+
 const updateComment = (rule: RuleTemplateV2, comment: string) => {
-  emit("comment-change", rule, comment);
+  emit("rule-change", rule, { comment });
 };
 </script>
