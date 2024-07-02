@@ -250,6 +250,11 @@ export interface DataSourceOptions {
   accountId: string;
   /** warehouse_id is used by Databricks. */
   warehouseId: string;
+  /** master_name is the master name used by connecting redis-master via redis sentinel. */
+  masterName: string;
+  /** master_username and master_obfuscated_password are master credentials used by redis sentinel mode. */
+  masterUsername: string;
+  masterObfuscatedPassword: string;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -645,6 +650,9 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     region: "",
     accountId: "",
     warehouseId: "",
+    masterName: "",
+    masterUsername: "",
+    masterObfuscatedPassword: "",
   };
 }
 
@@ -706,6 +714,15 @@ export const DataSourceOptions = {
     }
     if (message.warehouseId !== "") {
       writer.uint32(154).string(message.warehouseId);
+    }
+    if (message.masterName !== "") {
+      writer.uint32(162).string(message.masterName);
+    }
+    if (message.masterUsername !== "") {
+      writer.uint32(170).string(message.masterUsername);
+    }
+    if (message.masterObfuscatedPassword !== "") {
+      writer.uint32(178).string(message.masterObfuscatedPassword);
     }
     return writer;
   },
@@ -850,6 +867,27 @@ export const DataSourceOptions = {
 
           message.warehouseId = reader.string();
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.masterName = reader.string();
+          continue;
+        case 21:
+          if (tag !== 170) {
+            break;
+          }
+
+          message.masterUsername = reader.string();
+          continue;
+        case 22:
+          if (tag !== 178) {
+            break;
+          }
+
+          message.masterObfuscatedPassword = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -892,6 +930,11 @@ export const DataSourceOptions = {
       region: isSet(object.region) ? globalThis.String(object.region) : "",
       accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
+      masterName: isSet(object.masterName) ? globalThis.String(object.masterName) : "",
+      masterUsername: isSet(object.masterUsername) ? globalThis.String(object.masterUsername) : "",
+      masterObfuscatedPassword: isSet(object.masterObfuscatedPassword)
+        ? globalThis.String(object.masterObfuscatedPassword)
+        : "",
     };
   },
 
@@ -954,6 +997,15 @@ export const DataSourceOptions = {
     if (message.warehouseId !== "") {
       obj.warehouseId = message.warehouseId;
     }
+    if (message.masterName !== "") {
+      obj.masterName = message.masterName;
+    }
+    if (message.masterUsername !== "") {
+      obj.masterUsername = message.masterUsername;
+    }
+    if (message.masterObfuscatedPassword !== "") {
+      obj.masterObfuscatedPassword = message.masterObfuscatedPassword;
+    }
     return obj;
   },
 
@@ -987,6 +1039,9 @@ export const DataSourceOptions = {
     message.region = object.region ?? "";
     message.accountId = object.accountId ?? "";
     message.warehouseId = object.warehouseId ?? "";
+    message.masterName = object.masterName ?? "";
+    message.masterUsername = object.masterUsername ?? "";
+    message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
     return message;
   },
 };
