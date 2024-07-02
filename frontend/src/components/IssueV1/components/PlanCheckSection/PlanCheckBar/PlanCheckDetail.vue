@@ -190,7 +190,7 @@
               )
             "
           >
-            L{{ row.checkResult.sqlReviewReport.line }}
+            Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
 
@@ -309,11 +309,19 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
 });
 
 const getRuleTemplateByType = (type: string) => {
-  const mapByEngine = ruleTemplateMapV2.get(type);
-  if (!mapByEngine) {
-    return;
+  if (props.database) {
+    return ruleTemplateMapV2
+      .get(props.database.instanceEntity.engine)
+      ?.get(type);
   }
-  return [...mapByEngine.values()][0];
+
+  // fallback
+  for (const mapByType of ruleTemplateMapV2.values()) {
+    if (mapByType.has(type)) {
+      return mapByType.get(type);
+    }
+  }
+  return;
 };
 
 const categoryAndTitle = (

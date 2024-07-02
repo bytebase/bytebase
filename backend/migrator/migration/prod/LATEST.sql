@@ -892,7 +892,8 @@ CREATE TABLE db_group (
     project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,
     placeholder TEXT NOT NULL DEFAULT '',
-    expression JSONB NOT NULL DEFAULT '{}'
+    expression JSONB NOT NULL DEFAULT '{}',
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON db_group(project_id, resource_id);

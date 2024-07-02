@@ -1,21 +1,22 @@
 <template>
   <BBModal
-    :title="
-      editable
-        ? $t('sql-review.edit-rule.self')
-        : $t('sql-review.edit-rule.readonly')
-    "
+    :title="getRuleLocalization(rule.type).title"
     @close="$emit('cancel')"
   >
     <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
-          <div>
-            <RuleEngineIcon :engine="rule.engine" />
-          </div>
           <h3 class="text-lg text-control font-medium">
             {{ $t("common.name") }}
           </h3>
+          <div class="flex items-center space-x-2">
+            <EngineIcon :engine="rule.engine" custom-class="ml-1" />
+            <RichEngineName
+              :engine="rule.engine"
+              tag="p"
+              class="text-center text-sm !text-main"
+            />
+          </div>
         </div>
         <div class="textinfolabel flex items-center gap-x-2">
           {{ getRuleLocalization(rule.type).title }}
@@ -147,6 +148,7 @@
 import { NSwitch } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import type { RuleConfigComponent, RuleTemplateV2 } from "@/types/sqlReview";
 import { getRuleLocalization, getRuleLocalizationKey } from "@/types/sqlReview";
@@ -158,7 +160,6 @@ import {
   StringArrayComponent,
   TemplateComponent,
 } from "./RuleConfigComponents";
-import RuleEngineIcon from "./RuleEngineIcon.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
@@ -174,9 +175,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "update:payload", payload: PayloadValueType[]): void;
-  (event: "update:level", level: SQLReviewRuleLevel): void;
-  (event: "update:comment", comment: string): void;
+  (event: "update:rule", update: Partial<RuleTemplateV2>): void;
   (event: "cancel"): void;
 }>();
 
@@ -232,9 +231,11 @@ watch(
 );
 
 const confirm = () => {
-  emit("update:level", state.level);
-  emit("update:payload", state.payload);
-  emit("update:comment", state.comment);
+  emit("update:rule", {
+    componentList: payloadValueListToComponentList(props.rule, state.payload),
+    level: state.level,
+    comment: state.comment,
+  });
   nextTick(() => {
     emit("cancel");
   });

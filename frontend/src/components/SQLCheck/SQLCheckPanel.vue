@@ -11,7 +11,7 @@
     <PlanCheckDetail
       :plan-check-run="planCheckRun"
       :database="database"
-      :is-latest="true"
+      :is-latest="false"
       :highlight-row-filter="highlightRowFilter"
       @close="$emit('close')"
     >

@@ -45,14 +45,19 @@ type Manager struct {
 	sync.Mutex
 
 	store    *store.Store
-	astCache *lru.LRU[uint64, *Result]
+	astCache *lru.LRU[astHashKey, *Result]
+}
+
+type astHashKey struct {
+	hash   uint64
+	engine storepb.Engine
 }
 
 // NewManager creates a new sheet manager.
 func NewManager(store *store.Store) *Manager {
 	return &Manager{
 		store:    store,
-		astCache: lru.NewLRU[uint64, *Result](8, nil, 3*time.Minute),
+		astCache: lru.NewLRU[astHashKey, *Result](8, nil, 3*time.Minute),
 	}
 }
 
@@ -188,13 +193,14 @@ type Result struct {
 
 func (sm *Manager) GetAST(dbType storepb.Engine, statement string) (any, []*storepb.Advice) {
 	var result *Result
-	hashKey := xxh3.HashString(statement)
+	h := xxh3.HashString(statement)
+	key := astHashKey{hash: h, engine: dbType}
 	sm.Lock()
-	if v, ok := sm.astCache.Get(hashKey); ok {
+	if v, ok := sm.astCache.Get(key); ok {
 		result = v
 	} else {
 		result = &Result{}
-		sm.astCache.Add(hashKey, result)
+		sm.astCache.Add(key, result)
 	}
 	sm.Unlock()
 

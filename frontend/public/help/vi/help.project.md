@@ -12,4 +12,4 @@ title: "dự án" là gì?
 
 - [Tạo một dự án](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
 - [Quy trình làm việc của UI](https://www.bytebase.com/docs/change-database/change-workflow)
-- [Quy trình làm việc của GitOps](https://www.bytebase.com/docs/vcs-integration/enable-gitops-workflow)
+- [Quy trình làm việc của GitOps](https://www.bytebase.com/docs/vcs-integration/overview/)
