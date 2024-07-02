@@ -357,7 +357,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		return nil, model.Version{}, "", nil
 	}
 
-	peerDatabase, schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project, database)
+	peerDatabase, schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, instance, project, database)
 	if err != nil {
 		return nil, model.Version{}, "", err
 	}
@@ -454,29 +454,43 @@ func getConnectionStatement(dbType storepb.Engine, databaseName string) (string,
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (*store.DatabaseMessage, model.Version, string, error) {
-	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
-		ProjectID: &project.ResourceID,
-		Engine:    &instance.Engine,
-	})
+func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (*store.DatabaseMessage, model.Version, string, error) {
+	// Try to find a peer tenant database from database groups.
+	matchedDatabases, err := exec.getPeerTenantDatabasesFromDatabaseGroup(ctx, instance, project, database)
 	if err != nil {
-		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
 	}
+	// Otherwise, we will try to find a peer tenant database from all databases in the project.
+	// TODO(steven): remove me.
+	if len(matchedDatabases) == 0 {
+		allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+			ProjectID: &project.ResourceID,
+			Engine:    &instance.Engine,
+		})
+		if err != nil {
+			return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+		}
+		matchedDatabases = allDatabases
+	}
+
+	// Filter out the database itself.
 	var databases []*store.DatabaseMessage
-	for _, d := range allDatabases {
+	for _, d := range matchedDatabases {
 		if d.UID != database.UID {
 			databases = append(databases, d)
 		}
 	}
+	matchedDatabases = databases
 
-	deploymentConfig, err := stores.GetDeploymentConfigV2(ctx, project.UID)
+	// Then we will try to find a peer tenant database from deployment schedule with the matched databases.
+	deploymentConfig, err := exec.store.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
 		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}
 	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
 		return nil, model.Version{}, "", errors.Errorf("Failed to get deployment schedule")
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, databases)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, matchedDatabases)
 	if err != nil {
 		return nil, model.Version{}, "", errors.Errorf("Failed to create deployment pipeline")
 	}
@@ -484,17 +498,17 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if similarDB == nil {
 		return nil, model.Version{}, "", nil
 	}
-	similarDBInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &similarDB.InstanceID})
+	similarDBInstance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &similarDB.InstanceID})
 	if err != nil {
 		return nil, model.Version{}, "", err
 	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB, db.ConnectionContext{})
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB, db.ConnectionContext{})
 	if err != nil {
 		return nil, model.Version{}, "", err
 	}
 	defer driver.Close(ctx)
-	schemaVersion, err := getLatestDoneSchemaVersion(ctx, stores, similarDBInstance.UID, similarDB.UID, similarDB.DatabaseName)
+	schemaVersion, err := getLatestDoneSchemaVersion(ctx, exec.store, similarDBInstance.UID, similarDB.UID, similarDB.DatabaseName)
 	if err != nil {
 		return nil, model.Version{}, "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
@@ -504,6 +518,46 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 		return nil, model.Version{}, "", err
 	}
 	return similarDB, schemaVersion, schemaBuf.String(), nil
+}
+
+func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
+	dbGroups, err := exec.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
+	}
+	allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		ProjectID: &project.ResourceID,
+		Engine:    &instance.Engine,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+	}
+
+	var matchedDatabases []*store.DatabaseMessage
+	for _, dbGroup := range dbGroups {
+		// TODO(steven): move this filter into FindDatabaseGroupMessage.
+		if !dbGroup.Payload.Multitenancy {
+			continue
+		}
+
+		isMatched, err := utils.CheckDatabaseGroupMatch(ctx, dbGroup, database)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
+		}
+		// If current database is not matched, continue to the next database group.
+		if !isMatched {
+			continue
+		}
+
+		matchedDb, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, dbGroup, allDatabases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
+		}
+		if len(matchedDb) > 0 {
+			matchedDatabases = matchedDb
+		}
+	}
+	return matchedDatabases, nil
 }
 
 // GetLatestDoneSchemaVersion gets the latest schema version for a database.
