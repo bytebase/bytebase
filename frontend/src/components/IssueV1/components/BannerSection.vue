@@ -15,10 +15,10 @@
   </template>
   <template v-else>
     <div
-      v-if="showCancelBanner"
+      v-if="showClosedBanner"
       class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
     >
-      {{ $t("common.canceled") }}
+      {{ $t("common.closed") }}
     </div>
     <div
       v-else-if="showSuccessBanner"
@@ -81,7 +81,7 @@ const showRejectedReview = computed(() => {
   return reviewStatus.value === Issue_Approver_Status.REJECTED;
 });
 
-const showCancelBanner = computed(() => {
+const showClosedBanner = computed(() => {
   return issue.value.status === IssueStatus.CANCELED;
 });
 

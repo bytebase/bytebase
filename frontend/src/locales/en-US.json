@@ -274,7 +274,8 @@
     "configure-now": "Configure now",
     "connection": "Connection",
     "permission-denied": "Permission denied",
-    "resource": "Resource"
+    "resource": "Resource",
+    "closed": "Closed"
   },
   "error-page": {
     "go-back-home": "Go back home"
