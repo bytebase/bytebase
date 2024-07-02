@@ -230,11 +230,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 			instance = updatedInstance
 		}
 		// Sync all databases in the instance asynchronously.
-		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
-		select {
-		case s.stateCfg.InstanceSyncTickleChan <- 0:
-		default:
-		}
+		s.schemaSyncer.SyncAllDatabases(ctx, instance)
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
@@ -634,8 +630,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.
-	s.stateCfg.InstanceSyncs.Store(instance.UID, updatedInstance)
-	s.stateCfg.InstanceSyncTickleChan <- 0
+	s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 
 	return &v1pb.SyncInstanceResponse{}, nil
 }
@@ -650,15 +645,13 @@ func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.B
 		if instance.Deleted {
 			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
 		}
-		// Sync all databases in the instance asynchronously.
-		select {
-		case s.stateCfg.InstanceSyncTickleChan <- 0:
-		default:
+
+		updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		if err != nil {
+			return nil, err
 		}
-	}
-	select {
-	case s.stateCfg.InstanceSyncTickleChan <- 0:
-	default:
+		// Sync all databases in the instance asynchronously.
+		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 	}
 
 	return &v1pb.BatchSyncInstanceResponse{}, nil
