@@ -595,6 +595,10 @@
                   <a href="#bytebase.store.DataSourceOptions.AuthenticationType"><span class="badge">E</span>DataSourceOptions.AuthenticationType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.DataSourceOptions.RedisType"><span class="badge">E</span>DataSourceOptions.RedisType</a>
+                </li>
+              
               
               
             </ul>
@@ -5030,6 +5034,13 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>redis_type</td>
+                  <td><a href="#bytebase.store.DataSourceOptions.RedisType">DataSourceOptions.RedisType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5281,6 +5292,41 @@ Used for authentication when connecting to the data source. </p></td>
             
               <tr>
                 <td>AWS_RDS_IAM</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSourceOptions.RedisType">DataSourceOptions.RedisType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REDIS_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STANDALONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SENTINEL</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLUSTER</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>

@@ -255,6 +255,7 @@ export interface DataSourceOptions {
   /** master_username and master_obfuscated_password are master credentials used by redis sentinel mode. */
   masterUsername: string;
   masterObfuscatedPassword: string;
+  redisType: DataSourceOptions_RedisType;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -313,6 +314,67 @@ export function dataSourceOptions_AuthenticationTypeToNumber(object: DataSourceO
     case DataSourceOptions_AuthenticationType.AWS_RDS_IAM:
       return 3;
     case DataSourceOptions_AuthenticationType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export enum DataSourceOptions_RedisType {
+  REDIS_TYPE_UNSPECIFIED = "REDIS_TYPE_UNSPECIFIED",
+  STANDALONE = "STANDALONE",
+  SENTINEL = "SENTINEL",
+  CLUSTER = "CLUSTER",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function dataSourceOptions_RedisTypeFromJSON(object: any): DataSourceOptions_RedisType {
+  switch (object) {
+    case 0:
+    case "REDIS_TYPE_UNSPECIFIED":
+      return DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
+    case 1:
+    case "STANDALONE":
+      return DataSourceOptions_RedisType.STANDALONE;
+    case 2:
+    case "SENTINEL":
+      return DataSourceOptions_RedisType.SENTINEL;
+    case 3:
+    case "CLUSTER":
+      return DataSourceOptions_RedisType.CLUSTER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceOptions_RedisType.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceOptions_RedisTypeToJSON(object: DataSourceOptions_RedisType): string {
+  switch (object) {
+    case DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED:
+      return "REDIS_TYPE_UNSPECIFIED";
+    case DataSourceOptions_RedisType.STANDALONE:
+      return "STANDALONE";
+    case DataSourceOptions_RedisType.SENTINEL:
+      return "SENTINEL";
+    case DataSourceOptions_RedisType.CLUSTER:
+      return "CLUSTER";
+    case DataSourceOptions_RedisType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function dataSourceOptions_RedisTypeToNumber(object: DataSourceOptions_RedisType): number {
+  switch (object) {
+    case DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceOptions_RedisType.STANDALONE:
+      return 1;
+    case DataSourceOptions_RedisType.SENTINEL:
+      return 2;
+    case DataSourceOptions_RedisType.CLUSTER:
+      return 3;
+    case DataSourceOptions_RedisType.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -653,6 +715,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     masterName: "",
     masterUsername: "",
     masterObfuscatedPassword: "",
+    redisType: DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
   };
 }
 
@@ -723,6 +786,9 @@ export const DataSourceOptions = {
     }
     if (message.masterObfuscatedPassword !== "") {
       writer.uint32(178).string(message.masterObfuscatedPassword);
+    }
+    if (message.redisType !== DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED) {
+      writer.uint32(184).int32(dataSourceOptions_RedisTypeToNumber(message.redisType));
     }
     return writer;
   },
@@ -888,6 +954,13 @@ export const DataSourceOptions = {
 
           message.masterObfuscatedPassword = reader.string();
           continue;
+        case 23:
+          if (tag !== 184) {
+            break;
+          }
+
+          message.redisType = dataSourceOptions_RedisTypeFromJSON(reader.int32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -935,6 +1008,9 @@ export const DataSourceOptions = {
       masterObfuscatedPassword: isSet(object.masterObfuscatedPassword)
         ? globalThis.String(object.masterObfuscatedPassword)
         : "",
+      redisType: isSet(object.redisType)
+        ? dataSourceOptions_RedisTypeFromJSON(object.redisType)
+        : DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
     };
   },
 
@@ -1006,6 +1082,9 @@ export const DataSourceOptions = {
     if (message.masterObfuscatedPassword !== "") {
       obj.masterObfuscatedPassword = message.masterObfuscatedPassword;
     }
+    if (message.redisType !== DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED) {
+      obj.redisType = dataSourceOptions_RedisTypeToJSON(message.redisType);
+    }
     return obj;
   },
 
@@ -1042,6 +1121,7 @@ export const DataSourceOptions = {
     message.masterName = object.masterName ?? "";
     message.masterUsername = object.masterUsername ?? "";
     message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
+    message.redisType = object.redisType ?? DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
     return message;
   },
 };
