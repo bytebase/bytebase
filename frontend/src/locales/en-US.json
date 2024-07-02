@@ -275,7 +275,8 @@
     "connection": "Connection",
     "permission-denied": "Permission denied",
     "resource": "Resource",
-    "closed": "Closed"
+    "closed": "Closed",
+    "options": "Options"
   },
   "error-page": {
     "go-back-home": "Go back home"

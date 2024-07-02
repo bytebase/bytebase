@@ -176,7 +176,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     projectName: string;
     databaseGroup: Pick<
       DatabaseGroup,
-      "name" | "databasePlaceholder" | "databaseExpr"
+      "name" | "databasePlaceholder" | "databaseExpr" | "multitenancy"
     >;
     databaseGroupId: string;
     validateOnly?: boolean;
@@ -269,10 +269,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
         databaseGroup.databasePlaceholder
       )
     ) {
-      updateMask.push("database_placeholder");
+      updateMask.push("placeholder");
     }
     if (!isEqual(rawDatabaseGroup.databaseExpr, databaseGroup.databaseExpr)) {
-      updateMask.push("database_expr");
+      updateMask.push("expression");
     }
     const updatedDatabaseGroup = await projectServiceClient.updateDatabaseGroup(
       {
