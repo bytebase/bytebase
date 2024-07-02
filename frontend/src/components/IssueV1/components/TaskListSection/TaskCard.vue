@@ -57,7 +57,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1Name } from "@/components/v2";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import { Workflow } from "@/types/proto/v1/project_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
@@ -101,7 +101,6 @@ const schemaVersion = computed(() => {
   // show the schema version for a task if
   // the project is standard mode and VCS workflow
   if (isCreating.value) return "";
-  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) return "";
   if (project.value.workflow === Workflow.UI) return "";
 
   return extractSchemaVersionFromTask(props.task);
@@ -109,7 +108,6 @@ const schemaVersion = computed(() => {
 
 const taskClass = computed(() => {
   const { task } = props;
-
   const classes: string[] = [];
   if (selected.value) classes.push("selected");
   if (active.value) classes.push("active");

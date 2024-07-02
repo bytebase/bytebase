@@ -2,7 +2,6 @@ import { t } from "@/plugins/i18n";
 import type { ComposedIssue } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
   Task_Status,
@@ -13,7 +12,6 @@ import {
   extractDatabaseGroupName,
   extractDeploymentConfigName,
   extractUserResourceName,
-  flattenTaskV1List,
   hasProjectPermissionV2,
 } from "@/utils";
 import { planCheckRunSummaryForTask, specForTask } from ".";
@@ -72,21 +70,7 @@ export const allowUserToEditStatementForTask = (
   if (task.type === Task_Type.DATABASE_CREATE) {
     // For standard mode projects, we are not allowed to edit the database
     // creation SQL statement.
-    if (issue.projectEntity.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-      denyReasons.push("Cannot edit database creation statement");
-    }
-
-    // We allow to edit create database statement for tenant project to give users a
-    // chance to edit the dumped schema from its peer databases, because the dumped schema
-    // may not be perfectly correct.
-    // So we fallthrough to the common checkpoints.
-  }
-
-  if (issue.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    const tasks = flattenTaskV1List(issue.rolloutEntity);
-    if (!tasks.every((task) => isTaskEditable(issue, task).length === 0)) {
-      denyReasons.push("Some of the tasks are not editable in batch mode");
-    }
+    denyReasons.push("Cannot edit database creation statement");
   }
 
   // if not creating, we are allowed to edit sql statement only when:

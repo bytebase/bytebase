@@ -32,16 +32,17 @@ import (
 )
 
 const (
-	schemaSyncInterval = 1 * time.Minute
+	schemaSyncInterval          = 10 * time.Minute
+	databaseSyncCheckerInterval = 1 * time.Second
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
 	MaximumOutstanding  = 100
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, licenseService enterprise.LicenseService) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, licenseService enterprise.LicenseService) *Syncer {
 	return &Syncer{
-		store:          store,
+		store:          stores,
 		dbFactory:      dbFactory,
 		stateCfg:       stateCfg,
 		profile:        profile,
@@ -51,38 +52,68 @@ func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *sta
 
 // Syncer is the schema syncer.
 type Syncer struct {
-	store          *store.Store
-	dbFactory      *dbfactory.DBFactory
-	stateCfg       *state.State
-	profile        config.Profile
-	licenseService enterprise.LicenseService
+	sync.Mutex
+
+	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
+	stateCfg        *state.State
+	profile         config.Profile
+	licenseService  enterprise.LicenseService
+	databaseSyncMap sync.Map // map[int]*store.DatabaseMessage
 }
 
 // Run will run the schema syncer once.
 func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(schemaSyncInterval)
-	defer ticker.Stop()
 	defer wg.Done()
-	slog.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
-	for {
-		select {
-		case <-ticker.C:
-			s.trySyncAll(ctx)
-		case <-s.stateCfg.InstanceSyncTickleChan:
-			s.stateCfg.InstanceSyncs.Range(func(key, value any) bool {
-				s.stateCfg.InstanceSyncs.Delete(key)
-				instance, ok := value.(*store.InstanceMessage)
-				if !ok {
-					return true
-				}
-				// Sync all databases for instance.
-				s.syncAllDatabases(ctx, instance)
-				return true
-			})
-		case <-ctx.Done(): // if cancel() execute
-			return
+
+	sp := pool.New()
+	sp.Go(func() {
+		slog.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
+		ticker := time.NewTicker(schemaSyncInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				s.trySyncAll(ctx)
+			case <-ctx.Done(): // if cancel() execute
+				return
+			}
 		}
-	}
+	})
+
+	sp.Go(func() {
+		ticker := time.NewTicker(databaseSyncCheckerInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
+				s.databaseSyncMap.Range(func(key, value any) bool {
+					s.databaseSyncMap.Delete(key)
+					database, ok := value.(*store.DatabaseMessage)
+					if !ok {
+						return true
+					}
+
+					dbwp.Go(func() {
+						slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
+						if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+							slog.Debug("Failed to sync database schema",
+								slog.String("instance", database.InstanceID),
+								slog.String("databaseName", database.DatabaseName),
+								log.BBError(err))
+						}
+					})
+					return true
+				})
+				dbwp.Wait()
+			case <-ctx.Done(): // if cancel() execute
+				return
+			}
+		}
+	})
+	sp.Wait()
 }
 
 func (s *Syncer) trySyncAll(ctx context.Context) {
@@ -138,7 +169,6 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		slog.Error("Failed to retrieve databases", log.BBError(err))
 		return
 	}
-	dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 	for _, database := range databases {
 		database := database
 		if database.SyncState != api.OK {
@@ -161,30 +191,11 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 
-		dbwp.Go(func() {
-			slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
-			if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-				slog.Debug("Failed to sync database schema",
-					slog.String("instance", instance.ResourceID),
-					slog.String("databaseName", database.DatabaseName),
-					log.BBError(err))
-			}
-		})
+		s.databaseSyncMap.Store(database.UID, database)
 	}
-	dbwp.Wait()
 }
 
-func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
-	defer func() {
-		if r := recover(); r != nil {
-			err, ok := r.(error)
-			if !ok {
-				err = errors.Errorf("%v", r)
-			}
-			slog.Error("Database syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
-		}
-	}()
-
+func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
 	find := &store.FindDatabaseMessage{}
 	if instance != nil {
 		find.InstanceID = &instance.ResourceID
@@ -196,32 +207,12 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 		return
 	}
 
-	instanceMap := make(map[string][]*store.DatabaseMessage)
 	for _, database := range databases {
 		// Skip deleted databases.
 		if database.SyncState != api.OK {
 			continue
 		}
-		instanceMap[database.InstanceID] = append(instanceMap[database.InstanceID], database)
-	}
-
-	for _, databaseList := range instanceMap {
-		for _, database := range databaseList {
-			instanceID := database.InstanceID
-			slog.Debug("Sync database schema",
-				slog.String("instance", instanceID),
-				slog.String("database", database.DatabaseName),
-				slog.Int64("lastSuccessfulSyncTs", database.SuccessfulSyncTimeTs),
-			)
-			// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-			// We don't force dump database schema because it's rarely changed till the metadata is changed.
-			if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-				slog.Debug("Failed to sync database schema",
-					slog.String("instance", instanceID),
-					slog.String("databaseName", database.DatabaseName),
-					log.BBError(err))
-			}
-		}
+		s.databaseSyncMap.Store(database.UID, database)
 	}
 }
 

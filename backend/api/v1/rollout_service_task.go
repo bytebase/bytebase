@@ -117,24 +117,27 @@ func transformDatabaseGroupTargetToSteps(ctx context.Context, s *store.Store, sp
 		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
 	}
 
-	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list environments")
+		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}
-
-	dbByEnv := map[string][]*store.DatabaseMessage{}
-	for _, db := range matchedDatabases {
-		dbByEnv[db.EffectiveEnvironmentID] = append(dbByEnv[db.EffectiveEnvironmentID], db)
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
+		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
+	}
+	// Calculate the matrix of databases based on the deployment schedule.
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, matchedDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 	}
 
 	var steps []*storepb.PlanConfig_Step
-	for _, env := range environments {
-		databases := dbByEnv[env.ResourceID]
+	for i, databases := range matrix {
 		if len(databases) == 0 {
 			continue
 		}
+
 		step := &storepb.PlanConfig_Step{
-			Title: env.Title,
+			Title: deploymentConfig.Schedule.Deployments[i].Name,
 		}
 		for _, database := range databases {
 			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)

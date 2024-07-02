@@ -181,7 +181,7 @@ const props = defineProps({
     required: true,
   },
   alterType: {
-    type: String as PropType<"TENANT" | "MULTI_DB" | "SINGLE_DB">,
+    type: String as PropType<"MULTI_DB" | "SINGLE_DB">,
     required: true,
   },
   newWindow: {
@@ -440,11 +440,7 @@ const handlePreviewIssue = async () => {
       query.databaseList = databaseList.value.map((db) => db.name).join(",");
     }
   }
-  if (props.alterType !== "TENANT") {
-    // If we are not using tenant deployment config pipeline
-    // we need to pass the databaseList explicitly.
-    query.databaseList = databaseList.value.map((db) => db.name).join(",");
-  }
+  query.databaseList = databaseList.value.map((db) => db.name).join(",");
 
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
