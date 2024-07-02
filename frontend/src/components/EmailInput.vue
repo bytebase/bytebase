@@ -28,7 +28,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    size: "small" | "medium" | "large";
+    size?: "small" | "medium" | "large";
     domain?: string;
     value?: string;
     readonly?: boolean;
