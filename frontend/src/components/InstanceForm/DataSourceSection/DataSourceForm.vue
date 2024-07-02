@@ -1085,7 +1085,6 @@ const handleKeytabUpload = (options: { file: UploadFileInfo }) => {
     const data = new Uint8Array(arrayBuffer);
     const ds = props.dataSource;
     if (ds.saslConfig && ds.saslConfig.krbConfig) {
-      console.log(data);
       ds.saslConfig.krbConfig.keytab = data;
     }
   };

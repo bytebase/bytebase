@@ -12,15 +12,15 @@ export const rulesToTemplate = (
   withDisabled: boolean
 ) => {
   const ruleTemplateList: RuleTemplateV2[] = [];
-  const usedRule = new Set();
+  const usedRule = new Set<string>();
 
   for (const rule of review.ruleList) {
-    const ruleTemplate = ruleTemplateMapV2.get(rule.type)?.get(rule.engine);
+    const ruleTemplate = ruleTemplateMapV2.get(rule.engine)?.get(rule.type);
     if (!ruleTemplate) {
       continue;
     }
 
-    usedRule.add(rule.type);
+    usedRule.add(`${rule.engine}-${rule.type}`);
     const data = convertPolicyRuleToRuleTemplate(rule, ruleTemplate);
     if (data) {
       ruleTemplateList.push(data);
@@ -28,11 +28,11 @@ export const rulesToTemplate = (
   }
 
   if (withDisabled) {
-    for (const [key, map] of ruleTemplateMapV2.entries()) {
-      if (usedRule.has(key)) {
-        continue;
-      }
+    for (const map of ruleTemplateMapV2.values()) {
       for (const rule of map.values()) {
+        if (usedRule.has(`${rule.engine}-${rule.type}`)) {
+          continue;
+        }
         ruleTemplateList.push({
           ...rule,
           level: SQLReviewRuleLevel.DISABLED,
@@ -52,7 +52,7 @@ export const payloadValueListToComponentList = (
   rule: RuleTemplateV2,
   data: PayloadValueType[]
 ) => {
-  const componentList = rule.componentList.reduce<RuleConfigComponent[]>(
+  return rule.componentList.reduce<RuleConfigComponent[]>(
     (list, component, index) => {
       switch (component.payload.type) {
         case "STRING_ARRAY":
@@ -96,6 +96,4 @@ export const payloadValueListToComponentList = (
     },
     []
   );
-
-  return { componentList };
 };

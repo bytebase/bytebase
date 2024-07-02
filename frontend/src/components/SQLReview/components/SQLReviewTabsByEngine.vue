@@ -1,26 +1,27 @@
 <template>
-  <NTabs v-model:value="selectedEngine" :type="'line'">
-    <NTabPane v-for="data in engineList" :key="data.engine" :name="data.engine">
+  <NTabs v-model:value="selectedEngine" :type="'line'" :size="'large'">
+    <NTabPane
+      v-for="[engine, ruleMap] in ruleMapByEngine.entries()"
+      :key="engine"
+      :name="engine"
+    >
       <template #tab>
         <div class="flex items-center space-x-2">
-          <EngineIcon
-            :engine="engineFromJSON(data.engine)"
-            custom-class="ml-1"
-          />
+          <EngineIcon :engine="engine" custom-class="ml-1" />
           <RichEngineName
-            :engine="data.engine"
+            :engine="engine"
             tag="p"
             class="text-center text-sm !text-main"
           />
           <span
             class="items-center text-xs px-1 py-0.5 rounded-full bg-gray-200 text-gray-800"
           >
-            {{ data.ruleList.length }}
+            {{ ruleMap.size }}
           </span>
         </div>
       </template>
       <template #default>
-        <slot :rule-list="data.ruleList" :engine="selectedEngine" />
+        <slot :rule-list="[...ruleMap.values()]" :engine="selectedEngine" />
       </template>
     </NTabPane>
   </NTabs>
@@ -31,37 +32,15 @@ import { NTabs, NTabPane } from "naive-ui";
 import { ref, watchEffect } from "vue";
 import type { RuleTemplateV2 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { engineFromJSON } from "@/types/proto/v1/common";
-
-type EngineTypeStats = {
-  engine: Engine;
-  ruleList: RuleTemplateV2[];
-};
 
 const selectedEngine = ref<Engine>(Engine.UNRECOGNIZED);
-const engineList = ref<EngineTypeStats[]>([]);
 
 const props = defineProps<{
-  ruleList: RuleTemplateV2[];
+  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
 }>();
 
 watchEffect(() => {
-  const tmp = props.ruleList.reduce(
-    (dict, rule) => {
-      if (!dict[rule.engine]) {
-        dict[rule.engine] = {
-          engine: rule.engine,
-          ruleList: [],
-        };
-      }
-      dict[rule.engine].ruleList.push(rule);
-      return dict;
-    },
-    {} as { [id: string]: EngineTypeStats }
-  );
-  engineList.value = Object.values(tmp);
-  if (engineList.value.length > 0) {
-    selectedEngine.value = engineList.value[0].engine;
-  }
+  selectedEngine.value =
+    [...props.ruleMapByEngine.keys()][0] ?? Engine.UNRECOGNIZED;
 });
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <SQLReviewTabsByEngine :rule-list="selectedRuleList">
+  <SQLReviewTabsByEngine :rule-map-by-engine="ruleMapByEngine">
     <template
       #default="{
         ruleList: ruleListFilteredByEngine,
@@ -24,11 +24,10 @@ import type { Engine } from "@/types/proto/v1/common";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 
 defineProps<{
-  selectedRuleList: RuleTemplateV2[];
+  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
 }>();
 
 const emit = defineEmits<{
-  (event: "apply-template", index: number): void;
   (
     event: "rule-change",
     rule: RuleTemplateV2,

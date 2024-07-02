@@ -11,7 +11,7 @@
     <PlanCheckDetail
       :plan-check-run="planCheckRun"
       :database="database"
-      :is-latest="true"
+      :is-latest="false"
       @close="$emit('close')"
     >
       <template #row-extra="{ row }">
