@@ -268,12 +268,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			TABLE_NAME,
 			IFNULL(COLUMN_NAME, ''),
 			ORDINAL_POSITION,
-			COLUMN_DEFAULT,
+			CASE WHEN COLUMN_DEFAULT is NULL THEN NULL ELSE QUOTE(COLUMN_DEFAULT) END,
 			IS_NULLABLE,
 			COLUMN_TYPE,
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
-			COLUMN_COMMENT,
+			QUOTE(COLUMN_COMMENT),
 			GENERATION_EXPRESSION,
 			EXTRA
 		FROM information_schema.COLUMNS
@@ -304,12 +304,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		// Quoted string has a single quote around it.
+		column.Comment = stripSingleQuote(column.Comment)
+		if defaultStr.Valid {
+			defaultStr.String = stripSingleQuote(defaultStr.String)
+		}
+
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
 		}
-		// TODO(d): sanitize \0 strings for now till we find better solutions.
-		column.Comment = strings.ReplaceAll(column.Comment, "\u0000", "")
 		column.Nullable = nullableBool
 		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
 		key := db.TableKey{Schema: "", Table: tableName}
@@ -436,7 +440,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(TABLES.INDEX_LENGTH, 0),
 			IFNULL(TABLES.DATA_FREE, 0),
 			IFNULL(TABLES.CREATE_OPTIONS, ''),
-			IFNULL(TABLES.TABLE_COMMENT, ''),
+			QUOTE(IFNULL(TABLES.TABLE_COMMENT, '')),
 			IFNULL(CCSA.CHARACTER_SET_NAME, '')
 		FROM information_schema.TABLES TABLES
 		LEFT JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA
@@ -468,6 +472,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		// Quoted string has a single quote around it.
+		comment = stripSingleQuote(comment)
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
@@ -703,10 +709,8 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
 		default:
-			// TODO(d): sanitize \0 strings for now till we find better solutions.
-			v := strings.ReplaceAll(defaultStr.String, "\u0000", "")
 			// For non-generated and non CURRENT_XXX default value, use string.
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: v}}
+			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 		// TODO(zp): refactor column default value.
@@ -1317,4 +1321,11 @@ func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func stripSingleQuote(s string) string {
+	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
