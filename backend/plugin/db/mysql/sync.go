@@ -268,12 +268,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			TABLE_NAME,
 			IFNULL(COLUMN_NAME, ''),
 			ORDINAL_POSITION,
-			COLUMN_DEFAULT,
+			QUOTE(COLUMN_DEFAULT),
 			IS_NULLABLE,
 			COLUMN_TYPE,
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
-			COLUMN_COMMENT,
+			QUOTE(COLUMN_COMMENT),
 			GENERATION_EXPRESSION,
 			EXTRA
 		FROM information_schema.COLUMNS
@@ -304,6 +304,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		// Quoted string has a single quote around it.
+		column.Comment = stripSingleQuote(column.Comment)
+		if defaultStr.Valid {
+			defaultStr.String = stripSingleQuote(defaultStr.String)
+		}
+
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
@@ -434,7 +440,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(TABLES.INDEX_LENGTH, 0),
 			IFNULL(TABLES.DATA_FREE, 0),
 			IFNULL(TABLES.CREATE_OPTIONS, ''),
-			IFNULL(TABLES.TABLE_COMMENT, ''),
+			QUOTE(IFNULL(TABLES.TABLE_COMMENT, '')),
 			IFNULL(CCSA.CHARACTER_SET_NAME, '')
 		FROM information_schema.TABLES TABLES
 		LEFT JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA
@@ -466,6 +472,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		// Quoted string has a single quote around it.
+		comment = stripSingleQuote(comment)
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
@@ -1313,4 +1321,11 @@ func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func stripSingleQuote(s string) string {
+	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
