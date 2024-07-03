@@ -308,8 +308,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if err != nil {
 			return nil, err
 		}
-		// TODO(d): sanitize \0 strings for now till we find better solutions.
-		column.Comment = strings.ReplaceAll(column.Comment, "\u0000", "")
 		column.Nullable = nullableBool
 		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
 		key := db.TableKey{Schema: "", Table: tableName}
@@ -703,10 +701,8 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
 		default:
-			// TODO(d): sanitize \0 strings for now till we find better solutions.
-			v := strings.ReplaceAll(defaultStr.String, "\u0000", "")
 			// For non-generated and non CURRENT_XXX default value, use string.
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: v}}
+			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 		// TODO(zp): refactor column default value.
