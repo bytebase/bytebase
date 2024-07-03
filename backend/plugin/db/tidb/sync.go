@@ -258,12 +258,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			TABLE_NAME,
 			IFNULL(COLUMN_NAME, ''),
 			ORDINAL_POSITION,
-			COLUMN_DEFAULT,
+			CASE WHEN COLUMN_DEFAULT is NULL THEN NULL ELSE QUOTE(COLUMN_DEFAULT) END,
 			IS_NULLABLE,
 			COLUMN_TYPE,
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
-			COLUMN_COMMENT,
+			QUOTE(COLUMN_COMMENT),
 			EXTRA
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
@@ -291,6 +291,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		// Quoted string has a single quote around it.
+		column.Comment = stripSingleQuote(column.Comment)
+		if defaultStr.Valid {
+			defaultStr.String = stripSingleQuote(defaultStr.String)
+		}
+
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
@@ -356,7 +362,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(INDEX_LENGTH, 0),
 			IFNULL(DATA_FREE, 0),
 			IFNULL(CREATE_OPTIONS, ''),
-			IFNULL(TABLE_COMMENT, ''),
+			QUOTE(IFNULL(TABLE_COMMENT, '')),
 			IFNULL(TIDB_ROW_ID_SHARDING_INFO, '')
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = ?
@@ -387,6 +393,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		// Quoted string has a single quote around it.
+		comment = stripSingleQuote(comment)
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
@@ -1025,4 +1033,11 @@ func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func stripSingleQuote(s string) string {
+	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
