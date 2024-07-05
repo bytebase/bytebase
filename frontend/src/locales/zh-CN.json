@@ -2244,6 +2244,7 @@
     "search-databases": "搜索数据库",
     "search-results": "搜索结果",
     "loading-databases": "加载数据库信息...",
+    "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "close-pane": "关闭面板",
     "loading-data": "加载数据中...",
     "table-empty-placeholder": "点击 ”运行“ 执行查询",

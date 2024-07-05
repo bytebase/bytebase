@@ -2244,6 +2244,7 @@
     "search-databases": "Search Databases",
     "search-results": "Search Results",
     "loading-databases": "Loading Databases...",
+    "show-databases-without-query-permission": "Show databases without query permissions",
     "close-pane": "Close Pane",
     "loading-data": "Loading Data...",
     "table-empty-placeholder": "Click Run to execute the query.",

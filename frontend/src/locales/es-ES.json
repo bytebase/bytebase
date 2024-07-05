@@ -2244,6 +2244,7 @@
     "search-databases": "Buscar bases de datos",
     "search-results": "Resultados de búsqueda",
     "loading-databases": "Cargando bases de datos...",
+    "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "close-pane": "Cerrar panel",
     "loading-data": "Cargando datos...",
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
