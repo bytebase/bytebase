@@ -1,6 +1,6 @@
 <template>
   <div v-if="available">
-    <NButton text type="primary" @click="onClick">
+    <NButton text type="primary" :size="size" @click="onClick">
       {{ $t("sql-editor.request-query") }}
     </NButton>
 
@@ -25,9 +25,11 @@ const props = withDefaults(
   defineProps<{
     database: ComposedDatabase;
     panelPlacement: "left" | "right";
+    size?: "tiny" | "medium";
   }>(),
   {
     panelPlacement: "right",
+    size: "medium",
   }
 );
 
