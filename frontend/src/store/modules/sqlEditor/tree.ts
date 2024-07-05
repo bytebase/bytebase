@@ -2,6 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep, orderBy, uniq } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
+import { useCurrentUserV1 } from "@/store";
 import type {
   ComposedDatabase,
   ComposedInstance,
@@ -20,7 +21,7 @@ import {
   LeafTreeNodeTypes,
 } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
-import { getSemanticLabelValue, groupBy } from "@/utils";
+import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
 import { useFilterStore } from "../filter";
 import { useEnvironmentV1Store, useInstanceV1Store } from "../v1";
 import { useSQLEditorStore } from "./editor";
@@ -34,6 +35,7 @@ const defaultEnvironmentFactor: StatefulFactor = {
 
 export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const { filter } = useFilterStore();
+  const me = useCurrentUserV1();
 
   const defaultFactorList = (): StatefulFactor[] => {
     return [defaultEnvironmentFactor];
@@ -80,21 +82,35 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     cloneDeep(factorListInLocalStorage.value)
   );
 
+  const sortedDatabaseList = computed(() => {
+    if (!showMissingQueryDatabases.value) {
+      return databaseList.value.filter((db) =>
+        isDatabaseV1Queryable(db, me.value)
+      );
+    }
+    return orderBy(
+      databaseList.value,
+      [(db) => (isDatabaseV1Queryable(db, me.value) ? 1 : 0)],
+      ["desc"]
+    );
+  });
+
   const filteredDatabaseList = computed(() => {
     if (filter.database) {
-      return databaseList.value.filter((database) => {
+      return sortedDatabaseList.value.filter((database) => {
         return database.name === filter.database;
       });
     }
     if (filter.project || currentProject.value) {
       const projectName = filter.project ?? currentProject.value?.name;
-      return databaseList.value.filter((database) => {
+      return sortedDatabaseList.value.filter((database) => {
         return database.project === projectName;
       });
     }
 
-    return databaseList.value;
+    return sortedDatabaseList.value;
   });
+
   const filteredFactorList = computed(() => {
     return factorList.value.filter((sf) => !sf.disabled).map((sf) => sf.factor);
   });
@@ -118,6 +134,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const state = ref<TreeState>("UNSET");
   const tree = ref<TreeNode[]>([]);
   const expandedKeys = ref<string[]>([]);
+  const showMissingQueryDatabases = ref<boolean>(false);
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
     const { type, target } = node.meta;
@@ -148,8 +165,19 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     factorList.value = defaultFactorList();
     nodeListMapById.clear();
     expandedKeys.value = [];
+    showMissingQueryDatabases.value = false;
     state.value = "UNSET";
   };
+
+  watch(
+    () => showMissingQueryDatabases.value,
+    () => {
+      tree.value = buildTreeImpl(
+        filteredDatabaseList.value,
+        filteredFactorList.value
+      );
+    }
+  );
 
   watch(
     factorList,
@@ -188,6 +216,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     nodesByTarget,
     buildTree,
     expandedKeys,
+    showMissingQueryDatabases,
     cleanup,
   };
 });
