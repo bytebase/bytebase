@@ -54,8 +54,8 @@
       </div>
     </div>
     <NDivider />
-    <div class="w-full">
-      <p class="pl-1 text-lg mb-2">
+    <div class="w-full pl-1">
+      <p class="text-lg mb-2">
         {{ $t("common.options") }}
       </p>
       <div>
