@@ -2244,6 +2244,7 @@
     "search-databases": "データベースを検索する",
     "search-results": "の検索結果",
     "loading-databases": "データベース情報をロードしています...",
+    "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "close-pane": "パネルを閉じる",
     "loading-data": "データのロード...",
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",

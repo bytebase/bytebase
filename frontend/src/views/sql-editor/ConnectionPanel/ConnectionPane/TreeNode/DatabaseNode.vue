@@ -31,6 +31,7 @@
       <RequestQueryButton
         v-if="!canQuery"
         :database="database"
+        :size="'tiny'"
         :panel-placement="'left'"
       />
     </HideInStandaloneMode>
