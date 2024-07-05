@@ -828,12 +828,12 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 	var updateDatabaseGroup store.UpdateDatabaseGroupMessage
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "placeholder":
+		case "database_placeholder":
 			if request.DatabaseGroup.DatabasePlaceholder == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
 			}
 			updateDatabaseGroup.Placeholder = &request.DatabaseGroup.DatabasePlaceholder
-		case "expression":
+		case "database_expr":
 			if request.DatabaseGroup.DatabaseExpr == nil || request.DatabaseGroup.DatabaseExpr.Expression == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
 			}
@@ -1094,14 +1094,10 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	ret := convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID)
 	matches, unmatches, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
-	}
-	ret := &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
-		DatabasePlaceholder: databaseGroup.Placeholder,
-		DatabaseExpr:        databaseGroup.Expression,
 	}
 	for _, database := range matches {
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
@@ -1121,7 +1117,9 @@ func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessa
 		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
-		Multitenancy:        databaseGroup.Payload.Multitenancy,
+	}
+	if databaseGroup.Payload != nil {
+		databaseGroupV1.Multitenancy = databaseGroup.Payload.Multitenancy
 	}
 	return databaseGroupV1
 }

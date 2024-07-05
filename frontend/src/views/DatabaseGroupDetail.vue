@@ -18,25 +18,10 @@
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
                   {{ databaseGroup.databasePlaceholder }}
-                  <BBBadge
-                    text="Database Group"
-                    :can-remove="false"
-                    class="text-xs"
-                  />
                 </h1>
               </div>
             </div>
           </div>
-          <dl
-            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
-          >
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.project") }}&nbsp;-&nbsp;</span
-              >
-              <ProjectV1Name :project="project" hash="#database-groups" />
-            </dd>
-          </dl>
         </div>
 
         <div
@@ -62,7 +47,7 @@
         </div>
       </div>
 
-      <hr />
+      <NDivider />
 
       <FeatureAttentionForInstanceLicense
         v-if="existMatchedUnactivateInstance"
@@ -91,6 +76,25 @@
           />
         </div>
       </div>
+
+      <NDivider />
+
+      <div class="w-full pl-1">
+        <p class="text-lg mb-2">
+          {{ $t("common.options") }}
+        </p>
+        <!-- TODO(steven): use DatabaseGroupForm instead -->
+        <div>
+          <NCheckbox
+            :checked="databaseGroup.multitenancy"
+            readonly
+            :disabled="!allowEdit"
+            size="large"
+          >
+            {{ $t("database-group.multitenancy") }}
+          </NCheckbox>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -105,7 +109,7 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { NButton } from "naive-ui";
+import { NButton, NCheckbox, NDivider } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";

@@ -58,6 +58,11 @@
       <p class="pl-1 text-lg mb-2">
         {{ $t("common.options") }}
       </p>
+      <div>
+        <NCheckbox v-model:checked="state.multitenancy" size="large">
+          {{ $t("database-group.multitenancy") }}
+        </NCheckbox>
+      </div>
     </div>
   </div>
 </template>
@@ -65,7 +70,7 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import { NInput, NDivider } from "naive-ui";
+import { NCheckbox, NInput, NDivider } from "naive-ui";
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";

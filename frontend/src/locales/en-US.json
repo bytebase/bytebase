@@ -3375,6 +3375,7 @@
     "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
+    "multitenancy": "Multitenancy",
     "condition": {
       "self": "Condition"
     },

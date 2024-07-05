@@ -18,7 +18,7 @@ import type {
 } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import type { DatabaseGroup } from "@/types/proto/v1/project_service";
+import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { DatabaseGroupView } from "@/types/proto/v1/project_service";
 import {
   batchConvertParsedExprToCELString,
@@ -216,13 +216,13 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
     const result = await createDatabaseGroup({
       projectName: projectName,
-      databaseGroup: {
+      databaseGroup: DatabaseGroup.fromPartial({
         name: `${projectName}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
         databasePlaceholder: validateOnlyResourceId,
         databaseExpr: Expr.fromJSON({
           expression,
         }),
-      },
+      }),
       databaseGroupId: validateOnlyResourceId,
       validateOnly: true,
     });
@@ -255,7 +255,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
   const updateDatabaseGroup = async (
     databaseGroup: Pick<
       DatabaseGroup,
-      "name" | "databasePlaceholder" | "databaseExpr"
+      "name" | "databasePlaceholder" | "databaseExpr" | "multitenancy"
     >
   ) => {
     const rawDatabaseGroup = dbGroupMapByName.value.get(databaseGroup.name);
@@ -269,10 +269,13 @@ export const useDBGroupStore = defineStore("db-group", () => {
         databaseGroup.databasePlaceholder
       )
     ) {
-      updateMask.push("placeholder");
+      updateMask.push("database_placeholder");
     }
     if (!isEqual(rawDatabaseGroup.databaseExpr, databaseGroup.databaseExpr)) {
-      updateMask.push("expression");
+      updateMask.push("database_expr");
+    }
+    if (!isEqual(rawDatabaseGroup.multitenancy, databaseGroup.multitenancy)) {
+      updateMask.push("multitenancy");
     }
     const updatedDatabaseGroup = await projectServiceClient.updateDatabaseGroup(
       {

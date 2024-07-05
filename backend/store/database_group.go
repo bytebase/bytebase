@@ -140,7 +140,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 	return databaseGroups[0], nil
 }
 
-func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
+func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ProjectUID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
@@ -161,12 +161,8 @@ func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDat
 		"resource_id",
 		"placeholder",
 		"expression",
+		"payload",
 	}
-	// TODO(steven): remove me before production.
-	if s.profile.Mode == common.ReleaseModeDev {
-		fields = append(fields, "payload")
-	}
-
 	query := fmt.Sprintf(`SELECT %s FROM db_group WHERE %s ORDER BY id DESC;`, strings.Join(fields, ","), strings.Join(where, " AND "))
 	var databaseGroups []*DatabaseGroupMessage
 	rows, err := tx.QueryContext(ctx, query, args...)
@@ -187,9 +183,7 @@ func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDat
 			&databaseGroup.ResourceID,
 			&databaseGroup.Placeholder,
 			&exprBytes,
-		}
-		if s.profile.Mode == common.ReleaseModeDev {
-			dest = append(dest, &payloadBytes)
+			&payloadBytes,
 		}
 		if err := rows.Scan(dest...); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
@@ -198,14 +192,12 @@ func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDat
 		if err := common.ProtojsonUnmarshaler.Unmarshal(exprBytes, &expression); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal expression")
 		}
-		if s.profile.Mode == common.ReleaseModeDev {
-			var payload storepb.DatabaseGroupPayload
-			if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
-				return nil, errors.Wrapf(err, "failed to unmarshal payload")
-			}
-			databaseGroup.Payload = &payload
+		var payload storepb.DatabaseGroupPayload
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal payload")
 		}
 		databaseGroup.Expression = &expression
+		databaseGroup.Payload = &payload
 		databaseGroups = append(databaseGroups, &databaseGroup)
 	}
 	if err := rows.Err(); err != nil {
