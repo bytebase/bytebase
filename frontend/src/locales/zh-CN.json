@@ -275,7 +275,8 @@
     "connection": "连接",
     "permission-denied": "您没有权限执行此操作",
     "resource": "资源",
-    "closed": "已关闭"
+    "closed": "已关闭",
+    "options": "配置项"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -3375,6 +3376,7 @@
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
+    "multitenancy": "多租户",
     "condition": {
       "self": "条件"
     },

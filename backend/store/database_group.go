@@ -140,7 +140,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 	return databaseGroups[0], nil
 }
 
-func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
+func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ProjectUID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
@@ -161,12 +161,8 @@ func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDat
 		"resource_id",
 		"placeholder",
 		"expression",
+		"payload",
 	}
-	// TODO(steven): remove me before production.
-	if s.profile.Mode == common.ReleaseModeDev {
-		fields = append(fields, "payload")
-	}
-
 	query := fmt.Sprintf(`SELECT %s FROM db_group WHERE %s ORDER BY id DESC;`, strings.Join(fields, ","), strings.Join(where, " AND "))
 	var databaseGroups []*DatabaseGroupMessage
 	rows, err := tx.QueryContext(ctx, query, args...)
@@ -187,9 +183,7 @@ func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDat
 			&databaseGroup.ResourceID,
 			&databaseGroup.Placeholder,
 			&exprBytes,
-		}
-		if s.profile.Mode == common.ReleaseModeDev {
-			dest = append(dest, &payloadBytes)
+			&payloadBytes,
 		}
 		if err := rows.Scan(dest...); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
@@ -198,14 +192,12 @@ func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDat
 		if err := common.ProtojsonUnmarshaler.Unmarshal(exprBytes, &expression); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal expression")
 		}
-		if s.profile.Mode == common.ReleaseModeDev {
-			var payload storepb.DatabaseGroupPayload
-			if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
-				return nil, errors.Wrapf(err, "failed to unmarshal payload")
-			}
-			databaseGroup.Payload = &payload
+		var payload storepb.DatabaseGroupPayload
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal payload")
 		}
 		databaseGroup.Expression = &expression
+		databaseGroup.Payload = &payload
 		databaseGroups = append(databaseGroups, &databaseGroup)
 	}
 	if err := rows.Err(); err != nil {
@@ -221,18 +213,25 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		set, args = append(set, fmt.Sprintf("placeholder = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Expression; v != nil {
-		jsonExpr, err := protojson.Marshal(patch.Expression)
+		exprBytes, err := protojson.Marshal(patch.Expression)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal expression")
 		}
-		set, args = append(set, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, jsonExpr)
+		set, args = append(set, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, exprBytes)
+	}
+	if v := patch.Payload; v != nil {
+		payloadBytes, err := protojson.Marshal(patch.Payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal payload")
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payloadBytes)
 	}
 	args = append(args, databaseGroupUID)
 	query := fmt.Sprintf(`
 		UPDATE db_group SET 
 			%s 
 		WHERE id = $%d
-		RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_id, resource_id, placeholder, expression;
+		RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_id, resource_id, placeholder, expression, payload;
 	`, strings.Join(set, ", "), len(args))
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -241,7 +240,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 	}
 
 	var updatedDatabaseGroup DatabaseGroupMessage
-	var stringExpr string
+	var exprBytes, payloadBytes []byte
 	if err := tx.QueryRowContext(
 		ctx,
 		query,
@@ -255,7 +254,8 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		&updatedDatabaseGroup.ProjectUID,
 		&updatedDatabaseGroup.ResourceID,
 		&updatedDatabaseGroup.Placeholder,
-		&stringExpr,
+		&exprBytes,
+		&payloadBytes,
 	); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
@@ -263,17 +263,22 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	var expression expr.Expr
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(stringExpr), &expression); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(exprBytes, &expression); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	updatedDatabaseGroup.Expression = &expression
+	var payload storepb.DatabaseGroupPayload
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal payload")
+	}
+	updatedDatabaseGroup.Payload = &payload
 	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(updatedDatabaseGroup.ProjectUID, updatedDatabaseGroup.ResourceID), &updatedDatabaseGroup)
 	s.databaseGroupIDCache.Add(updatedDatabaseGroup.UID, &updatedDatabaseGroup)
 	return &updatedDatabaseGroup, nil
 }
 
 // CreateDatabaseGroup creates a database group.
-func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int, databaseGroup *DatabaseGroupMessage) (*DatabaseGroupMessage, error) {
+func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int, create *DatabaseGroupMessage) (*DatabaseGroupMessage, error) {
 	query := `
 	INSERT INTO db_group (
 		creator_id,
@@ -281,13 +286,18 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 		project_id,
 		resource_id,
 		placeholder,
-		expression
-	) VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_id, resource_id, placeholder, expression;
+		expression,
+		payload
+	) VALUES ($1, $2, $3, $4, $5, $6, $7)
+	RETURNING id, created_ts, updated_ts;
 	`
-	jsonExpr, err := protojson.Marshal(databaseGroup.Expression)
+	exprBytes, err := protojson.Marshal(create.Expression)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal expression")
+	}
+	payloadBytes, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -296,39 +306,30 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 	}
 	defer tx.Rollback()
 
-	var insertedDatabaseGroup DatabaseGroupMessage
-	var stringExpr string
 	if err := tx.QueryRowContext(
 		ctx,
 		query,
 		creatorPrincipalID,
 		creatorPrincipalID,
-		databaseGroup.ProjectUID,
-		databaseGroup.ResourceID,
-		databaseGroup.Placeholder,
-		jsonExpr,
+		create.ProjectUID,
+		create.ResourceID,
+		create.Placeholder,
+		exprBytes,
+		payloadBytes,
 	).Scan(
-		&insertedDatabaseGroup.UID,
-		&insertedDatabaseGroup.CreatedTs,
-		&insertedDatabaseGroup.UpdatedTs,
-		&insertedDatabaseGroup.CreatorID,
-		&insertedDatabaseGroup.UpdaterID,
-		&insertedDatabaseGroup.ProjectUID,
-		&insertedDatabaseGroup.ResourceID,
-		&insertedDatabaseGroup.Placeholder,
-		&stringExpr,
+		&create.UID,
+		&create.CreatedTs,
+		&create.UpdatedTs,
 	); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	var expression expr.Expr
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(stringExpr), &expression); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal expression")
-	}
-	insertedDatabaseGroup.Expression = &expression
-	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(insertedDatabaseGroup.ProjectUID, insertedDatabaseGroup.ResourceID), &insertedDatabaseGroup)
-	s.databaseGroupIDCache.Add(insertedDatabaseGroup.UID, &insertedDatabaseGroup)
-	return &insertedDatabaseGroup, nil
+
+	create.CreatorID = creatorPrincipalID
+	create.UpdaterID = creatorPrincipalID
+	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(create.ProjectUID, create.ResourceID), create)
+	s.databaseGroupIDCache.Add(create.UID, create)
+	return create, nil
 }
