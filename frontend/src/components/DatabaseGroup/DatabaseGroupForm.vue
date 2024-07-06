@@ -6,7 +6,7 @@
       type="warning"
       feature="bb.feature.database-grouping"
     />
-    <div class="w-full grid grid-cols-3 gap-x-6 pb-6 mb-4 border-b">
+    <div class="w-full grid grid-cols-3 gap-x-6">
       <div>
         <p class="text-lg mb-2">{{ $t("common.name") }}</p>
         <NInput v-model:value="state.placeholder" />
@@ -31,6 +31,7 @@
         />
       </div>
     </div>
+    <NDivider />
     <div class="w-full grid grid-cols-5 gap-x-6">
       <div class="col-span-3">
         <p class="pl-1 text-lg mb-2">
@@ -52,13 +53,24 @@
         />
       </div>
     </div>
+    <NDivider />
+    <div class="w-full pl-1">
+      <p class="text-lg mb-2">
+        {{ $t("common.options") }}
+      </p>
+      <div>
+        <NCheckbox v-model:checked="state.multitenancy" size="large">
+          {{ $t("database-group.multitenancy") }}
+        </NCheckbox>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import { NInput } from "naive-ui";
+import { NCheckbox, NInput, NDivider } from "naive-ui";
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -96,6 +108,7 @@ type LocalState = {
   placeholder: string;
   selectedDatabaseGroupId?: string;
   expr: ConditionGroupExpr;
+  multitenancy: boolean;
 };
 
 const { t } = useI18n();
@@ -106,6 +119,7 @@ const state = reactive<LocalState>({
   resourceId: "",
   placeholder: "",
   expr: wrapAsGroup(emptySimpleExpr()),
+  multitenancy: false,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
@@ -130,6 +144,7 @@ onMounted(async () => {
   if (composedDatabaseGroup.simpleExpr) {
     state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
   }
+  state.multitenancy = composedDatabaseGroup.multitenancy;
 });
 
 const validateResourceId = async (

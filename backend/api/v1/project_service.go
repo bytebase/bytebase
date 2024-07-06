@@ -773,6 +773,11 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 		Placeholder: request.DatabaseGroup.DatabasePlaceholder,
 		Expression:  request.DatabaseGroup.DatabaseExpr,
 	}
+	if request.DatabaseGroup.Multitenancy {
+		storeDatabaseGroup.Payload = &storepb.DatabaseGroupPayload{
+			Multitenancy: true,
+		}
+	}
 	if request.ValidateOnly {
 		return s.convertStoreToAPIDatabaseGroupFull(ctx, storeDatabaseGroup, projectResourceID)
 	}
@@ -829,16 +834,17 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 			}
 			updateDatabaseGroup.Placeholder = &request.DatabaseGroup.DatabasePlaceholder
 		case "database_expr":
-			if request.DatabaseGroup.DatabaseExpr == nil {
-				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
-			}
-			if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+			if request.DatabaseGroup.DatabaseExpr == nil || request.DatabaseGroup.DatabaseExpr.Expression == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
 			}
 			if _, err := common.ValidateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
 			}
 			updateDatabaseGroup.Expression = request.DatabaseGroup.DatabaseExpr
+		case "multitenancy":
+			updateDatabaseGroup.Payload = &storepb.DatabaseGroupPayload{
+				Multitenancy: request.DatabaseGroup.Multitenancy,
+			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
@@ -1088,14 +1094,10 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	ret := convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID)
 	matches, unmatches, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
-	}
-	ret := &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
-		DatabasePlaceholder: databaseGroup.Placeholder,
-		DatabaseExpr:        databaseGroup.Expression,
 	}
 	for _, database := range matches {
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
@@ -1111,11 +1113,15 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 }
 
 func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
-	return &v1pb.DatabaseGroup{
+	databaseGroupV1 := &v1pb.DatabaseGroup{
 		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
+	if databaseGroup.Payload != nil {
+		databaseGroupV1.Multitenancy = databaseGroup.Payload.Multitenancy
+	}
+	return databaseGroupV1
 }
 
 func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectWebhookMessage, error) {
