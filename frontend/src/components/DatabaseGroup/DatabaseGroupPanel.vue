@@ -156,6 +156,7 @@ const doConfirm = async () => {
           databaseExpr: Expr.fromJSON({
             expression: celStrings[0] || "true",
           }),
+          multitenancy: formState.multitenancy,
         },
         databaseGroupId: resourceId,
       });
@@ -170,8 +171,9 @@ const doConfirm = async () => {
         ...props.databaseGroup!,
         databasePlaceholder: formState.placeholder,
         databaseExpr: Expr.fromJSON({
-          expression: celStrings[0],
+          expression: celStrings[0] || "true",
         }),
+        multitenancy: formState.multitenancy,
       });
     }
 
