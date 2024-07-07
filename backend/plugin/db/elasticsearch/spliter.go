@@ -9,7 +9,7 @@ func SplitElasticsearchStatements(statementsStr string) ([]*Statement, error) {
 	var statements []*Statement
 
 	for idx, c := range statementsStr {
-		statement := sm.transfer(byte(c))
+		statement := sm.transfer(c)
 		if sm.state == StatusError {
 			return nil, errors.New("failed to parse statements")
 		}
@@ -62,7 +62,7 @@ type StateMachine struct {
 	numLeftBrace int
 }
 
-func (sm *StateMachine) transfer(c byte) *Statement {
+func (sm *StateMachine) transfer(c rune) *Statement {
 	switch sm.state {
 	case StatusInit:
 		if isASCIIAlpha(c) {
@@ -89,7 +89,7 @@ func (sm *StateMachine) transfer(c byte) *Statement {
 				sm.state = StatusQueryBody
 			}
 		} else if c != ' ' {
-			sm.statement.route = append(sm.statement.route, c)
+			sm.statement.route = append(sm.statement.route, string(c)...)
 		}
 
 	case StatusQueryBody:
@@ -105,7 +105,7 @@ func (sm *StateMachine) transfer(c byte) *Statement {
 			sm.statement.method += string(c)
 			return statement
 		}
-		sm.statement.queryString = append(sm.statement.queryString, c)
+		sm.statement.queryString = append(sm.statement.queryString, string(c)...)
 		if c == '{' {
 			sm.numLeftBrace++
 		} else if c == '}' {
@@ -121,7 +121,7 @@ func (sm *StateMachine) transfer(c byte) *Statement {
 	return nil
 }
 
-func isASCIIAlpha(c byte) bool {
+func isASCIIAlpha(c rune) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
