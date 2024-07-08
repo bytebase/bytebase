@@ -118,6 +118,10 @@ func hasTableFullScan(res []any) (bool, string, error) {
 	if len(res) != 3 {
 		return false, "", errors.Errorf("expected 3 but got %d", len(res))
 	}
+	columns, ok := res[0].([]string)
+	if !ok {
+		return false, "", errors.Errorf("expected []string but got %t", res[0])
+	}
 	rowList, ok := res[2].([]any)
 	if !ok {
 		return false, "", errors.Errorf("expected []any but got %t", res[2])
@@ -147,29 +151,38 @@ func hasTableFullScan(res []any) (bool, string, error) {
 	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
 
-	var tables []string
+	tableIndex, err := getColumnIndex(columns, "table")
+	if err != nil {
+		return false, "", errors.Errorf("failed to find rows column")
+	}
+	typeIndex, err := getColumnIndex(columns, "type")
+	if err != nil {
+		return false, "", errors.Errorf("failed to find rows column")
+	}
+	extraIndex, err := getColumnIndex(columns, "Extra")
+	if err != nil {
+		return false, "", errors.Errorf("failed to find rows column")
+	}
 
+	var tables []string
 	for _, rowAny := range rowList {
 		row, ok := rowAny.([]any)
 		if !ok {
 			return false, "", errors.Errorf("expected []any but got %t", row)
 		}
-		if len(row) != 12 {
-			return false, "", errors.Errorf("expected 12 but got %d", len(row))
-		}
-		if row[4] == "ALL" {
-			tables = append(tables, row[2].(string))
+		if row[typeIndex] == "ALL" {
+			tables = append(tables, row[tableIndex].(string))
 			continue
 		}
-		if row[4] == "index" {
-			extra, ok := row[11].(string)
+		if row[typeIndex] == "index" {
+			extra, ok := row[extraIndex].(string)
 			if !ok {
 				return false, "", nil
 			}
 			if strings.Contains(extra, "Using where") || strings.Contains(extra, "Using index condition") {
 				continue
 			}
-			tables = append(tables, row[2].(string))
+			tables = append(tables, row[tableIndex].(string))
 			continue
 		}
 	}
