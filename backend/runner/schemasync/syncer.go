@@ -91,13 +91,27 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 			case <-ticker.C:
 				dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 				s.databaseSyncMap.Range(func(key, value any) bool {
-					s.databaseSyncMap.Delete(key)
 					database, ok := value.(*store.DatabaseMessage)
 					if !ok {
 						return true
 					}
 
+					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+					if err != nil {
+						slog.Debug("Failed to get instance",
+							slog.String("instance", database.InstanceID),
+							log.BBError(err))
+						return true
+					}
+					if s.stateCfg.InstanceOutstandingConnections.Increment(instance.UID, int(instance.Options.GetMaximumConnections())) {
+						return true
+					}
+
+					s.databaseSyncMap.Delete(key)
 					dbwp.Go(func() {
+						defer func() {
+							s.stateCfg.InstanceOutstandingConnections.Decrement(instance.UID)
+						}()
 						slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
 						if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 							slog.Debug("Failed to sync database schema",
