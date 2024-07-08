@@ -871,6 +871,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "warehouse_id":
 			dataSource.WarehouseID = request.DataSource.WarehouseId
 			patch.WarehouseID = &request.DataSource.WarehouseId
+		case "use_ssl":
+			dataSource.UseSSL = request.DataSource.UseSsl
+			patch.UseSSL = &request.DataSource.UseSsl
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1180,6 +1183,7 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			DirectConnection:       ds.DirectConnection,
 			Region:                 ds.Region,
 			WarehouseId:            ds.WarehouseID,
+			UseSsl:                 ds.UseSSL,
 		})
 	}
 
