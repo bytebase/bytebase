@@ -13404,6 +13404,9 @@ components:
                         - SCHEMA_DUMP_END
                         - COMMAND_EXECUTE
                         - COMMAND_RESPONSE
+                        - DATABASE_SYNC_START
+                        - DATABASE_SYNC_END
+                        - TASK_RUN_STATUS_UPDATE
                     type: string
                     format: enum
                 schemaDumpStart:
@@ -13414,6 +13417,12 @@ components:
                     $ref: '#/components/schemas/TaskRunLog_CommandExecute'
                 commandResponse:
                     $ref: '#/components/schemas/TaskRunLog_CommandResponse'
+                databaseSyncStart:
+                    $ref: '#/components/schemas/TaskRunLog_DatabaseSyncStart'
+                databaseSyncEnd:
+                    $ref: '#/components/schemas/TaskRunLog_DatabaseSyncEnd'
+                taskRunStatusUpdate:
+                    $ref: '#/components/schemas/TaskRunLog_TaskRunStatusUpdate'
         TaskRunLog_CommandExecute:
             type: object
             properties:
@@ -13445,6 +13454,14 @@ components:
                     description: |-
                         `all_affected_rows` is the affected rows of each command.
                          `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
+        TaskRunLog_DatabaseSyncEnd:
+            type: object
+            properties:
+                error:
+                    type: string
+        TaskRunLog_DatabaseSyncStart:
+            type: object
+            properties: {}
         TaskRunLog_SchemaDumpEnd:
             type: object
             properties:
@@ -13453,6 +13470,16 @@ components:
         TaskRunLog_SchemaDumpStart:
             type: object
             properties: {}
+        TaskRunLog_TaskRunStatusUpdate:
+            type: object
+            properties:
+                status:
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - RUNNING_WAITING
+                        - RUNNING_RUNNING
+                    type: string
+                    format: enum
         TaskRun_ExecutionDetail:
             type: object
             properties:
