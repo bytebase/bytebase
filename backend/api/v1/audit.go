@@ -20,6 +20,11 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+// used for replacing sensitive fields.
+var (
+	maskedString string = ""
+)
+
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
 type AuditInterceptor struct {
 	store *store.Store
@@ -200,11 +205,35 @@ func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	if r == nil {
 		return nil
 	}
-	return &v1pb.LoginRequest{
-		Email:   r.GetEmail(),
-		IdpName: r.GetIdpName(),
-		Web:     r.GetWeb(),
+
+	//  sensitive fields blacklist.
+	if r.Password != "" {
+		r.Password = maskedString
 	}
+	if r.OtpCode != nil {
+		r.OtpCode = &maskedString
+	}
+	if r.RecoveryCode != nil {
+		r.RecoveryCode = &maskedString
+	}
+	if r.MfaTempToken != nil {
+		r.MfaTempToken = &maskedString
+	}
+	if r.IdpContext != nil && r.IdpContext.Context != nil {
+		switch context := r.IdpContext.Context.(type) {
+		case *v1pb.IdentityProviderContext_Oauth2Context:
+			if context.Oauth2Context != nil {
+				context.Oauth2Context.Code = maskedString
+				r.IdpContext.Context = context
+			}
+		case *v1pb.IdentityProviderContext_OidcContext:
+			// no fields to be masked currently.
+		default:
+			r.IdpContext = nil
+		}
+	}
+
+	return r
 }
 
 func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {
