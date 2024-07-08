@@ -56,12 +56,7 @@ export function allowGhostMigration(databaseList: Database[]): boolean {
   });
 }
 
-type DatabaseFilterFields =
-  | "name"
-  | "project"
-  | "instance"
-  | "environment"
-  | "tenant";
+type DatabaseFilterFields = "name" | "project" | "instance" | "environment";
 export function filterDatabaseByKeyword(
   db: Database,
   keyword: string,
@@ -94,16 +89,6 @@ export function filterDatabaseByKeyword(
   if (
     columns.includes("environment") &&
     db.instance.environment.name.toLowerCase().includes(keyword)
-  ) {
-    return true;
-  }
-
-  if (
-    columns.includes("tenant") &&
-    db.labels
-      .find((label) => label.key === "tenant")
-      ?.value.toLowerCase()
-      .includes(keyword)
   ) {
     return true;
   }

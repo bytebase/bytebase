@@ -39,10 +39,9 @@ func TestTenant(t *testing.T) {
 	projectID := generateRandomString("project", 10)
 	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:       fmt.Sprintf("projects/%s", projectID),
-			Title:      projectID,
-			Key:        projectID,
-			TenantMode: v1pb.TenantMode_TENANT_MODE_ENABLED,
+			Name:  fmt.Sprintf("projects/%s", projectID),
+			Title: projectID,
+			Key:   projectID,
 		},
 		ProjectId: projectID,
 	})

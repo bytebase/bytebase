@@ -434,7 +434,6 @@
     - [OperatorType](#bytebase-v1-OperatorType)
     - [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target)
-    - [TenantMode](#bytebase-v1-TenantMode)
     - [Webhook.Type](#bytebase-v1-Webhook-Type)
     - [Workflow](#bytebase-v1-Workflow)
   
@@ -6927,7 +6926,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | title | [string](#string) |  | The title or name of a project. It&#39;s not unique within the workspace. |
 | key | [string](#string) |  | The key is a short and upper-case identifier for a project. It&#39;s unique within the workspace. |
 | workflow | [Workflow](#bytebase-v1-Workflow) |  |  |
-| tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
 | issue_labels | [Label](#bytebase-v1-Label) | repeated |  |
@@ -7306,19 +7304,6 @@ The type of target.
 | PROTECTION_TARGET_UNSPECIFIED | 0 |  |
 | BRANCH | 1 |  |
 | CHANGELIST | 2 |  |
-
-
-
-<a name="bytebase-v1-TenantMode"></a>
-
-### TenantMode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TENANT_MODE_UNSPECIFIED | 0 |  |
-| TENANT_MODE_DISABLED | 1 |  |
-| TENANT_MODE_ENABLED | 2 |  |
 
 
 

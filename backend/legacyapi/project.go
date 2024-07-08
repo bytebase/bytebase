@@ -22,13 +22,3 @@ const (
 	// DefaultProdEnvironmentUID is the initial resource UID for the prod environment.
 	DefaultProdEnvironmentUID = 102
 )
-
-// ProjectTenantMode is the tenant mode setting for project.
-type ProjectTenantMode string
-
-const (
-	// TenantModeDisabled is the DISABLED value for ProjectTenantMode.
-	TenantModeDisabled ProjectTenantMode = "DISABLED"
-	// TenantModeTenant is the TENANT value for ProjectTenantMode.
-	TenantModeTenant ProjectTenantMode = "TENANT"
-)

@@ -1,7 +1,7 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { IamPolicy } from "../proto/v1/iam_policy";
-import { Project, TenantMode, Workflow } from "../proto/v1/project_service";
+import { Project, Workflow } from "../proto/v1/project_service";
 
 export const DEFAULT_PROJECT_UID = 1;
 export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
@@ -21,7 +21,6 @@ export const emptyProject = (): ComposedProject => {
       key: "",
       state: State.ACTIVE,
       workflow: Workflow.UI,
-      tenantMode: TenantMode.TENANT_MODE_DISABLED,
     }),
     iamPolicy: IamPolicy.fromJSON({}),
   };
