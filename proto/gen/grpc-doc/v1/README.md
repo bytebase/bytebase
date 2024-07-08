@@ -502,13 +502,16 @@
     - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
     - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
     - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
+    - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
+    - [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate)
   
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
+    - [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status)
     - [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -8266,8 +8269,11 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type) |  |  |
+| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | schema_dump | [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump) |  |  |
 | command_execute | [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute) |  |  |
+| database_sync | [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync) |  |  |
+| task_run_status_update | [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate) |  |  |
 
 
 
@@ -8309,6 +8315,23 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+<a name="bytebase-v1-TaskRunLogEntry-DatabaseSync"></a>
+
+### TaskRunLogEntry.DatabaseSync
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-TaskRunLogEntry-SchemaDump"></a>
 
 ### TaskRunLogEntry.SchemaDump
@@ -8320,6 +8343,21 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate"></a>
+
+### TaskRunLogEntry.TaskRunStatusUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status) |  |  |
 
 
 
@@ -8409,6 +8447,19 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+<a name="bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status"></a>
+
+### TaskRunLogEntry.TaskRunStatusUpdate.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| RUNNING_WAITING | 1 | the task run is ready to be executed by the scheduler |
+| RUNNING_RUNNING | 2 | the task run is being executed by the scheduler |
+
+
+
 <a name="bytebase-v1-TaskRunLogEntry-Type"></a>
 
 ### TaskRunLogEntry.Type
@@ -8419,6 +8470,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | TYPE_UNSPECIFIED | 0 |  |
 | SCHEMA_DUMP | 1 |  |
 | COMMAND_EXECUTE | 2 |  |
+| DATABASE_SYNC | 3 |  |
+| TASK_RUN_STATUS_UPDATE | 4 |  |
 
 
  
