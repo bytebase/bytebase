@@ -276,7 +276,8 @@
     "permission-denied": "許可が拒否されました",
     "resource": "リソース",
     "closed": "閉まっている",
-    "options": "オプション"
+    "options": "オプション",
+    "reset": "リセット"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -2147,6 +2148,7 @@
     "selectors": "選定基準",
     "add-stage": "ステージを追加",
     "confirm-to-revert": "編集を元に戻してもよろしいですか?",
+    "confirm-to-reset": "デフォルトにリセットしますか?",
     "name-placeholder": "芸名…",
     "error": {
       "at-least-one-stage": "少なくとも 1 つのステージが必要です",
