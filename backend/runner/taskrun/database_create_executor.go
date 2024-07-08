@@ -257,9 +257,6 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 	if peerDatabase == nil {
 		return
 	}
-	if project.TenantMode != api.TenantModeTenant {
-		return
-	}
 
 	issues, err := exec.store.ListIssueV2(ctx, &store.FindIssueMessage{
 		ProjectID:   &project.ResourceID,
@@ -353,10 +350,6 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 }
 
 func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (*store.DatabaseMessage, model.Version, string, error) {
-	if project.TenantMode != api.TenantModeTenant {
-		return nil, model.Version{}, "", nil
-	}
-
 	peerDatabase, schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, instance, project, database)
 	if err != nil {
 		return nil, model.Version{}, "", err
@@ -460,18 +453,6 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	if err != nil {
 		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
 	}
-	// Otherwise, we will try to find a peer tenant database from all databases in the project.
-	// TODO(steven): remove me.
-	if len(matchedDatabases) == 0 {
-		allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
-			ProjectID: &project.ResourceID,
-			Engine:    &instance.Engine,
-		})
-		if err != nil {
-			return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
-		}
-		matchedDatabases = allDatabases
-	}
 
 	// Filter out the database itself.
 	var databases []*store.DatabaseMessage
@@ -481,6 +462,9 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 		}
 	}
 	matchedDatabases = databases
+	if len(matchedDatabases) == 0 {
+		return nil, model.Version{}, "", nil
+	}
 
 	// Then we will try to find a peer tenant database from deployment schedule with the matched databases.
 	deploymentConfig, err := exec.store.GetDeploymentConfigV2(ctx, project.UID)
