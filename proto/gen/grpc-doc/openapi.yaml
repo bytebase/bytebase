@@ -9187,6 +9187,9 @@ components:
                 password:
                     writeOnly: true
                     type: string
+                useSsl:
+                    type: boolean
+                    description: Use SSL to connect to the data source. By default, we use system default SSL configuration.
                 sslCa:
                     writeOnly: true
                     type: string
