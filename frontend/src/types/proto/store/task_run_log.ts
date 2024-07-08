@@ -13,6 +13,7 @@ export interface TaskRunLog {
   databaseSyncStart: TaskRunLog_DatabaseSyncStart | undefined;
   databaseSyncEnd: TaskRunLog_DatabaseSyncEnd | undefined;
   taskRunStatusUpdate: TaskRunLog_TaskRunStatusUpdate | undefined;
+  transactionControl: TaskRunLog_TransactionControl | undefined;
 }
 
 export enum TaskRunLog_Type {
@@ -24,6 +25,7 @@ export enum TaskRunLog_Type {
   DATABASE_SYNC_START = "DATABASE_SYNC_START",
   DATABASE_SYNC_END = "DATABASE_SYNC_END",
   TASK_RUN_STATUS_UPDATE = "TASK_RUN_STATUS_UPDATE",
+  TRANSACTION_CONTROL = "TRANSACTION_CONTROL",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -53,6 +55,9 @@ export function taskRunLog_TypeFromJSON(object: any): TaskRunLog_Type {
     case 7:
     case "TASK_RUN_STATUS_UPDATE":
       return TaskRunLog_Type.TASK_RUN_STATUS_UPDATE;
+    case 8:
+    case "TRANSACTION_CONTROL":
+      return TaskRunLog_Type.TRANSACTION_CONTROL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -78,6 +83,8 @@ export function taskRunLog_TypeToJSON(object: TaskRunLog_Type): string {
       return "DATABASE_SYNC_END";
     case TaskRunLog_Type.TASK_RUN_STATUS_UPDATE:
       return "TASK_RUN_STATUS_UPDATE";
+    case TaskRunLog_Type.TRANSACTION_CONTROL:
+      return "TRANSACTION_CONTROL";
     case TaskRunLog_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -102,6 +109,8 @@ export function taskRunLog_TypeToNumber(object: TaskRunLog_Type): number {
       return 6;
     case TaskRunLog_Type.TASK_RUN_STATUS_UPDATE:
       return 7;
+    case TaskRunLog_Type.TRANSACTION_CONTROL:
+      return 8;
     case TaskRunLog_Type.UNRECOGNIZED:
     default:
       return -1;
@@ -198,6 +207,72 @@ export function taskRunLog_TaskRunStatusUpdate_StatusToNumber(object: TaskRunLog
   }
 }
 
+export interface TaskRunLog_TransactionControl {
+  type: TaskRunLog_TransactionControl_Type;
+  error: string;
+}
+
+export enum TaskRunLog_TransactionControl_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  BEGIN = "BEGIN",
+  COMMIT = "COMMIT",
+  ROLLBACK = "ROLLBACK",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function taskRunLog_TransactionControl_TypeFromJSON(object: any): TaskRunLog_TransactionControl_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "BEGIN":
+      return TaskRunLog_TransactionControl_Type.BEGIN;
+    case 2:
+    case "COMMIT":
+      return TaskRunLog_TransactionControl_Type.COMMIT;
+    case 3:
+    case "ROLLBACK":
+      return TaskRunLog_TransactionControl_Type.ROLLBACK;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRunLog_TransactionControl_Type.UNRECOGNIZED;
+  }
+}
+
+export function taskRunLog_TransactionControl_TypeToJSON(object: TaskRunLog_TransactionControl_Type): string {
+  switch (object) {
+    case TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case TaskRunLog_TransactionControl_Type.BEGIN:
+      return "BEGIN";
+    case TaskRunLog_TransactionControl_Type.COMMIT:
+      return "COMMIT";
+    case TaskRunLog_TransactionControl_Type.ROLLBACK:
+      return "ROLLBACK";
+    case TaskRunLog_TransactionControl_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function taskRunLog_TransactionControl_TypeToNumber(object: TaskRunLog_TransactionControl_Type): number {
+  switch (object) {
+    case TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case TaskRunLog_TransactionControl_Type.BEGIN:
+      return 1;
+    case TaskRunLog_TransactionControl_Type.COMMIT:
+      return 2;
+    case TaskRunLog_TransactionControl_Type.ROLLBACK:
+      return 3;
+    case TaskRunLog_TransactionControl_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 function createBaseTaskRunLog(): TaskRunLog {
   return {
     type: TaskRunLog_Type.TYPE_UNSPECIFIED,
@@ -208,6 +283,7 @@ function createBaseTaskRunLog(): TaskRunLog {
     databaseSyncStart: undefined,
     databaseSyncEnd: undefined,
     taskRunStatusUpdate: undefined,
+    transactionControl: undefined,
   };
 }
 
@@ -236,6 +312,9 @@ export const TaskRunLog = {
     }
     if (message.taskRunStatusUpdate !== undefined) {
       TaskRunLog_TaskRunStatusUpdate.encode(message.taskRunStatusUpdate, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.transactionControl !== undefined) {
+      TaskRunLog_TransactionControl.encode(message.transactionControl, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -303,6 +382,13 @@ export const TaskRunLog = {
 
           message.taskRunStatusUpdate = TaskRunLog_TaskRunStatusUpdate.decode(reader, reader.uint32());
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.transactionControl = TaskRunLog_TransactionControl.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -334,6 +420,9 @@ export const TaskRunLog = {
       taskRunStatusUpdate: isSet(object.taskRunStatusUpdate)
         ? TaskRunLog_TaskRunStatusUpdate.fromJSON(object.taskRunStatusUpdate)
         : undefined,
+      transactionControl: isSet(object.transactionControl)
+        ? TaskRunLog_TransactionControl.fromJSON(object.transactionControl)
+        : undefined,
     };
   },
 
@@ -362,6 +451,9 @@ export const TaskRunLog = {
     }
     if (message.taskRunStatusUpdate !== undefined) {
       obj.taskRunStatusUpdate = TaskRunLog_TaskRunStatusUpdate.toJSON(message.taskRunStatusUpdate);
+    }
+    if (message.transactionControl !== undefined) {
+      obj.transactionControl = TaskRunLog_TransactionControl.toJSON(message.transactionControl);
     }
     return obj;
   },
@@ -392,6 +484,9 @@ export const TaskRunLog = {
       : undefined;
     message.taskRunStatusUpdate = (object.taskRunStatusUpdate !== undefined && object.taskRunStatusUpdate !== null)
       ? TaskRunLog_TaskRunStatusUpdate.fromPartial(object.taskRunStatusUpdate)
+      : undefined;
+    message.transactionControl = (object.transactionControl !== undefined && object.transactionControl !== null)
+      ? TaskRunLog_TransactionControl.fromPartial(object.transactionControl)
       : undefined;
     return message;
   },
@@ -859,6 +954,82 @@ export const TaskRunLog_TaskRunStatusUpdate = {
   fromPartial(object: DeepPartial<TaskRunLog_TaskRunStatusUpdate>): TaskRunLog_TaskRunStatusUpdate {
     const message = createBaseTaskRunLog_TaskRunStatusUpdate();
     message.status = object.status ?? TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED;
+    return message;
+  },
+};
+
+function createBaseTaskRunLog_TransactionControl(): TaskRunLog_TransactionControl {
+  return { type: TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED, error: "" };
+}
+
+export const TaskRunLog_TransactionControl = {
+  encode(message: TaskRunLog_TransactionControl, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(taskRunLog_TransactionControl_TypeToNumber(message.type));
+    }
+    if (message.error !== "") {
+      writer.uint32(18).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLog_TransactionControl {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLog_TransactionControl();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = taskRunLog_TransactionControl_TypeFromJSON(reader.int32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLog_TransactionControl {
+    return {
+      type: isSet(object.type)
+        ? taskRunLog_TransactionControl_TypeFromJSON(object.type)
+        : TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+    };
+  },
+
+  toJSON(message: TaskRunLog_TransactionControl): unknown {
+    const obj: any = {};
+    if (message.type !== TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED) {
+      obj.type = taskRunLog_TransactionControl_TypeToJSON(message.type);
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLog_TransactionControl>): TaskRunLog_TransactionControl {
+    return TaskRunLog_TransactionControl.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLog_TransactionControl>): TaskRunLog_TransactionControl {
+    const message = createBaseTaskRunLog_TransactionControl();
+    message.type = object.type ?? TaskRunLog_TransactionControl_Type.TYPE_UNSPECIFIED;
+    message.error = object.error ?? "";
     return message;
   },
 };
