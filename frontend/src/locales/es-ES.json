@@ -276,7 +276,8 @@
     "permission-denied": "Permiso denegado",
     "resource": "Recurso",
     "closed": "Cerrado",
-    "options": "Opciones"
+    "options": "Opciones",
+    "reset": "Reiniciar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2147,6 +2148,7 @@
     "selectors": "Selectores",
     "add-stage": "Agregar etapa",
     "confirm-to-revert": "¿Confirmar para revertir la edición?",
+    "confirm-to-reset": "¿Confirmar el restablecimiento de los valores predeterminados?",
     "name-placeholder": "Nombre de la etapa...",
     "error": {
       "at-least-one-stage": "Al menos 1 etapa",
