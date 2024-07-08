@@ -1,5 +1,8 @@
 <template>
   <template v-if="viewMode === 'RESULT'">
+    <BBAttention v-if="result.error" class="w-full mb-2" :type="'error'">
+      <ErrorView :error="result.error" />
+    </BBAttention>
     <div
       class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto"
     >
@@ -262,7 +265,7 @@ const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
-  if (result.error) {
+  if (result.error && data.value.length === 0) {
     return "ERROR";
   }
   const columnNames = result.columnNames;
