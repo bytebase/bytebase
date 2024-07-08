@@ -152,7 +152,10 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.UpdateUserRequest:
 			return redactUpdateUserRequest(r)
 		case *v1pb.LoginRequest:
-			return redactLoginRequest(r)
+			if r, ok := proto.Clone(r).(*v1pb.LoginRequest); ok {
+				return redactLoginRequest(r)
+			}
+			return nil
 		default:
 			return nil
 		}
@@ -219,20 +222,9 @@ func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	if r.MfaTempToken != nil {
 		r.MfaTempToken = &maskedString
 	}
-	if r.IdpContext != nil && r.IdpContext.Context != nil {
-		switch context := r.IdpContext.Context.(type) {
-		case *v1pb.IdentityProviderContext_Oauth2Context:
-			if context.Oauth2Context != nil {
-				context.Oauth2Context.Code = maskedString
-				r.IdpContext.Context = context
-			}
-		case *v1pb.IdentityProviderContext_OidcContext:
-			// no fields to be masked currently.
-		default:
-			r.IdpContext = nil
-		}
+	if r.IdpContext != nil {
+		r.IdpContext = nil
 	}
-
 	return r
 }
 
