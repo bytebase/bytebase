@@ -10,6 +10,9 @@ export interface TaskRunLog {
   schemaDumpEnd: TaskRunLog_SchemaDumpEnd | undefined;
   commandExecute: TaskRunLog_CommandExecute | undefined;
   commandResponse: TaskRunLog_CommandResponse | undefined;
+  databaseSyncStart: TaskRunLog_DatabaseSyncStart | undefined;
+  databaseSyncEnd: TaskRunLog_DatabaseSyncEnd | undefined;
+  taskRunStatusUpdate: TaskRunLog_TaskRunStatusUpdate | undefined;
 }
 
 export enum TaskRunLog_Type {
@@ -18,6 +21,9 @@ export enum TaskRunLog_Type {
   SCHEMA_DUMP_END = "SCHEMA_DUMP_END",
   COMMAND_EXECUTE = "COMMAND_EXECUTE",
   COMMAND_RESPONSE = "COMMAND_RESPONSE",
+  DATABASE_SYNC_START = "DATABASE_SYNC_START",
+  DATABASE_SYNC_END = "DATABASE_SYNC_END",
+  TASK_RUN_STATUS_UPDATE = "TASK_RUN_STATUS_UPDATE",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -38,6 +44,15 @@ export function taskRunLog_TypeFromJSON(object: any): TaskRunLog_Type {
     case 4:
     case "COMMAND_RESPONSE":
       return TaskRunLog_Type.COMMAND_RESPONSE;
+    case 5:
+    case "DATABASE_SYNC_START":
+      return TaskRunLog_Type.DATABASE_SYNC_START;
+    case 6:
+    case "DATABASE_SYNC_END":
+      return TaskRunLog_Type.DATABASE_SYNC_END;
+    case 7:
+    case "TASK_RUN_STATUS_UPDATE":
+      return TaskRunLog_Type.TASK_RUN_STATUS_UPDATE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -57,6 +72,12 @@ export function taskRunLog_TypeToJSON(object: TaskRunLog_Type): string {
       return "COMMAND_EXECUTE";
     case TaskRunLog_Type.COMMAND_RESPONSE:
       return "COMMAND_RESPONSE";
+    case TaskRunLog_Type.DATABASE_SYNC_START:
+      return "DATABASE_SYNC_START";
+    case TaskRunLog_Type.DATABASE_SYNC_END:
+      return "DATABASE_SYNC_END";
+    case TaskRunLog_Type.TASK_RUN_STATUS_UPDATE:
+      return "TASK_RUN_STATUS_UPDATE";
     case TaskRunLog_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -75,6 +96,12 @@ export function taskRunLog_TypeToNumber(object: TaskRunLog_Type): number {
       return 3;
     case TaskRunLog_Type.COMMAND_RESPONSE:
       return 4;
+    case TaskRunLog_Type.DATABASE_SYNC_START:
+      return 5;
+    case TaskRunLog_Type.DATABASE_SYNC_END:
+      return 6;
+    case TaskRunLog_Type.TASK_RUN_STATUS_UPDATE:
+      return 7;
     case TaskRunLog_Type.UNRECOGNIZED:
     default:
       return -1;
@@ -105,6 +132,72 @@ export interface TaskRunLog_CommandResponse {
   allAffectedRows: number[];
 }
 
+export interface TaskRunLog_DatabaseSyncStart {
+}
+
+export interface TaskRunLog_DatabaseSyncEnd {
+  error: string;
+}
+
+export interface TaskRunLog_TaskRunStatusUpdate {
+  status: TaskRunLog_TaskRunStatusUpdate_Status;
+}
+
+export enum TaskRunLog_TaskRunStatusUpdate_Status {
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  /** RUNNING_WAITING - the task run is ready to be executed by the scheduler */
+  RUNNING_WAITING = "RUNNING_WAITING",
+  /** RUNNING_RUNNING - the task run is being executed by the scheduler */
+  RUNNING_RUNNING = "RUNNING_RUNNING",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function taskRunLog_TaskRunStatusUpdate_StatusFromJSON(object: any): TaskRunLog_TaskRunStatusUpdate_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "RUNNING_WAITING":
+      return TaskRunLog_TaskRunStatusUpdate_Status.RUNNING_WAITING;
+    case 2:
+    case "RUNNING_RUNNING":
+      return TaskRunLog_TaskRunStatusUpdate_Status.RUNNING_RUNNING;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRunLog_TaskRunStatusUpdate_Status.UNRECOGNIZED;
+  }
+}
+
+export function taskRunLog_TaskRunStatusUpdate_StatusToJSON(object: TaskRunLog_TaskRunStatusUpdate_Status): string {
+  switch (object) {
+    case TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case TaskRunLog_TaskRunStatusUpdate_Status.RUNNING_WAITING:
+      return "RUNNING_WAITING";
+    case TaskRunLog_TaskRunStatusUpdate_Status.RUNNING_RUNNING:
+      return "RUNNING_RUNNING";
+    case TaskRunLog_TaskRunStatusUpdate_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function taskRunLog_TaskRunStatusUpdate_StatusToNumber(object: TaskRunLog_TaskRunStatusUpdate_Status): number {
+  switch (object) {
+    case TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case TaskRunLog_TaskRunStatusUpdate_Status.RUNNING_WAITING:
+      return 1;
+    case TaskRunLog_TaskRunStatusUpdate_Status.RUNNING_RUNNING:
+      return 2;
+    case TaskRunLog_TaskRunStatusUpdate_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 function createBaseTaskRunLog(): TaskRunLog {
   return {
     type: TaskRunLog_Type.TYPE_UNSPECIFIED,
@@ -112,6 +205,9 @@ function createBaseTaskRunLog(): TaskRunLog {
     schemaDumpEnd: undefined,
     commandExecute: undefined,
     commandResponse: undefined,
+    databaseSyncStart: undefined,
+    databaseSyncEnd: undefined,
+    taskRunStatusUpdate: undefined,
   };
 }
 
@@ -131,6 +227,15 @@ export const TaskRunLog = {
     }
     if (message.commandResponse !== undefined) {
       TaskRunLog_CommandResponse.encode(message.commandResponse, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.databaseSyncStart !== undefined) {
+      TaskRunLog_DatabaseSyncStart.encode(message.databaseSyncStart, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.databaseSyncEnd !== undefined) {
+      TaskRunLog_DatabaseSyncEnd.encode(message.databaseSyncEnd, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.taskRunStatusUpdate !== undefined) {
+      TaskRunLog_TaskRunStatusUpdate.encode(message.taskRunStatusUpdate, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -177,6 +282,27 @@ export const TaskRunLog = {
 
           message.commandResponse = TaskRunLog_CommandResponse.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.databaseSyncStart = TaskRunLog_DatabaseSyncStart.decode(reader, reader.uint32());
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.databaseSyncEnd = TaskRunLog_DatabaseSyncEnd.decode(reader, reader.uint32());
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.taskRunStatusUpdate = TaskRunLog_TaskRunStatusUpdate.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -199,6 +325,15 @@ export const TaskRunLog = {
       commandResponse: isSet(object.commandResponse)
         ? TaskRunLog_CommandResponse.fromJSON(object.commandResponse)
         : undefined,
+      databaseSyncStart: isSet(object.databaseSyncStart)
+        ? TaskRunLog_DatabaseSyncStart.fromJSON(object.databaseSyncStart)
+        : undefined,
+      databaseSyncEnd: isSet(object.databaseSyncEnd)
+        ? TaskRunLog_DatabaseSyncEnd.fromJSON(object.databaseSyncEnd)
+        : undefined,
+      taskRunStatusUpdate: isSet(object.taskRunStatusUpdate)
+        ? TaskRunLog_TaskRunStatusUpdate.fromJSON(object.taskRunStatusUpdate)
+        : undefined,
     };
   },
 
@@ -218,6 +353,15 @@ export const TaskRunLog = {
     }
     if (message.commandResponse !== undefined) {
       obj.commandResponse = TaskRunLog_CommandResponse.toJSON(message.commandResponse);
+    }
+    if (message.databaseSyncStart !== undefined) {
+      obj.databaseSyncStart = TaskRunLog_DatabaseSyncStart.toJSON(message.databaseSyncStart);
+    }
+    if (message.databaseSyncEnd !== undefined) {
+      obj.databaseSyncEnd = TaskRunLog_DatabaseSyncEnd.toJSON(message.databaseSyncEnd);
+    }
+    if (message.taskRunStatusUpdate !== undefined) {
+      obj.taskRunStatusUpdate = TaskRunLog_TaskRunStatusUpdate.toJSON(message.taskRunStatusUpdate);
     }
     return obj;
   },
@@ -239,6 +383,15 @@ export const TaskRunLog = {
       : undefined;
     message.commandResponse = (object.commandResponse !== undefined && object.commandResponse !== null)
       ? TaskRunLog_CommandResponse.fromPartial(object.commandResponse)
+      : undefined;
+    message.databaseSyncStart = (object.databaseSyncStart !== undefined && object.databaseSyncStart !== null)
+      ? TaskRunLog_DatabaseSyncStart.fromPartial(object.databaseSyncStart)
+      : undefined;
+    message.databaseSyncEnd = (object.databaseSyncEnd !== undefined && object.databaseSyncEnd !== null)
+      ? TaskRunLog_DatabaseSyncEnd.fromPartial(object.databaseSyncEnd)
+      : undefined;
+    message.taskRunStatusUpdate = (object.taskRunStatusUpdate !== undefined && object.taskRunStatusUpdate !== null)
+      ? TaskRunLog_TaskRunStatusUpdate.fromPartial(object.taskRunStatusUpdate)
       : undefined;
     return message;
   },
@@ -545,6 +698,167 @@ export const TaskRunLog_CommandResponse = {
     message.error = object.error ?? "";
     message.affectedRows = object.affectedRows ?? 0;
     message.allAffectedRows = object.allAffectedRows?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseTaskRunLog_DatabaseSyncStart(): TaskRunLog_DatabaseSyncStart {
+  return {};
+}
+
+export const TaskRunLog_DatabaseSyncStart = {
+  encode(_: TaskRunLog_DatabaseSyncStart, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLog_DatabaseSyncStart {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLog_DatabaseSyncStart();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): TaskRunLog_DatabaseSyncStart {
+    return {};
+  },
+
+  toJSON(_: TaskRunLog_DatabaseSyncStart): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLog_DatabaseSyncStart>): TaskRunLog_DatabaseSyncStart {
+    return TaskRunLog_DatabaseSyncStart.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<TaskRunLog_DatabaseSyncStart>): TaskRunLog_DatabaseSyncStart {
+    const message = createBaseTaskRunLog_DatabaseSyncStart();
+    return message;
+  },
+};
+
+function createBaseTaskRunLog_DatabaseSyncEnd(): TaskRunLog_DatabaseSyncEnd {
+  return { error: "" };
+}
+
+export const TaskRunLog_DatabaseSyncEnd = {
+  encode(message: TaskRunLog_DatabaseSyncEnd, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.error !== "") {
+      writer.uint32(10).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLog_DatabaseSyncEnd {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLog_DatabaseSyncEnd();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLog_DatabaseSyncEnd {
+    return { error: isSet(object.error) ? globalThis.String(object.error) : "" };
+  },
+
+  toJSON(message: TaskRunLog_DatabaseSyncEnd): unknown {
+    const obj: any = {};
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLog_DatabaseSyncEnd>): TaskRunLog_DatabaseSyncEnd {
+    return TaskRunLog_DatabaseSyncEnd.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLog_DatabaseSyncEnd>): TaskRunLog_DatabaseSyncEnd {
+    const message = createBaseTaskRunLog_DatabaseSyncEnd();
+    message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseTaskRunLog_TaskRunStatusUpdate(): TaskRunLog_TaskRunStatusUpdate {
+  return { status: TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED };
+}
+
+export const TaskRunLog_TaskRunStatusUpdate = {
+  encode(message: TaskRunLog_TaskRunStatusUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.status !== TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(taskRunLog_TaskRunStatusUpdate_StatusToNumber(message.status));
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLog_TaskRunStatusUpdate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLog_TaskRunStatusUpdate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = taskRunLog_TaskRunStatusUpdate_StatusFromJSON(reader.int32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLog_TaskRunStatusUpdate {
+    return {
+      status: isSet(object.status)
+        ? taskRunLog_TaskRunStatusUpdate_StatusFromJSON(object.status)
+        : TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED,
+    };
+  },
+
+  toJSON(message: TaskRunLog_TaskRunStatusUpdate): unknown {
+    const obj: any = {};
+    if (message.status !== TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED) {
+      obj.status = taskRunLog_TaskRunStatusUpdate_StatusToJSON(message.status);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLog_TaskRunStatusUpdate>): TaskRunLog_TaskRunStatusUpdate {
+    return TaskRunLog_TaskRunStatusUpdate.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLog_TaskRunStatusUpdate>): TaskRunLog_TaskRunStatusUpdate {
+    const message = createBaseTaskRunLog_TaskRunStatusUpdate();
+    message.status = object.status ?? TaskRunLog_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED;
     return message;
   },
 };

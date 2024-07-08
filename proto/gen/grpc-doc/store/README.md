@@ -274,9 +274,13 @@
     - [TaskRunLog](#bytebase-store-TaskRunLog)
     - [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute)
     - [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse)
+    - [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd)
+    - [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart)
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
+    - [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate)
   
+    - [TaskRunLog.TaskRunStatusUpdate.Status](#bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status)
     - [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type)
   
 - [store/user.proto](#store_user-proto)
@@ -4168,6 +4172,9 @@ The following fields are used for error reporting.
 | schema_dump_end | [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd) |  |  |
 | command_execute | [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute) |  |  |
 | command_response | [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse) |  |  |
+| database_sync_start | [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart) |  |  |
+| database_sync_end | [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd) |  |  |
+| task_run_status_update | [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate) |  |  |
 
 
 
@@ -4207,6 +4214,31 @@ The following fields are used for error reporting.
 
 
 
+<a name="bytebase-store-TaskRunLog-DatabaseSyncEnd"></a>
+
+### TaskRunLog.DatabaseSyncEnd
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-DatabaseSyncStart"></a>
+
+### TaskRunLog.DatabaseSyncStart
+
+
+
+
+
+
+
 <a name="bytebase-store-TaskRunLog-SchemaDumpEnd"></a>
 
 ### TaskRunLog.SchemaDumpEnd
@@ -4231,7 +4263,35 @@ The following fields are used for error reporting.
 
 
 
+
+<a name="bytebase-store-TaskRunLog-TaskRunStatusUpdate"></a>
+
+### TaskRunLog.TaskRunStatusUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [TaskRunLog.TaskRunStatusUpdate.Status](#bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status) |  |  |
+
+
+
+
+
  
+
+
+<a name="bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status"></a>
+
+### TaskRunLog.TaskRunStatusUpdate.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| RUNNING_WAITING | 1 | the task run is ready to be executed by the scheduler |
+| RUNNING_RUNNING | 2 | the task run is being executed by the scheduler |
+
 
 
 <a name="bytebase-store-TaskRunLog-Type"></a>
@@ -4246,6 +4306,9 @@ The following fields are used for error reporting.
 | SCHEMA_DUMP_END | 2 |  |
 | COMMAND_EXECUTE | 3 |  |
 | COMMAND_RESPONSE | 4 |  |
+| DATABASE_SYNC_START | 5 |  |
+| DATABASE_SYNC_END | 6 |  |
+| TASK_RUN_STATUS_UPDATE | 7 |  |
 
 
  
