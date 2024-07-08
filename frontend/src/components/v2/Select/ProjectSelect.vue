@@ -31,7 +31,7 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import { Workflow } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2, roleListInProjectV1 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
@@ -44,7 +44,6 @@ const props = withDefaults(
     disabled?: boolean;
     project?: string | undefined | null; // UNKNOWN_ID(-1) to "ALL"
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
-    allowedProjectTenantModeList?: TenantMode[];
     allowedProjectWorkflowTypeList?: Workflow[];
     includeAll?: boolean;
     includeDefaultProject?: boolean;
@@ -56,10 +55,6 @@ const props = withDefaults(
     disabled: false,
     project: undefined,
     allowedProjectRoleList: () => [],
-    allowedProjectTenantModeList: () => [
-      TenantMode.TENANT_MODE_DISABLED,
-      TenantMode.TENANT_MODE_ENABLED,
-    ],
     allowedProjectWorkflowTypeList: () => [Workflow.UI, Workflow.VCS],
     includeAll: false,
     includeDefaultProject: false,
@@ -92,10 +87,7 @@ const rawProjectList = computed(() => {
     if (project.uid === String(DEFAULT_PROJECT_ID)) {
       return false;
     }
-    return (
-      props.allowedProjectTenantModeList.includes(project.tenantMode) &&
-      props.allowedProjectWorkflowTypeList.includes(project.workflow)
-    );
+    return props.allowedProjectWorkflowTypeList.includes(project.workflow);
   });
 });
 

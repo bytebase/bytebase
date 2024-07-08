@@ -66,7 +66,6 @@ type IssueCountMetric struct {
 
 // ProjectCountMetric is the API message for project count metric.
 type ProjectCountMetric struct {
-	TenantMode   api.ProjectTenantMode
 	WorkflowType v1pb.Workflow
 	RowStatus    api.RowStatus
 	Count        int
