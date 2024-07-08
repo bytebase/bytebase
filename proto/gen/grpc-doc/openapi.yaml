@@ -423,13 +423,6 @@ paths:
                      for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
                   schema:
                     type: string
-                - name: permission
-                  in: query
-                  description: |-
-                    By default, the permission "bb.databases.get" is used.
-                     Alternatively, "bb.databases.query" can be used to retrieve databases with query permissions to.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
