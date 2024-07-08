@@ -195,6 +195,10 @@ func getQueryExplainTypes(res []any) ([]ExplainType, error) {
 	if len(res) != 3 {
 		return nil, errors.Errorf("expected 3 but got %d", len(res))
 	}
+	columns, ok := res[0].([]string)
+	if !ok {
+		return nil, errors.Errorf("expected []string but got %t", res[0])
+	}
 	rowList, ok := res[2].([]any)
 	if !ok {
 		return nil, errors.Errorf("expected []any but got %t", res[2])
@@ -223,6 +227,10 @@ func getQueryExplainTypes(res []any) ([]ExplainType, error) {
 	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
 	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+	typeIndex, err := getColumnIndex(columns, "type")
+	if err != nil {
+		return nil, errors.Errorf("failed to find rows column")
+	}
 
 	explainTypes := []ExplainType{}
 	for _, rowAny := range rowList {
@@ -230,10 +238,7 @@ func getQueryExplainTypes(res []any) ([]ExplainType, error) {
 		if !ok {
 			return nil, errors.Errorf("expected []any but got %t", row)
 		}
-		if len(row) != 12 {
-			return nil, errors.Errorf("expected 12 but got %d", len(row))
-		}
-		explainType, ok := row[4].(string)
+		explainType, ok := row[typeIndex].(string)
 		if !ok {
 			// Skip the row if the type column is not a string.
 			continue
