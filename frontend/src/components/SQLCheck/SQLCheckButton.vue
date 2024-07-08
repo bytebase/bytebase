@@ -173,8 +173,17 @@ const runCheckInternal = async (
 
 const handleButtonClick = async () => {
   await runChecks();
+
   if (hasError.value) {
+    const d = defer<boolean>();
+    confirmDialog.value = d;
+    d.promise.finally(onPanelClose);
+
     showDetailPanel.value = true;
+
+    return d.promise;
+  } else {
+    confirmDialog.value = undefined;
   }
 };
 

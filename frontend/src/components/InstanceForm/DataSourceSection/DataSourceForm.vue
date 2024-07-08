@@ -712,22 +712,19 @@ MIIEvQ...
     "
     class="mt-4 sm:col-span-3 sm:col-start-1"
   >
-    <div class="flex flex-row items-center">
+    <div class="flex flex-row items-center gap-2">
+      <NSwitch
+        :value="dataSource.useSsl"
+        size="small"
+        @update:value="handleUseSslChanged"
+      />
       <label for="ssl" class="textlabel block">
         {{ $t("data-source.ssl-connection") }}
       </label>
     </div>
-    <template v-if="dataSource.pendingCreate">
-      <SslCertificateForm
-        :value="dataSource"
-        :engine-type="basicInfo.engine"
-        :disabled="!allowEdit"
-        @change="handleSSLChange"
-      />
-    </template>
-    <template v-else>
-      <template v-if="dataSource.updateSsl">
-        <SslCertificateForm
+    <template v-if="dataSource.useSsl">
+      <template v-if="dataSource.pendingCreate">
+        <SslCertificateFormV1
           :value="dataSource"
           :engine-type="basicInfo.engine"
           :disabled="!allowEdit"
@@ -735,13 +732,23 @@ MIIEvQ...
         />
       </template>
       <template v-else>
-        <NButton
-          class="!mt-2"
-          :disabled="!allowEdit"
-          @click.prevent="handleEditSSL"
-        >
-          {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-        </NButton>
+        <template v-if="dataSource.updateSsl">
+          <SslCertificateFormV1
+            :value="dataSource"
+            :engine-type="basicInfo.engine"
+            :disabled="!allowEdit"
+            @change="handleSSLChange"
+          />
+        </template>
+        <template v-else>
+          <NButton
+            class="!mt-2"
+            :disabled="!allowEdit"
+            @click.prevent="handleEditSSL"
+          >
+            {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+          </NButton>
+        </template>
       </template>
     </template>
   </div>
@@ -802,6 +809,7 @@ import {
   NUpload,
   NUploadDragger,
   type UploadFileInfo,
+  NSwitch,
 } from "naive-ui";
 import { watch, reactive, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -823,7 +831,7 @@ import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import GcpCredentialInput from "./GcpCredentialInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
-import SslCertificateForm from "./SslCertificateForm.vue";
+import SslCertificateFormV1 from "./SslCertificateFormV1.vue";
 
 interface LocalState {
   passwordType: DataSourceExternalSecret_SecretType;
@@ -1030,6 +1038,13 @@ const handlePortInput = (value: string) => {
   }
   ds.port = value.trim();
 };
+
+const handleUseSslChanged = (useSSL: boolean) => {
+  const ds = props.dataSource;
+  ds.useSsl = useSSL;
+  ds.updateSsl = true;
+};
+
 const handleEditSSL = () => {
   const ds = props.dataSource;
   ds.sslCa = "";
