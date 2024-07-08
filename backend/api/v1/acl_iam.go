@@ -226,7 +226,7 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 		InstanceID:  &instanceID,
 		ShowDeleted: true,
 	}
-	databases, err := searchDatabases(ctx, in.store, in.iamManager, databaseFind, iam.PermissionDatabasesGet)
+	databases, err := searchDatabases(ctx, in.store, in.iamManager, databaseFind)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to search databases")
 	}

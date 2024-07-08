@@ -120,7 +120,7 @@ func (s *InstanceService) SearchInstances(ctx context.Context, request *v1pb.Sea
 		databaseFind.ProjectID = &project.ResourceID
 	}
 
-	databases, err := searchDatabases(ctx, s.store, s.iamManager, databaseFind, iam.PermissionDatabasesGet)
+	databases, err := searchDatabases(ctx, s.store, s.iamManager, databaseFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get databases, error: %v", err)
 	}
