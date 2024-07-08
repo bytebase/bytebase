@@ -100,6 +100,11 @@ export const buildPlan = async (params: CreatePlanParams) => {
       query.changelist,
       params
     );
+  } else if (query.databaseGroupName) {
+    plan.steps = await buildStepsForDatabaseGroup(
+      params,
+      query.databaseGroupName
+    );
   } else {
     // build standard plan
     // Use dedicated sheets if sqlMap is specified.
