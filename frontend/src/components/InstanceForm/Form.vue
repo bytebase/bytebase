@@ -211,6 +211,30 @@
         </div>
 
         <div
+          v-if="basicInfo.engine === Engine.REDIS"
+          class="sm:col-span-4 sm:col-start-1"
+        >
+          <label
+            for="connectionStringSchema"
+            class="textlabel flex flex-row items-center"
+          >
+            {{ $t("data-source.connection-type") }}
+          </label>
+          <NRadioGroup
+            :value="currentMongoDBConnectionSchema"
+            @update:value="handleMongodbConnectionStringSchemaChange"
+          >
+            <NRadio
+              v-for="type in RedisConnectionType"
+              :key="type"
+              :value="type"
+            >
+              <span class="textlabel">{{ type }}</span>
+            </NRadio>
+          </NRadioGroup>
+        </div>
+
+        <div
           v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
           class="sm:col-span-4 sm:col-start-1"
         >
@@ -463,6 +487,7 @@ import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
   EngineList,
+  RedisConnectionType,
 } from "./constants";
 import { useInstanceFormContext } from "./context";
 
@@ -570,6 +595,25 @@ const changeMaximumConnections = (maximumConnections: number) => {
     basicInfo.value.options = InstanceOptions.fromPartial({});
   }
   basicInfo.value.options.maximumConnections = maximumConnections;
+};
+
+const handleRedisConnectionTypeChange = (type: string) => {
+  const ds = editingDataSource.value;
+  if (!ds) return;
+  switch (type) {
+    case RedisConnectionType[0]:
+      ds.break;
+    case MongoDBConnectionStringSchemaList[1]:
+      // MongoDB doesn't support specify port if using srv record.
+      ds.port = "";
+      ds.additionalAddresses = [];
+      ds.replicaSet = "";
+      ds.directConnection = false;
+      ds.srv = true;
+      break;
+    default:
+      ds.srv = false;
+  }
 };
 
 const handleMongodbConnectionStringSchemaChange = (type: string) => {
