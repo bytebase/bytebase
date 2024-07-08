@@ -433,14 +433,21 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						taskPatch.EarliestAllowedTs = &seconds
 						doUpdate = true
 
+						var fromEarliestAllowedTime, toEarliestAllowedTime *timestamppb.Timestamp
+						if task.EarliestAllowedTs != 0 {
+							fromEarliestAllowedTime = timestamppb.New(time.Unix(task.EarliestAllowedTs, 0))
+						}
+						if seconds != 0 {
+							toEarliestAllowedTime = timestamppb.New(time.Unix(seconds, 0))
+						}
 						issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 							IssueUID: issue.UID,
 							Payload: &storepb.IssueCommentPayload{
 								Event: &storepb.IssueCommentPayload_TaskUpdate_{
 									TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
 										Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
-										FromEarliestAllowedTime: timestamppb.New(time.Unix(task.EarliestAllowedTs, 0)),
-										ToEarliestAllowedTime:   timestamppb.New(time.Unix(seconds, 0)),
+										FromEarliestAllowedTime: fromEarliestAllowedTime,
+										ToEarliestAllowedTime:   toEarliestAllowedTime,
 									},
 								},
 							},
