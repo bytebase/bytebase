@@ -148,6 +148,10 @@ func getRows(res []any) (int64, error) {
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
+	columns, ok := res[0].([]string)
+	if !ok {
+		return 0, errors.Errorf("expected []string but got %t", res[0])
+	}
 	rowList, ok := res[2].([]any)
 	if !ok {
 		return 0, errors.Errorf("expected []any but got %t", res[2])
@@ -174,16 +178,18 @@ func getRows(res []any) (int64, error) {
 	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
 	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+	rowsIndex, err := getColumnIndex(columns, "rows")
+	if err != nil {
+		return 0, errors.Errorf("failed to find rows column")
+	}
 
 	for _, rowAny := range rowList {
 		row, ok := rowAny.([]any)
 		if !ok {
 			return 0, errors.Errorf("expected []any but got %t", row)
 		}
-		if len(row) != 12 {
-			return 0, errors.Errorf("expected 12 but got %d", len(row))
-		}
-		switch col := row[9].(type) {
+
+		switch col := row[rowsIndex].(type) {
 		case int:
 			return int64(col), nil
 		case int32:
