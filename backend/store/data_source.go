@@ -53,6 +53,7 @@ type DataSourceMessage struct {
 	Region              string
 	AccountID           string
 	WarehouseID         string
+	UseSSL              bool
 }
 
 // Copy returns a copy of the data source message.
@@ -86,6 +87,7 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		ReplicaSet:                         m.ReplicaSet,
 		DirectConnection:                   m.DirectConnection,
 		Region:                             m.Region,
+		UseSSL:                             m.UseSSL,
 	}
 }
 
@@ -130,6 +132,7 @@ type UpdateDataSourceMessage struct {
 	Region            *string
 	AccountID         *string
 	WarehouseID       *string
+	UseSSL            *bool
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -199,6 +202,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.Region = dataSourceOptions.Region
 		dataSourceMessage.AccountID = dataSourceOptions.AccountId
 		dataSourceMessage.WarehouseID = dataSourceOptions.WarehouseId
+		dataSourceMessage.UseSSL = dataSourceOptions.UseSsl
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -369,6 +373,9 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.WarehouseID; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseId', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
+	if v := patch.UseSSL; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('useSsl', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -427,6 +434,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		Region:                             dataSource.Region,
 		WarehouseId:                        dataSource.WarehouseID,
 		AccountId:                          dataSource.AccountID,
+		UseSsl:                             dataSource.UseSSL,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

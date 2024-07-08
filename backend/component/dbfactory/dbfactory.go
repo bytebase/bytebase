@@ -206,6 +206,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			Username: dataSource.Username,
 			Password: password,
 			TLSConfig: db.TLSConfig{
+				UseSSL:  dataSource.UseSSL,
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
