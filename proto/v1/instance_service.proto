@@ -363,6 +363,8 @@ message DataSource {
   DataSourceType type = 2;
   string username = 3;
   string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
+  bool use_ssl = 30;
   string ssl_ca = 5 [(google.api.field_behavior) = INPUT_ONLY];
   string ssl_cert = 6 [(google.api.field_behavior) = INPUT_ONLY];
   string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
