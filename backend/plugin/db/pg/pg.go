@@ -455,17 +455,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	totalRowsAffected := int64(0)
-	if len(remainingSQLs) != 0 {
-		tx, err := driver.db.BeginTx(ctx, nil)
-		if err != nil {
-			return 0, err
-		}
-		defer tx.Rollback()
-
-		if err := tx.Commit(); err != nil {
-			return 0, err
-		}
-	}
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
@@ -480,9 +469,24 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 			tx, err := conn.Begin(ctx)
 			if err != nil {
+				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 				return errors.Wrapf(err, "failed to begin transaction")
+			} else {
+				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
 			}
-			defer tx.Rollback(ctx)
+
+			committed := false
+			defer func() {
+				err := tx.Rollback(ctx)
+				if committed {
+					return
+				}
+				var rerr string
+				if err != nil {
+					rerr = err.Error()
+				}
+				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
+			}()
 
 			// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
 			if _, err := tx.Exec(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
@@ -541,7 +545,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			}
 
 			if err := tx.Commit(ctx); err != nil {
+				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 				return errors.Wrapf(err, "failed to commit transaction")
+			} else {
+				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+				committed = true
 			}
 
 			return nil

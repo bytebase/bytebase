@@ -415,6 +415,22 @@ func (o *ExecuteOptions) LogCommandResponse(commandIndexes []int32, affectedRows
 	}
 }
 
+func (o *ExecuteOptions) LogTransactionControl(t storepb.TaskRunLog_TransactionControl_Type, rerr string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_TRANSACTION_CONTROL,
+		TransactionControl: &storepb.TaskRunLog_TransactionControl{
+			Type:  t,
+			Error: rerr,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log command transaction control", log.BBError(err))
+	}
+}
+
 // ErrorWithPosition is the error with the position information.
 type ErrorWithPosition struct {
 	Err   error
