@@ -110,6 +110,7 @@ export const calcDataSourceUpdateMask = (
     updateMask.add("password");
   }
   if (updateSsl) {
+    updateMask.add("use_ssl");
     updateMask.add("ssl_ca");
     updateMask.add("ssl_key");
     updateMask.add("ssl_cert");
