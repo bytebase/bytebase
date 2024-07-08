@@ -96,6 +96,7 @@
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
   
     - [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType)
+    - [DataSource.RedisType](#bytebase-v1-DataSource-RedisType)
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
@@ -1653,6 +1654,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
 | account_id | [string](#string) |  | account_id is used by Databricks. |
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
+| master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
+| master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
+| master_obfuscated_password | [string](#string) |  |  |
+| redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
 
 
 
@@ -2029,6 +2034,20 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | PASSWORD | 1 |  |
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
+
+
+
+<a name="bytebase-v1-DataSource-RedisType"></a>
+
+### DataSource.RedisType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_TYPE_UNSPECIFIED | 0 |  |
+| STANDALONE | 1 |  |
+| SENTINEL | 2 |  |
+| CLUSTER | 3 |  |
 
 
 
