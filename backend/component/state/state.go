@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DefaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
-const DefaultInstanceMaximumConnections = 10
+// defaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
+const defaultInstanceMaximumConnections = 10
 
 // State is the state for all in-memory states within the server.
 type State struct {
@@ -97,6 +97,10 @@ type connectionLimiter struct {
 func (c *connectionLimiter) Increment(instanceID, maxConnections int) bool {
 	c.Lock()
 	defer c.Unlock()
+	if maxConnections == 0 {
+		maxConnections = defaultInstanceMaximumConnections
+	}
+
 	if c.connections[instanceID] >= maxConnections {
 		return true
 	}
