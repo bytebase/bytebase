@@ -385,6 +385,7 @@ message TaskRunLogEntry {
     TASK_RUN_STATUS_UPDATE = 4;
   }
   Type type = 1;
+  google.protobuf.Timestamp log_time = 6;
   SchemaDump schema_dump = 2;
   CommandExecute command_execute = 3;
   DatabaseSync database_sync = 4;
