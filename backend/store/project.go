@@ -157,7 +157,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				data_classification_config_id,
 				setting
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			RETURNING id
 		`,
 		creatorID,
