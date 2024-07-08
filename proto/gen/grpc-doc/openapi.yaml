@@ -9277,6 +9277,22 @@ components:
                 warehouseId:
                     type: string
                     description: warehouse_id is used by Databricks.
+                masterName:
+                    type: string
+                    description: master_name is the master name used by connecting redis-master via redis sentinel.
+                masterUsername:
+                    type: string
+                    description: master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
+                masterObfuscatedPassword:
+                    type: string
+                redisType:
+                    enum:
+                        - REDIS_TYPE_UNSPECIFIED
+                        - STANDALONE
+                        - SENTINEL
+                        - CLUSTER
+                    type: string
+                    format: enum
         DataSourceExternalSecret:
             type: object
             properties:
