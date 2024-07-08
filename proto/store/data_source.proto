@@ -128,6 +128,9 @@ message DataSourceOptions {
     CLUSTER = 3;
   }
   RedisType redis_type = 23;
+
+  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
+  bool use_ssl = 24;
 }
 
 message SASLConfig {
