@@ -2117,6 +2117,10 @@
                   <a href="#bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate"><span class="badge">M</span>TaskRunLogEntry.TaskRunStatusUpdate</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.TransactionControl"><span class="badge">M</span>TaskRunLogEntry.TransactionControl</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.Task.Status"><span class="badge">E</span>Task.Status</a>
@@ -2140,6 +2144,10 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status"><span class="badge">E</span>TaskRunLogEntry.TaskRunStatusUpdate.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.TransactionControl.Type"><span class="badge">E</span>TaskRunLogEntry.TransactionControl.Type</a>
                 </li>
               
                 <li>
@@ -23057,6 +23065,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>transaction_control</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.TransactionControl">TaskRunLogEntry.TransactionControl</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23237,6 +23252,37 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                 <tr>
                   <td>status</td>
                   <td><a href="#bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status">TaskRunLogEntry.TaskRunStatusUpdate.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.TransactionControl">TaskRunLogEntry.TransactionControl</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.TransactionControl.Type">TaskRunLogEntry.TransactionControl.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -23520,6 +23566,41 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.TaskRunLogEntry.TransactionControl.Type">TaskRunLogEntry.TransactionControl.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BEGIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMIT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ROLLBACK</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.TaskRunLogEntry.Type">TaskRunLogEntry.Type</h3>
         <p></p>
         <table class="enum-table">
@@ -23555,6 +23636,12 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
               <tr>
                 <td>TASK_RUN_STATUS_UPDATE</td>
                 <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TRANSACTION_CONTROL</td>
+                <td>5</td>
                 <td><p></p></td>
               </tr>
             
