@@ -502,6 +502,8 @@ export interface DataSource {
   type: DataSourceType;
   username: string;
   password: string;
+  /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
+  useSsl: boolean;
   sslCa: string;
   sslCert: string;
   sslKey: string;
@@ -2449,6 +2451,7 @@ function createBaseDataSource(): DataSource {
     type: DataSourceType.DATA_SOURCE_UNSPECIFIED,
     username: "",
     password: "",
+    useSsl: false,
     sslCa: "",
     sslCert: "",
     sslKey: "",
@@ -2490,6 +2493,9 @@ export const DataSource = {
     }
     if (message.password !== "") {
       writer.uint32(34).string(message.password);
+    }
+    if (message.useSsl === true) {
+      writer.uint32(240).bool(message.useSsl);
     }
     if (message.sslCa !== "") {
       writer.uint32(42).string(message.sslCa);
@@ -2603,6 +2609,13 @@ export const DataSource = {
           }
 
           message.password = reader.string();
+          continue;
+        case 30:
+          if (tag !== 240) {
+            break;
+          }
+
+          message.useSsl = reader.bool();
           continue;
         case 5:
           if (tag !== 42) {
@@ -2794,6 +2807,7 @@ export const DataSource = {
       type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : DataSourceType.DATA_SOURCE_UNSPECIFIED,
       username: isSet(object.username) ? globalThis.String(object.username) : "",
       password: isSet(object.password) ? globalThis.String(object.password) : "",
+      useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
       sslCa: isSet(object.sslCa) ? globalThis.String(object.sslCa) : "",
       sslCert: isSet(object.sslCert) ? globalThis.String(object.sslCert) : "",
       sslKey: isSet(object.sslKey) ? globalThis.String(object.sslKey) : "",
@@ -2845,6 +2859,9 @@ export const DataSource = {
     }
     if (message.password !== "") {
       obj.password = message.password;
+    }
+    if (message.useSsl === true) {
+      obj.useSsl = message.useSsl;
     }
     if (message.sslCa !== "") {
       obj.sslCa = message.sslCa;
@@ -2933,6 +2950,7 @@ export const DataSource = {
     message.type = object.type ?? DataSourceType.DATA_SOURCE_UNSPECIFIED;
     message.username = object.username ?? "";
     message.password = object.password ?? "";
+    message.useSsl = object.useSsl ?? false;
     message.sslCa = object.sslCa ?? "";
     message.sslCert = object.sslCert ?? "";
     message.sslKey = object.sslKey ?? "";

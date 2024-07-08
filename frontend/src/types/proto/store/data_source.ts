@@ -256,6 +256,8 @@ export interface DataSourceOptions {
   masterUsername: string;
   masterObfuscatedPassword: string;
   redisType: DataSourceOptions_RedisType;
+  /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
+  useSsl: boolean;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -716,6 +718,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     masterUsername: "",
     masterObfuscatedPassword: "",
     redisType: DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
+    useSsl: false,
   };
 }
 
@@ -789,6 +792,9 @@ export const DataSourceOptions = {
     }
     if (message.redisType !== DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED) {
       writer.uint32(184).int32(dataSourceOptions_RedisTypeToNumber(message.redisType));
+    }
+    if (message.useSsl === true) {
+      writer.uint32(192).bool(message.useSsl);
     }
     return writer;
   },
@@ -961,6 +967,13 @@ export const DataSourceOptions = {
 
           message.redisType = dataSourceOptions_RedisTypeFromJSON(reader.int32());
           continue;
+        case 24:
+          if (tag !== 192) {
+            break;
+          }
+
+          message.useSsl = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1011,6 +1024,7 @@ export const DataSourceOptions = {
       redisType: isSet(object.redisType)
         ? dataSourceOptions_RedisTypeFromJSON(object.redisType)
         : DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
+      useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
     };
   },
 
@@ -1085,6 +1099,9 @@ export const DataSourceOptions = {
     if (message.redisType !== DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED) {
       obj.redisType = dataSourceOptions_RedisTypeToJSON(message.redisType);
     }
+    if (message.useSsl === true) {
+      obj.useSsl = message.useSsl;
+    }
     return obj;
   },
 
@@ -1122,6 +1139,7 @@ export const DataSourceOptions = {
     message.masterUsername = object.masterUsername ?? "";
     message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
     message.redisType = object.redisType ?? DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
+    message.useSsl = object.useSsl ?? false;
     return message;
   },
 };

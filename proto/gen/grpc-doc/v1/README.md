@@ -1627,6 +1627,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | type | [DataSourceType](#bytebase-v1-DataSourceType) |  |  |
 | username | [string](#string) |  |  |
 | password | [string](#string) |  |  |
+| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
 | ssl_ca | [string](#string) |  |  |
 | ssl_cert | [string](#string) |  |  |
 | ssl_key | [string](#string) |  |  |
