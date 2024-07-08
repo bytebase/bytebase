@@ -131,9 +131,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 		return 0, errors.Wrapf(err, "failed to begin transaction")
-	} else {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
 	}
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
 
 	committed := false
 	defer func() {
@@ -199,10 +198,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err := tx.Commit(); err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 		return 0, errors.Wrapf(err, "failed to commit transaction")
-	} else {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-		committed = true
 	}
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+	committed = true
 	return totalRowsAffected, nil
 }
 
