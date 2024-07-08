@@ -1,1 +1,1 @@
-UPDATE data_source SET options = options || '{"use_ssl": true}'::jsonb WHERE ssl_ca != '';
+UPDATE data_source SET options = options || '{"useSsl": true}'::jsonb WHERE ssl_ca != '';
