@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -155,6 +156,8 @@ type Completer struct {
 	lexer               *plsql.PlSqlLexer
 	scanner             *base.Scanner
 	getMetadata         base.GetDatabaseMetadataFunc
+	listDatabaseNames   base.ListDatabaseNamesFunc
+	defaultDatabase     string
 	metadataCache       map[string]*model.DatabaseMetadata
 	noSeparatorRequired map[int]bool
 	// referencesStack is a hierarchical stack of table references.
@@ -188,6 +191,8 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		lexer:               lexer,
 		scanner:             scanner,
 		getMetadata:         cCtx.Metadata,
+		listDatabaseNames:   cCtx.ListDatabaseNames,
+		defaultDatabase:     cCtx.DefaultDatabase,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
 		cteCache:            make(map[int][]*base.VirtualTableReference),
@@ -219,6 +224,227 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	for ruleName := range candidates.Rules {
 		if ruleName == plsql.PlSqlParserRULE_general_element_part {
 			c.collectLeadingTableReferences(caretIndex)
+			c.takeReferencesSnapshot()
+			c.collectRemainingTableReferences()
+			c.takeReferencesSnapshot()
+		}
+	}
+
+	return c.convertCandidates(candidates)
+}
+
+type CompletionMap map[string]base.Candidate
+
+func (m CompletionMap) Insert(entry base.Candidate) {
+	m[entry.String()] = entry
+}
+
+func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
+	keywordEntries := make(CompletionMap)
+	runtimeFunctionEntries := make(CompletionMap)
+	schemaEntries := make(CompletionMap)
+	tableEntries := make(CompletionMap)
+	columnEntries := make(CompletionMap)
+	viewEntries := make(CompletionMap)
+
+	for token, value := range candidates.Tokens {
+		entry := c.parser.SymbolicNames[token]
+		entry = unquote(entry)
+
+		list := 0
+		if len(value) > 0 {
+			// For function call:
+			if value[0] == plsql.PlSqlLexerLEFT_PAREN {
+				list = 1
+			} else {
+				for _, item := range value {
+					subEntry := c.parser.SymbolicNames[item]
+					subEntry = unquote(subEntry)
+					entry += " " + subEntry
+				}
+			}
+		}
+
+		switch list {
+		case 1:
+			runtimeFunctionEntries.Insert(base.Candidate{
+				Type: base.CandidateTypeFunction,
+				Text: strings.ToUpper(entry) + "()",
+			})
+		}
+	}
+}
+
+func unquote(s string) string {
+	if len(s) < 2 {
+		return s
+	}
+
+	if (s[0] == '`' || s[0] == '\'' || s[0] == '"') && s[0] == s[len(s)-1] {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
+func (c *Completer) collectRemainingTableReferences() {
+	c.scanner.Push()
+
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == plsql.PlSqlLexerFROM
+		for !found {
+			if !c.scanner.Forward(false /* skipHidden */) {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case plsql.PlSqlLexerLEFT_PAREN:
+				level++
+			case plsql.PlSqlLexerRIGHT_PAREN:
+				if level > 0 {
+					level--
+				}
+			case plsql.PlSqlLexerFROM:
+				if level == 0 {
+					found = true
+				}
+			}
+		}
+
+		if !found {
+			c.scanner.PopAndRestore()
+			return
+		}
+
+		c.parseTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == plsql.PlSqlLexerFROM {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
+func (c *Completer) takeReferencesSnapshot() {
+	for _, references := range c.referencesStack {
+		c.references = append(c.references, references...)
+	}
+}
+
+func (c *Completer) collectLeadingTableReferences(caretIndex int) {
+	c.scanner.Push()
+
+	c.scanner.SeekIndex(0)
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == plsql.PlSqlLexerFROM
+		for !found {
+			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case plsql.PlSqlLexerLEFT_PAREN:
+				level++
+				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+			case plsql.PlSqlLexerRIGHT_PAREN:
+				if level == 0 {
+					c.scanner.PopAndRestore()
+					return // We cannot go above the initial nesting level.
+				}
+
+				level--
+				c.referencesStack = c.referencesStack[1:]
+			case plsql.PlSqlLexerFROM:
+				found = true
+			}
+		}
+
+		if !found {
+			c.scanner.PopAndRestore()
+			return // No FROM clause found.
+		}
+
+		c.parseTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == plsql.PlSqlLexerFROM {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
+func (c *Completer) parseTableReferences(fromClause string) {
+	// We use a local parser just for the FROM clause to avoid messing up tokens on the autocompletion
+	// parser (which would affect the processing of the found candidates)
+
+	input := antlr.NewInputStream(fromClause)
+	lexer := plsql.NewPlSqlLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := plsql.NewPlSqlParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.From_clause()
+
+	listener := &TableRefListener{
+		context: c,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+}
+
+type TableRefListener struct {
+	*plsql.BasePlSqlParserListener
+
+	context *Completer
+	done    bool
+	level   int
+}
+
+func (l *TableRefListener) ExitDml_table_expression_clause(ctx *plsql.Dml_table_expression_clauseContext) {
+	if l.done {
+		return
+	}
+
+	if ctx.Tableview_name() != nil && l.level == 0 {
+		reference := &base.PhysicalTableReference{}
+		_, reference.Schema, reference.Table = NormalizeTableViewName("", ctx.Tableview_name())
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+		return
+	}
+
+	if ctx.Select_statement() != nil && l.level == 0 {
+		reference := &base.VirtualTableReference{}
+
+		if span, err := base.GetQuerySpan(
+			l.context.ctx,
+			base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: l.context.getMetadata,
+				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+			},
+			store.Engine_ORACLE,
+			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_statement()),
+			l.context.defaultDatabase,
+			"",
+			false,
+		); err == nil && len(span) == 1 {
+			for _, column := range span[0].Results {
+				reference.Columns = append(reference.Columns, column.Name)
+			}
+		}
+
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+	}
+}
+
+func (l *TableRefListener) ExitTable_lias(ctx *plsql.Table_aliasContext) {
+	if l.done {
+		return
+	}
+
+	if l.level == 0 && len(l.context.referencesStack) > 0 && len(l.context.referencesStack[0]) > 0 {
+		alias := normalizeTableAlias(ctx)
+		switch reference := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(type) {
+		case *base.PhysicalTableReference:
+			reference.Alias = alias
+		case *base.VirtualTableReference:
+			reference.Table = alias
 		}
 	}
 }
