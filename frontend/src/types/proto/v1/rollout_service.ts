@@ -692,6 +692,7 @@ export interface TaskRunLog {
 
 export interface TaskRunLogEntry {
   type: TaskRunLogEntry_Type;
+  logTime: Date | undefined;
   schemaDump: TaskRunLogEntry_SchemaDump | undefined;
   commandExecute: TaskRunLogEntry_CommandExecute | undefined;
   databaseSync: TaskRunLogEntry_DatabaseSync | undefined;
@@ -3334,6 +3335,7 @@ export const TaskRunLog = {
 function createBaseTaskRunLogEntry(): TaskRunLogEntry {
   return {
     type: TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
+    logTime: undefined,
     schemaDump: undefined,
     commandExecute: undefined,
     databaseSync: undefined,
@@ -3345,6 +3347,9 @@ export const TaskRunLogEntry = {
   encode(message: TaskRunLogEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.type !== TaskRunLogEntry_Type.TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(taskRunLogEntry_TypeToNumber(message.type));
+    }
+    if (message.logTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(50).fork()).ldelim();
     }
     if (message.schemaDump !== undefined) {
       TaskRunLogEntry_SchemaDump.encode(message.schemaDump, writer.uint32(18).fork()).ldelim();
@@ -3374,6 +3379,13 @@ export const TaskRunLogEntry = {
           }
 
           message.type = taskRunLogEntry_TypeFromJSON(reader.int32());
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -3415,6 +3427,7 @@ export const TaskRunLogEntry = {
   fromJSON(object: any): TaskRunLogEntry {
     return {
       type: isSet(object.type) ? taskRunLogEntry_TypeFromJSON(object.type) : TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
+      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
       schemaDump: isSet(object.schemaDump) ? TaskRunLogEntry_SchemaDump.fromJSON(object.schemaDump) : undefined,
       commandExecute: isSet(object.commandExecute)
         ? TaskRunLogEntry_CommandExecute.fromJSON(object.commandExecute)
@@ -3430,6 +3443,9 @@ export const TaskRunLogEntry = {
     const obj: any = {};
     if (message.type !== TaskRunLogEntry_Type.TYPE_UNSPECIFIED) {
       obj.type = taskRunLogEntry_TypeToJSON(message.type);
+    }
+    if (message.logTime !== undefined) {
+      obj.logTime = message.logTime.toISOString();
     }
     if (message.schemaDump !== undefined) {
       obj.schemaDump = TaskRunLogEntry_SchemaDump.toJSON(message.schemaDump);
@@ -3452,6 +3468,7 @@ export const TaskRunLogEntry = {
   fromPartial(object: DeepPartial<TaskRunLogEntry>): TaskRunLogEntry {
     const message = createBaseTaskRunLogEntry();
     message.type = object.type ?? TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
+    message.logTime = object.logTime ?? undefined;
     message.schemaDump = (object.schemaDump !== undefined && object.schemaDump !== null)
       ? TaskRunLogEntry_SchemaDump.fromPartial(object.schemaDump)
       : undefined;
