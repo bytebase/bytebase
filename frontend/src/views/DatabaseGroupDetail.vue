@@ -13,12 +13,18 @@
           <!-- Summary -->
           <div class="flex items-center">
             <div>
-              <div class="flex items-center">
+              <div class="flex items-center gap-2">
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
                   {{ databaseGroup.databasePlaceholder }}
                 </h1>
+                <NTag v-if="databaseGroup.multitenancy" round type="info">
+                  <template #icon>
+                    <TenantIcon />
+                  </template>
+                  {{ $t("database-group.multitenancy") }}
+                </NTag>
               </div>
             </div>
           </div>
@@ -76,25 +82,6 @@
           />
         </div>
       </div>
-
-      <NDivider />
-
-      <div class="w-full pl-1">
-        <p class="text-lg mb-2">
-          {{ $t("common.options") }}
-        </p>
-        <!-- TODO(steven): use DatabaseGroupForm instead -->
-        <div>
-          <NCheckbox
-            :checked="databaseGroup.multitenancy"
-            readonly
-            :disabled="!allowEdit"
-            size="large"
-          >
-            {{ $t("database-group.multitenancy") }}
-          </NCheckbox>
-        </div>
-      </div>
     </main>
   </div>
 
@@ -109,7 +96,7 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { NButton, NCheckbox, NDivider } from "naive-ui";
+import { NButton, NDivider, NTag } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
@@ -120,6 +107,7 @@ import {
   DatabaseGroupFactorOptionsMap,
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
+import TenantIcon from "@/components/TenantIcon.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useCurrentUserV1,
