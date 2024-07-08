@@ -82,6 +82,8 @@
         <SchemaEditorSQLCheckButton
           :database-list="databaseList"
           :get-statement="generateOrGetEditingDDL"
+          :use-online-schema-change="state.useOnlineSchemaChange"
+          @enable-online-schema-change="state.useOnlineSchemaChange = true"
         />
       </template>
     </NTabs>
@@ -91,6 +93,12 @@
       <div class="flex justify-end items-center space-x-3">
         <NCheckbox v-model:checked="state.planOnly">
           {{ $t("issue.sql-review-only") }}
+        </NCheckbox>
+        <NCheckbox
+          v-if="allowUseOnlineSchemaChange"
+          v-model:checked="state.useOnlineSchemaChange"
+        >
+          {{ $t("task.online-migration.enable") }}
         </NCheckbox>
         <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
@@ -145,6 +153,7 @@ import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
+import { allowGhostForDatabase } from "../IssueV1/components/Sidebar/GhostSection/common";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import type { EditTarget, GenerateDiffDDLResult } from "../SchemaEditorLite";
@@ -167,6 +176,7 @@ interface LocalState {
   isUploadingFile: boolean;
   // planOnly is used to indicate whether only to create plan.
   planOnly: boolean;
+  useOnlineSchemaChange: boolean;
 }
 
 const props = defineProps({
@@ -205,6 +215,7 @@ const state = reactive<LocalState>({
   targets: [],
   isUploadingFile: false,
   planOnly: props.planOnly,
+  useOnlineSchemaChange: false,
 });
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
@@ -244,6 +255,10 @@ const editTargetsKey = computed(() => {
     databaseIdList: props.databaseIdList,
     alterType: props.alterType,
   });
+});
+
+const allowUseOnlineSchemaChange = computed(() => {
+  return databaseList.value.every((db) => allowGhostForDatabase(db));
 });
 
 const prepareDatabaseMetadata = async () => {
@@ -420,6 +435,9 @@ const handlePreviewIssue = async () => {
     template: "bb.issue.database.schema.update",
   };
   query.databaseList = databaseList.value.map((db) => db.name).join(",");
+  if (state.useOnlineSchemaChange) {
+    query.ghost = "1";
+  }
 
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
