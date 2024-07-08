@@ -365,9 +365,6 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			continue
 		}
 		maximumConnections := int(instance.Options.GetMaximumConnections())
-		if maximumConnections == 0 {
-			maximumConnections = state.DefaultInstanceMaximumConnections
-		}
 		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
 			continue
 		}
