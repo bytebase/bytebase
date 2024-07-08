@@ -177,7 +177,6 @@ import {
 } from "@/components/v2";
 import {
   experimentalCreateIssueByPlan,
-  hasFeature,
   useCurrentUserV1,
   useInstanceV1Store,
   useProjectV1Store,
@@ -194,7 +193,6 @@ import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
@@ -251,14 +249,6 @@ const project = computed(() => {
 
 const isReservedName = computed(() => {
   return state.databaseName.toLowerCase() == "bytebase";
-});
-
-const isTenantProject = computed((): boolean => {
-  if (parseInt(project.value.uid, 10) === UNKNOWN_ID) {
-    return false;
-  }
-
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 const allowCreate = computed(() => {
@@ -348,13 +338,6 @@ const createV1 = async () => {
       state.instanceRole
     );
     owner = instanceUser.roleName;
-  }
-
-  if (isTenantProject.value) {
-    if (!hasFeature("bb.feature.multi-tenancy")) {
-      state.showFeatureModal = true;
-      return;
-    }
   }
 
   const specs: Plan_Spec[] = [];

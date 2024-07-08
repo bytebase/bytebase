@@ -26,7 +26,7 @@ func NewProjectCountCollector(store *store.Store) metric.Collector {
 func (c *projectCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
-	projectCountMetricList, err := c.store.CountProjectGroupByTenantModeAndWorkflow(ctx)
+	projectCountMetricList, err := c.store.CountProjectGroupByWorkflow(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,9 +36,8 @@ func (c *projectCountCollector) Collect(ctx context.Context) ([]*metric.Metric, 
 			Name:  metricapi.ProjectCountMetricName,
 			Value: projectCountMetric.Count,
 			Labels: map[string]any{
-				"tenant_mode": string(projectCountMetric.TenantMode),
-				"workflow":    projectCountMetric.WorkflowType.String(),
-				"status":      string(projectCountMetric.RowStatus),
+				"workflow": projectCountMetric.WorkflowType.String(),
+				"status":   string(projectCountMetric.RowStatus),
 			},
 		})
 	}

@@ -110,12 +110,6 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	if projectMessage.TenantMode == api.TenantModeTenant {
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
-		}
-	}
-
 	setting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		slog.Error("failed to find classification setting", log.BBError(err))
@@ -173,14 +167,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.Title = &request.Project.Title
 		case "key":
 			patch.Key = &request.Project.Key
-		case "tenant_mode":
-			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
-			if tenantMode == api.TenantModeTenant {
-				if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
-					return nil, status.Errorf(codes.PermissionDenied, err.Error())
-				}
-			}
-			patch.TenantMode = &tenantMode
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
@@ -1474,13 +1460,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	if projectMessage.VCSConnectorsCount > 0 {
 		workflow = v1pb.Workflow_VCS
 	}
-	tenantMode := v1pb.TenantMode_TENANT_MODE_UNSPECIFIED
-	switch projectMessage.TenantMode {
-	case api.TenantModeDisabled:
-		tenantMode = v1pb.TenantMode_TENANT_MODE_DISABLED
-	case api.TenantModeTenant:
-		tenantMode = v1pb.TenantMode_TENANT_MODE_ENABLED
-	}
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
@@ -1509,7 +1488,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Title:                      projectMessage.Title,
 		Key:                        projectMessage.Key,
 		Workflow:                   workflow,
-		TenantMode:                 tenantMode,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 		IssueLabels:                issueLabels,
@@ -1519,28 +1497,15 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 }
 
-func convertToProjectTenantMode(tenantMode v1pb.TenantMode) api.ProjectTenantMode {
-	switch tenantMode {
-	case v1pb.TenantMode_TENANT_MODE_DISABLED:
-		return api.TenantModeDisabled
-	case v1pb.TenantMode_TENANT_MODE_ENABLED:
-		return api.TenantModeTenant
-	default:
-		return api.TenantModeDisabled
-	}
-}
-
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
 	setting := &storepb.Project{
 		AllowModifyStatement: project.AllowModifyStatement,
 		AutoResolveIssue:     project.AutoResolveIssue,
 	}
-	tenantMode := convertToProjectTenantMode(project.TenantMode)
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
 		Title:      project.Title,
 		Key:        project.Key,
-		TenantMode: tenantMode,
 		Setting:    setting,
 	}, nil
 }

@@ -48,19 +48,6 @@
       </dl>
     </div>
 
-    <div class="flex flex-col">
-      <div for="name" class="text-sm font-medium text-control-light">
-        {{ $t("common.mode") }}
-        <span class="text-red-600">*</span>
-      </div>
-      <div class="mt-2 textlabel">
-        <ProjectModeRadioGroup
-          v-model:value="state.tenantMode"
-          :disabled="!allowEdit"
-        />
-      </div>
-    </div>
-
     <div v-if="allowEdit" class="flex justify-end">
       <NButton type="primary" :disabled="!allowSave" @click.prevent="save">
         {{ $t("common.update") }}
@@ -81,17 +68,15 @@ import { NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { hasFeature, pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { DEFAULT_PROJECT_ID } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {
   title: string;
   key: string;
-  tenantMode: TenantMode;
   requiredFeature: FeatureType | undefined;
 }
 
@@ -106,7 +91,6 @@ const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   title: props.project.title,
   key: props.project.key,
-  tenantMode: props.project.tenantMode,
   requiredFeature: undefined,
 });
 
@@ -114,9 +98,7 @@ const allowSave = computed((): boolean => {
   return (
     parseInt(props.project.uid, 10) !== DEFAULT_PROJECT_ID &&
     !isEmpty(state.title) &&
-    (state.title !== props.project.title ||
-      state.key !== props.project.key ||
-      state.tenantMode !== props.project.tenantMode)
+    (state.title !== props.project.title || state.key !== props.project.key)
   );
 });
 
@@ -130,17 +112,6 @@ const save = () => {
   if (state.key !== props.project.key) {
     projectPatch.key = state.key;
     updateMask.push("key");
-  }
-  if (state.tenantMode !== props.project.tenantMode) {
-    if (state.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-      if (!hasFeature("bb.feature.multi-tenancy")) {
-        state.tenantMode = TenantMode.TENANT_MODE_DISABLED;
-        state.requiredFeature = "bb.feature.multi-tenancy";
-        return;
-      }
-    }
-    projectPatch.tenantMode = state.tenantMode;
-    updateMask.push("tenant_mode");
   }
   projectV1Store.updateProject(projectPatch, updateMask).then((updated) => {
     pushNotification({
