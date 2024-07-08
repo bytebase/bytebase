@@ -87,12 +87,7 @@
     </NTabs>
 
     <div class="w-full flex flex-row justify-between items-center">
-      <div class="flex flex-row items-center text-sm text-gray-500">
-        <template v-if="isBatchMode">
-          <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
-          {{ $t("schema-editor.tenant-mode-tips") }}
-        </template>
-      </div>
+      <div class="flex flex-row items-center text-sm text-gray-500"></div>
       <div class="flex justify-end items-center space-x-3">
         <NCheckbox v-model:checked="state.planOnly">
           {{ $t("issue.sql-review-only") }}
@@ -149,7 +144,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
@@ -244,9 +238,6 @@ const databaseEngine = computed((): Engine => {
 
 const project = computed(
   () => head(databaseList.value)?.projectEntity ?? unknownProject()
-);
-const isBatchMode = computed(
-  () => project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED
 );
 const editTargetsKey = computed(() => {
   return JSON.stringify({
@@ -428,18 +419,6 @@ const handlePreviewIssue = async () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
   };
-  if (isBatchMode.value) {
-    if (props.databaseIdList.length > 1) {
-      // A tenant pipeline with 2 or more databases will be generated
-      // via deployment config, so we don't need the databaseList parameter.
-      query.batch = "1";
-    } else {
-      // A tenant pipeline with only 1 database will be downgraded to
-      // a standard pipeline.
-      // So we need to provide the databaseList parameter
-      query.databaseList = databaseList.value.map((db) => db.name).join(",");
-    }
-  }
   query.databaseList = databaseList.value.map((db) => db.name).join(",");
 
   if (state.selectedTab === "raw-sql") {
@@ -477,24 +456,17 @@ const handlePreviewIssue = async () => {
         return cleanup();
       }
     }
-    if (isBatchMode.value) {
-      query.sql = statementList.join("\n\n");
-      query.name = generateIssueName(
-        databaseList.value.map((db) => db.databaseName),
-        !!query.ghost
-      );
-    } else {
-      query.databaseList = databaseList.value.map((db) => db.name).join(",");
 
-      const sqlMap: Record<string, string> = {};
-      databaseList.value.forEach((db, i) => {
-        const sql = statementList[i];
-        sqlMap[db.name] = sql;
-      });
-      query.sqlMap = JSON.stringify(sqlMap);
-      const databaseNameList = databaseList.value.map((db) => db.databaseName);
-      query.name = generateIssueName(databaseNameList, !!query.ghost);
-    }
+    query.databaseList = databaseList.value.map((db) => db.name).join(",");
+
+    const sqlMap: Record<string, string> = {};
+    databaseList.value.forEach((db, i) => {
+      const sql = statementList[i];
+      sqlMap[db.name] = sql;
+    });
+    query.sqlMap = JSON.stringify(sqlMap);
+    const databaseNameList = databaseList.value.map((db) => db.databaseName);
+    query.name = generateIssueName(databaseNameList, !!query.ghost);
   }
 
   const routeInfo = {

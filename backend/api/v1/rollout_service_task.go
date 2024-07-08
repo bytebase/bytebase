@@ -167,7 +167,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *s
 
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, licenseService, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
@@ -177,7 +177,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *s
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
@@ -230,13 +230,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		labelsJSON, err := convertDatabaseLabels(c.Labels)
 		if err != nil {
 			return nil, errors.Wrapf(err, "invalid database label %q", c.Labels)
-		}
-
-		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-		if project.TenantMode == api.TenantModeTenant {
-			if err := licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
-				return nil, err
-			}
 		}
 
 		// Get admin data source username.
@@ -672,7 +665,6 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		// query: CREATE DATABASE h1 WITH OWNER hello;
 		// ERROR:  must be member of role "hello"
 		//
-		// For tenant project, the schema for the newly created database will belong to the same owner.
 		// TODO(d): alter schema "public" owner to the database owner.
 		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
 	case storepb.Engine_CLICKHOUSE:

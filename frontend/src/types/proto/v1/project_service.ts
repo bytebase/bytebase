@@ -62,59 +62,6 @@ export function workflowToNumber(object: Workflow): number {
   }
 }
 
-export enum TenantMode {
-  TENANT_MODE_UNSPECIFIED = "TENANT_MODE_UNSPECIFIED",
-  TENANT_MODE_DISABLED = "TENANT_MODE_DISABLED",
-  TENANT_MODE_ENABLED = "TENANT_MODE_ENABLED",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function tenantModeFromJSON(object: any): TenantMode {
-  switch (object) {
-    case 0:
-    case "TENANT_MODE_UNSPECIFIED":
-      return TenantMode.TENANT_MODE_UNSPECIFIED;
-    case 1:
-    case "TENANT_MODE_DISABLED":
-      return TenantMode.TENANT_MODE_DISABLED;
-    case 2:
-    case "TENANT_MODE_ENABLED":
-      return TenantMode.TENANT_MODE_ENABLED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return TenantMode.UNRECOGNIZED;
-  }
-}
-
-export function tenantModeToJSON(object: TenantMode): string {
-  switch (object) {
-    case TenantMode.TENANT_MODE_UNSPECIFIED:
-      return "TENANT_MODE_UNSPECIFIED";
-    case TenantMode.TENANT_MODE_DISABLED:
-      return "TENANT_MODE_DISABLED";
-    case TenantMode.TENANT_MODE_ENABLED:
-      return "TENANT_MODE_ENABLED";
-    case TenantMode.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function tenantModeToNumber(object: TenantMode): number {
-  switch (object) {
-    case TenantMode.TENANT_MODE_UNSPECIFIED:
-      return 0;
-    case TenantMode.TENANT_MODE_DISABLED:
-      return 1;
-    case TenantMode.TENANT_MODE_ENABLED:
-      return 2;
-    case TenantMode.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export enum OperatorType {
   /** OPERATOR_TYPE_UNSPECIFIED - The operator is not specified. */
   OPERATOR_TYPE_UNSPECIFIED = "OPERATOR_TYPE_UNSPECIFIED",
@@ -398,7 +345,6 @@ export interface Project {
   /** The key is a short and upper-case identifier for a project. It's unique within the workspace. */
   key: string;
   workflow: Workflow;
-  tenantMode: TenantMode;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
   issueLabels: Label[];
@@ -2287,7 +2233,6 @@ function createBaseProject(): Project {
     title: "",
     key: "",
     workflow: Workflow.WORKFLOW_UNSPECIFIED,
-    tenantMode: TenantMode.TENANT_MODE_UNSPECIFIED,
     webhooks: [],
     dataClassificationConfigId: "",
     issueLabels: [],
@@ -2316,9 +2261,6 @@ export const Project = {
     }
     if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
       writer.uint32(48).int32(workflowToNumber(message.workflow));
-    }
-    if (message.tenantMode !== TenantMode.TENANT_MODE_UNSPECIFIED) {
-      writer.uint32(64).int32(tenantModeToNumber(message.tenantMode));
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
@@ -2390,13 +2332,6 @@ export const Project = {
 
           message.workflow = workflowFromJSON(reader.int32());
           continue;
-        case 8:
-          if (tag !== 64) {
-            break;
-          }
-
-          message.tenantMode = tenantModeFromJSON(reader.int32());
-          continue;
         case 11:
           if (tag !== 90) {
             break;
@@ -2456,7 +2391,6 @@ export const Project = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : Workflow.WORKFLOW_UNSPECIFIED,
-      tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : TenantMode.TENANT_MODE_UNSPECIFIED,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
         ? globalThis.String(object.dataClassificationConfigId)
@@ -2492,9 +2426,6 @@ export const Project = {
     if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
       obj.workflow = workflowToJSON(message.workflow);
     }
-    if (message.tenantMode !== TenantMode.TENANT_MODE_UNSPECIFIED) {
-      obj.tenantMode = tenantModeToJSON(message.tenantMode);
-    }
     if (message.webhooks?.length) {
       obj.webhooks = message.webhooks.map((e) => Webhook.toJSON(e));
     }
@@ -2527,7 +2458,6 @@ export const Project = {
     message.title = object.title ?? "";
     message.key = object.key ?? "";
     message.workflow = object.workflow ?? Workflow.WORKFLOW_UNSPECIFIED;
-    message.tenantMode = object.tenantMode ?? TenantMode.TENANT_MODE_UNSPECIFIED;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];

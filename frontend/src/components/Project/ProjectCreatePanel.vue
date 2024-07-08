@@ -49,15 +49,6 @@
             :required="true"
           />
         </div>
-        <div v-if="!simple" class="col-span-1">
-          <div for="name" class="text-base leading-6 font-medium text-control">
-            {{ $t("common.mode") }}
-            <span class="text-red-600">*</span>
-          </div>
-          <div class="mt-2 textlabel">
-            <ProjectModeRadioGroup v-model:value="state.project.tenantMode" />
-          </div>
-        </div>
       </div>
     </form>
 
@@ -100,18 +91,12 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import {
-  hasFeature,
-  pushNotification,
-  useUIStateStore,
-  useCurrentUserV1,
-} from "@/store";
+import { pushNotification, useUIStateStore, useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { randomString } from "@/utils";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -194,13 +179,6 @@ const allowCreate = computed(() => {
 });
 
 const create = async () => {
-  if (
-    state.project.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
-    !hasFeature("bb.feature.multi-tenancy")
-  ) {
-    state.showFeatureModal = true;
-    return;
-  }
   if (!allowCreate.value) {
     return;
   }
