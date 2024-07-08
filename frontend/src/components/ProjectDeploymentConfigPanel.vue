@@ -11,8 +11,18 @@
     />
 
     <div class="space-y-4">
-      <div class="text-lg font-medium leading-7 text-main">
-        {{ $t("common.deployment-config") }}
+      <div class="w-fullf flex flex-row justify-between items-center gap-4">
+        <h3 class="text-lg font-medium leading-7 text-main">
+          {{ $t("common.deployment-config") }}
+        </h3>
+        <div>
+          <NButton v-if="allowEdit" @click="addStage">
+            <template #icon>
+              <PlusIcon class="w-4 h-auto" />
+            </template>
+            {{ $t("deployment-config.add-stage") }}
+          </NButton>
+        </div>
       </div>
 
       <BBAttention
@@ -31,17 +41,18 @@
         />
         <div class="pt-4 border-t flex justify-between items-center">
           <div class="flex items-center space-x-2">
-            <NButton v-if="allowEdit" @click="addStage">
-              {{ $t("deployment-config.add-stage") }}
+            <NButton
+              :disabled="!allowResetToDefaultDeploymentConfig"
+              text
+              @click="resetToDefaultDeploymentConfig"
+            >
+              <template #icon>
+                <Undo2Icon class="w-4 h-auto" />
+              </template>
+              {{ $t("common.reset") }}
             </NButton>
           </div>
           <div v-if="allowEdit" class="flex items-center space-x-2">
-            <NButton
-              v-if="isDeploymentConfigDirty"
-              @click="revertDeploymentConfig"
-            >
-              {{ $t("common.revert") }}
-            </NButton>
             <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
               <template #trigger>
                 <NButton
@@ -69,19 +80,22 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
+import { Undo2Icon } from "lucide-vue-next";
 import { NPopover, useDialog } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, nextTick, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  getDefaultDeploymentConfig,
   pushNotification,
   useDeploymentConfigV1Store,
   useEnvironmentV1List,
 } from "@/store";
-import type {
+import {
   DeploymentConfig,
-  LabelSelectorRequirement,
-  Project,
+  type LabelSelectorRequirement,
+  type Project,
 } from "@/types/proto/v1/project_service";
 import { OperatorType } from "@/types/proto/v1/project_service";
 import type { ComposedDatabase } from "../types";
@@ -126,6 +140,17 @@ const state = reactive<LocalState>({
 
 const isDeploymentConfigDirty = computed((): boolean => {
   return !isEqual(state.deployment, state.originalDeployment);
+});
+
+const defaultDeploymentConfigSchedule = computed(
+  () => getDefaultDeploymentConfig().schedule
+);
+
+const allowResetToDefaultDeploymentConfig = computed((): boolean => {
+  return !isEqual(
+    defaultDeploymentConfigSchedule.value,
+    state.deployment?.schedule
+  );
 });
 
 const allowUpdateDeploymentConfig = computed((): boolean => {
@@ -184,11 +209,11 @@ const validate = () => {
   state.error = validateDeploymentConfigV1(state.deployment);
 };
 
-const revertDeploymentConfig = () => {
+const resetToDefaultDeploymentConfig = () => {
   dialog.create({
     positiveText: t("common.confirm"),
     negativeText: t("common.cancel"),
-    title: t("deployment-config.confirm-to-revert"),
+    title: t("deployment-config.confirm-to-reset"),
     autoFocus: false,
     closable: false,
     maskClosable: false,
@@ -197,7 +222,10 @@ const revertDeploymentConfig = () => {
       // nothing to do
     },
     onPositiveClick: () => {
-      state.deployment = cloneDeep(state.originalDeployment);
+      state.deployment = DeploymentConfig.fromPartial({
+        ...cloneDeep(state.originalDeployment),
+        schedule: getDefaultDeploymentConfig().schedule,
+      });
       resetStates();
     },
   });

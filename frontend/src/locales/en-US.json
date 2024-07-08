@@ -276,7 +276,8 @@
     "permission-denied": "Permission denied",
     "resource": "Resource",
     "closed": "Closed",
-    "options": "Options"
+    "options": "Options",
+    "reset": "Reset"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2147,6 +2148,7 @@
     "selectors": "Selectors",
     "add-stage": "Add stage",
     "confirm-to-revert": "Confirm to revert your editing?",
+    "confirm-to-reset": "Confirm reset to default?",
     "name-placeholder": "Stage name...",
     "error": {
       "at-least-one-stage": "At least 1 stage",
