@@ -22,7 +22,7 @@ import (
 
 // used for replacing sensitive fields.
 var (
-	maskedString string = ""
+	maskedString string
 )
 
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
