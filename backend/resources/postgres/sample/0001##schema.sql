@@ -84,3 +84,6 @@ FROM
 	INNER JOIN dept_emp_latest_date l ON d.emp_no = l.emp_no
 		AND d.from_date = l.from_date
 		AND l.to_date = d.to_date;
+
+-- for Prior Backup
+CREATE SCHEMA bbdataarchive;
