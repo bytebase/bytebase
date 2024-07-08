@@ -531,6 +531,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.RedisType"><span class="badge">E</span>DataSource.RedisType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
                 </li>
               
@@ -5416,6 +5420,34 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p>warehouse_id is used by Databricks. </p></td>
                 </tr>
               
+                <tr>
+                  <td>master_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>master_name is the master name used by connecting redis-master via redis sentinel. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>master_username and master_obfuscated_password are master credentials used by redis sentinel mode. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_obfuscated_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>redis_type</td>
+                  <td><a href="#bytebase.v1.DataSource.RedisType">DataSource.RedisType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6268,6 +6300,41 @@ Format: instances/{instance} </p></td>
             
               <tr>
                 <td>AWS_RDS_IAM</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.DataSource.RedisType">DataSource.RedisType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REDIS_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STANDALONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SENTINEL</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLUSTER</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
