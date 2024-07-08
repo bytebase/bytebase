@@ -298,6 +298,12 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to running")
 	}
+	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
+		TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
+			Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_WAITING,
+		},
+	})
 	return nil
 }
 
@@ -376,6 +382,13 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		if task.DatabaseID != nil {
 			s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, true)
 		}
+
+		s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), &storepb.TaskRunLog{
+			Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
+			TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
+				Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING,
+			},
+		})
 		go s.runTaskRunOnce(ctx, taskRun, task, executor)
 	}
 
