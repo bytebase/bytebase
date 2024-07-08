@@ -113,9 +113,6 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 	}
 
 	maximumConnections := int(instance.Options.GetMaximumConnections())
-	if maximumConnections == 0 {
-		maximumConnections = state.DefaultInstanceMaximumConnections
-	}
 	if s.stateCfg.InstanceOutstandingConnections.Increment(instanceUID, maximumConnections) {
 		return
 	}
