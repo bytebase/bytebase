@@ -951,6 +951,17 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				},
 			}
 			entries = append(entries, e)
+
+		case storepb.TaskRunLog_TRANSACTION_CONTROL:
+			e := &v1pb.TaskRunLogEntry{
+				Type:    v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
+				LogTime: timestamppb.New(l.T),
+				TransactionControl: &v1pb.TaskRunLogEntry_TransactionControl{
+					Type:  convertTaskRunLogTransactionControlType(l.Payload.TransactionControl.Type),
+					Error: l.Payload.TransactionControl.Error,
+				},
+			}
+			entries = append(entries, e)
 		}
 	}
 
@@ -965,6 +976,19 @@ func convertTaskRunLogTaskRunStatus(s storepb.TaskRunLog_TaskRunStatusUpdate_Sta
 		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_RUNNING
 	default:
 		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_STATUS_UNSPECIFIED
+	}
+}
+
+func convertTaskRunLogTransactionControlType(t storepb.TaskRunLog_TransactionControl_Type) v1pb.TaskRunLogEntry_TransactionControl_Type {
+	switch t {
+	case storepb.TaskRunLog_TransactionControl_BEGIN:
+		return v1pb.TaskRunLogEntry_TransactionControl_BEGIN
+	case storepb.TaskRunLog_TransactionControl_COMMIT:
+		return v1pb.TaskRunLogEntry_TransactionControl_COMMIT
+	case storepb.TaskRunLog_TransactionControl_ROLLBACK:
+		return v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK
+	default:
+		return v1pb.TaskRunLogEntry_TransactionControl_TYPE_UNSPECIFIED
 	}
 }
 

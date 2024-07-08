@@ -148,9 +148,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 		return 0, err
 	}
-	defer tx.Rollback()
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
+
+	committed := false
+	defer func() {
+		err := tx.Rollback()
+		if committed {
+			return
+		}
+		var rerr string
+		if err != nil {
+			rerr = err.Error()
+		}
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
+	}()
 
 	totalAffectRows := int64(0)
 
@@ -204,8 +218,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	if err := tx.Commit(); err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 		return 0, err
 	}
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+	committed = true
 	return totalAffectRows, nil
 }
 

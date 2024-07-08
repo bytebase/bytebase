@@ -279,8 +279,10 @@
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
     - [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate)
+    - [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl)
   
     - [TaskRunLog.TaskRunStatusUpdate.Status](#bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status)
+    - [TaskRunLog.TransactionControl.Type](#bytebase-store-TaskRunLog-TransactionControl-Type)
     - [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type)
   
 - [store/user.proto](#store_user-proto)
@@ -4175,6 +4177,7 @@ The following fields are used for error reporting.
 | database_sync_start | [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart) |  |  |
 | database_sync_end | [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd) |  |  |
 | task_run_status_update | [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate) |  |  |
+| transaction_control | [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl) |  |  |
 
 
 
@@ -4278,6 +4281,22 @@ The following fields are used for error reporting.
 
 
 
+
+<a name="bytebase-store-TaskRunLog-TransactionControl"></a>
+
+### TaskRunLog.TransactionControl
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TaskRunLog.TransactionControl.Type](#bytebase-store-TaskRunLog-TransactionControl-Type) |  |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
  
 
 
@@ -4291,6 +4310,20 @@ The following fields are used for error reporting.
 | STATUS_UNSPECIFIED | 0 |  |
 | RUNNING_WAITING | 1 | the task run is ready to be executed by the scheduler |
 | RUNNING_RUNNING | 2 | the task run is being executed by the scheduler |
+
+
+
+<a name="bytebase-store-TaskRunLog-TransactionControl-Type"></a>
+
+### TaskRunLog.TransactionControl.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BEGIN | 1 |  |
+| COMMIT | 2 |  |
+| ROLLBACK | 3 |  |
 
 
 
@@ -4309,6 +4342,7 @@ The following fields are used for error reporting.
 | DATABASE_SYNC_START | 5 |  |
 | DATABASE_SYNC_END | 6 |  |
 | TASK_RUN_STATUS_UPDATE | 7 |  |
+| TRANSACTION_CONTROL | 8 |  |
 
 
  
