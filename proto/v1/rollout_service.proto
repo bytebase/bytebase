@@ -383,6 +383,7 @@ message TaskRunLogEntry {
     COMMAND_EXECUTE = 2;
     DATABASE_SYNC = 3;
     TASK_RUN_STATUS_UPDATE = 4;
+    TRANSACTION_CONTROL = 5;
   }
   Type type = 1;
   google.protobuf.Timestamp log_time = 6;
@@ -390,6 +391,7 @@ message TaskRunLogEntry {
   CommandExecute command_execute = 3;
   DatabaseSync database_sync = 4;
   TaskRunStatusUpdate task_run_status_update = 5;
+  TransactionControl transaction_control = 7;
 
   message SchemaDump {
     google.protobuf.Timestamp start_time = 1;
@@ -428,5 +430,16 @@ message TaskRunLogEntry {
       // the task run is being executed by the scheduler
       RUNNING_RUNNING = 2;
     }
+  }
+
+  message TransactionControl {
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      BEGIN = 1;
+      COMMIT = 2;
+      ROLLBACK = 3;
+    }
+    Type type = 1;
+    string error = 2;
   }
 }

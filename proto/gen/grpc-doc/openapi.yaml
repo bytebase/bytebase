@@ -13407,6 +13407,7 @@ components:
                         - DATABASE_SYNC_START
                         - DATABASE_SYNC_END
                         - TASK_RUN_STATUS_UPDATE
+                        - TRANSACTION_CONTROL
                     type: string
                     format: enum
                 schemaDumpStart:
@@ -13423,6 +13424,8 @@ components:
                     $ref: '#/components/schemas/TaskRunLog_DatabaseSyncEnd'
                 taskRunStatusUpdate:
                     $ref: '#/components/schemas/TaskRunLog_TaskRunStatusUpdate'
+                transactionControl:
+                    $ref: '#/components/schemas/TaskRunLog_TransactionControl'
         TaskRunLog_CommandExecute:
             type: object
             properties:
@@ -13480,6 +13483,19 @@ components:
                         - RUNNING_RUNNING
                     type: string
                     format: enum
+        TaskRunLog_TransactionControl:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - BEGIN
+                        - COMMIT
+                        - ROLLBACK
+                    type: string
+                    format: enum
+                error:
+                    type: string
         TaskRun_ExecutionDetail:
             type: object
             properties:

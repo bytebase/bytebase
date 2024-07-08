@@ -126,11 +126,26 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, errors.Wrapf(err, "failed to get connection")
 	}
 	defer conn.Close()
+
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 		return 0, errors.Wrapf(err, "failed to begin transaction")
 	}
-	defer tx.Rollback()
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
+
+	committed := false
+	defer func() {
+		err := tx.Rollback()
+		if committed {
+			return
+		}
+		var rerr string
+		if err != nil {
+			rerr = err.Error()
+		}
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
+	}()
 
 	totalCommands := len(singleSQLs)
 	totalRowsAffected := int64(0)
@@ -181,8 +196,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	if err := tx.Commit(); err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 		return 0, errors.Wrapf(err, "failed to commit transaction")
 	}
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+	committed = true
 	return totalRowsAffected, nil
 }
 
