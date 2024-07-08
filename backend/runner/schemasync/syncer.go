@@ -98,7 +98,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 					if err != nil {
-						slog.Debug("Failed to get instance schema",
+						slog.Debug("Failed to get instance",
 							slog.String("instance", database.InstanceID),
 							log.BBError(err))
 						return true
