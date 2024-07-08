@@ -9,6 +9,7 @@ import (
 
 // TLSConfig is the configuration for SSL connection.
 type TLSConfig struct {
+	UseSSL  bool
 	SslCA   string
 	SslCert string
 	SslKey  string
