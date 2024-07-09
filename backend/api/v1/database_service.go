@@ -2243,15 +2243,15 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 			},
 		)
 		if err != nil {
-			retErr = err
+			retErr = errors.Wrap(err, "failed to create chat completion")
 			continue
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
-			retErr = err
+			retErr = errors.Wrapf(err, "failed to unmarshal chat completion response content: %s", resp.Choices[0].Message.Content)
 			continue
 		}
 		if err = generateResponse(&result); err != nil {
-			retErr = err
+			retErr = errors.Wrap(err, "failed to generate response")
 			continue
 		}
 		successful = true
