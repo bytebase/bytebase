@@ -1,6 +1,7 @@
 <template>
   <!-- Navigation -->
   <CommonSidebar
+    :key="'dashboard'"
     :item-list="dashboardSidebarItemList"
     :get-item-class="getItemClass"
   />
