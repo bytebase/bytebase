@@ -1,4 +1,4 @@
-import { pullAt } from "lodash-es";
+import { pullAt, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { reviewConfigServiceClient } from "@/grpcweb";
@@ -118,8 +118,8 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       newResources: string[];
       review: string;
     }) {
-      await removeReviewConfigTag(oldResources);
-      await upsertReviewConfigTag(newResources, review);
+      await removeReviewConfigTag(uniq(oldResources));
+      await upsertReviewConfigTag(uniq(newResources), review);
 
       const reviewPolicy = this.reviewPolicyList.find((r) => r.id === review);
       if (reviewPolicy) {

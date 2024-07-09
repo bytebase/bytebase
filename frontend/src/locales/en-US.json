@@ -2789,6 +2789,8 @@
     "disabled": "Disabled",
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
+    "select-review": "Select SQL review",
+    "select-review-label": "You can attach an existed SQL review policy to the resource, or {create}.",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
     "policy-removed": "Successfully removed the review policy.",
