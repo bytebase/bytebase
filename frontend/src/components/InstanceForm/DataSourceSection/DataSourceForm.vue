@@ -497,6 +497,63 @@
             />
           </div>
         </div>
+
+        <div
+          v-if="
+            basicInfo.engine === Engine.REDIS &&
+            dataSource.redisType === DataSource_RedisType.SENTINEL
+          "
+        >
+          <div class="mt-4">
+            <label class="textlabel"> Master Name </label>
+            <span class="text-red-600 mr-2">*</span>
+            <NInput
+              v-model:value="dataSource.masterName"
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="''"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="textlabel"> Master Username </label>
+            <NInput
+              v-model:value="dataSource.masterUsername"
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="''"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="textlabel block"> Master Password </label>
+            <div class="mt-2">
+              <NCheckbox
+                v-if="!isCreating && allowUsingEmptyPassword"
+                :size="'small'"
+                :checked="dataSource.useEmptyMasterPassword"
+                :disabled="!allowEdit"
+                @update:checked="toggleUseEmptyMasterPassword"
+              >
+                {{ $t("instance.no-password") }}
+              </NCheckbox>
+              <NInput
+                type="password"
+                show-password-on="click"
+                class="w-full"
+                :input-props="{ autocomplete: 'off' }"
+                :placeholder="
+                  dataSource.useEmptyMasterPassword
+                    ? $t('instance.no-password')
+                    : $t('instance.password-write-only')
+                "
+                :disabled="!allowEdit || dataSource.useEmptyMasterPassword"
+                :value="
+                  dataSource.useEmptyMasterPassword ? '' : dataSource.updatedMasterPassword
+                "
+                @update:value="dataSource.updatedMasterPassword = $event.trim()"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </template>
@@ -826,6 +883,7 @@ import {
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
+import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
@@ -1009,6 +1067,15 @@ const toggleUseEmptyPassword = (on: boolean) => {
     ds.updatedPassword = "";
   }
 };
+
+const toggleUseEmptyMasterPassword = (on: boolean) => {
+  const ds = props.dataSource;
+  ds.useEmptyMasterPassword = on;
+  if (on) {
+    ds.updatedMasterPassword = "";
+  }
+};
+
 const handleHostInput = (value: string) => {
   const ds = props.dataSource;
   if (ds.type === DataSourceType.READ_ONLY) {

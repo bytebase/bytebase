@@ -205,7 +205,7 @@
               :key="type"
               :value="type"
             >
-              <span class="textlabel">{{ type }}</span>
+              {{ type }}
             </NRadio>
           </NRadioGroup>
         </div>
@@ -221,21 +221,21 @@
             {{ $t("data-source.connection-type") }}
           </label>
           <NRadioGroup
-            :value="currentMongoDBConnectionSchema"
-            @update:value="handleMongodbConnectionStringSchemaChange"
+            :value="currentRedisConnectionType"
+            @update:value="handleRedisConnectionTypeChange"
           >
             <NRadio
               v-for="type in RedisConnectionType"
               :key="type"
               :value="type"
             >
-              <span class="textlabel">{{ type }}</span>
+              {{ type }}
             </NRadio>
           </NRadioGroup>
         </div>
 
         <div
-          v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
+          v-if="showAdditionalAddresses"
           class="sm:col-span-4 sm:col-start-1"
         >
           <label
@@ -244,7 +244,7 @@
           >
             {{ $t("data-source.additional-node-addresses") }}
           </label>
-          <div class="grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
+          <div class="mt-1 grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
             <template
               v-for="(_, index) in adminDataSource.additionalAddresses"
               :key="index"
@@ -253,7 +253,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesHost"
-                  class="textlabel flex flex-row items-center"
+                  class="textlabel !font-normal flex flex-row items-center"
                 >
                   {{ $t("instance.host-or-socket") }}
                 </label>
@@ -271,7 +271,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesPort"
-                  class="textlabel flex flex-row items-center"
+                  class="textlabel !font-normal flex flex-row items-center"
                 >
                   {{ $t("instance.port") }}
                 </label>
@@ -294,7 +294,7 @@
                 </MiniActionButton>
               </div>
             </template>
-            <div class="sm:col-span-12 sm:col-start-1">
+            <div class="mt-1 sm:col-span-12 sm:col-start-1">
               <NButton
                 class="ml-auto !w-12"
                 size="small"
@@ -476,6 +476,7 @@ import {
   InstanceOptions,
   DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
+import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { isDev, extractInstanceResourceName, onlyAllowNumber } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -551,6 +552,33 @@ const currentMongoDBConnectionSchema = computed(() => {
     : MongoDBConnectionStringSchemaList[1];
 });
 
+const currentRedisConnectionType = computed(() => {
+  switch (adminDataSource.value.redisType) {
+    case DataSource_RedisType.STANDALONE:
+      return RedisConnectionType[0];
+    case DataSource_RedisType.SENTINEL:
+      return RedisConnectionType[1];
+    case DataSource_RedisType.CLUSTER:
+      return RedisConnectionType[2];
+    default:
+      return RedisConnectionType[0];
+  }
+});
+
+const showAdditionalAddresses = computed(() => {
+  if (basicInfo.value.engine === Engine.MONGODB && !adminDataSource.value.srv) {
+    return true;
+  }
+  if (
+    basicInfo.value.engine === Engine.REDIS &&
+    (adminDataSource.value.redisType === DataSource_RedisType.CLUSTER ||
+      adminDataSource.value.redisType === DataSource_RedisType.SENTINEL)
+  ) {
+    return true;
+  }
+  return false;
+});
+
 const outboundIpList = computed(() => {
   if (!settingV1Store.workspaceProfileSetting) {
     return "";
@@ -602,17 +630,17 @@ const handleRedisConnectionTypeChange = (type: string) => {
   if (!ds) return;
   switch (type) {
     case RedisConnectionType[0]:
-      ds.break;
-    case MongoDBConnectionStringSchemaList[1]:
-      // MongoDB doesn't support specify port if using srv record.
-      ds.port = "";
-      ds.additionalAddresses = [];
-      ds.replicaSet = "";
-      ds.directConnection = false;
-      ds.srv = true;
+      ds.redisType = DataSource_RedisType.STANDALONE;
+      break;
+    case RedisConnectionType[1]:
+      ds.redisType = DataSource_RedisType.SENTINEL;
+      break;
+    case RedisConnectionType[2]:
+      ds.redisType = DataSource_RedisType.CLUSTER;
       break;
     default:
-      ds.srv = false;
+      ds.redisType = DataSource_RedisType.STANDALONE;
+      break;
   }
 };
 

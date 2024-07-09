@@ -208,6 +208,11 @@ type ConnectionConfig struct {
 
 	// WarehouseID is used by Databricks.
 	WarehouseID string
+
+	RedisType      storepb.DataSourceOptions_RedisType
+	MasterName     string
+	MasterUsername string
+	MasterPassword string
 }
 
 // SSHConfig is the configuration for connection over SSH.
