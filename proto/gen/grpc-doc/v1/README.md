@@ -96,6 +96,7 @@
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
   
     - [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType)
+    - [DataSource.RedisType](#bytebase-v1-DataSource-RedisType)
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
@@ -434,7 +435,6 @@
     - [OperatorType](#bytebase-v1-OperatorType)
     - [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target)
-    - [TenantMode](#bytebase-v1-TenantMode)
     - [Webhook.Type](#bytebase-v1-Webhook-Type)
     - [Workflow](#bytebase-v1-Workflow)
   
@@ -502,13 +502,18 @@
     - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
     - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
     - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
+    - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
+    - [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate)
+    - [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl)
   
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
+    - [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status)
+    - [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type)
     - [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -1628,6 +1633,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | type | [DataSourceType](#bytebase-v1-DataSourceType) |  |  |
 | username | [string](#string) |  |  |
 | password | [string](#string) |  |  |
+| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
 | ssl_ca | [string](#string) |  |  |
 | ssl_cert | [string](#string) |  |  |
 | ssl_key | [string](#string) |  |  |
@@ -1653,6 +1659,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
 | account_id | [string](#string) |  | account_id is used by Databricks. |
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
+| master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
+| master_username | [string](#string) |  | master_username and master_password are master credentials used by redis sentinel mode. |
+| master_password | [string](#string) |  |  |
+| redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
 
 
 
@@ -2029,6 +2039,20 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | PASSWORD | 1 |  |
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
+
+
+
+<a name="bytebase-v1-DataSource-RedisType"></a>
+
+### DataSource.RedisType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_TYPE_UNSPECIFIED | 0 |  |
+| STANDALONE | 1 |  |
+| SENTINEL | 2 |  |
+| CLUSTER | 3 |  |
 
 
 
@@ -2971,7 +2995,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - project with &#34;=&#34; operator, for example: - project = &#34;projects/sample-project&#34; - project = &#34;projects/-&#34; - instance with &#34;=&#34; operator, for example: - instance = &#34;instances/mysql&#34; - instance = &#34;instances/-&#34; for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance = &#34;instances/-&#34; to list all databases in the sample project. |
-| permission | [string](#string) |  | By default, the permission &#34;bb.databases.get&#34; is used. Alternatively, &#34;bb.databases.query&#34; can be used to retrieve databases with query permissions to. |
 
 
 
@@ -6927,7 +6950,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | title | [string](#string) |  | The title or name of a project. It&#39;s not unique within the workspace. |
 | key | [string](#string) |  | The key is a short and upper-case identifier for a project. It&#39;s unique within the workspace. |
 | workflow | [Workflow](#bytebase-v1-Workflow) |  |  |
-| tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
 | issue_labels | [Label](#bytebase-v1-Label) | repeated |  |
@@ -7306,19 +7328,6 @@ The type of target.
 | PROTECTION_TARGET_UNSPECIFIED | 0 |  |
 | BRANCH | 1 |  |
 | CHANGELIST | 2 |  |
-
-
-
-<a name="bytebase-v1-TenantMode"></a>
-
-### TenantMode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TENANT_MODE_UNSPECIFIED | 0 |  |
-| TENANT_MODE_DISABLED | 1 |  |
-| TENANT_MODE_ENABLED | 2 |  |
 
 
 
@@ -8261,8 +8270,12 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type) |  |  |
+| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | schema_dump | [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump) |  |  |
 | command_execute | [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute) |  |  |
+| database_sync | [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync) |  |  |
+| task_run_status_update | [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate) |  |  |
+| transaction_control | [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl) |  |  |
 
 
 
@@ -8304,6 +8317,23 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+<a name="bytebase-v1-TaskRunLogEntry-DatabaseSync"></a>
+
+### TaskRunLogEntry.DatabaseSync
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-TaskRunLogEntry-SchemaDump"></a>
 
 ### TaskRunLogEntry.SchemaDump
@@ -8314,6 +8344,37 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate"></a>
+
+### TaskRunLogEntry.TaskRunStatusUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-TransactionControl"></a>
+
+### TaskRunLogEntry.TransactionControl
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type) |  |  |
 | error | [string](#string) |  |  |
 
 
@@ -8404,6 +8465,33 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+<a name="bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status"></a>
+
+### TaskRunLogEntry.TaskRunStatusUpdate.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| RUNNING_WAITING | 1 | the task run is ready to be executed by the scheduler |
+| RUNNING_RUNNING | 2 | the task run is being executed by the scheduler |
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-TransactionControl-Type"></a>
+
+### TaskRunLogEntry.TransactionControl.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BEGIN | 1 |  |
+| COMMIT | 2 |  |
+| ROLLBACK | 3 |  |
+
+
+
 <a name="bytebase-v1-TaskRunLogEntry-Type"></a>
 
 ### TaskRunLogEntry.Type
@@ -8414,6 +8502,9 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | TYPE_UNSPECIFIED | 0 |  |
 | SCHEMA_DUMP | 1 |  |
 | COMMAND_EXECUTE | 2 |  |
+| DATABASE_SYNC | 3 |  |
+| TASK_RUN_STATUS_UPDATE | 4 |  |
+| TRANSACTION_CONTROL | 5 |  |
 
 
  

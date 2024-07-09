@@ -100,23 +100,11 @@ export const buildPlan = async (params: CreatePlanParams) => {
       query.changelist,
       params
     );
-  } else if (query.batch === "1") {
-    // in tenant mode, all specs share a unique sheet
-    const sheetUID = nextUID();
-    // build tenant plan
-    if (databaseUIDList.length === 0) {
-      // evaluate DeploymentConfig and generate steps/specs
-      if (query.databaseGroupName) {
-        plan.steps = await buildStepsForDatabaseGroup(
-          params,
-          query.databaseGroupName
-        );
-      } else {
-        plan.steps = await buildStepsViaDeploymentConfig(params, sheetUID);
-      }
-    } else {
-      plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
-    }
+  } else if (query.databaseGroupName) {
+    plan.steps = await buildStepsForDatabaseGroup(
+      params,
+      query.databaseGroupName
+    );
   } else {
     // build standard plan
     // Use dedicated sheets if sqlMap is specified.

@@ -1,13 +1,28 @@
 <template>
   <div class="text-sm">
-    <div v-if="duration">
-      {{ humanizeDurationV1(duration) }}
-    </div>
+    <NTooltip v-if="duration && entry.startTime && entry.endTime">
+      <template #trigger>
+        <span class="cursor-default">{{ humanizeDurationV1(duration) }}</span>
+      </template>
+      <template #default>
+        <div>
+          <p>
+            Start:
+            {{ dayjs(entry.startTime).format("YYYY-MM-DD HH:mm:ss.SSS UTCZZ") }}
+          </p>
+          <p>
+            End:
+            {{ dayjs(entry.endTime).format("YYYY-MM-DD HH:mm:ss.SSS UTCZZ") }}
+          </p>
+        </div>
+      </template>
+    </NTooltip>
     <div v-else class="text-control-placeholder">-</div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import type { FlattenLogEntry } from "./common";

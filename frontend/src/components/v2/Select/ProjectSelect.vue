@@ -1,16 +1,17 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="project"
+    :value="value"
     :options="options"
     :placeholder="$t('project.select')"
     :filterable="true"
+    :multiple="multiple"
     :filter="filterByName"
     :disabled="disabled"
     :render-label="renderLabel"
     class="bb-project-select"
     style="width: 12rem"
-    @update:value="$emit('update:project', $event)"
+    @update:value="handleValueUpdated"
   />
 </template>
 
@@ -31,7 +32,7 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import { Workflow } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2, roleListInProjectV1 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
@@ -43,34 +44,34 @@ const props = withDefaults(
   defineProps<{
     disabled?: boolean;
     project?: string | undefined | null; // UNKNOWN_ID(-1) to "ALL"
+    projects?: string[] | undefined | null; // UNKNOWN_ID(-1) to "ALL"
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
-    allowedProjectTenantModeList?: TenantMode[];
     allowedProjectWorkflowTypeList?: Workflow[];
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
     useResourceId?: boolean;
+    multiple?: boolean;
     filter?: (project: ComposedProject, index: number) => boolean;
   }>(),
   {
     disabled: false,
     project: undefined,
+    projects: undefined,
     allowedProjectRoleList: () => [],
-    allowedProjectTenantModeList: () => [
-      TenantMode.TENANT_MODE_DISABLED,
-      TenantMode.TENANT_MODE_ENABLED,
-    ],
     allowedProjectWorkflowTypeList: () => [Workflow.UI, Workflow.VCS],
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
     useResourceId: false,
+    multiple: false,
     filter: () => true,
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "update:project", id: string | undefined): void;
+  (event: "update:projects", id: string[]): void;
 }>();
 
 const { t } = useI18n();
@@ -79,6 +80,30 @@ const projectV1Store = useProjectV1Store();
 
 const prepare = () => {
   projectV1Store.fetchProjectList(true /* showDeleted */);
+};
+
+const value = computed(() => {
+  if (props.multiple) {
+    return props.projects || [];
+  } else {
+    return props.project;
+  }
+});
+
+const handleValueUpdated = (value: string | string[]) => {
+  if (props.multiple) {
+    if (!value) {
+      // normalize value
+      value = [];
+    }
+    emit("update:projects", value as string[]);
+  } else {
+    if (value === null) {
+      // normalize value
+      value = "";
+    }
+    emit("update:project", value as string);
+  }
 };
 
 const hasWorkspaceManageProjectPermission = computed(() =>
@@ -92,10 +117,7 @@ const rawProjectList = computed(() => {
     if (project.uid === String(DEFAULT_PROJECT_ID)) {
       return false;
     }
-    return (
-      props.allowedProjectTenantModeList.includes(project.tenantMode) &&
-      props.allowedProjectWorkflowTypeList.includes(project.workflow)
-    );
+    return props.allowedProjectWorkflowTypeList.includes(project.workflow);
   });
 });
 

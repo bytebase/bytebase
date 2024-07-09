@@ -502,6 +502,8 @@ export interface DataSource {
   type: DataSourceType;
   username: string;
   password: string;
+  /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
+  useSsl: boolean;
   sslCa: string;
   sslCert: string;
   sslKey: string;
@@ -556,6 +558,12 @@ export interface DataSource {
   accountId: string;
   /** warehouse_id is used by Databricks. */
   warehouseId: string;
+  /** master_name is the master name used by connecting redis-master via redis sentinel. */
+  masterName: string;
+  /** master_username and master_password are master credentials used by redis sentinel mode. */
+  masterUsername: string;
+  masterPassword: string;
+  redisType: DataSource_RedisType;
 }
 
 export enum DataSource_AuthenticationType {
@@ -614,6 +622,67 @@ export function dataSource_AuthenticationTypeToNumber(object: DataSource_Authent
     case DataSource_AuthenticationType.AWS_RDS_IAM:
       return 3;
     case DataSource_AuthenticationType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export enum DataSource_RedisType {
+  REDIS_TYPE_UNSPECIFIED = "REDIS_TYPE_UNSPECIFIED",
+  STANDALONE = "STANDALONE",
+  SENTINEL = "SENTINEL",
+  CLUSTER = "CLUSTER",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function dataSource_RedisTypeFromJSON(object: any): DataSource_RedisType {
+  switch (object) {
+    case 0:
+    case "REDIS_TYPE_UNSPECIFIED":
+      return DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
+    case 1:
+    case "STANDALONE":
+      return DataSource_RedisType.STANDALONE;
+    case 2:
+    case "SENTINEL":
+      return DataSource_RedisType.SENTINEL;
+    case 3:
+    case "CLUSTER":
+      return DataSource_RedisType.CLUSTER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSource_RedisType.UNRECOGNIZED;
+  }
+}
+
+export function dataSource_RedisTypeToJSON(object: DataSource_RedisType): string {
+  switch (object) {
+    case DataSource_RedisType.REDIS_TYPE_UNSPECIFIED:
+      return "REDIS_TYPE_UNSPECIFIED";
+    case DataSource_RedisType.STANDALONE:
+      return "STANDALONE";
+    case DataSource_RedisType.SENTINEL:
+      return "SENTINEL";
+    case DataSource_RedisType.CLUSTER:
+      return "CLUSTER";
+    case DataSource_RedisType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function dataSource_RedisTypeToNumber(object: DataSource_RedisType): number {
+  switch (object) {
+    case DataSource_RedisType.REDIS_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSource_RedisType.STANDALONE:
+      return 1;
+    case DataSource_RedisType.SENTINEL:
+      return 2;
+    case DataSource_RedisType.CLUSTER:
+      return 3;
+    case DataSource_RedisType.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -2449,6 +2518,7 @@ function createBaseDataSource(): DataSource {
     type: DataSourceType.DATA_SOURCE_UNSPECIFIED,
     username: "",
     password: "",
+    useSsl: false,
     sslCa: "",
     sslCert: "",
     sslKey: "",
@@ -2474,6 +2544,10 @@ function createBaseDataSource(): DataSource {
     region: "",
     accountId: "",
     warehouseId: "",
+    masterName: "",
+    masterUsername: "",
+    masterPassword: "",
+    redisType: DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
   };
 }
 
@@ -2490,6 +2564,9 @@ export const DataSource = {
     }
     if (message.password !== "") {
       writer.uint32(34).string(message.password);
+    }
+    if (message.useSsl === true) {
+      writer.uint32(240).bool(message.useSsl);
     }
     if (message.sslCa !== "") {
       writer.uint32(42).string(message.sslCa);
@@ -2566,6 +2643,18 @@ export const DataSource = {
     if (message.warehouseId !== "") {
       writer.uint32(234).string(message.warehouseId);
     }
+    if (message.masterName !== "") {
+      writer.uint32(250).string(message.masterName);
+    }
+    if (message.masterUsername !== "") {
+      writer.uint32(258).string(message.masterUsername);
+    }
+    if (message.masterPassword !== "") {
+      writer.uint32(266).string(message.masterPassword);
+    }
+    if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
+      writer.uint32(272).int32(dataSource_RedisTypeToNumber(message.redisType));
+    }
     return writer;
   },
 
@@ -2603,6 +2692,13 @@ export const DataSource = {
           }
 
           message.password = reader.string();
+          continue;
+        case 30:
+          if (tag !== 240) {
+            break;
+          }
+
+          message.useSsl = reader.bool();
           continue;
         case 5:
           if (tag !== 42) {
@@ -2779,6 +2875,34 @@ export const DataSource = {
 
           message.warehouseId = reader.string();
           continue;
+        case 31:
+          if (tag !== 250) {
+            break;
+          }
+
+          message.masterName = reader.string();
+          continue;
+        case 32:
+          if (tag !== 258) {
+            break;
+          }
+
+          message.masterUsername = reader.string();
+          continue;
+        case 33:
+          if (tag !== 266) {
+            break;
+          }
+
+          message.masterPassword = reader.string();
+          continue;
+        case 34:
+          if (tag !== 272) {
+            break;
+          }
+
+          message.redisType = dataSource_RedisTypeFromJSON(reader.int32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2794,6 +2918,7 @@ export const DataSource = {
       type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : DataSourceType.DATA_SOURCE_UNSPECIFIED,
       username: isSet(object.username) ? globalThis.String(object.username) : "",
       password: isSet(object.password) ? globalThis.String(object.password) : "",
+      useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
       sslCa: isSet(object.sslCa) ? globalThis.String(object.sslCa) : "",
       sslCert: isSet(object.sslCert) ? globalThis.String(object.sslCert) : "",
       sslKey: isSet(object.sslKey) ? globalThis.String(object.sslKey) : "",
@@ -2829,6 +2954,12 @@ export const DataSource = {
       region: isSet(object.region) ? globalThis.String(object.region) : "",
       accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
+      masterName: isSet(object.masterName) ? globalThis.String(object.masterName) : "",
+      masterUsername: isSet(object.masterUsername) ? globalThis.String(object.masterUsername) : "",
+      masterPassword: isSet(object.masterPassword) ? globalThis.String(object.masterPassword) : "",
+      redisType: isSet(object.redisType)
+        ? dataSource_RedisTypeFromJSON(object.redisType)
+        : DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
     };
   },
 
@@ -2845,6 +2976,9 @@ export const DataSource = {
     }
     if (message.password !== "") {
       obj.password = message.password;
+    }
+    if (message.useSsl === true) {
+      obj.useSsl = message.useSsl;
     }
     if (message.sslCa !== "") {
       obj.sslCa = message.sslCa;
@@ -2921,6 +3055,18 @@ export const DataSource = {
     if (message.warehouseId !== "") {
       obj.warehouseId = message.warehouseId;
     }
+    if (message.masterName !== "") {
+      obj.masterName = message.masterName;
+    }
+    if (message.masterUsername !== "") {
+      obj.masterUsername = message.masterUsername;
+    }
+    if (message.masterPassword !== "") {
+      obj.masterPassword = message.masterPassword;
+    }
+    if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
+      obj.redisType = dataSource_RedisTypeToJSON(message.redisType);
+    }
     return obj;
   },
 
@@ -2933,6 +3079,7 @@ export const DataSource = {
     message.type = object.type ?? DataSourceType.DATA_SOURCE_UNSPECIFIED;
     message.username = object.username ?? "";
     message.password = object.password ?? "";
+    message.useSsl = object.useSsl ?? false;
     message.sslCa = object.sslCa ?? "";
     message.sslCert = object.sslCert ?? "";
     message.sslKey = object.sslKey ?? "";
@@ -2962,6 +3109,10 @@ export const DataSource = {
     message.region = object.region ?? "";
     message.accountId = object.accountId ?? "";
     message.warehouseId = object.warehouseId ?? "";
+    message.masterName = object.masterName ?? "";
+    message.masterUsername = object.masterUsername ?? "";
+    message.masterPassword = object.masterPassword ?? "";
+    message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
     return message;
   },
 };

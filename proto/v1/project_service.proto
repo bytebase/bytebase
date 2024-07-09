@@ -283,6 +283,8 @@ message Label {
 }
 
 message Project {
+  reserved 8;
+
   // The name of the project.
   // Format: projects/{project}
   string name = 1;
@@ -299,8 +301,6 @@ message Project {
   string key = 5;
 
   Workflow workflow = 6;
-
-  TenantMode tenant_mode = 8;
 
   repeated Webhook webhooks = 11;
 
@@ -320,12 +320,6 @@ enum Workflow {
   WORKFLOW_UNSPECIFIED = 0;
   UI = 1;
   VCS = 2;
-}
-
-enum TenantMode {
-  TENANT_MODE_UNSPECIFIED = 0;
-  TENANT_MODE_DISABLED = 1;
-  TENANT_MODE_ENABLED = 2;
 }
 
 message AddWebhookRequest {

@@ -19,6 +19,7 @@ import {
   DataSourceExternalSecret_SecretType,
   DataSourceType,
   DataSource_AuthenticationType,
+  DataSource_RedisType,
 } from "@/types/proto/v1/instance_service";
 import {
   extractInstanceResourceName,
@@ -217,6 +218,16 @@ export const provideInstanceFormContext = (baseContext: {
       }
     }
 
+    // Redis Check Master Name
+    if (basicInfo.value.engine === Engine.REDIS) {
+      if (
+        adminDataSource.value.redisType === DataSource_RedisType.SENTINEL &&
+        adminDataSource.value.masterName === ""
+      ) {
+        return false;
+      }
+    }
+
     return (
       basicInfo.value.title.trim() &&
       resourceIdField.value?.resourceId &&
@@ -238,6 +249,8 @@ export const provideInstanceFormContext = (baseContext: {
         "pendingCreate",
         "updatedPassword",
         "useEmptyPassword",
+        "updatedMasterPassword",
+        "useEmptyMasterPassword",
         "updateSsl",
         "updateSsh",
         "updateAuthenticationPrivateKey"
@@ -248,6 +261,13 @@ export const provideInstanceFormContext = (baseContext: {
     }
     if (edit.useEmptyPassword) {
       ds.password = "";
+    }
+
+    if (edit.updatedMasterPassword) {
+      ds.masterPassword = edit.updatedMasterPassword;
+    }
+    if (edit.useEmptyMasterPassword) {
+      ds.masterPassword = "";
     }
 
     // Clean up unused fields for certain engine types.

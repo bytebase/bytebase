@@ -276,7 +276,8 @@
     "permission-denied": "許可が拒否されました",
     "resource": "リソース",
     "closed": "閉まっている",
-    "options": "オプション"
+    "options": "オプション",
+    "reset": "リセット"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -1241,9 +1242,16 @@
         "affected-rows": "影響を受ける行",
         "entry-type": {
           "command-execute": "コマンド実行",
-          "schema-dump": "スキーマダンプ"
+          "schema-dump": "スキーマダンプ",
+          "task-run-status-update": "ステータスアップデート",
+          "transaction-control": "トランザクション制御",
+          "database-sync": "データベースの同期"
         },
-        "affected-rows-n": "影響を受ける行: {n}"
+        "affected-rows-n": "影響を受ける行: {n}",
+        "status-update": {
+          "waiting": "実行の準備完了",
+          "running": "処刑される"
+        }
       }
     },
     "sql-review": {
@@ -2147,6 +2155,7 @@
     "selectors": "選定基準",
     "add-stage": "ステージを追加",
     "confirm-to-revert": "編集を元に戻してもよろしいですか?",
+    "confirm-to-reset": "デフォルトにリセットしますか?",
     "name-placeholder": "芸名…",
     "error": {
       "at-least-one-stage": "少なくとも 1 つのステージが必要です",
@@ -2225,7 +2234,8 @@
     "replica-set": "レプリカセット",
     "admin": "メインライブラリ",
     "read-only": "図書館から",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "connection-type": "接続タイプ"
   },
   "setting": {
     "project": {
@@ -2787,6 +2797,8 @@
     "disabled": "無効",
     "no-policy-set": "SQL監査ポリシーなし",
     "create-policy": "監査ポリシーを作成する",
+    "select-review": "SQLレビューを選択",
+    "select-review-label": "既存の SQL レビュー ポリシーをリソースまたは {create} に添付できます。",
     "duplicate-policy": "監査ポリシーをコピーする",
     "configure-policy": "監査ポリシーを構成する",
     "policy-removed": "監査ポリシーが削除されました",
@@ -2804,7 +2816,14 @@
     "not-available-for-free": "{plan}定期購入ではこのルールを使用できません",
     "unlock-full-feature": "100 を超える SQL レビュー ルールのロックを解除する",
     "search-by-name": "名前で検索",
-    "no-linked-resources": "リンクされたリソースはありません",
+    "attach-resource": {
+      "no-linked-resources": "リソースのバインドはありません",
+      "change-resources": "バインドされたリソースを変更する",
+      "self": "リソースにバインドする",
+      "label": "選択したリソースに監査ポリシーを適用します。リソースは 1 つのポリシーにのみ関連付けることができます。データベースはプロジェクトに添付された SQL 監査ポリシーを使用します。それ以外の場合は、環境ポリシーにフォールバックします。",
+      "label-environment": "SQL 監査ポリシーは、選択した環境に属するすべてのデータベースに影響します。",
+      "label-project": "SQL 監査ポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL 監査ポリシーは無視されます。"
+    },
     "create": {
       "breadcrumb": "監査ポリシーを作成する",
       "basic-info": {
@@ -2813,10 +2832,6 @@
         "display-name-placeholder": "監査ポリシー名",
         "display-name-default": "SQL監査ポリシー",
         "display-name-label": "さまざまな監査ポリシーを区別するために使用される名前。",
-        "attach-resource": "リソースにアタッチする",
-        "attach-resource-label": "選択したリソースに監査ポリシーを適用します。リソースは 1 つのポリシーにのみ関連付けることができます。データベースはプロジェクトに添付された SQL 監査ポリシーを使用します。それ以外の場合は、環境ポリシーにフォールバックします。",
-        "attach-resource-info-environment": "SQL 監査ポリシーは、選択した環境に属するすべてのデータベースに影響します。",
-        "attach-resource-info-project": "SQL 監査ポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL 監査ポリシーは無視されます。",
         "choose-template": "テンプレートを選択"
       },
       "configure-rule": {

@@ -23,7 +23,7 @@
 
 <script lang="ts" setup>
 import { NTooltip, type TooltipProps } from "naive-ui";
-import { withDefaults, computed, useSlots } from "vue";
+import { computed, useSlots } from "vue";
 import type { TooltipMode } from "./types";
 
 const props = withDefaults(

@@ -9,6 +9,7 @@ import (
 
 // TLSConfig is the configuration for SSL connection.
 type TLSConfig struct {
+	UseSSL  bool
 	SslCA   string
 	SslCert string
 	SslKey  string
@@ -16,12 +17,21 @@ type TLSConfig struct {
 
 // GetSslConfig gets the SSL config for connection.
 func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
-	if tc.SslCA == "" {
+	if !tc.UseSSL {
 		return nil, nil
 	}
-	rootCertPool := x509.NewCertPool()
-	if ok := rootCertPool.AppendCertsFromPEM([]byte(tc.SslCA)); !ok {
-		return nil, errors.Errorf("rootCertPool.AppendCertsFromPEM() failed to append server CA pem")
+	var rootCertPool *x509.CertPool
+	if tc.SslCA == "" {
+		p, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		rootCertPool = p
+	} else {
+		rootCertPool = x509.NewCertPool()
+		if ok := rootCertPool.AppendCertsFromPEM([]byte(tc.SslCA)); !ok {
+			return nil, errors.Errorf("rootCertPool.AppendCertsFromPEM() failed to append server CA pem")
+		}
 	}
 
 	cfg := &tls.Config{

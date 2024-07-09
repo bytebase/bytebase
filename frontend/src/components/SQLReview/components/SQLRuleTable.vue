@@ -1,9 +1,9 @@
 <template>
   <div>
-    <template v-for="category in categoryList" :key="category.id">
+    <template v-for="category in ruleList" :key="category.value">
       <div class="flex my-3 items-center">
         <span class="text-xl text-main font-semibold">
-          {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
+          {{ category.label }}
         </span>
         <span class="text-control-light text-md ml-1">
           ({{ category.ruleList.length }})
@@ -177,22 +177,22 @@ import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { useCurrentPlan } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
 import {
-  convertToCategoryList,
   getRuleLocalization,
   ruleIsAvailableInSubscription,
   planTypeToString,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
+import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
 
 type LocalState = {
   activeRule: RuleTemplateV2 | undefined;
 };
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
-    ruleList?: RuleTemplateV2[];
+    ruleList?: RuleListWithCategory[];
     editable: boolean;
   }>(),
   {
@@ -213,10 +213,6 @@ const { t } = useI18n();
 const currentPlan = useCurrentPlan();
 const state = reactive<LocalState>({
   activeRule: undefined,
-});
-
-const categoryList = computed(() => {
-  return convertToCategoryList(props.ruleList);
 });
 
 const columnList = computed((): BBGridColumn[] => {

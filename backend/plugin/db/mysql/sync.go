@@ -157,6 +157,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
 	atLeast8_0_16 := semVersion.GE(semver.MustParse("8.0.16"))
+	atLeast5_7_0 := semVersion.GE(semver.MustParse("5.7.0"))
 
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
@@ -279,6 +280,25 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME, ORDINAL_POSITION`
+	if !atLeast5_7_0 {
+		// GENERATION_EXPRESSION does not exist in MySQL 5.6.
+		columnQuery = `
+		SELECT
+			TABLE_NAME,
+			IFNULL(COLUMN_NAME, ''),
+			ORDINAL_POSITION,
+			CASE WHEN COLUMN_DEFAULT is NULL THEN NULL ELSE QUOTE(COLUMN_DEFAULT) END,
+			IS_NULLABLE,
+			COLUMN_TYPE,
+			IFNULL(CHARACTER_SET_NAME, ''),
+			IFNULL(COLLATION_NAME, ''),
+			QUOTE(COLUMN_COMMENT),
+			NULL,
+			EXTRA
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`
+	}
 	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)

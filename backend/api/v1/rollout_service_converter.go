@@ -873,7 +873,8 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 		switch l.Payload.Type {
 		case storepb.TaskRunLog_SCHEMA_DUMP_START:
 			e := &v1pb.TaskRunLogEntry{
-				Type: v1pb.TaskRunLogEntry_SCHEMA_DUMP,
+				Type:    v1pb.TaskRunLogEntry_SCHEMA_DUMP,
+				LogTime: timestamppb.New(l.T),
 				SchemaDump: &v1pb.TaskRunLogEntry_SchemaDump{
 					StartTime: timestamppb.New(l.T),
 				},
@@ -893,7 +894,8 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_COMMAND_EXECUTE:
 			e := &v1pb.TaskRunLogEntry{
-				Type: v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
+				Type:    v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
+				LogTime: timestamppb.New(l.T),
 				CommandExecute: &v1pb.TaskRunLogEntry_CommandExecute{
 					LogTime:        timestamppb.New(l.T),
 					CommandIndexes: l.Payload.CommandExecute.CommandIndexes,
@@ -918,10 +920,76 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				AffectedRows:    l.Payload.CommandResponse.AffectedRows,
 				AllAffectedRows: l.Payload.CommandResponse.AllAffectedRows,
 			}
+
+		case storepb.TaskRunLog_DATABASE_SYNC_START:
+			e := &v1pb.TaskRunLogEntry{
+				Type:    v1pb.TaskRunLogEntry_DATABASE_SYNC,
+				LogTime: timestamppb.New(l.T),
+				DatabaseSync: &v1pb.TaskRunLogEntry_DatabaseSync{
+					StartTime: timestamppb.New(l.T),
+				},
+			}
+			entries = append(entries, e)
+
+		case storepb.TaskRunLog_DATABASE_SYNC_END:
+			if len(entries) == 0 {
+				continue
+			}
+			prev := entries[len(entries)-1]
+			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_DATABASE_SYNC {
+				continue
+			}
+			prev.DatabaseSync.EndTime = timestamppb.New(l.T)
+			prev.DatabaseSync.Error = l.Payload.DatabaseSyncEnd.Error
+
+		case storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE:
+			e := &v1pb.TaskRunLogEntry{
+				Type:    v1pb.TaskRunLogEntry_TASK_RUN_STATUS_UPDATE,
+				LogTime: timestamppb.New(l.T),
+				TaskRunStatusUpdate: &v1pb.TaskRunLogEntry_TaskRunStatusUpdate{
+					Status: convertTaskRunLogTaskRunStatus(l.Payload.TaskRunStatusUpdate.Status),
+				},
+			}
+			entries = append(entries, e)
+
+		case storepb.TaskRunLog_TRANSACTION_CONTROL:
+			e := &v1pb.TaskRunLogEntry{
+				Type:    v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
+				LogTime: timestamppb.New(l.T),
+				TransactionControl: &v1pb.TaskRunLogEntry_TransactionControl{
+					Type:  convertTaskRunLogTransactionControlType(l.Payload.TransactionControl.Type),
+					Error: l.Payload.TransactionControl.Error,
+				},
+			}
+			entries = append(entries, e)
 		}
 	}
 
 	return entries
+}
+
+func convertTaskRunLogTaskRunStatus(s storepb.TaskRunLog_TaskRunStatusUpdate_Status) v1pb.TaskRunLogEntry_TaskRunStatusUpdate_Status {
+	switch s {
+	case storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_WAITING:
+		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_WAITING
+	case storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING:
+		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_RUNNING
+	default:
+		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_STATUS_UNSPECIFIED
+	}
+}
+
+func convertTaskRunLogTransactionControlType(t storepb.TaskRunLog_TransactionControl_Type) v1pb.TaskRunLogEntry_TransactionControl_Type {
+	switch t {
+	case storepb.TaskRunLog_TransactionControl_BEGIN:
+		return v1pb.TaskRunLogEntry_TransactionControl_BEGIN
+	case storepb.TaskRunLog_TransactionControl_COMMIT:
+		return v1pb.TaskRunLogEntry_TransactionControl_COMMIT
+	case storepb.TaskRunLog_TransactionControl_ROLLBACK:
+		return v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK
+	default:
+		return v1pb.TaskRunLogEntry_TransactionControl_TYPE_UNSPECIFIED
+	}
 }
 
 func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {

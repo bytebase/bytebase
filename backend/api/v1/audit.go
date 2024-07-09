@@ -20,6 +20,11 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+// used for replacing sensitive fields.
+var (
+	maskedString string
+)
+
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
 type AuditInterceptor struct {
 	store *store.Store
@@ -116,6 +121,8 @@ func getRequestResource(request any) string {
 		return r.GetUser().GetName()
 	case *v1pb.UpdateUserRequest:
 		return r.GetUser().GetName()
+	case *v1pb.LoginRequest:
+		return r.GetEmail()
 	default:
 		return ""
 	}
@@ -144,6 +151,11 @@ func getRequestString(request any) (string, error) {
 			return redactCreateUserRequest(r)
 		case *v1pb.UpdateUserRequest:
 			return redactUpdateUserRequest(r)
+		case *v1pb.LoginRequest:
+			if r, ok := proto.Clone(r).(*v1pb.LoginRequest); ok {
+				return redactLoginRequest(r)
+			}
+			return nil
 		default:
 			return nil
 		}
@@ -168,6 +180,8 @@ func getResponseString(response any) (string, error) {
 			return redactQueryResponse(r)
 		case *v1pb.ExportResponse:
 			return nil
+		case *v1pb.LoginResponse:
+			return nil
 		case *v1pb.Database:
 			return r
 		case *v1pb.BatchUpdateDatabasesResponse:
@@ -188,6 +202,30 @@ func getResponseString(response any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
+	if r == nil {
+		return nil
+	}
+
+	//  sensitive fields blacklist.
+	if r.Password != "" {
+		r.Password = maskedString
+	}
+	if r.OtpCode != nil {
+		r.OtpCode = &maskedString
+	}
+	if r.RecoveryCode != nil {
+		r.RecoveryCode = &maskedString
+	}
+	if r.MfaTempToken != nil {
+		r.MfaTempToken = &maskedString
+	}
+	if r.IdpContext != nil {
+		r.IdpContext = nil
+	}
+	return r
 }
 
 func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {
@@ -251,6 +289,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 func isAuditMethod(method string) bool {
 	switch method {
 	case
+		v1pb.AuthService_Login_FullMethodName,
 		v1pb.AuthService_CreateUser_FullMethodName,
 		v1pb.AuthService_UpdateUser_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,

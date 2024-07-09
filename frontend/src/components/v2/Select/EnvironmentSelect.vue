@@ -1,14 +1,15 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="environment"
+    :value="value"
     :options="options"
     :placeholder="$t('environment.select')"
     :filterable="true"
+    :multiple="multiple"
     :filter="filterByName"
     :render-label="renderLabel"
     class="bb-environment-select"
-    @update:value="$emit('update:environment', $event)"
+    @update:value="handleValueUpdated"
   />
 </template>
 
@@ -30,24 +31,29 @@ interface EnvironmentSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     environment?: string | undefined;
+    environments?: string[] | undefined;
     defaultEnvironmentName?: string | undefined;
     includeArchived?: boolean;
     showProductionIcon?: boolean;
     useResourceId?: boolean;
+    multiple?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
   }>(),
   {
     environment: undefined,
+    environments: undefined,
     defaultEnvironmentName: undefined,
     includeArchived: false,
     showProductionIcon: true,
     useResourceId: false,
+    multiple: false,
     filter: () => true,
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "update:environment", id: string | undefined): void;
+  (event: "update:environments", id: string[]): void;
 }>();
 
 const { t } = useI18n();
@@ -56,6 +62,30 @@ const environmentV1Store = useEnvironmentV1Store();
 
 const prepare = () => {
   projectV1Store.fetchProjectList(true /* showDeleted */);
+};
+
+const value = computed(() => {
+  if (props.multiple) {
+    return props.environments || [];
+  } else {
+    return props.environment;
+  }
+});
+
+const handleValueUpdated = (value: string | string[]) => {
+  if (props.multiple) {
+    if (!value) {
+      // normalize value
+      value = [];
+    }
+    emit("update:environments", value as string[]);
+  } else {
+    if (value === null) {
+      // normalize value
+      value = "";
+    }
+    emit("update:environment", value as string);
+  }
 };
 
 const rawEnvironmentList = computed(() => {
