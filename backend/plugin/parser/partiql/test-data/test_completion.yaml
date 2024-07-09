@@ -1,7 +1,14 @@
+- description: Multiple statements
+  input: |-
+    select count(1) from t1 where id; SELECT * FROM |
+    select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
+  want:
+    - text: Music
+      type: TABLE
+      definition: ""
+      comment: ""
 - description: Tricky
-  input: -|
-    SELECT * FROM Music
-    SELECT * FROM |
+  input: -| SELECT * FROM Music SELECT * FROM |
 - description: Simple Select Complete Table
   input: SELECT * FROM |
   want:
