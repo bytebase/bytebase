@@ -1,6 +1,6 @@
 <template>
   <div class="text-sm">
-    <NPopover v-if="duration && entry.startTime && entry.endTime">
+    <NTooltip v-if="duration && entry.startTime && entry.endTime">
       <template #trigger>
         <span class="cursor-default">{{ humanizeDurationV1(duration) }}</span>
       </template>
@@ -16,13 +16,13 @@
           </p>
         </div>
       </template>
-    </NPopover>
+    </NTooltip>
     <div v-else class="text-control-placeholder">-</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NPopover } from "naive-ui";
+import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import type { FlattenLogEntry } from "./common";

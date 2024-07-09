@@ -1,6 +1,6 @@
 <template>
   <div class="text-sm">
-    <HumanizeDate v-if="logTime" :date="logTime" />
+    <HumanizeDate v-if="logTime" :date="logTime" format="YYYY-MM-DD HH:mm:ss.SSS UTCZZ" />
     <div v-else class="text-control-placeholder">-</div>
   </div>
 </template>
