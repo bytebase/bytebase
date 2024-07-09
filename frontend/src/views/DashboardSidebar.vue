@@ -349,6 +349,6 @@ const navigationKbarActions = computed((): Action[] => {
 });
 useRegisterActions(navigationKbarActions);
 
-useProjectActions();
-useGlobalDatabaseActions();
+useProjectActions(10);
+useGlobalDatabaseActions(10);
 </script>

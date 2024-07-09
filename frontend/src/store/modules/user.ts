@@ -14,9 +14,17 @@ import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
+import { usePermissionStore } from "./v1/permission";
 
 export const useUserStore = defineStore("user", () => {
   const userMapByName = ref<Map<string, User>>(new Map());
+
+  const setUser = (user: User) => {
+    userMapByName.value.set(user.name, user);
+
+    // invalid permission cache
+    usePermissionStore().invalidCacheByUser(user);
+  };
 
   const userList = computed(() => {
     return orderBy(
@@ -59,7 +67,7 @@ export const useUserStore = defineStore("user", () => {
       showDeleted: true,
     });
     for (const user of users) {
-      userMapByName.value.set(user.name, user);
+      setUser(user);
     }
     return users;
   };
@@ -72,14 +80,14 @@ export const useUserStore = defineStore("user", () => {
         silent,
       }
     );
-    userMapByName.value.set(user.name, user);
+    setUser(user);
     return user;
   };
   const createUser = async (user: User) => {
     const createdUser = await authServiceClient.createUser({
       user,
     });
-    userMapByName.value.set(createdUser.name, createdUser);
+    setUser(createdUser);
     return createdUser;
   };
   const updateUser = async (updateUserRequest: UpdateUserRequest) => {
@@ -89,7 +97,7 @@ export const useUserStore = defineStore("user", () => {
       throw new Error(`user with name ${name} not found`);
     }
     const user = await authServiceClient.updateUser(updateUserRequest);
-    userMapByName.value.set(user.name, user);
+    setUser(user);
     return user;
   };
   const getOrFetchUserByName = async (name: string, silent = false) => {
@@ -98,7 +106,7 @@ export const useUserStore = defineStore("user", () => {
       return cachedData;
     }
     const user = await fetchUser(name, silent);
-    userMapByName.value.set(user.name, user);
+    setUser(user);
     return user;
   };
   const getUserByName = (name: string) => {
@@ -132,7 +140,7 @@ export const useUserStore = defineStore("user", () => {
     const restoredUser = await authServiceClient.undeleteUser({
       name: user.name,
     });
-    userMapByName.value.set(restoredUser.name, restoredUser);
+    setUser(restoredUser);
     return restoredUser;
   };
 

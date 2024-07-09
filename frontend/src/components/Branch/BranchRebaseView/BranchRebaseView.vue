@@ -183,7 +183,7 @@ const parentBranchOnly = computed(() => {
   if (!head.parentBranch) {
     return false; // parent-less (main) branches
   }
-  if (isOwnerOfProjectV1(props.project.iamPolicy, me.value)) {
+  if (isOwnerOfProjectV1(props.project, me.value)) {
     return false; // project owners are not limited
   }
   return true;
