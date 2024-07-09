@@ -2,7 +2,9 @@ package plancheck
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/github/gh-ost/go/logic"
 	"github.com/pkg/errors"
@@ -102,7 +104,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), rand.Int63n(10000000), database, adminDataSource, e.secret, tableName, renderedStatement, true, config.GhostFlags, 20000000)
+	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), rand.Int63n(10000000), database, adminDataSource, e.secret, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), renderedStatement, true, config.GhostFlags, 20000000)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}

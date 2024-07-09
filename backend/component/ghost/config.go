@@ -186,7 +186,7 @@ func GetPostponeFlagFilename(taskID int, taskCreatedTs int64, databaseID int, da
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
@@ -315,6 +315,8 @@ func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, d
 	}
 	// Uses specified port. GCP, Aliyun, Azure are equivalent here.
 	migrationContext.GoogleCloudPlatform = true
+
+	migrationContext.ForceTmpTableName = tableName + tmpTableNameSuffix
 
 	if migrationContext.SwitchToRowBinlogFormat && migrationContext.AssumeRBR {
 		return nil, errors.Errorf("switchToRBR and assumeRBR are mutually exclusive")
