@@ -152,6 +152,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
 	// change issue to demonstrate the SQL Review feature.
 	sqlReviewConfig := &store.ReviewConfigMessage{
+		ID:         "sample",
 		Name:       "SQL Review Sample Policy",
 		CreatorUID: userID,
 		Enforce:    true,
