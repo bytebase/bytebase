@@ -9275,8 +9275,8 @@ components:
                     description: master_name is the master name used by connecting redis-master via redis sentinel.
                 masterUsername:
                     type: string
-                    description: master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
-                masterObfuscatedPassword:
+                    description: master_username and master_password are master credentials used by redis sentinel mode.
+                masterPassword:
                     type: string
                 redisType:
                     enum:

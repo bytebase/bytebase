@@ -2234,7 +2234,8 @@
     "replica-set": "レプリカセット",
     "admin": "メインライブラリ",
     "read-only": "図書館から",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "connection-type": "接続タイプ"
   },
   "setting": {
     "project": {
