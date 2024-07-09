@@ -9,23 +9,27 @@
         #default="{
           ruleList: ruleListFilteredByCategory,
         }: {
-          ruleList: RuleTemplateV2[];
+          ruleList: RuleListWithCategory[];
         }"
       >
-        <div class="flex items-center justify-between">
-          <SQLReviewCategorySummaryFilter
+        <div
+          class="flex flex-col justify-start items-start md:flex-row md:items-center md:justify-between"
+        >
+          <SQLReviewLevelFilter
             :rule-list="ruleListFilteredByCategory"
             :is-checked-level="(level) => params.checkedLevel.has(level)"
             @toggle-checked-level="$emit('toggle-checked-level', $event)"
           />
           <SearchBox
             ref="searchField"
+            class="mt-2 md:mt-0 md:!max-w-72"
+            style="max-width: 100%"
             :value="params.searchText"
             :placeholder="$t('common.filter-by-name')"
             @update:value="$emit('change-search-text', $event)"
           />
         </div>
-        <slot :rule-list="ruleListFilteredByCategory.filter(filterRule)" />
+        <slot :rule-list="filterRuleList(ruleListFilteredByCategory)" />
       </template>
     </SQLReviewCategoryTabFilter>
   </div>
@@ -35,8 +39,9 @@
 import type { RuleTemplateV2 } from "@/types";
 import { getRuleLocalization } from "@/types";
 import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import SQLReviewCategorySummaryFilter from "./SQLReviewCategorySummaryFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
+import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
+import SQLReviewLevelFilter from "./SQLReviewLevelFilter.vue";
 import type { SQLRuleFilterParams } from "./useSQLRuleFilter";
 
 const props = defineProps<{
@@ -49,6 +54,22 @@ defineEmits<{
   (event: "change-category", category: string | undefined): void;
   (event: "change-search-text", keyword: string): void;
 }>();
+
+const filterRuleList = (
+  list: RuleListWithCategory[]
+): RuleListWithCategory[] => {
+  if (props.params.checkedLevel.size === 0 && !props.params.searchText) {
+    return list;
+  }
+  return list
+    .map((item) => {
+      return {
+        ...item,
+        ruleList: item.ruleList.filter(filterRule),
+      };
+    })
+    .filter((item) => item.ruleList.length > 0);
+};
 
 const filterRule = (rule: RuleTemplateV2) => {
   if (props.params.checkedLevel.size > 0) {

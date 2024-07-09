@@ -2796,6 +2796,8 @@
     "disabled": "Deshabilitado",
     "no-policy-set": "Sin política de revisión de SQL",
     "create-policy": "Crear política",
+    "select-review": "Seleccione revisión SQL",
+    "select-review-label": "Puede adjuntar una política de revisión de SQL existente al recurso o {create}.",
     "duplicate-policy": "Duplicar política de revisión de SQL",
     "configure-policy": "Configurar política",
     "policy-removed": "La política de revisión se eliminó correctamente.",
@@ -2813,7 +2815,14 @@
     "not-available-for-free": "La regla no está disponible para {plan}",
     "unlock-full-feature": "Desbloquear más de 100 reglas de validación de SQL",
     "search-by-name": "Buscar por nombre",
-    "no-linked-resources": "No hay recursos vinculados",
+    "attach-resource": {
+      "no-linked-resources": "Sin recursos adjuntos",
+      "change-resources": "Cambiar recursos adjuntos",
+      "self": "Adjuntar a recursos",
+      "label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
+      "label-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
+      "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno."
+    },
     "create": {
       "breadcrumb": "Crear política de revisión SQL",
       "basic-info": {
@@ -2822,10 +2831,6 @@
         "display-name-placeholder": "El nombre de la política de revisión",
         "display-name-default": "Política de revisión SQL",
         "display-name-label": "Un nombre para mostrar que ayuda a identificar entre diferentes políticas de revisión.",
-        "attach-resource": "Adjuntar al recurso",
-        "attach-resource-label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
-        "attach-resource-info-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
-        "attach-resource-info-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno.",
         "choose-template": "Elegir plantilla"
       },
       "configure-rule": {
