@@ -1242,9 +1242,16 @@
         "affected-rows": "Filas afectadas",
         "entry-type": {
           "command-execute": "ejecutar comando",
-          "schema-dump": "Volcado de esquema"
+          "schema-dump": "Volcado de esquema",
+          "task-run-status-update": "Actualización de estado",
+          "transaction-control": "Control de transacciones",
+          "database-sync": "Sincronización de base de datos"
         },
-        "affected-rows-n": "Filas afectadas: {n}"
+        "affected-rows-n": "Filas afectadas: {n}",
+        "status-update": {
+          "waiting": "Listo para ser ejecutado",
+          "running": "Ser ejecutado"
+        }
       }
     },
     "sql-review": {
