@@ -1,14 +1,14 @@
 import { orderBy, uniq } from "lodash-es";
 import { extractUserEmail, useUserStore, useUserGroupStore } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
+import { usePermissionStore } from "@/store/modules/v1/permission";
 import {
   ALL_USERS_USER_EMAIL,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_ID,
   PresetRoleType,
   groupBindingPrefix,
-  getUserEmailInBinding,
   PRESET_WORKSPACE_ROLES,
+  type ComposedProject,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -35,65 +35,29 @@ export const extractProjectResourceName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  const groupStore = useUserGroupStore();
-  const userInBinding = getUserEmailInBinding(user.email);
-
-  const workspaceLevelProjectRoles = user.roles.filter(
-    (role) => !PRESET_WORKSPACE_ROLES.includes(role)
-  );
-
-  const projectBindingRoles = iamPolicy.bindings
-    .filter((binding) => {
-      if (isBindingPolicyExpired(binding)) {
-        return false;
-      }
-      for (const member of binding.members) {
-        if (member === ALL_USERS_USER_EMAIL) {
-          return true;
-        }
-        if (member === userInBinding) {
-          return true;
-        }
-
-        if (member.startsWith(groupBindingPrefix)) {
-          const group = groupStore.getGroupByIdentifier(member);
-          if (!group) {
-            continue;
-          }
-
-          return group.members.some(
-            (m) => m.member === `${userNamePrefix}${user.email}`
-          );
-        }
-      }
-      return false;
-    })
-    .map((binding) => binding.role);
-
-  return uniq([...projectBindingRoles, ...workspaceLevelProjectRoles]);
+export const isMemberOfProjectV1 = (project: ComposedProject, user: User) => {
+  return usePermissionStore().roleListInProjectV1(project, user).length > 0;
 };
 
-export const isMemberOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).length > 0;
+export const isOwnerOfProjectV1 = (project: ComposedProject, user: User) => {
+  return usePermissionStore()
+    .roleListInProjectV1(project, user)
+    .includes(PresetRoleType.PROJECT_OWNER);
 };
 
-export const isOwnerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes(
-    PresetRoleType.PROJECT_OWNER
-  );
+export const isDeveloperOfProjectV1 = (
+  project: ComposedProject,
+  user: User
+) => {
+  return usePermissionStore()
+    .roleListInProjectV1(project, user)
+    .includes(PresetRoleType.PROJECT_DEVELOPER);
 };
 
-export const isDeveloperOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes(
-    PresetRoleType.PROJECT_DEVELOPER
-  );
-};
-
-export const isViewerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes(
-    PresetRoleType.PROJECT_VIEWER
-  );
+export const isViewerOfProjectV1 = (project: ComposedProject, user: User) => {
+  return usePermissionStore()
+    .roleListInProjectV1(project, user)
+    .includes(PresetRoleType.PROJECT_VIEWER);
 };
 
 export const getUserEmailListInBinding = (binding: Binding): string[] => {
