@@ -9,7 +9,6 @@
       comment: ""
 - description: Tricky
   input: -| SELECT * FROM Music SELECT * FROM |
-  want: []
 - description: Simple Select Complete Table
   input: SELECT * FROM |
   want:
