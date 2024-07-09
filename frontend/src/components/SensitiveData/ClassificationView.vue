@@ -17,7 +17,7 @@
         keypath="database.classification.sync-from-comment-tip"
       >
         <template #format>
-          <span class="font-semibold">{calssification id}-{comment}</span>
+          <span class="font-semibold">{classification id}-{comment}</span>
         </template>
       </i18n-t>
     </div>
