@@ -117,7 +117,8 @@ const rowProps = (project: ComposedProject) => {
         routeName = activeSidebar.value?.path ?? routeName;
 
         const { flattenNavigationItems } = useProjectSidebar(
-          computed(() => project)
+          project,
+          router.currentRoute.value
         );
         if (
           !flattenNavigationItems.value.find(

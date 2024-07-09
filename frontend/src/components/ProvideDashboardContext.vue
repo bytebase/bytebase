@@ -1,5 +1,6 @@
 <template>
   <slot v-if="!isLoading" />
+  <MaskSpinner v-else class="!bg-white" />
 </template>
 
 <script lang="ts" setup>
@@ -19,6 +20,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import MaskSpinner from "./misc/MaskSpinner.vue";
 
 const route = useRoute();
 const router = useRouter();

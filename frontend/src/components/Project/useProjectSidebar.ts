@@ -11,9 +11,11 @@ import {
   SearchCodeIcon,
   DownloadIcon,
 } from "lucide-vue-next";
-import { computed, h } from "vue";
-import type { Ref } from "vue";
-import type { RouteRecordRaw } from "vue-router";
+import { computed, h, unref } from "vue";
+import type {
+  RouteLocationNormalizedLoadedGeneric,
+  RouteRecordRaw,
+} from "vue-router";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { t } from "@/plugins/i18n";
@@ -38,7 +40,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { ComposedProject, MaybeRef } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import type { ProjectPermission } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
@@ -51,12 +53,15 @@ interface ProjectSidebarItem extends SidebarItem {
   children?: ProjectSidebarItem[];
 }
 
-export const useProjectSidebar = (project: Ref<ComposedProject>) => {
+export const useProjectSidebar = (
+  project: MaybeRef<ComposedProject>,
+  _route?: RouteLocationNormalizedLoadedGeneric
+) => {
   const currentUser = useCurrentUserV1();
-  const route = useRoute();
+  const route = _route ?? useRoute();
 
   const isDefaultProject = computed((): boolean => {
-    return project.value.name === DEFAULT_PROJECT_V1_NAME;
+    return unref(project).name === DEFAULT_PROJECT_V1_NAME;
   });
 
   const isTenantProject = computed((): boolean => {
@@ -114,7 +119,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
           (projectV1Route) => projectV1Route.name === item.path
         );
         return (routeConfig?.permissions ?? []).every((permission) =>
-          hasProjectPermissionV2(project.value, currentUser.value, permission)
+          hasProjectPermissionV2(unref(project), currentUser.value, permission)
         );
       })
       .map((item) => ({
