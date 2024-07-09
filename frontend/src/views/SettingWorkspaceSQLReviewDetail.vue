@@ -10,30 +10,24 @@
     @cancel="state.editMode = false"
   />
   <div v-else>
+    <BBAttention v-if="!reviewPolicy.enforce" type="warning" class="mb-4">
+      {{ $t("sql-review.disabled") }}
+    </BBAttention>
     <div
       class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
-      <div class="flex-1 flex space-x-2 items-center justify-start">
-        <div v-if="!reviewPolicy.enforce" class="whitespace-nowrap">
-          <BBBadge
-            :text="$t('sql-review.disabled')"
-            :can-remove="false"
-            :badge-style="'DISABLED'"
-          />
-        </div>
-        <BBTextField
-          class="flex-1 !text-xl md:!text-2xl py-0.5 px-0.5 font-bold truncate"
-          :disabled="!hasPermission"
-          :required="true"
-          :focus-on-mount="false"
-          :ends-on-enter="true"
-          :bordered="state.editingTitle"
-          :value="reviewPolicy.name"
-          size="large"
-          @on-focus="state.editingTitle = true"
-          @end-editing="changeName"
-        />
-      </div>
+      <BBTextField
+        class="flex-1 !text-xl md:!text-2xl py-0.5 px-0.5 font-bold truncate"
+        :disabled="!hasPermission"
+        :required="true"
+        :focus-on-mount="false"
+        :ends-on-enter="true"
+        :bordered="state.editingTitle"
+        :value="reviewPolicy.name"
+        size="large"
+        @on-focus="state.editingTitle = true"
+        @end-editing="changeName"
+      />
       <div v-if="hasPermission" class="flex gap-x-2">
         <NButton
           v-if="reviewPolicy.enforce"
@@ -214,7 +208,7 @@ const hasPermission = computed(() => {
 
 watchEffect(async () => {
   await store.getOrFetchReviewPolicyByName(props.sqlReviewPolicySlug);
-  if (route.query.attachResourcePanel) {
+  if (route.query.attachResourcePanel && hasPermission.value) {
     state.showResourcePanel = true;
   }
 });

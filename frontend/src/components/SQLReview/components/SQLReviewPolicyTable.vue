@@ -18,13 +18,8 @@
         :key="`${i}-${review.id}`"
         class="pt-4"
       >
-        <div>
-          <span v-if="review.id" class="text-md">
-            {{ review.name }}
-          </span>
-          <span v-else class="italic textinfo text-gray-400">
-            {{ $t("sql-review.no-policy-set") }}
-          </span>
+        <div class="text-md">
+          {{ review.name }}
         </div>
         <div class="space-y-2 space-x-2">
           <BBBadge
@@ -38,8 +33,8 @@
             />
           </BBBadge>
           <BBBadge
-            v-if="review.id && !review.enforce"
-            :text="$t('sql-review.disabled')"
+            v-if="!review.enforce"
+            :text="$t('common.disable')"
             :can-remove="false"
             :badge-style="'DISABLED'"
           />

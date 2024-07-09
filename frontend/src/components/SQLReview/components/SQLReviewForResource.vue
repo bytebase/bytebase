@@ -19,7 +19,7 @@
         </span>
       </div>
       <NButton
-        v-else-if="allowEdit"
+        v-else-if="allowEditSQLReviewPolicy"
         @click.prevent="showReviewSelectPanel = true"
       >
         {{ $t("sql-review.configure-policy") }}
