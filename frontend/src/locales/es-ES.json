@@ -2794,7 +2794,7 @@
   "sql-review": {
     "title": "Revisión de SQL",
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
-    "disabled": "Deshabilitado",
+    "disabled": "La revisión de SQL está deshabilitada",
     "no-policy-set": "Sin política de revisión de SQL",
     "create-policy": "Crear política",
     "select-review": "Seleccione revisión SQL",
