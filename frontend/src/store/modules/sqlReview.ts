@@ -1,4 +1,4 @@
-import { pullAt, isEqual } from "lodash-es";
+import { pullAt } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { reviewConfigServiceClient } from "@/grpcweb";
@@ -109,15 +109,30 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         ];
       }
     },
+    async upsertReviewConfigTag({
+      oldResources,
+      newResources,
+      review,
+    }: {
+      oldResources: string[];
+      newResources: string[];
+      review: string;
+    }) {
+      await removeReviewConfigTag(oldResources);
+      await upsertReviewConfigTag(newResources, review);
+
+      const reviewPolicy = this.reviewPolicyList.find((r) => r.id === review);
+      if (reviewPolicy) {
+        reviewPolicy.resources = newResources;
+      }
+    },
     async createReviewPolicy({
       id,
       title,
-      resources,
       ruleList,
     }: {
       id: string;
       title: string;
-      resources: string[];
       ruleList: SchemaPolicyRule[];
     }) {
       const reviewConfig = await reviewConfigServiceClient.createReviewConfig({
@@ -137,9 +152,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         },
       });
 
-      await upsertReviewConfigTag(resources, reviewConfig.name);
-
-      reviewConfig.resources = resources;
       const reviewPolicy = convertToSQLReviewPolicy(reviewConfig);
       if (!reviewPolicy) {
         throw new Error(
@@ -148,6 +160,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
 
       this.setReviewPolicy(reviewPolicy);
+      return reviewPolicy;
     },
     async removeReviewPolicy(id: string) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
@@ -169,13 +182,11 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       title,
       enforce,
       ruleList,
-      resources,
     }: {
       id: string;
       title?: string;
       enforce?: boolean;
       ruleList?: SchemaPolicyRule[];
-      resources?: string[];
     }) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
       if (index < 0) {
@@ -213,12 +224,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         reviewConfig: patch,
         updateMask,
       });
-
-      if (resources && !isEqual(resources, targetPolicy.resources)) {
-        await removeReviewConfigTag(targetPolicy.resources);
-        await upsertReviewConfigTag(resources, targetPolicy.id);
-        updated.resources = resources;
-      }
 
       const reviewPolicy = convertToSQLReviewPolicy(updated);
       if (reviewPolicy) {

@@ -1,73 +1,13 @@
 <template>
   <div>
-    <BBGrid
-      :column-list="columnList"
-      :data-source="reviewList"
-      :row-clickable="false"
-      class="border hidden md:grid"
-    >
-      <template #item="{ item: review }: { item: SQLReviewPolicy }">
-        <div class="bb-grid-cell">
-          <span v-if="review.resources.length === 0">-</span>
-          <div v-else>
-            <SQLReviewAttachedResource
-              v-for="resource in review.resources"
-              :key="resource"
-              :resource="resource"
-              :show-prefix="true"
-              :link="true"
-            />
-          </div>
-        </div>
-        <div class="bb-grid-cell">
-          <template v-if="review.id">
-            <div :innerHTML="highlight(review.name)" />
-          </template>
-          <span v-else class="italic textinfo text-gray-400">
-            {{ $t("sql-review.no-policy-set") }}
-          </span>
-        </div>
-        <div class="bb-grid-cell justify-center">
-          <NCheckbox
-            :disabled="!review.id || !hasUpdatePolicyPermission"
-            :checked="review.enforce ?? false"
-            @update:checked="toggleReviewEnabled(review, $event)"
-          />
-        </div>
-        <div class="bb-grid-cell gap-x-2 !pr-[3rem]">
-          <template v-if="!review.id">
-            <NButton
-              :disabled="!hasUpdatePolicyPermission"
-              @click.prevent="handleClickCreate(review.resources[0])"
-            >
-              {{ $t("sql-review.configure-policy") }}
-            </NButton>
-          </template>
-          <template v-else>
-            <NButton @click.prevent="handleClickEdit(review)">
-              {{
-                hasUpdatePolicyPermission
-                  ? $t("common.edit")
-                  : $t("common.view")
-              }}
-            </NButton>
-
-            <BBButtonConfirm
-              v-if="hasDeletePolicyPermission"
-              type="default"
-              :disabled="!hasUpdatePolicyPermission"
-              :style="'DELETE'"
-              :hide-icon="true"
-              :button-text="$t('common.delete')"
-              :ok-text="$t('common.delete')"
-              :confirm-title="$t('common.delete') + ` '${review.name}'?`"
-              :require-confirm="true"
-              @confirm="handleClickDelete(review)"
-            />
-          </template>
-        </div>
-      </template>
-    </BBGrid>
+    <div class="hidden md:grid">
+      <NDataTable
+        :striped="true"
+        :columns="columns"
+        :data="reviewList"
+        :row-key="(review: SQLReviewPolicy) => review.id"
+      />
+    </div>
 
     <div
       class="flex flex-col md:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
@@ -75,7 +15,7 @@
       <div
         v-for="(review, i) in reviewList"
         :key="`${i}-${review.id}`"
-        class="pt-4 space-y-3"
+        class="pt-4"
       >
         <div>
           <span v-if="review.id" class="text-md">
@@ -85,13 +25,16 @@
             {{ $t("sql-review.no-policy-set") }}
           </span>
         </div>
-        <div class="flex items-center gap-x-2">
+        <div class="space-y-2 space-x-2">
           <BBBadge
             v-for="resource in review.resources"
             :key="resource"
             :can-remove="false"
           >
-            <SQLReviewAttachedResource :resource="resource" />
+            <SQLReviewAttachedResource
+              :show-prefix="true"
+              :resource="resource"
+            />
           </BBBadge>
           <BBBadge
             v-if="review.id && !review.enforce"
@@ -100,7 +43,7 @@
             :badge-style="'DISABLED'"
           />
         </div>
-        <div class="flex items-center gap-x-2">
+        <div class="flex items-center gap-x-2 mt-4">
           <template v-if="!review.id">
             <NButton
               :disabled="!hasUpdatePolicyPermission"
@@ -137,13 +80,13 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { NCheckbox } from "naive-ui";
+<script setup lang="tsx">
+import { NCheckbox, NDataTable, NButton } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import type { BBGridColumn } from "@/bbkit";
-import { BBButtonConfirm, BBGrid } from "@/bbkit";
+import { BBButtonConfirm } from "@/bbkit";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
@@ -152,6 +95,7 @@ import { pushNotification, useCurrentUserV1, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import { getHighlightHTMLByRegExp } from "@/utils";
+import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
 
 const props = defineProps<{
   reviewList: SQLReviewPolicy[];
@@ -163,27 +107,81 @@ const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const sqlReviewStore = useSQLReviewStore();
 
-const columnList = computed((): BBGridColumn[] => {
+const columns = computed((): DataTableColumn<SQLReviewPolicy>[] => {
   return [
     {
-      title: t("common.resource"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
       title: t("common.name"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
+      key: "name",
+      resizable: true,
+      render: (review) => {
+        return <div innerHTML={highlight(review.name)}></div>;
+      },
     },
     {
-      title: t("common.enabled"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize justify-center",
+      title: t("common.resource"),
+      key: "resource",
+      resizable: true,
+      render: (review) => {
+        return (
+          <div>
+            {review.resources.length === 0 && <span>-</span>}
+            {review.resources.map((resource) => {
+              return (
+                <SQLReviewAttachedResource
+                  key={resource}
+                  resource={resource}
+                  showPrefix={true}
+                  link={true}
+                />
+              );
+            })}
+          </div>
+        );
+      },
+    },
+    {
+      title: () => {
+        return <div class="capitalize">{t("common.enabled")}</div>;
+      },
+      key: "enabled",
+      width: "7rem",
+      render: (review) => {
+        return (
+          <NCheckbox
+            disabled={!hasUpdatePolicyPermission.value}
+            checked={review.enforce}
+            onUpdate:checked={(on) => toggleReviewEnabled(review, on)}
+          />
+        );
+      },
     },
     {
       title: t("common.operations"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
+      key: "operations",
+      width: "15rem",
+      render: (review) => {
+        return (
+          <div class="flex items-center gap-x-2">
+            <NButton onClick={() => handleClickEdit(review)}>
+              {hasUpdatePolicyPermission.value
+                ? t("common.edit")
+                : t("common.view")}
+            </NButton>
+            {hasDeletePolicyPermission.value && (
+              <BBButtonConfirm
+                type={"default"}
+                style={"DELETE"}
+                hideIcon={true}
+                buttonText={t("common.delete")}
+                okText={t("common.delete")}
+                confirmTitle={t("common.delete") + ` '${review.name}'?`}
+                requireConfirm={true}
+                onConfirm={() => handleClickDelete(review)}
+              />
+            )}
+          </div>
+        );
+      },
     },
   ];
 });

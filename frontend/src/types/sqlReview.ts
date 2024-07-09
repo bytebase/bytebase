@@ -11,12 +11,6 @@ import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 
-export const LEVEL_LIST = [
-  SQLReviewRuleLevel.ERROR,
-  SQLReviewRuleLevel.WARNING,
-  SQLReviewRuleLevel.DISABLED,
-];
-
 // NumberPayload is the number type payload configuration options and default value.
 // Used by the frontend.
 export interface NumberPayload {
@@ -231,30 +225,17 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
   });
 })();
 
-interface RuleCategory {
-  id: string;
-  ruleList: RuleTemplateV2[];
-}
-
-// convertToCategoryList will reduce RuleTemplate list to RuleCategory list.
-export const convertToCategoryList = (
+// convertToCategoryMap will reduce RuleTemplate list to map by category.
+export const convertToCategoryMap = (
   ruleList: RuleTemplateV2[]
-): RuleCategory[] => {
-  const dict = ruleList.reduce(
-    (dict, rule) => {
-      if (!dict[rule.category]) {
-        dict[rule.category] = {
-          id: rule.category,
-          ruleList: [],
-        };
-      }
-      dict[rule.category].ruleList.push(rule);
-      return dict;
-    },
-    {} as { [key: string]: RuleCategory }
-  );
-
-  return Object.values(dict);
+): Map<string, RuleTemplateV2[]> => {
+  return ruleList.reduce((map, rule) => {
+    if (!map.has(rule.category)) {
+      map.set(rule.category, []);
+    }
+    map.get(rule.category)?.push(rule);
+    return map;
+  }, new Map<string, RuleTemplateV2[]>());
 };
 
 // The convertPolicyRuleToRuleTemplate will convert the review policy rule to rule template for frontend useage.

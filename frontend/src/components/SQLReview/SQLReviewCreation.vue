@@ -17,19 +17,14 @@
         <SQLReviewInfo
           :name="state.name"
           :resource-id="state.resourceId"
-          :attached-resources="state.attachedResources"
           :selected-template="
             state.pendingApplyTemplate || state.selectedTemplate
           "
           :is-edit="!!policy"
           :is-create="!isUpdate"
-          :allow-change-attached-resource="allowChangeAttachedResource"
           @select-template="tryApplyTemplate"
           @name-change="(val: string) => (state.name = val)"
           @resource-id-change="(val: string) => (state.resourceId = val)"
-          @attached-resources-change="
-            (val: string[]) => (state.attachedResources = val)
-          "
         />
       </template>
       <template #1>
@@ -48,7 +43,10 @@ import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
+import {
+  WORKSPACE_ROUTE_SQL_REVIEW,
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -71,7 +69,7 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
 import { rulesToTemplate } from "./components";
@@ -80,7 +78,6 @@ interface LocalState {
   currentStep: number;
   name: string;
   resourceId: string;
-  attachedResources: string[];
   selectedRuleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
   selectedTemplate: SQLReviewPolicyTemplateV2 | undefined;
   ruleUpdated: boolean;
@@ -123,7 +120,6 @@ const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   resourceId: props.policy ? getReviewConfigId(props.policy.id) : "",
-  attachedResources: props.selectedResources,
   selectedRuleMapByEngine: getRuleMapByEngine(props.selectedRuleList),
   selectedTemplate: props.policy
     ? rulesToTemplate(props.policy, false)
@@ -133,13 +129,6 @@ const state = reactive<LocalState>({
 });
 
 const isUpdate = computed(() => !!props.policy);
-
-const allowChangeAttachedResource = computed(() => {
-  if (isUpdate.value) {
-    return (props.policy?.resources ?? []).length === 0;
-  }
-  return props.selectedResources.length === 0;
-});
 
 const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   if (!template) {
@@ -161,13 +150,25 @@ const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   );
 };
 
-const onCancel = () => {
+const onCancel = (newPolicy: SQLReviewPolicy | undefined = undefined) => {
   if (props.policy) {
     emit("cancel");
   } else {
-    router.push({
-      name: WORKSPACE_ROUTE_SQL_REVIEW,
-    });
+    if (newPolicy) {
+      router.push({
+        name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+        params: {
+          sqlReviewPolicySlug: sqlReviewPolicySlug(newPolicy),
+        },
+        query: {
+          attachResourcePanel: 1,
+        },
+      });
+    } else {
+      router.push({
+        name: WORKSPACE_ROUTE_SQL_REVIEW,
+      });
+    }
   }
 };
 
@@ -177,7 +178,6 @@ const allowNext = computed((): boolean => {
       return (
         !!state.name &&
         !!state.resourceId &&
-        state.attachedResources.length > 0 &&
         state.selectedRuleMapByEngine.size > 0
       );
     case CONFIGURE_RULE_STEP:
@@ -220,7 +220,6 @@ const tryFinishSetup = async () => {
   const upsert = {
     title: state.name,
     ruleList: convertRuleMapToPolicyRuleList(state.selectedRuleMapByEngine),
-    resources: state.attachedResources,
   };
 
   if (isUpdate.value) {
@@ -234,12 +233,10 @@ const tryFinishSetup = async () => {
       style: "SUCCESS",
       title: t("sql-review.policy-updated"),
     });
+    onCancel();
   } else {
-    if (state.attachedResources.length === 0) {
-      return;
-    }
     try {
-      await store.createReviewPolicy({
+      const policy = await store.createReviewPolicy({
         ...upsert,
         id: `${reviewConfigNamePrefix}${state.resourceId}`,
       });
@@ -248,6 +245,7 @@ const tryFinishSetup = async () => {
         style: "SUCCESS",
         title: t("sql-review.policy-created"),
       });
+      onCancel(policy);
     } catch {
       pushNotification({
         module: "bytebase",
@@ -256,8 +254,6 @@ const tryFinishSetup = async () => {
       });
     }
   }
-
-  onCancel();
 };
 
 const tryApplyTemplate = (template: SQLReviewPolicyTemplateV2) => {
