@@ -288,8 +288,23 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 			if c == nil {
 				return nil
 			}
-			if _, _, err := common.GetProjectIDDeploymentConfigID(c.Target); err != nil {
-				// continue because this is not a plan that uses deployment config.
+			_, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
+			if err != nil {
+				// continue because this is not a plan that uses database group.
+				//nolint:nilerr
+				return nil
+			}
+			databaseGroup, err := exec.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ResourceID: &databaseGroupID})
+			if err != nil {
+				//nolint:nilerr
+				return nil
+			}
+			if databaseGroup == nil || !databaseGroup.Payload.Multitenancy {
+				return nil
+			}
+			isMatched, err := utils.CheckDatabaseGroupMatch(ctx, databaseGroup, createdDatabase)
+			if err != nil || !isMatched {
+				// continue if current database is not matched.
 				//nolint:nilerr
 				return nil
 			}
