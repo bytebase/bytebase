@@ -4,6 +4,7 @@ import Long from "long";
 import protobufjs from "protobufjs";
 import { createApp } from "vue";
 import App from "./App.vue";
+import Splash from "./Splash.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
@@ -194,7 +195,12 @@ const initBasicModules = async () => {
   ]);
 };
 
+const splash = createApp(Splash);
+splash.use(pinia).use(i18n).use(NaiveUI).mount("#app");
+
 initBasicModules().finally(() => {
+  splash.unmount();
+
   // Install router after the necessary data fetching is complete.
   app.use(router).use(highlight).use(i18n).use(NaiveUI);
   app.mount("#app");

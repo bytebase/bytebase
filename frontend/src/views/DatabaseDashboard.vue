@@ -157,8 +157,9 @@ onMounted(() => {
 });
 
 const databaseV1List = computed(() => {
+  const projects = new Set(projectList.value.map((project) => project.name));
   return sortDatabaseV1List(databaseV1Store.databaseList).filter((db) =>
-    projectList.value.map((project) => project.name).includes(db.project)
+    projects.has(db.project)
   );
 });
 
