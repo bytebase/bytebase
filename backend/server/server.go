@@ -312,6 +312,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			authProvider.AuthenticationStreamInterceptor,
 			contextProvider.StreamInterceptor,
 			aclProvider.ACLStreamInterceptor,
+			auditProvider.AuditStreamInterceptor,
 			recoveryStreamInterceptor,
 		),
 	)
