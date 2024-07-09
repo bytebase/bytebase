@@ -2230,6 +2230,7 @@
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
     "connection-string-schema": "Connection String Schema",
+    "connection-type": "Connection Type",
     "additional-node-addresses": "Additional Node Addresses",
     "replica-set": "Replica Set",
     "admin": "Admin",

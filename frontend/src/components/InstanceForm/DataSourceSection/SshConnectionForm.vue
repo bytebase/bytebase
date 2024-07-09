@@ -8,7 +8,7 @@
       :checked="state.type === sshType"
       @update:checked="handleSelectType(sshType, $event)"
     >
-      <span class="textlabel">{{ getSshTypeLabel(sshType) }}</span>
+      {{ getSshTypeLabel(sshType) }}
     </NRadio>
   </div>
 

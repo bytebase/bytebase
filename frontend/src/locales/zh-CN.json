@@ -2234,7 +2234,8 @@
     "replica-set": "副本集",
     "admin": "主库",
     "read-only": "从库",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "connection-type": "连接类型"
   },
   "setting": {
     "project": {

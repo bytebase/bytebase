@@ -431,9 +431,9 @@ message DataSource {
   // master_name is the master name used by connecting redis-master via redis sentinel.
   string master_name = 31;
 
-  // master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
+  // master_username and master_password are master credentials used by redis sentinel mode.
   string master_username = 32;
-  string master_obfuscated_password = 33;
+  string master_password = 33;
 
   enum RedisType {
     REDIS_TYPE_UNSPECIFIED = 0;
