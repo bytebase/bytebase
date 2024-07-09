@@ -620,7 +620,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
 					Text:     text,
-					LastLine: t.line,
+					LastLine: t.line - 1, // Convert to 0-based.
 					Empty:    t.emptyStatement,
 				})
 			}
@@ -648,7 +648,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine: t.line - t.aboveNonBlankLineDistance(),
+						LastLine: t.line - t.aboveNonBlankLineDistance() - 1, // Convert to 0-based.
 						Empty:    t.emptyStatement,
 					})
 				}

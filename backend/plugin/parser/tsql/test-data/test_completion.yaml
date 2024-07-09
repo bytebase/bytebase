@@ -1,3 +1,52 @@
+- description: Multiple statements
+  input: |-
+    select count(1) from t1 where id; SELECT * FROM |
+    select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
+  want:
+    - text: Company
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: School
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: MySchema
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: dbo
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: Address
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: Employees
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: qjd
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: EmployeeId
+      type: COLUMN
+      definition: Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Employees | int, NOT NULL
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Employees | varchar, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Address | varchar, NOT NULL
+      comment: ""
 - description: Column alias can be used in order by clause
   input: SELECT Id AS IdAlias, Name FROM Employees ORDER BY |;
   want:
