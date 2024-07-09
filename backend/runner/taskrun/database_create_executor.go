@@ -299,7 +299,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 				//nolint:nilerr
 				return nil
 			}
-			if !databaseGroup.Payload.Multitenancy {
+			if databaseGroup == nil || !databaseGroup.Payload.Multitenancy {
 				return nil
 			}
 			isMatched, err := utils.CheckDatabaseGroupMatch(ctx, databaseGroup, createdDatabase)
