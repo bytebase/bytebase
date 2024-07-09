@@ -23,6 +23,7 @@ import {
 import { sheetNameOfTaskV1 } from "@/utils";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
+import LogTimeCell from "./LogTimeCell.vue";
 import StatementCell from "./StatementCell.vue";
 import { type FlattenLogEntry, displayTaskRunLogEntryType } from "./common";
 
@@ -236,6 +237,15 @@ const columns = computed(() => {
       rowSpan: detailCellRowSpan,
       render: (entry) => {
         return <DetailCell entry={entry} sheet={sheet.value} />;
+      },
+    },
+    {
+      key: "log-time",
+      title: () => t("common.time"),
+      width: 120,
+      rowSpan,
+      render: (entry) => {
+        return <LogTimeCell entry={entry} />;
       },
     },
     {
