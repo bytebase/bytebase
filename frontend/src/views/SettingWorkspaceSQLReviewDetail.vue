@@ -6,7 +6,6 @@
     class="mt-1"
     :policy="reviewPolicy"
     :name="reviewPolicy.name"
-    :selected-resources="reviewPolicy.resources"
     :selected-rule-list="ruleListOfPolicy"
     @cancel="state.editMode = false"
   />

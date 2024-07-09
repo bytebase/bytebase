@@ -129,10 +129,12 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     async createReviewPolicy({
       id,
       title,
+      resources,
       ruleList,
     }: {
       id: string;
       title: string;
+      resources: string[];
       ruleList: SchemaPolicyRule[];
     }) {
       const reviewConfig = await reviewConfigServiceClient.createReviewConfig({
@@ -152,6 +154,13 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         },
       });
 
+      await this.upsertReviewConfigTag({
+        oldResources: [],
+        newResources: resources,
+        review: reviewConfig.name,
+      });
+
+      reviewConfig.resources = resources;
       const reviewPolicy = convertToSQLReviewPolicy(reviewConfig);
       if (!reviewPolicy) {
         throw new Error(

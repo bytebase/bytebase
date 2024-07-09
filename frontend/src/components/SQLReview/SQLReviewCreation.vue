@@ -17,14 +17,19 @@
         <SQLReviewInfo
           :name="state.name"
           :resource-id="state.resourceId"
+          :attached-resources="state.attachedResources"
           :selected-template="
             state.pendingApplyTemplate || state.selectedTemplate
           "
           :is-edit="!!policy"
           :is-create="!isUpdate"
+          :allow-change-attached-resource="false"
           @select-template="tryApplyTemplate"
           @name-change="(val: string) => (state.name = val)"
           @resource-id-change="(val: string) => (state.resourceId = val)"
+          @attached-resources-change="
+            (val: string[]) => (state.attachedResources = val)
+          "
         />
       </template>
       <template #1>
@@ -78,6 +83,7 @@ interface LocalState {
   currentStep: number;
   name: string;
   resourceId: string;
+  attachedResources: string[];
   selectedRuleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
   selectedTemplate: SQLReviewPolicyTemplateV2 | undefined;
   ruleUpdated: boolean;
@@ -88,12 +94,13 @@ const props = withDefaults(
   defineProps<{
     policy?: SQLReviewPolicy;
     name?: string;
-    selectedResources: string[];
+    selectedResources?: string[];
     selectedRuleList?: RuleTemplateV2[];
   }>(),
   {
     policy: undefined,
     name: "",
+    selectedResources: () => [],
     selectedRuleList: () => [],
   }
 );
@@ -120,6 +127,7 @@ const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   resourceId: props.policy ? getReviewConfigId(props.policy.id) : "",
+  attachedResources: props.selectedResources,
   selectedRuleMapByEngine: getRuleMapByEngine(props.selectedRuleList),
   selectedTemplate: props.policy
     ? rulesToTemplate(props.policy, false)
@@ -161,7 +169,7 @@ const onCancel = (newPolicy: SQLReviewPolicy | undefined = undefined) => {
           sqlReviewPolicySlug: sqlReviewPolicySlug(newPolicy),
         },
         query: {
-          attachResourcePanel: 1,
+          attachResourcePanel: newPolicy.resources.length === 0 ? 1 : undefined,
         },
       });
     } else {
@@ -238,6 +246,7 @@ const tryFinishSetup = async () => {
     try {
       const policy = await store.createReviewPolicy({
         ...upsert,
+        resources: state.attachedResources,
         id: `${reviewConfigNamePrefix}${state.resourceId}`,
       });
       pushNotification({
