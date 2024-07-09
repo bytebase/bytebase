@@ -12,12 +12,15 @@
             class="textinfo"
           >
             <template #create>
-              <span
-                class="normal-link cursor-pointer lowercase"
+              <NButton
+                text
+                type="primary"
+                class="normal-link lowercase"
                 @click="createPolicy"
+                @disabled="!allowCreateSQLReviewPolicy"
               >
                 {{ $t("sql-review.create-policy") }}
-              </span>
+              </NButton>
             </template>
           </i18n-t>
           <SQLReviewPolicyDataTable
@@ -41,13 +44,14 @@
 </template>
 
 <script setup lang="ts">
-import { watchEffect } from "vue";
+import { watchEffect, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";
-import { useSQLReviewStore, pushNotification } from "@/store";
+import { useSQLReviewStore, useCurrentUserV1, pushNotification } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   show: boolean;
@@ -61,9 +65,14 @@ const emit = defineEmits<{
 const sqlReviewStore = useSQLReviewStore();
 const router = useRouter();
 const { t } = useI18n();
+const me = useCurrentUserV1();
 
 watchEffect(() => {
   sqlReviewStore.fetchReviewPolicyList();
+});
+
+const allowCreateSQLReviewPolicy = computed(() => {
+  return hasWorkspacePermissionV2(me.value, "bb.policies.create");
 });
 
 const createPolicy = () => {

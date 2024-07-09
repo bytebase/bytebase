@@ -19,7 +19,7 @@
         </span>
       </div>
       <NButton
-        v-else-if="allowCreateSQLReviewPolicy"
+        v-else-if="allowEdit"
         @click.prevent="showReviewSelectPanel = true"
       >
         {{ $t("sql-review.configure-policy") }}
@@ -64,12 +64,6 @@ const showReviewSelectPanel = ref<boolean>(false);
 const allowEditSQLReviewPolicy = computed(() => {
   return (
     props.allowEdit && hasWorkspacePermissionV2(me.value, "bb.policies.update")
-  );
-});
-
-const allowCreateSQLReviewPolicy = computed(() => {
-  return (
-    props.allowEdit && hasWorkspacePermissionV2(me.value, "bb.policies.create")
   );
 });
 
