@@ -1,6 +1,6 @@
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
-import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 
 export type SQLRuleFilterParams = {
   checkedLevel: Set<SQLReviewRuleLevel>;
@@ -11,7 +11,10 @@ export type SQLRuleFilterParams = {
 export const useSQLRuleFilter = () => {
   const route = useRoute();
   const params = reactive<SQLRuleFilterParams>({
-    checkedLevel: new Set(),
+    checkedLevel: new Set([
+      SQLReviewRuleLevel.ERROR,
+      SQLReviewRuleLevel.WARNING,
+    ]),
     selectedCategory: route.query.category
       ? (route.query.category as string)
       : undefined,
@@ -33,7 +36,10 @@ export const useSQLRuleFilter = () => {
     },
     reset() {
       this.changeCategory(undefined);
-      params.checkedLevel = new Set();
+      params.checkedLevel = new Set([
+        SQLReviewRuleLevel.ERROR,
+        SQLReviewRuleLevel.WARNING,
+      ]);
     },
   };
   return { params, events };

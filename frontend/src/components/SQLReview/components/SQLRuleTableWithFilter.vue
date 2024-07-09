@@ -5,7 +5,11 @@
     v-on="filterEvents"
   >
     <template
-      #default="{ ruleList: filteredRuleList }: { ruleList: RuleTemplateV2[] }"
+      #default="{
+        ruleList: filteredRuleList,
+      }: {
+        ruleList: RuleListWithCategory[];
+      }"
     >
       <SQLRuleTable
         v-if="filteredRuleList.length > 0"
@@ -27,6 +31,7 @@ import {
 } from "@/components/SQLReview/components";
 import type { RuleTemplateV2 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
+import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 
 const props = defineProps<{
   engine: Engine;

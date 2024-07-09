@@ -2796,6 +2796,8 @@
     "disabled": "Disabled",
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
+    "select-review": "Select SQL review",
+    "select-review-label": "You can attach an existed SQL review policy to the resource, or {create}.",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
     "policy-removed": "Successfully removed the review policy.",
@@ -2813,7 +2815,14 @@
     "not-available-for-free": "Rule is not available for {plan}",
     "unlock-full-feature": "Unlock 100+ SQL lint rules",
     "search-by-name": "Search by name",
-    "no-linked-resources": "No linked resources",
+    "attach-resource": {
+      "no-linked-resources": "No attached resources",
+      "change-resources": "Change attached resources",
+      "self": "Attach to resources",
+      "label": "Apply the review policy to the selected resource. One resource can only link one policy. The database will use the SQL review policy attached to the project, otherwise fallback to the environment policy.",
+      "label-environment": "The SQL review policy will effect all databases belongs to the selected environment.",
+      "label-project": "The SQL review policy will effect all databases belongs to the selected project. The SQL review policy for environment will be ignored."
+    },
     "create": {
       "breadcrumb": "Create SQL review policy",
       "basic-info": {
@@ -2822,10 +2831,6 @@
         "display-name-placeholder": "The review policy name",
         "display-name-default": "SQL review policy",
         "display-name-label": "A display name to help identifying among different review policies.",
-        "attach-resource": "Attach to resource",
-        "attach-resource-label": "Apply the review policy to the selected resource. One resource can only link one policy. The database will use the SQL review policy attached to the project, otherwise fallback to the environment policy.",
-        "attach-resource-info-environment": "The SQL review policy will effect all databases belongs to the selected environment.",
-        "attach-resource-info-project": "The SQL review policy will effect all databases belongs to the selected project. The SQL review policy for environment will be ignored.",
         "choose-template": "Choose template"
       },
       "configure-rule": {

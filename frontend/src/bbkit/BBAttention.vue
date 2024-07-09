@@ -1,6 +1,8 @@
 <template>
   <NAlert :title="displayTitle" :type="type">
-    <div class="flex items-center justify-between">
+    <div
+      class="flex flex-col justify-start items-start md:flex-row md:items-center md:justify-between"
+    >
       <slot name="default">
         <div v-if="description" class="mt-2 text-sm">
           <p class="whitespace-pre-wrap">
@@ -13,7 +15,7 @@
       <slot name="action">
         <div
           v-if="actionText != ''"
-          class="flex items-center justify-end mt-2 md:mt-0 md:ml-2"
+          class="flex items-center justify-end mt-4 md:mt-0 md:ml-2"
         >
           <NButton :type="buttonType" @click.prevent="$emit('click')">
             {{ $t(actionText) }}

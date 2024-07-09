@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-6">
-    <div>
+    <div v-if="attachedResources.length > 0">
       <label class="textlabel">
-        {{ $t("sql-review.create.basic-info.attach-resource") }}
+        {{ $t("sql-review.attach-resource.self") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel">
-        {{ $t("sql-review.create.basic-info.attach-resource-label") }}
+        {{ $t("sql-review.attach-resource.label") }}
       </p>
       <NRadioGroup
         v-model:value="attachResourceType"
@@ -17,11 +17,7 @@
         <NRadio value="project">{{ $t("common.project") }}</NRadio>
       </NRadioGroup>
       <BBAttention type="info" class="my-2">
-        {{
-          $t(
-            `sql-review.create.basic-info.attach-resource-info-${attachResourceType}`
-          )
-        }}
+        {{ $t(`sql-review.attach-resource.label-${attachResourceType}`) }}
       </BBAttention>
       <EnvironmentSelect
         v-if="attachResourceType === 'environment'"

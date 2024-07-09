@@ -15,7 +15,9 @@
         {{ data.label }}
       </template>
       <template #default>
-        <slot :rule-list="data.ruleList" />
+        <slot
+          :rule-list="data.value === 'all' ? tabItemList.slice(1) : [data]"
+        />
       </template>
     </NTabPane>
   </NTabs>
@@ -27,7 +29,13 @@ import { NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";
-import { convertToCategoryList } from "@/types";
+import { convertToCategoryMap } from "@/types";
+
+export interface RuleListWithCategory {
+  value: string;
+  label: string;
+  ruleList: RuleTemplateV2[];
+}
 
 interface LocalState {
   selectedTab: string;
@@ -70,22 +78,23 @@ watch(
 );
 
 const tabItemList = computed(() => {
-  const list = [
+  const list: RuleListWithCategory[] = [
     {
       value: "all",
       label: t("common.all"),
-      ruleList: props.ruleList,
+      ruleList: [],
     },
   ];
-  list.push(
-    ...convertToCategoryList(props.ruleList).map((category) => {
-      return {
-        value: category.id,
-        label: t(`sql-review.category.${category.id.toLowerCase()}`),
-        ruleList: category.ruleList,
-      };
-    })
-  );
+
+  for (const [category, ruleList] of convertToCategoryMap(
+    props.ruleList
+  ).entries()) {
+    list.push({
+      value: category,
+      label: t(`sql-review.category.${category.toLowerCase()}`),
+      ruleList: ruleList,
+    });
+  }
   return list;
 });
 </script>
