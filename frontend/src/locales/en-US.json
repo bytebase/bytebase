@@ -1242,9 +1242,16 @@
         "affected-rows": "Affected rows",
         "entry-type": {
           "command-execute": "Command execute",
-          "schema-dump": "Schema dump"
+          "schema-dump": "Schema dump",
+          "task-run-status-update": "Status update",
+          "transaction-control": "Transaction control",
+          "database-sync": "Database sync"
         },
-        "affected-rows-n": "Affected rows: {n}"
+        "affected-rows-n": "Affected rows: {n}",
+        "status-update": {
+          "waiting": "Ready to be executed",
+          "running": "Being executed"
+        }
       }
     },
     "sql-review": {

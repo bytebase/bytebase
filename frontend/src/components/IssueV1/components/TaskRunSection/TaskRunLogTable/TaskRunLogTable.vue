@@ -23,8 +23,9 @@ import {
 import { sheetNameOfTaskV1 } from "@/utils";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
+import LogTimeCell from "./LogTimeCell.vue";
 import StatementCell from "./StatementCell.vue";
-import { type FlattenLogEntry } from "./common";
+import { type FlattenLogEntry, displayTaskRunLogEntryType } from "./common";
 
 const props = defineProps<{
   taskRun: TaskRun;
@@ -69,8 +70,51 @@ const logEntries = computed(() => {
 const flattenLogEntries = computed(() => {
   const flattenEntries: FlattenLogEntry[] = [];
   logEntries.value.forEach((entry, batch) => {
-    if (entry.type === TaskRunLogEntry_Type.SCHEMA_DUMP && entry.schemaDump) {
-      const { schemaDump } = entry;
+    const {
+      type,
+      taskRunStatusUpdate,
+      schemaDump,
+      commandExecute,
+      transactionControl,
+      databaseSync,
+    } = entry;
+    if (
+      type === TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE &&
+      taskRunStatusUpdate
+    ) {
+      flattenEntries.push({
+        batch,
+        serial: 0,
+        type: TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE,
+        startTime: entry.logTime,
+        endTime: undefined,
+        taskRunStatusUpdate,
+      });
+    }
+    if (type === TaskRunLogEntry_Type.DATABASE_SYNC && databaseSync) {
+      flattenEntries.push({
+        batch,
+        serial: 0,
+        type: TaskRunLogEntry_Type.DATABASE_SYNC,
+        startTime: databaseSync.startTime,
+        endTime: databaseSync.endTime,
+        databaseSync,
+      });
+    }
+    if (
+      type === TaskRunLogEntry_Type.TRANSACTION_CONTROL &&
+      transactionControl
+    ) {
+      flattenEntries.push({
+        batch,
+        serial: 0,
+        type: TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+        startTime: entry.logTime,
+        endTime: undefined,
+        transactionControl,
+      });
+    }
+    if (type === TaskRunLogEntry_Type.SCHEMA_DUMP && schemaDump) {
       flattenEntries.push({
         batch,
         serial: 0,
@@ -80,15 +124,14 @@ const flattenLogEntries = computed(() => {
         schemaDump,
       });
     }
-    if (
-      entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
-      entry.commandExecute
-    ) {
-      const { commandExecute } = entry;
+    if (type === TaskRunLogEntry_Type.COMMAND_EXECUTE && commandExecute) {
       const { response, logTime: startTime } = commandExecute;
       commandExecute.commandIndexes.forEach((commandIndex, serial) => {
         let affectedRows = response?.affectedRows;
-        if (commandExecute.commandIndexes.length === response?.allAffectedRows.length) {
+        if (
+          commandExecute.commandIndexes.length ===
+          response?.allAffectedRows.length
+        ) {
           affectedRows = response?.allAffectedRows[serial] ?? affectedRows;
         }
         const endTime = response?.logTime;
@@ -143,7 +186,7 @@ const columns = computed(() => {
   const columns: (DataTableColumn<FlattenLogEntry> & { hide?: boolean })[] = [
     {
       key: "batch",
-      title: () => t("issue.task-run.task-run-log.batch"),
+      title: () => "",
       width: 50,
       className: "whitespace-nowrap",
       titleColSpan: splitBatchAndSerialCol ? 2 : 1,
@@ -158,7 +201,7 @@ const columns = computed(() => {
     },
     {
       key: "serial",
-      title: () => "serial",
+      title: () => "",
       width: 50,
       className: "whitespace-nowrap",
       hide: !splitBatchAndSerialCol,
@@ -172,12 +215,7 @@ const columns = computed(() => {
       width: 120,
       className: "whitespace-nowrap",
       render: (entry) => {
-        const text =
-          entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
-            ? t("issue.task-run.task-run-log.entry-type.command-execute")
-            : entry.type === TaskRunLogEntry_Type.SCHEMA_DUMP
-              ? t("issue.task-run.task-run-log.entry-type.schema-dump")
-              : "";
+        const text = displayTaskRunLogEntryType(entry.type);
         if (text) {
           return <span class="text-sm">{text}</span>;
         }
@@ -187,7 +225,7 @@ const columns = computed(() => {
     {
       key: "statement",
       title: () => t("common.statement"),
-      width: '60%',
+      width: "60%",
       render: (entry) => {
         return <StatementCell entry={entry} sheet={sheet.value} />;
       },
@@ -195,10 +233,19 @@ const columns = computed(() => {
     {
       key: "detail",
       title: () => t("common.detail"),
-      width: '40%',
+      width: "40%",
       rowSpan: detailCellRowSpan,
       render: (entry) => {
         return <DetailCell entry={entry} sheet={sheet.value} />;
+      },
+    },
+    {
+      key: "log-time",
+      title: () => t("common.time"),
+      width: 120,
+      rowSpan,
+      render: (entry) => {
+        return <LogTimeCell entry={entry} />;
       },
     },
     {

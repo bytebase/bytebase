@@ -1242,9 +1242,16 @@
         "affected-rows": "影響を受ける行",
         "entry-type": {
           "command-execute": "コマンド実行",
-          "schema-dump": "スキーマダンプ"
+          "schema-dump": "スキーマダンプ",
+          "task-run-status-update": "ステータスアップデート",
+          "transaction-control": "トランザクション制御",
+          "database-sync": "データベースの同期"
         },
-        "affected-rows-n": "影響を受ける行: {n}"
+        "affected-rows-n": "影響を受ける行: {n}",
+        "status-update": {
+          "waiting": "実行の準備完了",
+          "running": "処刑される"
+        }
       }
     },
     "sql-review": {
