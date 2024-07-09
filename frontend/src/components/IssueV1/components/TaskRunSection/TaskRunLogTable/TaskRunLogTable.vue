@@ -87,7 +87,7 @@ const flattenLogEntries = computed(() => {
         serial: 0,
         type: TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE,
         startTime: entry.logTime,
-        endTime: entry.logTime,
+        endTime: undefined,
         taskRunStatusUpdate,
       });
     }
@@ -110,7 +110,7 @@ const flattenLogEntries = computed(() => {
         serial: 0,
         type: TaskRunLogEntry_Type.TRANSACTION_CONTROL,
         startTime: entry.logTime,
-        endTime: entry.logTime,
+        endTime: undefined,
         transactionControl,
       });
     }
