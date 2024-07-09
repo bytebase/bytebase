@@ -1146,6 +1146,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 				// We need to adjust the caret offset.
 				newCaretOffset = caretOffset - list[i-1].LastColumn - 1 // Convert to 0-based.
 			}
+			break
 		}
 	}
 
