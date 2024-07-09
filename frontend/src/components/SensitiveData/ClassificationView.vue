@@ -3,7 +3,7 @@
     <div>
       <div class="flex items-center space-x-2">
         <NSwitch
-          :value="!state.classification.classificationFromConfig"
+          :value="state.classification.classificationFromConfig"
           :disabled="!allowEdit || !hasSensitiveDataFeature"
           @update:value="onClassificationConfigChange"
         />
@@ -101,6 +101,7 @@
 </template>
 
 <script lang="ts" setup>
+import { head } from "lodash-es";
 import { NSwitch, useDialog, NDivider } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
@@ -141,14 +142,13 @@ const state = reactive<LocalState>({
   showExampleModal: false,
   showOverrideModal: false,
   classification:
+    head(settingStore.classification) ||
     DataClassificationSetting_DataClassificationConfig.fromPartial({
       id: uuidv4(),
     }),
 });
 
 const onClassificationConfigChange = (on: boolean) => {
-  state.classification.classificationFromConfig = !on;
-
   $dialog.warning({
     title: t("common.warning"),
     content: on
@@ -158,6 +158,7 @@ const onClassificationConfigChange = (on: boolean) => {
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {
+      state.classification.classificationFromConfig = on;
       await settingStore.upsertSetting({
         name: "bb.workspace.data-classification",
         value: {
