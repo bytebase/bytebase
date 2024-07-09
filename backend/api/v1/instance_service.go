@@ -874,6 +874,20 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "use_ssl":
 			dataSource.UseSSL = request.DataSource.UseSsl
 			patch.UseSSL = &request.DataSource.UseSsl
+		case "redis_type":
+			redisType := convertToStoreRedisType(request.DataSource.RedisType)
+			dataSource.RedisType = redisType
+			patch.RedisType = &redisType
+		case "master_name":
+			dataSource.MasterName = request.DataSource.MasterName
+			patch.MasterName = &request.DataSource.MasterName
+		case "master_username":
+			dataSource.MasterUsername = request.DataSource.MasterUsername
+			patch.MasterUsername = &request.DataSource.MasterUsername
+		case "master_password":
+			obfuscated := common.Obfuscate(request.DataSource.MasterPassword, s.secret)
+			dataSource.MasterObfuscatedPassword = obfuscated
+			patch.MasterObfuscatedPassword = &obfuscated
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1184,6 +1198,9 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			Region:                 ds.Region,
 			WarehouseId:            ds.WarehouseID,
 			UseSsl:                 ds.UseSSL,
+			RedisType:              convertToV1RedisType(ds.RedisType),
+			MasterName:             ds.MasterName,
+			MasterUsername:         ds.MasterUsername,
 		})
 	}
 
@@ -1316,6 +1333,32 @@ func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) st
 	return authenticationType
 }
 
+func convertToStoreRedisType(redisType v1pb.DataSource_RedisType) storepb.DataSourceOptions_RedisType {
+	authenticationType := storepb.DataSourceOptions_REDIS_TYPE_UNSPECIFIED
+	switch redisType {
+	case v1pb.DataSource_STANDALONE:
+		authenticationType = storepb.DataSourceOptions_STANDALONE
+	case v1pb.DataSource_SENTINEL:
+		authenticationType = storepb.DataSourceOptions_SENTINEL
+	case v1pb.DataSource_CLUSTER:
+		authenticationType = storepb.DataSourceOptions_CLUSTER
+	}
+	return authenticationType
+}
+
+func convertToV1RedisType(redisType storepb.DataSourceOptions_RedisType) v1pb.DataSource_RedisType {
+	authenticationType := v1pb.DataSource_STANDALONE
+	switch redisType {
+	case storepb.DataSourceOptions_STANDALONE:
+		authenticationType = v1pb.DataSource_STANDALONE
+	case storepb.DataSourceOptions_SENTINEL:
+		authenticationType = v1pb.DataSource_SENTINEL
+	case storepb.DataSourceOptions_CLUSTER:
+		authenticationType = v1pb.DataSource_CLUSTER
+	}
+	return authenticationType
+}
+
 func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
 	dsType, err := convertDataSourceTp(dataSource.Type)
 	if err != nil {
@@ -1357,6 +1400,11 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		Region:                             dataSource.Region,
 		AccountID:                          dataSource.AccountId,
 		WarehouseID:                        dataSource.WarehouseId,
+		UseSSL:                             dataSource.UseSsl,
+		RedisType:                          convertToStoreRedisType(dataSource.RedisType),
+		MasterName:                         dataSource.MasterName,
+		MasterUsername:                     dataSource.MasterUsername,
+		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
 	}, nil
 }
 

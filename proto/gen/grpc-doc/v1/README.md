@@ -1660,8 +1660,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | account_id | [string](#string) |  | account_id is used by Databricks. |
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
 | master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
-| master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
-| master_obfuscated_password | [string](#string) |  |  |
+| master_username | [string](#string) |  | master_username and master_password are master credentials used by redis sentinel mode. |
+| master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
 
 

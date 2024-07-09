@@ -1,3 +1,23 @@
+- input: |-
+    select count(1) from t1 where id; SELECT * FROM |
+    select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
+  want:
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT x.| FROM (SELECT * FROM t2) x
   want:
     - text: c1
