@@ -2794,7 +2794,7 @@
   "sql-review": {
     "title": "SQL 审核策略",
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
-    "disabled": "已禁用",
+    "disabled": "SQL 审核策略已禁用",
     "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
     "select-review": "选择 SQL 审核",

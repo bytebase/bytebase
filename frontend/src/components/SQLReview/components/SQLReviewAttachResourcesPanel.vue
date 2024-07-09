@@ -50,7 +50,11 @@
           <NButton @click="$emit('close')">
             {{ $t("common.cancel") }}
           </NButton>
-          <NButton type="primary" @click="upsertReviewResource">
+          <NButton
+            :disabled="!hasPermission"
+            type="primary"
+            @click="upsertReviewResource"
+          >
             {{ $t("common.confirm") }}
           </NButton>
         </div>
@@ -64,12 +68,13 @@ import { NDivider } from "naive-ui";
 import { watch, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ProjectSelect } from "@/components/v2";
-import { useSQLReviewStore, pushNotification } from "@/store";
+import { useSQLReviewStore, pushNotification, useCurrentUserV1 } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "@/types";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   show: boolean;
@@ -80,6 +85,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const me = useCurrentUserV1();
 const resources = ref<string[]>([]);
 const sqlReviewStore = useSQLReviewStore();
 const { t } = useI18n();
@@ -91,6 +97,10 @@ watch(
   },
   { immediate: true, deep: true }
 );
+
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV2(me.value, "bb.policies.update");
+});
 
 const environments = computed(() =>
   resources.value.filter((resource) =>
