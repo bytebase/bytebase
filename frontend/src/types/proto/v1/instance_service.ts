@@ -560,9 +560,9 @@ export interface DataSource {
   warehouseId: string;
   /** master_name is the master name used by connecting redis-master via redis sentinel. */
   masterName: string;
-  /** master_username and master_obfuscated_password are master credentials used by redis sentinel mode. */
+  /** master_username and master_password are master credentials used by redis sentinel mode. */
   masterUsername: string;
-  masterObfuscatedPassword: string;
+  masterPassword: string;
   redisType: DataSource_RedisType;
 }
 
@@ -2546,7 +2546,7 @@ function createBaseDataSource(): DataSource {
     warehouseId: "",
     masterName: "",
     masterUsername: "",
-    masterObfuscatedPassword: "",
+    masterPassword: "",
     redisType: DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
   };
 }
@@ -2649,8 +2649,8 @@ export const DataSource = {
     if (message.masterUsername !== "") {
       writer.uint32(258).string(message.masterUsername);
     }
-    if (message.masterObfuscatedPassword !== "") {
-      writer.uint32(266).string(message.masterObfuscatedPassword);
+    if (message.masterPassword !== "") {
+      writer.uint32(266).string(message.masterPassword);
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       writer.uint32(272).int32(dataSource_RedisTypeToNumber(message.redisType));
@@ -2894,7 +2894,7 @@ export const DataSource = {
             break;
           }
 
-          message.masterObfuscatedPassword = reader.string();
+          message.masterPassword = reader.string();
           continue;
         case 34:
           if (tag !== 272) {
@@ -2956,9 +2956,7 @@ export const DataSource = {
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
       masterName: isSet(object.masterName) ? globalThis.String(object.masterName) : "",
       masterUsername: isSet(object.masterUsername) ? globalThis.String(object.masterUsername) : "",
-      masterObfuscatedPassword: isSet(object.masterObfuscatedPassword)
-        ? globalThis.String(object.masterObfuscatedPassword)
-        : "",
+      masterPassword: isSet(object.masterPassword) ? globalThis.String(object.masterPassword) : "",
       redisType: isSet(object.redisType)
         ? dataSource_RedisTypeFromJSON(object.redisType)
         : DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
@@ -3063,8 +3061,8 @@ export const DataSource = {
     if (message.masterUsername !== "") {
       obj.masterUsername = message.masterUsername;
     }
-    if (message.masterObfuscatedPassword !== "") {
-      obj.masterObfuscatedPassword = message.masterObfuscatedPassword;
+    if (message.masterPassword !== "") {
+      obj.masterPassword = message.masterPassword;
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       obj.redisType = dataSource_RedisTypeToJSON(message.redisType);
@@ -3113,7 +3111,7 @@ export const DataSource = {
     message.warehouseId = object.warehouseId ?? "";
     message.masterName = object.masterName ?? "";
     message.masterUsername = object.masterUsername ?? "";
-    message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
+    message.masterPassword = object.masterPassword ?? "";
     message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
     return message;
   },

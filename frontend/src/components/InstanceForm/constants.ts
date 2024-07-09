@@ -92,5 +92,7 @@ export const MongoDBConnectionStringSchemaList = [
   "mongodb+srv://",
 ];
 
+export const RedisConnectionType = ["Standalone", "Sentinel", "Cluster"];
+
 export const SnowflakeExtraLinkPlaceHolder =
   "https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false";
