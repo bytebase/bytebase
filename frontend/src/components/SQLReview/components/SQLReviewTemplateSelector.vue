@@ -23,7 +23,7 @@
           <span class="text-base mt-4 font-medium">
             {{ template.review.name }}
           </span>
-          <div>
+          <div class="space-y-2">
             <BBBadge
               v-for="resource in template.review.resources"
               :key="resource"

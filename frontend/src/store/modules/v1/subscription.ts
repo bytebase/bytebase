@@ -2,10 +2,9 @@ import dayjs from "dayjs";
 import { defineStore } from "pinia";
 import type { Ref } from "vue";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { subscriptionServiceClient } from "@/grpcweb";
 import type { FeatureType } from "@/types";
-import { PLANS, planTypeToString, instanceLimitFeature } from "@/types";
+import { PLANS, instanceLimitFeature } from "@/types";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import type { Subscription } from "@/types/proto/v1/subscription_service";
 import {
@@ -195,30 +194,6 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         }
       }
       return PlanType.FREE;
-    },
-    getRquiredPlanString(type: FeatureType): string {
-      const { t } = useI18n();
-      const plan = t(
-        `subscription.plan.${planTypeToString(
-          this.getMinimumRequiredPlan(type)
-        )}.title`
-      );
-      return t("subscription.require-subscription", { requiredPlan: plan });
-    },
-    getFeatureRequiredPlanString(type: FeatureType): string {
-      const { t } = useI18n();
-      const minRequiredPlan = this.getMinimumRequiredPlan(type);
-
-      const requiredPlan = t(
-        `subscription.plan.${planTypeToString(minRequiredPlan)}.title`
-      );
-      const feature = t(
-        `subscription.features.${type.replace(/\./g, "-")}.title`
-      );
-      return t("subscription.feature-require-subscription", {
-        feature,
-        requiredPlan,
-      });
     },
     async fetchSubscription() {
       try {
