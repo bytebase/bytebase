@@ -145,7 +145,14 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { computed, reactive, watch, watchEffect } from "vue";
+import {
+  computed,
+  reactive,
+  watch,
+  watchEffect,
+  onMounted,
+  nextTick,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
@@ -166,7 +173,7 @@ import {
   convertRuleMapToPolicyRuleList,
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, sqlReviewNameFromSlug } from "@/utils";
 
 const props = defineProps<{
   sqlReviewPolicySlug: string;
@@ -206,17 +213,25 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
+const sqlReviewName = computed(() =>
+  sqlReviewNameFromSlug(props.sqlReviewPolicySlug)
+);
+
 watchEffect(async () => {
-  await store.getOrFetchReviewPolicyByName(props.sqlReviewPolicySlug);
+  await store.getOrFetchReviewPolicyByName(sqlReviewName.value);
+});
+
+onMounted(() => {
   if (route.query.attachResourcePanel && hasPermission.value) {
-    state.showResourcePanel = true;
+    nextTick(() => {
+      state.showResourcePanel = true;
+    });
   }
 });
 
 const reviewPolicy = computed(() => {
   return (
-    store.getReviewPolicyByName(props.sqlReviewPolicySlug) ??
-    unknown("SQL_REVIEW")
+    store.getReviewPolicyByName(sqlReviewName.value) ?? unknown("SQL_REVIEW")
   );
 });
 

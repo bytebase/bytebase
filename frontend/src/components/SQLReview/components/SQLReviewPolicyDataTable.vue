@@ -10,6 +10,7 @@
 </template>
 
 <script setup lang="tsx">
+import { CheckIcon, XIcon } from "lucide-vue-next";
 import { NCheckbox, NDataTable, NButton } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
@@ -102,12 +103,16 @@ const columns = computed(
         key: "enabled",
         width: "7rem",
         render: (review: SQLReviewPolicy) => {
-          return (
+          return props.allowEdit ? (
             <NCheckbox
               disabled={!hasUpdatePolicyPermission.value || !props.allowEdit}
               checked={review.enforce}
               onUpdate:checked={(on) => toggleReviewEnabled(review, on)}
             />
+          ) : review.enforce ? (
+            <CheckIcon class="w-4 h-4 textinfolabel" />
+          ) : (
+            <XIcon class="w-4 h-4 textinfolabel" />
           );
         },
       },

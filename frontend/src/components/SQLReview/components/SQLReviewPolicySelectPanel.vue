@@ -9,7 +9,7 @@
           <i18n-t
             keypath="sql-review.select-review-label"
             tag="p"
-            class="textinfo"
+            class="textinfolabel"
           >
             <template #create>
               <NButton
