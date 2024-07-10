@@ -9,7 +9,7 @@
           <FeatureBadge
             feature="bb.feature.encrypted-secrets"
             custom-class="ml-2"
-            :instance="database.instanceEntity"
+            :instance="database.instanceResource"
           />
         </div>
         <div class="textinfolabel">
@@ -34,7 +34,7 @@
     </div>
     <FeatureAttention
       feature="bb.feature.encrypted-secrets"
-      :instance="database.instanceEntity"
+      :instance="database.instanceResource"
     />
     <div>
       <BBGrid
@@ -187,7 +187,7 @@
   <FeatureModal
     feature="bb.feature.encrypted-secrets"
     :open="showFeatureModal"
-    :instance="database.instanceEntity"
+    :instance="database.instanceResource"
     @cancel="showFeatureModal = false"
   />
 </template>
@@ -263,7 +263,7 @@ const extractSecretName = (name: string) => {
 const hasSecretFeature = computed(() => {
   return subscriptionV1Store.hasInstanceFeature(
     "bb.feature.encrypted-secrets",
-    props.database.instanceEntity
+    props.database.instanceResource
   );
 });
 

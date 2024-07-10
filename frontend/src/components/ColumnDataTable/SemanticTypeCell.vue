@@ -19,7 +19,7 @@
 
   <FeatureModal
     feature="bb.feature.sensitive-data"
-    :instance="database.instanceEntity"
+    :instance="database.instanceResource"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -76,7 +76,7 @@ const hasSensitiveDataFeature = computed(() => {
 const instanceMissingLicense = computed(() => {
   return subscriptionV1Store.instanceMissingLicense(
     "bb.feature.sensitive-data",
-    props.database.instanceEntity
+    props.database.instanceResource
   );
 });
 

@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center flex-wrap gap-1">
     <InstanceV1Name
-      :instance="coreDatabaseInfo.instanceEntity"
+      :instance="coreDatabaseInfo.instanceResource"
       :plain="true"
       :link="link"
     >

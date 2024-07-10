@@ -55,7 +55,7 @@ export const connectionForSQLEditorTab = (tab: SQLEditorTab) => {
       connection.database
     );
     target.database = database;
-    target.instance = database.instanceEntity;
+    target.instance = database.instanceResource;
   }
   return target;
 };

@@ -217,7 +217,7 @@ const existMatchedUnactivateInstance = computed(() => {
     (database) =>
       !subscriptionV1Store.hasInstanceFeature(
         "bb.feature.database-grouping",
-        database.instanceEntity
+        database.instanceResource
       )
   );
 });

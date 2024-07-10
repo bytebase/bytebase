@@ -34,7 +34,7 @@
           class="flex flex-1 items-center whitespace-pre-wrap"
         >
           <InstanceV1Name
-            :instance="databaseForTask(issue, task).instanceEntity"
+            :instance="databaseForTask(issue, task).instanceResource"
             :link="false"
             class="!gap-x-2"
           />

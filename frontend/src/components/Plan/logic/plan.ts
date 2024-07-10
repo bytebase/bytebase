@@ -35,7 +35,7 @@ export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
       const instanceEntity = useInstanceV1Store().getInstanceByName(
         db.instance
       );
-      db.instanceEntity = instanceEntity;
+      db.instanceResource = instanceEntity;
       db.instanceResource = InstanceResource.fromJSON(instanceEntity);
       db.environment = instanceEntity.environment;
       db.effectiveEnvironment = instanceEntity.environment;
@@ -79,7 +79,7 @@ export const databaseEngineForSpec = async (
       true /* silent */
     );
     if (db && db.uid !== String(UNKNOWN_ID)) {
-      return db.instanceEntity.engine;
+      return db.instanceResource.engine;
     }
   }
   if (extractDatabaseGroupName(target)) {
@@ -92,7 +92,7 @@ export const databaseEngineForSpec = async (
         true /* silent */
       );
       if (db && db.uid !== String(UNKNOWN_ID)) {
-        return db.instanceEntity.engine;
+        return db.instanceResource.engine;
       }
     }
   }
@@ -111,7 +111,7 @@ export const databaseEngineForSpec = async (
       );
       const db = head(head(pipeline));
       if (db && db.uid !== String(UNKNOWN_ID)) {
-        return db.instanceEntity.engine;
+        return db.instanceResource.engine;
       }
     }
   }

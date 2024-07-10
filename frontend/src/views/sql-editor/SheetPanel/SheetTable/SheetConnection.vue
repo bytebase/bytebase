@@ -1,6 +1,6 @@
 <template>
   <div v-if="database" class="flex items-center flex-wrap gap-1">
-    <InstanceV1Name :instance="database.instanceEntity" :link="false">
+    <InstanceV1Name :instance="database.instanceResource" :link="false">
       <template #prefix>
         <EnvironmentV1Name
           :environment="database.effectiveEnvironmentEntity"

@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center flex-wrap gap-1" @click.stop.prevent>
     <InstanceV1Name
-      :instance="database.instanceEntity"
+      :instance="database.instanceResource"
       :plain="true"
       :link="link"
       :text-class="link ? 'hover:underline' : ''"

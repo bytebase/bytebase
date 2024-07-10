@@ -129,7 +129,7 @@ const filteredTables = computed(() => {
 });
 
 const engine = computed(() => {
-  return props.db.instanceEntity.engine;
+  return props.db.instanceResource.engine;
 });
 
 const configForTable = (table: TableMetadata) => {

@@ -58,7 +58,7 @@
         <FeatureBadgeForInstanceLicense
           v-if="!isGrantRequestIssue(issue)"
           feature="bb.feature.custom-approval"
-          :instance="selectedDatabase.instanceEntity"
+          :instance="selectedDatabase.instanceResource"
         />
       </div>
     </div>

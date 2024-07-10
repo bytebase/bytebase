@@ -107,7 +107,7 @@ const databaseList = computed(() => {
       (db) => db.effectiveEnvironmentEntity.order,
       (db) => db.effectiveEnvironmentEntity.title,
       (db) => db.databaseName,
-      (db) => db.instanceEntity.title,
+      (db) => db.instanceResource.title,
     ],
     ["desc", "asc", "asc", "asc"]
   );

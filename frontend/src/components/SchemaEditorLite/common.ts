@@ -53,7 +53,7 @@ export const generateDiffDDL = async (
       {
         sourceMetadata: source,
         targetMetadata: target,
-        engine: database.instanceEntity.engine,
+        engine: database.instanceResource.engine,
         classificationFromConfig:
           classificationConfig?.classificationFromConfig ?? false,
       },

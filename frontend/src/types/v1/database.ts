@@ -2,7 +2,11 @@ import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { Database } from "../proto/v1/database_service";
 import type { Environment } from "../proto/v1/environment_service";
-import { emptyInstance, unknownInstance, type ComposedInstanceResource } from "./instance";
+import {
+  emptyInstance,
+  unknownInstance,
+  type ComposedInstanceResource,
+} from "./instance";
 import type { ComposedProject } from "./project";
 import { emptyProject, unknownProject } from "./project";
 
@@ -13,8 +17,9 @@ export interface ComposedDatabase extends Database {
   databaseName: string;
   /** instance name. Format: instances/{instance} */
   instance: string;
-  /** related instance entity */
-  instanceEntity: ComposedInstanceResource;
+  /** InstanceResource with more fields */
+  instanceResource: ComposedInstanceResource;
+  /** related environment entity composed by effectedEnvironment  */
   effectiveEnvironmentEntity: Environment;
 }
 
@@ -33,7 +38,7 @@ export const emptyDatabase = (): ComposedDatabase => {
     ...database,
     databaseName: "",
     instance: instanceEntity.name,
-    instanceEntity,
+    instanceResource: instanceEntity,
     projectEntity,
     effectiveEnvironmentEntity,
   };
@@ -54,7 +59,7 @@ export const unknownDatabase = (): ComposedDatabase => {
     ...database,
     databaseName: "<<Unknown database>>",
     instance: instanceEntity.name,
-    instanceEntity,
+    instanceResource: instanceEntity,
     projectEntity,
     effectiveEnvironmentEntity: instanceEntity.environmentEntity,
   };

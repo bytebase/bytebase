@@ -30,7 +30,7 @@
     </NTooltip>
     <div v-if="isDatabaseChangeSpec(spec)" class="flex items-center gap-2">
       <InstanceV1Name
-        :instance="databaseForSpec(plan, spec).instanceEntity"
+        :instance="databaseForSpec(plan, spec).instanceResource"
         :link="false"
         class="text-gray-500 text-sm"
       />

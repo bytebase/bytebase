@@ -69,10 +69,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
         continue;
       }
       if (databaseMapByName.has(database.name)) {
-        databaseMapByName.get(database.name)!.instanceEntity = instance;
+        databaseMapByName.get(database.name)!.instanceResource = instance;
       }
       if (databaseMapByUID.has(database.uid)) {
-        databaseMapByUID.get(database.uid)!.instanceEntity = instance;
+        databaseMapByUID.get(database.uid)!.instanceResource = instance;
       }
     }
   };
@@ -320,7 +320,7 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
     composed.databaseName = databaseName;
     composed.instance = instance;
     const ir = db.instanceResource ?? unknownInstanceResource();
-    composed.instanceEntity = {
+    composed.instanceResource = {
       ...ir,
       name: instance,
       environment: db.environment,

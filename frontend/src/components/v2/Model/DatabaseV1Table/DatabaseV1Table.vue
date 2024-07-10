@@ -127,7 +127,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.instance"),
     resizable: true,
     render: (data) => (
-      <InstanceV1Name instance={data.instanceEntity} link={false} tag="div" />
+      <InstanceV1Name instance={data.instanceResource} link={false} tag="div" />
     ),
   };
   const DATABASE_LABELS: DatabaseDataTableColumn = {

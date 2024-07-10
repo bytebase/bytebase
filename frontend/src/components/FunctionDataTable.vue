@@ -37,7 +37,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 
-const engine = computed(() => props.database.instanceEntity.engine);
+const engine = computed(() => props.database.instanceResource.engine);
 
 const isPostgres = computed(() => engine.value === Engine.POSTGRES);
 

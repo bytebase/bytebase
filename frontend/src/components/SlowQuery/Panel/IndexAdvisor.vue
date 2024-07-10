@@ -32,7 +32,7 @@
       <FeatureBadge
         custom-class="ml-1 text-white"
         feature="bb.feature.index-advisor"
-        :instance="slowQueryLog.database.instanceEntity"
+        :instance="slowQueryLog.database.instanceResource"
       />
     </NButton>
   </div>
@@ -48,7 +48,7 @@
   <FeatureModal
     feature="bb.feature.index-advisor"
     :open="state.showFeatureModal"
-    :instance="slowQueryLog.database.instanceEntity"
+    :instance="slowQueryLog.database.instanceResource"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -90,7 +90,7 @@ const state = reactive<LocalState>({
 const settingV1Store = useSettingV1Store();
 const hasIndexAdvisorFeature = featureToRef(
   "bb.feature.index-advisor",
-  props.slowQueryLog.database.instanceEntity
+  props.slowQueryLog.database.instanceResource
 );
 const hasOpenAIKeySetup = computed(() => {
   const openAIKeySetting = settingV1Store.getSettingByName(

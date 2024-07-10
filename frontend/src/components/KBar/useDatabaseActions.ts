@@ -49,7 +49,7 @@ const useDatabaseActions = (databaseList: MaybeRef<ComposedDatabase[]>) => {
           name: environmentV1Name(environment),
           children: databases.map((db) => ({
             id: `bb.database.${db.uid}`,
-            name: `${db.databaseName} (${db.instanceEntity.title})`,
+            name: `${db.databaseName} (${db.instanceResource.title})`,
             link: databaseV1Url(db),
           })),
         };

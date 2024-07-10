@@ -311,7 +311,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
 const getRuleTemplateByType = (type: string) => {
   if (props.database) {
     return ruleTemplateMapV2
-      .get(props.database.instanceEntity.engine)
+      .get(props.database.instanceResource.engine)
       ?.get(type);
   }
 

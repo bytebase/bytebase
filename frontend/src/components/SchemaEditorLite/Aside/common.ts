@@ -202,7 +202,7 @@ const buildInstanceNodeList = (
     (target) => target.database.instance
   );
   return Array.from(groupedByInstance).map(([key, targets]) => {
-    const instance = targets[0].database.instanceEntity;
+    const instance = targets[0].database.instanceResource;
     const instanceNode: TreeNodeForInstance = {
       type: "instance",
       key: key,
@@ -289,7 +289,7 @@ const buildSchemaNodeList = (
     map.set(tableGroupNode.key, tableGroupNode);
 
     // Procedures
-    if (engineSupportsEditProcedures(db.instanceEntity.engine)) {
+    if (engineSupportsEditProcedures(db.instanceResource.engine)) {
       const procedureGroupNode: TreeNodeForGroup<"procedure"> = {
         type: "group",
         group: "procedure",
@@ -315,7 +315,7 @@ const buildSchemaNodeList = (
       map.set(procedureGroupNode.key, procedureGroupNode);
     }
     // Functions
-    if (engineSupportsEditFunctions(db.instanceEntity.engine)) {
+    if (engineSupportsEditFunctions(db.instanceResource.engine)) {
       const functionGroupNode: TreeNodeForGroup<"function"> = {
         type: "group",
         group: "function",

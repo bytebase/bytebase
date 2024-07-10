@@ -215,7 +215,7 @@ const state = reactive<LocalState>({
   showSchemaTemplateDrawer: false,
 });
 const engine = computed(() => {
-  return props.db.instanceEntity.engine;
+  return props.db.instanceResource.engine;
 });
 const selectedSchema = computed(() => {
   return props.database.schemas.find(

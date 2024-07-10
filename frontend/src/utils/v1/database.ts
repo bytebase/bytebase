@@ -179,7 +179,7 @@ export function filterDatabaseV1ByKeyword(
 
   if (
     columns.includes("instance") &&
-    db.instanceEntity.title.toLowerCase().includes(keyword)
+    db.instanceResource.title.toLowerCase().includes(keyword)
   ) {
     return true;
   }
@@ -202,13 +202,13 @@ export function allowGhostMigrationV1(
   const subscriptionV1Store = useSubscriptionV1Store();
   return databaseList.every((db) => {
     return (
-      db.instanceEntity.engine === Engine.MYSQL &&
+      db.instanceResource.engine === Engine.MYSQL &&
       subscriptionV1Store.hasInstanceFeature(
         "bb.feature.online-migration",
-        db.instanceEntity
+        db.instanceResource
       ) &&
       semverCompare(
-        db.instanceEntity.engineVersion,
+        db.instanceResource.engineVersion,
         MIN_GHOST_SUPPORT_MYSQL_VERSION,
         "gte"
       )

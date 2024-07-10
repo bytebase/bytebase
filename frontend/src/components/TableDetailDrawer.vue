@@ -50,7 +50,7 @@
                   <span class="ml-1 textlabel"
                     >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
                   >
-                  <InstanceV1Name :instance="database.instanceEntity" />
+                  <InstanceV1Name :instance="database.instanceResource" />
                 </dd>
                 <dt class="sr-only">{{ $t("common.project") }}</dt>
                 <dd class="flex items-center text-sm md:mr-4">
@@ -321,7 +321,7 @@ const database = computed(() => {
 });
 
 const instanceEngine = computed(() => {
-  return database.value.instanceEntity.engine;
+  return database.value.instanceResource.engine;
 });
 
 const allowQuery = computed(() => {
@@ -344,7 +344,7 @@ const hasSchemaProperty = computed(
 const hasPartitionTables = computed(() => {
   return (
     // Only show partition tables for PostgreSQL.
-    database.value.instanceEntity.engine === Engine.POSTGRES &&
+    database.value.instanceResource.engine === Engine.POSTGRES &&
     table.value &&
     table.value.partitions.length > 0
   );

@@ -265,7 +265,7 @@ const database = computed(() => {
 });
 
 const language = useInstanceV1EditorLanguage(
-  computed(() => database.value.instanceEntity)
+  computed(() => database.value.instanceResource)
 );
 const filename = computed(() => {
   const name = uuidv1();
@@ -274,7 +274,7 @@ const filename = computed(() => {
 });
 const dialect = computed((): SQLDialect => {
   const db = database.value;
-  return dialectOfEngineV1(db.instanceEntity.engine);
+  return dialectOfEngineV1(db.instanceResource.engine);
 });
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");

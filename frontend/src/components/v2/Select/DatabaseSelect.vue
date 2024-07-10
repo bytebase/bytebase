@@ -126,7 +126,7 @@ const rawDatabaseList = computed(() => {
     if (props.project && props.project !== String(UNKNOWN_ID)) {
       if (db.projectEntity.uid !== props.project) return false;
     }
-    if (!props.allowedEngineTypeList.includes(db.instanceEntity.engine)) {
+    if (!props.allowedEngineTypeList.includes(db.instanceResource.engine)) {
       return false;
     }
 
@@ -178,7 +178,7 @@ const renderLabel: SelectRenderLabel = (option) => {
     children.unshift(
       h(InstanceV1EngineIcon, {
         class: "mr-1",
-        instance: database.instanceEntity,
+        instance: database.instanceResource,
       })
     );
     // suffix engine name
@@ -188,7 +188,7 @@ const renderLabel: SelectRenderLabel = (option) => {
         {
           class: "text-xs opacity-60 ml-1",
         },
-        [`(${instanceV1Name(database.instanceEntity)})`]
+        [`(${instanceV1Name(database.instanceResource)})`]
       )
     );
   }

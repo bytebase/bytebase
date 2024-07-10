@@ -88,7 +88,7 @@ const renderLabel: SelectRenderLabel = (option) => {
     children.unshift(
       h(InstanceV1EngineIcon, {
         class: "mr-1",
-        instance: database.instanceEntity,
+        instance: database.instanceResource,
       })
     );
   }

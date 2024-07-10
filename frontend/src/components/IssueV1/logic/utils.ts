@@ -51,7 +51,7 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
         const instanceEntity = useInstanceV1Store().getInstanceByName(
           db.instance
         );
-        db.instanceEntity = instanceEntity;
+        db.instanceResource = instanceEntity;
         db.instanceResource = InstanceResource.fromJSON(instanceEntity);
         db.environment = instanceEntity.environment;
         db.effectiveEnvironment = instanceEntity.environment;

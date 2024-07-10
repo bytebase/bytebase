@@ -117,7 +117,7 @@ const handleConfirmButtonClick = async () => {
 
     const column = ColumnMetadata.fromPartial({});
     column.name = "id";
-    const engine = props.database.instanceEntity.engine;
+    const engine = props.database.instanceResource.engine;
     column.type = engine === Engine.POSTGRES ? "integer" : "int";
     column.comment = "";
     table.columns.push(column);

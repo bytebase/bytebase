@@ -533,7 +533,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     },
   });
   if (node.type === "database") {
-    const { engine } = node.db.instanceEntity;
+    const { engine } = node.db.instanceResource;
     if (engineSupportsMultiSchema(engine)) {
       icons.push(menuIcon);
     }

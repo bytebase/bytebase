@@ -50,7 +50,7 @@
               <div class="flex flex-row justify-center items-center">
                 <InstanceV1EngineIcon
                   :instance="
-                    databaseStore.getDatabaseByName(databaseName).instanceEntity
+                    databaseStore.getDatabaseByName(databaseName).instanceResource
                   "
                 />
                 <span class="text-sm text-control-light mx-1">
@@ -149,8 +149,8 @@ const databases = computed(() => {
       // Only show databases with same engine.
       .filter(
         (db) =>
-          db.instanceEntity.engine ===
-          selectedDatabase.value.instanceEntity.engine
+          db.instanceResource.engine ===
+          selectedDatabase.value.instanceResource.engine
       )
   );
 });
@@ -219,12 +219,12 @@ const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
           },
           [
             h(InstanceV1EngineIcon, {
-              instance: row.instanceEntity,
+              instance: row.instanceResource,
             }),
             h(
               NPerformantEllipsis,
               { class: "overflow-hidden truncate" },
-              { default: () => row.instanceEntity.title }
+              { default: () => row.instanceResource.title }
             ),
           ]
         );

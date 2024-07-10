@@ -127,7 +127,7 @@ export const useDropdown = () => {
               window.open(url, "_blank");
             },
           });
-          if (instanceV1HasAlterSchema(database.instanceEntity)) {
+          if (instanceV1HasAlterSchema(database.instanceResource)) {
             items.push({
               key: "alter-schema",
               label: t("database.edit-schema"),

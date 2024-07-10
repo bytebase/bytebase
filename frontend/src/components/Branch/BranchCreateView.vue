@@ -190,7 +190,7 @@ const prepareBranchFromDatabaseHead = async (uid: string) => {
   // for baseline
   const branch = Branch.fromPartial({
     name: nextFakeBranchName(),
-    engine: database.instanceEntity.engine,
+    engine: database.instanceResource.engine,
     baselineDatabase: database.name,
     baselineSchemaMetadata: metadata,
     schemaMetadata: metadata,

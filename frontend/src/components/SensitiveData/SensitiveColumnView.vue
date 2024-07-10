@@ -327,7 +327,7 @@ const onRowClick = async (
       break;
     case "EDIT":
       state.pendingGrantAccessColumn = [item];
-      if (isMissingLicenseForInstance(item.database.instanceEntity)) {
+      if (isMissingLicenseForInstance(item.database.instanceResource)) {
         state.showFeatureModal = true;
         return;
       }
