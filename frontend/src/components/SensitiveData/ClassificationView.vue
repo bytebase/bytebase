@@ -292,21 +292,25 @@ const example: UploadClassificationConfig = {
       id: "1-1",
       title: "Basic",
       description: "",
+      levelId: "1",
     },
     {
       id: "1-2",
       title: "Assert",
       description: "",
+      levelId: "1",
     },
     {
       id: "1-3",
       title: "Contact",
       description: "",
+      levelId: "2",
     },
     {
       id: "1-4",
       title: "Health",
       description: "",
+      levelId: "2",
     },
     {
       id: "2",
@@ -317,11 +321,13 @@ const example: UploadClassificationConfig = {
       id: "2-1",
       title: "Social",
       description: "",
+      levelId: "1",
     },
     {
       id: "2-2",
       title: "Business",
       description: "",
+      levelId: "1",
     },
   ],
 };
