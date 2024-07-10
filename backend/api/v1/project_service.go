@@ -1300,7 +1300,7 @@ func validateAndConvertToStoreDeploymentSchedule(deployment *v1pb.DeploymentConf
 				return nil, common.Errorf(common.Invalid, "label selector expression must not be empty")
 			}
 			switch e.Operator {
-			case v1pb.OperatorType_OPERATOR_TYPE_IN:
+			case v1pb.OperatorType_OPERATOR_TYPE_IN, v1pb.OperatorType_OPERATOR_TYPE_NOT_IN:
 				if len(e.Values) == 0 {
 					return nil, common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
 				}
