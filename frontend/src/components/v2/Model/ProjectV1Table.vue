@@ -32,6 +32,7 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
+import { getHighlightHTMLByRegExp } from "@/utils";
 
 type ProjectDataTableColumn = DataTableColumn<ComposedProject> & {
   hide?: boolean;
@@ -46,11 +47,13 @@ const props = withDefaults(
     bordered?: boolean;
     loading?: boolean;
     pagination?: false | PaginationProps;
+    keyword?: string;
     onClick?: (project: ComposedProject, e: MouseEvent) => void;
   }>(),
   {
     bordered: true,
     currentProject: undefined,
+    keyword: undefined,
     pagination: () => ({ pageSize: 20 }) as PaginationProps,
     onClick: undefined,
   }
@@ -89,13 +92,26 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         key: "key",
         title: t("project.table.key"),
         width: 200,
-        render: (project) => project.key,
+        render: (project) => {
+          return (
+            <span
+              innerHTML={getHighlightHTMLByRegExp(
+                project.key,
+                props.keyword ?? ""
+              )}
+            ></span>
+          );
+        },
       },
       {
         key: "title",
         title: t("project.table.name"),
         render: (project) => (
-          <ProjectNameCell mode="ALL_SHORT" project={project} />
+          <ProjectNameCell
+            mode="ALL_SHORT"
+            project={project}
+            keyword={props.keyword}
+          />
         ),
       },
     ] as ProjectDataTableColumn[]

@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-row space-x-2 items-center">
-    <ProjectV1Name :project="project" :link="link" tag="div" />
+    <ProjectV1Name
+      :project="project"
+      :link="link"
+      tag="div"
+      :keyword="keyword"
+    />
 
     <NTooltip v-if="project.workflow === Workflow.VCS">
       <template #trigger>
@@ -38,10 +43,12 @@ withDefaults(
     project: Project;
     mode?: Mode;
     link?: boolean;
+    keyword?: string;
   }>(),
   {
     mode: "ALL",
     link: false,
+    keyword: undefined,
   }
 );
 </script>

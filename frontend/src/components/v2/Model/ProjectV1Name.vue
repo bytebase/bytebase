@@ -6,7 +6,8 @@
     :class="link && !plain && 'normal-link'"
   >
     <NPerformantEllipsis>
-      {{ projectV1Name(project) }}
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <span v-html="renderedProjectName" />
     </NPerformantEllipsis>
   </component>
 </template>
@@ -15,7 +16,7 @@
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import type { Project } from "@/types/proto/v1/project_service";
-import { projectV1Name } from "@/utils";
+import { getHighlightHTMLByRegExp, projectV1Name } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -24,12 +25,14 @@ const props = withDefaults(
     link?: boolean;
     plain?: boolean;
     hash?: string;
+    keyword?: string;
   }>(),
   {
     tag: "span",
     link: true,
     plain: false,
     hash: "",
+    keyword: undefined,
   }
 );
 
@@ -45,5 +48,12 @@ const bindings = computed(() => {
     };
   }
   return {};
+});
+
+const renderedProjectName = computed(() => {
+  return getHighlightHTMLByRegExp(
+    projectV1Name(props.project),
+    props.keyword || ""
+  );
 });
 </script>
