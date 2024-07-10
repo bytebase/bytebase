@@ -226,7 +226,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 
 	exec.reconcilePlan(ctx, project, database, peerDatabase)
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
 			slog.String("databaseName", database.DatabaseName),
