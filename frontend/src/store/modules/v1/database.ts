@@ -2,11 +2,7 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
-import type {
-  ComposedInstance,
-  ComposedDatabase,
-  MaybeRef,
-} from "@/types";
+import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
   emptyDatabase,
   EMPTY_ID,
@@ -69,10 +65,16 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
         continue;
       }
       if (databaseMapByName.has(database.name)) {
-        databaseMapByName.get(database.name)!.instanceResource = instance;
+        const db = databaseMapByName.get(database.name);
+        if (db) {
+          db.instanceResource.activation = instance.activation;
+        }
       }
       if (databaseMapByUID.has(database.uid)) {
-        databaseMapByUID.get(database.uid)!.instanceResource = instance;
+        const db = databaseMapByUID.get(database.uid);
+        if (db) {
+          db.instanceResource.activation = instance.activation;
+        }
       }
     }
   };
@@ -319,17 +321,26 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
 
     composed.databaseName = databaseName;
     composed.instance = instance;
-    const ir = db.instanceResource ?? unknownInstanceResource();
-    composed.instanceResource = {
-      ...ir,
-      name: instance,
-      environment: db.environment,
-    };
-    composed.instanceResource ?? unknownInstanceResource();
+    composed.instanceResource = composeInstanceResourceForDatabase(
+      instance,
+      db
+    );
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
     composed.effectiveEnvironmentEntity =
       environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
       unknownEnvironment();
     return markRaw(composed);
   });
+};
+
+export const composeInstanceResourceForDatabase = (
+  name: string,
+  db: Database
+) => {
+  const ir = db.instanceResource ?? unknownInstanceResource();
+  return {
+    ...ir,
+    name,
+    environment: db.environment,
+  };
 };

@@ -78,6 +78,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import type { MaskData } from "@/types/proto/v1/org_policy_service";
+import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SensitiveColumnDrawer from "../SensitiveData/SensitiveColumnDrawer.vue";
 
 type LocalState = {

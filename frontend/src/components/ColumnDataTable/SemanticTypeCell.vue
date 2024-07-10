@@ -47,6 +47,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { updateColumnConfig } from "./utils";
+import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 
 type LocalState = {
   showFeatureModal: boolean;

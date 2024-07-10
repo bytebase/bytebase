@@ -198,6 +198,7 @@ import { NButton, NInput } from "naive-ui";
 import { computed, ref, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
+import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
