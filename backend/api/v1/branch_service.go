@@ -1087,7 +1087,7 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 
-			if !equalTable(table, tt.GetProto()) {
+			if !common.EqualTable(table, tt.GetProto()) {
 				trimSchema.Tables = append(trimSchema.Tables, table)
 				continue
 			}
@@ -1133,7 +1133,7 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 
-			if !equalTable(table, tt.GetProto()) {
+			if !common.EqualTable(table, tt.GetProto()) {
 				trimSchema.Tables = append(trimSchema.Tables, table)
 				continue
 			}
@@ -1177,116 +1177,6 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 	}
 
 	return s, t
-}
-
-func equalTable(s, t *storepb.TableMetadata) bool {
-	if len(s.GetColumns()) != len(t.GetColumns()) {
-		return false
-	}
-	if len(s.Indexes) != len(t.Indexes) {
-		return false
-	}
-	if len(s.Partitions) != len(t.Partitions) {
-		return false
-	}
-	if s.GetComment() != t.GetComment() {
-		return false
-	}
-	if s.GetUserComment() != t.GetUserComment() {
-		return false
-	}
-	for i := 0; i < len(s.GetColumns()); i++ {
-		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
-		if sc.Name != tc.Name {
-			return false
-		}
-		if sc.OnUpdate != tc.OnUpdate {
-			return false
-		}
-		if sc.Comment != tc.Comment {
-			return false
-		}
-		if sc.UserComment != tc.UserComment {
-			return false
-		}
-		if sc.Type != tc.Type {
-			return false
-		}
-		if sc.Nullable != tc.Nullable {
-			return false
-		}
-		if sc.GetDefault().GetValue() != tc.GetDefault().GetValue() {
-			return false
-		}
-		if sc.GetDefaultExpression() != tc.GetDefaultExpression() {
-			return false
-		}
-		if sc.GetDefaultNull() != tc.GetDefaultNull() {
-			return false
-		}
-	}
-	for i := 0; i < len(s.GetIndexes()); i++ {
-		si, ti := s.GetIndexes()[i], t.GetIndexes()[i]
-		if si.GetName() != ti.GetName() {
-			return false
-		}
-		if si.GetDefinition() != ti.GetDefinition() {
-			return false
-		}
-		if si.GetPrimary() != ti.GetPrimary() {
-			return false
-		}
-		if si.GetUnique() != ti.GetUnique() {
-			return false
-		}
-		if si.GetType() != ti.GetType() {
-			return false
-		}
-		if si.GetVisible() != ti.GetVisible() {
-			return false
-		}
-		if si.GetComment() != ti.GetComment() {
-			return false
-		}
-		if !slices.Equal(si.GetExpressions(), ti.GetExpressions()) {
-			return false
-		}
-	}
-
-	for i := 0; i < len(s.GetPartitions()); i++ {
-		si, ti := s.GetPartitions()[i], t.GetPartitions()[i]
-		if !equalPartitions(si, ti) {
-			return false
-		}
-	}
-	return true
-}
-
-func equalPartitions(s, t *storepb.TablePartitionMetadata) bool {
-	if s.GetName() != t.GetName() {
-		return false
-	}
-	if s.Type != t.Type {
-		return false
-	}
-	if s.Expression != t.Expression {
-		return false
-	}
-	if s.Value != t.Value {
-		return false
-	}
-	if s.UseDefault != t.UseDefault {
-		return false
-	}
-	if len(s.Subpartitions) != len(t.Subpartitions) {
-		return false
-	}
-	for i := 0; i < len(s.Subpartitions); i++ {
-		if !equalPartitions(s.Subpartitions[i], t.Subpartitions[i]) {
-			return false
-		}
-	}
-	return true
 }
 
 func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.Engine) {
