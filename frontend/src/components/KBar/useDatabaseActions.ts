@@ -86,21 +86,25 @@ const useDatabaseActions = (databaseList: MaybeRef<ComposedDatabase[]>) => {
 };
 
 export const useProjectDatabaseActions = (
-  project: MaybeRef<ComposedProject>
+  project: MaybeRef<ComposedProject>,
+  limit: number
 ) => {
   const projectDatabaseList = computed(() => {
-    return useDatabaseV1Store().databaseListByProject(unref(project).name);
+    return useDatabaseV1Store()
+      .databaseListByProject(unref(project).name)
+      .slice(0, limit); // Don't create too many actions
   });
   useDatabaseActions(projectDatabaseList);
 };
 
-export const useGlobalDatabaseActions = () => {
+export const useGlobalDatabaseActions = (limit: number) => {
   const me = useCurrentUserV1();
   // Use this to make the list reactive when project is transferred.
   const databaseList = computed(() => {
     return useDatabaseV1Store()
       .databaseListByUser(me.value)
-      .filter((db) => db.project !== DEFAULT_PROJECT_V1_NAME);
+      .filter((db) => db.project !== DEFAULT_PROJECT_V1_NAME)
+      .slice(0, limit); // Don't create too many actions
   });
   useDatabaseActions(databaseList);
 };

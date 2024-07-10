@@ -14,6 +14,7 @@ import {
 import { getUserEmailListInBinding, memberListInProjectV1 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
+import { usePermissionStore } from "./permission";
 import { useProjectV1Store } from "./project";
 
 export const useProjectIamPolicyStore = defineStore(
@@ -71,6 +72,8 @@ export const useProjectIamPolicyStore = defineStore(
         policy,
       });
       policyMap.value.set(project, updated);
+
+      usePermissionStore().invalidCacheByProject(project);
     };
 
     const getProjectIamPolicy = (project: string) => {
@@ -157,13 +160,17 @@ export const useCurrentUserIamPolicy = () => {
       return true;
     }
 
+    const project = projectStore.getProjectByName(projectName);
+    if (!project) {
+      return false;
+    }
     const policy = iamPolicyStore.policyMap.get(projectName);
     if (!policy) {
       return false;
     }
     return (
-      isOwnerOfProjectV1(policy, currentUser.value) ||
-      isDeveloperOfProjectV1(policy, currentUser.value)
+      isOwnerOfProjectV1(project, currentUser.value) ||
+      isDeveloperOfProjectV1(project, currentUser.value)
     );
   };
 
@@ -176,9 +183,13 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
+    const project = projectStore.getProjectByName(projectName);
+    if (!project) {
+      return false;
+    }
     return (
       isProjectOwnerOrDeveloper(projectName) ||
-      isViewerOfProjectV1(policy, currentUser.value)
+      isViewerOfProjectV1(project, currentUser.value)
     );
   };
 

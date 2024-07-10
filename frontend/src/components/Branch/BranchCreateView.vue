@@ -145,7 +145,7 @@ const isPreparingBranch = ref(false);
 const EMPTY_BRANCH = Branch.fromPartial({});
 
 const allowCreateBranchFromDatabase = computed(() => {
-  return isOwnerOfProjectV1(props.project.iamPolicy, me.value);
+  return isOwnerOfProjectV1(props.project, me.value);
 });
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);

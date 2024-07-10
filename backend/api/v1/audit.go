@@ -37,69 +37,126 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 	}
 }
 
-func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	response, rerr := handler(ctx, request)
-
-	if err := func() error {
-		if !isAuditMethod(serverInfo.FullMethod) {
-			return nil
-		}
-		requestString, err := getRequestString(request)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get request string")
-		}
-		responseString, err := getResponseString(response)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get response string")
-		}
-
-		var user string
-		if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
-			user = common.FormatUserUID(u.ID)
-		}
-
-		st, _ := status.FromError(rerr)
-
-		projectIDs, ok := common.GetProjectIDsFromContext(ctx)
-		if !ok {
-			return errors.Errorf("failed to get projects ids from context")
-		}
-		var parents []string
-		if len(projectIDs) == 0 {
-			workspaceID, err := in.store.GetWorkspaceID(ctx)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get workspace id")
-			}
-			parents = append(parents, common.FormatWorkspace(workspaceID))
-		} else {
-			for _, projectID := range projectIDs {
-				parents = append(parents, common.FormatProject(projectID))
-			}
-		}
-
-		createAuditLogCtx := context.WithoutCancel(ctx)
-		for _, parent := range parents {
-			p := &storepb.AuditLog{
-				Parent:   parent,
-				Method:   serverInfo.FullMethod,
-				Resource: getRequestResource(request),
-				Severity: storepb.AuditLog_INFO,
-				User:     user,
-				Request:  requestString,
-				Response: responseString,
-				Status:   st.Proto(),
-			}
-			if err := in.store.CreateAuditLog(createAuditLogCtx, p); err != nil {
-				return errors.Wrapf(err, "failed to create audit log")
-			}
-		}
-
-		return nil
-	}(); err != nil {
-		slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
+func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, rerr error) error {
+	requestString, err := getRequestString(request)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get request string")
+	}
+	responseString, err := getResponseString(response)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get response string")
 	}
 
+	var user string
+	if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
+		user = common.FormatUserUID(u.ID)
+	}
+
+	st, _ := status.FromError(rerr)
+
+	projectIDs, ok := common.GetProjectIDsFromContext(ctx)
+	if !ok {
+		return errors.Errorf("failed to get projects ids from context")
+	}
+	var parents []string
+	if len(projectIDs) == 0 {
+		workspaceID, err := storage.GetWorkspaceID(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get workspace id")
+		}
+		parents = append(parents, common.FormatWorkspace(workspaceID))
+	} else {
+		for _, projectID := range projectIDs {
+			parents = append(parents, common.FormatProject(projectID))
+		}
+	}
+
+	createAuditLogCtx := context.WithoutCancel(ctx)
+	for _, parent := range parents {
+		p := &storepb.AuditLog{
+			Parent:   parent,
+			Method:   method,
+			Resource: getRequestResource(request),
+			Severity: storepb.AuditLog_INFO,
+			User:     user,
+			Request:  requestString,
+			Response: responseString,
+			Status:   st.Proto(),
+		}
+		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
+			return errors.Wrapf(err, "failed to create audit log")
+		}
+	}
+
+	return nil
+}
+
+func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	response, rerr := handler(ctx, request)
+	if isAuditMethod(serverInfo.FullMethod) {
+		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, rerr); err != nil {
+			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
+		}
+	}
 	return response, rerr
+}
+
+type AuditStream struct {
+	grpc.ServerStream
+	needAudit  bool
+	curRequest any
+	ctx        context.Context
+	method     string
+	storage    *store.Store
+}
+
+func (s *AuditStream) RecvMsg(request any) error {
+	err := s.ServerStream.RecvMsg(request)
+	if err != nil {
+		return err
+	}
+	// audit log.
+	if s.needAudit {
+		s.curRequest = request
+	}
+	return nil
+}
+
+func (s *AuditStream) SendMsg(resp any) error {
+	err := s.ServerStream.SendMsg(resp)
+	if err != nil {
+		return err
+	}
+	// audit log.
+	if s.needAudit && s.curRequest != nil {
+		if auditErr := createAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil); auditErr != nil {
+			return auditErr
+		}
+	}
+
+	return nil
+}
+
+func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	overrideStream, ok := ss.(overrideStream)
+	if !ok {
+		return errors.New("type assertions failed: grpc.ServerStream -> overrideStream")
+	}
+
+	auditStream := &AuditStream{
+		ServerStream: overrideStream,
+		needAudit:    isStreamAuditMethod(info.FullMethod),
+		ctx:          overrideStream.childCtx,
+		method:       info.FullMethod,
+		storage:      in.store,
+	}
+
+	err := handler(srv, auditStream)
+	if err != nil {
+		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, err)
+	}
+
+	return nil
 }
 
 func getRequestResource(request any) string {
@@ -108,6 +165,8 @@ func getRequestResource(request any) string {
 	}
 	switch r := request.(type) {
 	case *v1pb.QueryRequest:
+		return r.Name
+	case *v1pb.AdminExecuteRequest:
 		return r.Name
 	case *v1pb.ExportRequest:
 		return r.Name
@@ -135,6 +194,8 @@ func getRequestString(request any) (string, error) {
 		}
 		switch r := request.(type) {
 		case *v1pb.QueryRequest:
+			return r
+		case *v1pb.AdminExecuteRequest:
 			return r
 		case *v1pb.ExportRequest:
 			//nolint:revive
@@ -178,6 +239,8 @@ func getResponseString(response any) (string, error) {
 		switch r := response.(type) {
 		case *v1pb.QueryResponse:
 			return redactQueryResponse(r)
+		case *v1pb.AdminExecuteResponse:
+			return redactAdminExecuteResponse(r)
 		case *v1pb.ExportResponse:
 			return nil
 		case *v1pb.LoginResponse:
@@ -262,6 +325,29 @@ func redactUser(r *v1pb.User) *v1pb.User {
 	}
 }
 
+func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecuteResponse {
+	if r == nil {
+		return nil
+	}
+	n := &v1pb.AdminExecuteResponse{
+		Results: nil,
+	}
+	for _, result := range r.Results {
+		n.Results = append(n.Results, &v1pb.QueryResult{
+			ColumnNames:     result.ColumnNames,
+			ColumnTypeNames: result.ColumnTypeNames,
+			Rows:            nil, // Redacted
+			Masked:          result.Masked,
+			Sensitive:       result.Sensitive,
+			Error:           result.Error,
+			Latency:         result.Latency,
+			Statement:       result.Statement,
+		})
+	}
+
+	return n
+}
+
 func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 	if r == nil {
 		return nil
@@ -297,6 +383,15 @@ func isAuditMethod(method string) bool {
 		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName:
+		return true
+	default:
+		return false
+	}
+}
+
+func isStreamAuditMethod(method string) bool {
+	switch method {
+	case v1pb.SQLService_AdminExecute_FullMethodName:
 		return true
 	default:
 		return false

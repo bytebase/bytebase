@@ -273,7 +273,7 @@ const showMergeBranchButton = computed(() => {
 const showRebaseBranchButton = computed(() => {
   // For main branches: only project owners are allowed
   if (!parentBranch.value) {
-    return isOwnerOfProjectV1(props.project.iamPolicy, currentUser.value);
+    return isOwnerOfProjectV1(props.project, currentUser.value);
   }
 
   // For feature branches: project owners and branch creator
@@ -284,7 +284,7 @@ const showRebaseBranchButton = computed(() => {
 const showApplyBranchButton = computed(() => {
   return (
     !parentBranch.value &&
-    isOwnerOfProjectV1(props.project.iamPolicy, currentUser.value)
+    isOwnerOfProjectV1(props.project, currentUser.value)
   );
 });
 

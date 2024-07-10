@@ -3,99 +3,99 @@
     <div class="flex-1 flex overflow-hidden">
       <HideInStandaloneMode>
         <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
-        <div v-if="state.showMobileOverlay" class="md:hidden">
-          <div class="fixed inset-0 flex z-40">
-            <div class="fixed inset-0">
-              <div
-                class="absolute inset-0 bg-gray-600 opacity-75"
+        <div
+          v-show="state.showMobileOverlay"
+          :class="[sidebarView === 'MOBILE' ? 'block' : 'hidden']"
+          class="fixed inset-0 flex z-40"
+        >
+          <div class="fixed inset-0">
+            <div
+              class="absolute inset-0 bg-gray-600 opacity-75"
+              @click.prevent="state.showMobileOverlay = false"
+            ></div>
+          </div>
+          <div
+            tabindex="0"
+            class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-none"
+          >
+            <div class="absolute top-0 right-0 -mr-12 pt-2">
+              <button
+                type="button"
+                class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
                 @click.prevent="state.showMobileOverlay = false"
-              ></div>
+              >
+                <span class="sr-only">Close sidebar</span>
+                <!-- Heroicon name: x -->
+                <heroicons-solid:x class="h-6 w-6 text-white" />
+              </button>
+            </div>
+            <!-- Mobile Sidebar -->
+            <div id="sidebar-mobile" class="flex-1 h-0 py-0 overflow-y-auto">
+              <!-- Empty as teleport placeholder -->
             </div>
             <div
-              tabindex="0"
-              class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-none"
+              class="flex-shrink-0 flex border-t border-block-border px-3 py-1.5"
             >
-              <div class="absolute top-0 right-0 -mr-12 pt-2">
-                <button
-                  type="button"
-                  class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                  @click.prevent="state.showMobileOverlay = false"
-                >
-                  <span class="sr-only">Close sidebar</span>
-                  <!-- Heroicon name: x -->
-                  <heroicons-solid:x class="h-6 w-6 text-white" />
-                </button>
-              </div>
-              <!-- Mobile Sidebar -->
-              <div class="flex-1 h-0 py-0 overflow-y-auto">
-                <router-view
-                  name="leftSidebar"
-                  @click="state.showMobileOverlay = false"
+              <div
+                v-if="isDemo"
+                class="text-sm flex whitespace-nowrap text-accent"
+              >
+                <heroicons-outline:presentation-chart-bar
+                  class="w-5 h-5 mr-1"
                 />
+                {{ $t("common.demo-mode") }}
+              </div>
+              <router-link
+                v-else-if="!isFreePlan || !hasPermission"
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+                exact-active-class=""
+                class="text-sm flex"
+              >
+                {{ $t(currentPlan) }}
+              </router-link>
+              <div
+                v-else
+                class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
+                @click="state.showTrialModal = true"
+              >
+                <heroicons-solid:sparkles class="w-5 h-5" />
+                {{ $t(currentPlan) }}
               </div>
               <div
-                class="flex-shrink-0 flex border-t border-block-border px-3 py-1.5"
+                class="text-sm flex items-center gap-x-1 ml-auto"
+                :class="
+                  canUpgrade
+                    ? 'text-success cursor-pointer'
+                    : 'text-control-light cursor-default'
+                "
+                @click="state.showReleaseModal = canUpgrade"
               >
-                <div
-                  v-if="isDemo"
-                  class="text-sm flex whitespace-nowrap text-accent"
-                >
-                  <heroicons-outline:presentation-chart-bar
-                    class="w-5 h-5 mr-1"
-                  />
-                  {{ $t("common.demo-mode") }}
-                </div>
-                <router-link
-                  v-else-if="!isFreePlan || !hasPermission"
-                  :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
-                  exact-active-class=""
-                  class="text-sm flex"
-                >
-                  {{ $t(currentPlan) }}
-                </router-link>
-                <div
-                  v-else
-                  class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
-                  @click="state.showTrialModal = true"
-                >
-                  <heroicons-solid:sparkles class="w-5 h-5" />
-                  {{ $t(currentPlan) }}
-                </div>
-                <div
-                  class="text-sm flex items-center gap-x-1 ml-auto"
-                  :class="
-                    canUpgrade
-                      ? 'text-success cursor-pointer'
-                      : 'text-control-light cursor-default'
-                  "
-                  @click="state.showReleaseModal = canUpgrade"
-                >
-                  <heroicons-outline:volume-up
-                    v-if="canUpgrade"
-                    class="h-4 w-4"
-                  />
-                  {{ version }}
-                </div>
+                <heroicons-outline:volume-up
+                  v-if="canUpgrade"
+                  class="h-4 w-4"
+                />
+                {{ version }}
               </div>
             </div>
-            <div class="flex-shrink-0 w-14" aria-hidden="true">
-              <!-- Force sidebar to shrink to fit close icon -->
-            </div>
+          </div>
+          <div class="flex-shrink-0 w-14" aria-hidden="true">
+            <!-- Force sidebar to shrink to fit close icon -->
           </div>
         </div>
 
         <!-- Static sidebar for desktop -->
         <aside
-          class="hidden md:flex md:flex-shrink-0"
+          class="flex-shrink-0"
           data-label="bb-dashboard-static-sidebar"
+          :class="[sidebarView === 'DESKTOP' ? 'flex' : 'hidden']"
         >
           <div class="flex flex-col w-52 bg-control-bg">
             <!-- Sidebar component, swap this element with another sidebar if you like -->
-            <div class="flex-1 flex flex-col py-0 overflow-y-auto">
-              <router-view
-                name="leftSidebar"
-                @click="state.showMobileOverlay = false"
-              />
+            <div
+              id="sidebar-desktop"
+              class="flex-1 flex flex-col py-0 overflow-y-auto"
+            >
+              <!-- Empty as teleport placeholder -->
             </div>
             <div
               class="flex-shrink-0 flex justify-between border-t border-block-border px-3 py-1.5"
@@ -156,6 +156,20 @@
             </div>
           </div>
         </aside>
+
+        <!--
+          Do not render two instances of sidebars to desktop and mobile sidebars
+          but render one sidebar and teleport it to a correct container when
+          screen size varies
+        -->
+        <teleport
+          v-if="mounted"
+          :to="
+            sidebarView === 'DESKTOP' ? '#sidebar-desktop' : '#sidebar-mobile'
+          "
+        >
+          <router-view name="leftSidebar" />
+        </teleport>
       </HideInStandaloneMode>
 
       <div
@@ -239,6 +253,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useMounted, useWindowSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -267,6 +282,7 @@ interface LocalState {
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const router = useRouter();
+const mounted = useMounted();
 
 const state = reactive<LocalState>({
   showMobileOverlay: false,
@@ -276,10 +292,14 @@ const state = reactive<LocalState>({
 
 const currentUserV1 = useCurrentUserV1();
 const mainContainerRef = ref<HTMLDivElement>();
+const { width: windowWidth } = useWindowSize();
 
-const hasPermission = hasWorkspacePermissionV2(
-  currentUserV1.value,
-  "bb.settings.set"
+const sidebarView = computed(() => {
+  return windowWidth.value >= 768 ? "DESKTOP" : "MOBILE";
+});
+
+const hasPermission = computed(() =>
+  hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set")
 );
 
 const { pageMode, isDemo } = storeToRefs(actuatorStore);
@@ -336,7 +356,7 @@ const currentPlan = computed((): string => {
     case PlanType.ENTERPRISE:
       return "subscription.plan.enterprise.title";
     default:
-      if (hasPermission) {
+      if (hasPermission.value) {
         return "subscription.plan.try";
       }
       return "subscription.plan.free.title";
