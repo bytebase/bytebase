@@ -460,6 +460,14 @@ message InstanceResource {
   repeated DataSource data_sources = 4;
 
   bool activation = 5;
+
+  // The name of the instance.
+  // Format: instances/{instance}
+  string name = 6;
+
+  // The environment resource.
+  // Format: environments/prod where prod is the environment resource ID.
+  string environment = 7;
 }
 
 message SASLConfig {
