@@ -30,7 +30,7 @@ import (
 )
 
 // NewSchemaUpdateGhostCutoverExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaUpdateGhostCutoverExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -48,7 +48,7 @@ type SchemaUpdateGhostCutoverExecutor struct {
 	license      enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
@@ -121,7 +121,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, taskContext context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *storepb.TaskRunResult, err error) {
+func cutover(ctx context.Context, taskContext context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *storepb.TaskRunResult, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {

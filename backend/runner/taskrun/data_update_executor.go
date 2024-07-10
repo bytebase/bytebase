@@ -29,7 +29,7 @@ import (
 )
 
 // NewDataUpdateExecutor creates a data update (DML) task executor.
-func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &DataUpdateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -47,7 +47,7 @@ type DataUpdateExecutor struct {
 	license      enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 // RunOnce will run the data update (DML) task executor once.

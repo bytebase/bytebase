@@ -23,7 +23,7 @@ import (
 )
 
 // NewSchemaBaselineExecutor creates a schema baseline task executor.
-func NewSchemaBaselineExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaBaselineExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaBaselineExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -41,7 +41,7 @@ type SchemaBaselineExecutor struct {
 	license      enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 // RunOnce will run the schema update (DDL) task executor once.

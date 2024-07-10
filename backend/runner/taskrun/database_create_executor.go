@@ -27,7 +27,7 @@ import (
 )
 
 // NewDatabaseCreateExecutor creates a database create task executor.
-func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, stateCfg *state.State, profile config.Profile) Executor {
+func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, stateCfg *state.State, profile *config.Profile) Executor {
 	return &DatabaseCreateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -43,7 +43,7 @@ type DatabaseCreateExecutor struct {
 	dbFactory    *dbfactory.DBFactory
 	schemaSyncer *schemasync.Syncer
 	stateCfg     *state.State
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 var cannotCreateDatabase = map[storepb.Engine]bool{
