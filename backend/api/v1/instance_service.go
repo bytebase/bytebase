@@ -1100,6 +1100,8 @@ func convertToInstanceResource(instanceMessage *store.InstanceMessage) (*v1pb.In
 		EngineVersion: instance.EngineVersion,
 		DataSources:   instance.DataSources,
 		Activation:    instance.Activation,
+		Name:          instance.Name,
+		Environment:   instance.Environment,
 	}, nil
 }
 
