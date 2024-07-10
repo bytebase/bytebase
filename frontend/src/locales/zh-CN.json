@@ -2898,7 +2898,8 @@
       "select-type": "选择类型",
       "method": "操作",
       "request": "请求信息",
-      "response": "响应信息"
+      "response": "响应信息",
+      "status": "状态"
     },
     "type": {
       "workspace": {

@@ -2898,7 +2898,8 @@
       "select-type": "Select Type",
       "method": "Method",
       "request": "Request",
-      "response": "Response"
+      "response": "Response",
+      "status": "Status"
     },
     "type": {
       "workspace": {
