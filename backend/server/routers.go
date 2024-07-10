@@ -22,7 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 )
 
-func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, lspServer *lsp.Server, gitOpsServer *gitops.Service, mux *grpcruntime.ServeMux, profile config.Profile) {
+func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, lspServer *lsp.Server, gitOpsServer *gitops.Service, mux *grpcruntime.ServeMux, profile *config.Profile) {
 	// Embed frontend.
 	embedFrontend(e)
 
