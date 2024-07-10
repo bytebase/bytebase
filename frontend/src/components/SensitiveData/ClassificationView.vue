@@ -3,7 +3,7 @@
     <div>
       <div class="flex items-center space-x-2">
         <NSwitch
-          :value="state.classification.classificationFromConfig"
+          :value="!state.classification.classificationFromConfig"
           :disabled="!allowEdit || !hasSensitiveDataFeature"
           @update:value="onClassificationConfigChange"
         />
@@ -145,17 +145,17 @@ const allowSave = computed(() => {
   );
 });
 
-const onClassificationConfigChange = (on: boolean) => {
+const onClassificationConfigChange = (fromComment: boolean) => {
   $dialog.warning({
     title: t("common.warning"),
-    content: on
+    content: fromComment
       ? t("database.classification.sync-from-comment-enable-warning")
       : t("database.classification.sync-from-comment-disable-warning"),
     style: "z-index: 100000",
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {
-      state.classification.classificationFromConfig = on;
+      state.classification.classificationFromConfig = !fromComment;
       await upsertSetting();
     },
   });
