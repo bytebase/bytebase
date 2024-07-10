@@ -2230,12 +2230,12 @@
     "read-replica-port": "只读副本端口",
     "delete-read-only-data-source": "删除只读数据源",
     "connection-string-schema": "连接串模式",
+    "connection-type": "连接类型",
     "additional-node-addresses": "附加节点地址",
     "replica-set": "副本集",
     "admin": "主库",
     "read-only": "从库",
-    "direct-connection": "Direct Connection",
-    "connection-type": "连接类型"
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2898,7 +2898,8 @@
       "select-type": "选择类型",
       "method": "操作",
       "request": "请求信息",
-      "response": "响应信息"
+      "response": "响应信息",
+      "status": "状态"
     },
     "type": {
       "workspace": {
@@ -3391,7 +3392,10 @@
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
-    "multitenancy": "多租户",
+    "multitenancy": {
+      "self": "多租户",
+      "description": "支持管理跨不同租户的多个同构数据库。"
+    },
     "condition": {
       "self": "条件"
     },

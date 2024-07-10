@@ -2898,7 +2898,8 @@
       "select-type": "Select Type",
       "method": "Method",
       "request": "Request",
-      "response": "Response"
+      "response": "Response",
+      "status": "Status"
     },
     "type": {
       "workspace": {
@@ -3391,7 +3392,10 @@
     "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
-    "multitenancy": "Multitenancy",
+    "multitenancy": {
+      "self": "Multitenancy",
+      "description": "Enables managing multiple homogeneous databases in one workflow across different tenants."
+    },
     "condition": {
       "self": "Condition"
     },

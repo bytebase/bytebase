@@ -2230,12 +2230,12 @@
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
     "connection-string-schema": "Esquema de cadena de conexión",
+    "connection-type": "Tipo de conección",
     "additional-node-addresses": "Direcciones de nodos adicionales",
     "replica-set": "Conjunto de réplicas",
     "admin": "Admin",
     "read-only": "Solo lectura",
-    "direct-connection": "Direct Connection",
-    "connection-type": "Tipo de conección"
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2898,7 +2898,8 @@
       "select-type": "Seleccionar tipo",
       "method": "Método",
       "request": "Pedido",
-      "response": "Respuesta"
+      "response": "Respuesta",
+      "status": "Estatus"
     },
     "type": {
       "workspace": {
@@ -3391,7 +3392,10 @@
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
-    "multitenancy": "Multi Alquiler",
+    "multitenancy": {
+      "self": "Multi Alquiler",
+      "description": "Permite gestionar múltiples bases de datos homogéneas en un flujo de trabajo entre diferentes inquilinos."
+    },
     "condition": {
       "self": "Condición"
     },

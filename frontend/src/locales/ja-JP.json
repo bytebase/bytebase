@@ -2230,12 +2230,12 @@
     "read-replica-port": "リードレプリカポート",
     "delete-read-only-data-source": "読み取り専用データソースを削除する",
     "connection-string-schema": "接続文字列モード",
+    "connection-type": "接続タイプ",
     "additional-node-addresses": "追加のノードアドレス",
     "replica-set": "レプリカセット",
     "admin": "メインライブラリ",
     "read-only": "図書館から",
-    "direct-connection": "Direct Connection",
-    "connection-type": "接続タイプ"
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2898,7 +2898,8 @@
       "select-type": "タイプを選択してください",
       "method": "方法",
       "request": "リクエスト",
-      "response": "応答"
+      "response": "応答",
+      "status": "ポジション"
     },
     "type": {
       "workspace": {
@@ -3391,7 +3392,10 @@
     "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
-    "multitenancy": "マルチテナント",
+    "multitenancy": {
+      "self": "マルチテナント",
+      "description": "異なるテナント間で複数の同種データベースを 1 つのワークフローで管理できます。"
+    },
     "condition": {
       "self": "状態"
     },
