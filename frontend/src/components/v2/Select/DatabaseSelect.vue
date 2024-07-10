@@ -25,11 +25,12 @@ import {
   useCurrentUserV1,
   useSearchDatabaseV1List,
   useDatabaseV1Store,
+  useInstanceV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, unknownDatabase } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
-import { instanceV1Name, supportedEngineV1List } from "@/utils";
+import { instanceResourceName, supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model";
 
 interface DatabaseSelectOption extends SelectOption {
@@ -79,6 +80,7 @@ const currentUserV1 = useCurrentUserV1();
 const { ready } = useSearchDatabaseV1List({
   filter: "instance = instances/-",
 });
+const instanceStore = useInstanceV1Store();
 
 const value = computed(() => {
   if (props.multiple) {
@@ -118,7 +120,8 @@ const rawDatabaseList = computed(() => {
       }
     }
     if (props.instance && props.instance !== String(UNKNOWN_ID)) {
-      if (db.instanceEntity.uid !== props.instance) return false;
+      const instance = instanceStore.getInstanceByName(db.instance);
+      if (instance.uid !== props.instance) return false;
     }
     if (props.project && props.project !== String(UNKNOWN_ID)) {
       if (db.projectEntity.uid !== props.project) return false;
@@ -185,7 +188,7 @@ const renderLabel: SelectRenderLabel = (option) => {
         {
           class: "text-xs opacity-60 ml-1",
         },
-        [`(${instanceV1Name(database.instanceEntity)})`]
+        [`(${instanceResourceName(database.instanceEntity)})`]
       )
     );
   }

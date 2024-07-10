@@ -8,7 +8,7 @@
     <EnvironmentV1Name
       v-if="
         !hasEnvironmentContext ||
-        database.effectiveEnvironment !== database.instanceEntity.environment
+        database.effectiveEnvironment !== database.environment
       "
       :environment="database.effectiveEnvironmentEntity"
       :link="false"

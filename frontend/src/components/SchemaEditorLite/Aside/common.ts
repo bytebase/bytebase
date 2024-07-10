@@ -1,5 +1,5 @@
 import type { TreeOption } from "naive-ui";
-import type { ComposedDatabase, ComposedInstance } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -9,6 +9,7 @@ import type {
   TableMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { groupBy } from "@/utils";
 import { keyForResource } from "../context/common";
 import {
@@ -26,7 +27,7 @@ export interface BaseTreeNode extends TreeOption {
 
 export interface TreeNodeForInstance extends BaseTreeNode {
   type: "instance";
-  instance: ComposedInstance;
+  instance: InstanceResource;
   children: TreeNodeForDatabase[];
 }
 
@@ -201,11 +202,11 @@ const buildInstanceNodeList = (
     targets,
     (target) => target.database.instance
   );
-  return Array.from(groupedByInstance).map(([_, targets]) => {
+  return Array.from(groupedByInstance).map(([key, targets]) => {
     const instance = targets[0].database.instanceEntity;
     const instanceNode: TreeNodeForInstance = {
       type: "instance",
-      key: instance.name,
+      key: key,
       label: instance.title,
       isLeaf: false,
       instance,

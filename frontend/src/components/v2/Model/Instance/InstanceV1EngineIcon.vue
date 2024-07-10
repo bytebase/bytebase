@@ -17,12 +17,12 @@
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance, InstanceResource } from "@/types/proto/v1/instance_service";
 
 defineProps({
   instance: {
     required: true,
-    type: Object as PropType<Instance>,
+    type: Object as PropType<Instance | InstanceResource>,
   },
   showStatus: {
     type: Boolean,

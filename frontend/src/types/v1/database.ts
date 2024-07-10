@@ -2,7 +2,7 @@ import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { Database } from "../proto/v1/database_service";
 import type { Environment } from "../proto/v1/environment_service";
-import type { ComposedInstance } from "./instance";
+import type { InstanceResource } from "../proto/v1/instance_service";
 import { emptyInstance, unknownInstance } from "./instance";
 import type { ComposedProject } from "./project";
 import { emptyProject, unknownProject } from "./project";
@@ -15,7 +15,7 @@ export interface ComposedDatabase extends Database {
   /** instance name. Format: instances/{instance} */
   instance: string;
   /** related instance entity */
-  instanceEntity: ComposedInstance;
+  instanceEntity: InstanceResource;
   effectiveEnvironmentEntity: Environment;
 }
 

@@ -131,9 +131,13 @@ export const provideIssueGhostContext = () => {
   const showFeatureModal = ref(false);
   const showMissingInstanceLicense = computed(() => {
     const instances = uniqBy(
-      flattenTaskV1List(issue.value.rolloutEntity).map(
-        (task) => databaseForTask(issue.value, task).instanceEntity
-      ),
+      flattenTaskV1List(issue.value.rolloutEntity).map((task) => {
+        const db = databaseForTask(issue.value, task);
+        return {
+          name: db.instance,
+          ...db.instanceEntity,
+        };
+      }),
       (instance) => instance.name
     );
     const subscriptionStore = useSubscriptionV1Store();

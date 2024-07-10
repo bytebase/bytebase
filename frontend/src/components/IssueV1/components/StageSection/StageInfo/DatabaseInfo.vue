@@ -7,13 +7,12 @@
     >
       <template
         v-if="
-          database &&
-          database.instanceEntity.environment !== database.effectiveEnvironment
+          database && database.environment !== database.effectiveEnvironment
         "
         #prefix
       >
         <EnvironmentV1Name
-          :environment="database.instanceEntity.environmentEntity"
+          :environment="physicalEnvironment"
           :plain="true"
           :show-icon="false"
           :link="link"
@@ -71,8 +70,8 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
@@ -119,4 +118,12 @@ const database = computedAsync(async () => {
   }
   return undefined;
 }, undefined);
+
+const physicalEnvironment = computed(() => {
+  if (!database.value) return unknownEnvironment();
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(database.value.environment) ??
+    unknownEnvironment()
+  );
+});
 </script>

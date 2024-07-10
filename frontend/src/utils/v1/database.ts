@@ -61,8 +61,8 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
     databaseList,
     [
       (db) => db.effectiveEnvironmentEntity.order,
-      (db) => Number(db.instanceEntity.uid),
-      (db) => Number(db.projectEntity.uid),
+      (db) => db.instance,
+      (db) => db.projectEntity.key,
       (db) => db.databaseName,
     ],
     ["desc", "asc", "asc", "asc"]
@@ -70,9 +70,9 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
 };
 
 export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
-  if (db.instanceEntity.state === State.DELETED) {
-    return true;
-  }
+  // if (db.instanceEntity.state === State.DELETED) {
+  //   return true;
+  // }
   if (db.effectiveEnvironmentEntity.state === State.DELETED) {
     return true;
   }

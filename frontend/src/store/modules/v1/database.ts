@@ -8,9 +8,8 @@ import {
   EMPTY_ID,
   unknownDatabase,
   unknownEnvironment,
-  unknownInstance,
   UNKNOWN_ID,
-  UNKNOWN_INSTANCE_NAME,
+  unknownInstanceResource,
 } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
@@ -24,7 +23,6 @@ import type {
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
-import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";
 
 export const DEFAULT_DATABASE_PAGE_SIZE = 1000000;
@@ -299,15 +297,9 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
 
 export const batchComposeDatabase = async (databaseList: Database[]) => {
   const projectV1Store = useProjectV1Store();
-  const instanceV1Store = useInstanceV1Store();
   const environmentV1Store = useEnvironmentV1Store();
 
   const distinctProjectList = uniq(databaseList.map((db) => db.project));
-  const distinctInstanceList = uniq(
-    databaseList
-      .map((db) => extractDatabaseResourceName(db.name).instance)
-      .filter((instance) => instance !== UNKNOWN_INSTANCE_NAME)
-  );
 
   await Promise.all(
     distinctProjectList.map((project) => {
@@ -317,28 +309,14 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
       return projectV1Store.getOrFetchProjectByName(project);
     })
   );
-  await Promise.all(
-    distinctInstanceList.map((instance) =>
-      instanceV1Store.getOrFetchInstanceByName(instance)
-    )
-  );
   return databaseList.map((db) => {
     const composed = db as ComposedDatabase;
     const { databaseName, instance } = extractDatabaseResourceName(db.name);
 
     composed.databaseName = databaseName;
     composed.instance = instance;
-    const instanceEntity =
-      composed.instance === UNKNOWN_INSTANCE_NAME
-        ? unknownInstance()
-        : instanceV1Store.getInstanceByName(composed.instance) ??
-          unknownInstance();
-    composed.instanceEntity = {
-      ...instanceEntity,
-      environmentEntity:
-        environmentV1Store.getEnvironmentByName(instanceEntity.environment) ??
-        unknownEnvironment(),
-    };
+    composed.instanceEntity =
+      composed.instanceResource ?? unknownInstanceResource();
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
     composed.effectiveEnvironmentEntity =
       environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??

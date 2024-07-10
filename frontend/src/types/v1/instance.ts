@@ -1,13 +1,19 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto/v1/common";
 import type { Environment } from "../proto/v1/environment_service";
-import { Instance } from "../proto/v1/instance_service";
+import { Instance, InstanceResource } from "../proto/v1/instance_service";
 import { emptyEnvironment, unknownEnvironment } from "./environment";
 
 export const EMPTY_INSTANCE_NAME = `instances/${EMPTY_ID}`;
 export const UNKNOWN_INSTANCE_NAME = `instances/${UNKNOWN_ID}`;
 
 export interface ComposedInstance extends Instance {
+  environmentEntity: Environment;
+}
+
+export interface ComposedInstanceResource extends InstanceResource {
+  name: string;
+  environment: string;
   environmentEntity: Environment;
 }
 
@@ -38,6 +44,34 @@ export const unknownInstance = (): ComposedInstance => {
   };
   return {
     ...instance,
+    environmentEntity,
+  };
+};
+
+export const emptyInstanceResource = (): ComposedInstanceResource => {
+  const environmentEntity = emptyEnvironment();
+  const instance = InstanceResource.fromJSON({
+    title: "",
+    engine: Engine.MYSQL,
+  });
+  return {
+    ...instance,
+    name: EMPTY_INSTANCE_NAME,
+    environment: environmentEntity.name,
+    environmentEntity,
+  };
+};
+
+export const unknownInstanceResource = (): ComposedInstanceResource => {
+  const environmentEntity = unknownEnvironment();
+  const instance = {
+    ...emptyInstance(),
+    title: "<<Unknown instance>>",
+  };
+  return {
+    ...instance,
+    name: UNKNOWN_INSTANCE_NAME,
+    environment: environmentEntity.name,
     environmentEntity,
   };
 };

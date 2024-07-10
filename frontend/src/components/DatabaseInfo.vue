@@ -7,13 +7,11 @@
       :text-class="link ? 'hover:underline' : ''"
     >
       <template
-        v-if="
-          database.instanceEntity.environment !== database.effectiveEnvironment
-        "
+        v-if="database.environment !== database.effectiveEnvironment"
         #prefix
       >
         <EnvironmentV1Name
-          :environment="database.instanceEntity.environmentEntity"
+          :environment="physicalEnvironment"
           :plain="true"
           :show-icon="false"
           :link="link"
@@ -48,10 +46,16 @@
 </template>
 
 <script lang="ts" setup>
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
+import { computed } from "vue";
+import {
+  DatabaseV1Name,
+  EnvironmentV1Name,
+  InstanceV1Name,
+} from "@/components/v2";
+import { useEnvironmentV1Store } from "@/store";
+import { unknownEnvironment, type ComposedDatabase } from "@/types";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     database: ComposedDatabase;
     link?: boolean;
@@ -60,4 +64,11 @@ withDefaults(
     link: true,
   }
 );
+
+const physicalEnvironment = computed(() => {
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(props.database.environment) ??
+    unknownEnvironment()
+  );
+});
 </script>

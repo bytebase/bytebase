@@ -13,7 +13,11 @@
     <slot name="prefix" />
 
     <NEllipsis :disabled="!tooltip" :line-clamp="1" :class="textClass">
-      {{ instanceV1Name(instance) }}
+      {{
+        isInstanceEntity(instance)
+          ? instanceV1Name(instance)
+          : instanceResourceName(instance)
+      }}
     </NEllipsis>
 
     <InstanceV1EngineIcon
@@ -26,13 +30,20 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
-import type { Instance } from "@/types/proto/v1/instance_service";
-import { instanceV1Name } from "@/utils";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
+import {
+  isInstanceEntity,
+  instanceV1Name,
+  instanceResourceName,
+} from "@/utils";
 import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 
 const props = withDefaults(
   defineProps<{
-    instance: Instance;
+    instance: Instance | InstanceResource;
     tag?: string;
     link?: boolean;
     icon?: boolean;
