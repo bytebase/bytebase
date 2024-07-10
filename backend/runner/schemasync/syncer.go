@@ -11,11 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/conc/pool"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -273,9 +271,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 	if instanceMeta.Version != instance.EngineVersion {
 		updateInstance.EngineVersion = &instanceMeta.Version
-	}
-	if !equalInstanceMetadata(instanceMeta.Metadata, instance.Metadata) {
-		updateInstance.Metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.GetMysqlLowerCaseTableNames()
 	}
 	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
 	if err != nil {
@@ -593,10 +588,6 @@ func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, instance *
 			slog.String("type", string(api.AnomalyDatabaseConnection)),
 			log.BBError(err))
 	}
-}
-
-func equalInstanceMetadata(x, y *storepb.InstanceMetadata) bool {
-	return cmp.Equal(x, y, protocmp.Transform(), protocmp.IgnoreFields(&storepb.InstanceMetadata{}, "last_sync_time"))
 }
 
 func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig) {
