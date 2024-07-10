@@ -426,7 +426,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 	// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
 	// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
-	if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
+	if force || !common.EqualDatabaseSchemaMetadataFast(oldDatabaseMetadata, databaseMetadata) {
 		var schemaBuf bytes.Buffer
 		if _, err := driver.Dump(ctx, &schemaBuf); err != nil {
 			return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
@@ -597,12 +597,6 @@ func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, instance *
 
 func equalInstanceMetadata(x, y *storepb.InstanceMetadata) bool {
 	return cmp.Equal(x, y, protocmp.Transform(), protocmp.IgnoreFields(&storepb.InstanceMetadata{}, "last_sync_time"))
-}
-
-func equalDatabaseMetadata(x, y *storepb.DatabaseSchemaMetadata) bool {
-	return cmp.Equal(x, y, protocmp.Transform(),
-		protocmp.IgnoreFields(&storepb.TableMetadata{}, "row_count", "data_size", "index_size", "data_free"),
-	)
 }
 
 func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig) {
