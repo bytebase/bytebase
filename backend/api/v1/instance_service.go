@@ -345,7 +345,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.DataSources = &datasources
 		case "activation":
-			patch.Activation = &request.Instance.Activation
+			if request.Instance.Activation != instance.Activation {
+				patch.Activation = &request.Instance.Activation
+			}
 		case "options.sync_interval":
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = instance.Options
