@@ -33,7 +33,7 @@ import (
 
 const (
 	instanceSyncInterval        = 15 * time.Minute
-	databaseSyncCheckerInterval = 5 * time.Second
+	databaseSyncCheckerInterval = 10 * time.Second
 	syncTimeout                 = 15 * time.Minute
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
@@ -89,6 +89,17 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 		for {
 			select {
 			case <-ticker.C:
+				instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
+				if err != nil {
+					if err != nil {
+						slog.Error("Failed to list instance", log.BBError(err))
+						return
+					}
+				}
+				instanceMap := make(map[string]*store.InstanceMessage)
+				for _, instance := range instances {
+					instanceMap[instance.ResourceID] = instance
+				}
 				dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 				s.databaseSyncMap.Range(func(key, value any) bool {
 					database, ok := value.(*store.DatabaseMessage)
@@ -96,9 +107,9 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 						return true
 					}
 
-					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-					if err != nil {
-						slog.Debug("Failed to get instance",
+					instance, ok := instanceMap[database.InstanceID]
+					if !ok {
+						slog.Debug("Instance not found",
 							slog.String("instance", database.InstanceID),
 							log.BBError(err))
 						return true
