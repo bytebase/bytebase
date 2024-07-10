@@ -24,7 +24,7 @@ import (
 )
 
 // NewDataExportExecutor creates a data export task executor.
-func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &DataExportExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -42,7 +42,7 @@ type DataExportExecutor struct {
 	license      enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 // RunOnce will run the data export task executor once.

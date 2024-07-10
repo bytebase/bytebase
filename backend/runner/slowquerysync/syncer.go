@@ -30,7 +30,7 @@ const (
 )
 
 // NewSyncer creates a new slow query syncer.
-func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile) *Syncer {
+func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile *config.Profile) *Syncer {
 	return &Syncer{
 		store:     store,
 		dbFactory: dbFactory,
@@ -44,7 +44,7 @@ type Syncer struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 	stateCfg  *state.State
-	profile   config.Profile
+	profile   *config.Profile
 }
 
 // Run will run the slow query syncer.

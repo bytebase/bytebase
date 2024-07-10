@@ -25,7 +25,7 @@ import (
 )
 
 // NewSchemaUpdateSDLExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaUpdateSDLExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -43,7 +43,7 @@ type SchemaUpdateSDLExecutor struct {
 	license      enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
