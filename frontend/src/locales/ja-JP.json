@@ -2898,7 +2898,8 @@
       "select-type": "タイプを選択してください",
       "method": "方法",
       "request": "リクエスト",
-      "response": "応答"
+      "response": "応答",
+      "status": "ポジション"
     },
     "type": {
       "workspace": {
