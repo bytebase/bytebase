@@ -207,15 +207,14 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 	if !firstUser {
 		rolePtr := ctx.Value(common.RoleContextKey)
-		if rolePtr == nil || rolePtr.(api.Role) != api.WorkspaceAdmin {
-			return nil, status.Errorf(codes.InvalidArgument, "cannot specify roles")
-		}
-		for _, role := range request.User.Roles {
-			roleID, err := common.GetRoleID(role)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		if rolePtr != nil && rolePtr.(api.Role) == api.WorkspaceAdmin {
+			for _, role := range request.User.Roles {
+				roleID, err := common.GetRoleID(role)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				}
+				userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
 			}
-			userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
 		}
 	}
 	// If multiple roles are specified, checks if the current user is workspace admin.
