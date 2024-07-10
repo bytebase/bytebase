@@ -21,17 +21,27 @@
           </NButton>
         </div>
       </div>
-      <NTabs v-model:value="state.selectedTab" type="line">
+      <NTabs
+        :value="actualSelectedTab"
+        type="line"
+        @update:value="state.selectedTab = $event"
+      >
         <NTabPane
           v-for="tab in tabList"
           :key="tab.id"
           :name="tab.id"
           :tab="tab.title"
+          :disabled="
+            tab.id === 'recent' &&
+            state.searchText.trim().length > 0 &&
+            filteredRecentProjectList.length === 0
+          "
         >
           <ProjectV1Table
             :project-list="tab.list"
             :current-project="currentProject"
             :pagination="false"
+            :keyword="state.searchText"
             @row-click="$emit('dismiss')"
           />
         </NTabPane>
@@ -49,8 +59,10 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBModal } from "@/bbkit";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
@@ -62,6 +74,7 @@ import {
   EMPTY_PROJECT_NAME,
 } from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
+import ProjectCreatePanel from "./ProjectCreatePanel.vue";
 
 interface LocalState {
   searchText: string;
@@ -99,18 +112,36 @@ const getFilteredProjectList = (
   return filterProjectV1ListByKeyword(list, state.searchText);
 };
 
+const filteredRecentProjectList = computed(() => {
+  return getFilteredProjectList(recentViewProjects.value);
+});
+const filteredAllProjectList = computed(() => {
+  return getFilteredProjectList(projectList.value);
+});
+
 const tabList = computed(() => [
   {
     title: t("common.recent"),
     id: "recent",
-    list: getFilteredProjectList(recentViewProjects.value),
+    list: filteredRecentProjectList.value,
   },
   {
     title: t("common.all"),
     id: "all",
-    list: getFilteredProjectList(projectList.value),
+    list: filteredAllProjectList.value,
   },
 ]);
+
+const actualSelectedTab = computed((): LocalState["selectedTab"] => {
+  if (
+    state.searchText.trim().length > 0 &&
+    filteredRecentProjectList.value.length === 0
+  ) {
+    // Force to view 'ALL' tab when search by keyword but "Recent" is empty.
+    return "all";
+  }
+  return state.selectedTab;
+});
 
 const currentProject = computed(() => {
   if (
