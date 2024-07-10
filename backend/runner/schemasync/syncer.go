@@ -424,29 +424,27 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		rawDump = dbSchema.GetSchema()
 	}
 
-	if force || !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
-		// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
-		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
-		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
-			var schemaBuf bytes.Buffer
-			if _, err := driver.Dump(ctx, &schemaBuf); err != nil {
-				return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
-			}
-			rawDump = schemaBuf.Bytes()
+	// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
+	// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
+	if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
+		var schemaBuf bytes.Buffer
+		if _, err := driver.Dump(ctx, &schemaBuf); err != nil {
+			return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 		}
+		rawDump = schemaBuf.Bytes()
+	}
 
-		if err := s.store.UpsertDBSchema(ctx,
-			database.UID,
-			model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
-			api.SystemBotID,
-		); err != nil {
-			if strings.Contains(err.Error(), "escape sequence") {
-				if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
-					slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
-				}
+	if err := s.store.UpsertDBSchema(ctx,
+		database.UID,
+		model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
+		api.SystemBotID,
+	); err != nil {
+		if strings.Contains(err.Error(), "escape sequence") {
+			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
+				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
 			}
-			return errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 		}
+		return errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 	}
 
 	// Check schema drift
