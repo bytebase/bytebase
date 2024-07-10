@@ -55,8 +55,8 @@ export const useCommonSearchScopeOptions = (
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
   const fullScopeOptions = computed((): ScopeOption[] => {
-    const scopes: ScopeOption[] = [
-      {
+    const scopeCreators = {
+      project: () => ({
         id: "project",
         title: t("issue.advanced-search.scope.project.title"),
         description: t("issue.advanced-search.scope.project.description"),
@@ -76,8 +76,8 @@ export const useCommonSearchScopeOptions = (
             },
           };
         }),
-      },
-      {
+      }),
+      instance: () => ({
         id: "instance",
         title: t("issue.advanced-search.scope.instance.title"),
         description: t("issue.advanced-search.scope.instance.description"),
@@ -104,8 +104,8 @@ export const useCommonSearchScopeOptions = (
             },
           };
         }),
-      },
-      {
+      }),
+      database: () => ({
         id: "database",
         title: t("issue.advanced-search.scope.database.title"),
         description: t("issue.advanced-search.scope.database.description"),
@@ -133,8 +133,8 @@ export const useCommonSearchScopeOptions = (
             },
           };
         }),
-      },
-      {
+      }),
+      environment: () => ({
         id: "environment",
         title: t("issue.advanced-search.scope.environment.title"),
         description: t("issue.advanced-search.scope.environment.description"),
@@ -149,8 +149,8 @@ export const useCommonSearchScopeOptions = (
               }),
           };
         }),
-      },
-      {
+      }),
+      ["project-assigned"]: () => ({
         id: "project-assigned",
         title: t("issue.advanced-search.scope.project-assigned.title"),
         description: t(
@@ -174,11 +174,17 @@ export const useCommonSearchScopeOptions = (
               ),
           },
         ],
-      },
-    ];
-    return scopes.filter((scope) =>
-      unref(supportOptionIdList).includes(scope.id)
-    );
+      }),
+    } as Record<SearchScopeId, () => ScopeOption>;
+
+    const scopes: ScopeOption[] = [];
+    unref(supportOptionIdList).forEach((id) => {
+      const create = scopeCreators[id];
+      if (create) {
+        scopes.push(create());
+      }
+    });
+    return scopes;
   });
 
   // filteredScopeOptions will filter search options by chosen scope.
