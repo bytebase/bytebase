@@ -110,7 +110,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := cutover(ctx, taskContext, e.store, e.dbFactory, e.stateCfg, e.profile, task, taskRunUID, statement, payload.SheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
-	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
 			slog.String("databaseName", database.DatabaseName),

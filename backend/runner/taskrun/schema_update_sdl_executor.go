@@ -84,7 +84,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, driverCtx cont
 	}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.MigrateSDL, ddl, version, &payload.SheetID)
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
 			slog.String("databaseName", database.DatabaseName),
