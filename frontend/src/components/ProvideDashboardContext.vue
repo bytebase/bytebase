@@ -13,6 +13,7 @@
 <script lang="ts" setup>
 import { NSpin } from "naive-ui";
 import { ref, onMounted } from "vue";
+import { onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   useEnvironmentV1Store,
@@ -65,6 +66,7 @@ const fetchInstancesAndDatabases = async (project: string) => {
   instanceAndDatabaseInitialized.add(project || "");
 };
 
+let unregisterBeforeEachHook: (() => void) | undefined;
 onMounted(async () => {
   await router.isReady();
 
@@ -89,7 +91,7 @@ onMounted(async () => {
 
   isInitializing.value = false;
 
-  router.beforeEach((to, from, next) => {
+  unregisterBeforeEachHook = router.beforeEach((to, from, next) => {
     const fromProject = from.params.projectId as string;
     const toProject = to.params.projectId as string;
     if (fromProject !== toProject) {
@@ -107,5 +109,9 @@ onMounted(async () => {
 
     next();
   });
+});
+
+onUnmounted(() => {
+  unregisterBeforeEachHook && unregisterBeforeEachHook();
 });
 </script>
