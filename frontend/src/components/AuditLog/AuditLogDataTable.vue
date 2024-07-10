@@ -130,9 +130,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         title: t("audit-log.table.status"),
         render: (auditLog) =>
           auditLog.status ? (
-            <JSONStringView
-              jsonString={`{"code": "${auditLog.status.code.toString()}","message": "${auditLog.status.message}"}`}
-            />
+            <JSONStringView jsonString={JSON.stringify(auditLog.status)} />
           ) : (
             "-"
           ),
