@@ -49,8 +49,11 @@ func (s *ActuatorService) GetActuatorInfo(ctx context.Context, _ *v1pb.GetActuat
 func (s *ActuatorService) UpdateActuatorInfo(ctx context.Context, request *v1pb.UpdateActuatorInfoRequest) (*v1pb.ActuatorInfo, error) {
 	for _, path := range request.UpdateMask.Paths {
 		if path == "debug" {
+			debug := request.GetActuator().GetDebug()
+
+			s.profile.RuntimeDebug.Store(debug)
 			level := slog.LevelInfo
-			if request.Actuator.Debug {
+			if debug {
 				level = slog.LevelDebug
 			}
 			log.LogLevel.Set(level)
@@ -144,7 +147,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		LastActiveTime:     timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
 		WorkspaceId:        workspaceID,
 		GitopsWebhookUrl:   setting.GitopsWebhookUrl,
-		Debug:              slog.Default().Enabled(ctx, slog.LevelDebug),
+		Debug:              s.profile.RuntimeDebug.Load(),
 		Lsp:                s.profile.Lsp,
 		PreUpdateBackup:    s.profile.PreUpdateBackup,
 		UnlicensedFeatures: unlicensedFeaturesString,

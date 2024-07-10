@@ -2,6 +2,7 @@
 package config
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -9,6 +10,7 @@ import (
 )
 
 // Profile is the configuration to start main server.
+// Profile must not be copied, its fields must not be modified unless mentioned otherwise.
 type Profile struct {
 	// Mode can be "prod" or "dev"
 	Mode common.ReleaseMode
@@ -67,6 +69,9 @@ type Profile struct {
 	ExecuteDetail   bool
 
 	DevelopmentAudit bool
+
+	// can be set in runtime
+	RuntimeDebug atomic.Bool
 }
 
 // UseEmbedDB returns whether to use embedDB.
