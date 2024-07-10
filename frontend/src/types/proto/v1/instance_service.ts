@@ -699,6 +699,16 @@ export interface InstanceResource {
   engineVersion: string;
   dataSources: DataSource[];
   activation: boolean;
+  /**
+   * The name of the instance.
+   * Format: instances/{instance}
+   */
+  name: string;
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
 }
 
 export interface SASLConfig {
@@ -3192,7 +3202,15 @@ export const DataSource_Address = {
 };
 
 function createBaseInstanceResource(): InstanceResource {
-  return { title: "", engine: Engine.ENGINE_UNSPECIFIED, engineVersion: "", dataSources: [], activation: false };
+  return {
+    title: "",
+    engine: Engine.ENGINE_UNSPECIFIED,
+    engineVersion: "",
+    dataSources: [],
+    activation: false,
+    name: "",
+    environment: "",
+  };
 }
 
 export const InstanceResource = {
@@ -3211,6 +3229,12 @@ export const InstanceResource = {
     }
     if (message.activation === true) {
       writer.uint32(40).bool(message.activation);
+    }
+    if (message.name !== "") {
+      writer.uint32(50).string(message.name);
+    }
+    if (message.environment !== "") {
+      writer.uint32(58).string(message.environment);
     }
     return writer;
   },
@@ -3257,6 +3281,20 @@ export const InstanceResource = {
 
           message.activation = reader.bool();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.environment = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3275,6 +3313,8 @@ export const InstanceResource = {
         ? object.dataSources.map((e: any) => DataSource.fromJSON(e))
         : [],
       activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
     };
   },
 
@@ -3295,6 +3335,12 @@ export const InstanceResource = {
     if (message.activation === true) {
       obj.activation = message.activation;
     }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.environment !== "") {
+      obj.environment = message.environment;
+    }
     return obj;
   },
 
@@ -3308,6 +3354,8 @@ export const InstanceResource = {
     message.engineVersion = object.engineVersion ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.activation = object.activation ?? false;
+    message.name = object.name ?? "";
+    message.environment = object.environment ?? "";
     return message;
   },
 };
