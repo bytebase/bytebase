@@ -8,7 +8,6 @@ import (
 
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -70,9 +69,9 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, lspServer *lsp.
 			return context.JSON(http.StatusTooManyRequests, nil)
 		},
 	}))
-	if profile.Debug {
-		pprof.Register(e)
-	}
+
+	registerPprof(e, &profile.RuntimeDebug)
+
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
