@@ -59,9 +59,14 @@
         {{ $t("common.options") }}
       </p>
       <div>
-        <NCheckbox v-model:checked="state.multitenancy" size="large">
-          {{ $t("database-group.multitenancy") }}
-        </NCheckbox>
+        <NCheckbox
+          v-model:checked="state.multitenancy"
+          size="large"
+          :label="$t('database-group.multitenancy.self')"
+        />
+        <p class="text-sm text-gray-400 pl-6 ml-0.5">
+          {{ $t("database-group.multitenancy.description") }}
+        </p>
       </div>
     </div>
   </div>
