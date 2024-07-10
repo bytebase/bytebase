@@ -1198,7 +1198,14 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 // sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
-func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (storepb.Advice_Status, []*v1pb.Advice, error) {
+func (s *SQLService) sqlReviewCheck(
+	ctx context.Context,
+	statement string,
+	changeType v1pb.CheckRequest_ChangeType,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	overrideMetadata *storepb.DatabaseSchemaMetadata,
+) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
@@ -1235,15 +1242,24 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 	}
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
+
+	context := advisor.SQLReviewCheckContext{
+		Charset:         dbMetadata.CharacterSet,
+		Collation:       dbMetadata.Collation,
+		ChangeType:      convertChangeType(changeType),
+		DBSchema:        dbMetadata,
+		DbType:          instance.Engine,
+		Catalog:         catalog,
+		Driver:          connection,
+		Context:         ctx,
+		CurrentDatabase: database.DatabaseName,
+	}
+
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
-		instance.Engine,
-		dbMetadata,
 		statement,
-		changeType,
-		catalog,
-		connection,
 		database,
+		context,
 	)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
@@ -1283,13 +1299,9 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 
 func (s *SQLService) sqlCheck(
 	ctx context.Context,
-	dbType storepb.Engine,
-	dbSchema *storepb.DatabaseSchemaMetadata,
 	statement string,
-	changeType v1pb.CheckRequest_ChangeType,
-	catalog *catalog.Catalog,
-	driver *sql.DB,
 	database *store.DatabaseMessage,
+	context advisor.SQLReviewCheckContext,
 ) (storepb.Advice_Status, []*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
@@ -1300,17 +1312,7 @@ func (s *SQLService) sqlCheck(
 		return storepb.Advice_ERROR, nil, err
 	}
 
-	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
-		Charset:         dbSchema.CharacterSet,
-		Collation:       dbSchema.Collation,
-		ChangeType:      convertChangeType(changeType),
-		DBSchema:        dbSchema,
-		DbType:          dbType,
-		Catalog:         catalog,
-		Driver:          driver,
-		Context:         ctx,
-		CurrentDatabase: database.DatabaseName,
-	})
+	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, err
 	}

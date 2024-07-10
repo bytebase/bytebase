@@ -487,7 +487,12 @@ type SQLReviewCheckContext struct {
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
-func SQLReviewCheck(sm *sheet.Manager, statements string, ruleList []*storepb.SQLReviewRule, checkContext SQLReviewCheckContext) ([]*storepb.Advice, error) {
+func SQLReviewCheck(
+	sm *sheet.Manager,
+	statements string,
+	ruleList []*storepb.SQLReviewRule,
+	checkContext SQLReviewCheckContext,
+) ([]*storepb.Advice, error) {
 	ast, result := sm.GetAST(checkContext.DbType, statements)
 	if ast == nil || len(ruleList) == 0 {
 		return result, nil
@@ -509,7 +514,12 @@ func SQLReviewCheck(sm *sheet.Manager, statements string, ruleList []*storepb.SQ
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(SQLReviewRuleType(rule.Type), checkContext.DbType)
+		ruleType := SQLReviewRuleType(rule.Type)
+		if SkipRuleInChangeType(ruleType, checkContext.ChangeType) {
+			continue
+		}
+
+		advisorType, err := getAdvisorTypeByRule(ruleType, checkContext.DbType)
 		if err != nil {
 			if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED {
 				slog.Warn("not supported rule", "rule type", rule.Type, "engine", rule.Engine.String(), log.BBError(err))
