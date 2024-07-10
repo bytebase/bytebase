@@ -1,3 +1,4 @@
+import { uniqBy } from "lodash-es";
 import type { Ref, VNode } from "vue";
 import { computed, h, unref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -11,12 +12,12 @@ import {
 } from "@/components/v2";
 import {
   useDatabaseV1Store,
-  useInstanceV1List,
   useDatabaseV1ListByProject,
   useEnvironmentV1List,
   useProjectV1List,
+  useEnvironmentV1Store,
 } from "@/store";
-import { UNKNOWN_ID, type MaybeRef } from "@/types";
+import { UNKNOWN_ID, unknownEnvironment, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
@@ -35,6 +36,7 @@ export const useCommonSearchScopeOptions = (
   const { t } = useI18n();
   const route = useRoute();
   const databaseV1Store = useDatabaseV1Store();
+  const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List(false /* !showDeleted */);
   const { projectList } = useProjectV1List();
 
@@ -45,12 +47,18 @@ export const useCommonSearchScopeOptions = (
     }
     return undefined;
   });
-  const { instanceList } = useInstanceV1List(
-    /* !showDeleted */ false,
-    /* !forceUpdate */ false,
-    /* parent */ project
-  );
   const { databaseList } = useDatabaseV1ListByProject(project);
+  const instanceList = computed(() => {
+    return uniqBy(
+      databaseList.value.map((db) => db.instanceResource),
+      (ir) => ir.name
+    ).map((ir) => ({
+      ...ir,
+      environmentEntity:
+        environmentStore.getEnvironmentByName(ir.environment) ??
+        unknownEnvironment(),
+    }));
+  });
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.

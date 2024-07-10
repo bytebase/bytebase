@@ -325,6 +325,7 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
       instance,
       db
     );
+    composed.environment = composed.instanceResource.environment;
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
     composed.effectiveEnvironmentEntity =
       environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
@@ -341,6 +342,6 @@ export const composeInstanceResourceForDatabase = (
   return {
     ...ir,
     name,
-    environment: db.environment,
+    environment: db.environment || db.effectiveEnvironment,
   };
 };
