@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
-import { ref, watchEffect } from "vue";
+import { ref, watch } from "vue";
 import type { RuleTemplateV2 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
@@ -39,8 +39,9 @@ const props = defineProps<{
   ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
 }>();
 
-watchEffect(() => {
-  selectedEngine.value =
-    [...props.ruleMapByEngine.keys()][0] ?? Engine.UNRECOGNIZED;
-});
+watch(
+  () => [...props.ruleMapByEngine.keys()][0] ?? Engine.UNRECOGNIZED,
+  (engine) => (selectedEngine.value = engine),
+  { immediate: true }
+);
 </script>
