@@ -50,12 +50,12 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
 
   // Actions
   const upsertInstances = async (list: Instance[]) => {
-    const composedInstances: ComposedInstance[] = [];
-    for (let i = 0; i < list.length; i++) {
-      const composed = await composeInstance(list[i]);
+    const composedInstances = await Promise.all(
+      list.map((instance) => composeInstance(instance))
+    );
+    composedInstances.forEach((composed) => {
       instanceMapByName.set(composed.name, composed);
-      composedInstances.push(composed);
-    }
+    });
     return composedInstances;
   };
   const fetchInstanceList = async (showDeleted = false, parent?: string) => {
