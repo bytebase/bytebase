@@ -5,10 +5,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestEqualDatabaseMetadata(t *testing.T) {
+func TestEqualDatabaseMetadataFast(t *testing.T) {
 	tests := []struct {
 		x    *storepb.DatabaseSchemaMetadata
 		y    *storepb.DatabaseSchemaMetadata
@@ -22,7 +23,7 @@ func TestEqualDatabaseMetadata(t *testing.T) {
 		{
 			x:    nil,
 			y:    &storepb.DatabaseSchemaMetadata{},
-			want: false,
+			want: true,
 		},
 		{
 			x: &storepb.DatabaseSchemaMetadata{
@@ -129,8 +130,9 @@ func TestEqualDatabaseMetadata(t *testing.T) {
 			want: true,
 		},
 	}
+
 	for _, test := range tests {
-		got := equalDatabaseMetadata(test.x, test.y)
+		got := common.EqualDatabaseSchemaMetadataFast(test.x, test.y)
 		assert.Equal(t, test.want, got)
 	}
 }
