@@ -30,7 +30,7 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, unknownDatabase } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
-import { instanceResourceName, supportedEngineV1List } from "@/utils";
+import { instanceV1Name, supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model";
 
 interface DatabaseSelectOption extends SelectOption {
@@ -188,7 +188,7 @@ const renderLabel: SelectRenderLabel = (option) => {
         {
           class: "text-xs opacity-60 ml-1",
         },
-        [`(${instanceResourceName(database.instanceEntity)})`]
+        [`(${instanceV1Name(database.instanceEntity)})`]
       )
     );
   }

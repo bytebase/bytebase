@@ -12,37 +12,18 @@ import type {
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
-export const isInstanceEntity = (
-  instance: Instance | InstanceResource
-): instance is Instance => {
-  return (
-    typeof (instance as any)["name"] === "string" &&
-    typeof (instance as any)["uid"] === "string"
-  );
-};
-
-export function instanceV1Name(instance: Instance) {
+export function instanceV1Name(instance: Instance | InstanceResource) {
   const { t } = useI18n();
   const store = useSubscriptionV1Store();
   let name = instance.title;
   // instance cannot be deleted and activated at the same time.
-  if (instance.state === State.DELETED) {
+  if ((instance as Instance).state === State.DELETED) {
     name += ` (${t("common.archived")})`;
   } else if (
-    instance.uid !== `${UNKNOWN_ID}` &&
+    (instance as Instance).uid !== `${UNKNOWN_ID}` &&
     !instance.activation &&
     store.currentPlan !== PlanType.FREE
   ) {
-    name += ` (${t("common.no-license")})`;
-  }
-  return name;
-}
-
-export function instanceResourceName(instance: InstanceResource) {
-  const { t } = useI18n();
-  const store = useSubscriptionV1Store();
-  let name = instance.title;
-  if (!instance.activation && store.currentPlan !== PlanType.FREE) {
     name += ` (${t("common.no-license")})`;
   }
   return name;
