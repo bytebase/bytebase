@@ -4,6 +4,8 @@ import {
   getWorksheetId,
   worksheetNamePrefix,
   projectNamePrefix,
+  getReviewConfigId,
+  reviewConfigNamePrefix,
 } from "@/store/modules/v1/common";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import type { IssueId, SQLReviewPolicy } from "../types";
@@ -61,7 +63,11 @@ export function taskSlug(name: string, id: IdType): string {
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return reviewPolicy.id;
+  return getReviewConfigId(reviewPolicy.id);
+}
+
+export function sqlReviewNameFromSlug(slug: string): string {
+  return `${reviewConfigNamePrefix}${slug}`;
 }
 
 export function worksheetSlugV1(sheet: Worksheet): string {
