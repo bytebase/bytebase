@@ -1,5 +1,5 @@
 import type { TreeOption } from "naive-ui";
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, ComposedInstanceResource } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -9,7 +9,6 @@ import type {
   TableMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { groupBy } from "@/utils";
 import { keyForResource } from "../context/common";
 import {
@@ -27,7 +26,7 @@ export interface BaseTreeNode extends TreeOption {
 
 export interface TreeNodeForInstance extends BaseTreeNode {
   type: "instance";
-  instance: InstanceResource;
+  instance: ComposedInstanceResource;
   children: TreeNodeForDatabase[];
 }
 
