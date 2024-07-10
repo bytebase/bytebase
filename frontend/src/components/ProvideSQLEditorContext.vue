@@ -185,6 +185,10 @@ const prepareDatabases = async () => {
   editorStore.databaseList = databaseList;
 };
 
+const prepareInstancesAndDatabases = async () => {
+  await Promise.all([prepareInstances(), prepareDatabases()]);
+};
+
 const connect = (connection: SQLEditorConnection) => {
   tabStore.selectOrAddSimilarNewTab(
     {
@@ -595,8 +599,7 @@ const restoreLastVisitedSidebarTab = () => {
 onMounted(async () => {
   editorStore.projectContextReady = false;
   await Promise.all([initializeProjects(), groupStore.fetchGroupList()]);
-  await prepareInstances();
-  await prepareDatabases();
+  await prepareInstancesAndDatabases();
   tabStore.maybeInitProject(editorStore.project);
   editorStore.projectContextReady = true;
   nextTick(() => {
@@ -611,8 +614,7 @@ onMounted(async () => {
     async () => {
       editorStore.projectContextReady = false;
       await handleProjectSwitched();
-      await prepareInstances();
-      await prepareDatabases();
+      await prepareInstancesAndDatabases();
       tabStore.maybeInitProject(editorStore.project);
       editorStore.projectContextReady = true;
       nextTick(() => {
