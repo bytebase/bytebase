@@ -114,9 +114,9 @@ type Server struct {
 }
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
+func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s := &Server{
-		profile:         &profile,
+		profile:         profile,
 		startedTs:       time.Now().Unix(),
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
@@ -193,7 +193,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
-	storeInstance, err := store.New(storeDB, &profile)
+	storeInstance, err := store.New(storeDB, profile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to new store")
 	}

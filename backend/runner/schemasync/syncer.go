@@ -41,7 +41,7 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, licenseService enterprise.LicenseService) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile *config.Profile, licenseService enterprise.LicenseService) *Syncer {
 	return &Syncer{
 		store:          stores,
 		dbFactory:      dbFactory,
@@ -58,7 +58,7 @@ type Syncer struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	stateCfg        *state.State
-	profile         config.Profile
+	profile         *config.Profile
 	licenseService  enterprise.LicenseService
 	databaseSyncMap sync.Map // map[int]*store.DatabaseMessage
 }
