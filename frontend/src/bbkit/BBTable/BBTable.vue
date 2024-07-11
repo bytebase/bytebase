@@ -113,7 +113,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults } from "vue";
+import { computed } from "vue";
 import type { VueClass } from "@/utils";
 import type { BBTableColumn, BBTableSectionDataSource } from "../types";
 

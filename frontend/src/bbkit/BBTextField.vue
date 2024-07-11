@@ -22,7 +22,7 @@
 <script lang="ts" setup>
 import { isEmpty } from "lodash-es";
 import { NInput } from "naive-ui";
-import { reactive, ref, watch, withDefaults } from "vue";
+import { reactive, ref, watch } from "vue";
 
 interface LocalState {
   text: string;
