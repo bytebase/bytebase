@@ -2823,7 +2823,7 @@
       "no-linked-resources": "Sin recursos adjuntos",
       "change-resources": "Cambiar recursos adjuntos",
       "self": "Adjuntar a recursos",
-      "label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
+      "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
       "label-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
       "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno."
     },
