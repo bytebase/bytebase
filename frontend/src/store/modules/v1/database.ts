@@ -1,6 +1,6 @@
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watch } from "vue";
+import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
@@ -343,6 +343,6 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
     composed.effectiveEnvironmentEntity =
       environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
       unknownEnvironment();
-    return composed;
+    return markRaw(composed);
   });
 };
