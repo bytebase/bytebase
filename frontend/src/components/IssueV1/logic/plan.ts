@@ -12,28 +12,32 @@ import {
   type ComposedIssue,
   unknownDatabase,
   unknownEnvironment,
+  type ComposedDatabase,
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { extractDatabaseResourceName, extractDatabaseGroupName } from "@/utils";
 
-export const databaseForSpec = (issue: ComposedIssue, spec: Plan_Spec) => {
+export const databaseForSpec = (
+  issue: ComposedIssue,
+  spec: Plan_Spec
+): ComposedDatabase => {
   const { createDatabaseConfig, changeDatabaseConfig, exportDataConfig } = spec;
   if (createDatabaseConfig !== undefined) {
-    const instance = createDatabaseConfig.target;
+    const instanceName = createDatabaseConfig.target;
     const databaseName = createDatabaseConfig.database;
-    const instanceEntity = useInstanceV1Store().getInstanceByName(instance);
+    const instance = useInstanceV1Store().getInstanceByName(instanceName);
     return {
       ...unknownDatabase(),
-      name: `${instance}/databases/${databaseName}`,
+      name: `${instanceName}/databases/${databaseName}`,
       uid: String(UNKNOWN_ID),
       databaseName,
-      instance,
-      instanceEntity,
+      instance: instanceName,
       project: issue.project,
       projectEntity: issue.projectEntity,
-      effectiveEnvironment: instanceEntity.environment,
-      effectiveEnvironmentEntity: instanceEntity.environmentEntity,
+      effectiveEnvironment: instance.environment,
+      effectiveEnvironmentEntity: instance.environmentEntity,
+      instanceResource: instance,
     };
   } else if (
     changeDatabaseConfig !== undefined ||
