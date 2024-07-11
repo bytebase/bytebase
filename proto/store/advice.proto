@@ -30,4 +30,5 @@ message Advice {
   string detail = 5;
 
   Position start_position = 6;
+  Position end_position = 7;
 }
