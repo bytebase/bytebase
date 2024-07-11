@@ -249,9 +249,7 @@ func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, d
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
 	migrationContext.ServeSocketFile = getSocketFilename(taskID, taskCreatedTs, database.UID, database.DatabaseName, tableName)
-	migrationContext.DropServeSocket = true
 	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID, taskCreatedTs, database.UID, database.DatabaseName, tableName)
-	migrationContext.InitiallyDropGhostTable = true
 	migrationContext.TimestampOldTable = defaultConfig.timestampOldTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(defaultConfig.heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(defaultConfig.niceRatio)
