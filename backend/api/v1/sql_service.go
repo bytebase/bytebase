@@ -828,7 +828,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, instance *st
 	if instance.Engine != storepb.Engine_ORACLE {
 		return nil
 	}
-	return func(ctx context.Context, linkedDatabaseName string) (string, *model.DatabaseMetadata, error) {
+	return func(ctx context.Context, linkedDatabaseName string, schemaName string) (string, *model.DatabaseMetadata, error) {
 		// Find the linked database metadata.
 		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
@@ -851,9 +851,12 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, instance *st
 		}
 		// Find the linked database in Bytebase.
 		var linkedDatabase *store.DatabaseMessage
-		username := linkedMeta.GetUsername()
+		databaseName := linkedMeta.GetUsername()
+		if schemaName != "" {
+			databaseName = schemaName
+		}
 		databaseList, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
-			DatabaseName: &username,
+			DatabaseName: &databaseName,
 			Engine:       &instance.Engine,
 		})
 		if err != nil {
