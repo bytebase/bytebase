@@ -102,9 +102,8 @@
     <div>
       <SQLReviewTemplateSelector
         :required="true"
-        :selected-template="selectedTemplate"
+        :selected-template-id="selectedTemplateId"
         @select-template="$emit('select-template', $event)"
-        @templates-change="onTemplatesChange($event)"
       />
     </div>
   </div>
@@ -136,7 +135,7 @@ const props = defineProps<{
   resourceId: string;
   attachedResources: string[];
   isCreate: boolean;
-  selectedTemplate?: SQLReviewPolicyTemplateV2;
+  selectedTemplateId?: string;
   isEdit: boolean;
   allowChangeAttachedResource: boolean;
 }>();
@@ -180,15 +179,6 @@ const filterResource = (name: string): boolean => {
     return true;
   }
   return !sqlReviewStore.getReviewPolicyByResouce(name);
-};
-
-const onTemplatesChange = (templates: {
-  policy: SQLReviewPolicyTemplateV2[];
-  builtin: SQLReviewPolicyTemplateV2[];
-}) => {
-  if (!props.selectedTemplate) {
-    emit("select-template", templates.policy[0] ?? templates.builtin[0]);
-  }
 };
 
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();

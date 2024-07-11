@@ -16,13 +16,14 @@
           class="flex flex-col justify-start items-start md:flex-row md:items-center md:justify-between"
         >
           <SQLReviewLevelFilter
+            v-if="!hideLevelFilter"
             :rule-list="ruleListFilteredByCategory"
             :is-checked-level="(level) => params.checkedLevel.has(level)"
             @toggle-checked-level="$emit('toggle-checked-level', $event)"
           />
           <SearchBox
             ref="searchField"
-            class="mt-2 md:mt-0 md:!max-w-72"
+            class="ml-auto mt-2 md:mt-0 md:!max-w-72"
             style="max-width: 100%"
             :value="params.searchText"
             :placeholder="$t('common.filter-by-name')"
@@ -47,6 +48,7 @@ import type { SQLRuleFilterParams } from "./useSQLRuleFilter";
 const props = defineProps<{
   ruleList: RuleTemplateV2[];
   params: SQLRuleFilterParams;
+  hideLevelFilter?: boolean;
 }>();
 
 defineEmits<{

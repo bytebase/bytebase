@@ -2807,6 +2807,8 @@
     "policy-updated": "Successfully updated the review policy.",
     "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
+    "add-rules": "Add rules",
+    "add-or-remove-rules": "Add or remove rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Admin has permission to create or update review policy.",
     "disable": "Disable",

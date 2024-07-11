@@ -18,8 +18,8 @@
           :name="state.name"
           :resource-id="state.resourceId"
           :attached-resources="state.attachedResources"
-          :selected-template="
-            state.pendingApplyTemplate || state.selectedTemplate
+          :selected-template-id="
+            state.pendingApplyTemplate?.id ?? state.selectedTemplateId
           "
           :is-edit="!!policy"
           :is-create="!isUpdate"
@@ -35,7 +35,8 @@
       <template #1>
         <SQLReviewConfig
           :rule-map-by-engine="state.selectedRuleMapByEngine"
-          @rule-change="change"
+          @rule-upsert="upsertRule"
+          @rule-remove="removeRole"
         />
       </template>
     </StepTab>
@@ -71,13 +72,14 @@ import {
   getRuleMapByEngine,
   convertRuleMapToPolicyRuleList,
   ruleIsAvailableInSubscription,
+  TEMPLATE_LIST_V2 as builtInTemplateList,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
-import { rulesToTemplate } from "./components";
+import { getTemplateId } from "./components";
 
 interface LocalState {
   currentStep: number;
@@ -85,7 +87,7 @@ interface LocalState {
   resourceId: string;
   attachedResources: string[];
   selectedRuleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
-  selectedTemplate: SQLReviewPolicyTemplateV2 | undefined;
+  selectedTemplateId: string | undefined;
   ruleUpdated: boolean;
   pendingApplyTemplate: SQLReviewPolicyTemplateV2 | undefined;
 }
@@ -129,9 +131,9 @@ const state = reactive<LocalState>({
   resourceId: props.policy ? getReviewConfigId(props.policy.id) : "",
   attachedResources: props.selectedResources,
   selectedRuleMapByEngine: getRuleMapByEngine(props.selectedRuleList),
-  selectedTemplate: props.policy
-    ? rulesToTemplate(props.policy, false)
-    : undefined,
+  selectedTemplateId: props.policy
+    ? getTemplateId(props.policy)
+    : builtInTemplateList[0]?.id,
   ruleUpdated: false,
   pendingApplyTemplate: undefined,
 });
@@ -142,7 +144,7 @@ const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   if (!template) {
     return;
   }
-  state.selectedTemplate = template;
+  state.selectedTemplateId = template.id;
   state.pendingApplyTemplate = undefined;
 
   state.selectedRuleMapByEngine = getRuleMapByEngine(
@@ -183,11 +185,7 @@ const onCancel = (newPolicy: SQLReviewPolicy | undefined = undefined) => {
 const allowNext = computed((): boolean => {
   switch (state.currentStep) {
     case BASIC_INFO_STEP:
-      return (
-        !!state.name &&
-        !!state.resourceId &&
-        state.selectedRuleMapByEngine.size > 0
-      );
+      return !!state.name && !!state.resourceId;
     case CONFIGURE_RULE_STEP:
       return state.selectedRuleMapByEngine.size > 0;
     case PREVIEW_STEP:
@@ -267,7 +265,7 @@ const tryFinishSetup = async () => {
 
 const tryApplyTemplate = (template: SQLReviewPolicyTemplateV2) => {
   if (state.ruleUpdated || props.policy) {
-    if (template.id === state.selectedTemplate?.id) {
+    if (template.id === state.selectedTemplateId) {
       state.pendingApplyTemplate = undefined;
       return;
     }
@@ -277,17 +275,38 @@ const tryApplyTemplate = (template: SQLReviewPolicyTemplateV2) => {
   onTemplateApply(template);
 };
 
-const change = (rule: RuleTemplateV2, overrides: Partial<RuleTemplateV2>) => {
+const removeRole = (rule: RuleTemplateV2) => {
+  state.selectedRuleMapByEngine.get(rule.engine)?.delete(rule.type);
+  if (state.selectedRuleMapByEngine.get(rule.engine)?.size === 0) {
+    state.selectedRuleMapByEngine.delete(rule.engine);
+  }
+};
+
+const upsertRule = (
+  rule: RuleTemplateV2,
+  overrides: Partial<RuleTemplateV2>
+) => {
   if (
     !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
   ) {
     return;
   }
 
+  if (!state.selectedRuleMapByEngine.has(rule.engine)) {
+    state.selectedRuleMapByEngine.set(
+      rule.engine,
+      new Map<string, RuleTemplateV2>()
+    );
+  }
+
   const selectedRule = state.selectedRuleMapByEngine
     .get(rule.engine)
     ?.get(rule.type);
   if (!selectedRule) {
+    state.selectedRuleMapByEngine.get(rule.engine)?.set(rule.type, {
+      ...rule,
+      level: SQLReviewRuleLevel.WARNING,
+    });
     return;
   }
   state.selectedRuleMapByEngine

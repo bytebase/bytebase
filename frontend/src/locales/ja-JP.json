@@ -2807,6 +2807,8 @@
     "policy-updated": "監査ポリシーが更新されました",
     "policy-duplicated": "監査ポリシーがコピーされました",
     "rules": "ルール",
+    "add-rules": "ルールを追加する",
+    "add-or-remove-rules": "ルールを追加または削除する",
     "filter": "フィルター",
     "no-permission": "管理者または DBA のみが監査ポリシーを作成または更新する権限を持っています。",
     "disable": "監査ポリシーを無効にする",
