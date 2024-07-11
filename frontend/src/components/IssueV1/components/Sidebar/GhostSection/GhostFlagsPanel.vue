@@ -90,9 +90,10 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
 import { planServiceClient } from "@/grpcweb";
-import { pushNotification } from "@/store";
+import { pushNotification, useDBGroupStore } from "@/store";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { extractDatabaseGroupName } from "@/utils";
 import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 
@@ -105,6 +106,7 @@ const {
   dialog,
   events,
 } = useIssueContext();
+const dbGroupStore = useDBGroupStore();
 const isUpdating = ref(false);
 
 const stage = computed(() => {
@@ -143,13 +145,15 @@ const readonly = computed(() => {
   return denyEditGhostFlagsReasons.value.length > 0;
 });
 
-const isDeploymentConfig = computed(() => {
-  return !!spec.value?.changeDatabaseConfig?.target?.match(
-    /\/deploymentConfigs\/[^/]+/
-  );
-});
-
 const chooseUpdateSpecs = async () => {
+  let isBatchMode = false;
+  const target = spec.value?.changeDatabaseConfig?.target;
+  if (target && extractDatabaseGroupName(target)) {
+    const dbGroup = dbGroupStore.getDBGroupByName(target);
+    if (dbGroup?.multitenancy) {
+      isBatchMode = true;
+    }
+  }
   const { tasks } = await chooseUpdateTarget(
     issue.value,
     task.value,
@@ -158,7 +162,7 @@ const chooseUpdateSpecs = async () => {
       allowChangeTaskGhostFlags(issue.value, task),
     dialog,
     t("task.online-migration.ghost-parameters"),
-    isDeploymentConfig.value
+    isBatchMode
   );
 
   const specs = tasks

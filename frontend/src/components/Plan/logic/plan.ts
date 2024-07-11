@@ -3,7 +3,6 @@ import {
   composeInstanceResourceForDatabase,
   useDatabaseV1Store,
   useDBGroupStore,
-  useDeploymentConfigV1Store,
   useEnvironmentV1Store,
 } from "@/store";
 import {
@@ -15,12 +14,7 @@ import {
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
-import {
-  extractDatabaseResourceName,
-  extractDatabaseGroupName,
-  extractDeploymentConfigName,
-  getPipelineFromDeploymentScheduleV1,
-} from "@/utils";
+import { extractDatabaseResourceName, extractDatabaseGroupName } from "@/utils";
 
 export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
   // Now we only handle changeDatabaseConfig specs.
@@ -100,34 +94,8 @@ export const databaseEngineForSpec = async (
       }
     }
   }
-  if (extractDeploymentConfigName(target)) {
-    const deploymentConfig =
-      await useDeploymentConfigV1Store().fetchDeploymentConfigByProjectName(
-        project.name
-      );
-    if (deploymentConfig) {
-      const databaseList = useDatabaseV1Store().databaseListByProject(
-        project.name
-      );
-      const pipeline = getPipelineFromDeploymentScheduleV1(
-        databaseList,
-        deploymentConfig.schedule
-      );
-      const db = head(head(pipeline));
-      if (db && db.uid !== String(UNKNOWN_ID)) {
-        return db.instanceResource.engine;
-      }
-    }
-  }
-  return Engine.ENGINE_UNSPECIFIED;
-};
 
-export const isDeploymentConfigChangeSpec = (spec?: Plan_Spec) => {
-  if (!spec) return false;
-  const deploymentConfig = extractDeploymentConfigName(
-    spec.changeDatabaseConfig?.target ?? ""
-  );
-  return deploymentConfig !== "";
+  return Engine.ENGINE_UNSPECIFIED;
 };
 
 export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {

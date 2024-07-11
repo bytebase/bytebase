@@ -60,7 +60,6 @@ import { useI18n } from "vue-i18n";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import {
-  isDeploymentConfigChangeTaskV1,
   isTaskEditable,
   latestTaskRunForTask,
   notifyNotEditableLegacyIssue,
@@ -99,9 +98,6 @@ const dialog = useDialog();
 
 const shouldShowEarliestAllowedTime = computed(() => {
   if (!isDatabaseChangeRelatedIssue(issue.value)) {
-    return false;
-  }
-  if (isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value)) {
     return false;
   }
   return true;

@@ -220,24 +220,6 @@ export const buildStepsForDatabaseGroup = async (
   return [step];
 };
 
-export const buildStepsViaDeploymentConfig = async (
-  params: CreateIssueParams,
-  sheetUID: string
-) => {
-  const { project } = params;
-  const spec = await buildSpecForTarget(
-    `${project.name}/deploymentConfigs/default`,
-    params,
-    sheetUID
-  );
-  maybeSetInitialSQLForSpec(spec, "", params);
-  maybeSetInitialDatabaseConfigForSpec(spec, params);
-  const step = Plan_Step.fromPartial({
-    specs: [spec],
-  });
-  return [step];
-};
-
 export const buildStepsViaChangelist = async (
   databaseUIDList: string[],
   changelistResourceName: string,

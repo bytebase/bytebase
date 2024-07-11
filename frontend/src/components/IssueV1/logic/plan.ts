@@ -3,7 +3,6 @@ import {
   composeInstanceResourceForDatabase,
   useDatabaseV1Store,
   useDBGroupStore,
-  useDeploymentConfigV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
 } from "@/store";
@@ -16,12 +15,7 @@ import {
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import {
-  extractDatabaseResourceName,
-  extractDatabaseGroupName,
-  extractDeploymentConfigName,
-  getPipelineFromDeploymentScheduleV1,
-} from "@/utils";
+import { extractDatabaseResourceName, extractDatabaseGroupName } from "@/utils";
 
 export const databaseForSpec = (issue: ComposedIssue, spec: Plan_Spec) => {
   const { createDatabaseConfig, changeDatabaseConfig, exportDataConfig } = spec;
@@ -118,25 +112,6 @@ export const databaseEngineForSpec = async (
         dbName,
         /* silent */ true
       );
-      if (db && db.uid !== String(UNKNOWN_ID)) {
-        return db.instanceResource.engine;
-      }
-    }
-  }
-  if (extractDeploymentConfigName(target)) {
-    const deploymentConfig =
-      await useDeploymentConfigV1Store().fetchDeploymentConfigByProjectName(
-        project.name
-      );
-    if (deploymentConfig) {
-      const databaseList = useDatabaseV1Store().databaseListByProject(
-        project.name
-      );
-      const pipeline = getPipelineFromDeploymentScheduleV1(
-        databaseList,
-        deploymentConfig.schedule
-      );
-      const db = head(head(pipeline));
       if (db && db.uid !== String(UNKNOWN_ID)) {
         return db.instanceResource.engine;
       }
