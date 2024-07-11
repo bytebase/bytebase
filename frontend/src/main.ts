@@ -200,7 +200,7 @@ const initBasicModules = async () => {
 initSearchParams();
 
 const splash = createApp(Splash);
-splash.use(pinia).use(i18n).use(NaiveUI).mount("#app");
+splash.use(pinia).use(NaiveUI).mount("#app");
 
 initBasicModules().finally(() => {
   splash.unmount();
