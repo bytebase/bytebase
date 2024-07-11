@@ -1,5 +1,5 @@
 - description: Test For Database Link
-  statement: SELECT * FROM T@REMOTE;
+  statement: SELECT * FROM PUBLIC.T@REMOTE;
   connectedDatabase: PUBLIC
   metadata: |-
     {
