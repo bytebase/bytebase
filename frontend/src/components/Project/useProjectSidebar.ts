@@ -10,10 +10,11 @@ import {
   PencilRuler,
   SearchCodeIcon,
   DownloadIcon,
+  SquareGanttChartIcon,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
 import type {
-  RouteLocationNormalizedLoadedGeneric,
+  RouteLocationNormalizedLoaded,
   RouteRecordRaw,
 } from "vue-router";
 import { useRoute } from "vue-router";
@@ -54,7 +55,7 @@ interface ProjectSidebarItem extends SidebarItem {
 
 export const useProjectSidebar = (
   project: MaybeRef<ComposedProject>,
-  _route?: RouteLocationNormalizedLoadedGeneric
+  _route?: RouteLocationNormalizedLoaded
 ) => {
   const currentUser = useCurrentUserV1();
   const route = _route ?? useRoute();
@@ -139,11 +140,6 @@ export const useProjectSidebar = (
           {
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-            type: "div",
-          },
-          {
-            title: t("common.deployment-config"),
-            path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
             type: "div",
           },
           {
@@ -242,6 +238,13 @@ export const useProjectSidebar = (
             type: "div",
           },
         ],
+      },
+      {
+        title: t("common.deployment-config"),
+        icon: () => h(SquareGanttChartIcon),
+        path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
+        type: "div",
+        hide: isDefaultProject.value,
       },
       {
         title: t("common.setting"),

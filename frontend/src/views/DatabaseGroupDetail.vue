@@ -23,7 +23,7 @@
                   <template #icon>
                     <TenantIcon />
                   </template>
-                  {{ $t("database-group.multitenancy") }}
+                  {{ $t("database-group.multitenancy.self") }}
                 </NTag>
               </div>
             </div>
