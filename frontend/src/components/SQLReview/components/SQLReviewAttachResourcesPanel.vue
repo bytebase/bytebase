@@ -22,6 +22,7 @@
               :environments="environments"
               :use-resource-id="true"
               :multiple="true"
+              :render-suffix="getResourceAttachedConfigName"
               @update:environments="onResourcesChange($event, projects)"
             />
           </div>
@@ -43,6 +44,7 @@
               :projects="projects"
               :use-resource-id="true"
               :multiple="true"
+              :render-suffix="getResourceAttachedConfigName"
               @update:projects="onResourcesChange($event, environments)"
             />
           </div>
@@ -110,6 +112,7 @@ const environments = computed(() =>
     resource.startsWith(environmentNamePrefix)
   )
 );
+
 const projects = computed(() =>
   resources.value.filter((resource) => resource.startsWith(projectNamePrefix))
 );
@@ -133,5 +136,10 @@ const upsertReviewResource = async () => {
     title: t("sql-review.policy-updated"),
   });
   emit("close");
+};
+
+const getResourceAttachedConfigName = (resource: string) => {
+  const config = sqlReviewStore.getReviewPolicyByResouce(resource)?.name;
+  return config ? `(${config})` : "";
 };
 </script>
