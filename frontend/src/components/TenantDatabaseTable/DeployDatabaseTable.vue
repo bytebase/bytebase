@@ -105,7 +105,7 @@
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
 import { NPopover } from "naive-ui";
-import { computed, withDefaults } from "vue";
+import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { DeploymentConfig } from "@/types/proto/v1/project_service";
