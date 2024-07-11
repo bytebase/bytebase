@@ -49,12 +49,14 @@
       v-if="state.quickActionType === 'quickaction.bb.database.schema.update'"
       :project-id="project?.uid"
       :type="'bb.issue.database.schema.update'"
+      :default-selected-tab="databaseChangeTargetType"
       @dismiss="state.quickActionType = undefined"
     />
     <AlterSchemaPrepForm
       v-if="state.quickActionType === 'quickaction.bb.database.data.update'"
       :project-id="project?.uid"
       :type="'bb.issue.database.data.update'"
+      :default-selected-tab="databaseChangeTargetType"
       @dismiss="state.quickActionType = undefined"
     />
     <TransferDatabaseForm
@@ -127,7 +129,10 @@ import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import { Drawer } from "@/components/v2";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_GROUPS,
+} from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useInstanceV1Store,
@@ -143,6 +148,7 @@ import type {
   DatabaseGroupQuickActionType,
   FeatureType,
 } from "@/types";
+import { DATABASE_CHANGE_TARGET_TYPE } from "./AlterSchemaPrepForm/type";
 
 interface LocalState {
   feature?: FeatureType;
@@ -212,6 +218,13 @@ const shouldShowAlterDatabaseEntries = computed(() => {
       return currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name);
     })
     .includes(true);
+});
+
+const databaseChangeTargetType = computed(() => {
+  if (route.name?.toString().startsWith(PROJECT_V1_ROUTE_DATABASE_GROUPS)) {
+    return DATABASE_CHANGE_TARGET_TYPE.DATABASE_GROUP;
+  }
+  return DATABASE_CHANGE_TARGET_TYPE.DATABASE;
 });
 
 watch(route, () => {
