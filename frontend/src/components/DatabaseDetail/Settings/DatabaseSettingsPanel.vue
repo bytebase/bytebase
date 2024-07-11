@@ -9,7 +9,12 @@
           class="mt-1 max-w-md"
           :environment="environment?.uid"
           :disabled="!allowUpdateDatabase"
-          :default-environment-name="database.instanceResource.environment"
+          :render-suffix="
+            (env: string) =>
+              database.instanceResource.environment === env
+                ? `(${$t('common.default')})`
+                : ''
+          "
           @update:environment="handleSelectEnvironmentUID"
         />
       </div>
