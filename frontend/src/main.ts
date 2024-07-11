@@ -172,5 +172,6 @@ const initSearchParams = () => {
 };
 
 initSearchParams();
+
 app.use(router).use(highlight).use(i18n).use(NaiveUI);
 app.mount("#app");
