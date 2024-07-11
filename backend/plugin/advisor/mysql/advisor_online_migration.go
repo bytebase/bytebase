@@ -31,17 +31,6 @@ type OnlineMigrationAdvisor struct {
 
 // Check checks for using gh-ost to migrate large tables.
 func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
-	if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
-		return []*storepb.Advice{
-			{
-				Status:  storepb.Advice_SUCCESS,
-				Code:    advisor.Ok.Int32(),
-				Title:   "OK",
-				Content: "",
-			},
-		}, nil
-	}
-
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -66,6 +55,7 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 			title:            string(ctx.Rule.Type),
 			currentDatabase:  ctx.CurrentDatabase,
 			changedResources: make(map[string]base.SchemaResource),
+			baseline:         int32(stmt.BaseLine),
 		}
 
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
@@ -81,27 +71,71 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 			}
 			if tableRows >= minRows {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.AdviseOnlineMigration.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
-					StartPosition: &storepb.Position{
-						Line: int32(stmt.BaseLine),
-					},
+					Status:        checker.level,
+					Code:          advisor.AdviseOnlineMigrationForStatement.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
+					StartPosition: checker.start,
+					EndPosition:   checker.end,
 				})
 			}
 		}
 	}
 
+	// More than one statements need online migration.
+	// Advise running each statement in separate issues.
+	if len(adviceList) > 1 {
+		return adviceList, nil
+	}
+	// One statement needs online migration, others don't.
+	// Advise running the statement in another issue.
+	if len(adviceList) == 1 && len(stmtList) > 1 {
+		return adviceList, nil
+	}
+
+	// We have only one statement, and the statement
+	// needs online migration.
+	// Advise enable online migration for the issue, or return OK if it's already enabled.
+	if len(adviceList) == 1 && len(stmtList) == 1 {
+		if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
+			return []*storepb.Advice{{
+				Status:  storepb.Advice_SUCCESS,
+				Code:    advisor.Ok.Int32(),
+				Title:   "OK",
+				Content: "",
+			}}, nil
+		}
+
+		adviceList[0].Code = advisor.AdviseOnlineMigration.Int32()
+		return adviceList, nil
+	}
+
+	// No statement needs online migration.
+	// Advise disable online migration if it's enabled.
 	if len(adviceList) == 0 {
-		adviceList = append(adviceList, &storepb.Advice{
+		if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
+			return []*storepb.Advice{{
+				Status:  level,
+				Code:    advisor.AdviseNoOnlineMigration.Int32(),
+				Title:   "Advise not using online migration",
+				Content: "",
+			}}, nil
+		}
+		return []*storepb.Advice{{
 			Status:  storepb.Advice_SUCCESS,
 			Code:    advisor.Ok.Int32(),
 			Title:   "OK",
 			Content: "",
-		})
+		}}, nil
 	}
-	return adviceList, nil
+
+	// should never reach
+	return []*storepb.Advice{{
+		Status:  storepb.Advice_SUCCESS,
+		Code:    advisor.Ok.Int32(),
+		Title:   "OK",
+		Content: "",
+	}}, nil
 }
 
 type useGhostChecker struct {
@@ -113,6 +147,24 @@ type useGhostChecker struct {
 	currentDatabase  string
 	changedResources map[string]base.SchemaResource
 	ghostCompatible  bool
+
+	baseline int32
+	start    *storepb.Position
+	end      *storepb.Position
+}
+
+func (c *useGhostChecker) EnterAlterStatement(ctx *mysql.AlterStatementContext) {
+	c.start = &storepb.Position{
+		Line:   c.baseline + int32(ctx.GetStart().GetLine()),
+		Column: int32(ctx.GetStart().GetColumn()) + 1, // convert to 1-based
+	}
+}
+
+func (c *useGhostChecker) ExitAlterStatement(ctx *mysql.AlterStatementContext) {
+	c.end = &storepb.Position{
+		Line:   c.baseline + int32(ctx.GetStop().GetLine()),
+		Column: int32(ctx.GetStop().GetColumn()+len([]rune(ctx.GetStop().GetText()))) + 1, // convert to 1-based
+	}
 }
 
 func (c *useGhostChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {

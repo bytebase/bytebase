@@ -1,4 +1,6 @@
 /* eslint-disable */
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -485,4 +487,100 @@ export function exportFormatToNumber(object: ExportFormat): number {
     default:
       return -1;
   }
+}
+
+export interface Position {
+  line: number;
+  column: number;
+}
+
+function createBasePosition(): Position {
+  return { line: 0, column: 0 };
+}
+
+export const Position = {
+  encode(message: Position, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.line !== 0) {
+      writer.uint32(8).int32(message.line);
+    }
+    if (message.column !== 0) {
+      writer.uint32(16).int32(message.column);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Position {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePosition();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.line = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.column = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Position {
+    return {
+      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
+      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
+    };
+  },
+
+  toJSON(message: Position): unknown {
+    const obj: any = {};
+    if (message.line !== 0) {
+      obj.line = Math.round(message.line);
+    }
+    if (message.column !== 0) {
+      obj.column = Math.round(message.column);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Position>): Position {
+    return Position.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Position>): Position {
+    const message = createBasePosition();
+    message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
+    return message;
+  },
+};
+
+type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+
+export type DeepPartial<T> = T extends Builtin ? T
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
 }

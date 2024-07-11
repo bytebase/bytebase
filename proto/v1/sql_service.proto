@@ -262,6 +262,11 @@ message Advice {
 
   // The advice detail.
   string detail = 7;
+
+  // 1-based Position of the SQL statement.
+  // To supersede `line` and `column` above.
+  Position start_position = 8;
+  Position end_position = 9;
 }
 
 message ExportRequest {
