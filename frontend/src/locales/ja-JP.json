@@ -1815,6 +1815,7 @@
     "transfer-database-from-to": "データベースをソース プロジェクトからターゲット プロジェクトに転送する",
     "classification": {
       "self": "分類と格付け",
+      "description": "データ分類を使用して、少数の分類のみを制御することで、多数の列のマスキング ポリシーを管理します。",
       "sync-from-comment": "コメントからカテゴリと評価を同期する",
       "sync-from-comment-tip": "有効にすると、分類評価がテーブルまたは列のコメントから同期されます。コメントは「{format}」形式に従う必要があります。",
       "sync-from-comment-enable-warning": "分類評価は DDL とともに変更され、元の注釈と同期されます。",

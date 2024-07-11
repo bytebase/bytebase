@@ -1815,6 +1815,7 @@
     "transfer-database-from-to": "Transfer database from source project to target project",
     "classification": {
       "self": "Classification",
+      "description": "Use data classification to manage masking policy for many columns by controlling only a small number of classifications.",
       "sync-from-comment": "Sync classification from comment",
       "sync-from-comment-tip": "Once enabled, the classification will sync from the table/column comment. The comment should follow \"{format}\" format.",
       "sync-from-comment-enable-warning": "Classification will change with the DDL and sync from the original comment.",

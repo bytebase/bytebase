@@ -38,12 +38,14 @@ const props = withDefaults(
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
+    showProject?: boolean;
     showEdit?: boolean;
     customClick?: boolean;
   }>(),
   {
     bordered: true,
     showSelection: true,
+    showProject: true,
   }
 );
 
@@ -84,11 +86,19 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
           <span>{data.databasePlaceholder}</span>
           {data.multitenancy && (
             <NTag round type="info" size="small">
-              {t("database-group.multitenancy")}
+              {t("database-group.multitenancy.self")}
             </NTag>
           )}
         </div>
       );
+    },
+  };
+  const PROJECT: DatabaseGroupDataTableColumn = {
+    key: "project",
+    title: t("common.project"),
+    hide: !props.showProject,
+    render: (data) => {
+      return <span>{data.projectEntity.title}</span>;
     },
   };
   const EDIT_BUTTON: DatabaseGroupDataTableColumn = {
@@ -115,7 +125,9 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
   };
 
   // Maybe we can add more columns here. e.g. matched databases, etc.
-  return [SELECTION, NAME, EDIT_BUTTON].filter((column) => !column.hide);
+  return [SELECTION, NAME, PROJECT, EDIT_BUTTON].filter(
+    (column) => !column.hide
+  );
 });
 
 const data = computed(() => {

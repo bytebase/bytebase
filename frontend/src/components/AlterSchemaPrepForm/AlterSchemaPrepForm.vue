@@ -16,8 +16,11 @@
       class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
       <div v-if="ready">
-        <NTabs v-model:value="state.databaseSelectedTab">
-          <NTabPane :tab="$t('common.database')" name="DATABASE">
+        <NTabs v-model:value="state.selectedTab">
+          <NTabPane
+            :tab="$t('common.database')"
+            :name="DATABASE_CHANGE_TARGET_TYPE.DATABASE"
+          >
             <div class="space-y-3">
               <div class="w-full flex items-center space-x-2">
                 <AdvancedSearch
@@ -45,7 +48,10 @@
               />
             </div>
           </NTabPane>
-          <NTabPane :tab="renderDatabaseGroupTabTitle" name="DATABASE_GROUP">
+          <NTabPane
+            :tab="renderDatabaseGroupTabTitle"
+            :name="DATABASE_CHANGE_TARGET_TYPE.DATABASE_GROUP"
+          >
             <div class="space-y-3">
               <AdvancedSearch
                 v-model:params="state.params"
@@ -178,10 +184,11 @@ import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchSc
 import { DatabaseLabelFilter, DrawerContent } from "../v2";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
 import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
+import { DATABASE_CHANGE_TARGET_TYPE } from "./type";
 
 type LocalState = {
   label: string;
-  databaseSelectedTab: "DATABASE" | "DATABASE_GROUP";
+  selectedTab: DATABASE_CHANGE_TARGET_TYPE;
   showSchemaLessDatabaseList: boolean;
   selectedLabels: { key: string; value: string }[];
   selectedDatabaseUidList: Set<string>;
@@ -206,6 +213,10 @@ const props = defineProps({
   planOnly: {
     type: Boolean,
     default: false,
+  },
+  defaultSelectedTab: {
+    type: String as PropType<DATABASE_CHANGE_TARGET_TYPE>,
+    default: DATABASE_CHANGE_TARGET_TYPE.DATABASE,
   },
 });
 
@@ -234,7 +245,7 @@ const schemaEditorContext = ref<{
 const state = reactive<LocalState>({
   selectedDatabaseUidList: new Set<string>(),
   label: "environment",
-  databaseSelectedTab: "DATABASE",
+  selectedTab: props.defaultSelectedTab,
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   selectedLabels: [],
@@ -248,7 +259,7 @@ const state = reactive<LocalState>({
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
   computed(() =>
-    state.databaseSelectedTab === "DATABASE"
+    state.selectedTab === DATABASE_CHANGE_TARGET_TYPE.DATABASE
       ? ["project", "instance", "environment"]
       : ["project", "environment"]
   )
@@ -419,7 +430,7 @@ const flattenSelectedProjectList = computed(() => {
 });
 
 const allowGenerateMultiDb = computed(() => {
-  if (state.databaseSelectedTab === "DATABASE") {
+  if (state.selectedTab === DATABASE_CHANGE_TARGET_TYPE.DATABASE) {
     return (
       flattenSelectedProjectList.value.length === 1 &&
       flattenSelectedDatabaseUidList.value.length > 0
@@ -462,7 +473,7 @@ const flattenSelectedDatabaseList = computed(() =>
 // Also works when single db selected.
 const generateMultiDb = async () => {
   if (
-    state.databaseSelectedTab === "DATABASE_GROUP" &&
+    state.selectedTab === DATABASE_CHANGE_TARGET_TYPE.DATABASE_GROUP &&
     state.selectedDatabaseGroupName
   ) {
     previewDatabaseGroupIssue();

@@ -7,6 +7,7 @@
       :show-edit="allowEdit"
       :custom-click="true"
       :show-selection="false"
+      :show-project="false"
       @row-click="handleDatabaseGroupClick"
       @edit="handleEditDatabaseGroup"
     />

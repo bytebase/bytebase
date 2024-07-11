@@ -47,17 +47,6 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	if len(stmtList) > 1 {
-		return []*storepb.Advice{
-			{
-				Status:  storepb.Advice_SUCCESS,
-				Code:    advisor.Ok.Int32(),
-				Title:   "OK",
-				Content: "skip because there are more than one statement",
-			},
-		}, nil
-	}
-
 	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
@@ -95,7 +84,10 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 					Status:  checker.level,
 					Code:    advisor.AdviseOnlineMigration.Int32(),
 					Title:   checker.title,
-					Content: fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider enabling online migration", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
+					Content: fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
+					StartPosition: &storepb.Position{
+						Line: int32(stmt.BaseLine),
+					},
 				})
 			}
 		}

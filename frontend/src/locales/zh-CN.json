@@ -1815,6 +1815,7 @@
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
       "self": "分类分级",
+      "description": "通过分类分级，来批量管理列的脱敏规则。",
       "sync-from-comment": "从注释中同步分类分级",
       "sync-from-comment-tip": "启用后，分类分级将从表或列的注释同步。注释应遵循“{format}”格式。",
       "sync-from-comment-enable-warning": "分类分级将随着 DDL 而改变，并与原始注释同步。",
