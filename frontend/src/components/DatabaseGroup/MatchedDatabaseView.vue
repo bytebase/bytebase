@@ -42,15 +42,15 @@
               <FeatureBadge
                 feature="bb.feature.database-grouping"
                 custom-class="mr-2"
-                :instance="database.instanceEntity"
+                :instance="database.instanceResource"
               />
-              <InstanceV1EngineIcon :instance="database.instanceEntity" />
+              <InstanceV1EngineIcon :instance="database.instanceResource" />
               <NEllipsis
                 class="ml-1 text-sm text-gray-400 max-w-[124px]"
                 line-clamp="1"
               >
                 ({{ database.effectiveEnvironmentEntity.title }})
-                {{ database.instanceEntity.title }}
+                {{ database.instanceResource.title }}
               </NEllipsis>
             </div>
           </div>
@@ -95,15 +95,15 @@
               <FeatureBadge
                 feature="bb.feature.database-grouping"
                 custom-class="mr-2"
-                :instance="database.instanceEntity"
+                :instance="database.instanceResource"
               />
-              <InstanceV1EngineIcon :instance="database.instanceEntity" />
+              <InstanceV1EngineIcon :instance="database.instanceResource" />
               <NEllipsis
                 class="ml-1 text-sm text-gray-400 max-w-[124px]"
                 line-clamp="1"
               >
                 ({{ database.effectiveEnvironmentEntity.title }})
-                {{ database.instanceEntity.title }}
+                {{ database.instanceResource.title }}
               </NEllipsis>
             </div>
           </div>
