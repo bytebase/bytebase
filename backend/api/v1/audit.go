@@ -93,7 +93,7 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	response, rerr := handler(ctx, request)
-	if isAuditMethod(serverInfo.FullMethod) {
+	if isAuditMethod(serverInfo.FullMethod, request) {
 		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
@@ -182,9 +182,21 @@ func getRequestResource(request any) string {
 		return r.GetUser().GetName()
 	case *v1pb.LoginRequest:
 		return r.GetEmail()
+	case *v1pb.CreateRiskRequest:
+		if r.Risk != nil {
+			return r.Risk.Name
+		}
+	case *v1pb.UpdateSettingRequest:
+		if r.Setting != nil {
+			return r.Setting.Name
+		}
+	case *v1pb.CreateIssueRequest:
+		if r.Issue != nil && r.Issue.GrantRequest != nil {
+			return r.Issue.GrantRequest.Role
+		}
 	default:
-		return ""
 	}
+	return ""
 }
 
 func getRequestString(request any) (string, error) {
@@ -217,6 +229,16 @@ func getRequestString(request any) (string, error) {
 				return redactLoginRequest(r)
 			}
 			return nil
+		case *v1pb.CreateRiskRequest:
+			return r
+		case *v1pb.UpdateRiskRequest:
+			return r
+		case *v1pb.DeleteRiskRequest:
+			return r
+		case *v1pb.UpdateSettingRequest:
+			return r
+		case *v1pb.CreateIssueRequest:
+			return r
 		default:
 			return nil
 		}
@@ -253,6 +275,12 @@ func getResponseString(response any) (string, error) {
 			return r
 		case *v1pb.User:
 			return redactUser(r)
+		case *v1pb.Issue:
+			return r
+		case *v1pb.Risk:
+			return r
+		case *v1pb.Setting:
+			return r
 		default:
 			return nil
 		}
@@ -322,6 +350,7 @@ func redactUser(r *v1pb.User) *v1pb.User {
 		Email:    r.Email,
 		Title:    r.Title,
 		UserType: r.UserType,
+		Roles:    r.Roles,
 	}
 }
 
@@ -372,7 +401,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 	return n
 }
 
-func isAuditMethod(method string) bool {
+func isAuditMethod(method string, request any) bool {
 	switch method {
 	case
 		v1pb.AuthService_Login_FullMethodName,
@@ -382,11 +411,21 @@ func isAuditMethod(method string) bool {
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
 		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
-		v1pb.SQLService_Query_FullMethodName:
+		v1pb.SQLService_Query_FullMethodName,
+		v1pb.RiskService_CreateRisk_FullMethodName,
+		v1pb.RiskService_DeleteRisk_FullMethodName,
+		v1pb.RiskService_UpdateRisk_FullMethodName,
+		v1pb.SettingService_UpdateSetting_FullMethodName:
 		return true
+	case v1pb.IssueService_CreateIssue_FullMethodName:
+		if r, ok := request.(*v1pb.CreateIssueRequest); ok {
+			if r, ok = proto.Clone(r).(*v1pb.CreateIssueRequest); ok && r.Issue != nil && r.Issue.GrantRequest != nil {
+				return true
+			}
+		}
 	default:
-		return false
 	}
+	return false
 }
 
 func isStreamAuditMethod(method string) bool {
