@@ -84,7 +84,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
           <span>{data.databasePlaceholder}</span>
           {data.multitenancy && (
             <NTag round type="info" size="small">
-              {t("database-group.multitenancy")}
+              {t("database-group.multitenancy.self")}
             </NTag>
           )}
         </div>
