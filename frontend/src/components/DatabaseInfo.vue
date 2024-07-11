@@ -7,11 +7,11 @@
       :text-class="link ? 'hover:underline' : ''"
     >
       <template
-        v-if="database.environment !== database.effectiveEnvironment"
+        v-if="instanceEnvironment.name !== database.effectiveEnvironment"
         #prefix
       >
         <EnvironmentV1Name
-          :environment="physicalEnvironment"
+          :environment="instanceEnvironment"
           :plain="true"
           :show-icon="false"
           :link="link"
@@ -65,10 +65,11 @@ const props = withDefaults(
   }
 );
 
-const physicalEnvironment = computed(() => {
+const instanceEnvironment = computed(() => {
   return (
-    useEnvironmentV1Store().getEnvironmentByName(props.database.environment) ??
-    unknownEnvironment()
+    useEnvironmentV1Store().getEnvironmentByName(
+      props.database.instanceResource.environment
+    ) ?? unknownEnvironment()
   );
 });
 </script>

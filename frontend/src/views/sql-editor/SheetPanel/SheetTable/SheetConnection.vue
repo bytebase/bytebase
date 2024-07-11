@@ -15,8 +15,8 @@
       <heroicons-outline:database />
 
       <EnvironmentV1Name
-        v-if="database.environment !== database.effectiveEnvironment"
-        :environment="physicalEnvironment"
+        v-if="instanceEnvironment.name !== database.effectiveEnvironment"
+        :environment="instanceEnvironment"
         :link="false"
         :show-icon="false"
         text-class=" text-control-light"
@@ -51,11 +51,12 @@ const database = computed(() => {
   return db;
 });
 
-const physicalEnvironment = computed(() => {
+const instanceEnvironment = computed(() => {
   if (!database.value) return unknownEnvironment();
   return (
-    useEnvironmentV1Store().getEnvironmentByName(database.value.environment) ??
-    unknownEnvironment()
+    useEnvironmentV1Store().getEnvironmentByName(
+      database.value.instanceResource.environment
+    ) ?? unknownEnvironment()
   );
 });
 </script>

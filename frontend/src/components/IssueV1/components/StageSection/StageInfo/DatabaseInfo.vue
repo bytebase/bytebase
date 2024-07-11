@@ -7,12 +7,12 @@
     >
       <template
         v-if="
-          database && database.environment !== database.effectiveEnvironment
+          database && instanceEnvironment.name !== database.effectiveEnvironment
         "
         #prefix
       >
         <EnvironmentV1Name
-          :environment="physicalEnvironment"
+          :environment="instanceEnvironment"
           :plain="true"
           :show-icon="false"
           :link="link"
@@ -119,11 +119,12 @@ const database = computedAsync(async () => {
   return undefined;
 }, undefined);
 
-const physicalEnvironment = computed(() => {
+const instanceEnvironment = computed(() => {
   if (!database.value) return unknownEnvironment();
   return (
-    useEnvironmentV1Store().getEnvironmentByName(database.value.environment) ??
-    unknownEnvironment()
+    useEnvironmentV1Store().getEnvironmentByName(
+      database.value.instanceResource.environment
+    ) ?? unknownEnvironment()
   );
 });
 </script>

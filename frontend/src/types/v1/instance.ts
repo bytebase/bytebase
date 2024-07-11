@@ -16,11 +16,6 @@ export interface ComposedInstance extends Instance {
   environmentEntity: Environment;
 }
 
-export interface ComposedInstanceResource extends InstanceResource {
-  name: string;
-  environment: string;
-}
-
 export const emptyInstance = (): ComposedInstance => {
   const environmentEntity = emptyEnvironment();
   const instance = Instance.fromJSON({
@@ -52,7 +47,7 @@ export const unknownInstance = (): ComposedInstance => {
   };
 };
 
-export const emptyInstanceResource = (): ComposedInstanceResource => {
+export const emptyInstanceResource = (): InstanceResource => {
   const instance = InstanceResource.fromJSON({
     title: "",
     engine: Engine.MYSQL,
@@ -64,7 +59,7 @@ export const emptyInstanceResource = (): ComposedInstanceResource => {
   };
 };
 
-export const unknownInstanceResource = (): ComposedInstanceResource => {
+export const unknownInstanceResource = (): InstanceResource => {
   const instance = {
     ...emptyInstance(),
     title: "<<Unknown instance>>",

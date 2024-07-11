@@ -20,6 +20,7 @@ import type {
   SearchDatabasesRequest,
   BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
@@ -337,11 +338,11 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
 export const composeInstanceResourceForDatabase = (
   name: string,
   db: Database
-) => {
-  const ir = db.instanceResource ?? unknownInstanceResource();
-  return {
-    ...ir,
-    name,
-    environment: db.environment || db.effectiveEnvironment,
-  };
+): InstanceResource => {
+  return (
+    db.instanceResource ?? {
+      ...unknownInstanceResource(),
+      name,
+    }
+  );
 };
