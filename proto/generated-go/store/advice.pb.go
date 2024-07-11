@@ -87,7 +87,8 @@ type Advice struct {
 	// The advice content.
 	Content string `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
 	// The advice detail.
-	Detail        string    `protobuf:"bytes,5,opt,name=detail,proto3" json:"detail,omitempty"`
+	Detail string `protobuf:"bytes,5,opt,name=detail,proto3" json:"detail,omitempty"`
+	// 1-based positions of the sql statment.
 	StartPosition *Position `protobuf:"bytes,6,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
 	EndPosition   *Position `protobuf:"bytes,7,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 }

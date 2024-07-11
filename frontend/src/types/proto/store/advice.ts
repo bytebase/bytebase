@@ -16,6 +16,7 @@ export interface Advice {
   content: string;
   /** The advice detail. */
   detail: string;
+  /** 1-based positions of the sql statment. */
   startPosition: Position | undefined;
   endPosition: Position | undefined;
 }
