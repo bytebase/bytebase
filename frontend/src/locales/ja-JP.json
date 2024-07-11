@@ -2395,7 +2395,7 @@
     "web-socket": {
       "errors": {
         "title": "WebSocket接続に失敗しました",
-        "description": "オートコンプリート機能が制限されているか、無効になっている可能性があります。",
+        "description": "オートコンプリートが制限されているか、無効になっている可能性があります。",
         "disconnected": "WebSocketが切断されました"
       }
     }

@@ -2395,7 +2395,7 @@
     "web-socket": {
       "errors": {
         "title": "La conexión WebSocket falló",
-        "description": "La función Autocompletar puede estar limitada o deshabilitada.",
+        "description": "La finalización automática puede estar limitada o deshabilitada.",
         "disconnected": "WebSocket desconectado"
       }
     }

@@ -2395,7 +2395,7 @@
     "web-socket": {
       "errors": {
         "title": "WebSocket connection failed",
-        "description": "Auto Completion feature might be limited or disabled.",
+        "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected"
       }
     }

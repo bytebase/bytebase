@@ -2395,7 +2395,7 @@
     "web-socket": {
       "errors": {
         "title": "WebSocket 连接失败",
-        "description": "自动完成功能可能会受限或不生效。",
+        "description": "自动补全功能可能会受到限制或无效。",
         "disconnected": "WebSocket 已断开连接"
       }
     }
