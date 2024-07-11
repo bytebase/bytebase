@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -1275,16 +1276,28 @@ func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 	var result []*v1pb.Advice
 	for _, advice := range list {
 		result = append(result, &v1pb.Advice{
-			Status:  convertAdviceStatus(advice.Status),
-			Code:    int32(advice.Code),
-			Title:   advice.Title,
-			Content: advice.Content,
-			Line:    int32(advice.GetStartPosition().GetLine()),
-			Column:  int32(advice.GetStartPosition().GetColumn()),
-			Detail:  advice.Detail,
+			Status:        convertAdviceStatus(advice.Status),
+			Code:          int32(advice.Code),
+			Title:         advice.Title,
+			Content:       advice.Content,
+			Line:          int32(advice.GetStartPosition().GetLine()),
+			Column:        int32(advice.GetStartPosition().GetColumn()),
+			Detail:        advice.Detail,
+			StartPosition: convertAdvicePosition(advice.StartPosition),
+			EndPosition:   convertAdvicePosition(advice.EndPosition),
 		})
 	}
 	return result
+}
+
+func convertAdvicePosition(p *storepb.Position) *v1pb.Position {
+	if p == nil {
+		return nil
+	}
+	return &v1pb.Position{
+		Line:   p.Line,
+		Column: p.Column,
+	}
 }
 
 func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
