@@ -21,7 +21,12 @@ import { NSelect } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import { useCurrentUserV1, useProjectV1Store, useProjectV1List } from "@/store";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useProjectV1List,
+  usePermissionStore,
+} from "@/store";
 import type { ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_ID,
@@ -32,7 +37,7 @@ import {
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV2, roleListInProjectV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
   value: string;
@@ -76,6 +81,7 @@ defineEmits<{
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
+const permissionStore = usePermissionStore();
 
 const prepare = () => {
   projectV1Store.fetchProjectList(true /* showDeleted */);
@@ -124,7 +130,10 @@ const combinedProjectList = computed(() => {
     props.allowedProjectRoleList.length > 0
   ) {
     list = list.filter((project) => {
-      const roles = roleListInProjectV1(project.iamPolicy, currentUserV1.value);
+      const roles = permissionStore.roleListInProjectV1(
+        project,
+        currentUserV1.value
+      );
       return intersection(props.allowedProjectRoleList, roles).length > 0;
     });
   }

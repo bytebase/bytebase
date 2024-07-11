@@ -96,8 +96,8 @@ export const isDatabaseV1Alterable = (
 
   // If user is owner or developer of its projects, we will show the database in the UI.
   if (
-    isOwnerOfProjectV1(database.projectEntity.iamPolicy, user) ||
-    isDeveloperOfProjectV1(database.projectEntity.iamPolicy, user)
+    isOwnerOfProjectV1(database.projectEntity, user) ||
+    isDeveloperOfProjectV1(database.projectEntity, user)
   ) {
     return true;
   }
