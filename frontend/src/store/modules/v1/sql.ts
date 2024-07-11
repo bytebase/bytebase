@@ -33,6 +33,8 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
           detail: sqlReviewReport.detail,
           line: sqlReviewReport.line,
           column: sqlReviewReport.column,
+          startPosition: undefined,
+          endPosition: undefined,
         });
       }
     }
