@@ -218,7 +218,7 @@ const handleSelectDatabase = (uid: string | undefined) => {
   }
 };
 const filterDatabase = (db: ComposedDatabase) => {
-  return db.instanceEntity.engine === props.branch.engine;
+  return db.instanceResource.engine === props.branch.engine;
 };
 
 const allowPreviewIssue = computed(() => {
@@ -338,7 +338,7 @@ const handlePreviewIssue = async () => {
   }
   const sheet = Sheet.fromPartial({
     database: db.name,
-    engine: db.instanceEntity.engine,
+    engine: db.instanceResource.engine,
     payload: {
       type: SheetPayload_Type.SCHEMA_DESIGN,
       baselineDatabaseConfig: {

@@ -109,7 +109,7 @@
                       <InstanceV1Name
                         class="text-gray-500"
                         :instance="
-                          extractDatabase(item.databaseResource).instanceEntity
+                          extractDatabase(item.databaseResource).instanceResource
                         "
                         :link="false"
                       />

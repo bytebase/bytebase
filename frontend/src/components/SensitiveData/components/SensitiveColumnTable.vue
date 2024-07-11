@@ -52,7 +52,7 @@
       </div>
       <div class="bb-grid-cell">
         <InstanceV1Name
-          :instance="item.database.instanceEntity"
+          :instance="item.database.instanceResource"
           :link="false"
         />
       </div>

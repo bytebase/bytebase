@@ -191,12 +191,12 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
   if (!db) {
     return;
   }
-  const language = languageOfEngineV1(db.instanceEntity.engine);
+  const language = languageOfEngineV1(db.instanceResource.engine);
   if (language !== "sql") {
     return;
   }
 
-  const dialect = dialectOfEngineV1(db.instanceEntity.engine);
+  const dialect = dialectOfEngineV1(db.instanceResource.engine);
   const statement = getSheetStatement(sheet);
   if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {
     return;

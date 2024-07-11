@@ -171,7 +171,7 @@ const databaseList = computed(() => {
 const schemaDatabaseList = computed(() => {
   if (guessedDatabaseChangeType.value === "DDL") {
     return databaseList.value.filter((db) =>
-      instanceV1HasAlterSchema(db.instanceEntity)
+      instanceV1HasAlterSchema(db.instanceResource)
     );
   }
 
@@ -180,7 +180,7 @@ const schemaDatabaseList = computed(() => {
 
 const schemalessDatabaseList = computed(() => {
   return databaseList.value.filter(
-    (db) => !instanceV1HasAlterSchema(db.instanceEntity)
+    (db) => !instanceV1HasAlterSchema(db.instanceResource)
   );
 });
 

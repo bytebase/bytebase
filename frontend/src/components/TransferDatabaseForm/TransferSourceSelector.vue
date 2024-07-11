@@ -95,9 +95,8 @@ const filterSourceProject = (project: Project) => {
   return project.uid !== props.project.uid;
 };
 
-const nonEmptyInstanceUidSet = computed(() => {
-  const instanceList = props.rawDatabaseList.map((db) => db.instanceEntity);
-  return new Set(instanceList.map((instance) => instance.uid));
+const nonEmptyInstanceNameSet = computed(() => {
+  return new Set(props.rawDatabaseList.map((db) => db.instance));
 });
 
 const changeInstanceFilter = (uid: string | undefined) => {
@@ -109,7 +108,8 @@ const changeInstanceFilter = (uid: string | undefined) => {
 
 const filterInstance = (instance: ComposedInstance) => {
   if (instance.uid === String(UNKNOWN_ID)) return true; // "ALL" can be displayed.
-  return nonEmptyInstanceUidSet.value.has(instance.uid);
+  return nonEmptyInstanceNameSet.value.has(instance.name);
+  // return nonEmptyInstanceUidSet.value.has(instance.uid);
 };
 
 const changeProjectFilter = (uid: string | undefined) => {

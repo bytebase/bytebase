@@ -90,7 +90,7 @@ const referencedNameForFk = (fk: ForeignKeyMetadata) => {
     (column) => column.name === fk.referencedColumns[position]
   );
 
-  if (engineSupportsMultiSchema(props.db.instanceEntity.engine)) {
+  if (engineSupportsMultiSchema(props.db.instanceResource.engine)) {
     return `${referencedSchema.name}.${referencedTable.name}(${referencedColumn?.name})`;
   } else {
     return `${referencedTable.name}(${referencedColumn?.name})`;

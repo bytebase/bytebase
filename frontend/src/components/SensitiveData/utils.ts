@@ -29,7 +29,7 @@ export const getExpressionsForSensitiveColumn = (
   const expressions = [
     `resource.database_name == "${sensitiveColumn.database.databaseName}"`,
     `resource.instance_id == "${extractInstanceResourceName(
-      sensitiveColumn.database.instanceEntity.name
+      sensitiveColumn.database.instance
     )}"`,
     `resource.table_name == "${sensitiveColumn.maskData.table}"`,
     `resource.column_name == "${sensitiveColumn.maskData.column}"`,

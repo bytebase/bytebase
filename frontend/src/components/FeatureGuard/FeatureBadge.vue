@@ -57,7 +57,10 @@ import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspa
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString } from "@/types";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -70,7 +73,7 @@ const props = defineProps({
     type: String as PropType<FeatureType>,
   },
   instance: {
-    type: Object as PropType<Instance>,
+    type: Object as PropType<Instance | InstanceResource>,
     default: undefined,
   },
   customClass: {

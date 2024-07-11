@@ -1,9 +1,9 @@
 <template>
   <div v-if="database" class="flex items-center flex-wrap gap-1">
-    <InstanceV1Name :instance="database.instanceEntity" :link="false">
+    <InstanceV1Name :instance="database.instanceResource" :link="false">
       <template #prefix>
         <EnvironmentV1Name
-          :environment="database.instanceEntity.environmentEntity"
+          :environment="database.effectiveEnvironmentEntity"
           :link="false"
           :show-icon="false"
           text-class=" text-control-light"
@@ -15,10 +15,8 @@
       <heroicons-outline:database />
 
       <EnvironmentV1Name
-        v-if="
-          database.instanceEntity.environment !== database.effectiveEnvironment
-        "
-        :environment="database.effectiveEnvironmentEntity"
+        v-if="instanceEnvironment.name !== database.effectiveEnvironment"
+        :environment="instanceEnvironment"
         :link="false"
         :show-icon="false"
         text-class=" text-control-light"
@@ -36,8 +34,8 @@ import {
   InstanceV1Name,
   EnvironmentV1Name,
 } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 const props = defineProps<{
@@ -51,5 +49,14 @@ const database = computed(() => {
   const db = databaseStore.getDatabaseByName(sheet.database);
   if (db.uid === String(UNKNOWN_ID)) return undefined;
   return db;
+});
+
+const instanceEnvironment = computed(() => {
+  if (!database.value) return unknownEnvironment();
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(
+      database.value.instanceResource.environment
+    ) ?? unknownEnvironment()
+  );
 });
 </script>

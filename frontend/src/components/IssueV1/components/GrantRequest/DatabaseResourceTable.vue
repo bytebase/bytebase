@@ -22,7 +22,7 @@
       </div>
       <div class="bb-grid-cell">
         <InstanceV1Name
-          :instance="extractComposedDatabase(item).instanceEntity"
+          :instance="extractComposedDatabase(item).instanceResource"
         />
       </div>
     </template>

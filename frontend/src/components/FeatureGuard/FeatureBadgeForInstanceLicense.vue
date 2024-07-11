@@ -37,7 +37,10 @@ import type { PropType } from "vue";
 import { reactive, computed } from "vue";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import type { FeatureType } from "@/types";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -54,7 +57,7 @@ const props = defineProps({
     type: String as PropType<FeatureType>,
   },
   instance: {
-    type: Object as PropType<Instance>,
+    type: Object as PropType<Instance | InstanceResource>,
     default: undefined,
   },
   customClass: {

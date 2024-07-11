@@ -9,7 +9,7 @@
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span class="truncate" v-html="databaseName" />
       -<InstanceV1Name
-        :instance="database.instanceEntity"
+        :instance="database.instanceResource"
         :link="false"
         class="whitespace-nowrap"
       />

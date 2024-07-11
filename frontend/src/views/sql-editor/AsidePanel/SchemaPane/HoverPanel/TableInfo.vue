@@ -40,7 +40,7 @@ const props = defineProps<{
   table: TableMetadata;
 }>();
 
-const instanceEngine = computed(() => props.db.instanceEntity.engine);
+const instanceEngine = computed(() => props.db.instanceResource.engine);
 
 const hasSchemaProperty = computed(() => {
   return [Engine.POSTGRES, Engine.RISINGWAVE].includes(instanceEngine.value);

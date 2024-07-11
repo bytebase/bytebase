@@ -61,8 +61,8 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
     databaseList,
     [
       (db) => db.effectiveEnvironmentEntity.order,
-      (db) => Number(db.instanceEntity.uid),
-      (db) => Number(db.projectEntity.uid),
+      (db) => db.instance,
+      (db) => db.projectEntity.key,
       (db) => db.databaseName,
     ],
     ["desc", "asc", "asc", "asc"]
@@ -70,9 +70,9 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
 };
 
 export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
-  if (db.instanceEntity.state === State.DELETED) {
-    return true;
-  }
+  // if (db.instanceEntity.state === State.DELETED) {
+  //   return true;
+  // }
   if (db.effectiveEnvironmentEntity.state === State.DELETED) {
     return true;
   }
@@ -179,7 +179,7 @@ export function filterDatabaseV1ByKeyword(
 
   if (
     columns.includes("instance") &&
-    db.instanceEntity.title.toLowerCase().includes(keyword)
+    db.instanceResource.title.toLowerCase().includes(keyword)
   ) {
     return true;
   }
@@ -202,13 +202,13 @@ export function allowGhostMigrationV1(
   const subscriptionV1Store = useSubscriptionV1Store();
   return databaseList.every((db) => {
     return (
-      db.instanceEntity.engine === Engine.MYSQL &&
+      db.instanceResource.engine === Engine.MYSQL &&
       subscriptionV1Store.hasInstanceFeature(
         "bb.feature.online-migration",
-        db.instanceEntity
+        db.instanceResource
       ) &&
       semverCompare(
-        db.instanceEntity.engineVersion,
+        db.instanceResource.engineVersion,
         MIN_GHOST_SUPPORT_MYSQL_VERSION,
         "gte"
       )

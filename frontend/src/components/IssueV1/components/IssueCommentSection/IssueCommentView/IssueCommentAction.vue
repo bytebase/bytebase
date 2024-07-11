@@ -104,7 +104,7 @@ const showRestoreButton = (comment: ComposedIssueComment) => {
   if (!selectedTask.value) {
     return false;
   }
-  if (coreDatabaseInfo.value.instanceEntity.engine !== Engine.MYSQL) {
+  if (coreDatabaseInfo.value.instanceResource.engine !== Engine.MYSQL) {
     return false;
   }
   return true;

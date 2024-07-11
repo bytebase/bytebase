@@ -5,7 +5,10 @@ import { computed } from "vue";
 import { subscriptionServiceClient } from "@/grpcweb";
 import type { FeatureType } from "@/types";
 import { PLANS, instanceLimitFeature } from "@/types";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import type { Subscription } from "@/types/proto/v1/subscription_service";
 import {
   PlanType,
@@ -159,7 +162,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     },
     hasInstanceFeature(
       type: FeatureType,
-      instance: Instance | undefined = undefined
+      instance: Instance | InstanceResource | undefined = undefined
     ) {
       // DONOT check instance license fo FREE plan.
       if (this.currentPlan === PlanType.FREE) {
@@ -172,7 +175,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     },
     instanceMissingLicense(
       type: FeatureType,
-      instance: Instance | undefined = undefined
+      instance: Instance | InstanceResource | undefined = undefined
     ) {
       if (!instanceLimitFeature.has(type)) {
         return false;
@@ -247,7 +250,7 @@ export const hasFeature = (type: FeatureType) => {
 
 export const featureToRef = (
   type: FeatureType,
-  instance: Instance | undefined = undefined
+  instance: Instance | InstanceResource | undefined = undefined
 ): Ref<boolean> => {
   const store = useSubscriptionV1Store();
   return computed(() => store.hasInstanceFeature(type, instance));
