@@ -197,7 +197,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		}
 	}
 
-	dataSources, err := s.listDataSourceV2(ctx, tx, instanceCreate.ResourceID)
+	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &instanceCreate.ResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		Title:         instanceCreate.Title,
 		Engine:        instanceCreate.Engine,
 		ExternalLink:  instanceCreate.ExternalLink,
-		DataSources:   dataSources,
+		DataSources:   instanceDataSourcesMap[instanceCreate.ResourceID],
 		Activation:    instanceCreate.Activation,
 		Options:       instanceCreate.Options,
 		Metadata:      instanceCreate.Metadata,
@@ -346,11 +346,11 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 	}
 	instance.Deleted = convertRowStatusToDeleted(rowStatus)
-	dataSourceList, err := s.listDataSourceV2(ctx, tx, patch.ResourceID)
+	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &patch.ResourceID)
 	if err != nil {
 		return nil, err
 	}
-	instance.DataSources = dataSourceList
+	instance.DataSources = instanceDataSourcesMap[patch.ResourceID]
 	var instanceOptions storepb.InstanceOptions
 	if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
 		return nil, err
@@ -458,12 +458,17 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		return nil, err
 	}
 
+	// Use a single query to list all data sources if there are more than one instance to look at.
+	var dataSourceFind *string
+	if len(instanceMessages) == 1 {
+		dataSourceFind = &instanceMessages[0].ResourceID
+	}
+	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, dataSourceFind)
+	if err != nil {
+		return nil, err
+	}
 	for _, instanceMessage := range instanceMessages {
-		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceMessage.ResourceID)
-		if err != nil {
-			return nil, err
-		}
-		instanceMessage.DataSources = dataSourceList
+		instanceMessage.DataSources = instanceDataSourcesMap[instanceMessage.ResourceID]
 	}
 
 	return instanceMessages, nil
