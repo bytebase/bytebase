@@ -11,10 +11,7 @@ export type SQLRuleFilterParams = {
 export const useSQLRuleFilter = () => {
   const route = useRoute();
   const params = reactive<SQLRuleFilterParams>({
-    checkedLevel: new Set([
-      SQLReviewRuleLevel.ERROR,
-      SQLReviewRuleLevel.WARNING,
-    ]),
+    checkedLevel: new Set([]),
     selectedCategory: route.query.category
       ? (route.query.category as string)
       : undefined,
@@ -36,10 +33,7 @@ export const useSQLRuleFilter = () => {
     },
     reset() {
       this.changeCategory(undefined);
-      params.checkedLevel = new Set([
-        SQLReviewRuleLevel.ERROR,
-        SQLReviewRuleLevel.WARNING,
-      ]);
+      params.checkedLevel = new Set([]);
     },
   };
   return { params, events };
