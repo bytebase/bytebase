@@ -44,7 +44,7 @@
 
 <script lang="ts" setup>
 import { useDialog } from "naive-ui";
-import { reactive, computed, withDefaults } from "vue";
+import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";

@@ -29,7 +29,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults } from "vue";
+import { computed } from "vue";
 
 export type BBBadgeStyle = "INFO" | "WARN" | "CRITICAL" | "DISABLED";
 export type BBBadgeSize = "normal" | "small";

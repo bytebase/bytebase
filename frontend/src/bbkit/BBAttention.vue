@@ -28,7 +28,7 @@
 
 <script lang="ts" setup>
 import { NAlert } from "naive-ui";
-import { computed, withDefaults } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 const props = withDefaults(
