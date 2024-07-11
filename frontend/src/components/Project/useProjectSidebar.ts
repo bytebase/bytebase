@@ -12,10 +12,7 @@ import {
   DownloadIcon,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
-import type {
-  RouteLocationNormalizedLoadedGeneric,
-  RouteRecordRaw,
-} from "vue-router";
+import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from "vue-router";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { t } from "@/plugins/i18n";
@@ -55,7 +52,7 @@ interface ProjectSidebarItem extends SidebarItem {
 
 export const useProjectSidebar = (
   project: MaybeRef<ComposedProject>,
-  _route?: RouteLocationNormalizedLoadedGeneric
+  _route?: RouteLocationNormalizedLoaded
 ) => {
   const currentUser = useCurrentUserV1();
   const route = _route ?? useRoute();
@@ -65,7 +62,7 @@ export const useProjectSidebar = (
   });
 
   const isTenantProject = computed((): boolean => {
-    return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
+    return unref(project).tenantMode === TenantMode.TENANT_MODE_ENABLED;
   });
 
   const getFlattenProjectV1Routes = (
