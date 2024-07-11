@@ -25,7 +25,10 @@
               @update:environments="onResourcesChange($event, projects)"
             />
           </div>
-          <NDivider />
+          <div class="flex items-center space-x-2">
+            <div class="textlabel w-10 capitalize">{{ $t("common.or") }}</div>
+            <NDivider />
+          </div>
           <div>
             <div class="textlabel mb-1">
               {{ $t("common.project") }}
