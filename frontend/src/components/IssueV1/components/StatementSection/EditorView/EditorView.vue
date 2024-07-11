@@ -225,7 +225,6 @@ import {
   specForTask,
   createEmptyLocalSheet,
   notifyNotEditableLegacyIssue,
-  isDeploymentConfigChangeTaskV1,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
 } from "@/components/IssueV1/logic";
@@ -447,30 +446,6 @@ const chooseUpdateStatementTarget = () => {
       );
     }),
   };
-
-  if (isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value)) {
-    dialog.info({
-      title: t("issue.update-statement.self", { type: statementTitle.value }),
-      content: t(
-        "issue.update-statement.current-change-will-apply-to-all-tasks-in-batch-mode"
-      ),
-      type: "info",
-      autoFocus: false,
-      closable: false,
-      maskClosable: false,
-      closeOnEsc: false,
-      showIcon: false,
-      positiveText: t("common.confirm"),
-      negativeText: t("common.cancel"),
-      onPositiveClick: () => {
-        d.resolve({ target: "ALL", tasks: targets.ALL });
-      },
-      onNegativeClick: () => {
-        d.resolve({ target: "CANCELED", tasks: [] });
-      },
-    });
-    return d.promise;
-  }
 
   if (targets.STAGE.length === 1 && targets.ALL.length === 1) {
     d.resolve({ target: "TASK", tasks: targets.TASK });

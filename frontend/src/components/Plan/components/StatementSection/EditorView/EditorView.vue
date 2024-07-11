@@ -205,7 +205,6 @@ import {
   createEmptyLocalSheet,
   databaseEngineForSpec,
   databaseForSpec,
-  isDeploymentConfigChangeSpec,
   isGroupingChangeSpec,
   sheetNameForSpec,
 } from "@/components/Plan/logic";
@@ -379,30 +378,6 @@ const chooseUpdateStatementTarget = () => {
         ?.specs || [],
     ALL: flattenSpecList(plan.value),
   };
-
-  if (isDeploymentConfigChangeSpec(selectedSpec.value)) {
-    dialog.info({
-      title: t("issue.update-statement.self", { type: statementTitle.value }),
-      content: t(
-        "issue.update-statement.current-change-will-apply-to-all-tasks-in-batch-mode"
-      ),
-      type: "info",
-      autoFocus: false,
-      closable: false,
-      maskClosable: false,
-      closeOnEsc: false,
-      showIcon: false,
-      positiveText: t("common.confirm"),
-      negativeText: t("common.cancel"),
-      onPositiveClick: () => {
-        d.resolve({ target: "ALL", specs: targets.ALL });
-      },
-      onNegativeClick: () => {
-        d.resolve({ target: "CANCELED", specs: [] });
-      },
-    });
-    return d.promise;
-  }
 
   if (targets.STEP.length === 1 && targets.ALL.length === 1) {
     d.resolve({ target: "SPEC", specs: targets.SPEC });
