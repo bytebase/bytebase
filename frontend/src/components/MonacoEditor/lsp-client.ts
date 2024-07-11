@@ -9,25 +9,18 @@ import {
   WebSocketMessageReader,
   WebSocketMessageWriter,
 } from "vscode-ws-jsonrpc";
-import { h } from "vue";
-import { t } from "@/plugins/i18n";
-import { pushNotification } from "@/store";
-import { minmax, sleep } from "@/utils";
-import LearnMoreLink from "../LearnMoreLink.vue";
-import { createUrl } from "./utils";
+import { shallowReactive, toRef } from "vue";
+import { sleep } from "@/utils";
+import {
+  createUrl,
+  errorNotification,
+  MAX_RETRIES,
+  messages,
+  progressiveDelay,
+  WEBSOCKET_TIMEOUT,
+} from "./utils";
 
-// Max retires in a retry serial. Will be reset after a success connection
-const MAX_RETRIES = 5;
-// Progressive delay in a retry serial. Avoiding to flood the server.
-const DELAY = {
-  max: 1000,
-  min: 100,
-  growth: 1.5,
-};
-// Timeout to setup connection in EACH attempt
-const TIMEOUT = 5000;
-
-type ConnectionState = {
+export type ConnectionState = {
   url: string;
   state: "initial" | "ready" | "closed" | "reconnecting";
   ws: Promise<WebSocket> | undefined;
@@ -35,19 +28,13 @@ type ConnectionState = {
   retries: number;
 };
 
-const conn: ConnectionState = {
+const conn = shallowReactive<ConnectionState>({
   url: createUrl(location.host, "/lsp").toString(),
   state: "initial",
   ws: undefined,
   lastCommand: undefined,
   retries: 0,
-};
-
-const messages = {
-  title: () => t("sql-editor.web-socket.errors.title"),
-  description: () => t("sql-editor.web-socket.errors.description"),
-  disconnected: () => t("sql-editor.web-socket.errors.disconnected"),
-};
+});
 
 const connectWebSocket = () => {
   if (conn.ws) {
@@ -94,7 +81,7 @@ const connectWebSocket = () => {
 
       const timer = setTimeout(() => {
         handleError(-1, "timeout");
-      }, TIMEOUT);
+      }, WEBSOCKET_TIMEOUT);
 
       ws.addEventListener("open", () => {
         clearTimeout(timer);
@@ -252,41 +239,4 @@ export const executeCommand = async (
   return result;
 };
 
-const extractErrorMessage = (err: any) => {
-  if (typeof err === "string") {
-    return err;
-  }
-  if (typeof err.message === "string") {
-    return err.message;
-  }
-  return String(err);
-};
-
-const errorNotification = (err: unknown) => {
-  pushNotification({
-    module: "bytebase",
-    style: "CRITICAL",
-    title: messages.title(),
-    description: () => {
-      const message = extractErrorMessage(err);
-      return [
-        h("p", {}, messages.description()),
-        message ? h("p", {}, message) : null,
-        h(LearnMoreLink, {
-          url: "https://www.bytebase.com/docs/administration/production-setup/#enable-https-and-websocket",
-        }),
-      ];
-    },
-  });
-};
-
-const progressiveDelay = (serial: number) => {
-  if (serial === 0) {
-    return 0;
-  }
-  return minmax(
-    DELAY.min * Math.pow(DELAY.growth, serial - 1),
-    DELAY.min,
-    DELAY.max
-  );
-};
+export const connectionState = toRef(conn, "state");
