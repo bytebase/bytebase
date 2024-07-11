@@ -803,6 +803,7 @@ Used internally for obfuscating the page token.
 | content | [string](#string) |  | The advice content. |
 | detail | [string](#string) |  | The advice detail. |
 | start_position | [Position](#bytebase-store-Position) |  |  |
+| end_position | [Position](#bytebase-store-Position) |  |  |
 
 
 

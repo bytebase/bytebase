@@ -17,6 +17,7 @@ export interface Advice {
   /** The advice detail. */
   detail: string;
   startPosition: Position | undefined;
+  endPosition: Position | undefined;
 }
 
 export enum Advice_Status {
@@ -89,6 +90,7 @@ function createBaseAdvice(): Advice {
     content: "",
     detail: "",
     startPosition: undefined,
+    endPosition: undefined,
   };
 }
 
@@ -111,6 +113,9 @@ export const Advice = {
     }
     if (message.startPosition !== undefined) {
       Position.encode(message.startPosition, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.endPosition !== undefined) {
+      Position.encode(message.endPosition, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -164,6 +169,13 @@ export const Advice = {
 
           message.startPosition = Position.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.endPosition = Position.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -181,6 +193,7 @@ export const Advice = {
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
+      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
   },
 
@@ -204,6 +217,9 @@ export const Advice = {
     if (message.startPosition !== undefined) {
       obj.startPosition = Position.toJSON(message.startPosition);
     }
+    if (message.endPosition !== undefined) {
+      obj.endPosition = Position.toJSON(message.endPosition);
+    }
     return obj;
   },
 
@@ -219,6 +235,9 @@ export const Advice = {
     message.detail = object.detail ?? "";
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
       ? Position.fromPartial(object.startPosition)
+      : undefined;
+    message.endPosition = (object.endPosition !== undefined && object.endPosition !== null)
+      ? Position.fromPartial(object.endPosition)
       : undefined;
     return message;
   },
