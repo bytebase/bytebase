@@ -8233,6 +8233,14 @@ components:
                 detail:
                     type: string
                     description: The advice detail.
+                startPosition:
+                    allOf:
+                        - $ref: '#/components/schemas/Position'
+                    description: |-
+                        1-based Position of the SQL statement.
+                         To supersede `line` and `column` above.
+                endPosition:
+                    $ref: '#/components/schemas/Position'
         AdviseIndexResponse:
             type: object
             properties:
@@ -11636,6 +11644,15 @@ components:
                     readOnly: true
                     type: string
                     description: The system-assigned, unique identifier for the resource.
+        Position:
+            type: object
+            properties:
+                line:
+                    type: integer
+                    format: int32
+                column:
+                    type: integer
+                    format: int32
         PrettyRequest:
             type: object
             properties:
