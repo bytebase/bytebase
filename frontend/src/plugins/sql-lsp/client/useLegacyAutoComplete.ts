@@ -36,7 +36,7 @@ export const useLegacyAutoComplete = async (
     if (database.value.uid === String(UNKNOWN_ID)) {
       return "MYSQL";
     }
-    return dialectOfEngineV1(database.value.instanceEntity.engine);
+    return dialectOfEngineV1(database.value.instanceResource.engine);
   });
   const connectionScope = computed((): ConnectionScope => {
     if (database.value.uid !== String(UNKNOWN_ID)) {

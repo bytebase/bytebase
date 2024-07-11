@@ -23,7 +23,7 @@ const instance = computed(() => {
   if (sheet) {
     if (!sheet.database) return undefined;
     return useDatabaseV1Store().getDatabaseByName(sheet.database)
-      .instanceEntity;
+      .instanceResource;
   }
   if (tab) {
     return connectionForSQLEditorTab(tab).instance;

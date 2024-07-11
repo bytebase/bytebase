@@ -5,7 +5,7 @@
     <template v-if="node.type === 'instance'">
       <InstanceV1EngineIcon :instance="node.instance" />
       <span class="text-gray-500">
-        {{ node.instance.environmentEntity.title }}
+        {{ environmentForInstanceNode(node).title }}
       </span>
     </template>
     <template v-if="node.type === 'database'">
@@ -66,9 +66,11 @@ import {
   TableIcon,
 } from "@/components/Icon";
 import type { InstanceV1EngineIcon } from "@/components/v2";
+import { useEnvironmentV1Store } from "@/store";
+import { unknownEnvironment } from "@/types";
 import { useSchemaEditorContext } from "../context";
 import NodeCheckbox from "./NodeCheckbox";
-import type { TreeNode } from "./common";
+import type { TreeNode, TreeNodeForInstance } from "./common";
 
 const props = defineProps<{
   node: TreeNode;
@@ -93,4 +95,11 @@ const isIndexColumn = computed(() => {
   const { table, column } = node.metadata;
   return table.indexes.some((idx) => idx.expressions.includes(column.name));
 });
+
+const environmentForInstanceNode = (node: TreeNodeForInstance) => {
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(node.instance.environment) ??
+    unknownEnvironment()
+  );
+};
 </script>

@@ -71,7 +71,7 @@ const { copy: copyTextToClipboard, isSupported } = useClipboard({
 const schemaString = ref<string | null>(null);
 
 const engine = computed(() => {
-  return props.database.instanceEntity.engine;
+  return props.database.instanceResource.engine;
 });
 
 const databaseMetadata = computed(() => {

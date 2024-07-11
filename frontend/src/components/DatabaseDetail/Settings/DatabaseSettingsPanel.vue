@@ -9,7 +9,7 @@
           class="mt-1 max-w-md"
           :environment="environment?.uid"
           :disabled="!allowUpdateDatabase"
-          :default-environment-name="database.instanceEntity.environment"
+          :default-environment-name="database.instanceResource.environment"
           @update:environment="handleSelectEnvironmentUID"
         />
       </div>

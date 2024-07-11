@@ -94,7 +94,7 @@ const classificationConfig = computed(() => {
   );
 });
 
-const engine = computed(() => props.database.instanceEntity.engine);
+const engine = computed(() => props.database.instanceResource.engine);
 
 const isPostgres = computed(
   () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE

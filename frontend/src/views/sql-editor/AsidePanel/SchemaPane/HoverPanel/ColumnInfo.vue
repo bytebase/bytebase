@@ -44,7 +44,7 @@ const props = defineProps<{
 }>();
 
 const instanceEngine = computed(() => {
-  return props.db.instanceEntity.engine;
+  return props.db.instanceResource.engine;
 });
 
 const characterSet = computed(() => {

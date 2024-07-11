@@ -2,13 +2,13 @@
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
     <InstanceV1EngineIcon
       v-if="!hasInstanceContext"
-      :instance="database.instanceEntity"
+      :instance="database.instanceResource"
     />
 
     <EnvironmentV1Name
       v-if="
         !hasEnvironmentContext ||
-        database.effectiveEnvironment !== database.instanceEntity.environment
+        database.effectiveEnvironment !== database.instanceResource.environment
       "
       :environment="database.effectiveEnvironmentEntity"
       :link="false"
@@ -24,7 +24,7 @@
     <span class="flex-1 truncate">
       <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
       <span v-if="!hasInstanceContext" class="text-control-light">
-        ({{ database.instanceEntity.title }})
+        ({{ database.instanceResource.title }})
       </span>
     </span>
     <HideInStandaloneMode>

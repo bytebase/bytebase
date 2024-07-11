@@ -60,7 +60,7 @@ export const getSchemaOrTableTreeOptions = (
   if (!databaseMetadata) {
     return undefined;
   }
-  if (hasSchemaProperty(database.instanceEntity.engine)) {
+  if (hasSchemaProperty(database.instanceResource.engine)) {
     const schemaNodes = databaseMetadata.schemas.map(
       (schema): DatabaseTreeOption<"schema"> => {
         const schemaNode: DatabaseTreeOption<"schema"> = {

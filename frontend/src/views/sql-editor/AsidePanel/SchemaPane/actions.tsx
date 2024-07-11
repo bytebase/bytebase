@@ -125,7 +125,7 @@ export const useDropdown = () => {
         });
 
         if (
-          VIEW_SCHEMA_ACTION_ENABLED_ENGINES.includes(db.instanceEntity.engine)
+          VIEW_SCHEMA_ACTION_ENABLED_ENGINES.includes(db.instanceResource.engine)
         ) {
           items.push({
             key: "view-schema-text",
@@ -164,7 +164,7 @@ export const useDropdown = () => {
             },
           });
 
-          if (instanceV1HasAlterSchema(db.instanceEntity)) {
+          if (instanceV1HasAlterSchema(db.instanceResource)) {
             items.push({
               key: "edit-schema",
               label: t("database.edit-schema"),
@@ -282,7 +282,7 @@ const tableOrViewNameForNode = (node: TreeNode) => {
 };
 
 const engineForTarget = (target: NodeTarget) => {
-  return (target as NodeTarget<"database">).db.instanceEntity.engine;
+  return (target as NodeTarget<"database">).db.instanceResource.engine;
 };
 
 const targetSupportsSelectAll = (target: NodeTarget) => {
@@ -349,7 +349,7 @@ const runQuery = async (
     statement,
     connection: { ...tab.connection },
     explain: false,
-    engine: database.instanceEntity.engine,
+    engine: database.instanceResource.engine,
   });
 };
 
@@ -369,7 +369,7 @@ export const selectAllFromTableOrView = async (
   }
 
   const { db } = target;
-  const { engine } = db.instanceEntity;
+  const { engine } = db.instanceResource;
 
   const query = generateSimpleSelectAllStatement(
     engine,

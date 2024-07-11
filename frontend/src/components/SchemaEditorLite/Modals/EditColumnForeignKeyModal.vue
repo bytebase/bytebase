@@ -124,7 +124,7 @@ const state = reactive<LocalState>({
   referencedColumnName: null,
 });
 const engine = computed(() => {
-  return props.database.instanceEntity.engine;
+  return props.database.instanceResource.engine;
 });
 
 const referencedSchema = computed(() => {

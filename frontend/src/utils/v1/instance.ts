@@ -5,19 +5,22 @@ import type { ComposedInstance } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
-export function instanceV1Name(instance: Instance) {
+export function instanceV1Name(instance: Instance | InstanceResource) {
   const { t } = useI18n();
   const store = useSubscriptionV1Store();
   let name = instance.title;
   // instance cannot be deleted and activated at the same time.
-  if (instance.state === State.DELETED) {
+  if ((instance as Instance).state === State.DELETED) {
     name += ` (${t("common.archived")})`;
   } else if (
-    instance.uid !== `${UNKNOWN_ID}` &&
+    (instance as Instance).uid !== `${UNKNOWN_ID}` &&
     !instance.activation &&
     store.currentPlan !== PlanType.FREE
   ) {
@@ -44,7 +47,7 @@ export const sortInstanceV1List = (instanceList: ComposedInstance[]) => {
   );
 };
 
-export const hostPortOfInstanceV1 = (instance: Instance) => {
+export const hostPortOfInstanceV1 = (instance: Instance | InstanceResource) => {
   const ds =
     instance.dataSources.find((ds) => ds.type === DataSourceType.ADMIN) ??
     instance.dataSources[0];
@@ -120,7 +123,7 @@ export const supportedEngineV1List = () => {
 // };
 
 export const instanceV1HasAlterSchema = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   if (engine === Engine.REDIS) return false;
@@ -128,7 +131,7 @@ export const instanceV1HasAlterSchema = (
 };
 
 export const instanceV1HasReadonlyMode = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   // For MongoDB and Redis, we rely on users setting up read-only data source for queries.
   return true;
@@ -233,7 +236,7 @@ export const instanceV1AllowsReorderColumns = (
 };
 
 export const instanceV1SupportsConciseSchema = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [Engine.ORACLE].includes(engine);
@@ -246,7 +249,9 @@ export const instanceV1SupportsTablePartition = (
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
 
-export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
+export const engineOfInstanceV1 = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
   if (typeof instanceOrEngine === "string") {
     return instanceOrEngine;
   }

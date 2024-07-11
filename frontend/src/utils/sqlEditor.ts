@@ -7,7 +7,6 @@ import {
 } from "@/store";
 import type {
   ComposedDatabase,
-  ComposedInstance,
   CoreSQLEditorTab,
   SQLEditorConnection,
   SQLEditorTab,
@@ -15,6 +14,7 @@ import type {
 } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
@@ -43,7 +43,7 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
 
 export const connectionForSQLEditorTab = (tab: SQLEditorTab) => {
   const target: {
-    instance: ComposedInstance | undefined;
+    instance: InstanceResource | undefined;
     database: ComposedDatabase | undefined;
   } = {
     instance: undefined,
@@ -55,10 +55,7 @@ export const connectionForSQLEditorTab = (tab: SQLEditorTab) => {
       connection.database
     );
     target.database = database;
-    target.instance = database.instanceEntity;
-  } else if (connection.instance) {
-    const instance = useInstanceV1Store().getInstanceByUID(connection.instance);
-    target.instance = instance;
+    target.instance = database.instanceResource;
   }
   return target;
 };

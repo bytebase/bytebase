@@ -115,7 +115,7 @@ export const useCommonSearchScopeOptions = (
             keywords: [
               db.databaseName,
               extractInstanceResourceName(db.instance),
-              db.instanceEntity.title,
+              db.instanceResource.title,
               extractEnvironmentResourceName(db.effectiveEnvironment),
               db.effectiveEnvironmentEntity.title,
               extractProjectResourceName(db.project),

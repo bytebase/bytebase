@@ -376,7 +376,7 @@ const filteredDatabaseList = computed(() => {
 const selectableDatabaseList = computed(() => {
   if (isEditSchema.value) {
     return filteredDatabaseList.value.filter((db) =>
-      instanceV1HasAlterSchema(db.instanceEntity)
+      instanceV1HasAlterSchema(db.instanceResource)
     );
   }
 
@@ -385,7 +385,7 @@ const selectableDatabaseList = computed(() => {
 
 const schemalessDatabaseList = computed(() => {
   return filteredDatabaseList.value.filter(
-    (db) => !instanceV1HasAlterSchema(db.instanceEntity)
+    (db) => !instanceV1HasAlterSchema(db.instanceResource)
   );
 });
 

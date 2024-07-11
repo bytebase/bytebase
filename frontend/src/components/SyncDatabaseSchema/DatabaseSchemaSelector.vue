@@ -68,7 +68,7 @@
   <FeatureModal
     feature="bb.feature.sync-schema-all-versions"
     :open="state.showFeatureModal"
-    :instance="database?.instanceEntity"
+    :instance="database?.instanceResource"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -154,7 +154,7 @@ const isFetchingChangeHistorySourceSchema = ref(false);
 const hasSyncSchemaFeature = computed(() => {
   return useSubscriptionV1Store().hasInstanceFeature(
     "bb.feature.sync-schema-all-versions",
-    database.value?.instanceEntity
+    database.value?.instanceResource
   );
 });
 
@@ -267,7 +267,7 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
       h(FeatureBadge, {
         feature: "bb.feature.sync-schema-all-versions",
         "custom-class": "mr-1",
-        instance: database.value?.instanceEntity,
+        instance: database.value?.instanceResource,
       })
     );
   }
@@ -357,12 +357,12 @@ const mergedChangeHistorySourceSchema = computedAsync(
           `${database.name}/schema`
         );
         const changeHistory = mockLatestSchemaChangeHistory(database, schema);
-        if (instanceV1SupportsConciseSchema(database.instanceEntity)) {
+        if (instanceV1SupportsConciseSchema(database.instanceResource)) {
           const conciseSchema = await databaseStore.fetchDatabaseSchema(
             `${database.name}/schema`,
             /* sdlFormat */ false,
             /* concise */ instanceV1SupportsConciseSchema(
-              database.instanceEntity
+              database.instanceResource
             )
           );
           const conciseHistory = conciseSchema.schema;
@@ -382,7 +382,7 @@ const mergedChangeHistorySourceSchema = computedAsync(
           view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
         });
 
-        if (instanceV1SupportsConciseSchema(database.instanceEntity)) {
+        if (instanceV1SupportsConciseSchema(database.instanceResource)) {
           const conciseHistory = await changeHistoryStore.fetchChangeHistory({
             name: changeHistoryName,
             view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,

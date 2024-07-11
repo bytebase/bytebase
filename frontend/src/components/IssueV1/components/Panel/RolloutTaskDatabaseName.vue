@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center flex-1 gap-x-1 overflow-hidden">
     <InstanceV1Name
-      :instance="db.instanceEntity"
+      :instance="db.instanceResource"
       :plain="true"
       :link="false"
       text-class="shrink-0 whitespace-nowrap"

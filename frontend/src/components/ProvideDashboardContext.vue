@@ -61,8 +61,7 @@ const fetchDatabases = async (project: string) => {
 const instanceAndDatabaseInitialized = new Set<string /* project */>();
 const fetchInstancesAndDatabases = async (project: string) => {
   if (instanceAndDatabaseInitialized.has(project || "")) return;
-  await fetchInstances(project);
-  await fetchDatabases(project);
+  await Promise.all([fetchInstances(project), fetchDatabases(project)]);
   instanceAndDatabaseInitialized.add(project || "");
 };
 

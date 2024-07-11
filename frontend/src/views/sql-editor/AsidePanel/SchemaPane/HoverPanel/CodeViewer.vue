@@ -45,7 +45,7 @@ const format = useLocalStorage<boolean>(
   "bb.sql-editor.schema-hover-panel.code-viewer.format",
   false
 );
-const instanceEngine = computed(() => props.db.instanceEntity.engine);
+const instanceEngine = computed(() => props.db.instanceResource.engine);
 
 const hasSchemaProperty = computed(() => {
   return [Engine.POSTGRES, Engine.RISINGWAVE].includes(instanceEngine.value);

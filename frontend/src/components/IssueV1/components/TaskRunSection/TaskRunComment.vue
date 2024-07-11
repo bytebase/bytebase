@@ -152,7 +152,7 @@ const commentLink = computed((): CommentLink => {
     }
   } else if (taskRun.status === TaskRun_Status.FAILED) {
     const db = databaseForTask(issue.value, task);
-    if (isPostgresFamily(db.instanceEntity.engine)) {
+    if (isPostgresFamily(db.instanceResource.engine)) {
       return {
         title: t("common.troubleshoot"),
         link: "https://www.bytebase.com/docs/change-database/troubleshoot/#postgresql",

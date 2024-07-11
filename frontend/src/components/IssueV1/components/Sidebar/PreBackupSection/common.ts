@@ -36,7 +36,7 @@ export const usePreBackupContext = () => {
       return false;
     }
     const database = databaseForTask(issue.value, task.value);
-    const { engine } = database.instanceEntity;
+    const { engine } = database.instanceResource;
     if (
       engine !== Engine.MYSQL &&
       engine !== Engine.TIDB &&
@@ -84,7 +84,7 @@ export const usePreBackupContext = () => {
 
   const archiveDatabase = computed((): string => {
     const database = databaseForTask(issue.value, task.value);
-    const { engine } = database.instanceEntity;
+    const { engine } = database.instanceResource;
     if (engine === Engine.ORACLE) {
       return "BBDATAARCHIVE";
     }

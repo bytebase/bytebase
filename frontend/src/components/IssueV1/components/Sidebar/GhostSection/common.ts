@@ -132,7 +132,7 @@ export const provideIssueGhostContext = () => {
   const showMissingInstanceLicense = computed(() => {
     const instances = uniqBy(
       flattenTaskV1List(issue.value.rolloutEntity).map(
-        (task) => databaseForTask(issue.value, task).instanceEntity
+        (task) => databaseForTask(issue.value, task).instanceResource
       ),
       (instance) => instance.name
     );
@@ -192,9 +192,9 @@ export const allowChangeTaskGhostFlags = (issue: ComposedIssue, task: Task) => {
 
 export const allowGhostForDatabase = (database: ComposedDatabase) => {
   return (
-    database.instanceEntity.engine === Engine.MYSQL &&
+    database.instanceResource.engine === Engine.MYSQL &&
     semverCompare(
-      database.instanceEntity.engineVersion,
+      database.instanceResource.engineVersion,
       MIN_GHOST_SUPPORT_MYSQL_VERSION,
       "gte"
     )

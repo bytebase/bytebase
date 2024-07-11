@@ -90,7 +90,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const engine = computed(() => {
-  return props.database.instanceEntity.engine;
+  return props.database.instanceResource.engine;
 });
 const currentUserV1 = useCurrentUserV1();
 const subscriptionV1Store = useSubscriptionV1Store();

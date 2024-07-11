@@ -141,9 +141,12 @@ import {
   usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import type { ComposedInstance } from "@/types";
 import { UNKNOWN_ID, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import {
   PolicyType,
   PolicyResourceType,
@@ -296,7 +299,9 @@ const onColumnRemove = async (column: SensitiveColumn) => {
   });
 };
 
-const isMissingLicenseForInstance = (instance: ComposedInstance): boolean => {
+const isMissingLicenseForInstance = (
+  instance: Instance | InstanceResource
+): boolean => {
   return subscriptionStore.instanceMissingLicense(
     "bb.feature.sensitive-data",
     instance
@@ -322,7 +327,7 @@ const onRowClick = async (
       break;
     case "EDIT":
       state.pendingGrantAccessColumn = [item];
-      if (isMissingLicenseForInstance(item.database.instanceEntity)) {
+      if (isMissingLicenseForInstance(item.database.instanceResource)) {
         state.showFeatureModal = true;
         return;
       }
@@ -352,11 +357,13 @@ const filteredColumnList = computed(() => {
     ) {
       return false;
     }
-    if (
-      state.selectedInstanceUid !== String(UNKNOWN_ID) &&
-      column.database.instanceEntity.uid !== state.selectedInstanceUid
-    ) {
-      return false;
+    if (state.selectedInstanceUid !== String(UNKNOWN_ID)) {
+      const instance = useInstanceV1Store().getInstanceByUID(
+        state.selectedInstanceUid
+      );
+      if (instance.name !== column.database.instance) {
+        return false;
+      }
     }
     if (
       state.selectedDatabaseUid !== String(UNKNOWN_ID) &&
@@ -397,7 +404,8 @@ const onDatabaseSelect = (databaseUid: string | undefined) => {
   state.selectedDatabaseUid = databaseUid ?? String(UNKNOWN_ID);
   if (databaseUid) {
     const database = databaseStore.getDatabaseByUID(databaseUid);
-    state.selectedInstanceUid = database.instanceEntity.uid;
+    const instance = useInstanceV1Store().getInstanceByName(database.instance);
+    state.selectedInstanceUid = instance.uid;
   }
 };
 
