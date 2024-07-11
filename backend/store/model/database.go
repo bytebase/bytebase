@@ -300,6 +300,7 @@ func (t *TableConfig) IsEmpty() bool {
 
 // DatabaseMetadata is the metadata for a database.
 type DatabaseMetadata struct {
+	name           string
 	internal       map[string]*SchemaMetadata
 	linkedDatabase map[string]*LinkedDatabaseMetadata
 }
@@ -307,6 +308,7 @@ type DatabaseMetadata struct {
 // NewDatabaseMetadata creates a new database metadata.
 func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMetadata {
 	databaseMetadata := &DatabaseMetadata{
+		name:           metadata.Name,
 		internal:       make(map[string]*SchemaMetadata),
 		linkedDatabase: make(map[string]*LinkedDatabaseMetadata),
 	}
@@ -374,6 +376,10 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 		}
 	}
 	return databaseMetadata
+}
+
+func (d *DatabaseMetadata) GetName() string {
+	return d.name
 }
 
 // GetSchema gets the schema by name.

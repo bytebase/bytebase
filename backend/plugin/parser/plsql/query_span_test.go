@@ -87,7 +87,7 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 				names = append(names, metadata.Name)
 			}
 			return names, nil
-		}, func(_ context.Context, linkedDatabaseName string) (string, *model.DatabaseMetadata, error) {
+		}, func(_ context.Context, linkedDatabaseName, _ string) (string, *model.DatabaseMetadata, error) {
 			var linkedDBInfo *storepb.LinkedDatabaseMetadata
 			for _, metadata := range databaseMetadata {
 				for _, linkedDatabase := range metadata.GetLinkedDatabases() {
