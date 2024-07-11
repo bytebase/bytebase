@@ -1,5 +1,12 @@
 <template>
   <div class="w-full space-y-4">
+    <div class="text-sm text-control-light">
+      {{ $t("database.classification.description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/security/data-masking/data-classification?source=console"
+        class="ml-1"
+      />
+    </div>
     <div>
       <div class="flex items-center space-x-2">
         <NSwitch
@@ -12,7 +19,7 @@
         </div>
       </div>
       <i18n-t
-        class="textinfolabel"
+        class="textinfolabel mt-1"
         tag="div"
         keypath="database.classification.sync-from-comment-tip"
       >
@@ -281,6 +288,16 @@ const example: UploadClassificationConfig = {
       title: "Level 2",
       description: "",
     },
+    {
+      id: "3",
+      title: "Level 3",
+      description: "",
+    },
+    {
+      id: "4",
+      title: "Level 4",
+      description: "",
+    },
   ],
   classifications: [
     {
@@ -296,21 +313,15 @@ const example: UploadClassificationConfig = {
     },
     {
       id: "1-2",
-      title: "Assert",
-      description: "",
-      levelId: "1",
-    },
-    {
-      id: "1-3",
       title: "Contact",
       description: "",
       levelId: "2",
     },
     {
-      id: "1-4",
+      id: "1-3",
       title: "Health",
       description: "",
-      levelId: "2",
+      levelId: "4",
     },
     {
       id: "2",
@@ -327,7 +338,7 @@ const example: UploadClassificationConfig = {
       id: "2-2",
       title: "Business",
       description: "",
-      levelId: "1",
+      levelId: "3",
     },
   ],
 };
