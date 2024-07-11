@@ -80,7 +80,7 @@
           :engine="engine"
           :rule-list="ruleListFilteredByEngine"
           :editable="hasPermission"
-          @rule-change="markChange"
+          @rule-upsert="markChange"
         />
       </template>
     </SQLReviewTabsByEngine>
@@ -239,7 +239,7 @@ const ruleListOfPolicy = computed((): RuleTemplateV2[] => {
   if (reviewPolicy.value.id === `${UNKNOWN_ID}`) {
     return [];
   }
-  return rulesToTemplate(reviewPolicy.value, true).ruleList;
+  return rulesToTemplate(reviewPolicy.value, false).ruleList;
 });
 
 watch(

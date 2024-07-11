@@ -9,81 +9,23 @@
           ({{ category.ruleList.length }})
         </span>
       </div>
-      <BBGrid
-        :column-list="columnList"
-        :data-source="category.ruleList"
-        :row-clickable="false"
-        class="border hidden lg:grid"
-      >
-        <template #item="{ item: rule }: { item: RuleTemplateV2 }">
-          <div class="bb-grid-cell justify-center">
-            <NSwitch
-              size="small"
-              :disabled="!editable || !isRuleAvailable(rule)"
-              :value="rule.level !== SQLReviewRuleLevel.DISABLED"
-              @update-value="(val) => toggleActivity(rule, val)"
-            />
-          </div>
-          <div class="bb-grid-cell gap-x-1">
-            <NTooltip
-              v-if="!isRuleAvailable(rule)"
-              trigger="hover"
-              :show-arrow="false"
-            >
-              <template #trigger>
-                <div class="flex justify-center">
-                  <heroicons-outline:exclamation
-                    class="h-5 w-5 text-yellow-600"
-                  />
-                </div>
-              </template>
-              <span class="whitespace-nowrap">
-                {{
-                  $t("sql-review.not-available-for-free", {
-                    plan: $t(
-                      `subscription.plan.${planTypeToString(currentPlan)}.title`
-                    ),
-                  })
-                }}
-              </span>
-            </NTooltip>
-            <span>
-              {{ getRuleLocalization(rule.type).title }}
-            </span>
-            <a
-              :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
-              target="_blank"
-              class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
-            >
-              <heroicons-outline:external-link class="w-4 h-4" />
-            </a>
-          </div>
-          <div class="bb-grid-cell">
-            <RuleLevelSwitch
-              :level="rule.level"
-              :disabled="!isRuleAvailable(rule)"
-              :editable="editable"
-              @level-change="updateLevel(rule, $event)"
-            />
-          </div>
-          <div class="bb-grid-cell justify-center">
-            <NButton
-              :disabled="!isRuleAvailable(rule)"
-              @click="setActiveRule(rule)"
-            >
-              {{ editable ? $t("common.edit") : $t("common.view") }}
-            </NButton>
-          </div>
-          <div
-            v-if="rule.comment || getRuleLocalization(rule.type).description"
-            class="bb-grid-cell col-span-full pl-24 border-t-0"
-          >
-            <p class="w-full text-left pl-2 text-gray-500 -mt-2 mb-1">
-              {{ rule.comment || getRuleLocalization(rule.type).description }}
-            </p>
-          </div>
-        </template>
-      </BBGrid>
+      <div class="hidden lg:block">
+        <NDataTable
+          :striped="true"
+          :columns="columns"
+          :data="category.ruleList"
+          :row-key="getRuleKey"
+          :max-height="'100%'"
+          :virtual-scroll="true"
+          :bordered="true"
+          :default-expand-all="true"
+          :row-props="rowProps"
+          :checked-row-keys="selectedRuleKeys"
+          @update:checked-row-keys="
+            (val) => $emit('update:selectedRuleKeys', val as string[])
+          "
+        />
+      </div>
       <div
         class="flex flex-col lg:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
       >
@@ -129,7 +71,12 @@
                 </a>
               </span>
             </div>
-            <div class="flex items-center space-x-2">
+            <NCheckbox
+              v-if="selectRule"
+              :checked="selectedRuleKeys.includes(getRuleKey(rule))"
+              @update:checked="(_) => toggleRule(rule)"
+            />
+            <div v-else class="flex items-center space-x-2">
               <PencilIcon
                 v-if="editable"
                 class="w-4 h-4"
@@ -144,6 +91,7 @@
             </div>
           </div>
           <RuleLevelSwitch
+            v-if="!hideLevel"
             class="text-xs"
             :level="rule.level"
             :disabled="!isRuleAvailable(rule)"
@@ -168,12 +116,12 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
-import { NSwitch } from "naive-ui";
+import { NSwitch, NCheckbox, NDataTable, NButton } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { useCurrentPlan } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
 import {
@@ -185,28 +133,36 @@ import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
+import { getRuleKey } from "./utils";
 
 type LocalState = {
   activeRule: RuleTemplateV2 | undefined;
 };
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     ruleList?: RuleListWithCategory[];
     editable: boolean;
+    selectRule?: boolean;
+    hideLevel?: boolean;
+    selectedRuleKeys?: string[];
   }>(),
   {
     ruleList: () => [],
     editable: true,
+    selectRule: false,
+    hideLevel: false,
+    selectedRuleKeys: () => [],
   }
 );
 
 const emit = defineEmits<{
   (
-    event: "rule-change",
+    event: "rule-upsert",
     rule: RuleTemplateV2,
     update: Partial<RuleTemplateV2>
   ): void;
+  (event: "update:selectedRuleKeys", keys: string[]): void;
 }>();
 
 const { t } = useI18n();
@@ -215,23 +171,125 @@ const state = reactive<LocalState>({
   activeRule: undefined,
 });
 
-const columnList = computed((): BBGridColumn[] => {
-  const columns: BBGridColumn[] = [
+const columns = computed(() => {
+  const columns: (DataTableColumn<RuleTemplateV2> & { hide?: boolean })[] = [
+    {
+      type: "selection",
+      cellProps: (rule: RuleTemplateV2) => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+      hide: !props.selectRule,
+    },
+    {
+      type: "expand",
+      expandable: (rule: RuleTemplateV2) => {
+        return !!(rule.comment || getRuleLocalization(rule.type).description);
+      },
+      renderExpand: (rule: RuleTemplateV2) => {
+        const comment =
+          rule.comment || getRuleLocalization(rule.type).description;
+        return <p class="w-full text-left pl-10 text-gray-500">{comment}</p>;
+      },
+    },
     {
       title: t("sql-review.rule.active"),
-      width: "6rem",
-      class: "justify-center",
+      key: "active",
+      width: "5rem",
+      hide: props.hideLevel,
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <NSwitch
+            size={"small"}
+            disabled={!props.editable || !isRuleAvailable(rule)}
+            value={rule.level !== SQLReviewRuleLevel.DISABLED}
+            onUpdate:value={(val) => toggleActivity(rule, val)}
+          />
+        );
+      },
     },
-    { title: t("common.name"), width: "1fr" },
-    { title: t("sql-review.level.name"), width: "12rem" },
+    {
+      title: t("common.name"),
+      resizable: true,
+      key: "name",
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <div class="flex items-center space-x-2">
+            <span>{getRuleLocalization(rule.type).title}</span>
+            <a
+              href={`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`}
+              target="_blank"
+              class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
+            >
+              <ExternalLinkIcon class="w-4 h-4" />
+            </a>
+          </div>
+        );
+      },
+    },
+    {
+      title: t("sql-review.level.name"),
+      hide: props.hideLevel,
+      key: "level",
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <RuleLevelSwitch
+            level={rule.level}
+            disabled={!isRuleAvailable(rule)}
+            editable={props.editable}
+            onLevel-change={(on) => updateLevel(rule, on)}
+          />
+        );
+      },
+    },
     {
       title: t("common.operations"),
+      hide: props.selectRule,
+      key: "operations",
       width: "10rem",
-      class: "justify-center",
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <NButton
+            disabled={!isRuleAvailable(rule)}
+            onClick={() => setActiveRule(rule)}
+          >
+            {props.editable ? t("common.edit") : t("common.view")}
+          </NButton>
+        );
+      },
     },
   ];
-  return columns;
+
+  return columns.filter((item) => !item.hide);
 });
+
+const rowProps = (rule: RuleTemplateV2) => {
+  return {
+    style: props.selectRule ? "cursor: pointer;" : "",
+    onClick: (e: MouseEvent) => {
+      if (props.selectRule) {
+        toggleRule(rule);
+        return;
+      }
+    },
+  };
+};
+
+const toggleRule = (rule: RuleTemplateV2) => {
+  const key = getRuleKey(rule);
+  const index = props.selectedRuleKeys.findIndex((k) => k === key);
+  if (index < 0) {
+    emit("update:selectedRuleKeys", [...props.selectedRuleKeys, key]);
+  } else {
+    emit("update:selectedRuleKeys", [
+      ...props.selectedRuleKeys.slice(0, index),
+      ...props.selectedRuleKeys.slice(index + 1),
+    ]);
+  }
+};
 
 const isRuleAvailable = (rule: RuleTemplateV2) => {
   return ruleIsAvailableInSubscription(rule.type, currentPlan.value);
@@ -252,10 +310,10 @@ const onRuleChanged = (update: Partial<RuleTemplateV2>) => {
   if (!state.activeRule) {
     return;
   }
-  emit("rule-change", state.activeRule, update);
+  emit("rule-upsert", state.activeRule, update);
 };
 
 const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRuleLevel) => {
-  emit("rule-change", rule, { level });
+  emit("rule-upsert", rule, { level });
 };
 </script>

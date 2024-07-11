@@ -29,7 +29,9 @@
     "bb-sql-review-dev": "基本的なテンプレート",
     "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",
     "bb-sql-review-sample": "サンプルテンプレート",
-    "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。"
+    "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。",
+    "bb-sql-review-empty": "ゼロから始めます",
+    "bb-sql-review-empty-desc": "空のテンプレートです。必要なルールを自分で追加する必要があります。"
   },
   "rule": {
     "engine-mysql-use-innodb": {

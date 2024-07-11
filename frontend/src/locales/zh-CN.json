@@ -2807,6 +2807,8 @@
     "policy-updated": "审核策略已更新",
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
+    "add-rules": "添加规则",
+    "add-or-remove-rules": "添加或删除规则",
     "filter": "筛选",
     "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
     "disable": "停用审核策略",

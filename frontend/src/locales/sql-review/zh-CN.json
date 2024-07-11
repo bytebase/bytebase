@@ -29,7 +29,9 @@
     "bb-sql-review-dev": "基础模板",
     "bb-sql-review-dev-desc": "保证变更可正确地应用到数据库。",
     "bb-sql-review-sample": "样例模版",
-    "bb-sql-review-sample-desc": "一个包括 DROP 保护和禁止列值为 NULL 的简易审核策略。"
+    "bb-sql-review-sample-desc": "一个包括 DROP 保护和禁止列值为 NULL 的简易审核策略。",
+    "bb-sql-review-empty": "白手起家",
+    "bb-sql-review-empty-desc": "一个空的模板，需要您自行添加需要的规则。"
   },
   "rule": {
     "engine-mysql-use-innodb": {

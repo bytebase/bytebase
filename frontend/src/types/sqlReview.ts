@@ -158,6 +158,7 @@ export const getRuleMapByEngine = (
     }
     map.get(engine)?.set(rule.type, {
       ...rule,
+      level: rule.level || SQLReviewRuleLevel.DISABLED,
       engine,
       componentList: rule.componentList || [],
     });
@@ -188,7 +189,7 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
     }[];
   }[];
 
-  return templateList.map((template) => {
+  const resp = templateList.map((template) => {
     const ruleList: RuleTemplateV2[] = [];
 
     for (const rule of template.ruleList) {
@@ -223,6 +224,13 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
       ruleList,
     };
   });
+
+  resp.unshift({
+    id: "bb.sql-review.empty",
+    ruleList: [],
+  });
+
+  return resp;
 })();
 
 // convertToCategoryMap will reduce RuleTemplate list to map by category.
