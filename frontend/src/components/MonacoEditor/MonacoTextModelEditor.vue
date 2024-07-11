@@ -32,7 +32,6 @@ import {
   watch,
   watchEffect,
 } from "vue";
-import { useLegacyAutoComplete } from "@/plugins/sql-lsp/client";
 import type { SQLDialect } from "@/types";
 import {
   type AutoCompleteContext,
@@ -49,7 +48,6 @@ import {
   useSuggestOptionByLanguage,
   useLineHighlights,
 } from "./composables";
-import { shouldUseNewLSP } from "./dev";
 import monaco, { createMonacoEditor } from "./editor";
 import type {
   AdviceOption,
@@ -131,15 +129,7 @@ onMounted(async () => {
     useAdvices(monaco, editor, toRef(props, "advices"));
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
-    if (shouldUseNewLSP()) {
-      useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
-    } else {
-      useLegacyAutoComplete(
-        monaco,
-        editor,
-        toRef(props, "autoCompleteContext")
-      );
-    }
+    useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
 
     ready.value = true;
 
