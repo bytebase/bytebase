@@ -2807,6 +2807,8 @@
     "policy-updated": "La política de revisión se actualizó correctamente.",
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
+    "add-rules": "Agregar reglas",
+    "add-or-remove-rules": "Agregar o eliminar reglas",
     "filter": "Filtro",
     "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
     "disable": "Deshabilitar",

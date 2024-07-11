@@ -7,6 +7,12 @@ import { convertPolicyRuleToRuleTemplate, ruleTemplateMapV2 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import type { PayloadValueType } from "./RuleConfigComponents";
 
+export const getRuleKey = (rule: RuleTemplateV2) =>
+  `${rule.engine}:${rule.type}`;
+
+export const getTemplateId = (review: SQLReviewPolicy) =>
+  `bb.sql-review.${review.id}`;
+
 export const rulesToTemplate = (
   review: SQLReviewPolicy,
   withDisabled: boolean
@@ -42,7 +48,7 @@ export const rulesToTemplate = (
   }
 
   return {
-    id: `bb.sql-review.${review.id}`,
+    id: getTemplateId(review),
     review,
     ruleList: ruleTemplateList,
   };

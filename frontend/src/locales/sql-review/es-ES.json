@@ -29,7 +29,9 @@
     "bb-sql-review-dev": "Plantilla Básica",
     "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",
     "bb-sql-review-sample": "Plantilla de Muestra",
-    "bb-sql-review-sample-desc": "Una plantilla mínima con protección de DROP y prohibición de columnas anulables."
+    "bb-sql-review-sample-desc": "Una plantilla mínima con protección de DROP y prohibición de columnas anulables.",
+    "bb-sql-review-empty": "Empezar desde el principio",
+    "bb-sql-review-empty-desc": "Una plantilla vacía. Debe agregar las reglas necesarias usted mismo."
   },
   "rule": {
     "engine-mysql-use-innodb": {
