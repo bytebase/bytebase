@@ -57,6 +57,7 @@ const props = withDefaults(
     includeArchived?: boolean;
     useResourceId?: boolean;
     multiple?: boolean;
+    renderSuffix?: (project: string) => string;
     filter?: (project: ComposedProject, index: number) => boolean;
   }>(),
   {
@@ -71,6 +72,7 @@ const props = withDefaults(
     useResourceId: false,
     multiple: false,
     filter: () => true,
+    renderSuffix: (project: string) => "",
   }
 );
 
@@ -229,6 +231,12 @@ watchEffect(prepare);
 
 const renderLabel = (option: SelectOption) => {
   const { project } = option as ProjectSelectOption;
-  return <ProjectNameCell project={project} mode="ALL_SHORT" />;
+  return (
+    <ProjectNameCell
+      project={project}
+      mode="ALL_SHORT"
+      suffix={props.renderSuffix(project.name)}
+    />
+  );
 };
 </script>
