@@ -71,3 +71,21 @@ export const formatEditorContent = async (
     editor.setPosition(pos);
   }
 };
+
+export const createUrl = (
+  host: string,
+  path: string,
+  searchParams: Record<string, any> = {},
+  secure: boolean = location.protocol === "https:"
+) => {
+  const protocol = secure ? "wss" : "ws";
+  const url = new URL(`${protocol}://${host}${path}`);
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    const v = value instanceof Array ? value.join(",") : value;
+    if (v) {
+      url.searchParams.set(key, v);
+    }
+  }
+  return url;
+};

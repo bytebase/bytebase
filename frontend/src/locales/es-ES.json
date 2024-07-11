@@ -2391,7 +2391,14 @@
       "self": "Modo estandar"
     },
     "to-enable-standard-mode": "para habilitar el modo estándar",
-    "add-a-new-instance": "Agregar una nueva instancia"
+    "add-a-new-instance": "Agregar una nueva instancia",
+    "web-socket": {
+      "errors": {
+        "title": "La conexión WebSocket falló",
+        "description": "La función Autocompletar puede estar limitada o deshabilitada.",
+        "disconnected": "WebSocket desconectado"
+      }
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",
