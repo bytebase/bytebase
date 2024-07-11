@@ -17,7 +17,7 @@ export const allowUsingSchemaEditor = (
   databaseList: ComposedDatabase[]
 ): boolean => {
   return databaseList.every((db) => {
-    return engineSupportsSchemaEditor(db.instanceEntity.engine);
+    return engineSupportsSchemaEditor(db.instanceResource.engine);
   });
 };
 

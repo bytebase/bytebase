@@ -90,7 +90,7 @@ export const provideDatabaseDetailContext = (
     return (
       database.value.project !== DEFAULT_PROJECT_V1_NAME &&
       hasPermissionToCreateChangeDatabaseIssue(database.value, me.value) &&
-      instanceV1HasAlterSchema(database.value.instanceEntity)
+      instanceV1HasAlterSchema(database.value.instanceResource)
     );
   });
 
@@ -110,7 +110,7 @@ export const provideDatabaseDetailContext = (
   const allowListSlowQueries = computed(
     () =>
       checkPermission("bb.slowQueries.list") &&
-      instanceV1SupportSlowQuery(database.value.instanceEntity)
+      instanceV1SupportSlowQuery(database.value.instanceResource)
   );
 
   const context: DatabaseDetailContext = {

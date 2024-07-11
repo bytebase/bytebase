@@ -8,7 +8,7 @@
     <span v-html="optionName" />
     <span v-if="database" class="ml-1 text-gray-500 flex flex-row items-center">
       (<InstanceV1Name
-        :instance="database.instanceEntity"
+        :instance="database.instanceResource"
         :link="false"
         class="whitespace-nowrap"
       />)

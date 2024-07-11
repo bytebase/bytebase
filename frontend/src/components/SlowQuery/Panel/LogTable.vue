@@ -132,7 +132,7 @@ const dataTableColumns = computed(
           (rowA.log.statistics?.maximumRowsExamined ?? 0) -
           (rowB.log.statistics?.maximumRowsExamined ?? 0),
         render: (item) =>
-          instanceV1HasSlowQueryDetail(item.database.instanceEntity)
+          instanceV1HasSlowQueryDetail(item.database.instanceResource)
             ? item.log.statistics?.maximumRowsExamined
             : "-",
       },
@@ -143,7 +143,7 @@ const dataTableColumns = computed(
           (rowA.log.statistics?.averageRowsExamined ?? 0) -
           (rowB.log.statistics?.averageRowsExamined ?? 0),
         render: (item) =>
-          instanceV1HasSlowQueryDetail(item.database.instanceEntity)
+          instanceV1HasSlowQueryDetail(item.database.instanceResource)
             ? item.log.statistics?.averageRowsExamined
             : "-",
       },
@@ -154,7 +154,7 @@ const dataTableColumns = computed(
           (rowA.log.statistics?.maximumRowsSent ?? 0) -
           (rowB.log.statistics?.maximumRowsSent ?? 0),
         render: (item) =>
-          instanceV1HasSlowQueryDetail(item.database.instanceEntity)
+          instanceV1HasSlowQueryDetail(item.database.instanceResource)
             ? item.log.statistics?.maximumRowsSent
             : "-",
       },
@@ -196,7 +196,7 @@ const dataTableColumns = computed(
         key: "instance",
         render: (item) =>
           h(InstanceV1Name, {
-            instance: item.database.instanceEntity,
+            instance: item.database.instanceResource,
             link: false,
           }),
       });

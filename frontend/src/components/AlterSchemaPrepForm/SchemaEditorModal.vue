@@ -241,7 +241,7 @@ const databaseList = computed(() => {
 // Returns Engine.UNRECOGNIZED if there are more than ONE types.
 const databaseEngine = computed((): Engine => {
   const engineTypes = uniq(
-    databaseList.value.map((db) => db.instanceEntity.engine)
+    databaseList.value.map((db) => db.instanceResource.engine)
   );
   if (engineTypes.length !== 1) return Engine.UNRECOGNIZED;
   return engineTypes[0];

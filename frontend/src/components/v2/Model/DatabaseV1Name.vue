@@ -60,8 +60,8 @@ const bindings = computed(() => {
 
 const prefix = computed(() => {
   const { database } = props;
-  if (database.instanceEntity.engine === Engine.REDIS) {
-    return database.instanceEntity.title;
+  if (database.instanceResource.engine === Engine.REDIS) {
+    return database.instanceResource.title;
   }
   return "";
 });

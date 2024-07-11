@@ -231,7 +231,7 @@ const canEditDatabase = (
 
 const databaseSupportAlterSchema = computed(() => {
   return props.databases.every((db) => {
-    return instanceV1HasAlterSchema(db.instanceEntity);
+    return instanceV1HasAlterSchema(db.instanceResource);
   });
 });
 

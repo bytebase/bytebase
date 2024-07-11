@@ -94,7 +94,7 @@
                   class="flex items-center gap-x-1 textinfolabel ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
                 >
                   <InstanceV1Name
-                    :instance="database.instanceEntity"
+                    :instance="database.instanceResource"
                     :link="false"
                   />
                 </div>
@@ -168,7 +168,7 @@ const databaseListGroupByEnvironment = computed(() => {
     databaseStore.databaseList
       .filter((db) => db.projectEntity.uid === props.projectId)
       .filter((db) => db.databaseName.includes(state.searchText))
-      .filter((db) => db.instanceEntity.engine === props.engine) || [];
+      .filter((db) => db.instanceResource.engine === props.engine) || [];
   const listByEnv = environmentV1Store.environmentList.map((environment) => {
     const list = databaseList.filter(
       (db) => db.effectiveEnvironment === environment.name

@@ -248,7 +248,7 @@ const { allowGetSchema } = useDatabaseDetailContext();
 const dbSchemaStore = useDBSchemaV1Store();
 
 const databaseEngine = computed(() => {
-  return props.database.instanceEntity.engine;
+  return props.database.instanceResource.engine;
 });
 
 const hasSchemaProperty = computed(() => {

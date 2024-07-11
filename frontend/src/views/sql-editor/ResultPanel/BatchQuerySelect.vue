@@ -35,7 +35,7 @@
           @click="$emit('update:selected-database', item.database)"
         >
           <InstanceV1EngineIcon
-            :instance="item.database.instanceEntity"
+            :instance="item.database.instanceResource"
             :tooltip="false"
           />
           <span class="mx-2 opacity-60">{{
@@ -58,7 +58,7 @@
           />
         </NButton>
       </template>
-      {{ item.database.instanceEntity.title }}
+      {{ item.database.instanceResource.title }}
     </NTooltip>
   </div>
 </template>

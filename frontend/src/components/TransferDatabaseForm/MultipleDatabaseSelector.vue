@@ -88,12 +88,12 @@
             </div>
             <div class="bb-grid-cell justify-end">
               <InstanceV1Name
-                :instance="database.instanceEntity"
+                :instance="database.instanceResource"
                 :link="false"
               />
             </div>
             <div class="bb-grid-cell textinfolabel justify-end">
-              {{ hostPortOfInstanceV1(database.instanceEntity) }}
+              {{ hostPortOfInstanceV1(database.instanceResource) }}
             </div>
           </template>
         </BBGrid>

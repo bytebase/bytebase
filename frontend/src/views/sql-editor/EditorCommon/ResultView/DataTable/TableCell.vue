@@ -60,7 +60,7 @@ const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const clickable = computed(() => {
   if (truncated.value) return true;
-  if (database.value.instanceEntity.engine === Engine.MONGODB) {
+  if (database.value.instanceResource.engine === Engine.MONGODB) {
     // A cheap way to check JSON string without paying the parsing cost.
     const maybeJSON = String(props.value).trim();
     return (

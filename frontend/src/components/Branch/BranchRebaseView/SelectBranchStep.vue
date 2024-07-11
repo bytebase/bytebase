@@ -177,7 +177,7 @@ const headBranchFilter = (branch: Branch) => {
     );
   } else {
     const sourceDatabase = source as ComposedDatabase;
-    return branch.engine === sourceDatabase.instanceEntity.engine;
+    return branch.engine === sourceDatabase.instanceResource.engine;
   }
 };
 

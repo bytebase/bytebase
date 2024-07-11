@@ -101,11 +101,11 @@
               class="flex items-center gap-x-2 ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
             >
               <InstanceV1Name
-                :instance="database.instanceEntity"
+                :instance="database.instanceResource"
                 :link="false"
               />
               <span class="textinfolabel">
-                {{ hostPortOfInstanceV1(database.instanceEntity) }}
+                {{ hostPortOfInstanceV1(database.instanceResource) }}
               </span>
             </div>
           </label>

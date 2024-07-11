@@ -66,7 +66,7 @@ export const useContextMenu = () => {
     if (!node) return [];
     if (typeof node.db === "undefined") return [];
 
-    const { engine } = (node.db as ComposedDatabase).instanceEntity;
+    const { engine } = (node.db as ComposedDatabase).instanceResource;
     if (node.type === "database") {
       if (engineSupportsMultiSchema(engine)) {
         return [

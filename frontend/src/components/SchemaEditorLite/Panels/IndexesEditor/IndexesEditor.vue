@@ -173,7 +173,7 @@ const columns = computed(() => {
       render: (index) => {
         const allowTurnOnOrOffPrimary = () => {
           // Do not allow to edit primary key for TiDB.
-          if (props.db.instanceEntity.engine === Engine.TIDB) {
+          if (props.db.instanceResource.engine === Engine.TIDB) {
             return false;
           }
 

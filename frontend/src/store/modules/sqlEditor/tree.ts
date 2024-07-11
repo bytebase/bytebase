@@ -404,7 +404,7 @@ const isLeafNodeType = (type: NodeType) => {
 const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {
   switch (factor) {
     case "environment":
-      return db.instanceEntity.environment;
+      return db.effectiveEnvironment;
     case "instance":
       return db.instance;
   }
