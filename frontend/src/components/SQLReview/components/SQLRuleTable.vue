@@ -11,6 +11,7 @@
       </div>
       <div class="hidden lg:block">
         <NDataTable
+          :size="size"
           :striped="true"
           :columns="columns"
           :data="category.ruleList"
@@ -146,6 +147,7 @@ const props = withDefaults(
     selectRule?: boolean;
     hideLevel?: boolean;
     selectedRuleKeys?: string[];
+    size?: "small" | "medium";
   }>(),
   {
     ruleList: () => [],
@@ -153,6 +155,7 @@ const props = withDefaults(
     selectRule: false,
     hideLevel: false,
     selectedRuleKeys: () => [],
+    size: "medium",
   }
 );
 
@@ -193,6 +196,13 @@ const columns = computed(() => {
         const comment =
           rule.comment || getRuleLocalization(rule.type).description;
         return <p class="w-full text-left pl-10 text-gray-500">{comment}</p>;
+      },
+      cellProps: (rule: RuleTemplateV2) => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
       },
     },
     {

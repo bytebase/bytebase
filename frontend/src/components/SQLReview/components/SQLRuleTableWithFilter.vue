@@ -19,6 +19,7 @@
         :hide-level="hideLevel"
         :select-rule="selectRule"
         :selected-rule-keys="selectedRuleKeys"
+        :size="size"
         @rule-upsert="onRuleChange"
         @update:selected-rule-keys="$emit('update:selectedRuleKeys', $event)"
       />
@@ -46,11 +47,13 @@ const props = withDefaults(
     hideLevel?: boolean;
     selectRule?: boolean;
     selectedRuleKeys?: string[];
+    size?: "small" | "medium";
   }>(),
   {
     selectRule: false,
     hideLevel: false,
     selectedRuleKeys: () => [],
+    size: "medium",
   }
 );
 

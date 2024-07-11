@@ -13,11 +13,10 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed, h, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -38,6 +37,7 @@ const props = withDefaults(
     useResourceId?: boolean;
     multiple?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
+    renderSuffix?: (environment: string) => string;
   }>(),
   {
     environment: undefined,
@@ -48,6 +48,7 @@ const props = withDefaults(
     useResourceId: false,
     multiple: false,
     filter: () => true,
+    renderSuffix: (environment: string) => "",
   }
 );
 
@@ -56,7 +57,6 @@ const emit = defineEmits<{
   (event: "update:environments", id: string[]): void;
 }>();
 
-const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 
@@ -131,10 +131,7 @@ const renderLabel = (option: SelectOption) => {
     environment,
     showIcon: props.showProductionIcon,
     link: false,
-    suffix:
-      props.defaultEnvironmentName === environment.name
-        ? `(${t("common.default")})`
-        : "",
+    suffix: props.renderSuffix(environment.name),
   });
 };
 

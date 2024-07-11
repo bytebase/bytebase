@@ -21,6 +21,7 @@
               :editable="false"
               :hide-level="true"
               :select-rule="true"
+              :size="'small'"
               :selected-rule-keys="selectedRuleKeys"
               @update:selected-rule-keys="onSelectedRuleKeysUpdate"
             />
@@ -30,7 +31,7 @@
       <template #footer>
         <div class="flex items-center justify-end gap-x-3">
           <NButton @click="$emit('close')">
-            {{ $t("common.cancel") }}
+            {{ $t("common.close") }}
           </NButton>
         </div>
       </template>
