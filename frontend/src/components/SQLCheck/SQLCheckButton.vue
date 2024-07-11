@@ -127,11 +127,11 @@ const advices = ref<Advice[]>();
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
 
-const reviewPolicy = computedAsync(async () => {
-  return await useSQLReviewStore().getOrFetchReviewPolicyByResource(
-    props.database.effectiveEnvironment
-  );
-}, undefined);
+const reviewPolicy = useReviewPolicyForDatabase(
+  computed(() => {
+    return props.database;
+  })
+);
 
 const hasManageSQLReviewPolicyPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
