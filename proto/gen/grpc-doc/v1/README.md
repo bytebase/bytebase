@@ -30,6 +30,8 @@
     - [AnomalyService](#bytebase-v1-AnomalyService)
   
 - [v1/common.proto](#v1_common-proto)
+    - [Position](#bytebase-v1-Position)
+  
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
@@ -1036,6 +1038,22 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 <p align="right"><a href="#top">Top</a></p>
 
 ## v1/common.proto
+
+
+
+<a name="bytebase-v1-Position"></a>
+
+### Position
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
+
+
+
 
 
  
@@ -9665,6 +9683,8 @@ Type of the SheetPayload.
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
 | column | [int32](#int32) |  | The advice column number in the SQL statement. |
 | detail | [string](#string) |  | The advice detail. |
+| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
 
 
 
