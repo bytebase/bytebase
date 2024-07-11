@@ -321,15 +321,11 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	// 2. projects/{project}/databaseGroups/{databaseGroup}
-	// 3. projects/{project}/deploymentConfigs/{deploymentConfig}
 	if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
 		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
 	}
 	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
 		return nil, nil, errors.Errorf("unexpected database group target %q", c.Target)
-	}
-	if _, _, err := common.GetProjectIDDeploymentConfigID(c.Target); err == nil {
-		return nil, nil, errors.Errorf("unexpected deployment config target %q", c.Target)
 	}
 
 	return nil, nil, errors.Errorf("unknown target %q", c.Target)
