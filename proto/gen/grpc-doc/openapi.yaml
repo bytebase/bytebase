@@ -10271,6 +10271,16 @@ components:
                         $ref: '#/components/schemas/DataSource'
                 activation:
                     type: boolean
+                name:
+                    type: string
+                    description: |-
+                        The name of the instance.
+                         Format: instances/{instance}
+                environment:
+                    type: string
+                    description: |-
+                        The environment resource.
+                         Format: environments/prod where prod is the environment resource ID.
         InstanceRole:
             type: object
             properties:

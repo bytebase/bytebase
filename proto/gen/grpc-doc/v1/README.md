@@ -1810,6 +1810,8 @@ InstanceOptions is the option for instances.
 | engine_version | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | activation | [bool](#bool) |  |  |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 
 
 
