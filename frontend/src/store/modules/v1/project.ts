@@ -10,6 +10,7 @@ import {
   defaultProject,
   UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_V1_NAME,
+  UNKNOWN_ID,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -66,9 +67,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     if (name === DEFAULT_PROJECT_V1_NAME) return defaultProject();
     return projectMapByName.get(name) ?? unknownProject();
   };
-  const getProjectByUID = (uid: string) => {
+  const findProjectByUID = (uid: string) => {
     if (uid === String(EMPTY_ID)) {
       return emptyProject();
+    }
+    if (uid === String(UNKNOWN_ID)) {
+      return unknownProject();
     }
     return (
       projectList.value.find((project) => project.uid === uid) ??
@@ -125,7 +129,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     projectList,
     getProjectList,
     upsertProjectMap,
-    getProjectByUID,
+    findProjectByUID,
     getProjectByName,
     fetchProjectList,
     fetchProjectByName,

@@ -305,7 +305,7 @@ const databaseDiffCache = reactive<
   >
 >({});
 const project = computed(() => {
-  return useProjectV1Store().getProjectByUID(props.projectName);
+  return useProjectV1Store().findProjectByUID(props.projectName);
 });
 
 const displayOnlySourceDatabaseSchema = computed(() => {

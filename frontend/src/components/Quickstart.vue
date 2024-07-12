@@ -158,7 +158,7 @@ const show = computed(() => {
 });
 
 const sampleProject = computed(() => {
-  const project = projectStore.getProjectByUID("101");
+  const project = projectStore.findProjectByUID("101");
   if (project.name === UNKNOWN_PROJECT_NAME) {
     return;
   }

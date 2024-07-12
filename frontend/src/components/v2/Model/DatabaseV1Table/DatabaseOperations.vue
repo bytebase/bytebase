@@ -313,7 +313,7 @@ const generateMultiDb = async (
     ),
     databaseList: props.databases.map((db) => db.name).join(","),
   };
-  const project = useProjectV1Store().getProjectByUID(
+  const project = useProjectV1Store().findProjectByUID(
     selectedProjectName.value
   );
   router.push({

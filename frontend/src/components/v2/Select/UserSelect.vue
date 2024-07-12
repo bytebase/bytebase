@@ -126,7 +126,7 @@ const prepare = () => {
 watchEffect(prepare);
 
 const getUserListFromProject = (projectUID: string) => {
-  const project = projectV1Store.getProjectByUID(projectUID);
+  const project = projectV1Store.findProjectByUID(projectUID);
   const memberList = memberListInProjectV1(project.iamPolicy);
   const filteredUserList = memberList
     .filter((member) => {
