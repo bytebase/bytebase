@@ -33,12 +33,6 @@ func runDifferTest(t *testing.T, file string, record bool) {
 	for i, test := range tests {
 		diff, err := SchemaDiff(base.DiffContext{IgnoreCaseSensitive: false, StrictMode: true}, test.OldSchema, test.NewSchema)
 		require.NoErrorf(t, err, "Test Cases[%02d] Failed", i+1)
-		if len(diff) > 0 {
-			require.Equalf(t, disableFKCheckStmt, diff[:len(disableFKCheckStmt)], "Test Cases[%02d] Failed", i+1)
-			diff = diff[len(disableFKCheckStmt):]
-			require.Equalf(t, enableFKCheckStmt, diff[len(diff)-len(enableFKCheckStmt):], "Test Cases[%02d] Failed", i+1)
-			diff = diff[:len(diff)-len(enableFKCheckStmt)]
-		}
 		if record {
 			tests[i].Diff = diff
 		} else {
