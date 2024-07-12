@@ -1,6 +1,6 @@
 package iam
 
-type Permission string
+type Permission = string
 
 const (
 	// Workspace-level permissions.
@@ -109,10 +109,6 @@ const (
 	PermissionTaskRunsList          Permission = "bb.taskRuns.list"
 )
 
-func (p Permission) String() string {
-	return string(p)
-}
-
 var allWorkspacePermissions = []Permission{
 	PermissionEnvironmentsCreate,
 	PermissionEnvironmentsDelete,
@@ -219,17 +215,6 @@ var allProjectPermissions = []Permission{
 	PermissionTaskRunsList,
 }
 
-var allPermissionsMap = func() map[Permission]bool {
-	m := make(map[Permission]bool)
-	for _, p := range allWorkspacePermissions {
-		m[p] = true
-	}
-	for _, p := range allProjectPermissions {
-		m[p] = true
-	}
-	return m
-}()
-
 var allWorkspacePermissionsMap = func() map[Permission]bool {
 	m := make(map[Permission]bool)
 	for _, p := range allWorkspacePermissions {
@@ -247,15 +232,13 @@ var allProjectPermissionsMap = func() map[Permission]bool {
 }()
 
 func PermissionExist(p Permission) bool {
-	return allPermissionsMap[p]
-}
-
-func NewPermission(s string) Permission {
-	p := Permission(s)
-	if !PermissionExist(p) {
-		panic("invalid permission: " + s)
+	if allWorkspacePermissionsMap[p] {
+		return true
 	}
-	return p
+	if allProjectPermissionsMap[p] {
+		return true
+	}
+	return false
 }
 
 type PermissionLevel string

@@ -42,7 +42,7 @@ func NewManager(store *store.Store) (*Manager, error) {
 			if _, ok := predefinedRoles[binding.Name]; !ok {
 				predefinedRoles[binding.Name] = make(map[Permission]bool)
 			}
-			predefinedRoles[binding.Name][NewPermission(permission)] = true
+			predefinedRoles[binding.Name][Permission(permission)] = true
 		}
 	}
 
@@ -95,12 +95,7 @@ func (m *Manager) GetPermissions(ctx context.Context, roleName string) (map[Perm
 	if role == nil {
 		return nil, nil
 	}
-	permissions := make(map[Permission]bool)
-	for permission := range role.Permissions {
-		// TODO(d): optimize this.
-		permissions[NewPermission(permission)] = true
-	}
-	return permissions, nil
+	return role.Permissions, nil
 }
 
 func (m *Manager) hasPermission(ctx context.Context, p Permission, workspaceRoles []string, projectRoles [][]string) (bool, error) {
