@@ -12,6 +12,7 @@
       size: 'small',
     }"
     :show-code-location="false"
+    :advice-filter="(advice) => advice.title !== 'advice.online-migration'"
     class="justify-end"
   >
     <template #row-title-extra="{ row, confirm }">
