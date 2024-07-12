@@ -64,7 +64,7 @@
     <div class="w-full">
       <div class="flex flex-row items-center space-x-1">
         <InstanceV1EngineIcon
-          v-if="state.instance"
+          v-if="state.instanceName"
           :instance="selectedInstance"
         />
         <label for="instance" class="textlabel">
@@ -77,10 +77,10 @@
           name="instance"
           required
           :disabled="!allowEditInstance"
-          :instance="state.instance"
+          :instance-name="state.instanceName"
           :use-resource-id="true"
           :filter="instanceV1HasCreateDatabase"
-          @update:instance="selectInstance"
+          @update:instance-name="selectInstance"
         />
       </div>
     </div>
@@ -106,7 +106,7 @@
       <InstanceRoleSelect
         class="mt-1"
         name="instance-user"
-        :instance="state.instance"
+        :instance-name="state.instanceName"
         :role="state.instanceRole"
         :filter="filterInstanceRole"
         @update:instance-role="selectInstanceRole"
@@ -186,6 +186,7 @@ import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
   UNKNOWN_ID,
+  UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { Engine } from "@/types/proto/v1/common";
@@ -201,7 +202,7 @@ import {
 interface LocalState {
   projectId?: string;
   environment?: string;
-  instance?: string;
+  instanceName?: string;
   instanceRole?: string;
   labels: Record<string, string>;
   databaseName: string;
@@ -216,7 +217,7 @@ interface LocalState {
 const props = defineProps<{
   projectId?: string;
   environment?: string;
-  instance?: string;
+  instanceName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -233,7 +234,7 @@ const state = reactive<LocalState>({
   databaseName: "",
   projectId: props.projectId,
   environment: props.environment,
-  instance: props.instance,
+  instanceName: props.instanceName,
   labels: {},
   tableName: "",
   characterSet: "",
@@ -258,7 +259,7 @@ const allowCreate = computed(() => {
     !isReservedName.value &&
     state.projectId &&
     state.environment &&
-    state.instance
+    state.instanceName
   );
 });
 
@@ -269,11 +270,11 @@ const allowEditProject = computed(() => {
 
 // If instance has been specified, then we disallow changing it.
 const allowEditInstance = computed(() => {
-  return !props.instance;
+  return !props.instanceName;
 });
 
 const selectedInstance = computed((): ComposedInstance => {
-  return instanceV1Store.getInstanceByName(state.instance ?? "");
+  return instanceV1Store.getInstanceByName(state.instanceName ?? "");
 });
 
 const showCollationAndCharacterSet = computed((): boolean => {
@@ -283,7 +284,7 @@ const showCollationAndCharacterSet = computed((): boolean => {
 
 const requireDatabaseOwnerName = computed((): boolean => {
   const instance = selectedInstance.value;
-  if (instance.uid === String(UNKNOWN_ID)) {
+  if (instance.name === UNKNOWN_INSTANCE_NAME) {
     return false;
   }
   return [Engine.POSTGRES, Engine.REDSHIFT].includes(instance.engine);
@@ -301,8 +302,8 @@ const selectProject = (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
-const selectInstance = (instance: string | undefined) => {
-  state.instance = instance;
+const selectInstance = (instanceName: string | undefined) => {
+  state.instanceName = instanceName;
   state.environment = selectedInstance.value.environment;
 };
 
@@ -325,7 +326,7 @@ const createV1 = async () => {
   if (!allowCreate.value) {
     return;
   }
-  if (!state.environment || !state.instance) {
+  if (!state.environment || !state.instanceName) {
     return;
   }
 
@@ -342,7 +343,7 @@ const createV1 = async () => {
 
   const specs: Plan_Spec[] = [];
   const createDatabaseConfig: Plan_CreateDatabaseConfig = {
-    target: state.instance,
+    target: state.instanceName,
     database: databaseName,
     table: tableName,
     labels: state.labels,

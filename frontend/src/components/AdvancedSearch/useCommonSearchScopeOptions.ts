@@ -55,6 +55,8 @@ export const useCommonSearchScopeOptions = (
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
   const fullScopeOptions = computed((): ScopeOption[] => {
+    console.time("evaluate fullScopeOptions");
+
     const scopeCreators = {
       project: () => ({
         id: "project",
@@ -184,6 +186,7 @@ export const useCommonSearchScopeOptions = (
         scopes.push(create());
       }
     });
+    console.timeEnd("evaluate fullScopeOptions");
     return scopes;
   });
 

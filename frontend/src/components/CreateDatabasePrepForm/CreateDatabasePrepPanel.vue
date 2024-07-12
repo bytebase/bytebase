@@ -4,7 +4,7 @@
       ref="form"
       :project-id="projectId"
       :environment="environment"
-      :instance="instance"
+      :instance-name="instanceName"
       @dismiss="$emit('dismiss')"
     />
     <template #footer>
@@ -22,7 +22,7 @@ import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 defineProps<{
   projectId?: string;
   environment?: string;
-  instance?: string;
+  instanceName?: string;
 }>();
 
 defineEmits<{
