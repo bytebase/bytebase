@@ -11,6 +11,7 @@
     :button-props="{
       size: 'small',
     }"
+    :show-code-location="false"
     class="justify-end"
   >
     <template #row-title-extra="{ row, confirm }">

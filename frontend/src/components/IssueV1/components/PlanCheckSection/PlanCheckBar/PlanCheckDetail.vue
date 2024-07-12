@@ -1,5 +1,5 @@
 <template>
-  <div class="divide-y">
+  <div class="flex flex-col gap-y-0.5">
     <div
       v-for="(row, i) in highlightTableRows"
       :key="i"
@@ -85,7 +85,7 @@
         </HideInStandaloneMode>
 
         <!-- Only show the error line for latest plan check run -->
-        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
+        <template v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line">
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
@@ -178,7 +178,7 @@
         </HideInStandaloneMode>
 
         <!-- Only show the error line for latest plan check run -->
-        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
+        <template v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line">
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
@@ -253,7 +253,7 @@ type LocalState = {
 
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
-  isLatest?: boolean;
+  showCodeLocation?: boolean;
   database?: ComposedDatabase;
 }>();
 

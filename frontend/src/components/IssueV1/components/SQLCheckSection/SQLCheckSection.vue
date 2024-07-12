@@ -15,6 +15,7 @@
       }"
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
+      :show-code-location="true"
       @update:advices="$emit('update:advices', $event)"
     >
       <template #result="{ advices, isRunning }">

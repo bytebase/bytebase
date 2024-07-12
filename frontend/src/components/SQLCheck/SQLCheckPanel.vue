@@ -11,7 +11,7 @@
     <PlanCheckDetail
       :plan-check-run="planCheckRun"
       :database="database"
-      :is-latest="false"
+      :show-code-location="showCodeLocation"
       @close="$emit('close')"
     >
       <template #row-title-extra="{ row }">
@@ -60,6 +60,7 @@ const { advices, database } = defineProps<{
   advices: Advice[];
   overrideTitle?: string;
   confirm?: Defer<boolean>;
+  showCodeLocation?: boolean;
 }>();
 
 defineEmits<{

@@ -60,6 +60,7 @@
       :advices="advices"
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
+      :show-code-location="showCodeLocation"
       @close="onPanelClose"
     >
       <template #row-title-extra="{ row }">
@@ -85,6 +86,7 @@ import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer, hasWorkspacePermissionV2 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
+import SQLCheckPanel from "./SQLCheckPanel.vue";
 import SQLCheckSummary from "./SQLCheckSummary.vue";
 import { useSQLCheckContext } from "./context";
 
@@ -96,12 +98,14 @@ const props = withDefaults(
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
     changeType?: CheckRequest_ChangeType;
+    showCodeLocation?: boolean;
   }>(),
   {
     databaseMetadata: undefined,
     buttonProps: undefined,
     buttonStyle: undefined,
     changeType: undefined,
+    showCodeLocation: undefined,
   }
 );
 
