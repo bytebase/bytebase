@@ -12,7 +12,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import {
-  UNKNOWN_ENVIRONMENT_NAME,
+  isValidEnvironmentName,
   unknownEnvironment,
   type FeatureType,
 } from "@/types";
@@ -204,7 +204,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (!hasWorkspacePermissionV2(me.value, "bb.instances.create")) {
       return false;
     }
-    if (environment.value.name === UNKNOWN_ENVIRONMENT_NAME) {
+    if (!isValidEnvironmentName(environment.value.name)) {
       return false;
     }
     if (basicInfo.value.engine === Engine.SPANNER) {

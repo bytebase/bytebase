@@ -88,8 +88,8 @@ import {
 import type { ComposedDatabase, ComposedInstance } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
-  UNKNOWN_INSTANCE_NAME,
   defaultProject,
+  isValidInstanceName,
 } from "@/types";
 import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -178,7 +178,7 @@ const filteredDatabaseList = computed(() => {
       const instance = state.instanceFilter;
       if (
         instance &&
-        instance.name !== UNKNOWN_INSTANCE_NAME &&
+        isValidInstanceName(instance.name) &&
         db.instance !== instance.name
       ) {
         return false;

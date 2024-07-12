@@ -147,6 +147,8 @@ import {
   UNKNOWN_INSTANCE_NAME,
   UNKNOWN_PROJECT_NAME,
   isValidProjectName,
+  isValidEnvironmentName,
+  isValidInstanceName,
 } from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
@@ -351,9 +353,8 @@ const filteredColumnList = computed(() => {
       return false;
     }
     if (
-      state.selectedEnvironmentName !== UNKNOWN_ENVIRONMENT_NAME &&
-      column.database.effectiveEnvironmentEntity.name !==
-        state.selectedEnvironmentName
+      isValidEnvironmentName(state.selectedEnvironmentName) &&
+      column.database.effectiveEnvironment !== state.selectedEnvironmentName
     ) {
       return false;
     }
@@ -364,7 +365,7 @@ const filteredColumnList = computed(() => {
       return false;
     }
     if (
-      state.selectedInstanceName !== UNKNOWN_INSTANCE_NAME &&
+      isValidInstanceName(state.selectedInstanceName) &&
       state.selectedInstanceName !== column.database.instance
     ) {
       return false;
@@ -393,7 +394,7 @@ const findInstanceWithoutLicense = (columnList: SensitiveColumn[]) => {
 };
 
 const environment = computed(() => {
-  if (state.selectedEnvironmentName === UNKNOWN_ENVIRONMENT_NAME) {
+  if (!isValidEnvironmentName(state.selectedEnvironmentName)) {
     return;
   }
   return environmentStore.getEnvironmentByName(state.selectedEnvironmentName);

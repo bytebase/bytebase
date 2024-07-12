@@ -130,7 +130,11 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { WorkspacePermission } from "@/types";
-import { PresetRoleType, UNKNOWN_PROJECT_NAME } from "@/types";
+import {
+  PresetRoleType,
+  UNKNOWN_PROJECT_NAME,
+  isValidProjectName,
+} from "@/types";
 import {
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
@@ -159,7 +163,7 @@ const show = computed(() => {
 
 const sampleProject = computed(() => {
   const project = projectStore.findProjectByUID("101");
-  if (project.name === UNKNOWN_PROJECT_NAME) {
+  if (!isValidProjectName(project.name)) {
     return;
   }
   return project;

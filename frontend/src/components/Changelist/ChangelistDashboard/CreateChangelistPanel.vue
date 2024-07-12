@@ -150,7 +150,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { ResourceId, ValidatedMessage } from "@/types";
-import { UNKNOWN_PROJECT_NAME } from "@/types";
+import { isValidProjectName } from "@/types";
 import type { ComposedProject } from "@/types";
 import {
   Changelist,
@@ -181,7 +181,7 @@ const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const errors = asyncComputed(() => {
   const errors: string[] = [];
-  if (!projectName.value || projectName.value === UNKNOWN_PROJECT_NAME) {
+  if (!isValidProjectName(projectName.value)) {
     errors.push(t("changelist.error.project-is-required"));
   }
   if (!title.value.trim()) {

@@ -28,7 +28,7 @@
 import { NButton } from "naive-ui";
 import { computed, watch } from "vue";
 import { ProjectSelect } from "@/components/v2";
-import { UNKNOWN_PROJECT_NAME } from "@/types";
+import { UNKNOWN_PROJECT_NAME, isValidProjectName } from "@/types";
 import { useChangelistDashboardContext } from "./context";
 
 defineProps<{
@@ -45,7 +45,7 @@ const projectName = computed({
     return project;
   },
   set(name) {
-    if (!name || name === UNKNOWN_PROJECT_NAME) {
+    if (!isValidProjectName(name)) {
       filter.value.project = "projects/-";
     } else {
       filter.value.project = name;

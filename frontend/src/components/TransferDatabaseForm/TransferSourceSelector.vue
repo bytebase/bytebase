@@ -3,10 +3,7 @@
     <div
       class="flex flex-col md:flex-row md:items-center gap-y-2 justify-between"
     >
-      <div
-        v-if="project.name !== DEFAULT_PROJECT_NAME"
-        class="radio-set-row"
-      >
+      <div v-if="project.name !== DEFAULT_PROJECT_NAME" class="radio-set-row">
         <NRadioGroup v-model:value="state.transferSource">
           <NRadio v-if="hasPermissionForDefaultProject" :value="'DEFAULT'">
             {{ $t("quick-action.from-unassigned-databases") }}
@@ -59,6 +56,7 @@ import {
   PresetRoleType,
   UNKNOWN_INSTANCE_NAME,
   UNKNOWN_PROJECT_NAME,
+  isValidInstanceName,
   isValidProjectName,
 } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -106,7 +104,7 @@ const nonEmptyInstanceNameSet = computed(() => {
 });
 
 const changeInstanceFilter = (name: string | undefined) => {
-  if (!name || name === UNKNOWN_INSTANCE_NAME) {
+  if (!isValidInstanceName(name)) {
     return emit("select-instance", undefined);
   }
   emit("select-instance", useInstanceV1Store().getInstanceByName(name));

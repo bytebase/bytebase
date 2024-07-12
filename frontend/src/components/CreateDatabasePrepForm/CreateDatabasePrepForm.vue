@@ -183,7 +183,9 @@ import type { ComposedInstance } from "@/types";
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
-  UNKNOWN_INSTANCE_NAME,
+  isValidEnvironmentName,
+  isValidInstanceName,
+  isValidProjectName,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
@@ -257,9 +259,9 @@ const allowCreate = computed(() => {
     !isEmpty(state.databaseName) &&
     validDatabaseOwnerName.value &&
     !isReservedName.value &&
-    state.projectName &&
-    state.environmentName &&
-    state.instanceName
+    isValidProjectName(state.projectName) &&
+    isValidEnvironmentName(state.environmentName) &&
+    isValidInstanceName(state.instanceName)
   );
 });
 
@@ -284,7 +286,7 @@ const showCollationAndCharacterSet = computed((): boolean => {
 
 const requireDatabaseOwnerName = computed((): boolean => {
   const instance = selectedInstance.value;
-  if (instance.name === UNKNOWN_INSTANCE_NAME) {
+  if (!isValidInstanceName(instance.name)) {
     return false;
   }
   return [Engine.POSTGRES, Engine.REDSHIFT].includes(instance.engine);
