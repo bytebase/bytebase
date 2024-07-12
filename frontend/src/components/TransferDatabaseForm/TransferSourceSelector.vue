@@ -30,10 +30,10 @@
         <ProjectSelect
           v-else-if="state.transferSource == 'OTHER'"
           :include-all="true"
-          :project="projectFilter?.uid ?? String(UNKNOWN_ID)"
+          :project-name="projectFilter?.name ?? UNKNOWN_PROJECT_NAME"
           :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
           :filter="filterSourceProject"
-          @update:project="changeProjectFilter"
+          @update:project-name="changeProjectFilter"
         />
         <SearchBox
           :value="searchText"
@@ -55,10 +55,11 @@ import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
 import { useInstanceV1Store, useProjectV1Store } from "@/store";
 import type { ComposedDatabase, ComposedInstance } from "@/types";
 import {
-  UNKNOWN_ID,
   DEFAULT_PROJECT_V1_NAME,
   PresetRoleType,
   UNKNOWN_INSTANCE_NAME,
+  UNKNOWN_PROJECT_NAME,
+  isValidProjectName,
 } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import type { TransferSource } from "./utils";
@@ -97,7 +98,7 @@ const state = reactive<LocalState>({
 });
 
 const filterSourceProject = (project: Project) => {
-  return project.uid !== props.project.uid;
+  return project.name !== props.project.name;
 };
 
 const nonEmptyInstanceNameSet = computed(() => {
@@ -114,14 +115,13 @@ const changeInstanceFilter = (name: string | undefined) => {
 const filterInstance = (instance: ComposedInstance) => {
   if (instance.name === UNKNOWN_INSTANCE_NAME) return true; // "ALL" can be displayed.
   return nonEmptyInstanceNameSet.value.has(instance.name);
-  // return nonEmptyInstanceUidSet.value.has(instance.uid);
 };
 
-const changeProjectFilter = (uid: string | undefined) => {
-  if (!uid || uid === String(UNKNOWN_ID)) {
+const changeProjectFilter = (name: string | undefined) => {
+  if (!isValidProjectName(name)) {
     return emit("select-project", undefined);
   }
-  emit("select-project", useProjectV1Store().getProjectByUID(uid));
+  emit("select-project", useProjectV1Store().getProjectByName(name));
 };
 
 watch(

@@ -39,7 +39,7 @@ import {
 } from "./common";
 
 const props = defineProps<{
-  projectId: string;
+  projectName: string;
   databaseId?: string;
   databaseResources: DatabaseResource[];
 }>();
@@ -65,8 +65,8 @@ const defaultExpandedKeys = ref<string[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    props.projectId
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    props.projectName
   );
   const filters = [`instance = "instances/-"`, `project = "${project.name}"`];
   await databaseStore.searchDatabases({
@@ -100,7 +100,7 @@ onMounted(async () => {
 });
 
 const databaseList = computed(() => {
-  const project = useProjectV1Store().getProjectByUID(props.projectId);
+  const project = useProjectV1Store().getProjectByName(props.projectName);
   const list = orderBy(
     databaseStore.databaseListByProject(project.name),
     [

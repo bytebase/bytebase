@@ -22,7 +22,7 @@
               :environment-names="environmentNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:environment-names="onResourcesChange($event, projects)"
+              @update:environment-names="onResourcesChange($event, projectNames)"
             />
           </div>
           <div class="flex items-center space-x-2">
@@ -40,11 +40,10 @@
               class="mt-3"
               style="width: 100%"
               required
-              :projects="projects"
-              :use-resource-id="true"
+              :project-names="projectNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:projects="onResourcesChange($event, environmentNames)"
+              @update:project-names="onResourcesChange($event, environmentNames)"
             />
           </div>
         </div>
@@ -112,7 +111,7 @@ const environmentNames = computed(() =>
   )
 );
 
-const projects = computed(() =>
+const projectNames = computed(() =>
   resources.value.filter((resource) => resource.startsWith(projectNamePrefix))
 );
 

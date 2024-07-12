@@ -42,11 +42,10 @@
         class="mt-2"
         style="width: 100%"
         required
-        :project="attachedResources[0]"
-        :use-resource-id="true"
+        :project-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
-        :filter="(proj: Project, _: number) => filterResource(proj.name)"
-        @update:project="
+        :filter="(proj) => filterResource(proj.name)"
+        @update:project-name="
           (val: string | undefined) => {
             if (!val) {
               $emit('attached-resources-change', []);
@@ -124,8 +123,8 @@ import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
-import type { Project } from "@/types/proto/v1/project_service";
 import { getErrorCode } from "@/utils/grpcweb";
+import { ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";
 import { type ResourceType } from "./components/useReviewConfigAttachedResource";
 

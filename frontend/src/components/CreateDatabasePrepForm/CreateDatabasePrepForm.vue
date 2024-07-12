@@ -8,8 +8,8 @@
         class="mt-1 !w-full"
         required
         :disabled="!allowEditProject"
-        :project="state.projectId"
-        @update:project="selectProject"
+        :project-name="state.projectName"
+        @update:project-name="selectProject"
       />
     </div>
 
@@ -183,8 +183,8 @@ import type { ComposedInstance } from "@/types";
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
-  UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
+  UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { Engine } from "@/types/proto/v1/common";
@@ -198,7 +198,7 @@ import {
 } from "@/utils";
 
 interface LocalState {
-  projectId?: string;
+  projectName?: string;
   environmentName?: string;
   instanceName?: string;
   instanceRole?: string;
@@ -213,7 +213,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectId?: string;
+  projectName?: string;
   environmentName?: string;
   instanceName?: string;
 }>();
@@ -230,7 +230,7 @@ const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
   databaseName: "",
-  projectId: props.projectId,
+  projectName: props.projectName,
   environmentName: props.environmentName,
   instanceName: props.instanceName,
   labels: {},
@@ -243,7 +243,9 @@ const state = reactive<LocalState>({
 });
 
 const project = computed(() => {
-  return projectV1Store.getProjectByUID(state.projectId ?? String(UNKNOWN_ID));
+  return projectV1Store.getProjectByName(
+    state.projectName ?? UNKNOWN_PROJECT_NAME
+  );
 });
 
 const isReservedName = computed(() => {
@@ -255,7 +257,7 @@ const allowCreate = computed(() => {
     !isEmpty(state.databaseName) &&
     validDatabaseOwnerName.value &&
     !isReservedName.value &&
-    state.projectId &&
+    state.projectName &&
     state.environmentName &&
     state.instanceName
   );
@@ -263,7 +265,7 @@ const allowCreate = computed(() => {
 
 // If project has been specified, then we disallow changing it.
 const allowEditProject = computed(() => {
-  return !props.projectId;
+  return !props.projectName;
 });
 
 // If instance has been specified, then we disallow changing it.
@@ -296,8 +298,8 @@ const validDatabaseOwnerName = computed((): boolean => {
   return state.instanceRole !== undefined;
 });
 
-const selectProject = (projectId: string | undefined) => {
-  state.projectId = projectId;
+const selectProject = (name: string | undefined) => {
+  state.projectName = name;
 };
 
 const selectInstance = (instanceName: string | undefined) => {

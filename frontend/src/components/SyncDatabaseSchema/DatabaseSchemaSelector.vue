@@ -11,8 +11,8 @@
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
-        :project="state.projectId"
-        @update:project="handleProjectSelect"
+        :project-name="state.projectName"
+        @update:project-name="handleProjectSelect"
       />
     </div>
     <div
@@ -31,7 +31,7 @@
         class="!w-128 max-w-full"
         :database="state.databaseId"
         :environment="shamefulEnvironmentUID"
-        :project="state.projectId"
+        :project="state.projectName"
         :placeholder="$t('db.select')"
         :allowed-engine-type-list="allowedEngineTypeList"
         :fallback-option="false"
@@ -51,7 +51,7 @@
           :options="schemaVersionOptions"
           :placeholder="$t('change-history.select')"
           :disabled="
-            !isValidId(state.projectId) || schemaVersionOptions.length === 0
+            !isValidId(state.projectName) || schemaVersionOptions.length === 0
           "
           :render-label="renderSchemaVersionLabel"
           :fallback-option="
@@ -121,7 +121,7 @@ const emit = defineEmits<{
 
 interface LocalState {
   showFeatureModal: boolean;
-  projectId?: string;
+  projectName?: string;
   environmentName?: string;
   databaseId?: string;
   changeHistoryName?: string;
@@ -129,7 +129,7 @@ interface LocalState {
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
-  projectId: props.selectState?.projectId,
+  projectName: props.selectState?.projectId,
   environmentName: props.selectState?.environmentName,
   databaseId: props.selectState?.databaseId,
   changeHistoryName: props.selectState?.changeHistory?.name,
@@ -178,11 +178,11 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleProjectSelect = async (projectId: string | undefined) => {
-  if (projectId !== state.projectId) {
+const handleProjectSelect = async (name: string | undefined) => {
+  if (name !== state.projectName) {
     state.databaseId = undefined;
   }
-  state.projectId = projectId;
+  state.projectName = name;
 };
 
 const handleEnvironmentSelect = async (name: string | undefined) => {
@@ -198,7 +198,7 @@ const handleDatabaseSelect = async (databaseId: string | undefined) => {
     if (!database) {
       return;
     }
-    state.projectId = database.projectEntity.uid;
+    state.projectName = database.project;
     state.environmentName = database.effectiveEnvironment;
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata({
@@ -444,7 +444,7 @@ watch(
 
 watch(
   [
-    () => state.projectId,
+    () => state.projectName,
     () => state.environmentName,
     () => state.databaseId,
     mergedChangeHistorySourceSchema,
@@ -476,7 +476,7 @@ watch(
   ],
   ([projectId, environmentName, databaseId, changeHistoryName, isFetching]) => {
     if (isFetching) return;
-    state.projectId = projectId;
+    state.projectName = projectId;
     state.environmentName = environmentName;
     state.databaseId = databaseId;
     state.changeHistoryName = changeHistoryName;

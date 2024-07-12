@@ -42,7 +42,7 @@
     </InstanceForm>
     <CreateDatabasePrepPanel
       v-if="state.quickActionType === 'quickaction.bb.database.create'"
-      :project-id="project?.uid"
+      :project-name="project?.name"
       @dismiss="state.quickActionType = undefined"
     />
     <AlterSchemaPrepForm
@@ -81,14 +81,14 @@
 
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
-    :project-id="project?.uid"
+    :project-name="project?.name"
     @close="state.showRequestQueryPanel = false"
   />
 
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
     :redirect-to-issue-page="true"
-    :project-id="project?.uid"
+    :project-name="project?.name"
     @close="state.showRequestExportPanel = false"
   />
 

@@ -19,7 +19,7 @@
 
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
-    :project-id="database?.projectEntity.uid"
+    :project-name="database?.project"
     :database="database"
     :redirect-to-issue-page="pageMode === 'BUNDLED'"
     @close="state.showRequestQueryPanel = false"
