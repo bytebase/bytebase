@@ -2391,7 +2391,14 @@
       "self": "标准模式"
     },
     "to-enable-standard-mode": "来开启标准模式",
-    "add-a-new-instance": "添加实例"
+    "add-a-new-instance": "添加实例",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket 连接失败",
+        "description": "自动补全功能可能会受到限制或无效。",
+        "disconnected": "WebSocket 已断开连接"
+      }
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",
