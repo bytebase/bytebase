@@ -50,6 +50,7 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   UNKNOWN_ID,
+  UNKNOWN_INSTANCE_NAME,
   UNKNOWN_USER_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -345,10 +346,10 @@ const prepareConnectionSlugLegacy = async () => {
 
   if (Number.isNaN(databaseId)) {
     // connected to instance
-    const instance = await useInstanceV1Store().getOrFetchInstanceByUID(
-      String(instanceId)
+    const instance = await useInstanceV1Store().getOrFetchInstanceByName(
+      `instances/${instanceId}`
     );
-    if (instance.uid !== String(UNKNOWN_ID)) {
+    if (instance.name !== UNKNOWN_INSTANCE_NAME) {
       connect({
         instance: instance.name,
         database: "",
@@ -398,7 +399,7 @@ const prepareConnectionParams = async () => {
     const instance = await useInstanceV1Store().getOrFetchInstanceByName(
       `instances/${instanceName}`
     );
-    if (instance.uid !== String(UNKNOWN_ID)) {
+    if (instance.name !== UNKNOWN_INSTANCE_NAME) {
       connect({
         instance: instance.name,
         database: "",
@@ -547,7 +548,7 @@ const syncURLWithConnection = () => {
       }
       if (instanceName) {
         const instance = instanceStore.getInstanceByName(instanceName);
-        if (instance.uid !== String(UNKNOWN_ID)) {
+        if (instance.name !== UNKNOWN_INSTANCE_NAME) {
           if (table) {
             query.table = table;
             query.schema = schema ?? "";

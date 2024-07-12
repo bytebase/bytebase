@@ -62,7 +62,7 @@
   >
     <CreateDatabasePrepPanel
       :environment="environment?.name"
-      :instance="instance.name"
+      :instance-name="instance.name"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </Drawer>

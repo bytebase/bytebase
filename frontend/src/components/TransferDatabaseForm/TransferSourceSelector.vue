@@ -22,10 +22,10 @@
             state.transferSource == 'DEFAULT' && hasPermissionForDefaultProject
           "
           class="!w-48"
-          :instance="instanceFilter?.uid ?? String(UNKNOWN_ID)"
+          :instance="instanceFilter?.name ?? UNKNOWN_INSTANCE_NAME"
           :include-all="true"
           :filter="filterInstance"
-          @update:instance="changeInstanceFilter"
+          @update:instance-name="changeInstanceFilter"
         />
         <ProjectSelect
           v-else-if="state.transferSource == 'OTHER'"
@@ -54,7 +54,12 @@ import { computed, reactive, watch } from "vue";
 import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
 import { useInstanceV1Store, useProjectV1Store } from "@/store";
 import type { ComposedDatabase, ComposedInstance } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME, PresetRoleType } from "@/types";
+import {
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_V1_NAME,
+  PresetRoleType,
+  UNKNOWN_INSTANCE_NAME,
+} from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import type { TransferSource } from "./utils";
 
@@ -99,15 +104,15 @@ const nonEmptyInstanceNameSet = computed(() => {
   return new Set(props.rawDatabaseList.map((db) => db.instance));
 });
 
-const changeInstanceFilter = (uid: string | undefined) => {
-  if (!uid || uid === String(UNKNOWN_ID)) {
+const changeInstanceFilter = (name: string | undefined) => {
+  if (!name || name === UNKNOWN_INSTANCE_NAME) {
     return emit("select-instance", undefined);
   }
-  emit("select-instance", useInstanceV1Store().getInstanceByUID(uid));
+  emit("select-instance", useInstanceV1Store().getInstanceByName(name));
 };
 
 const filterInstance = (instance: ComposedInstance) => {
-  if (instance.uid === String(UNKNOWN_ID)) return true; // "ALL" can be displayed.
+  if (instance.name === UNKNOWN_INSTANCE_NAME) return true; // "ALL" can be displayed.
   return nonEmptyInstanceNameSet.value.has(instance.name);
   // return nonEmptyInstanceUidSet.value.has(instance.uid);
 };

@@ -25,7 +25,6 @@ import {
   useCurrentUserV1,
   useSearchDatabaseV1List,
   useDatabaseV1Store,
-  useInstanceV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, unknownDatabase } from "@/types";
@@ -44,7 +43,7 @@ const props = withDefaults(
     database?: string;
     databases?: string[];
     environment?: string;
-    instance?: string;
+    instanceName?: string;
     project?: string;
     allowedEngineTypeList?: readonly Engine[];
     includeAll?: boolean;
@@ -58,7 +57,7 @@ const props = withDefaults(
     database: undefined,
     databases: undefined,
     environment: undefined,
-    instance: undefined,
+    instanceName: undefined,
     project: undefined,
     allowedEngineTypeList: () => supportedEngineV1List(),
     includeAll: false,
@@ -77,10 +76,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
-const { ready } = useSearchDatabaseV1List({
-  filter: "instance = instances/-",
-});
-const instanceStore = useInstanceV1Store();
+const { ready } = useSearchDatabaseV1List(
+  computed(() => ({
+    filter: `instance = ${props.instanceName ?? "instances/-"}`,
+  }))
+);
 
 const value = computed(() => {
   if (props.multiple) {
@@ -119,9 +119,8 @@ const rawDatabaseList = computed(() => {
         return false;
       }
     }
-    if (props.instance && props.instance !== String(UNKNOWN_ID)) {
-      const instance = instanceStore.getInstanceByName(db.instance);
-      if (instance.uid !== props.instance) return false;
+    if (props.instanceName && props.instanceName !== db.instance) {
+      return false;
     }
     if (props.project && props.project !== String(UNKNOWN_ID)) {
       if (db.projectEntity.uid !== props.project) return false;
