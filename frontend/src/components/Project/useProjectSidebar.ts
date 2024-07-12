@@ -42,7 +42,7 @@ import projectV1Routes, {
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import type { ComposedProject, MaybeRef } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { ProjectPermission } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -61,7 +61,7 @@ export const useProjectSidebar = (
   const route = _route ?? useRoute();
 
   const isDefaultProject = computed((): boolean => {
-    return unref(project).name === DEFAULT_PROJECT_V1_NAME;
+    return unref(project).name === DEFAULT_PROJECT_NAME;
   });
 
   const getFlattenProjectV1Routes = (

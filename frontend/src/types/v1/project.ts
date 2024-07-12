@@ -6,7 +6,7 @@ import { Project, Workflow } from "../proto/v1/project_service";
 export const DEFAULT_PROJECT_UID = 1;
 export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
 export const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
-export const DEFAULT_PROJECT_V1_NAME = "projects/default";
+export const DEFAULT_PROJECT_NAME = "projects/default";
 
 export interface ComposedProject extends Project {
   iamPolicy: IamPolicy;
@@ -38,8 +38,17 @@ export const unknownProject = (): ComposedProject => {
 export const defaultProject = (): ComposedProject => {
   return {
     ...unknownProject(),
-    name: DEFAULT_PROJECT_V1_NAME,
+    name: DEFAULT_PROJECT_NAME,
     uid: String(DEFAULT_PROJECT_UID),
     title: "Default project",
   };
+};
+
+export const isValidProjectName = (name: any): name is string => {
+  return (
+    typeof name === "string" &&
+    name.startsWith("projects/") &&
+    name !== EMPTY_PROJECT_NAME &&
+    name !== UNKNOWN_PROJECT_NAME
+  );
 };

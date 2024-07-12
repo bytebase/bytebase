@@ -86,9 +86,9 @@
             class="mt-1 w-full"
             required="true"
             :environment-name="
-              environment.name === UNKNOWN_ENVIRONMENT_NAME
-                ? undefined
-                : environment.name
+              isValidEnvironmentName(environment.name)
+                ? environment.name
+                : undefined
             "
             :disabled="!allowEdit"
             @update:environment-name="handleSelectEnvironment"
@@ -468,7 +468,10 @@ import {
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
-import { UNKNOWN_ENVIRONMENT_NAME, UNKNOWN_ID } from "@/types";
+import {
+  UNKNOWN_ID,
+  isValidEnvironmentName,
+} from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -722,7 +725,7 @@ const changeInstanceActivation = async (on: boolean) => {
 };
 
 const handleSelectEnvironment = (name: string | undefined) => {
-  if (!name || name === UNKNOWN_ENVIRONMENT_NAME) return;
+  if (!isValidEnvironmentName(name)) return;
   basicInfo.value.environment = name;
 };
 

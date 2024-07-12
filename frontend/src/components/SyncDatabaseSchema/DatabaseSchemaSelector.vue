@@ -11,8 +11,8 @@
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
-        :project="state.projectId"
-        @update:project="handleProjectSelect"
+        :project-name="state.projectName"
+        @update:project-name="handleProjectSelect"
       />
     </div>
     <div
@@ -30,8 +30,8 @@
       <DatabaseSelect
         class="!w-128 max-w-full"
         :database="state.databaseId"
-        :environment="shamefulEnvironmentUID"
-        :project="state.projectId"
+        :environment-name="state.environmentName"
+        :project-name="state.projectName"
         :placeholder="$t('db.select')"
         :allowed-engine-type-list="allowedEngineTypeList"
         :fallback-option="false"
@@ -51,7 +51,7 @@
           :options="schemaVersionOptions"
           :placeholder="$t('change-history.select')"
           :disabled="
-            !isValidId(state.projectId) || schemaVersionOptions.length === 0
+            !isValidId(state.projectName) || schemaVersionOptions.length === 0
           "
           :render-label="renderSchemaVersionLabel"
           :fallback-option="
@@ -90,7 +90,6 @@ import {
   useChangeHistoryStore,
   useDatabaseV1Store,
   useSubscriptionV1Store,
-  useEnvironmentV1Store,
   useDBSchemaV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
@@ -121,7 +120,7 @@ const emit = defineEmits<{
 
 interface LocalState {
   showFeatureModal: boolean;
-  projectId?: string;
+  projectName?: string;
   environmentName?: string;
   databaseId?: string;
   changeHistoryName?: string;
@@ -129,7 +128,7 @@ interface LocalState {
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
-  projectId: props.selectState?.projectId,
+  projectName: props.selectState?.projectName,
   environmentName: props.selectState?.environmentName,
   databaseId: props.selectState?.databaseId,
   changeHistoryName: props.selectState?.changeHistory?.name,
@@ -178,11 +177,11 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleProjectSelect = async (projectId: string | undefined) => {
-  if (projectId !== state.projectId) {
+const handleProjectSelect = async (name: string | undefined) => {
+  if (name !== state.projectName) {
     state.databaseId = undefined;
   }
-  state.projectId = projectId;
+  state.projectName = name;
 };
 
 const handleEnvironmentSelect = async (name: string | undefined) => {
@@ -198,7 +197,7 @@ const handleDatabaseSelect = async (databaseId: string | undefined) => {
     if (!database) {
       return;
     }
-    state.projectId = database.projectEntity.uid;
+    state.projectName = database.project;
     state.environmentName = database.effectiveEnvironment;
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata({
@@ -444,15 +443,15 @@ watch(
 
 watch(
   [
-    () => state.projectId,
+    () => state.projectName,
     () => state.environmentName,
     () => state.databaseId,
     mergedChangeHistorySourceSchema,
     isFetchingChangeHistorySourceSchema,
   ],
-  ([projectId, environmentName, databaseId, source, isFetching]) => {
+  ([projectName, environmentName, databaseId, source, isFetching]) => {
     const params: ChangeHistorySourceSchema = {
-      projectId,
+      projectName,
       environmentName,
       databaseId,
       changeHistory: source?.changeHistory,
@@ -468,15 +467,21 @@ watch(
 
 watch(
   [
-    () => props.selectState?.projectId,
+    () => props.selectState?.projectName,
     () => props.selectState?.environmentName,
     () => props.selectState?.databaseId,
     () => props.selectState?.changeHistory?.name,
     () => props.selectState?.isFetching,
   ],
-  ([projectId, environmentName, databaseId, changeHistoryName, isFetching]) => {
+  ([
+    projectName,
+    environmentName,
+    databaseId,
+    changeHistoryName,
+    isFetching,
+  ]) => {
     if (isFetching) return;
-    state.projectId = projectId;
+    state.projectName = projectName;
     state.environmentName = environmentName;
     state.databaseId = databaseId;
     state.changeHistoryName = changeHistoryName;
@@ -485,13 +490,6 @@ watch(
     immediate: false,
   }
 );
-
-const shamefulEnvironmentUID = computed(() => {
-  // todo(jim): refactor me
-  const { environmentName } = state;
-  if (!environmentName) return undefined;
-  return useEnvironmentV1Store().getEnvironmentByName(environmentName).uid;
-});
 </script>
 
 <style lang="postcss">
