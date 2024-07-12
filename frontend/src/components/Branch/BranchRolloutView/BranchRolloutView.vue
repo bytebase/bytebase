@@ -20,8 +20,8 @@
           <div class="textlabel">{{ $t("common.database") }}</div>
           <DatabaseSelect
             :database="database?.uid"
-            :project="project.uid"
-            :environment="environment?.uid"
+            :project-name="project.name"
+            :environment-name="environment?.name"
             :filter="filterDatabase"
             style="width: 16rem"
             @update:database="handleSelectDatabase"
@@ -142,7 +142,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
-import { UNKNOWN_ENVIRONMENT_NAME, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -194,7 +194,7 @@ const isGeneratingDDL = ref(false);
 const $dialog = useDialog();
 
 const handleSelectEnvironment = (name: string | undefined) => {
-  if (!name || name === UNKNOWN_ENVIRONMENT_NAME) {
+  if (!isValidEnvironmentName(name)) {
     environment.value = undefined;
     handleSelectDatabase(undefined);
     return;

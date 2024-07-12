@@ -38,6 +38,7 @@ import {
   allUsersUser,
   unknownUser,
   PresetRoleType,
+  isValidProjectName,
 } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
@@ -54,7 +55,7 @@ const props = withDefaults(
     multiple?: boolean;
     user?: string;
     users?: string[];
-    project?: string;
+    projectName?: string;
     includeAll?: boolean;
     // allUsers is a special user that represents all users in the project.
     includeAllUsers?: boolean;
@@ -73,7 +74,7 @@ const props = withDefaults(
     multiple: false,
     user: undefined,
     users: undefined,
-    project: undefined,
+    projectName: undefined,
     includeAll: false,
     includeAllUsers: false,
     includeSystemBot: false,
@@ -115,8 +116,8 @@ const value = computed(() => {
 });
 
 const prepare = () => {
-  if (props.project && String(props.project) !== String(UNKNOWN_ID)) {
-    projectV1Store.getOrFetchProjectByUID(props.project);
+  if (isValidProjectName(props.projectName)) {
+    projectV1Store.getOrFetchProjectByName(props.projectName);
   } else {
     // Need not to fetch the entire member list since it's done in
     // root component
@@ -125,7 +126,7 @@ const prepare = () => {
 watchEffect(prepare);
 
 const getUserListFromProject = (projectUID: string) => {
-  const project = projectV1Store.getProjectByUID(projectUID);
+  const project = projectV1Store.findProjectByUID(projectUID);
   const memberList = memberListInProjectV1(project.iamPolicy);
   const filteredUserList = memberList
     .filter((member) => {
@@ -162,8 +163,8 @@ const getUserListFromWorkspace = () => {
 
 const rawUserList = computed(() => {
   const list =
-    props.project && props.project !== String(UNKNOWN_ID)
-      ? getUserListFromProject(props.project)
+    props.projectName && props.projectName !== String(UNKNOWN_ID)
+      ? getUserListFromProject(props.projectName)
       : getUserListFromWorkspace();
 
   return list.filter((user) => {

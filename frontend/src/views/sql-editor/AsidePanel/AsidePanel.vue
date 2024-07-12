@@ -11,11 +11,11 @@
       <ProjectSelect
         style="width: 100%"
         class="project-select"
-        :project="projectUID"
+        :project-name="projectName"
         :include-all="false"
         :include-default-project="true"
         :loading="!projectContextReady"
-        @update:project="handleSwitchProject"
+        @update:project-name="handleSwitchProject"
       />
     </div>
 
@@ -45,12 +45,8 @@ import { useElementSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { ProjectSelect } from "@/components/v2";
-import {
-  useProjectV1Store,
-  useSQLEditorTreeStore,
-  useSQLEditorStore,
-} from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { useSQLEditorTreeStore, useSQLEditorStore } from "@/store";
+import { isValidProjectName } from "@/types";
 import { useSQLEditorContext } from "../context";
 import GutterBar from "./GutterBar";
 import HistoryPane from "./HistoryPane";
@@ -65,8 +61,8 @@ const { project, projectContextReady, strictProject } =
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 
-const projectUID = computed(() => {
-  return editorStore.currentProject?.uid ?? null;
+const projectName = computed(() => {
+  return editorStore.currentProject?.name ?? null;
 });
 
 watch([project, projectContextReady], ([project, ready]) => {
@@ -79,12 +75,11 @@ watch([project, projectContextReady], ([project, ready]) => {
   }
 });
 
-const handleSwitchProject = (uid: string | undefined) => {
-  if (!uid || uid === String(UNKNOWN_ID)) {
+const handleSwitchProject = (name: string | undefined) => {
+  if (!isValidProjectName(name)) {
     project.value = "";
   } else {
-    const proj = useProjectV1Store().getProjectByUID(uid);
-    project.value = proj.name;
+    project.value = name;
   }
 };
 </script>

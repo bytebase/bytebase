@@ -71,6 +71,15 @@ export const unknownInstanceResource = (): InstanceResource => {
   };
 };
 
+export const isValidInstanceName = (name: any): name is string => {
+  return (
+    typeof name === "string" &&
+    name.startsWith("instances/") &&
+    name !== EMPTY_INSTANCE_NAME &&
+    name !== UNKNOWN_INSTANCE_NAME
+  );
+};
+
 export const defaultCharsetOfEngineV1 = (engine: Engine): string => {
   switch (engine) {
     case Engine.CLICKHOUSE:

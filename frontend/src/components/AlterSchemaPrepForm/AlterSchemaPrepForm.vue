@@ -165,7 +165,7 @@ import {
   usePageMode,
 } from "@/store";
 import type { ComposedDatabase, FeatureType } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { SearchParams } from "@/utils";
 import {
@@ -200,7 +200,7 @@ type LocalState = {
 };
 
 const props = defineProps({
-  projectId: {
+  projectName: {
     type: String,
     default: undefined,
   },
@@ -277,8 +277,8 @@ const renderDatabaseGroupTabTitle = () => {
 };
 
 const selectedProject = computed(() => {
-  if (props.projectId) {
-    return projectV1Store.getProjectByUID(props.projectId);
+  if (props.projectName) {
+    return projectV1Store.getProjectByName(props.projectName);
   }
   const filter = state.params.scopes.find(
     (scope) => scope.id === "project"
@@ -344,7 +344,7 @@ const rawDatabaseList = computed(() => {
   }
   list = list.filter(
     (db) =>
-      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_V1_NAME
+      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
   return list;
 });

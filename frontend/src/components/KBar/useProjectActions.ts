@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1, useProjectV1List } from "@/store";
-import { DEFAULT_PROJECT_ID } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 export const useProjectActions = (limit: number) => {
@@ -16,7 +16,7 @@ export const useProjectActions = (limit: number) => {
   const accessibleProjectList = computed(() => {
     return projectList.value.filter((project) => {
       return (
-        project.uid != String(DEFAULT_PROJECT_ID) &&
+        project.name !== DEFAULT_PROJECT_NAME &&
         hasProjectPermissionV2(project, me.value, "bb.projects.get")
       );
     });
@@ -30,8 +30,8 @@ export const useProjectActions = (limit: number) => {
   const kbarActions = computed((): Action[] => {
     const actions = sortedProjectList.value.map((project) =>
       defineAction({
-        // here `id` looks like "bb.project.1234"
-        id: `bb.project.${project.uid}`,
+        // here `id` looks like "bb.project.projects/cms"
+        id: `bb.project.${project.name}`,
         section: t("common.projects"),
         name: project.title,
         keywords: ["project", project.key].join(" "),

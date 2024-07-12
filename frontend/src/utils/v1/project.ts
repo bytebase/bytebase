@@ -3,7 +3,7 @@ import { extractUserEmail, useUserStore, useUserGroupStore } from "@/store";
 import { usePermissionStore } from "@/store/modules/v1/permission";
 import {
   ALL_USERS_USER_EMAIL,
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   UNKNOWN_ID,
   PresetRoleType,
   groupBindingPrefix,
@@ -152,7 +152,7 @@ export const memberListInProjectV1 = (iamPolicy: IamPolicy) => {
 };
 
 export function projectV1Name(project: Project) {
-  if (project.name === DEFAULT_PROJECT_V1_NAME) {
+  if (project.name === DEFAULT_PROJECT_NAME) {
     return "Unassigned";
   }
 

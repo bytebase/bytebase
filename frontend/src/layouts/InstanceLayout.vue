@@ -4,7 +4,7 @@
       <ProvideInstanceContext :instance-id="instanceId">
         <template v-if="hasPermission">
           <div
-            v-if="instance.name === UNKNOWN_INSTANCE_NAME"
+            v-if="!isValidInstanceName(instance.name)"
             class="flex items-center gap-x-2 m-4"
           >
             <BBSpin :size="20" />
@@ -27,7 +27,7 @@ import { useRouter } from "vue-router";
 import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
 import { useCurrentUserV1, useInstanceV1Store } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
-import { UNKNOWN_INSTANCE_NAME } from "@/types";
+import { isValidInstanceName } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{

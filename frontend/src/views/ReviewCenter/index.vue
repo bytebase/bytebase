@@ -49,7 +49,7 @@
     @close="state.selectedPlanOnlyType = undefined"
   >
     <AlterSchemaPrepForm
-      :project-id="specificProject?.uid"
+      :project-name="specificProject?.name"
       :type="state.selectedPlanOnlyType!"
       :plan-only="true"
       @dismiss="state.selectedPlanOnlyType = undefined"

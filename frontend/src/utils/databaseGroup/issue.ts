@@ -34,7 +34,7 @@ export const generateDatabaseGroupIssueRoute = (
       ? PROJECT_V1_ROUTE_PLAN_DETAIL
       : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(databaseGroup.projectEntity.name),
+      projectId: extractProjectResourceName(databaseGroup.name),
       issueSlug: "create",
       planSlug: "create",
     },

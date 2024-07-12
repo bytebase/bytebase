@@ -20,11 +20,11 @@ import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useEnvironmentV1Store, useInstanceV1List } from "@/store";
+import { useInstanceV1List } from "@/store";
 import type { ComposedInstance } from "@/types";
 import {
-  UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
+  isValidEnvironmentName,
   unknownInstance,
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
@@ -71,15 +71,9 @@ const { instanceList: allInstanceList, ready } = useInstanceV1List(
 
 const rawInstanceList = computed(() => {
   let list = [...allInstanceList.value];
-  if (
-    props.environmentName &&
-    props.environmentName !== UNKNOWN_ENVIRONMENT_NAME
-  ) {
-    const environment = useEnvironmentV1Store().getEnvironmentByName(
-      props.environmentName
-    );
+  if (isValidEnvironmentName(props.environmentName)) {
     list = allInstanceList.value.filter(
-      (instance) => instance.environment === environment.name
+      (instance) => instance.environment === props.environmentName
     );
   }
   // Filter by engine type
