@@ -52,7 +52,7 @@ func runDifferTest(t *testing.T, file string, record bool) {
 
 func TestSchemaDiffTable(t *testing.T) {
 	testFile := "test_differ_table.yaml"
-	runDifferTest(t, testFile, true /* record */)
+	runDifferTest(t, testFile, false /* record */)
 }
 
 func TestSchemaDiffColumn(t *testing.T) {
