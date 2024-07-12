@@ -255,7 +255,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement base.SingleSQ
 	for key := range rowMap {
 		sortedColumnNames = append(sortedColumnNames, key)
 	}
-	sort.StringSlice(sortedColumnNames).Sort()
+	sort.Strings(sortedColumnNames)
 	columnTypes := make([]string, 0, len(sortedColumnNames))
 	for _, key := range sortedColumnNames {
 		columnTypes = append(columnTypes, columnTypeMap[key])

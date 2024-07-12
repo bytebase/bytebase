@@ -92,25 +92,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 
-	schemaNameMap := make(map[string]bool)
 	for _, schemaName := range schemaList {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range tableMap {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range viewMap {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range streamMap {
-		schemaNameMap[schemaName] = true
-	}
-	var schemaNames []string
-	for schemaName := range schemaNameMap {
-		schemaNames = append(schemaNames, schemaName)
-	}
-	sort.Strings(schemaNames)
-	for _, schemaName := range schemaNames {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
 		var streams []*storepb.StreamMetadata
@@ -152,7 +134,7 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 		SELECT
 			SCHEMA_NAME
 		FROM "%s".INFORMATION_SCHEMA.SCHEMATA
-		WHERE %s`, database, excludeWhere)
+		WHERE %s ORDER BY SCHEMA_NAME`, database, excludeWhere)
 
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
