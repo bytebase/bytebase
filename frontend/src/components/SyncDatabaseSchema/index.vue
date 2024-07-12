@@ -74,7 +74,7 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { extractProjectResourceName } from "@/utils";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
@@ -160,7 +160,9 @@ const allowNext = computed(() => {
     if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
       return (
         !changeHistorySourceSchemaState.isFetching &&
-        isValidId(changeHistorySourceSchemaState.environmentId) &&
+        isValidEnvironmentName(
+          changeHistorySourceSchemaState.environmentName
+        ) &&
         isValidId(changeHistorySourceSchemaState.databaseId) &&
         !isUndefined(changeHistorySourceSchemaState.changeHistory)
       );

@@ -145,10 +145,10 @@ export const getFactorList = (source: Risk_Source) => {
 const getEnvironmentIdOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
-    const environmentId = extractEnvironmentResourceName(env.name);
+    const environmentName = extractEnvironmentResourceName(env.name);
     return {
-      label: environmentId,
-      value: environmentId,
+      label: environmentName,
+      value: environmentName,
     };
   });
 };

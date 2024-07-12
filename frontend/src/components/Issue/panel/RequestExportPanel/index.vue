@@ -119,7 +119,7 @@ import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/inde
 
 interface LocalState {
   projectId?: string;
-  environmentId?: string;
+  environmentName?: string;
   databaseId?: string;
   databaseResourceCondition?: string;
   databaseResources: DatabaseResource[];
@@ -181,8 +181,8 @@ const handleProjectSelect = async (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
-const handleEnvironmentSelect = (environmentId: string | undefined) => {
-  state.environmentId = environmentId;
+const handleEnvironmentSelect = (environmentName: string | undefined) => {
+  state.environmentName = environmentName;
   const database = databaseStore.getDatabaseByUID(
     state.databaseId || String(UNKNOWN_ID)
   );
@@ -190,7 +190,7 @@ const handleEnvironmentSelect = (environmentId: string | undefined) => {
   if (
     database &&
     database.uid !== String(UNKNOWN_ID) &&
-    database.effectiveEnvironmentEntity.uid !== state.environmentId
+    database.effectiveEnvironment !== state.environmentName
   ) {
     state.databaseId = undefined;
   }
@@ -203,7 +203,7 @@ const handleDatabaseSelect = (databaseId: string | undefined) => {
   );
   if (database && database.uid !== String(UNKNOWN_ID)) {
     handleProjectSelect(database.projectEntity.uid);
-    handleEnvironmentSelect(database.effectiveEnvironmentEntity.uid);
+    handleEnvironmentSelect(database.effectiveEnvironment);
   }
 };
 
