@@ -82,32 +82,39 @@ const resultStatus = computed(() => {
 const buttonClasses = computed(() => {
   let bgColor = "";
   let textColor = "";
+  let borderColor = "";
   switch (status.value) {
     case PlanCheckRun_Status.RUNNING:
       bgColor = "bg-blue-100";
       textColor = "text-blue-800";
+      borderColor = "bg-blue-800";
       break;
     case PlanCheckRun_Status.FAILED:
       bgColor = "bg-red-100";
       textColor = "text-red-800";
+      borderColor = "border-red-800";
       break;
     case PlanCheckRun_Status.CANCELED:
       bgColor = "bg-yellow-100";
       textColor = "text-yellow-800";
+      borderColor = "border-yellow-800";
       break;
     case PlanCheckRun_Status.DONE:
       switch (resultStatus.value) {
         case PlanCheckRun_Result_Status.SUCCESS:
           bgColor = "bg-gray-100";
           textColor = "text-gray-800";
+          borderColor = "border-gray-800";
           break;
         case PlanCheckRun_Result_Status.WARNING:
           bgColor = "bg-yellow-100";
           textColor = "text-yellow-800";
+          borderColor = "border-yellow-800";
           break;
         case PlanCheckRun_Result_Status.ERROR:
           bgColor = "bg-red-100";
           textColor = "text-red-800";
+          borderColor = "border-red-800";
           break;
       }
       break;
@@ -117,7 +124,7 @@ const buttonClasses = computed(() => {
   if (props.clickable) {
     styleList.push("cursor-pointer");
     if (props.selected) {
-      styleList.push("shadow", "font-medium", "border-control-border");
+      styleList.push("font-medium", borderColor);
     } else {
       styleList.push(bgColor, "hover:opacity-80", "border-transparent");
     }

@@ -9,7 +9,6 @@
 
     <div class="flex-1">
       <PlanCheckBadgeBar
-        v-if="!state.showPlanCheckDetail"
         :plan-check-run-list="planCheckRunList"
         @select-type="selectedType = $event"
       >

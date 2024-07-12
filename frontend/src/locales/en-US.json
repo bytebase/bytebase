@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "Show default parameters",
       "hide-default-parameters": "Hide default parameters",
-      "enable": "Enable online migration"
+      "enable": "Enable online migration",
+      "disable": "Disable online migration",
+      "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
     "prior-backup-tips": "Back up affected data ahead of time"
   },

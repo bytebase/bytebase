@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados",
-      "enable": "Habilitar la migración en línea"
+      "enable": "Habilitar la migración en línea",
+      "disable": "Deshabilitar la migración en línea",
+      "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
     "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
   },

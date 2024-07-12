@@ -77,7 +77,7 @@
         </HideInStandaloneMode>
 
         <!-- Only show the error line for latest plan check run -->
-        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
+        <template v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line">
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
@@ -90,8 +90,6 @@
             Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
-
-        <slot name="row-extra" :row="row" />
       </div>
     </div>
   </div>
@@ -155,7 +153,7 @@ type LocalState = {
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
   database?: ComposedDatabase;
-  isLatest?: boolean;
+  showCodeLocation?: boolean;
 }>();
 
 const { t } = useI18n();
