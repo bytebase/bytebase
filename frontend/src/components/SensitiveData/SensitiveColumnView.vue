@@ -34,7 +34,7 @@
         />
         <DatabaseSelect
           :include-all="true"
-          :project="shamefulProjectUID"
+          :project-name="state.selectedProjectName"
           :instance-name="state.selectedInstanceName"
           :database="state.selectedDatabaseUid"
           @update:database="onDatabaseSelect($event)"
@@ -140,7 +140,6 @@ import {
   pushNotification,
   usePolicyV1Store,
   useSubscriptionV1Store,
-  useProjectV1Store,
 } from "@/store";
 import {
   UNKNOWN_ID,
@@ -449,9 +448,4 @@ const updateCheckedColumnList = (indexes: number[]) => {
     }
   }
 };
-
-const shamefulProjectUID = computed(() => {
-  // todo(jim): refactor me
-  return useProjectV1Store().getProjectByName(state.selectedProjectName).uid;
-});
 </script>

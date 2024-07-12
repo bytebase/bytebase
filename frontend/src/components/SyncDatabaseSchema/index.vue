@@ -74,7 +74,11 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_ID, isValidEnvironmentName, isValidProjectName } from "@/types";
+import {
+  UNKNOWN_ID,
+  isValidEnvironmentName,
+  isValidProjectName,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { extractProjectResourceName } from "@/utils";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
@@ -239,7 +243,9 @@ const tryFinishSetup = async () => {
   }
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
-  const project = await projectStore.getOrFetchProjectByUID(projectName.value!);
+  const project = await projectStore.getOrFetchProjectByName(
+    projectName.value!
+  );
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",

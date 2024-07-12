@@ -30,8 +30,8 @@
       <DatabaseSelect
         class="!w-128 max-w-full"
         :database="state.databaseId"
-        :environment="shamefulEnvironmentUID"
-        :project="state.projectName"
+        :environment-name="state.environmentName"
+        :project-name="state.projectName"
         :placeholder="$t('db.select')"
         :allowed-engine-type-list="allowedEngineTypeList"
         :fallback-option="false"
@@ -90,7 +90,6 @@ import {
   useChangeHistoryStore,
   useDatabaseV1Store,
   useSubscriptionV1Store,
-  useEnvironmentV1Store,
   useDBSchemaV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
@@ -474,7 +473,13 @@ watch(
     () => props.selectState?.changeHistory?.name,
     () => props.selectState?.isFetching,
   ],
-  ([projectName, environmentName, databaseId, changeHistoryName, isFetching]) => {
+  ([
+    projectName,
+    environmentName,
+    databaseId,
+    changeHistoryName,
+    isFetching,
+  ]) => {
     if (isFetching) return;
     state.projectName = projectName;
     state.environmentName = environmentName;
@@ -485,13 +490,6 @@ watch(
     immediate: false,
   }
 );
-
-const shamefulEnvironmentUID = computed(() => {
-  // todo(jim): refactor me
-  const { environmentName } = state;
-  if (!environmentName) return undefined;
-  return useEnvironmentV1Store().getEnvironmentByName(environmentName).uid;
-});
 </script>
 
 <style lang="postcss">

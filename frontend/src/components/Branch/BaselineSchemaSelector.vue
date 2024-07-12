@@ -11,8 +11,8 @@
       :placeholder="$t('schema-designer.select-database-placeholder')"
       :disabled="readonly || props.loading"
       :allowed-engine-type-list="allowedEngineTypeList"
-      :environment="shamefulEnvironmentUID"
-      :project="shamefulProjectUID"
+      :environment-name="state.environmentName"
+      :project-name="props.projectName"
       :database="state.databaseId ?? String(UNKNOWN_ID)"
       :fallback-option="false"
       @update:database="handleDatabaseSelect"
@@ -22,18 +22,10 @@
 
 <script lang="ts" setup>
 import { isNull, isUndefined } from "lodash-es";
-import { computed, reactive, watch } from "vue";
+import { reactive, watch } from "vue";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
-import {
-  UNKNOWN_ID,
-  isValidEnvironmentName,
-  isValidProjectName,
-} from "@/types";
+import { useDatabaseV1Store } from "@/store";
+import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps<{
@@ -120,20 +112,6 @@ const handleDatabaseSelect = (databaseId?: string) => {
     state.databaseId = databaseId;
   }
 };
-
-const shamefulEnvironmentUID = computed(() => {
-  // todo(jim): refactor me
-  const { environmentName } = state;
-  if (!isValidEnvironmentName(environmentName)) return undefined;
-  return useEnvironmentV1Store().getEnvironmentByName(environmentName).uid;
-});
-
-const shamefulProjectUID = computed(() => {
-  // todo(jim): refactor me
-  const { projectName } = props;
-  if (!isValidProjectName(projectName)) return undefined;
-  return useProjectV1Store().getProjectByUID(projectName).uid;
-});
 </script>
 
 <style lang="postcss">

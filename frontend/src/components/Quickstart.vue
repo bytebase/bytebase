@@ -135,6 +135,7 @@ import {
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
   hasWorkspaceLevelProjectPermission,
+  extractProjectResourceName,
 } from "@/utils";
 
 type IntroItem = {
@@ -182,7 +183,9 @@ const introList = computed(() => {
       link: {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
-          projectId: sampleProject.value?.uid,
+          projectId: extractProjectResourceName(
+            sampleProject.value?.name ?? UNKNOWN_PROJECT_NAME
+          ),
           issueSlug: "101",
         },
       },
@@ -354,7 +357,10 @@ watchEffect(async () => {
   if (
     hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
   ) {
-    await projectStore.getOrFetchProjectByUID("101", true /* silent */);
+    await projectStore.getOrFetchProjectByName(
+      "projects/101",
+      true /* silent */
+    );
   }
 });
 </script>

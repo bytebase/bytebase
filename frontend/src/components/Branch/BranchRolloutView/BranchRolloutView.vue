@@ -20,8 +20,8 @@
           <div class="textlabel">{{ $t("common.database") }}</div>
           <DatabaseSelect
             :database="database?.uid"
-            :project="project.uid"
-            :environment="environment?.uid"
+            :project-name="project.name"
+            :environment-name="environment?.name"
             :filter="filterDatabase"
             style="width: 16rem"
             @update:database="handleSelectDatabase"

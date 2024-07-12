@@ -8,7 +8,6 @@ import {
   EMPTY_PROJECT_NAME,
   unknownProject,
   defaultProject,
-  UNKNOWN_ID,
   UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
@@ -16,7 +15,6 @@ import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
@@ -82,26 +80,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     await upsertProjectMap([project]);
     return project as ComposedProject;
   };
-  const fetchProjectByUID = async (uid: string, silent = false) => {
-    return fetchProjectByName(`${projectNamePrefix}${uid}`, silent);
-  };
   const getOrFetchProjectByName = async (name: string, silent = false) => {
     const cachedData = projectMapByName.get(name);
     if (cachedData) {
       return cachedData;
     }
     return fetchProjectByName(name, silent);
-  };
-  const getOrFetchProjectByUID = async (uid: string, silent = false) => {
-    if (uid === String(EMPTY_ID)) return emptyProject();
-    if (uid === String(UNKNOWN_ID)) return unknownProject();
-
-    const cachedData = projectList.value.find((project) => project.uid === uid);
-    if (cachedData) {
-      return cachedData;
-    }
-    await fetchProjectByUID(uid, silent);
-    return getProjectByUID(uid);
   };
   const createProject = async (project: Project, resourceId: string) => {
     const created = await projectServiceClient.createProject({
@@ -145,9 +129,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     getProjectByName,
     fetchProjectList,
     fetchProjectByName,
-    fetchProjectByUID,
     getOrFetchProjectByName,
-    getOrFetchProjectByUID,
     createProject,
     updateProject,
     archiveProject,
