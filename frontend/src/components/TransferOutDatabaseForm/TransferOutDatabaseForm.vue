@@ -82,7 +82,7 @@ import {
 import type { ComposedDatabase } from "@/types";
 import {
   PresetRoleType,
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
 import { extractProjectResourceName } from "@/utils";
@@ -119,7 +119,7 @@ const selectedDatabaseList = computed(() => {
 
 const allUnassigned = computed(() => {
   return selectedDatabaseList.value.every(
-    (db) => db.project === DEFAULT_PROJECT_V1_NAME
+    (db) => db.project === DEFAULT_PROJECT_NAME
   );
 });
 
@@ -129,7 +129,7 @@ watch(
   () => transfer.value,
   (transfer) => {
     if (transfer === "unassign") {
-      targetProjectName.value = DEFAULT_PROJECT_V1_NAME;
+      targetProjectName.value = DEFAULT_PROJECT_NAME;
     } else {
       targetProjectName.value = undefined;
     }

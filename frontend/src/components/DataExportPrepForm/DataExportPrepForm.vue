@@ -76,7 +76,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { SearchParams } from "@/utils";
 import {
@@ -165,7 +165,7 @@ const rawDatabaseList = computed(() => {
   }
   list = list.filter(
     (db) =>
-      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_V1_NAME
+      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
   return list;
 });

@@ -108,7 +108,7 @@ import {
   usePageMode,
 } from "@/store";
 import type { ComposedDatabase, ProjectPermission } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
   DatabaseMetadataView,
@@ -177,7 +177,7 @@ const selectedProjectNames = computed(() => {
 });
 
 const assignedDatabases = computed(() => {
-  return props.databases.filter((db) => db.project !== DEFAULT_PROJECT_V1_NAME);
+  return props.databases.filter((db) => db.project !== DEFAULT_PROJECT_NAME);
 });
 
 const getDisabledTooltip = (action: string) => {
@@ -186,7 +186,7 @@ const getDisabledTooltip = (action: string) => {
       action,
     });
   }
-  if (selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME)) {
+  if (selectedProjectNames.value.has(DEFAULT_PROJECT_NAME)) {
     return t("database.batch-action-disabled-for-unassigned", {
       action,
     });
@@ -374,7 +374,7 @@ const unAssignDatabases = async () => {
     state.loading = true;
     await useDatabaseV1Store().transferDatabases(
       assignedDatabases.value,
-      DEFAULT_PROJECT_V1_NAME
+      DEFAULT_PROJECT_NAME
     );
     pushNotification({
       module: "bytebase",
@@ -395,7 +395,7 @@ const unAssignDatabases = async () => {
 const operationsInProjectDetail = computed(() => !!props.projectName);
 
 const isInDefaultProject = computed(
-  () => props.projectName === DEFAULT_PROJECT_V1_NAME
+  () => props.projectName === DEFAULT_PROJECT_NAME
 );
 
 const actions = computed((): DatabaseAction[] => {
@@ -482,7 +482,7 @@ const actions = computed((): DatabaseAction[] => {
         !allowEditSchema.value ||
         !selectedProjectName.value ||
         props.databases.length < 1 ||
-        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
+        selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
       click: () => generateMultiDb("bb.issue.database.schema.update"),
       tooltip: (action) => {
         if (!databaseSupportAlterSchema.value) {
@@ -503,7 +503,7 @@ const actions = computed((): DatabaseAction[] => {
         !allowChangeData.value ||
         !selectedProjectName.value ||
         props.databases.length < 1 ||
-        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
+        selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
       click: () => generateMultiDb("bb.issue.database.data.update"),
       tooltip: (action) => {
         if (!allowChangeData.value) {

@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1, useProjectV1List } from "@/store";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 export const useProjectActions = (limit: number) => {
@@ -16,7 +16,7 @@ export const useProjectActions = (limit: number) => {
   const accessibleProjectList = computed(() => {
     return projectList.value.filter((project) => {
       return (
-        project.name !== DEFAULT_PROJECT_V1_NAME &&
+        project.name !== DEFAULT_PROJECT_NAME &&
         hasProjectPermissionV2(project, me.value, "bb.projects.get")
       );
     });

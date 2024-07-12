@@ -4,7 +4,7 @@
       class="flex flex-col md:flex-row md:items-center gap-y-2 justify-between"
     >
       <div
-        v-if="project.name !== DEFAULT_PROJECT_V1_NAME"
+        v-if="project.name !== DEFAULT_PROJECT_NAME"
         class="radio-set-row"
       >
         <NRadioGroup v-model:value="state.transferSource">
@@ -55,7 +55,7 @@ import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
 import { useInstanceV1Store, useProjectV1Store } from "@/store";
 import type { ComposedDatabase, ComposedInstance } from "@/types";
 import {
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   PresetRoleType,
   UNKNOWN_INSTANCE_NAME,
   UNKNOWN_PROJECT_NAME,

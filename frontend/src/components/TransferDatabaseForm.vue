@@ -87,7 +87,7 @@ import {
 } from "@/store";
 import type { ComposedDatabase, ComposedInstance } from "@/types";
 import {
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   UNKNOWN_INSTANCE_NAME,
   defaultProject,
 } from "@/types";
@@ -130,7 +130,7 @@ const hasPermissionForDefaultProject = computed(() => {
 
 const state = reactive<LocalState>({
   transferSource:
-    props.projectName === DEFAULT_PROJECT_V1_NAME ||
+    props.projectName === DEFAULT_PROJECT_NAME ||
     !hasPermissionForDefaultProject.value
       ? "OTHER"
       : "DEFAULT",
@@ -144,12 +144,12 @@ const { project } = useProjectByName(toRef(props, "projectName"));
 
 const rawDatabaseList = computed(() => {
   if (state.transferSource === "DEFAULT") {
-    return databaseStore.databaseListByProject(DEFAULT_PROJECT_V1_NAME);
+    return databaseStore.databaseListByProject(DEFAULT_PROJECT_NAME);
   } else {
     return databaseStore.databaseList.filter((db) => {
       return (
         db.project !== props.projectName &&
-        db.project !== DEFAULT_PROJECT_V1_NAME &&
+        db.project !== DEFAULT_PROJECT_NAME &&
         hasProjectPermissionV2(
           db.projectEntity,
           currentUserV1.value,

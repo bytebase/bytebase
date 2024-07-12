@@ -32,7 +32,7 @@ import type { ComposedProject } from "@/types";
 import {
   unknownProject,
   defaultProject,
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -122,7 +122,7 @@ const { projectList } = useProjectV1List();
 
 const rawProjectList = computed(() => {
   return projectList.value.filter((project) => {
-    if (project.name === DEFAULT_PROJECT_V1_NAME) {
+    if (project.name === DEFAULT_PROJECT_NAME) {
       return false;
     }
     return props.allowedProjectWorkflowTypeList.includes(project.workflow);
@@ -164,7 +164,7 @@ const combinedProjectList = computed(() => {
 
   if (
     props.projectName &&
-    props.projectName !== DEFAULT_PROJECT_V1_NAME &&
+    props.projectName !== DEFAULT_PROJECT_NAME &&
     props.projectName !== UNKNOWN_PROJECT_NAME &&
     isOrphanValue.value
   ) {
@@ -181,7 +181,7 @@ const combinedProjectList = computed(() => {
   }
 
   if (
-    props.projectName === DEFAULT_PROJECT_V1_NAME ||
+    props.projectName === DEFAULT_PROJECT_NAME ||
     props.includeDefaultProject
   ) {
     list.unshift({ ...defaultProject() });
@@ -204,7 +204,7 @@ const options = computed(() => {
       project,
       value: project.name,
       label:
-        project.name === DEFAULT_PROJECT_V1_NAME
+        project.name === DEFAULT_PROJECT_NAME
           ? t("common.unassigned")
           : project.name === UNKNOWN_PROJECT_NAME
             ? t("project.all")

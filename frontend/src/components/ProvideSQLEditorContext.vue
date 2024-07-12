@@ -47,7 +47,7 @@ import {
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
@@ -131,7 +131,7 @@ const initializeProjects = async () => {
       editorStore.project = lastView;
     } else {
       const projectListWithoutDefaultProject = projectList.filter(
-        (proj) => proj.name !== DEFAULT_PROJECT_V1_NAME
+        (proj) => proj.name !== DEFAULT_PROJECT_NAME
       );
       editorStore.project =
         head(projectListWithoutDefaultProject)?.name ??

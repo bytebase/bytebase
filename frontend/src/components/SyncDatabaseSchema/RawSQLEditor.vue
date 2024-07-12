@@ -73,7 +73,7 @@ import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { ProjectSelect } from "@/components/v2";
 import { useSheetV1Store } from "@/store";
 import {
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   UNKNOWN_ID,
   dialectOfEngineV1,
   isValidProjectName,
@@ -173,7 +173,7 @@ const handleSQLUpload = async (statement: string, filename: string) => {
 
   state.isUploadingFile = true;
   try {
-    const sheet = await sheetStore.createSheet(DEFAULT_PROJECT_V1_NAME, {
+    const sheet = await sheetStore.createSheet(DEFAULT_PROJECT_NAME, {
       title: filename,
       engine: state.engine,
       content: new TextEncoder().encode(statement),

@@ -8,7 +8,7 @@ import {
   useProjectV1List,
   useSettingV1Store,
 } from "@/store";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { MaskingAlgorithmSetting_Algorithm } from "@/types/proto/v1/setting_service";
 import {
   extractEnvironmentResourceName,
@@ -60,7 +60,7 @@ export const getInstanceIdOptions = () => {
 export const getProjectIdOptions = () => {
   const { projectList } = useProjectV1List();
   return projectList.value
-    .filter((proj) => proj.name != DEFAULT_PROJECT_V1_NAME)
+    .filter((proj) => proj.name != DEFAULT_PROJECT_NAME)
     .map<SelectOption>((proj) => {
       const projectId = extractProjectResourceName(proj.name);
       return {

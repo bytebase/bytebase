@@ -68,7 +68,7 @@ import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import { useProjectV1List } from "@/store";
 import type { ComposedProject } from "@/types";
-import { isValidProjectName, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
 import ProjectCreatePanel from "./ProjectCreatePanel.vue";
 
@@ -103,7 +103,7 @@ const getFilteredProjectList = (
   projectList: ComposedProject[]
 ): ComposedProject[] => {
   const list = projectList.filter(
-    (project) => project.name !== DEFAULT_PROJECT_V1_NAME
+    (project) => project.name !== DEFAULT_PROJECT_NAME
   );
   return filterProjectV1ListByKeyword(list, state.searchText);
 };
