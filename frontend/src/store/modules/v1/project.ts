@@ -178,17 +178,17 @@ export const useProjectV1List = (
   return { projectList, ready };
 };
 
-export const useProjectV1ByUID = (uid: MaybeRef<string>) => {
+export const useProjectByName = (name: MaybeRef<string>) => {
   const store = useProjectV1Store();
   const ready = ref(false);
   watchEffect(() => {
     ready.value = false;
-    store.getOrFetchProjectByUID(unref(uid)).then(() => {
+    store.getOrFetchProjectByName(unref(name)).then(() => {
       ready.value = true;
     });
   });
   const project = computed(() => {
-    return store.getProjectByUID(unref(uid));
+    return store.getProjectByName(unref(name));
   });
   return { project, ready };
 };

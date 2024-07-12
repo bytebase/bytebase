@@ -11,7 +11,7 @@
     >
       <RawSQLEditor
         :view-mode="true"
-        :project-id="rawSqlState.projectId"
+        :project-name="rawSqlState.projectName"
         :engine="rawSqlState.engine"
         :statement="rawSqlState.statement"
         :sheet-id="rawSqlState.sheetId"

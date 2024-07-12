@@ -129,7 +129,7 @@ interface LocalState {
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
-  projectName: props.selectState?.projectId,
+  projectName: props.selectState?.projectName,
   environmentName: props.selectState?.environmentName,
   databaseId: props.selectState?.databaseId,
   changeHistoryName: props.selectState?.changeHistory?.name,
@@ -450,9 +450,9 @@ watch(
     mergedChangeHistorySourceSchema,
     isFetchingChangeHistorySourceSchema,
   ],
-  ([projectId, environmentName, databaseId, source, isFetching]) => {
+  ([projectName, environmentName, databaseId, source, isFetching]) => {
     const params: ChangeHistorySourceSchema = {
-      projectId,
+      projectName,
       environmentName,
       databaseId,
       changeHistory: source?.changeHistory,
@@ -468,15 +468,15 @@ watch(
 
 watch(
   [
-    () => props.selectState?.projectId,
+    () => props.selectState?.projectName,
     () => props.selectState?.environmentName,
     () => props.selectState?.databaseId,
     () => props.selectState?.changeHistory?.name,
     () => props.selectState?.isFetching,
   ],
-  ([projectId, environmentName, databaseId, changeHistoryName, isFetching]) => {
+  ([projectName, environmentName, databaseId, changeHistoryName, isFetching]) => {
     if (isFetching) return;
-    state.projectName = projectId;
+    state.projectName = projectName;
     state.environmentName = environmentName;
     state.databaseId = databaseId;
     state.changeHistoryName = changeHistoryName;

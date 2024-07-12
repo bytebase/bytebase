@@ -48,6 +48,7 @@ export const isValidProjectName = (name: any): name is string => {
   return (
     typeof name === "string" &&
     name.startsWith("projects/") &&
+    name !== EMPTY_PROJECT_NAME &&
     name !== UNKNOWN_PROJECT_NAME
   );
 };

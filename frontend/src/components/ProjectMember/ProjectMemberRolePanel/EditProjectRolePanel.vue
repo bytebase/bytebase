@@ -31,7 +31,7 @@
           >
             <p class="mb-2">{{ $t("common.databases") }}</p>
             <QuerierDatabaseResourceForm
-              :project-name="project.uid"
+              :project-name="project.name"
               :database-resources="state.databaseResources"
               @update:condition="state.databaseResourceCondition = $event"
               @update:database-resources="state.databaseResources = $event"

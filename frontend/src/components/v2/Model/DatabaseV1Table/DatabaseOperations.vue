@@ -108,7 +108,7 @@ import {
   usePageMode,
 } from "@/store";
 import type { ComposedDatabase, ProjectPermission } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME, DEFAULT_PROJECT_UID } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import {
   Database,
   DatabaseMetadataView,
@@ -143,9 +143,9 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     databases: ComposedDatabase[];
-    projectUid?: string;
+    projectName?: string;
   }>(),
-  { projectUid: "" }
+  { projectName: "" }
 );
 
 const state = reactive<LocalState>({
@@ -194,15 +194,15 @@ const getDisabledTooltip = (action: string) => {
   return "";
 };
 
-const selectedProjectUid = computed(() => {
-  if (props.projectUid) {
-    return props.projectUid;
+const selectedProjectName = computed(() => {
+  if (props.projectName) {
+    return props.projectName;
   }
   if (selectedProjectNames.value.size !== 1) {
     return "";
   }
   const project = [...selectedProjectNames.value][0];
-  return projectStore.getProjectByName(project).uid;
+  return projectStore.getProjectByName(project).name;
 });
 
 const canEditDatabase = (
@@ -313,7 +313,9 @@ const generateMultiDb = async (
     ),
     databaseList: props.databases.map((db) => db.name).join(","),
   };
-  const project = useProjectV1Store().getProjectByUID(selectedProjectUid.value);
+  const project = useProjectV1Store().getProjectByUID(
+    selectedProjectName.value
+  );
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
@@ -390,10 +392,10 @@ const unAssignDatabases = async () => {
   }
 };
 
-const operationsInProjectDetail = computed(() => !!props.projectUid);
+const operationsInProjectDetail = computed(() => !!props.projectName);
 
 const isInDefaultProject = computed(
-  () => props.projectUid === `${DEFAULT_PROJECT_UID}`
+  () => props.projectName === DEFAULT_PROJECT_V1_NAME
 );
 
 const actions = computed((): DatabaseAction[] => {
@@ -478,7 +480,7 @@ const actions = computed((): DatabaseAction[] => {
       disabled:
         !databaseSupportAlterSchema.value ||
         !allowEditSchema.value ||
-        !selectedProjectUid.value ||
+        !selectedProjectName.value ||
         props.databases.length < 1 ||
         selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
       click: () => generateMultiDb("bb.issue.database.schema.update"),
@@ -499,7 +501,7 @@ const actions = computed((): DatabaseAction[] => {
       text: t("database.change-data"),
       disabled:
         !allowChangeData.value ||
-        !selectedProjectUid.value ||
+        !selectedProjectName.value ||
         props.databases.length < 1 ||
         selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
       click: () => generateMultiDb("bb.issue.database.data.update"),

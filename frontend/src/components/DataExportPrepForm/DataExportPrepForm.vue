@@ -98,7 +98,7 @@ type LocalState = {
 };
 
 const props = defineProps({
-  projectId: {
+  projectName: {
     type: String,
     default: undefined,
   },
@@ -126,8 +126,8 @@ const scopeOptions = useCommonSearchScopeOptions(
 );
 
 const selectedProject = computed(() => {
-  if (props.projectId) {
-    return projectV1Store.getProjectByUID(props.projectId);
+  if (props.projectName) {
+    return projectV1Store.getProjectByName(props.projectName);
   }
   const filter = state.params.scopes.find(
     (scope) => scope.id === "project"

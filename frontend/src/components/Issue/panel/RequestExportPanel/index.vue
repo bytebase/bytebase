@@ -202,7 +202,7 @@ const handleDatabaseSelect = (databaseId: string | undefined) => {
     state.databaseId || String(UNKNOWN_ID)
   );
   if (database && database.uid !== String(UNKNOWN_ID)) {
-    handleProjectSelect(database.projectEntity.uid);
+    handleProjectSelect(database.project);
     handleEnvironmentSelect(database.effectiveEnvironment);
   }
 };

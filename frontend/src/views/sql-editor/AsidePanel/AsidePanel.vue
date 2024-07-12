@@ -62,7 +62,7 @@ const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 
 const projectName = computed(() => {
-  return editorStore.currentProject?.uid ?? null;
+  return editorStore.currentProject?.name ?? null;
 });
 
 watch([project, projectContextReady], ([project, ready]) => {

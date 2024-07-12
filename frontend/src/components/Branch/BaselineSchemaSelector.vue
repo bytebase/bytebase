@@ -12,7 +12,7 @@
       :disabled="readonly || props.loading"
       :allowed-engine-type-list="allowedEngineTypeList"
       :environment="shamefulEnvironmentUID"
-      :project="projectId"
+      :project="shamefulProjectUID"
       :database="state.databaseId ?? String(UNKNOWN_ID)"
       :fallback-option="false"
       @update:database="handleDatabaseSelect"
@@ -24,12 +24,20 @@
 import { isNull, isUndefined } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import {
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useProjectV1Store,
+} from "@/store";
+import {
+  UNKNOWN_ID,
+  isValidEnvironmentName,
+  isValidProjectName,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps<{
-  projectId?: string;
+  projectName?: string;
   databaseId?: string;
   readonly?: boolean;
   loading?: boolean;
@@ -48,15 +56,15 @@ const state = reactive<LocalState>({});
 const databaseStore = useDatabaseV1Store();
 
 watch(
-  () => props.projectId,
+  () => props.projectName,
   () => {
     const database = isValidId(state.databaseId)
       ? databaseStore.getDatabaseByUID(state.databaseId)
       : undefined;
-    if (!database || !props.projectId) {
+    if (!database || !props.projectName) {
       return;
     }
-    if (database.projectEntity.uid !== props.projectId) {
+    if (database.project !== props.projectName) {
       state.environmentName = undefined;
       state.databaseId = undefined;
     }
@@ -116,8 +124,15 @@ const handleDatabaseSelect = (databaseId?: string) => {
 const shamefulEnvironmentUID = computed(() => {
   // todo(jim): refactor me
   const { environmentName } = state;
-  if (!environmentName) return undefined;
+  if (!isValidEnvironmentName(environmentName)) return undefined;
   return useEnvironmentV1Store().getEnvironmentByName(environmentName).uid;
+});
+
+const shamefulProjectUID = computed(() => {
+  // todo(jim): refactor me
+  const { projectName } = props;
+  if (!isValidProjectName(projectName)) return undefined;
+  return useProjectV1Store().getProjectByUID(projectName).uid;
 });
 </script>
 

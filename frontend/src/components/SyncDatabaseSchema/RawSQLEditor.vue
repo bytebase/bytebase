@@ -95,7 +95,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectId?: string;
+  projectName?: string;
   engine: Engine;
   statement?: string;
   sheetId?: number;
@@ -109,7 +109,7 @@ const emit = defineEmits<{
 
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
-  projectName: props.projectId,
+  projectName: props.projectName,
   engine: props.engine || Engine.MYSQL,
   editStatement: props.statement || "",
   isUploadingFile: false,
@@ -208,7 +208,7 @@ const update = (sheetId?: number) => {
     sheetId = Number(extractSheetUID(sheet.value.name));
   }
   emit("update", {
-    projectId: state.projectName,
+    projectName: state.projectName,
     engine: state.engine,
     statement: state.editStatement,
     sheetId: sheetId,

@@ -143,7 +143,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
-  projectId: string;
+  projectName: string;
   engine: Engine;
   selectedDatabaseIdList: string[];
   loading?: boolean;
@@ -166,7 +166,7 @@ const state = reactive<LocalState>({
 const databaseListGroupByEnvironment = computed(() => {
   const databaseList =
     databaseStore.databaseList
-      .filter((db) => db.projectEntity.uid === props.projectId)
+      .filter((db) => db.project === props.projectName)
       .filter((db) => db.databaseName.includes(state.searchText))
       .filter((db) => db.instanceResource.engine === props.engine) || [];
   const listByEnv = environmentV1Store.environmentList.map((environment) => {
