@@ -263,27 +263,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			},
 		}
 	}
-
-	var remainingSQLs []base.SingleSQL
-	var nonTransactionStmts []string
-	for _, singleSQL := range commands {
-		if isNonTransactionStatement(singleSQL.Text) {
-			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
-			continue
-		}
-		remainingSQLs = append(remainingSQLs, singleSQL)
-	}
-
 	totalRowsAffected := int64(0)
-	if len(remainingSQLs) != 0 {
-		totalCommands := len(remainingSQLs)
+	if len(commands) != 0 {
+		totalCommands := len(commands)
 		tx, err := driver.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
 		defer tx.Rollback()
 
-		for i, command := range remainingSQLs {
+		for i, command := range commands {
 			// Start the current chunk.
 			// Set the progress information for the current chunk.
 			if opts.UpdateExecutionStatus != nil {
@@ -328,12 +317,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 	}
 
-	// Run non-transaction statements at the end.
-	for _, stmt := range nonTransactionStmts {
-		if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-			return 0, err
-		}
-	}
 	return totalRowsAffected, nil
 }
 
@@ -359,20 +342,6 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 		}
 	}
 	return nil
-}
-
-func isNonTransactionStatement(stmt string) bool {
-	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
-	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
-	createIndexReg := regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
-	if len(createIndexReg.FindString(stmt)) > 0 {
-		return true
-	}
-
-	// DROP INDEX CONCURRENTLY cannot run inside a transaction block.
-	// DROP INDEX [ CONCURRENTLY ] [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ]
-	dropIndexReg := regexp.MustCompile(`(?i)DROP(\s+)INDEX(\s+)CONCURRENTLY`)
-	return len(dropIndexReg.FindString(stmt)) > 0
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
