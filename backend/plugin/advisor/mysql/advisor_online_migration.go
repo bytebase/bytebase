@@ -47,12 +47,11 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 		return nil, err
 	}
 	dbSchema := model.NewDBSchema(ctx.DBSchema, nil, nil)
+	title := string(ctx.Rule.Type)
 
 	var adviceList []*storepb.Advice
 	for _, stmt := range stmtList {
 		checker := &useGhostChecker{
-			level:            level,
-			title:            string(ctx.Rule.Type),
 			currentDatabase:  ctx.CurrentDatabase,
 			changedResources: make(map[string]base.SchemaResource),
 			baseline:         int32(stmt.BaseLine),
@@ -71,9 +70,9 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 			}
 			if tableRows >= minRows {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:        checker.level,
+					Status:        level,
 					Code:          advisor.AdviseOnlineMigrationForStatement.Int32(),
-					Title:         checker.title,
+					Title:         title,
 					Content:       fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
 					StartPosition: checker.start,
 					EndPosition:   checker.end,
@@ -95,7 +94,7 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 
 	// We have only one statement, and the statement
 	// needs online migration.
-	// Advise enable online migration for the issue, or return OK if it's already enabled.
+	// Advise to enable online migration for the issue, or return OK if it's already enabled.
 	if len(adviceList) == 1 && len(stmtList) == 1 {
 		if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
 			return []*storepb.Advice{{
@@ -111,14 +110,14 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 	}
 
 	// No statement needs online migration.
-	// Advise disable online migration if it's enabled.
+	// Advise to disable online migration if it's enabled.
 	if len(adviceList) == 0 {
 		if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
 			return []*storepb.Advice{{
 				Status:  level,
 				Code:    advisor.AdviseNoOnlineMigration.Int32(),
-				Title:   "Advise not using online migration",
-				Content: "",
+				Title:   title,
+				Content: "Advise to disable online migration because found no statements that need online migration",
 			}}, nil
 		}
 		return []*storepb.Advice{{
@@ -140,9 +139,6 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 
 type useGhostChecker struct {
 	*mysql.BaseMySQLParserListener
-
-	level storepb.Advice_Status
-	title string
 
 	currentDatabase  string
 	changedResources map[string]base.SchemaResource
