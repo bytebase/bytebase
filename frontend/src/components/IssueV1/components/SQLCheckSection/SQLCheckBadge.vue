@@ -27,9 +27,6 @@
       v-if="showDetailPanel"
       :database="database"
       :advices="advices"
-      :highlight-row-filter="
-        (row) => row.checkResult.title === 'advice.online-migration'
-      "
       @close="showDetailPanel = false"
     >
       <template #row-title-extra="{ row }">

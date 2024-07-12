@@ -11,9 +11,6 @@
     :button-props="{
       size: 'small',
     }"
-    :highlight-row-filter="
-      (row) => row.checkResult.title === 'advice.online-migration'
-    "
     class="justify-end"
   >
     <template #row-title-extra="{ row, confirm }">

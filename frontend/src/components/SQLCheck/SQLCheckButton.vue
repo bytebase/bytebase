@@ -60,7 +60,6 @@
       :advices="advices"
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
-      :highlight-row-filter="highlightRowFilter"
       @close="onPanelClose"
     >
       <template #row-extra="{ row }">
@@ -88,7 +87,6 @@ import type { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer, hasWorkspacePermissionV2 } from "@/utils";
-import type { PlanCheckDetailTableRow } from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckSummary from "./SQLCheckSummary.vue";
 import { useSQLCheckContext } from "./context";
@@ -101,14 +99,12 @@ const props = withDefaults(
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
     changeType?: CheckRequest_ChangeType;
-    highlightRowFilter?: (row: PlanCheckDetailTableRow) => boolean;
   }>(),
   {
     databaseMetadata: undefined,
     buttonProps: undefined,
     buttonStyle: undefined,
     changeType: undefined,
-    highlightRowFilter: undefined,
   }
 );
 

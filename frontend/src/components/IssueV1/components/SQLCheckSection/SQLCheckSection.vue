@@ -13,9 +13,6 @@
       :button-props="{
         size: 'tiny',
       }"
-      :highlight-row-filter="
-        (row) => row.checkResult.title === 'advice.online-migration'
-      "
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
       @update:advices="$emit('update:advices', $event)"

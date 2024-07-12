@@ -98,8 +98,6 @@
             Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
-
-        <slot name="row-extra" :row="row" />
       </div>
     </div>
 
@@ -193,8 +191,6 @@
             Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
-
-        <slot name="row-extra" :row="row" />
       </div>
     </div>
   </div>
@@ -259,7 +255,6 @@ const props = defineProps<{
   planCheckRun: PlanCheckRun;
   isLatest?: boolean;
   database?: ComposedDatabase;
-  highlightRowFilter?: (row: PlanCheckDetailTableRow) => boolean;
 }>();
 
 const { t } = useI18n();
@@ -406,15 +401,15 @@ const tableRows = computed(() => {
   });
 });
 
+const highlightRowFilter = (row: PlanCheckDetailTableRow) => {
+  return row.checkResult.title === "advice.online-migration";
+};
+
 const highlightTableRows = computed(() => {
-  const { highlightRowFilter } = props;
-  if (!highlightRowFilter) return [];
   return tableRows.value.filter(highlightRowFilter);
 });
 
 const standardTableRows = computed(() => {
-  const { highlightRowFilter } = props;
-  if (!highlightRowFilter) return tableRows.value;
   return tableRows.value.filter((row) => !highlightRowFilter(row));
 });
 
