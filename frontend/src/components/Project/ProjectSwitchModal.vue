@@ -68,11 +68,7 @@ import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import { useProjectV1List } from "@/store";
 import type { ComposedProject } from "@/types";
-import {
-  DEFAULT_PROJECT_ID,
-  UNKNOWN_PROJECT_NAME,
-  EMPTY_PROJECT_NAME,
-} from "@/types";
+import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
 import ProjectCreatePanel from "./ProjectCreatePanel.vue";
 
@@ -107,7 +103,7 @@ const getFilteredProjectList = (
   projectList: ComposedProject[]
 ): ComposedProject[] => {
   const list = projectList.filter(
-    (project) => project.uid !== String(DEFAULT_PROJECT_ID)
+    (project) => project.name !== DEFAULT_PROJECT_NAME
   );
   return filterProjectV1ListByKeyword(list, state.searchText);
 };
@@ -144,10 +140,7 @@ const actualSelectedTab = computed((): LocalState["selectedTab"] => {
 });
 
 const currentProject = computed(() => {
-  if (
-    props.project?.name === UNKNOWN_PROJECT_NAME ||
-    props.project?.name === EMPTY_PROJECT_NAME
-  ) {
+  if (!isValidProjectName(props.project?.name)) {
     return undefined;
   }
   return props.project;

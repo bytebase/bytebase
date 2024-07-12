@@ -43,7 +43,7 @@ import {
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 import type { ComposedInstance, ComposedSlowQueryPolicy } from "@/types";
-import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import { isValidEnvironmentName } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { instanceV1SupportSlowQuery } from "@/utils";
 import { SlowQueryPolicyTable } from "./components";
@@ -99,7 +99,7 @@ const composedSlowQueryPolicyList = computed(() => {
 const filteredComposedSlowQueryPolicyList = computed(() => {
   let list = [...composedSlowQueryPolicyList.value];
   const { environment } = state.filter;
-  if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
+  if (isValidEnvironmentName(environment?.name)) {
     list = list.filter(
       (item) => item.instance.environment === environment.name
     );

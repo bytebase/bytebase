@@ -23,7 +23,7 @@
       <div class="flex flex-row items-center justify-start gap-x-2">
         <DatabaseSelect
           v-model:database="state.databaseUID"
-          :project="project.uid"
+          :project-name="project.name"
         />
         <AffectedTableSelect
           v-model:affected-table="state.affectedTable"

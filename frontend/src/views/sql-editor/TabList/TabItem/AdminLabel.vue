@@ -1,11 +1,10 @@
 <template>
   <label class="flex items-center text-sm h-5 ml-0.5 whitespace-nowrap">
-    <EnvironmentV1Name
-      v-if="instance.name !== UNKNOWN_INSTANCE_NAME"
-      :environment="instance.environmentEntity"
-      :link="false"
-    />
-    <template v-if="instance.name !== UNKNOWN_INSTANCE_NAME">
+    <template v-if="isValidInstanceName(instance.name)">
+      <EnvironmentV1Name
+        :environment="instance.environmentEntity"
+        :link="false"
+      />
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
       <span>{{ instance.title }}</span>
     </template>
@@ -22,7 +21,7 @@ import { computed } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { UNKNOWN_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import { UNKNOWN_ID, isValidInstanceName } from "@/types";
 
 const props = defineProps({
   tab: {

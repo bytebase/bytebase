@@ -11,7 +11,7 @@ import {
   UNKNOWN_ID,
   unknownInstanceResource,
 } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import type {
   Database,
@@ -310,7 +310,7 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
 
   await Promise.all(
     distinctProjectList.map((project) => {
-      if (project === DEFAULT_PROJECT_V1_NAME) {
+      if (project === DEFAULT_PROJECT_NAME) {
         return;
       }
       return projectV1Store.getOrFetchProjectByName(project);

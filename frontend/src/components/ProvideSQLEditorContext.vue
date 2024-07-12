@@ -47,11 +47,11 @@ import {
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   UNKNOWN_ID,
-  UNKNOWN_INSTANCE_NAME,
   UNKNOWN_USER_NAME,
+  isValidInstanceName,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -131,7 +131,7 @@ const initializeProjects = async () => {
       editorStore.project = lastView;
     } else {
       const projectListWithoutDefaultProject = projectList.filter(
-        (proj) => proj.name !== DEFAULT_PROJECT_V1_NAME
+        (proj) => proj.name !== DEFAULT_PROJECT_NAME
       );
       editorStore.project =
         head(projectListWithoutDefaultProject)?.name ??
@@ -349,7 +349,7 @@ const prepareConnectionSlugLegacy = async () => {
     const instance = await useInstanceV1Store().getOrFetchInstanceByName(
       `instances/${instanceId}`
     );
-    if (instance.name !== UNKNOWN_INSTANCE_NAME) {
+    if (isValidInstanceName(instance.name)) {
       connect({
         instance: instance.name,
         database: "",
@@ -399,7 +399,7 @@ const prepareConnectionParams = async () => {
     const instance = await useInstanceV1Store().getOrFetchInstanceByName(
       `instances/${instanceName}`
     );
-    if (instance.name !== UNKNOWN_INSTANCE_NAME) {
+    if (isValidInstanceName(instance.name)) {
       connect({
         instance: instance.name,
         database: "",
@@ -548,7 +548,7 @@ const syncURLWithConnection = () => {
       }
       if (instanceName) {
         const instance = instanceStore.getInstanceByName(instanceName);
-        if (instance.name !== UNKNOWN_INSTANCE_NAME) {
+        if (isValidInstanceName(instance.name)) {
           if (table) {
             query.table = table;
             query.schema = schema ?? "";

@@ -17,12 +17,12 @@
     >
       <NInputGroup>
         <ProjectSelect
-          :project="state.selectedProjectUid"
+          :project-name="state.selectedProjectName"
           :include-default-project="true"
           :include-all="true"
           :disabled="false"
-          @update:project="
-            state.selectedProjectUid = $event ?? String(UNKNOWN_ID)
+          @update:project-name="
+            state.selectedProjectName = $event ?? UNKNOWN_PROJECT_NAME
           "
         />
         <InstanceSelect
@@ -34,7 +34,7 @@
         />
         <DatabaseSelect
           :include-all="true"
-          :project="state.selectedProjectUid"
+          :project-name="state.selectedProjectName"
           :instance-name="state.selectedInstanceName"
           :database="state.selectedDatabaseUid"
           @update:database="onDatabaseSelect($event)"
@@ -145,6 +145,10 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
+  UNKNOWN_PROJECT_NAME,
+  isValidProjectName,
+  isValidEnvironmentName,
+  isValidInstanceName,
 } from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
@@ -165,7 +169,7 @@ import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface LocalState {
   selectedEnvironmentName: string;
-  selectedProjectUid: string;
+  selectedProjectName: string;
   selectedInstanceName: string;
   selectedDatabaseUid: string;
   showFeatureModal: boolean;
@@ -196,7 +200,7 @@ const state = reactive<LocalState>({
   isLoading: false,
   sensitiveColumnList: [],
   selectedEnvironmentName: UNKNOWN_ENVIRONMENT_NAME,
-  selectedProjectUid: String(UNKNOWN_ID),
+  selectedProjectName: UNKNOWN_PROJECT_NAME,
   selectedInstanceName: UNKNOWN_INSTANCE_NAME,
   selectedDatabaseUid: String(UNKNOWN_ID),
   pendingGrantAccessColumn: [],
@@ -349,20 +353,19 @@ const filteredColumnList = computed(() => {
       return false;
     }
     if (
-      state.selectedEnvironmentName !== UNKNOWN_ENVIRONMENT_NAME &&
-      column.database.effectiveEnvironmentEntity.name !==
-        state.selectedEnvironmentName
+      isValidEnvironmentName(state.selectedEnvironmentName) &&
+      column.database.effectiveEnvironment !== state.selectedEnvironmentName
     ) {
       return false;
     }
     if (
-      state.selectedProjectUid !== String(UNKNOWN_ID) &&
-      column.database.projectEntity.uid !== state.selectedProjectUid
+      isValidProjectName(state.selectedProjectName) &&
+      column.database.project !== state.selectedProjectName
     ) {
       return false;
     }
     if (
-      state.selectedInstanceName !== UNKNOWN_INSTANCE_NAME &&
+      isValidInstanceName(state.selectedInstanceName) &&
       state.selectedInstanceName !== column.database.instance
     ) {
       return false;
@@ -391,7 +394,7 @@ const findInstanceWithoutLicense = (columnList: SensitiveColumn[]) => {
 };
 
 const environment = computed(() => {
-  if (state.selectedEnvironmentName === UNKNOWN_ENVIRONMENT_NAME) {
+  if (!isValidEnvironmentName(state.selectedEnvironmentName)) {
     return;
   }
   return environmentStore.getEnvironmentByName(state.selectedEnvironmentName);

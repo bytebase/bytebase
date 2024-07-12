@@ -83,7 +83,9 @@
           :database-list="databaseList"
           :get-statement="generateOrGetEditingDDL"
           :use-online-schema-migration="state.useOnlineSchemaMigration"
-          @toggle-online-schema-migration="state.useOnlineSchemaMigration = $event"
+          @toggle-online-schema-migration="
+            state.useOnlineSchemaMigration = $event
+          "
         />
       </template>
     </NTabs>
@@ -144,11 +146,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import {
-  dialectOfEngineV1,
-  UNKNOWN_PROJECT_NAME,
-  unknownProject,
-} from "@/types";
+import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
@@ -303,7 +301,7 @@ watch(editTargetsKey, prepareDatabaseMetadata, {
 onMounted(async () => {
   if (
     databaseList.value.length === 0 ||
-    project.value.name === UNKNOWN_PROJECT_NAME
+    !isValidProjectName(project.value.name)
   ) {
     notificationStore.pushNotification({
       module: "bytebase",

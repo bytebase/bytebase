@@ -55,7 +55,7 @@
     @close="state.showRequestExportPanel = false"
   >
     <DataExportPrepForm
-      :project-id="specificProject?.uid"
+      :project-name="specificProject?.name"
       @dismiss="state.showRequestExportPanel = false"
     />
   </Drawer>

@@ -19,7 +19,7 @@
 
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
-    :project-id="database?.projectEntity.uid"
+    :project-name="database?.project"
     :database="database"
     :redirect-to-issue-page="pageMode === 'BUNDLED'"
     @close="state.showRequestQueryPanel = false"
@@ -35,7 +35,7 @@ import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
+import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import type { VueClass } from "@/utils";
 import {
   hasProjectPermissionV2,
@@ -102,7 +102,7 @@ const gotoSQLEditor = () => {
   }
 
   const database = props.database as ComposedDatabase;
-  if (database.project === DEFAULT_PROJECT_V1_NAME) {
+  if (database.project === DEFAULT_PROJECT_NAME) {
     if (
       !hasProjectPermissionV2(
         defaultProject(),

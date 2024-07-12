@@ -42,19 +42,19 @@
     </InstanceForm>
     <CreateDatabasePrepPanel
       v-if="state.quickActionType === 'quickaction.bb.database.create'"
-      :project-id="project?.uid"
+      :project-name="project?.name"
       @dismiss="state.quickActionType = undefined"
     />
     <AlterSchemaPrepForm
       v-if="state.quickActionType === 'quickaction.bb.database.schema.update'"
-      :project-id="project?.uid"
+      :project-name="project?.name"
       :type="'bb.issue.database.schema.update'"
       :default-selected-tab="databaseChangeTargetType"
       @dismiss="state.quickActionType = undefined"
     />
     <AlterSchemaPrepForm
       v-if="state.quickActionType === 'quickaction.bb.database.data.update'"
-      :project-id="project?.uid"
+      :project-name="project?.name"
       :type="'bb.issue.database.data.update'"
       :default-selected-tab="databaseChangeTargetType"
       @dismiss="state.quickActionType = undefined"
@@ -64,7 +64,7 @@
         project &&
         state.quickActionType === 'quickaction.bb.project.database.transfer'
       "
-      :project-id="project.uid"
+      :project-name="project.name"
       @dismiss="state.quickActionType = undefined"
     />
   </Drawer>
@@ -81,14 +81,14 @@
 
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
-    :project-id="project?.uid"
+    :project-name="project?.name"
     @close="state.showRequestQueryPanel = false"
   />
 
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
     :redirect-to-issue-page="true"
-    :project-id="project?.uid"
+    :project-name="project?.name"
     @close="state.showRequestExportPanel = false"
   />
 

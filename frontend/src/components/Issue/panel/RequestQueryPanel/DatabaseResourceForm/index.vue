@@ -27,7 +27,7 @@
   >
     <DatabaseResourceSelector
       v-if="project"
-      :project-id="project.uid"
+      :project-name="project.name"
       :database-resources="state.databaseResources"
       @update="handleSelectedDatabaseResourceChanged"
     />
@@ -48,7 +48,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectId?: string;
+  projectName?: string;
   databaseResources?: DatabaseResource[];
 }>();
 
@@ -67,8 +67,8 @@ const state = reactive<LocalState>({
 });
 
 const project = computed(() => {
-  return props.projectId
-    ? projectStore.getProjectByUID(props.projectId)
+  return props.projectName
+    ? projectStore.getProjectByName(props.projectName)
     : undefined;
 });
 

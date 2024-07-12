@@ -62,7 +62,9 @@ export const useCurrentProject = (
       if (issueUID.value === String(EMPTY_ID)) {
         const projectUID = route.query.project as string;
         if (!projectUID) return unknownProject();
-        return await useProjectV1Store().getOrFetchProjectByUID(projectUID);
+        return await useProjectV1Store().getOrFetchProjectByName(
+          `projects/${projectUID}`
+        );
       }
 
       const existedIssue = await experimentalFetchIssueByUID(issueUID.value);

@@ -19,7 +19,7 @@
     <div class="space-y-2">
       <DatabaseOperations
         v-if="showDatabaseOperations"
-        :project-uid="project.uid"
+        :project-name="project.name"
         :databases="selectedDatabases"
       />
       <DatabaseV1Table
