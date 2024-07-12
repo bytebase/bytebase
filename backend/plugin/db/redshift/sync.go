@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -196,7 +195,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	for schemaName := range schemaNameMap {
 		schemaNames = append(schemaNames, schemaName)
 	}
-	sort.Strings(schemaNames)
 	for _, schemaName := range schemaNames {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
@@ -355,7 +353,9 @@ func (driver *Driver) getSchemas(txn *sql.Tx) ([]string, error) {
 		FROM
 			SVV_ALL_SCHEMAS
 		WHERE
-			database_name = $1;
+			database_name = $1
+		ORDER BY
+			schema_name;
 	`
 	rows, err := txn.Query(query, driver.databaseName)
 	if err != nil {

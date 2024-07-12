@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -318,7 +317,8 @@ func formatTableNameFromRegclass(name string) string {
 var listSchemaQuery = fmt.Sprintf(`
 SELECT nspname
 FROM pg_catalog.pg_namespace
-WHERE nspname NOT IN (%s);
+WHERE nspname NOT IN (%s)
+ORDER BY nspname;
 `, pgparser.SystemSchemaWhereClause)
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
@@ -342,8 +342,6 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	sort.Strings(schemaNames)
 	return schemaNames, nil
 }
 

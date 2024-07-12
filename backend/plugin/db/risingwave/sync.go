@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
-	"sort"
 	"time"
 
 	"github.com/pkg/errors"
@@ -105,7 +104,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	for schemaName := range schemaNameMap {
 		schemaNames = append(schemaNames, schemaName)
 	}
-	sort.Strings(schemaNames)
 	for _, schemaName := range schemaNames {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
@@ -136,7 +134,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 var listSchemaQuery = fmt.Sprintf(`
 SELECT nspname
 FROM pg_catalog.pg_namespace
-WHERE nspname NOT IN (%s);
+WHERE nspname NOT IN (%s) ORDER BY nspname;
 `, systemSchemas)
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
