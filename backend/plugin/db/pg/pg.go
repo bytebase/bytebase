@@ -390,28 +390,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		//nolint
 		if false && len(commands) <= common.MaximumCommands {
 			oneshot = false
-			var tmpCommands []base.SingleSQL
-			var tmpOriginalIndex []int32
-			for i, command := range commands {
-				if IsNonTransactionStatement(command.Text) {
-					nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-					nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-					continue
-				}
-				if isSetRoleStatement(command.Text) {
-					nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-					nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-				}
-				if isSuperuserStatement(command.Text) {
-					// Use superuser privilege to run privileged statements.
-					slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
-					command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", command.Text, owner)
-				}
-				tmpCommands = append(tmpCommands, command)
-				tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
-			}
-			commands, originalIndex = tmpCommands, tmpOriginalIndex
 		}
+
+		var tmpCommands []base.SingleSQL
+		var tmpOriginalIndex []int32
+		for i, command := range commands {
+			switch {
+			case isSetRoleStatement(command.Text):
+				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+			case IsNonTransactionStatement(command.Text):
+				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+				continue
+			case isSuperuserStatement(command.Text):
+				// Use superuser privilege to run privileged statements.
+				slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
+				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", command.Text, owner)
+			}
+			tmpCommands = append(tmpCommands, command)
+			tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
+		}
+		commands, originalIndex = tmpCommands, tmpOriginalIndex
 	}
 	// HACK(p0ny): always split for pg
 	//nolint
