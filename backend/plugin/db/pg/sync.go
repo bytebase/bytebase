@@ -317,7 +317,8 @@ func formatTableNameFromRegclass(name string) string {
 var listSchemaQuery = fmt.Sprintf(`
 SELECT nspname
 FROM pg_catalog.pg_namespace
-WHERE nspname NOT IN (%s);
+WHERE nspname NOT IN (%s)
+ORDER BY nspname;
 `, pgparser.SystemSchemaWhereClause)
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
@@ -327,7 +328,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	}
 	defer rows.Close()
 
-	var result []string
+	var schemaNames []string
 	for rows.Next() {
 		var schemaName string
 		if err := rows.Scan(&schemaName); err != nil {
@@ -336,13 +337,12 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		if pgparser.IsSystemSchema(schemaName) {
 			continue
 		}
-		result = append(result, schemaName)
+		schemaNames = append(schemaNames, schemaName)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	return result, nil
+	return schemaNames, nil
 }
 
 func getListForeignTableQuery() string {
