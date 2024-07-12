@@ -43,7 +43,7 @@ import {
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 import type { ComposedInstance, ComposedSlowQueryPolicy } from "@/types";
-import { UNKNOWN_ENVIRONMENT_NAME, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { instanceV1SupportSlowQuery } from "@/utils";
 import { SlowQueryPolicyTable } from "./components";
