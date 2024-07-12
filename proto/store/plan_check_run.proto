@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
 import "store/instance_change_history.proto";
 
 option go_package = "generated-go/store";
@@ -66,6 +67,10 @@ message PlanCheckRunResult {
       string detail = 3;
       // Code from sql review.
       int32 code = 4;
+      // 1-based Position of the SQL statement.
+      // To supersede `line` and `column` above.
+      Position start_position = 8;
+      Position end_position = 9;
     }
   }
 }
