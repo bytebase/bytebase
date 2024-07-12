@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -1092,7 +1091,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if slices.Contains(permissions, wantPermission) {
+		if permissions[wantPermission] {
 			return true, nil
 		}
 	}
@@ -1103,7 +1102,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !slices.Contains(permissions, wantPermission) {
+		if !permissions[wantPermission] {
 			continue
 		}
 

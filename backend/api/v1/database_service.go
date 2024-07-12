@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -288,7 +287,7 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
 		}
-		if slices.Contains(permissions, needPermission) {
+		if permissions[needPermission] {
 			return databases, nil
 		}
 	}
@@ -332,7 +331,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !slices.Contains(permissions, needPermission) {
+		if !permissions[needPermission] {
 			continue
 		}
 
