@@ -1,9 +1,9 @@
 <template>
-  <div class="divide-y">
+  <div class="flex flex-col gap-y-0.5">
     <div
       v-for="(row, i) in highlightTableRows"
       :key="i"
-      class="py-3 px-2 first:pt-2 space-y-2"
+      class="py-2 px-2 space-y-2"
       :class="[
         row.checkResult.status === PlanCheckRun_Result_Status.ERROR &&
           'border-error border rounded',
@@ -43,63 +43,80 @@
 
         <slot name="row-title-extra" :row="row" />
       </div>
-      <div class="textinfolabel">
-        <span>{{ row.checkResult.content }}</span>
-        <template v-if="row.checkResult.sqlReviewReport?.detail">
-          <span
-            class="ml-1 normal-link"
-            @click="
-              state.activeResultDefinition =
-                row.checkResult.sqlReviewReport!.detail
-            "
-            >{{ $t("sql-review.view-definition") }}</span
-          >
-          <span class="border-r border-control-border ml-1"></span>
-        </template>
-        <template
-          v-if="
-            row.checkResult.sqlReviewReport &&
-            getActiveRule(row.checkResult.title)
-          "
+
+      <div class="textinfolabel flex flex-col gap-y-0.5">
+        <div>{{ row.checkResult.content }}</div>
+
+        <OnlineMigrationDetail
+          v-if="row.checkResult.title === 'advice.online-migration'"
+          :row="row"
+        />
+
+        <div
+          class="flex items-center justify-start space-x-2 divide-x divide-block-border"
         >
-          <span
-            class="ml-1 normal-link"
-            @click="setActiveRule(row.checkResult.title)"
-            >{{ $t("sql-review.rule-detail") }}</span
+          <div
+            v-if="row.checkResult.sqlReviewReport?.detail"
+            class="pl-2 first:pl-0"
           >
-          <span class="border-r border-control-border ml-1"></span>
-        </template>
-        <template v-if="row.checkResult.sqlSummaryReport">
-          {{ row.checkResult.sqlSummaryReport.affectedRows }}
-        </template>
-
-        <HideInStandaloneMode>
-          <a
-            v-if="row.link"
-            class="ml-1 normal-link"
-            :href="row.link.url"
-            :target="row.link.target"
-          >
-            {{ row.link.title }}
-          </a>
-        </HideInStandaloneMode>
-
-        <!-- Only show the error line for latest plan check run -->
-        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
-          <span class="border-r border-control-border ml-1"></span>
-          <span
-            class="ml-1 normal-link"
-            @click="
-              handleClickPlanCheckDetailLine(
-                row.checkResult.sqlReviewReport!.line
-              )
+            <span
+              class="normal-link"
+              @click="
+                state.activeResultDefinition =
+                  row.checkResult.sqlReviewReport!.detail
+              "
+              >{{ $t("sql-review.view-definition") }}</span
+            >
+          </div>
+          <div
+            v-if="
+              row.checkResult.sqlReviewReport &&
+              getActiveRule(row.checkResult.title)
             "
+            class="pl-2 first:pl-0"
           >
-            Line {{ row.checkResult.sqlReviewReport.line }}
-          </span>
-        </template>
+            <span
+              class="normal-link"
+              @click="setActiveRule(row.checkResult.title)"
+              >{{ $t("sql-review.rule-detail") }}</span
+            >
+          </div>
+          <div v-if="row.checkResult.sqlSummaryReport" class="pl-2 first:pl-0">
+            <span>
+              {{ row.checkResult.sqlSummaryReport.affectedRows }}
+            </span>
+          </div>
 
-        <slot name="row-extra" :row="row" />
+          <HideInStandaloneMode>
+            <div class="pl-2 first:pl-0">
+              <a
+                v-if="row.link"
+                class="normal-link"
+                :href="row.link.url"
+                :target="row.link.target"
+              >
+                {{ row.link.title }}
+              </a>
+            </div>
+          </HideInStandaloneMode>
+
+          <!-- Only show the error line for latest plan check run -->
+          <div
+            v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line"
+            class="pl-2 first:pl-0"
+          >
+            <span
+              class="normal-link"
+              @click="
+                handleClickPlanCheckDetailLine(
+                  row.checkResult.sqlReviewReport!.line
+                )
+              "
+            >
+              Line {{ row.checkResult.sqlReviewReport.line }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -180,7 +197,9 @@
         </HideInStandaloneMode>
 
         <!-- Only show the error line for latest plan check run -->
-        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
+        <template
+          v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line"
+        >
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
@@ -193,8 +212,6 @@
             Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
-
-        <slot name="row-extra" :row="row" />
       </div>
     </div>
   </div>
@@ -219,6 +236,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
+import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
 import type { RuleTemplateV2, ComposedDatabase } from "@/types";
@@ -236,6 +254,7 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto/v1/plan_service";
 import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
+import { OnlineMigrationDetail } from "./detail";
 
 interface ErrorCodeLink {
   title: string;
@@ -257,9 +276,8 @@ type LocalState = {
 
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
-  isLatest?: boolean;
+  showCodeLocation?: boolean;
   database?: ComposedDatabase;
-  highlightRowFilter?: (row: PlanCheckDetailTableRow) => boolean;
 }>();
 
 const { t } = useI18n();
@@ -406,15 +424,15 @@ const tableRows = computed(() => {
   });
 });
 
+const highlightRowFilter = (row: PlanCheckDetailTableRow) => {
+  return row.checkResult.title === "advice.online-migration";
+};
+
 const highlightTableRows = computed(() => {
-  const { highlightRowFilter } = props;
-  if (!highlightRowFilter) return [];
   return tableRows.value.filter(highlightRowFilter);
 });
 
 const standardTableRows = computed(() => {
-  const { highlightRowFilter } = props;
-  if (!highlightRowFilter) return tableRows.value;
   return tableRows.value.filter((row) => !highlightRowFilter(row));
 });
 

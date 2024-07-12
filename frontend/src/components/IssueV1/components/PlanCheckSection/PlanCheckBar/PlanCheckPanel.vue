@@ -16,7 +16,7 @@
       v-if="selectedPlanCheckRun"
       :plan-check-run="selectedPlanCheckRun"
       :database="database"
-      :is-latest="isLatestPlanCheckRun"
+      :show-code-location="isLatestPlanCheckRun"
       @close="$emit('close')"
     />
   </div>

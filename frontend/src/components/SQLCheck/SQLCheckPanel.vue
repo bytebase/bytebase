@@ -11,13 +11,9 @@
     <PlanCheckDetail
       :plan-check-run="planCheckRun"
       :database="database"
-      :is-latest="false"
-      :highlight-row-filter="highlightRowFilter"
+      :show-code-location="showCodeLocation"
       @close="$emit('close')"
     >
-      <template #row-extra="{ row }">
-        <slot name="row-extra" :row="row" />
-      </template>
       <template #row-title-extra="{ row }">
         <slot name="row-title-extra" :row="row" />
       </template>
@@ -57,16 +53,14 @@ import {
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";
-import PlanCheckDetail, {
-  type PlanCheckDetailTableRow,
-} from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
+import PlanCheckDetail from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 
 const { advices, database } = defineProps<{
   database: ComposedDatabase;
   advices: Advice[];
   overrideTitle?: string;
   confirm?: Defer<boolean>;
-  highlightRowFilter?: (row: PlanCheckDetailTableRow) => boolean;
+  showCodeLocation?: boolean;
 }>();
 
 defineEmits<{

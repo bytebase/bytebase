@@ -10,39 +10,26 @@
 </template>
 
 <script setup lang="ts">
-import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { isGroupingChangeTaskV1, useIssueContext } from "../../logic";
-import { type PlanCheckDetailTableRow } from "../PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
-import { allowGhostForTask } from "../Sidebar/GhostSection/common";
-
-const emit = defineEmits<{
-  (event: "toggle", on: boolean): void;
-}>();
+import type { PlanCheckDetailTableRow } from "@/components/IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 
 const props = defineProps<{
   row: PlanCheckDetailTableRow;
 }>();
 
+const emit = defineEmits<{
+  (event: "toggle", on: boolean): void;
+}>();
+
 const { t } = useI18n();
-const { isCreating, issue, activeTask } = useIssueContext();
 
 const code = computed(() => {
   return props.row.checkResult.sqlReviewReport?.code;
 });
 
 const advise = computed(() => {
-  if (!isCreating.value) {
-    return undefined;
-  }
   if (!code.value) {
-    return undefined;
-  }
-  if (isGroupingChangeTaskV1(issue.value, activeTask.value)) {
-    return undefined;
-  }
-  if (!allowGhostForTask(issue.value, activeTask.value)) {
     return undefined;
   }
   if (code.value === 1801) {

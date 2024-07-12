@@ -639,7 +639,7 @@
       }
     },
     "advice-online-migration": {
-      "title": "Advise enabling online migration",
+      "title": "Online migration",
       "description": "Advise enabling online migration if the migrated table row count exceeds your setting. Suggested error level: Warning",
       "component": {
         "number": {
