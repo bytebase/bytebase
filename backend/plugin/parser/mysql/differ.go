@@ -21,11 +21,6 @@ func init() {
 	base.RegisterSchemaDiffFunc(storepb.Engine_OCEANBASE, SchemaDiff)
 }
 
-const (
-	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n\n"
-	enableFKCheckStmt  string = "SET FOREIGN_KEY_CHECKS=1;\n"
-)
-
 // SchemaDiffer is the parser for MySQL dialect.
 type SchemaDiffer struct {
 }
@@ -839,11 +834,7 @@ func (diff *diffNode) deparse() (string, error) {
 		return "", err
 	}
 
-	text := buf.String()
-	if len(text) > 0 {
-		return fmt.Sprintf("%s%s%s", disableFKCheckStmt, buf.String(), enableFKCheckStmt), nil
-	}
-	return "", nil
+	return buf.String(), nil
 }
 
 func sortAndWriteAlertTableOptionList(buf *strings.Builder, tableOptions []*tableOptionDef) error {
