@@ -126,44 +126,20 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	for _, schemaName := range schemas {
-		var tables []*storepb.TableMetadata
-		var externalTables []*storepb.ExternalTableMetadata
-		var views []*storepb.ViewMetadata
-		var materializedViews []*storepb.MaterializedViewMetadata
-		var functions []*storepb.FunctionMetadata
-		var sequences []*storepb.SequenceMetadata
-		var exists bool
-		if tables, exists = tableMap[schemaName]; !exists {
-			tables = []*storepb.TableMetadata{}
-		}
-		if externalTables, exists = externalTableMap[schemaName]; !exists {
-			externalTables = []*storepb.ExternalTableMetadata{}
-		}
+		tables := tableMap[schemaName]
 		for _, table := range tables {
 			if isAtLeastPG10 {
 				table.Partitions = warpTablePartitions(tablePartitionMap, schemaName, table.Name)
 			}
 		}
-		if views, exists = viewMap[schemaName]; !exists {
-			views = []*storepb.ViewMetadata{}
-		}
-		if materializedViews, exists = materializedViewMap[schemaName]; !exists {
-			materializedViews = []*storepb.MaterializedViewMetadata{}
-		}
-		if functions, exists = functionMap[schemaName]; !exists {
-			functions = []*storepb.FunctionMetadata{}
-		}
-		if sequences, exists = sequenceMap[schemaName]; !exists {
-			sequences = []*storepb.SequenceMetadata{}
-		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:              schemaName,
 			Tables:            tables,
-			ExternalTables:    externalTables,
-			Views:             views,
-			Functions:         functions,
-			Sequences:         sequences,
-			MaterializedViews: materializedViews,
+			ExternalTables:    externalTableMap[schemaName],
+			Views:             viewMap[schemaName],
+			Functions:         functionMap[schemaName],
+			Sequences:         sequenceMap[schemaName],
+			MaterializedViews: materializedViewMap[schemaName],
 		})
 	}
 	databaseMetadata.Extensions = extensions
