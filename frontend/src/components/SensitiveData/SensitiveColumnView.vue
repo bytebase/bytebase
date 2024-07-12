@@ -29,7 +29,7 @@
           class="!w-48"
           :instance-name="state.selectedInstanceName"
           :include-all="true"
-          :environment="environment?.uid"
+          :environment-name="environment?.name"
           @update:instance-name="onInstanceSelect($event)"
         />
         <DatabaseSelect

@@ -474,10 +474,10 @@ watch(
     () => props.selectState?.changeHistory?.name,
     () => props.selectState?.isFetching,
   ],
-  ([projectId, environmentId, databaseId, changeHistoryName, isFetching]) => {
+  ([projectId, environmentName, databaseId, changeHistoryName, isFetching]) => {
     if (isFetching) return;
     state.projectId = projectId;
-    state.environmentName = environmentId;
+    state.environmentName = environmentName;
     state.databaseId = databaseId;
     state.changeHistoryName = changeHistoryName;
   },
