@@ -4,10 +4,11 @@
     :database="database"
     :database-metadata="databaseMetadata"
     :get-statement="getStatement"
-    class="justify-end"
     :button-style="{
       height: '28px',
     }"
+    :advice-filter="(advice) => advice.title !== 'advice.online-migration'"
+    class="justify-end"
   />
 </template>
 
