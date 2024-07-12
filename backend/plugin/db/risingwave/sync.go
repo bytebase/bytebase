@@ -85,26 +85,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
 	}
-
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
-
-	schemaNameMap := make(map[string]bool)
 	for _, schemaName := range schemaList {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range tableMap {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range viewMap {
-		schemaNameMap[schemaName] = true
-	}
-	var schemaNames []string
-	for schemaName := range schemaNameMap {
-		schemaNames = append(schemaNames, schemaName)
-	}
-	for _, schemaName := range schemaNames {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
 		var functions []*storepb.FunctionMetadata
