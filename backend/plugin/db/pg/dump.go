@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -103,8 +104,17 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 }
 
 func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writer) error {
-	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
+	version, err := driver.getVersion(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get version")
+	}
+	semVersion, err := semver.Make(version)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse version %s to semantic version", version)
+	}
+	atLeast10_0_0 := semVersion.GE(semver.MustParse("10.0.0"))
 
+	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	password := driver.config.Password
 	if driver.config.AuthenticationType == storepb.DataSourceOptions_AWS_RDS_IAM {
 		rdsPassword, err := getRDSConnectionPassword(ctx, driver.config)
@@ -198,6 +208,13 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 			// Skip "SET SESSION AUTHORIZATION" till we can support it.
 			if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 				return nil
+			}
+			if !atLeast10_0_0 && strings.Contains(line, "CREATE EVENT TRIGGER") {
+				// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
+				// Since we use pg_dump >= version 10, the dump uses a new style even for an old version of PostgreSQL.
+				// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
+				// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
+				line = strings.ReplaceAll(line, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 			}
 			// Skip "COMMENT ON EXTENSION" till we can support it.
 			// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
