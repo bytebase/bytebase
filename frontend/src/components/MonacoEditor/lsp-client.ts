@@ -1,20 +1,120 @@
-import { MonacoLanguageClient } from "monaco-languageclient";
-import type {
-  ExecuteCommandParams,
-  MessageTransports,
-} from "vscode-languageclient";
-import { CloseAction, ErrorAction } from "vscode-languageclient";
 import {
+  MonacoLanguageClient,
+  type IConnectionProvider,
+} from "monaco-languageclient";
+import type { ExecuteCommandParams } from "vscode-languageclient";
+import { CloseAction, ErrorAction, State } from "vscode-languageclient";
+import {
+  toSocket,
   WebSocketMessageReader,
   WebSocketMessageWriter,
-  toSocket,
 } from "vscode-ws-jsonrpc";
-import { h } from "vue";
-import { pushNotification } from "@/store";
-import LearnMoreLink from "../LearnMoreLink.vue";
+import { shallowReactive, toRef } from "vue";
+import { sleep } from "@/utils";
+import {
+  createUrl,
+  errorNotification,
+  MAX_RETRIES,
+  messages,
+  progressiveDelay,
+  WEBSOCKET_TIMEOUT,
+} from "./utils";
+
+export type ConnectionState = {
+  url: string;
+  state: "initial" | "ready" | "closed" | "reconnecting";
+  ws: Promise<WebSocket> | undefined;
+  lastCommand: ExecuteCommandParams | undefined;
+  retries: number;
+};
+
+const conn = shallowReactive<ConnectionState>({
+  url: createUrl(location.host, "/lsp").toString(),
+  state: "initial",
+  ws: undefined,
+  lastCommand: undefined,
+  retries: 0,
+});
+
+const connectWebSocket = () => {
+  if (conn.ws) {
+    return conn.ws;
+  }
+
+  const connect = (
+    resolve: (value: WebSocket | PromiseLike<WebSocket>) => void,
+    reject: (reason?: any) => void
+  ) => {
+    const ws = new WebSocket(conn.url);
+    const retries = conn.retries++;
+
+    switch (conn.state) {
+      case "closed":
+        return reject(`Connection is closed`);
+      case "initial":
+        break;
+      case "ready":
+      case "reconnecting":
+        conn.state = "reconnecting";
+        break;
+    }
+
+    const delay = progressiveDelay(retries);
+    console.debug(
+      `[LSP-Client] try connecting: state=${conn.state} retries=${retries} delay=${delay}`
+    );
+
+    sleep(delay).then(() => {
+      const handleError = (code: number, reason: string) => {
+        if (conn.state === "closed" || conn.state === "ready") {
+          return;
+        }
+
+        if (conn.retries >= MAX_RETRIES) {
+          conn.state = "closed";
+          return reject(
+            `${messages.disconnected()}: maxRetires exceeded (${MAX_RETRIES}). code=${code} reason="${reason}"`
+          );
+        }
+        return connect(resolve, reject);
+      };
+
+      const timer = setTimeout(() => {
+        handleError(-1, "timeout");
+      }, WEBSOCKET_TIMEOUT);
+
+      ws.addEventListener("open", () => {
+        clearTimeout(timer);
+        console.debug(`[LSP-Client] WebSocket open`);
+        if (conn.state === "ready" || conn.state === "closed") {
+          return;
+        }
+        conn.state = "ready";
+        conn.retries = 0; // reset retry counter
+        resolve(ws);
+      });
+      ws.addEventListener("close", (e) => {
+        clearTimeout(timer);
+        console.debug(
+          `[LSP-Client] WebSocket close state=${conn.state} code=${e.code} reason=${e.reason}`
+        );
+        handleError(e.code, e.reason);
+      });
+    });
+  };
+
+  const promise = new Promise<WebSocket>(connect);
+  conn.ws = promise;
+  return promise;
+};
+
+const state = {
+  client: undefined as MonacoLanguageClient | undefined,
+  clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
+};
 
 export const createLanguageClient = (
-  transports: MessageTransports
+  connectionProvider: IConnectionProvider
 ): MonacoLanguageClient => {
   return new MonacoLanguageClient({
     name: "Bytebase Language Client",
@@ -23,95 +123,81 @@ export const createLanguageClient = (
       documentSelector: ["sql"],
       // disable the default error handler
       errorHandler: {
-        error: () => ({ action: ErrorAction.Continue }),
-        closed: () => ({ action: CloseAction.Restart }),
+        error: (error, message, count) => {
+          console.debug("[MonacoLanguageClient] error", error, message, count);
+          return {
+            action: ErrorAction.Continue,
+          };
+        },
+        closed: async () => {
+          console.debug("[MonacoLanguageClient] closed");
+          conn.ws = undefined;
+          try {
+            await connectWebSocket();
+            return {
+              action: CloseAction.Restart,
+            };
+          } catch (err) {
+            errorNotification(err);
+            return {
+              action: CloseAction.DoNotRestart,
+            };
+          }
+        },
       },
     },
     // create a language client connection from the JSON RPC connection on demand
-    connectionProvider: {
-      get: () => {
-        return Promise.resolve(transports);
-      },
-    },
+    connectionProvider,
   });
 };
 
-export const createUrl = (
-  host: string,
-  path: string,
-  searchParams: Record<string, any> = {},
-  secure: boolean = location.protocol === "https:"
-): string => {
-  const protocol = secure ? "wss" : "ws";
-  const url = new URL(`${protocol}://${host}${path}`);
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    const v = value instanceof Array ? value.join(",") : value;
-    if (v) {
-      url.searchParams.set(key, v);
-    }
-  }
-
-  return url.toString();
-};
-
-export const createWebSocketAndStartClient = (
-  url: string
-): {
-  webSocket: WebSocket;
+export const createWebSocketAndStartClient = (): {
   languageClient: Promise<MonacoLanguageClient>;
 } => {
-  const webSocket = new WebSocket(url);
   const languageClient = new Promise<MonacoLanguageClient>(
     (resolve, reject) => {
-      webSocket.onopen = () => {
-        const socket = toSocket(webSocket);
-        const reader = new WebSocketMessageReader(socket);
-        const writer = new WebSocketMessageWriter(socket);
-        const languageClient = createLanguageClient({
-          reader,
-          writer,
-        });
-        languageClient.start();
-        reader.onClose(() => languageClient.stop());
-        resolve(languageClient);
-      };
-      webSocket.onerror = (e: any) => {
-        console.error("[MonacoLanguageClient] WebSocket error", e);
-        const message = typeof e.message === "string" ? e.message : "";
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: "Error",
-          description: () => {
-            return [
-              h("p", {}, `Error occurred when initializing WebSocket`),
-              message ? h("p", {}, message) : null,
-              h(LearnMoreLink, {
-                url: "https://www.bytebase.com/docs/administration/production-setup/#enable-https-and-websocket",
-              }),
-            ];
-          },
-        });
-        reject(e);
-      };
+      const languageClient = createLanguageClient({
+        async get() {
+          const ws = await connectWebSocket();
+          const socket = toSocket(ws);
+          const reader = new WebSocketMessageReader(socket);
+          const writer = new WebSocketMessageWriter(socket);
+          return { reader, writer };
+        },
+      });
+      languageClient.onDidChangeState((e) => {
+        if (e.newState === State.Running) {
+          const { lastCommand } = conn;
+          if (lastCommand) {
+            // When LSP Client is reconnected, the LSP context (e.g. setMetadata)
+            // will be cleared.
+            // So we need to catch the last command, and re-send it to recover
+            // the context
+            executeCommand(
+              languageClient,
+              lastCommand.command,
+              lastCommand.arguments
+            );
+          }
+        }
+      });
+
+      languageClient.start().catch((err) => {
+        // LSP Client startup failed.
+        errorNotification(err);
+      });
+
+      resolve(languageClient);
     }
   );
 
   return {
-    webSocket,
     languageClient,
   };
 };
 
-const state = {
-  client: undefined as MonacoLanguageClient | undefined,
-  clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
-};
-
 const initializeRunner = async () => {
-  const url = createUrl(location.host, "/lsp");
-  const client = await createWebSocketAndStartClient(url).languageClient;
+  const client = await createWebSocketAndStartClient().languageClient;
   state.client = client;
   return client;
 };
@@ -145,9 +231,12 @@ export const executeCommand = async (
     command,
     arguments: args,
   };
+  conn.lastCommand = executeCommandParams;
   const result = await client.sendRequest(
     "workspace/executeCommand",
     executeCommandParams
   );
   return result;
 };
+
+export const connectionState = toRef(conn, "state");

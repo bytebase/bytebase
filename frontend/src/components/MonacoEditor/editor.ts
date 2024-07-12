@@ -8,7 +8,6 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import "monaco-editor/esm/vs/editor/standalone/browser/standaloneCodeEditorService";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution.js";
 import { defer } from "@/utils";
-import { shouldUseNewLSP } from "./dev";
 import { initializeMonacoServices } from "./services";
 import { getBBTheme } from "./themes/bb";
 import { getBBDarkTheme } from "./themes/bb-dark";
@@ -39,32 +38,15 @@ const initializeTheme = () => {
   state.themeInitialized = true;
 };
 
-const initializeNewLSP = async () => {
-  const { initializeLSPClient } = await import("./lsp-client");
-  await initializeLSPClient();
-};
-
-const initializeLegacyLSP = async () => {
-  const { useLanguageClient } = await import("@/plugins/sql-lsp/client");
-  const { start } = useLanguageClient();
-  start();
-};
-
 const initialize = async () => {
   await initializeMonacoServices();
 
-  if (shouldUseNewLSP()) {
-    try {
-      await initializeNewLSP();
-    } catch (err) {
-      console.error("[MonacoEditor] initialize", err);
-
-      await initializeLegacyLSP();
-    }
-  } else {
-    await initializeLegacyLSP();
+  try {
+    const { initializeLSPClient } = await import("./lsp-client");
+    await initializeLSPClient();
+  } catch (err) {
+    console.error("[MonacoEditor] initialize", err);
   }
-
   initializeTheme();
 };
 
