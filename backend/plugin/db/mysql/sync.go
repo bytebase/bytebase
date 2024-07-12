@@ -1214,13 +1214,10 @@ func analyzeSlowLog(engine storepb.Engine, logs []*slowLog) (map[string]*storepb
 		}
 
 		for _, db := range databaseList {
-			var dbLog map[string]*storepb.SlowQueryStatisticsItem
-			var exists bool
-			if dbLog, exists = logMap[db]; !exists {
-				dbLog = make(map[string]*storepb.SlowQueryStatisticsItem)
-				logMap[db] = dbLog
+			if _, ok := logMap[db]; !ok {
+				logMap[db] = make(map[string]*storepb.SlowQueryStatisticsItem)
 			}
-			dbLog[fingerprint] = mergeSlowLog(fingerprint, dbLog[fingerprint], log.details)
+			logMap[db][fingerprint] = mergeSlowLog(fingerprint, logMap[db][fingerprint], log.details)
 		}
 	}
 

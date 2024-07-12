@@ -89,24 +89,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 	for _, schemaName := range schemaList {
-		var tables []*storepb.TableMetadata
-		var views []*storepb.ViewMetadata
-		var functions []*storepb.FunctionMetadata
-		var exists bool
-		if tables, exists = tableMap[schemaName]; !exists {
-			tables = []*storepb.TableMetadata{}
-		}
-		if views, exists = viewMap[schemaName]; !exists {
-			views = []*storepb.ViewMetadata{}
-		}
-		if functions, exists = functionMap[schemaName]; !exists {
-			functions = []*storepb.FunctionMetadata{}
-		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:      schemaName,
-			Tables:    tables,
-			Views:     views,
-			Functions: functions,
+			Tables:    tableMap[schemaName],
+			Views:     viewMap[schemaName],
+			Functions: functionMap[schemaName],
 		})
 	}
 	// No extensions in RisingWave.

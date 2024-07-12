@@ -180,19 +180,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 	for _, schemaName := range schemaList {
-		var tables []*storepb.TableMetadata
-		var views []*storepb.ViewMetadata
-		var exists bool
-		if tables, exists = tableMap[schemaName]; !exists {
-			tables = []*storepb.TableMetadata{}
-		}
-		if views, exists = viewMap[schemaName]; !exists {
-			views = []*storepb.ViewMetadata{}
-		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:   schemaName,
-			Tables: tables,
-			Views:  views,
+			Tables: tableMap[schemaName],
+			Views:  viewMap[schemaName],
 		})
 	}
 
