@@ -62,9 +62,6 @@
       :override-title="$t('issue.sql-check.sql-review-violations')"
       @close="onPanelClose"
     >
-      <template #row-extra="{ row }">
-        <slot name="row-extra" :row="row" :confirm="confirmDialog" />
-      </template>
       <template #row-title-extra="{ row }">
         <slot name="row-title-extra" :row="row" :confirm="confirmDialog" />
       </template>

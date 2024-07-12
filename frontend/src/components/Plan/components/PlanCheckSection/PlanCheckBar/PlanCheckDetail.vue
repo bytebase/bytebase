@@ -90,8 +90,6 @@
             Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
-
-        <slot name="row-extra" :row="row" />
       </div>
     </div>
   </div>

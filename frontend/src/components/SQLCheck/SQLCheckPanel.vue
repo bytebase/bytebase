@@ -14,9 +14,6 @@
       :is-latest="false"
       @close="$emit('close')"
     >
-      <template #row-extra="{ row }">
-        <slot name="row-extra" :row="row" />
-      </template>
       <template #row-title-extra="{ row }">
         <slot name="row-title-extra" :row="row" />
       </template>
