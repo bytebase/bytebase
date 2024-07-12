@@ -160,7 +160,9 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 	)
 
 	for rows.Next() {
-		role := &RoleMessage{}
+		role := &RoleMessage{
+			Permissions: map[string]bool{},
+		}
 		var permissionBytes []byte
 		if err := rows.Scan(&role.CreatorID, &role.ResourceID, &role.Name, &role.Description, &permissionBytes); err != nil {
 			return nil, err
