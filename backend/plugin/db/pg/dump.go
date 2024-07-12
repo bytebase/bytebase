@@ -104,9 +104,13 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 }
 
 func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writer) error {
-	semVersion, err := semver.Make(driver.connectionCtx.EngineVersion)
+	version, err := driver.getVersion(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", driver.connectionCtx.EngineVersion)
+		return errors.Wrapf(err, "failed to get version")
+	}
+	semVersion, err := semver.Make(version)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse version %s to semantic version", version)
 	}
 	atLeast10_0_0 := semVersion.GE(semver.MustParse("10.0.0"))
 
