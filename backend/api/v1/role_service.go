@@ -65,13 +65,15 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 		return nil, err
 	}
 
+	permissions := make(map[string]bool)
+	for _, v := range request.GetRole().GetPermissions() {
+		permissions[v] = true
+	}
 	create := &store.RoleMessage{
 		ResourceID:  request.RoleId,
 		Name:        request.Role.Title,
 		Description: request.Role.Description,
-		Permissions: &storepb.RolePermissions{
-			Permissions: request.Role.Permissions,
-		},
+		Permissions: permissions,
 	}
 	if valid := validatePermissions(request.Role.Permissions); !valid {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
@@ -121,9 +123,11 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 		case "description":
 			patch.Description = &request.Role.Description
 		case "permissions":
-			patch.Permissions = &storepb.RolePermissions{
-				Permissions: request.Role.Permissions,
+			permissions := make(map[string]bool)
+			for _, v := range request.GetRole().GetPermissions() {
+				permissions[v] = true
 			}
+			patch.Permissions = &permissions
 			if valid := validatePermissions(request.Role.Permissions); !valid {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
 			}
@@ -218,7 +222,7 @@ func convertToRole(ctx context.Context, iamManager *iam.Manager, role *store.Rol
 		return nil, errors.Wrapf(err, "failed to get permissions")
 	}
 	convertedPermissions := []string{}
-	for _, permission := range permissions {
+	for permission := range permissions {
 		convertedPermissions = append(convertedPermissions, string(permission))
 	}
 	return &v1pb.Role{
