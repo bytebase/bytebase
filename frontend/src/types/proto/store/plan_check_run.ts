@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Position } from "./common";
 import { ChangedResources } from "./instance_change_history";
 
 export const protobufPackage = "bytebase.store";
@@ -188,6 +189,12 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
   detail: string;
   /** Code from sql review. */
   code: number;
+  /**
+   * 1-based Position of the SQL statement.
+   * To supersede `line` and `column` above.
+   */
+  startPosition: Position | undefined;
+  endPosition: Position | undefined;
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
@@ -848,7 +855,7 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
 };
 
 function createBasePlanCheckRunResult_Result_SqlReviewReport(): PlanCheckRunResult_Result_SqlReviewReport {
-  return { line: 0, column: 0, detail: "", code: 0 };
+  return { line: 0, column: 0, detail: "", code: 0, startPosition: undefined, endPosition: undefined };
 }
 
 export const PlanCheckRunResult_Result_SqlReviewReport = {
@@ -864,6 +871,12 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
     }
     if (message.code !== 0) {
       writer.uint32(32).int32(message.code);
+    }
+    if (message.startPosition !== undefined) {
+      Position.encode(message.startPosition, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.endPosition !== undefined) {
+      Position.encode(message.endPosition, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -903,6 +916,20 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
 
           message.code = reader.int32();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.startPosition = Position.decode(reader, reader.uint32());
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.endPosition = Position.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -918,6 +945,8 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
       column: isSet(object.column) ? globalThis.Number(object.column) : 0,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
+      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
+      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
   },
 
@@ -935,6 +964,12 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
     if (message.code !== 0) {
       obj.code = Math.round(message.code);
     }
+    if (message.startPosition !== undefined) {
+      obj.startPosition = Position.toJSON(message.startPosition);
+    }
+    if (message.endPosition !== undefined) {
+      obj.endPosition = Position.toJSON(message.endPosition);
+    }
     return obj;
   },
 
@@ -949,6 +984,12 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
     message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     message.code = object.code ?? 0;
+    message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
+      ? Position.fromPartial(object.startPosition)
+      : undefined;
+    message.endPosition = (object.endPosition !== undefined && object.endPosition !== null)
+      ? Position.fromPartial(object.endPosition)
+      : undefined;
     return message;
   },
 };

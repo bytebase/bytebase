@@ -392,6 +392,10 @@ message PlanCheckRun {
       string detail = 3;
       // Code from sql review.
       int32 code = 4;
+      // 1-based Position of the SQL statement.
+      // To supersede `line` and `column` above.
+      Position start_position = 5;
+      Position end_position = 6;
     }
   }
 }
