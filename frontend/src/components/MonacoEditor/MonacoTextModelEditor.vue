@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" v-bind="$attrs" class="relative">
+  <div ref="containerRef" v-bind="$attrs" class="relative bb-monaco-editor">
     <div
       v-if="!ready"
       class="absolute inset-0 flex flex-col items-center justify-center"
@@ -8,13 +8,7 @@
     </div>
     <div
       v-if="ready && !contentRef && placeholder"
-      class="absolute pointer-events-none font-mono text-control-placeholder"
-      style="
-        font-family: &quot;Droid Sans Mono&quot;, monospace;
-        font-size: 14px;
-        left: 52px;
-        top: 8px;
-      "
+      class="bb-monaco-editor--placeholder absolute pointer-events-none font-mono text-control-placeholder"
     >
       {{ placeholder }}
     </div>
@@ -210,6 +204,15 @@ defineExpose({
 
 <style>
 .editor-widget.suggest-widget .signature-label {
-  @apply ml-2;
+  margin-left: 0.5rem;
+}
+</style>
+
+<style scoped>
+.bb-monaco-editor .bb-monaco-editor--placeholder {
+  font-family: "Droid Sans Mono", monospace;
+  font-size: 14px;
+  left: 52px;
+  top: 8px;
 }
 </style>
