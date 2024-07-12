@@ -28,7 +28,7 @@
           :tab="() => renderTab(item.data, index)"
         >
           <EnvironmentDetail
-            :environment-id="item.id"
+            :environment-name="item.id"
             :simple="true"
             :hide-archive-restore="true"
             body-class="!px-0"

@@ -45,7 +45,7 @@ const useDatabaseActions = (databaseList: MaybeRef<ComposedDatabase[]>) => {
       .map((environment) => {
         const databases = databasesByEnv.get(environment.name)!;
         return {
-          id: `bb.env.${environment.uid}`,
+          id: `bb.env.${environment.name}`,
           name: environmentV1Name(environment),
           children: databases.map((db) => ({
             id: `bb.database.${db.uid}`,

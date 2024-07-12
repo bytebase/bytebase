@@ -290,13 +290,13 @@ const databaseAnomalySummaryList = computed((): Summary[] => {
           break;
       }
     }
-    const summary = envMap.get(database.effectiveEnvironmentEntity.uid);
+    const summary = envMap.get(database.effectiveEnvironment);
     if (summary) {
       summary.criticalCount += criticalCount;
       summary.highCount += highCount;
       summary.mediumCount += mediumCount;
     } else {
-      envMap.set(String(database.effectiveEnvironmentEntity.uid), {
+      envMap.set(database.effectiveEnvironment, {
         environmentName: database.effectiveEnvironmentEntity.title,
         criticalCount,
         highCount,
@@ -307,7 +307,7 @@ const databaseAnomalySummaryList = computed((): Summary[] => {
 
   const list: Summary[] = [];
   for (const environment of environmentList.value) {
-    const summary = envMap.get(environment.uid);
+    const summary = envMap.get(environment.name);
     if (summary) {
       list.push(summary);
     }
@@ -338,13 +338,13 @@ const instanceAnomalySummaryList = computed((): Summary[] => {
           break;
       }
     }
-    const summary = envMap.get(instance.environmentEntity.uid);
+    const summary = envMap.get(instance.environment);
     if (summary) {
       summary.criticalCount += criticalCount;
       summary.highCount += highCount;
       summary.mediumCount += mediumCount;
     } else {
-      envMap.set(instance.environmentEntity.uid, {
+      envMap.set(instance.environment, {
         environmentName: instance.environmentEntity.title,
         criticalCount,
         highCount,
@@ -355,7 +355,7 @@ const instanceAnomalySummaryList = computed((): Summary[] => {
 
   const list: Summary[] = [];
   for (const environment of environmentList.value) {
-    const summary = envMap.get(environment.uid);
+    const summary = envMap.get(environment.name);
     if (summary) {
       list.push(summary);
     }
