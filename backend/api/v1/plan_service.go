@@ -390,8 +390,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						ID:        task.ID,
 						UpdaterID: user.ID,
 					}
-					tasksMap[task.ID] = task
-
 					var taskSpecID struct {
 						SpecID string `json:"specId"`
 					}
@@ -643,7 +641,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					if !doUpdate {
 						continue
 					}
-
+					tasksMap[task.ID] = task
 					taskPatchList = append(taskPatchList, taskPatch)
 				}
 			}
@@ -651,7 +649,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			for _, taskPatch := range taskPatchList {
 				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
 					task := tasksMap[taskPatch.ID]
-					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning {
+					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning || task.LatestTaskRunStatus == api.TaskRunSkipped || task.LatestTaskRunStatus == api.TaskRunDone {
 						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %q is %s", task.Name, task.LatestTaskRunStatus)
 					}
 				}
