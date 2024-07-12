@@ -36,9 +36,9 @@ export const DatabaseGroupFactorOptionsMap = () => {
 const getEnvironmentOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
-    const environmentId = extractEnvironmentResourceName(env.name);
+    const environmentName = extractEnvironmentResourceName(env.name);
     return {
-      label: environmentId,
+      label: environmentName,
       value: env.name,
     };
   });

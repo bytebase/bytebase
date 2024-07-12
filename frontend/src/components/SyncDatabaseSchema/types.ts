@@ -5,7 +5,7 @@ export type SourceSchemaType = "SCHEMA_HISTORY_VERSION" | "RAW_SQL";
 
 export interface ChangeHistorySourceSchema {
   projectId?: string;
-  environmentId?: string;
+  environmentName?: string;
   databaseId?: string;
   changeHistory?: ChangeHistory;
   conciseHistory?: string;

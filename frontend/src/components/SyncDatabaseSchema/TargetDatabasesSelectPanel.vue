@@ -21,7 +21,7 @@
         class="overflow-y-auto"
         arrow-placement="left"
         :default-expanded-names="
-          databaseListGroupByEnvironment.map((group) => group.environment.uid)
+          databaseListGroupByEnvironment.map((group) => group.environment.name)
         "
       >
         <NCollapseItem
@@ -29,8 +29,8 @@
             environment,
             databaseList: databaseListInEnvironment,
           } in databaseListGroupByEnvironment"
-          :key="environment.uid"
-          :name="environment.uid"
+          :key="environment.name"
+          :name="environment.name"
         >
           <template #header>
             <label class="flex items-center gap-x-2" @click.stop.prevent>

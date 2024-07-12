@@ -9,14 +9,14 @@ export const ENVIRONMENT_V1_ROUTE_DETAIL = `${ENVIRONMENT_V1_ROUTE_DASHBOARD}.de
 
 const environmentV1Routes: RouteRecordRaw[] = [
   {
-    path: "environments/:environmentId",
+    path: "environments/:environmentName",
     name: ENVIRONMENT_V1_ROUTE_DETAIL,
     meta: {
       title: (route: RouteLocationNormalized) => {
-        const environmentId = route.params.environmentId as string;
+        const environmentName = route.params.environmentName as string;
         return (
           useEnvironmentV1Store().getEnvironmentByName(
-            `${environmentNamePrefix}${environmentId}`
+            `${environmentNamePrefix}${environmentName}`
           ) || unknownEnvironment()
         ).title;
       },

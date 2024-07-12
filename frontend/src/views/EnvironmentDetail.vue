@@ -80,7 +80,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  environmentId: string;
+  environmentName: string;
   simple?: boolean;
   hideArchiveRestore?: boolean;
   bodyClass?: VueClass;
@@ -97,18 +97,18 @@ const policyV1Store = usePolicyV1Store();
 const state = reactive<LocalState>({
   environment:
     environmentV1Store.getEnvironmentByName(
-      `${environmentNamePrefix}${props.environmentId}`
+      `${environmentNamePrefix}${props.environmentName}`
     ) || unknownEnvironment(),
   showArchiveModal: false,
 });
 
 const prepareEnvironment = async () => {
   await environmentV1Store.getOrFetchEnvironmentByName(
-    `${environmentNamePrefix}${props.environmentId}`
+    `${environmentNamePrefix}${props.environmentName}`
   );
 };
 
-watch(() => props.environmentId, prepareEnvironment, {
+watch(() => props.environmentName, prepareEnvironment, {
   immediate: true,
 });
 
@@ -179,7 +179,7 @@ const doArchive = (environment: Environment) => {
     router.replace({
       name: ENVIRONMENT_V1_ROUTE_DETAIL,
       params: {
-        environmentId: extractEnvironmentResourceName(environment.name),
+        environmentName: extractEnvironmentResourceName(environment.name),
       },
     });
   });

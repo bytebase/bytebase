@@ -15,7 +15,7 @@
   <NCollapse
     arrow-placement="left"
     :default-expanded-names="
-      databaseListGroupByEnvironment.map((group) => group.environment.uid)
+      databaseListGroupByEnvironment.map((group) => group.environment.name)
     "
   >
     <NCollapseItem
@@ -23,8 +23,8 @@
         environment,
         databaseList: databaseListInEnvironment,
       } in databaseListGroupByEnvironment"
-      :key="environment.uid"
-      :name="environment.uid"
+      :key="environment.name"
+      :name="environment.name"
     >
       <template #header>
         <label class="flex items-center gap-x-2" @click.stop.prevent>
@@ -79,14 +79,14 @@
                 :checked="
                   isDatabaseSelectedForEnvironment(
                     database.uid,
-                    environment.uid
+                    environment.name
                   )
                 "
                 @update:checked="
                   (checked) =>
                     toggleDatabaseUidForEnvironment(
                       database.uid,
-                      environment.uid,
+                      environment.name,
                       checked
                     )
                 "
@@ -171,11 +171,11 @@ const databaseListGroupByEnvironment = computed(() => {
 
 const toggleDatabaseUidForEnvironment = (
   databaseId: string,
-  environmentId: string,
+  environmentName: string,
   selected: boolean
 ) => {
   const map = state.selectedDatabaseUidListForEnvironment;
-  const list = map.get(environmentId) || [];
+  const list = map.get(environmentName) || [];
   const index = list.indexOf(databaseId);
   if (selected) {
     // push the databaseId in if needed
@@ -190,18 +190,18 @@ const toggleDatabaseUidForEnvironment = (
   }
   // Set or remove the list to the map
   if (list.length > 0) {
-    map.set(environmentId, list);
+    map.set(environmentName, list);
   } else {
-    map.delete(environmentId);
+    map.delete(environmentName);
   }
 };
 
 const isDatabaseSelectedForEnvironment = (
   databaseId: string,
-  environmentId: string
+  environmentName: string
 ) => {
   const map = state.selectedDatabaseUidListForEnvironment;
-  const list = map.get(environmentId) || [];
+  const list = map.get(environmentName) || [];
   return list.includes(databaseId);
 };
 
@@ -210,7 +210,7 @@ const getAllSelectionStateForEnvironment = (
   databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
   const set = new Set(
-    state.selectedDatabaseUidListForEnvironment.get(environment.uid) ?? []
+    state.selectedDatabaseUidListForEnvironment.get(environment.name) ?? []
   );
   const checked = set.size > 0 && databaseList.every((db) => set.has(db.uid));
   const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
@@ -227,7 +227,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList.forEach((db) =>
-    toggleDatabaseUidForEnvironment(db.uid, environment.uid, on)
+    toggleDatabaseUidForEnvironment(db.uid, environment.name, on)
   );
 };
 
@@ -236,7 +236,7 @@ const getSelectionStateSummaryForEnvironment = (
   databaseList: ComposedDatabase[]
 ) => {
   const set = new Set(
-    state.selectedDatabaseUidListForEnvironment.get(environment.uid)
+    state.selectedDatabaseUidListForEnvironment.get(environment.name)
   );
   const selected = databaseList.filter((db) => set.has(db.uid)).length;
   const total = databaseList.length;

@@ -258,7 +258,7 @@ import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import type { RawSQLState, SourceSchemaType } from "./types";
 
 interface DatabaseSourceSchema {
-  environmentId: string;
+  environmentName: string;
   databaseId: string;
   changeHistory: ChangeHistory;
   conciseHistory?: string;
@@ -432,8 +432,8 @@ const getDatabaseSourceSchemaEnvironment = () => {
   if (!props.databaseSourceSchema) {
     return;
   }
-  return environmentV1Store.getEnvironmentByUID(
-    props.databaseSourceSchema.environmentId
+  return environmentV1Store.getEnvironmentByName(
+    props.databaseSourceSchema.environmentName
   );
 };
 
