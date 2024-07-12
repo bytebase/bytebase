@@ -4,7 +4,7 @@
     :database="database"
     :get-statement="getStatement"
     :change-type="
-      useOnlineSchemaChange
+      useOnlineSchemaMigration
         ? CheckRequest_ChangeType.DDL_GHOST
         : CheckRequest_ChangeType.DDL
     "
@@ -34,11 +34,11 @@ import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 const props = defineProps<{
   databaseList: ComposedDatabase[];
   getStatement: () => Promise<{ statement: string; errors: string[] }>;
-  useOnlineSchemaChange: boolean;
+  useOnlineSchemaMigration: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "toggle-online-schema-change", on: boolean): void;
+  (event: "toggle-online-schema-migration", on: boolean): void;
 }>();
 
 const { show, database } = useSchemaEditorSQLCheck({
@@ -49,7 +49,7 @@ const handleToggleOnlineMigration = (
   on: boolean,
   confirm: Defer<boolean> | undefined
 ) => {
-  emit("toggle-online-schema-change", on);
+  emit("toggle-online-schema-migration", on);
   confirm?.resolve(false);
 };
 </script>
