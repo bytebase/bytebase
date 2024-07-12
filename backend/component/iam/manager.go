@@ -3,7 +3,6 @@ package iam
 import (
 	"context"
 	_ "embed"
-	"slices"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -27,7 +26,7 @@ type acl struct {
 }
 
 type Manager struct {
-	predefinedRoles map[string][]Permission
+	predefinedRoles map[string]map[Permission]bool
 	store           *store.Store
 }
 
@@ -37,10 +36,13 @@ func NewManager(store *store.Store) (*Manager, error) {
 		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
 	}
 
-	predefinedRoles := make(map[string][]Permission)
+	predefinedRoles := make(map[string]map[Permission]bool)
 	for _, binding := range predefinedACL.Roles {
 		for _, permission := range binding.Permissions {
-			predefinedRoles[binding.Name] = append(predefinedRoles[binding.Name], NewPermission(permission))
+			if _, ok := predefinedRoles[binding.Name]; !ok {
+				predefinedRoles[binding.Name] = make(map[Permission]bool)
+			}
+			predefinedRoles[binding.Name][NewPermission(permission)] = true
 		}
 	}
 
@@ -78,7 +80,7 @@ func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *sto
 
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
-func (m *Manager) GetPermissions(ctx context.Context, roleName string) ([]Permission, error) {
+func (m *Manager) GetPermissions(ctx context.Context, roleName string) (map[Permission]bool, error) {
 	if permissions, ok := m.predefinedRoles[roleName]; ok {
 		return permissions, nil
 	}
@@ -93,9 +95,10 @@ func (m *Manager) GetPermissions(ctx context.Context, roleName string) ([]Permis
 	if role == nil {
 		return nil, nil
 	}
-	var permissions []Permission
-	for _, permission := range role.Permissions.GetPermissions() {
-		permissions = append(permissions, NewPermission(permission))
+	permissions := make(map[Permission]bool)
+	for permission := range role.Permissions {
+		// TODO(d): optimize this.
+		permissions[NewPermission(permission)] = true
 	}
 	return permissions, nil
 }
@@ -121,7 +124,7 @@ func (m *Manager) hasPermissionOnWorkspace(ctx context.Context, p Permission, wo
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if slices.Contains(permissions, p) {
+		if permissions[p] {
 			return true, nil
 		}
 	}
@@ -142,7 +145,7 @@ func (m *Manager) hasPermissionOnEveryProject(ctx context.Context, p Permission,
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to get permissions")
 			}
-			if slices.Contains(permissions, p) {
+			if permissions[p] {
 				has = true
 				break
 			}
