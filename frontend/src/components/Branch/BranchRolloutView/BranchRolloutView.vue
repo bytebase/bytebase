@@ -19,12 +19,12 @@
         <div class="flex flex-row items-center gap-x-2">
           <div class="textlabel">{{ $t("common.database") }}</div>
           <DatabaseSelect
-            :database="database?.uid"
+            :database-name="database?.name"
             :project-name="project.name"
             :environment-name="environment?.name"
             :filter="filterDatabase"
             style="width: 16rem"
-            @update:database="handleSelectDatabase"
+            @update:database-name="handleSelectDatabase"
           />
         </div>
       </div>
@@ -142,7 +142,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
-import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
+import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -207,12 +207,12 @@ const handleSelectEnvironment = (name: string | undefined) => {
     }
   }
 };
-const handleSelectDatabase = (uid: string | undefined) => {
-  if (!uid || uid === String(UNKNOWN_ID)) {
+const handleSelectDatabase = (name: string | undefined) => {
+  if (!isValidDatabaseName(name)) {
     database.value = undefined;
     return;
   }
-  database.value = useDatabaseV1Store().getDatabaseByUID(uid);
+  database.value = useDatabaseV1Store().getDatabaseByName(name);
   if (!environment.value) {
     // Auto select environment if it's not selected
     environment.value = database.value.effectiveEnvironmentEntity;

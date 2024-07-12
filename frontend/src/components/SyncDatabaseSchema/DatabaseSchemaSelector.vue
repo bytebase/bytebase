@@ -29,13 +29,13 @@
       />
       <DatabaseSelect
         class="!w-128 max-w-full"
-        :database="state.databaseId"
+        :database-name="state.databaseName"
         :environment-name="state.environmentName"
         :project-name="state.projectName"
         :placeholder="$t('db.select')"
         :allowed-engine-type-list="allowedEngineTypeList"
         :fallback-option="false"
-        @update:database="handleDatabaseSelect"
+        @update:database-name="handleDatabaseSelect"
       />
     </div>
     <div
@@ -92,7 +92,7 @@ import {
   useSubscriptionV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
@@ -122,7 +122,7 @@ interface LocalState {
   showFeatureModal: boolean;
   projectName?: string;
   environmentName?: string;
-  databaseId?: string;
+  databaseName?: string;
   changeHistoryName?: string;
 }
 
@@ -130,7 +130,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   projectName: props.selectState?.projectName,
   environmentName: props.selectState?.environmentName,
-  databaseId: props.selectState?.databaseId,
+  databaseName: props.selectState?.databaseId,
   changeHistoryName: props.selectState?.changeHistory?.name,
 });
 const { t } = useI18n();
@@ -139,7 +139,7 @@ const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 
 const database = computed(() => {
-  const databaseId = state.databaseId;
+  const databaseId = state.databaseName;
   if (!isValidId(databaseId)) {
     return;
   }
@@ -179,27 +179,27 @@ const isValidId = (id: any): id is string => {
 
 const handleProjectSelect = async (name: string | undefined) => {
   if (name !== state.projectName) {
-    state.databaseId = undefined;
+    state.databaseName = undefined;
   }
   state.projectName = name;
 };
 
 const handleEnvironmentSelect = async (name: string | undefined) => {
   if (name !== state.environmentName) {
-    state.databaseId = undefined;
+    state.databaseName = undefined;
   }
   state.environmentName = name;
 };
 
-const handleDatabaseSelect = async (databaseId: string | undefined) => {
-  if (isValidId(databaseId)) {
-    const database = databaseStore.getDatabaseByUID(databaseId);
+const handleDatabaseSelect = async (name: string | undefined) => {
+  if (isValidDatabaseName(name)) {
+    const database = databaseStore.getDatabaseByName(name);
     if (!database) {
       return;
     }
     state.projectName = database.project;
     state.environmentName = database.effectiveEnvironment;
-    state.databaseId = databaseId;
+    state.databaseName = name;
     dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.name,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
@@ -207,8 +207,8 @@ const handleDatabaseSelect = async (databaseId: string | undefined) => {
   }
 };
 
-const databaseChangeHistoryList = (databaseId: string) => {
-  const database = databaseStore.getDatabaseByUID(databaseId);
+const databaseChangeHistoryList = (databaseName: string) => {
+  const database = databaseStore.getDatabaseByName(databaseName);
   const list = changeHistoryStore
     .changeHistoryListByDatabase(database.name)
     .filter((changeHistory) =>
@@ -219,11 +219,11 @@ const databaseChangeHistoryList = (databaseId: string) => {
 };
 
 const schemaVersionOptions = computed(() => {
-  const { databaseId } = state;
-  if (!databaseId || databaseId === String(UNKNOWN_ID)) {
+  const { databaseName } = state;
+  if (!isValidDatabaseName(databaseName)) {
     return [];
   }
-  const changeHistories = databaseChangeHistoryList(databaseId);
+  const changeHistories = databaseChangeHistoryList(databaseName);
   if (changeHistories.length === 0) return [];
   const options: SelectOption[] = [
     {
@@ -296,7 +296,7 @@ const isMockLatestSchemaChangeHistorySelected = computed(() => {
 });
 const fallbackSchemaVersionOption = (value: string): SelectOption => {
   if (extractChangeHistoryUID(value) === String(UNKNOWN_ID)) {
-    const { databaseId } = state;
+    const { databaseName: databaseId } = state;
     if (databaseId && databaseId !== String(UNKNOWN_ID)) {
       const db = databaseStore.getDatabaseByUID(databaseId);
       const changeHistory = mockLatestSchemaChangeHistory(db);
@@ -321,9 +321,9 @@ const handleSchemaVersionSelect = async (
   option: SelectOption
 ) => {
   const changeHistory = option.changeHistory as ChangeHistory;
-  const index = databaseChangeHistoryList(state.databaseId as string).findIndex(
-    (history) => history.uid === changeHistory.uid
-  );
+  const index = databaseChangeHistoryList(
+    state.databaseName as string
+  ).findIndex((history) => history.uid === changeHistory.uid);
   if (index > 0 && !hasSyncSchemaFeature.value) {
     state.showFeatureModal = true;
     return;
@@ -336,7 +336,7 @@ const mergedChangeHistorySourceSchema = computedAsync(
     | Pick<ChangeHistorySourceSchema, "changeHistory" | "conciseHistory">
     | undefined
   > => {
-    const { databaseId, changeHistoryName } = state;
+    const { databaseName: databaseId, changeHistoryName } = state;
     if (!isValidId(databaseId)) {
       return undefined;
     }
@@ -402,9 +402,9 @@ const mergedChangeHistorySourceSchema = computedAsync(
 );
 
 watch(
-  () => [state.databaseId],
+  () => [state.databaseName],
   async () => {
-    const databaseId = state.databaseId;
+    const databaseId = state.databaseName;
     if (!isValidId(databaseId)) {
       state.changeHistoryName = undefined;
       return;
@@ -445,7 +445,7 @@ watch(
   [
     () => state.projectName,
     () => state.environmentName,
-    () => state.databaseId,
+    () => state.databaseName,
     mergedChangeHistorySourceSchema,
     isFetchingChangeHistorySourceSchema,
   ],
@@ -483,7 +483,7 @@ watch(
     if (isFetching) return;
     state.projectName = projectName;
     state.environmentName = environmentName;
-    state.databaseId = databaseId;
+    state.databaseName = databaseId;
     state.changeHistoryName = changeHistoryName;
   },
   {

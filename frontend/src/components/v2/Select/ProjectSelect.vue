@@ -55,7 +55,6 @@ const props = withDefaults(
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
-    useResourceId?: boolean;
     multiple?: boolean;
     renderSuffix?: (project: string) => string;
     filter?: (project: ComposedProject, index: number) => boolean;
@@ -69,7 +68,6 @@ const props = withDefaults(
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
-    useResourceId: false,
     multiple: false,
     filter: () => true,
     renderSuffix: (project: string) => "",

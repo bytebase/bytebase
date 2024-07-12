@@ -22,7 +22,7 @@
     <div class="flex flex-row items-center justify-between py-0.5">
       <div class="flex flex-row items-center justify-start gap-x-2">
         <DatabaseSelect
-          v-model:database="state.databaseUID"
+          v-model:database-name="state.databaseName"
           :project-name="project.name"
         />
         <AffectedTableSelect
@@ -69,7 +69,7 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { type ComposedChangeHistory } from "@/types";
 import type { AffectedTable } from "@/types/changeHistory";
 import { EmptyAffectedTable } from "@/types/changeHistory";
@@ -94,7 +94,7 @@ import { semanticChangeHistoryType } from "./utils";
 type LocalState = {
   isLoading: boolean;
   keyword: string;
-  databaseUID: string | undefined;
+  databaseName: string | undefined;
   changeHistoryList: ComposedChangeHistory[];
   affectedTable: AffectedTable;
   changeHistoryTypes: ChangeHistory_Type[];
@@ -108,7 +108,7 @@ const { changesFromChangeHistory: changes } = useAddChangeContext();
 const state = reactive<LocalState>({
   isLoading: false,
   keyword: "",
-  databaseUID: undefined,
+  databaseName: undefined,
   changeHistoryList: [],
   affectedTable: EmptyAffectedTable,
   changeHistoryTypes: [ChangeHistory_Type.DATA, ChangeHistory_Type.MIGRATE],
@@ -116,9 +116,9 @@ const state = reactive<LocalState>({
 });
 
 const database = computed(() => {
-  const uid = state.databaseUID;
-  if (!uid || uid === String(UNKNOWN_ID)) return undefined;
-  return useDatabaseV1Store().getDatabaseByUID(uid);
+  const name = state.databaseName;
+  if (!isValidDatabaseName(name)) return undefined;
+  return useDatabaseV1Store().getDatabaseByName(name);
 });
 
 const filteredChangeHistoryList = computed(() => {
@@ -236,7 +236,7 @@ const handleClickChange = (change: Change) => {
   const database = useDatabaseV1Store().getDatabaseByName(
     extractDatabaseResourceName(changeHistoryName).database
   );
-  state.databaseUID = database.uid;
+  state.databaseName = database.name;
   state.detailChangeHistoryName = changeHistoryName;
 };
 
@@ -245,12 +245,12 @@ watch(
   () => project.value.name,
   (project) => {
     const databaseList = useDatabaseV1Store().databaseListByProject(project);
-    state.databaseUID = first(databaseList)?.uid;
+    state.databaseName = first(databaseList)?.name;
   },
   { immediate: true }
 );
 
-watch(() => database.value?.uid, fetchChangeHistoryList, { immediate: true });
+watch(() => database.value?.name, fetchChangeHistoryList, { immediate: true });
 
 watch(
   () => state.changeHistoryList,

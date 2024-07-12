@@ -47,7 +47,7 @@ defineEmits<{
   (event: "update:source-type", type: RebaseSourceType): void;
   (event: "update:head-branch-name", branch: string | undefined): void;
   (event: "update:source-branch-name", branch: string | undefined): void;
-  (event: "update:source-database-uid", uid: string | undefined): void;
+  (event: "update:source-database-name", name: string | undefined): void;
 }>();
 
 const sourceBranchOrDatabase = computed(() => {

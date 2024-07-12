@@ -12,7 +12,7 @@
       @update:source-type="state.sourceType = $event"
       @update:head-branch-name="handleUpdateHeadBranch"
       @update:source-branch-name="state.sourceBranchName = $event || null"
-      @update:source-database-uid="state.sourceDatabaseUID = $event || null"
+      @update:source-database-name="state.sourceDatabaseName = $event || null"
     />
 
     <RebaseBranchValidationStateView
@@ -81,7 +81,7 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
 import { defer, isOwnerOfProjectV1 } from "@/utils";
 import RebaseBranchSelect from "./RebaseBranchSelect.vue";
@@ -92,7 +92,7 @@ import type { RebaseBranchValidationState, RebaseSourceType } from "./types";
 interface LocalState {
   currentStepIndex: number;
   sourceBranchName: string | null;
-  sourceDatabaseUID: string | null;
+  sourceDatabaseName: string | null;
   sourceType: RebaseSourceType;
   isRebasing: boolean;
 }
@@ -110,7 +110,7 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   currentStepIndex: 0,
   sourceBranchName: null,
-  sourceDatabaseUID: null,
+  sourceDatabaseName: null,
   sourceType: "BRANCH",
   isRebasing: false,
 });
@@ -162,11 +162,11 @@ const sourceDatabase = computed(() => {
   if (state.sourceType === "BRANCH") {
     return undefined;
   }
-  const uid = state.sourceDatabaseUID;
-  if (!uid || uid === String(UNKNOWN_ID)) {
+  const name = state.sourceDatabaseName;
+  if (!isValidDatabaseName(name)) {
     return undefined;
   }
-  return useDatabaseV1Store().getDatabaseByUID(uid);
+  return useDatabaseV1Store().getDatabaseByName(name);
 });
 const sourceBranchOrDatabase = computed(() => {
   if (state.sourceType === "BRANCH") {
@@ -302,9 +302,8 @@ watch(
     }
     // Automatically set the sourceDatabase to the branch's baselineDatabase
     // if sourceDatabase is empty
-    if (!state.sourceDatabaseUID) {
-      const db = useDatabaseV1Store().getDatabaseByName(head.baselineDatabase);
-      state.sourceDatabaseUID = db.uid;
+    if (!state.sourceDatabaseName) {
+      state.sourceDatabaseName = head.baselineDatabase;
       state.sourceType = "DATABASE";
     }
 
