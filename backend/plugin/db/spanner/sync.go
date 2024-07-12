@@ -2,6 +2,7 @@ package spanner
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"cloud.google.com/go/spanner"
@@ -89,6 +90,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	for schemaName := range schemaNameMap {
 		schemaNames = append(schemaNames, schemaName)
 	}
+	sort.Strings(schemaNames)
 	for _, schemaName := range schemaNames {
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:   schemaName,
