@@ -439,13 +439,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 
 		if isSuperuserStatement(singleSQL.Text) {
-			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-			if strings.Contains(strings.ToUpper(singleSQL.Text), "CREATE EVENT TRIGGER") {
-				singleSQL.Text = strings.ReplaceAll(singleSQL.Text, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-			}
 			// Use superuser privilege to run privileged statements.
 			slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", singleSQL.Text))
 			singleSQL.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", singleSQL.Text, owner)
