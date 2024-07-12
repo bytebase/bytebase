@@ -2391,7 +2391,14 @@
       "self": "標準モード"
     },
     "to-enable-standard-mode": "標準モードを有効にするには",
-    "add-a-new-instance": "新しいインスタンスを追加する"
+    "add-a-new-instance": "新しいインスタンスを追加する",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket接続に失敗しました",
+        "description": "オートコンプリートが制限されているか、無効になっている可能性があります。",
+        "disconnected": "WebSocketが切断されました"
+      }
+    }
   },
   "schema-editor": {
     "self": "スキーマエディタ",
