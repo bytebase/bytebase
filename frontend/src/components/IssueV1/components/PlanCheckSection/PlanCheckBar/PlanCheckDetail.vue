@@ -46,6 +46,12 @@
 
       <div class="textinfolabel flex flex-col gap-y-0.5">
         <div>{{ row.checkResult.content }}</div>
+
+        <OnlineMigrationDetail
+          v-if="row.checkResult.title === 'advice.online-migration'"
+          :row="row"
+        />
+
         <div
           class="flex items-center justify-start space-x-2 divide-x divide-block-border"
         >
@@ -248,6 +254,7 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto/v1/plan_service";
 import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
+import { OnlineMigrationDetail } from "./detail";
 
 interface ErrorCodeLink {
   title: string;
