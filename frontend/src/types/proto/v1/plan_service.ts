@@ -8,6 +8,7 @@ import {
   exportFormatFromJSON,
   exportFormatToJSON,
   exportFormatToNumber,
+  Position,
   VCSType,
   vCSTypeFromJSON,
   vCSTypeToJSON,
@@ -662,6 +663,12 @@ export interface PlanCheckRun_Result_SqlReviewReport {
   detail: string;
   /** Code from sql review. */
   code: number;
+  /**
+   * 1-based Position of the SQL statement.
+   * To supersede `line` and `column` above.
+   */
+  startPosition: Position | undefined;
+  endPosition: Position | undefined;
 }
 
 function createBaseGetPlanRequest(): GetPlanRequest {
@@ -3266,7 +3273,7 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
 };
 
 function createBasePlanCheckRun_Result_SqlReviewReport(): PlanCheckRun_Result_SqlReviewReport {
-  return { line: 0, column: 0, detail: "", code: 0 };
+  return { line: 0, column: 0, detail: "", code: 0, startPosition: undefined, endPosition: undefined };
 }
 
 export const PlanCheckRun_Result_SqlReviewReport = {
@@ -3282,6 +3289,12 @@ export const PlanCheckRun_Result_SqlReviewReport = {
     }
     if (message.code !== 0) {
       writer.uint32(32).int32(message.code);
+    }
+    if (message.startPosition !== undefined) {
+      Position.encode(message.startPosition, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.endPosition !== undefined) {
+      Position.encode(message.endPosition, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -3321,6 +3334,20 @@ export const PlanCheckRun_Result_SqlReviewReport = {
 
           message.code = reader.int32();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.startPosition = Position.decode(reader, reader.uint32());
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.endPosition = Position.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3336,6 +3363,8 @@ export const PlanCheckRun_Result_SqlReviewReport = {
       column: isSet(object.column) ? globalThis.Number(object.column) : 0,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
+      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
+      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
   },
 
@@ -3353,6 +3382,12 @@ export const PlanCheckRun_Result_SqlReviewReport = {
     if (message.code !== 0) {
       obj.code = Math.round(message.code);
     }
+    if (message.startPosition !== undefined) {
+      obj.startPosition = Position.toJSON(message.startPosition);
+    }
+    if (message.endPosition !== undefined) {
+      obj.endPosition = Position.toJSON(message.endPosition);
+    }
     return obj;
   },
 
@@ -3365,6 +3400,12 @@ export const PlanCheckRun_Result_SqlReviewReport = {
     message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     message.code = object.code ?? 0;
+    message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
+      ? Position.fromPartial(object.startPosition)
+      : undefined;
+    message.endPosition = (object.endPosition !== undefined && object.endPosition !== null)
+      ? Position.fromPartial(object.endPosition)
+      : undefined;
     return message;
   },
 };

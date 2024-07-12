@@ -6356,6 +6356,8 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | column | [int32](#int32) |  |  |
 | detail | [string](#string) |  |  |
 | code | [int32](#int32) |  | Code from sql review. |
+| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
 
 
 
