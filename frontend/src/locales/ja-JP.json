@@ -393,7 +393,8 @@
       },
       "show-default-parameters": "デフォルトパラメータを表示",
       "hide-default-parameters": "デフォルトパラメータを非表示にする",
-      "enable": "オンラインでの大規模なテーブル変更を有効にする"
+      "enable": "オンラインでの大規模なテーブル変更を有効にする",
+      "disable": "オンライン移行を無効にする"
     },
     "prior-backup-tips": "影響を受けるデータを事前にバックアップする"
   },

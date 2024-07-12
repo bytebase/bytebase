@@ -83,7 +83,7 @@
           :database-list="databaseList"
           :get-statement="generateOrGetEditingDDL"
           :use-online-schema-change="state.useOnlineSchemaChange"
-          @enable-online-schema-change="state.useOnlineSchemaChange = true"
+          @toggle-online-schema-change="state.useOnlineSchemaChange = $event"
         />
       </template>
     </NTabs>

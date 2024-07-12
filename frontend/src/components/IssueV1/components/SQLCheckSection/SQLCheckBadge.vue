@@ -128,11 +128,9 @@ const handleClick = () => {
 };
 
 const handleToggleOnlineMigration = (on: boolean) => {
-  if (on) {
-    events.emit("toggle-online-migration", {
-      on: true,
-    });
-    showDetailPanel.value = true;
-  }
+  events.emit("toggle-online-migration", {
+    on,
+  });
+  showDetailPanel.value = true;
 };
 </script>

@@ -92,12 +92,10 @@ const handleToggleOnlineMigration = (
   on: boolean,
   confirm: Defer<boolean> | undefined
 ) => {
-  if (on) {
-    events.emit("toggle-online-migration", {
-      on: true,
-    });
-    confirm?.resolve(false);
-  }
+  events.emit("toggle-online-migration", {
+    on,
+  });
+  confirm?.resolve(false);
 };
 
 const changeType = computed((): CheckRequest_ChangeType | undefined => {

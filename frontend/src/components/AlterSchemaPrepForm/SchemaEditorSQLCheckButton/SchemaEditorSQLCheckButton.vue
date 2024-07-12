@@ -14,14 +14,11 @@
     class="justify-end"
   >
     <template #row-title-extra="{ row, confirm }">
-      <NButton
+      <OnlineMigrationAdviceExtra
         v-if="row.checkResult.title === 'advice.online-migration'"
-        size="small"
-        type="primary"
-        @click="handleEnableOnlineChange(confirm)"
-      >
-        {{ $t("task.online-migration.enable") }}
-      </NButton>
+        :row="row"
+        @toggle="handleToggleOnlineMigration($event, confirm)"
+      />
     </template>
   </SQLCheckButton>
 </template>
@@ -31,6 +28,7 @@ import { SQLCheckButton } from "@/components/SQLCheck";
 import type { ComposedDatabase } from "@/types";
 import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";
+import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 
 const props = defineProps<{
@@ -40,15 +38,18 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "enable-online-schema-change"): void;
+  (event: "toggle-online-schema-change", on: boolean): void;
 }>();
 
 const { show, database } = useSchemaEditorSQLCheck({
   databaseList: toRef(props, "databaseList"),
 });
 
-const handleEnableOnlineChange = (confirm: Defer<boolean> | undefined) => {
-  emit("enable-online-schema-change");
+const handleToggleOnlineMigration = (
+  on: boolean,
+  confirm: Defer<boolean> | undefined
+) => {
+  emit("toggle-online-schema-change", on);
   confirm?.resolve(false);
 };
 </script>
