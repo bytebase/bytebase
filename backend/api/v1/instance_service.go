@@ -429,15 +429,12 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 		findDatabase := &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
 		}
-		if project != nil {
-			findDatabase.ProjectID = &project.ResourceID
-		}
 		databases, err := s.store.ListDatabases(ctx, findDatabase)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
 		}
 
-		var enabledDatabases []*store.DatabaseMessage
+		enabled := false
 		for _, database := range databases {
 			if database.SyncState != api.OK {
 				continue
@@ -457,10 +454,11 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 				continue
 			}
 
-			enabledDatabases = append(enabledDatabases, database)
+			enabled = true
+			break
 		}
 
-		if len(enabledDatabases) == 0 {
+		if !enabled {
 			return nil
 		}
 
