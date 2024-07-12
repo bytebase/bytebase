@@ -202,7 +202,7 @@ import type {
   SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
 import type {
@@ -279,7 +279,7 @@ const viewMode = computed((): ViewMode => {
 });
 
 const showSearchFeature = computed(() => {
-  if (connectedInstance.value.uid === String(UNKNOWN_ID)) {
+  if (connectedInstance.value.name === UNKNOWN_INSTANCE_NAME) {
     return false;
   }
   return instanceV1HasStructuredQueryResult(connectedInstance.value);
