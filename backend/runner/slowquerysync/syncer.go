@@ -80,10 +80,8 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 	}()
 
 	find := &store.FindInstanceMessage{}
-	project := ""
 	if message != nil {
 		find.ResourceID = &message.InstanceID
-		project = message.ProjectID
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
@@ -99,7 +97,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 		instanceWG.Add(1)
 		go func(instance *store.InstanceMessage) {
 			defer instanceWG.Done()
-			if err := s.syncInstanceSlowQuery(ctx, instance, project); err != nil {
+			if err := s.syncInstanceSlowQuery(ctx, instance); err != nil {
 				slog.Debug("Failed to sync instance slow query",
 					slog.String("instance", instance.ResourceID),
 					log.BBError(err))
@@ -109,7 +107,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 	instanceWG.Wait()
 }
 
-func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage, project string) error {
+func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
 	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
 	if err != nil {
 		return err
@@ -122,13 +120,13 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 	case storepb.Engine_MYSQL:
 		return s.syncMySQLSlowQuery(ctx, instance)
 	case storepb.Engine_POSTGRES:
-		return s.syncPostgreSQLSlowQuery(ctx, instance, project)
+		return s.syncPostgreSQLSlowQuery(ctx, instance)
 	default:
 		return errors.Errorf("unsupported database engine: %s", instance.Engine)
 	}
 }
 
-func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage, project string) error {
+func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 
 	earliestDate := today.AddDate(0, 0, -retentionCycle)
@@ -140,16 +138,12 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 	findDatabases := &store.FindDatabaseMessage{
 		InstanceID: &instance.ResourceID,
 	}
-	if project != "" {
-		findDatabases.ProjectID = &project
-	}
 	databases, err := s.store.ListDatabases(ctx, findDatabases)
 	if err != nil {
 		return err
 	}
 
-	var enabledDatabases []*store.DatabaseMessage
-
+	var enabledDatabase *store.DatabaseMessage
 	for _, database := range databases {
 		if database.SyncState != api.OK {
 			continue
@@ -173,14 +167,15 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			continue
 		}
 
-		enabledDatabases = append(enabledDatabases, database)
+		enabledDatabase = database
+		break
 	}
 
-	if len(enabledDatabases) == 0 {
+	if enabledDatabase == nil {
 		return errors.Errorf("no database is available for slow query sync in instance %s", instance.ResourceID)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, enabledDatabases[0], db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, enabledDatabase, db.ConnectionContext{})
 	if err != nil {
 		return err
 	}
