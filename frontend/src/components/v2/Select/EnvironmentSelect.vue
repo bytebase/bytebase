@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="value"
+    :value="combinedValue"
     :options="options"
     :placeholder="$t('environment.select')"
     :filterable="true"
@@ -29,20 +29,17 @@ interface EnvironmentSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    environment?: string | undefined;
-    environments?: string[] | undefined;
-    defaultEnvironmentName?: string | undefined;
+    environmentName?: string | undefined;
+    environmentNames?: string[] | undefined;
     includeArchived?: boolean;
     showProductionIcon?: boolean;
-    useResourceId?: boolean;
     multiple?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
     renderSuffix?: (environment: string) => string;
   }>(),
   {
-    environment: undefined,
-    environments: undefined,
-    defaultEnvironmentName: undefined,
+    environmentName: undefined,
+    environmentNames: undefined,
     includeArchived: false,
     showProductionIcon: true,
     useResourceId: false,
@@ -53,8 +50,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update:environment", id: string | undefined): void;
-  (event: "update:environments", id: string[]): void;
+  (event: "update:environment-name", name: string | undefined): void;
+  (event: "update:environment-names", names: string[]): void;
 }>();
 
 const projectV1Store = useProjectV1Store();
@@ -64,11 +61,11 @@ const prepare = () => {
   projectV1Store.fetchProjectList(true /* showDeleted */);
 };
 
-const value = computed(() => {
+const combinedValue = computed(() => {
   if (props.multiple) {
-    return props.environments || [];
+    return props.environmentNames || [];
   } else {
-    return props.environment;
+    return props.environmentName;
   }
 });
 
@@ -78,13 +75,13 @@ const handleValueUpdated = (value: string | string[]) => {
       // normalize value
       value = [];
     }
-    emit("update:environments", value as string[]);
+    emit("update:environment-names", value as string[]);
   } else {
     if (value === null) {
       // normalize value
       value = "";
     }
-    emit("update:environment", value as string);
+    emit("update:environment-name", value as string);
   }
 };
 
@@ -93,16 +90,12 @@ const rawEnvironmentList = computed(() => {
   return list;
 });
 
-const getEnvironmentValue = (environment: Environment): string => {
-  return props.useResourceId ? environment.name : environment.uid;
-};
-
 const combinedEnvironmentList = computed(() => {
   let list = rawEnvironmentList.value.filter((environment) => {
     if (props.includeArchived) return true;
     if (environment.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (getEnvironmentValue(environment) === props.environment) return true;
+    if (environment.name === props.environmentName) return true;
     return false;
   });
 
@@ -118,7 +111,7 @@ const options = computed(() => {
     (environment) => {
       return {
         environment,
-        value: getEnvironmentValue(environment),
+        value: environment.name,
         label: environment.title,
       };
     }

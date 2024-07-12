@@ -24,11 +24,10 @@
         class="mt-2"
         required
         name="environment"
-        :environment="attachedResources[0]"
-        :use-resource-id="true"
+        :environment-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
         :filter="(env: Environment, _: number) => filterResource(env.name)"
-        @update:environment="
+        @update:environment-name="
           (val: string | undefined) => {
             if (!val) {
               $emit('attached-resources-change', []);

@@ -78,7 +78,6 @@
           required
           :disabled="!allowEditInstance"
           :instance-name="state.instanceName"
-          :use-resource-id="true"
           :filter="instanceV1HasCreateDatabase"
           @update:instance-name="selectInstance"
         />
@@ -90,11 +89,10 @@
         {{ $t("common.environment") }}
       </label>
       <EnvironmentSelect
-        v-model:environment="state.environment"
+        v-model:environment-name="state.environmentName"
         class="mt-1"
         required
         name="environment"
-        :use-resource-id="true"
       />
     </div>
 
@@ -201,7 +199,7 @@ import {
 
 interface LocalState {
   projectId?: string;
-  environment?: string;
+  environmentName?: string;
   instanceName?: string;
   instanceRole?: string;
   labels: Record<string, string>;
@@ -216,7 +214,7 @@ interface LocalState {
 
 const props = defineProps<{
   projectId?: string;
-  environment?: string;
+  environmentName?: string;
   instanceName?: string;
 }>();
 
@@ -233,7 +231,7 @@ const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   databaseName: "",
   projectId: props.projectId,
-  environment: props.environment,
+  environmentName: props.environmentName,
   instanceName: props.instanceName,
   labels: {},
   tableName: "",
@@ -258,7 +256,7 @@ const allowCreate = computed(() => {
     validDatabaseOwnerName.value &&
     !isReservedName.value &&
     state.projectId &&
-    state.environment &&
+    state.environmentName &&
     state.instanceName
   );
 });
@@ -304,7 +302,7 @@ const selectProject = (projectId: string | undefined) => {
 
 const selectInstance = (instanceName: string | undefined) => {
   state.instanceName = instanceName;
-  state.environment = selectedInstance.value.environment;
+  state.environmentName = selectedInstance.value.environment;
 };
 
 const selectInstanceRole = (name?: string) => {
@@ -326,7 +324,7 @@ const createV1 = async () => {
   if (!allowCreate.value) {
     return;
   }
-  if (!state.environment || !state.instanceName) {
+  if (!state.environmentName || !state.instanceName) {
     return;
   }
 
@@ -347,7 +345,7 @@ const createV1 = async () => {
     database: databaseName,
     table: tableName,
     labels: state.labels,
-    environment: state.environment,
+    environment: state.environmentName,
 
     characterSet:
       state.characterSet ||
