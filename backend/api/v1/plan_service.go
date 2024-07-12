@@ -644,6 +644,21 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					tasksMap[task.ID] = task
 					taskPatchList = append(taskPatchList, taskPatch)
 				}
+
+				if len(taskPatchList) != 0 {
+					issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+						PipelineID: oldPlan.PipelineUID,
+					})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+					}
+					if issue != nil {
+						// Do not allow to update task if issue is done or canceled.
+						if issue.Status == api.IssueDone || issue.Status == api.IssueCanceled {
+							return nil, status.Errorf(codes.FailedPrecondition, "cannot update task because issue %q is %s", issue.Title, issue.Status)
+						}
+					}
+				}
 			}
 
 			for _, taskPatch := range taskPatchList {
