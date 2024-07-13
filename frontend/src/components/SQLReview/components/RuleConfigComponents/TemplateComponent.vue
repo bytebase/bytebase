@@ -14,15 +14,11 @@ import {
   InputWithTemplate,
   type Template,
 } from "@/components/InputWithTemplate";
-import type {
-  RuleConfigComponent,
-  RuleTemplateV2,
-  TemplatePayload,
-} from "@/types";
+import type { RuleConfigComponent, TemplatePayload } from "@/types";
 import { getRuleLocalizationKey } from "@/types";
 
 const props = defineProps<{
-  rule: RuleTemplateV2;
+  ruleType: string;
   config: RuleConfigComponent;
   value: string;
   disabled: boolean;
@@ -35,12 +31,12 @@ defineEmits<{
 const { t } = useI18n();
 
 const templateList = computed(() => {
-  const { rule, config } = props;
+  const { ruleType, config } = props;
   const payload = config.payload as TemplatePayload;
   return payload.templateList.map<Template>((id) => ({
     id,
     description: t(
-      `sql-review.rule.${getRuleLocalizationKey(rule.type)}.component.${
+      `sql-review.rule.${getRuleLocalizationKey(ruleType)}.component.${
         config.key
       }.template.${id}`
     ),

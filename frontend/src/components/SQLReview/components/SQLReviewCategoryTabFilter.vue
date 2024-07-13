@@ -1,14 +1,9 @@
 <template>
   <NTabs
-    :value="state.selectedTab"
+    :value="value"
     :size="'small'"
     :type="tabType"
-    @update:value="
-      (val: string) => {
-        state.selectedTab = val;
-        $emit('update:value', val == 'all' ? undefined : state.selectedTab);
-      }
-    "
+    @update:value="$emit('update:value', $event)"
   >
     <NTabPane v-for="data in tabItemList" :key="data.value" :name="data.value">
       <template #tab>
@@ -26,7 +21,7 @@
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
 import { NTabs, NTabPane } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";
 import { convertToCategoryMap } from "@/types";
@@ -37,29 +32,16 @@ export interface RuleListWithCategory {
   ruleList: RuleTemplateV2[];
 }
 
-interface LocalState {
-  selectedTab: string;
-}
-
-const props = withDefaults(
-  defineProps<{
-    value?: string;
-    ruleList: RuleTemplateV2[];
-  }>(),
-  {
-    value: undefined,
-  }
-);
+const props = defineProps<{
+  value: string;
+  ruleList: RuleTemplateV2[];
+}>();
 
 defineEmits<{
-  (event: "update:value", value: string | undefined): void;
+  (event: "update:value", value: string): void;
 }>();
 
 const { t } = useI18n();
-
-const state = reactive<LocalState>({
-  selectedTab: "all",
-});
 
 const { width: winWidth } = useWindowSize();
 
@@ -69,13 +51,6 @@ const tabType = computed(() => {
   }
   return "line";
 });
-
-watch(
-  () => props.value,
-  (selected) => {
-    state.selectedTab = selected ?? "all";
-  }
-);
 
 const tabItemList = computed(() => {
   const list: RuleListWithCategory[] = [

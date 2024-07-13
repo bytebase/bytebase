@@ -95,8 +95,7 @@
             v-if="!hideLevel"
             class="text-xs"
             :level="rule.level"
-            :disabled="!isRuleAvailable(rule)"
-            :editable="editable"
+            :disabled="!editable || !isRuleAvailable(rule)"
             @level-change="updateLevel(rule, $event)"
           />
           <p class="textinfolabel">
@@ -108,9 +107,8 @@
 
     <SQLRuleEditDialog
       v-if="state.activeRule"
-      :editable="editable"
       :rule="state.activeRule"
-      :disabled="!isRuleAvailable(state.activeRule)"
+      :disabled="!editable || !isRuleAvailable(state.activeRule)"
       @cancel="state.activeRule = undefined"
       @update:rule="onRuleChanged"
     />
@@ -119,7 +117,7 @@
 
 <script lang="tsx" setup>
 import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
-import { NSwitch, NCheckbox, NDataTable, NButton } from "naive-ui";
+import { NSwitch, NCheckbox, NDataTable, NButton, NDivider } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -131,6 +129,7 @@ import {
   planTypeToString,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
@@ -190,12 +189,31 @@ const columns = computed(() => {
     {
       type: "expand",
       expandable: (rule: RuleTemplateV2) => {
-        return !!(rule.comment || getRuleLocalization(rule.type).description);
+        return !!(
+          rule.comment ||
+          getRuleLocalization(rule.type).description ||
+          rule.componentList.length > 0
+        );
       },
       renderExpand: (rule: RuleTemplateV2) => {
         const comment =
           rule.comment || getRuleLocalization(rule.type).description;
-        return <p class="w-full text-left pl-10 text-gray-500">{comment}</p>;
+        return (
+          <div class="px-10">
+            <p class="w-full text-left text-gray-500">{comment}</p>
+            {rule.componentList.length > 0 && !!comment && (
+              <NDivider class={"!my-4"} />
+            )}
+            {rule.componentList.length > 0 && (
+              <RuleConfig
+                disabled={true}
+                rule={rule}
+                size={"small"}
+                class={"mb-3"}
+              />
+            )}
+          </div>
+        );
       },
       cellProps: (rule: RuleTemplateV2) => {
         return {
@@ -248,8 +266,7 @@ const columns = computed(() => {
         return (
           <RuleLevelSwitch
             level={rule.level}
-            disabled={!isRuleAvailable(rule)}
-            editable={props.editable}
+            disabled={!props.editable || !isRuleAvailable(rule)}
             onLevel-change={(on) => updateLevel(rule, on)}
           />
         );

@@ -201,7 +201,6 @@
 
   <SQLRuleEditDialog
     v-if="state.activeRule"
-    :editable="false"
     :rule="state.activeRule"
     :disabled="true"
     @cancel="state.activeRule = undefined"
