@@ -4,7 +4,7 @@ import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 
 export type SQLRuleFilterParams = {
   checkedLevel: Set<SQLReviewRuleLevel>;
-  selectedCategory: string | undefined;
+  selectedCategory: string;
   searchText: string;
 };
 
@@ -14,7 +14,7 @@ export const useSQLRuleFilter = () => {
     checkedLevel: new Set([]),
     selectedCategory: route.query.category
       ? (route.query.category as string)
-      : undefined,
+      : "all",
     searchText: "",
   });
   const events = {
@@ -25,14 +25,14 @@ export const useSQLRuleFilter = () => {
         params.checkedLevel.add(level);
       }
     },
-    changeCategory(category: string | undefined) {
+    changeCategory(category: string) {
       params.selectedCategory = category;
     },
     changeSearchText(keyword: string) {
       params.searchText = keyword;
     },
     reset() {
-      this.changeCategory(undefined);
+      this.changeCategory("all");
       params.checkedLevel = new Set([]);
     },
   };
