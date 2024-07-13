@@ -9,14 +9,16 @@ import "google/type/expr.proto";
 option go_package = "generated-go/v1";
 
 message GetIamPolicyRequest {
-  // The name of the project to get the IAM policy.
+  // The name of the resource to get the IAM policy.
   // Format: projects/{project}
+  // Format: workspaces/{workspace}
   string resource = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SetIamPolicyRequest {
   // The name of the resource to set the IAM policy.
   // Format: projects/{project}
+  // Format: workspaces/{workspace}
   string resource = 1 [(google.api.field_behavior) = REQUIRED];
 
   IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
