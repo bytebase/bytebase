@@ -4297,7 +4297,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The name of the project to get the IAM policy. Format: projects/{project} |
+| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
 
 
 
@@ -4327,7 +4327,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} |
+| resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
 | policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 
 
@@ -6017,6 +6017,8 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
 | UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
 | DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
+| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 
  
 
