@@ -12693,14 +12693,14 @@ components:
                          use the default full mask algorithm.
         SetIamPolicyRequest:
             required:
-                - project
+                - resource
                 - policy
             type: object
             properties:
-                project:
+                resource:
                     type: string
                     description: |-
-                        The name of the project to set the IAM policy.
+                        The name of the resource to set the IAM policy.
                          Format: projects/{project}
                 policy:
                     $ref: '#/components/schemas/IamPolicy'
