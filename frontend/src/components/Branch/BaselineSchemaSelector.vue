@@ -3,16 +3,16 @@
     <EnvironmentSelect
       name="environment"
       :disabled="readonly || props.loading"
-      :environment="state.environmentId"
-      @update:environment="handleEnvironmentSelect"
+      :environment-name="state.environmentName"
+      @update:environment-name="handleEnvironmentSelect"
     />
     <DatabaseSelect
       style="width: 100%"
       :placeholder="$t('schema-designer.select-database-placeholder')"
       :disabled="readonly || props.loading"
       :allowed-engine-type-list="allowedEngineTypeList"
-      :environment="state.environmentId"
-      :project="projectId"
+      :environment-name="state.environmentName"
+      :project-name="props.projectName"
       :database="state.databaseId ?? String(UNKNOWN_ID)"
       :fallback-option="false"
       @update:database="handleDatabaseSelect"
@@ -24,12 +24,12 @@
 import { isNull, isUndefined } from "lodash-es";
 import { reactive, watch } from "vue";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps<{
-  projectId?: string;
+  projectName?: string;
   databaseId?: string;
   readonly?: boolean;
   loading?: boolean;
@@ -40,25 +40,24 @@ const emit = defineEmits<{
 }>();
 
 interface LocalState {
-  environmentId?: string;
+  environmentName?: string;
   databaseId?: string;
 }
 
 const state = reactive<LocalState>({});
 const databaseStore = useDatabaseV1Store();
-const environmentStore = useEnvironmentV1Store();
 
 watch(
-  () => props.projectId,
+  () => props.projectName,
   () => {
     const database = isValidId(state.databaseId)
       ? databaseStore.getDatabaseByUID(state.databaseId)
       : undefined;
-    if (!database || !props.projectId) {
+    if (!database || !props.projectName) {
       return;
     }
-    if (database.projectEntity.uid !== props.projectId) {
-      state.environmentId = undefined;
+    if (database.project !== props.projectName) {
+      state.environmentName = undefined;
       state.databaseId = undefined;
     }
   }
@@ -73,7 +72,7 @@ watch(
     try {
       if (database) {
         state.databaseId = database.uid;
-        state.environmentId = database.effectiveEnvironmentEntity.uid;
+        state.environmentName = database.effectiveEnvironment;
       }
     } catch (error) {
       // do nothing.
@@ -96,9 +95,9 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleEnvironmentSelect = (environmentId?: string) => {
-  if (environmentId !== state.environmentId) {
-    state.environmentId = environmentId;
+const handleEnvironmentSelect = (name?: string) => {
+  if (name !== state.environmentName) {
+    state.environmentName = name;
     state.databaseId = undefined;
   }
 };
@@ -109,11 +108,7 @@ const handleDatabaseSelect = (databaseId?: string) => {
     if (!database) {
       return;
     }
-
-    const environment = environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment
-    );
-    state.environmentId = environment?.uid;
+    state.environmentName = database.effectiveEnvironment;
     state.databaseId = databaseId;
   }
 };

@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "Show default parameters",
       "hide-default-parameters": "Hide default parameters",
-      "enable": "Enable online migration"
+      "enable": "Enable online migration",
+      "disable": "Disable online migration",
+      "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
     "prior-backup-tips": "Back up affected data ahead of time"
   },
@@ -2391,7 +2393,14 @@
       "self": "Standard mode"
     },
     "to-enable-standard-mode": "to enable the standard mode",
-    "add-a-new-instance": "Add a new instance"
+    "add-a-new-instance": "Add a new instance",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket connection failed",
+        "description": "Auto Completion might be limited or disabled.",
+        "disconnected": "WebSocket disconnected"
+      }
+    }
   },
   "schema-editor": {
     "self": "Schema Editor",

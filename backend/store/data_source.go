@@ -150,10 +150,16 @@ type UpdateDataSourceMessage struct {
 	MasterObfuscatedPassword *string
 }
 
-func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
-	var dataSourceMessages []*DataSourceMessage
+func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID *string) (map[string][]*DataSourceMessage, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if instanceID != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *instanceID)
+	}
+
+	instanceDataSourcesMap := make(map[string][]*DataSourceMessage)
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
+			instance.resource_id,
 			data_source.id,
 			data_source.name,
 			data_source.type,
@@ -168,8 +174,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			data_source.options
 		FROM data_source
 		LEFT JOIN instance ON instance.id = data_source.instance_id
-		WHERE instance.resource_id = $1`,
-		instanceID,
+		WHERE `+strings.Join(where, " AND "),
+		args...,
 	)
 	if err != nil {
 		return nil, err
@@ -177,8 +183,10 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	defer rows.Close()
 	for rows.Next() {
 		var protoBytes []byte
+		var instanceID string
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
+			&instanceID,
 			&dataSourceMessage.UID,
 			&dataSourceMessage.ID,
 			&dataSourceMessage.Type,
@@ -222,13 +230,13 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.MasterName = dataSourceOptions.MasterName
 		dataSourceMessage.MasterObfuscatedPassword = dataSourceOptions.MasterObfuscatedPassword
 		dataSourceMessage.MasterUsername = dataSourceOptions.MasterUsername
-		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
+		instanceDataSourcesMap[instanceID] = append(instanceDataSourcesMap[instanceID], &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return dataSourceMessages, nil
+	return instanceDataSourcesMap, nil
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.

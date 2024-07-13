@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -1092,7 +1091,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if slices.Contains(permissions, wantPermission) {
+		if permissions[wantPermission] {
 			return true, nil
 		}
 	}
@@ -1103,7 +1102,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !slices.Contains(permissions, wantPermission) {
+		if !permissions[wantPermission] {
 			continue
 		}
 
@@ -1275,16 +1274,28 @@ func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 	var result []*v1pb.Advice
 	for _, advice := range list {
 		result = append(result, &v1pb.Advice{
-			Status:  convertAdviceStatus(advice.Status),
-			Code:    int32(advice.Code),
-			Title:   advice.Title,
-			Content: advice.Content,
-			Line:    int32(advice.GetStartPosition().GetLine()),
-			Column:  int32(advice.GetStartPosition().GetColumn()),
-			Detail:  advice.Detail,
+			Status:        convertAdviceStatus(advice.Status),
+			Code:          int32(advice.Code),
+			Title:         advice.Title,
+			Content:       advice.Content,
+			Line:          int32(advice.GetStartPosition().GetLine()),
+			Column:        int32(advice.GetStartPosition().GetColumn()),
+			Detail:        advice.Detail,
+			StartPosition: convertAdvicePosition(advice.StartPosition),
+			EndPosition:   convertAdvicePosition(advice.EndPosition),
 		})
 	}
 	return result
+}
+
+func convertAdvicePosition(p *storepb.Position) *v1pb.Position {
+	if p == nil {
+		return nil
+	}
+	return &v1pb.Position{
+		Line:   p.Line,
+		Column: p.Column,
+	}
 }
 
 func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {

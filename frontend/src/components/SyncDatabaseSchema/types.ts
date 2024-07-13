@@ -4,8 +4,8 @@ import type { ChangeHistory } from "@/types/proto/v1/database_service";
 export type SourceSchemaType = "SCHEMA_HISTORY_VERSION" | "RAW_SQL";
 
 export interface ChangeHistorySourceSchema {
-  projectId?: string;
-  environmentId?: string;
+  projectName?: string;
+  environmentName?: string;
   databaseId?: string;
   changeHistory?: ChangeHistory;
   conciseHistory?: string;
@@ -13,7 +13,7 @@ export interface ChangeHistorySourceSchema {
 }
 
 export interface RawSQLState {
-  projectId?: string;
+  projectName?: string;
   engine: Engine;
   statement: string;
   sheetId?: number;

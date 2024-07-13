@@ -222,6 +222,13 @@ const columns = computed(() => {
           },
         };
       },
+      cellProps: (rule: RuleTemplateV2) => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
     },
     {
       title: t("sql-review.rule.active"),

@@ -12,7 +12,11 @@ import type {
   SQLEditorTab,
   SQLEditorTabQueryContext,
 } from "@/types";
-import { DEFAULT_SQL_EDITOR_TAB_MODE, UNKNOWN_ID } from "@/types";
+import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
+  isValidInstanceName,
+  UNKNOWN_ID,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
@@ -91,7 +95,7 @@ export const suggestedTabTitleForSQLEditorConnection = (
   const parts: string[] = [];
   if (database.uid !== String(UNKNOWN_ID)) {
     parts.push(database.databaseName);
-  } else if (instance.uid !== String(UNKNOWN_ID)) {
+  } else if (isValidInstanceName(instance.name)) {
     parts.push(instance.title);
   }
   parts.push(defaultSQLEditorTabTitle());

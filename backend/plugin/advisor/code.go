@@ -187,7 +187,12 @@ const (
 	DisabledFunction       Code = 1702
 
 	// 1801 ~ 1899 advice error code.
+	// Advise enabling online migration for the issue.
 	AdviseOnlineMigration Code = 1801
+	// Advise using online migration to run the statement.
+	AdviseOnlineMigrationForStatement Code = 1802
+	// Advise not using online migration for the issue.
+	AdviseNoOnlineMigration Code = 1803
 
 	// 1901 ~ 1999 schema error code.
 	SchemaNotExists Code = 1901

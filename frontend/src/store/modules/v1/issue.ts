@@ -5,7 +5,7 @@ import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
-import { PresetRoleType, UNKNOWN_PROJECT_NAME } from "@/types";
+import { isValidProjectName, PresetRoleType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
@@ -102,9 +102,8 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     const projectStore = useProjectV1Store();
     const issues = resp.issues.filter((issue) => {
       const proj = extractProjectResourceName(issue.name);
-      return (
-        projectStore.getProjectByName(`projects/${proj}`).name !==
-        UNKNOWN_PROJECT_NAME
+      return isValidProjectName(
+        projectStore.getProjectByName(`projects/${proj}`).name
       );
     });
 

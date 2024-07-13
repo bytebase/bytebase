@@ -11,8 +11,8 @@
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
-        :project="state.projectId"
-        @update:project="handleProjectSelect"
+        :project-name="state.projectName"
+        @update:project-name="handleProjectSelect"
       />
     </div>
     <div
@@ -24,14 +24,14 @@
       <EnvironmentSelect
         class="!w-60 mr-4 shrink-0"
         name="environment"
-        :environment="state.environmentId"
-        @update:environment="handleEnvironmentSelect"
+        :environment-name="state.environmentName"
+        @update:environment-name="handleEnvironmentSelect"
       />
       <DatabaseSelect
         class="!w-128 max-w-full"
         :database="state.databaseId"
-        :environment="state.environmentId"
-        :project="state.projectId"
+        :environment-name="state.environmentName"
+        :project-name="state.projectName"
         :placeholder="$t('db.select')"
         :allowed-engine-type-list="allowedEngineTypeList"
         :fallback-option="false"
@@ -51,7 +51,7 @@
           :options="schemaVersionOptions"
           :placeholder="$t('change-history.select')"
           :disabled="
-            !isValidId(state.projectId) || schemaVersionOptions.length === 0
+            !isValidId(state.projectName) || schemaVersionOptions.length === 0
           "
           :render-label="renderSchemaVersionLabel"
           :fallback-option="
@@ -90,7 +90,6 @@ import {
   useChangeHistoryStore,
   useDatabaseV1Store,
   useSubscriptionV1Store,
-  useEnvironmentV1Store,
   useDBSchemaV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
@@ -121,16 +120,16 @@ const emit = defineEmits<{
 
 interface LocalState {
   showFeatureModal: boolean;
-  projectId?: string;
-  environmentId?: string;
+  projectName?: string;
+  environmentName?: string;
   databaseId?: string;
   changeHistoryName?: string;
 }
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
-  projectId: props.selectState?.projectId,
-  environmentId: props.selectState?.environmentId,
+  projectName: props.selectState?.projectName,
+  environmentName: props.selectState?.environmentName,
   databaseId: props.selectState?.databaseId,
   changeHistoryName: props.selectState?.changeHistory?.name,
 });
@@ -138,7 +137,6 @@ const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
-const environmentStore = useEnvironmentV1Store();
 
 const database = computed(() => {
   const databaseId = state.databaseId;
@@ -179,18 +177,18 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleProjectSelect = async (projectId: string | undefined) => {
-  if (projectId !== state.projectId) {
+const handleProjectSelect = async (name: string | undefined) => {
+  if (name !== state.projectName) {
     state.databaseId = undefined;
   }
-  state.projectId = projectId;
+  state.projectName = name;
 };
 
-const handleEnvironmentSelect = async (environmentId: string | undefined) => {
-  if (environmentId !== state.environmentId) {
+const handleEnvironmentSelect = async (name: string | undefined) => {
+  if (name !== state.environmentName) {
     state.databaseId = undefined;
   }
-  state.environmentId = environmentId;
+  state.environmentName = name;
 };
 
 const handleDatabaseSelect = async (databaseId: string | undefined) => {
@@ -199,11 +197,8 @@ const handleDatabaseSelect = async (databaseId: string | undefined) => {
     if (!database) {
       return;
     }
-    const environment = environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment
-    );
-    state.projectId = database.projectEntity.uid;
-    state.environmentId = environment?.uid;
+    state.projectName = database.project;
+    state.environmentName = database.effectiveEnvironment;
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.name,
@@ -448,16 +443,16 @@ watch(
 
 watch(
   [
-    () => state.projectId,
-    () => state.environmentId,
+    () => state.projectName,
+    () => state.environmentName,
     () => state.databaseId,
     mergedChangeHistorySourceSchema,
     isFetchingChangeHistorySourceSchema,
   ],
-  ([projectId, environmentId, databaseId, source, isFetching]) => {
+  ([projectName, environmentName, databaseId, source, isFetching]) => {
     const params: ChangeHistorySourceSchema = {
-      projectId,
-      environmentId,
+      projectName,
+      environmentName,
       databaseId,
       changeHistory: source?.changeHistory,
       conciseHistory: source?.conciseHistory,
@@ -472,16 +467,22 @@ watch(
 
 watch(
   [
-    () => props.selectState?.projectId,
-    () => props.selectState?.environmentId,
+    () => props.selectState?.projectName,
+    () => props.selectState?.environmentName,
     () => props.selectState?.databaseId,
     () => props.selectState?.changeHistory?.name,
     () => props.selectState?.isFetching,
   ],
-  ([projectId, environmentId, databaseId, changeHistoryName, isFetching]) => {
+  ([
+    projectName,
+    environmentName,
+    databaseId,
+    changeHistoryName,
+    isFetching,
+  ]) => {
     if (isFetching) return;
-    state.projectId = projectId;
-    state.environmentId = environmentId;
+    state.projectName = projectName;
+    state.environmentName = environmentName;
     state.databaseId = databaseId;
     state.changeHistoryName = changeHistoryName;
   },

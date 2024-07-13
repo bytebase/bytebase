@@ -126,7 +126,7 @@
 
   <TargetDatabasesSelectPanel
     v-if="selectTargetDatabasesContext.show"
-    :project-id="project.uid"
+    :project-name="project.name"
     :engine="dirtyBranch.engine"
     :selected-database-id-list="[]"
     :loading="!!state.applyingToDatabaseStatus"

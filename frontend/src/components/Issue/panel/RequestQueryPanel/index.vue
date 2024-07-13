@@ -18,13 +18,13 @@
           </span>
           <ProjectSelect
             class="!w-60 shrink-0"
-            :project="state.projectId"
+            :project-name="state.projectName"
             :allowed-project-role-list="[
               PresetRoleType.PROJECT_OWNER,
               PresetRoleType.PROJECT_DEVELOPER,
               PresetRoleType.PROJECT_VIEWER,
             ]"
-            @update:project="handleProjectSelect"
+            @update:project-name="handleProjectSelect"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
@@ -33,7 +33,7 @@
             <RequiredStar />
           </span>
           <DatabaseResourceForm
-            :project-id="state.projectId"
+            :project-name="state.projectName"
             :database-resources="state.databaseResources"
             @update:condition="state.databaseResourceCondition = $event"
             @update:database-resources="state.databaseResources = $event"
@@ -105,7 +105,7 @@ import {
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 
 interface LocalState {
-  projectId?: string;
+  projectName?: string;
   databaseResourceCondition?: string;
   databaseResources: DatabaseResource[];
   expireDays: number;
@@ -118,12 +118,12 @@ defineOptions({
 
 const props = withDefaults(
   defineProps<{
-    projectId?: string;
+    projectName?: string;
     database?: ComposedDatabase;
     placement: "left" | "right";
   }>(),
   {
-    projectId: undefined,
+    projectName: undefined,
     database: undefined,
     placement: "right",
   }
@@ -156,14 +156,14 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
-  projectId: props.projectId,
+  projectName: props.projectName,
   ...extractDatabaseResourcesFromProps(),
   expireDays: 1,
   description: "",
 });
 
 const allowCreate = computed(() => {
-  if (!state.projectId) {
+  if (!state.projectName) {
     return false;
   }
 
@@ -176,8 +176,8 @@ const allowCreate = computed(() => {
   return true;
 });
 
-const handleProjectSelect = async (projectId: string | undefined) => {
-  state.projectId = projectId;
+const handleProjectSelect = async (name: string | undefined) => {
+  state.projectName = name;
 };
 
 const doCreateIssue = async () => {
@@ -192,8 +192,8 @@ const doCreateIssue = async () => {
     grantRequest: {},
   });
 
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    state.projectId!
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    state.projectName!
   );
   const expression: string[] = [];
   if (state.databaseResourceCondition) {
@@ -235,10 +235,6 @@ const doCreateIssue = async () => {
 };
 
 const generateIssueName = () => {
-  if (!state.projectId) {
-    throw new Error("No project selected");
-  }
-
   if (state.databaseResources.length === 0) {
     return `Request query for all database`;
   } else {

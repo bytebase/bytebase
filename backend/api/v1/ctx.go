@@ -401,9 +401,9 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 	case *v1pb.UpdateProjectRequest:
 		projects = append(projects, r.GetProject().GetName())
 	case *v1pb.SetIamPolicyRequest:
-		projects = append(projects, r.GetProject())
+		projects = append(projects, r.GetResource())
 	case *v1pb.GetIamPolicyRequest:
-		projects = append(projects, r.GetProject())
+		projects = append(projects, r.GetResource())
 	case *v1pb.BatchGetIamPolicyRequest:
 		projects = append(projects, r.GetNames()...)
 	case *v1pb.GetDeploymentConfigRequest:

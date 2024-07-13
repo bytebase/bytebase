@@ -63,12 +63,11 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	switch config.RedisType {
 	case storepb.DataSourceOptions_REDIS_TYPE_UNSPECIFIED, storepb.DataSourceOptions_STANDALONE:
 		options := &redis.Options{
-			Addr:       fmt.Sprintf("%s:%s", config.Host, config.Port),
-			ClientName: "bytebase",
-			Username:   config.Username,
-			Password:   config.Password,
-			TLSConfig:  tlsConfig,
-			DB:         db,
+			Addr:      fmt.Sprintf("%s:%s", config.Host, config.Port),
+			Username:  config.Username,
+			Password:  config.Password,
+			TLSConfig: tlsConfig,
+			DB:        db,
 		}
 		if config.SSHConfig.Host != "" {
 			sshClient, err := util.GetSSHClient(config.SSHConfig)
@@ -88,7 +87,6 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		client := redis.NewClient(options)
 		d.databaseName = fmt.Sprintf("%d", db)
 		d.rdb = client
-		return d, nil
 	case storepb.DataSourceOptions_SENTINEL:
 		sentinelAddrs := make([]string, 0, 1+len(config.AdditionalAddresses))
 		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
@@ -99,7 +97,6 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			MasterName:       config.MasterName,
 			Username:         config.MasterUsername,
 			Password:         config.MasterPassword,
-			ClientName:       "bytebase",
 			SentinelUsername: config.Username,
 			SentinelPassword: config.Password,
 			SentinelAddrs:    sentinelAddrs,
@@ -124,7 +121,6 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		d.databaseName = fmt.Sprintf("%d", db)
 		client := redis.NewFailoverClient(options)
 		d.rdb = client
-		return d, nil
 	case storepb.DataSourceOptions_CLUSTER:
 		addrs := make([]string, 0, 1+len(config.AdditionalAddresses))
 		addrs = append(addrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
@@ -132,11 +128,10 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			addrs = append(addrs, fmt.Sprintf("%s:%s", addr.Host, addr.Port))
 		}
 		options := &redis.ClusterOptions{
-			Addrs:      addrs,
-			ClientName: "bytebase",
-			Username:   config.Username,
-			Password:   config.Password,
-			TLSConfig:  tlsConfig,
+			Addrs:     addrs,
+			Username:  config.Username,
+			Password:  config.Password,
+			TLSConfig: tlsConfig,
 		}
 		if config.SSHConfig.Host != "" {
 			sshClient, err := util.GetSSHClient(config.SSHConfig)
@@ -155,10 +150,11 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		}
 		client := redis.NewClusterClient(options)
 		d.rdb = client
-		return d, nil
 	default:
 		return nil, errors.Errorf("unsupported redis type %s", config.RedisType.String())
 	}
+
+	return d, nil
 }
 
 type noDeadlineConn struct{ net.Conn }

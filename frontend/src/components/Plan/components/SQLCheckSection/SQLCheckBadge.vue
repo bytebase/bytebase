@@ -1,6 +1,6 @@
 <template>
   <button
-    class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
+    class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-transparent"
     :class="buttonClasses"
     @click="handleClick"
   >
@@ -78,32 +78,41 @@ const buttonClasses = computed(() => {
   let bgColor = "";
   let bgHoverColor = "";
   let textColor = "";
+  let borderColor = "";
   switch (status.value) {
     case "RUNNING":
       bgColor = "bg-blue-100";
       bgHoverColor = "bg-blue-300";
       textColor = "text-blue-800";
+      borderColor = "border-blue-800";
       break;
     case "SUCCESS":
       bgColor = "bg-gray-100";
       bgHoverColor = "bg-gray-300";
       textColor = "text-gray-800";
+      borderColor = "border-gray-800";
       break;
     case "WARNING":
       bgColor = "bg-yellow-100";
       bgHoverColor = "bg-yellow-300";
       textColor = "text-yellow-800";
+      borderColor = "border-yellow-800";
       break;
     case "ERROR":
       bgColor = "bg-red-100";
       bgHoverColor = "bg-red-300";
       textColor = "text-red-800";
+      borderColor = "border-red-800";
       break;
   }
 
   const styleList: string[] = [textColor, bgColor];
   if (clickable.value) {
-    styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
+    styleList.push(
+      "cursor-pointer",
+      `hover:${bgHoverColor}`,
+      `hover:${borderColor}`
+    );
   } else {
     styleList.push("cursor-default");
   }

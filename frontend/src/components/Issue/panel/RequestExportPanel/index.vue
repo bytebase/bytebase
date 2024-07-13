@@ -17,10 +17,10 @@
           </span>
           <ProjectSelect
             class="!w-60 shrink-0"
-            :project="state.projectId"
+            :project-name="state.projectName"
             :filter="filterProject"
-            :disabled="Boolean(props.projectId)"
-            @update:project="handleProjectSelect"
+            :disabled="isValidProjectName(props.projectName)"
+            @update:project-name="handleProjectSelect"
           />
         </div>
 
@@ -30,7 +30,7 @@
             <RequiredStar />
           </span>
           <DatabaseResourceForm
-            :project-id="state.projectId"
+            :project-name="state.projectName"
             :database-resources="state.databaseResources"
             @update:condition="state.databaseResourceCondition = $event"
             @update:database-resources="state.databaseResources = $event"
@@ -106,7 +106,7 @@ import {
   pushNotification,
 } from "@/store";
 import type { DatabaseResource, ComposedProject } from "@/types";
-import { UNKNOWN_ID, PresetRoleType } from "@/types";
+import { UNKNOWN_ID, PresetRoleType, isValidProjectName } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import {
@@ -118,8 +118,8 @@ import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
 interface LocalState {
-  projectId?: string;
-  environmentId?: string;
+  projectName?: string;
+  environmentName?: string;
   databaseId?: string;
   databaseResourceCondition?: string;
   databaseResources: DatabaseResource[];
@@ -133,7 +133,7 @@ defineOptions({
 });
 
 const props = defineProps<{
-  projectId?: string;
+  projectName?: string;
   databaseId?: string;
   redirectToIssuePage?: boolean;
 }>();
@@ -155,7 +155,7 @@ const state = reactive<LocalState>({
 });
 
 const allowCreate = computed(() => {
-  if (!state.projectId) {
+  if (!state.projectName) {
     return false;
   }
   if (isUndefined(state.databaseResourceCondition)) {
@@ -165,8 +165,8 @@ const allowCreate = computed(() => {
 });
 
 onMounted(async () => {
-  if (props.projectId) {
-    handleProjectSelect(props.projectId);
+  if (props.projectName) {
+    handleProjectSelect(props.projectName);
   }
   if (props.databaseId) {
     handleDatabaseSelect(props.databaseId);
@@ -177,12 +177,12 @@ const filterProject = (project: ComposedProject) => {
   return hasProjectPermissionV2(project, currentUser.value, "bb.databases.get");
 };
 
-const handleProjectSelect = async (projectId: string | undefined) => {
-  state.projectId = projectId;
+const handleProjectSelect = async (name: string | undefined) => {
+  state.projectName = name;
 };
 
-const handleEnvironmentSelect = (environmentId: string | undefined) => {
-  state.environmentId = environmentId;
+const handleEnvironmentSelect = (environmentName: string | undefined) => {
+  state.environmentName = environmentName;
   const database = databaseStore.getDatabaseByUID(
     state.databaseId || String(UNKNOWN_ID)
   );
@@ -190,7 +190,7 @@ const handleEnvironmentSelect = (environmentId: string | undefined) => {
   if (
     database &&
     database.uid !== String(UNKNOWN_ID) &&
-    database.effectiveEnvironmentEntity.uid !== state.environmentId
+    database.effectiveEnvironment !== state.environmentName
   ) {
     state.databaseId = undefined;
   }
@@ -202,8 +202,8 @@ const handleDatabaseSelect = (databaseId: string | undefined) => {
     state.databaseId || String(UNKNOWN_ID)
   );
   if (database && database.uid !== String(UNKNOWN_ID)) {
-    handleProjectSelect(database.projectEntity.uid);
-    handleEnvironmentSelect(database.effectiveEnvironmentEntity.uid);
+    handleProjectSelect(database.project);
+    handleEnvironmentSelect(database.effectiveEnvironment);
   }
 };
 
@@ -212,14 +212,16 @@ const doCreateIssue = async () => {
     return;
   }
 
+  const project = await projectStore.getOrFetchProjectByName(
+    state.projectName!
+  );
   const newIssue = Issue.fromPartial({
-    title: generateIssueName(),
+    title: generateIssueName(project),
     description: state.description,
     type: Issue_Type.GRANT_REQUEST,
     grantRequest: {},
   });
 
-  const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
   const expression: string[] = [];
   expression.push(`request.row_limit <= ${state.maxRowCount}`);
   if (state.databaseResourceCondition) {
@@ -271,8 +273,7 @@ const doCreateIssue = async () => {
   emit("close");
 };
 
-const generateIssueName = () => {
-  const project = projectStore.getProjectByUID(state.projectId!);
+const generateIssueName = (project: ComposedProject) => {
   return `Request data export for "${project.title}"`;
 };
 </script>

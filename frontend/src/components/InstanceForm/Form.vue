@@ -85,13 +85,13 @@
           <EnvironmentSelect
             class="mt-1 w-full"
             required="true"
-            :environment="
-              environment.uid === String(UNKNOWN_ID)
-                ? undefined
-                : environment.uid
+            :environment-name="
+              isValidEnvironmentName(environment.name)
+                ? environment.name
+                : undefined
             "
             :disabled="!allowEdit"
-            @update:environment="handleSelectEnvironmentUID"
+            @update:environment-name="handleSelectEnvironment"
           />
         </div>
 
@@ -463,13 +463,15 @@ import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspa
 import {
   useSettingV1Store,
   useActuatorV1Store,
-  useEnvironmentV1Store,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import {
+  UNKNOWN_ID,
+  isValidEnvironmentName,
+} from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -722,10 +724,9 @@ const changeInstanceActivation = async (on: boolean) => {
   }
 };
 
-const handleSelectEnvironmentUID = (uid: string | undefined) => {
-  if (!uid) return;
-  const environment = useEnvironmentV1Store().getEnvironmentByUID(uid);
-  basicInfo.value.environment = environment.name;
+const handleSelectEnvironment = (name: string | undefined) => {
+  if (!isValidEnvironmentName(name)) return;
+  basicInfo.value.environment = name;
 };
 
 const testConnectionForCurrentEditingDS = () => {

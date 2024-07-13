@@ -5,7 +5,7 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
-import { IamPolicy } from "./iam_policy";
+import { GetIamPolicyRequest, IamPolicy, SetIamPolicyRequest } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -281,14 +281,6 @@ export interface UndeleteProjectRequest {
   name: string;
 }
 
-export interface GetIamPolicyRequest {
-  /**
-   * The name of the project to get the IAM policy.
-   * Format: projects/{project}
-   */
-  project: string;
-}
-
 export interface BatchGetIamPolicyRequest {
   /** The scope of the batch get. Typically it's "projects/-". */
   scope: string;
@@ -300,15 +292,6 @@ export interface BatchGetIamPolicyResponse {
 }
 
 export interface BatchGetIamPolicyResponse_PolicyResult {
-  project: string;
-  policy: IamPolicy | undefined;
-}
-
-export interface SetIamPolicyRequest {
-  /**
-   * The name of the project to set the IAM policy.
-   * Format: projects/{project}
-   */
   project: string;
   policy: IamPolicy | undefined;
 }
@@ -1675,63 +1658,6 @@ export const UndeleteProjectRequest = {
   },
 };
 
-function createBaseGetIamPolicyRequest(): GetIamPolicyRequest {
-  return { project: "" };
-}
-
-export const GetIamPolicyRequest = {
-  encode(message: GetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetIamPolicyRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetIamPolicyRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.project = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetIamPolicyRequest {
-    return { project: isSet(object.project) ? globalThis.String(object.project) : "" };
-  },
-
-  toJSON(message: GetIamPolicyRequest): unknown {
-    const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
-    return GetIamPolicyRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
-    const message = createBaseGetIamPolicyRequest();
-    message.project = object.project ?? "";
-    return message;
-  },
-};
-
 function createBaseBatchGetIamPolicyRequest(): BatchGetIamPolicyRequest {
   return { scope: "", names: [] };
 }
@@ -1936,82 +1862,6 @@ export const BatchGetIamPolicyResponse_PolicyResult = {
   },
   fromPartial(object: DeepPartial<BatchGetIamPolicyResponse_PolicyResult>): BatchGetIamPolicyResponse_PolicyResult {
     const message = createBaseBatchGetIamPolicyResponse_PolicyResult();
-    message.project = object.project ?? "";
-    message.policy = (object.policy !== undefined && object.policy !== null)
-      ? IamPolicy.fromPartial(object.policy)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseSetIamPolicyRequest(): SetIamPolicyRequest {
-  return { project: "", policy: undefined };
-}
-
-export const SetIamPolicyRequest = {
-  encode(message: SetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
-    }
-    if (message.policy !== undefined) {
-      IamPolicy.encode(message.policy, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetIamPolicyRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetIamPolicyRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.project = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.policy = IamPolicy.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SetIamPolicyRequest {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
-    };
-  },
-
-  toJSON(message: SetIamPolicyRequest): unknown {
-    const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    if (message.policy !== undefined) {
-      obj.policy = IamPolicy.toJSON(message.policy);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SetIamPolicyRequest>): SetIamPolicyRequest {
-    return SetIamPolicyRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SetIamPolicyRequest>): SetIamPolicyRequest {
-    const message = createBaseSetIamPolicyRequest();
     message.project = object.project ?? "";
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? IamPolicy.fromPartial(object.policy)
@@ -4771,21 +4621,22 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              39,
+              40,
               18,
-              37,
+              38,
               47,
               118,
               49,
               47,
               123,
-              112,
               114,
-              111,
-              106,
               101,
+              115,
+              111,
+              117,
+              114,
               99,
-              116,
+              101,
               61,
               112,
               114,
@@ -4880,24 +4731,25 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              42,
+              43,
               58,
               1,
               42,
               34,
-              37,
+              38,
               47,
               118,
               49,
               47,
               123,
-              112,
               114,
-              111,
-              106,
               101,
+              115,
+              111,
+              117,
+              114,
               99,
-              116,
+              101,
               61,
               112,
               114,

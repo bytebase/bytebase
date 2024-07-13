@@ -4,7 +4,6 @@ import Long from "long";
 import protobufjs from "protobufjs";
 import { createApp } from "vue";
 import App from "./App.vue";
-import Splash from "./Splash.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
@@ -22,7 +21,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useAuthStore,
-  useSubscriptionV1Store,
 } from "./store";
 import {
   environmentName,
@@ -173,39 +171,7 @@ const initSearchParams = () => {
   }
 };
 
-// We need to restore the basic info in order to perform route authentication.
-// Even using the <suspense>, it's still too late, thus we do the fetch here.
-// We use finally because we always want to mount the app regardless of the error.
-const initActuator = async () => {
-  useActuatorV1Store().fetchServerInfo();
-};
-const initSubscription = async () => {
-  await useSubscriptionV1Store().fetchSubscription();
-};
-const initFeatureMatrix = async () => {
-  await useSubscriptionV1Store().fetchFeatureMatrix();
-};
-const restoreUser = async () => {
-  await useAuthStore().restoreUser();
-};
-const initBasicModules = async () => {
-  await Promise.all([
-    initActuator(),
-    initFeatureMatrix(),
-    initSubscription(),
-    restoreUser(),
-  ]);
-};
-
 initSearchParams();
 
-const splash = createApp(Splash);
-splash.use(pinia).use(i18n).use(NaiveUI).mount("#app");
-
-initBasicModules().finally(() => {
-  splash.unmount();
-
-  // Install router after the necessary data fetching is complete.
-  app.use(router).use(highlight).use(i18n).use(NaiveUI);
-  app.mount("#app");
-});
+app.use(router).use(highlight).use(i18n).use(NaiveUI);
+app.mount("#app");

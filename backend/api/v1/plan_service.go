@@ -390,8 +390,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						ID:        task.ID,
 						UpdaterID: user.ID,
 					}
-					tasksMap[task.ID] = task
-
 					var taskSpecID struct {
 						SpecID string `json:"specId"`
 					}
@@ -643,15 +641,30 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					if !doUpdate {
 						continue
 					}
-
+					tasksMap[task.ID] = task
 					taskPatchList = append(taskPatchList, taskPatch)
+				}
+
+				if len(taskPatchList) != 0 {
+					issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+						PipelineID: oldPlan.PipelineUID,
+					})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+					}
+					if issue != nil {
+						// Do not allow to update task if issue is done or canceled.
+						if issue.Status == api.IssueDone || issue.Status == api.IssueCanceled {
+							return nil, status.Errorf(codes.FailedPrecondition, "cannot update task because issue %q is %s", issue.Title, issue.Status)
+						}
+					}
 				}
 			}
 
 			for _, taskPatch := range taskPatchList {
 				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
 					task := tasksMap[taskPatch.ID]
-					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning {
+					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning || task.LatestTaskRunStatus == api.TaskRunSkipped || task.LatestTaskRunStatus == api.TaskRunDone {
 						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %q is %s", task.Name, task.LatestTaskRunStatus)
 					}
 				}

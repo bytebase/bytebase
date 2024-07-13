@@ -4,13 +4,7 @@ import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedInstance, MaybeRef } from "@/types";
-import {
-  emptyInstance,
-  EMPTY_ID,
-  unknownEnvironment,
-  unknownInstance,
-  UNKNOWN_ID,
-} from "@/types";
+import { unknownEnvironment, unknownInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
@@ -143,29 +137,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     await fetchInstanceByName(name, silent);
     return getInstanceByName(name);
   };
-  const fetchInstanceByUID = async (uid: string) => {
-    const name = `instances/${uid}`;
-    return fetchInstanceByName(name);
-  };
-  const getInstanceByUID = (uid: string) => {
-    if (uid === String(EMPTY_ID)) return emptyInstance();
-    if (uid === String(UNKNOWN_ID)) return unknownInstance();
-    return (
-      instanceList.value.find((instance) => instance.uid === uid) ??
-      unknownInstance()
-    );
-  };
-  const getOrFetchInstanceByUID = async (uid: string) => {
-    if (uid === String(EMPTY_ID)) return emptyInstance();
-    if (uid === String(UNKNOWN_ID)) return unknownInstance();
-
-    const existed = instanceList.value.find((instance) => instance.uid === uid);
-    if (existed) {
-      return existed;
-    }
-    await fetchInstanceByUID(uid);
-    return getInstanceByUID(uid);
-  };
   const fetchInstanceRoleByName = async (name: string) => {
     const role = await instanceRoleServiceClient.getInstanceRole({ name });
     return role;
@@ -238,8 +209,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     fetchProjectInstanceList,
     getInstanceByName,
     getOrFetchInstanceByName,
-    getInstanceByUID,
-    getOrFetchInstanceByUID,
     fetchInstanceRoleByName,
     fetchInstanceRoleListByName,
     getInstanceRoleListByName,

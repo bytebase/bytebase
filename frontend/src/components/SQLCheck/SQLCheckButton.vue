@@ -1,10 +1,10 @@
 <template>
   <div class="flex flex-row items-center gap-2">
-    <slot name="result" :advices="advices" :is-running="isRunning">
+    <slot name="result" :advices="filteredAdvices" :is-running="isRunning">
       <SQLCheckSummary
-        v-if="advices !== undefined && !isRunning"
+        v-if="filteredAdvices !== undefined && !isRunning"
         :database="database"
-        :advices="advices"
+        :advices="filteredAdvices"
         @click="showDetailPanel = true"
       />
     </slot>
@@ -55,17 +55,15 @@
     </NPopover>
 
     <SQLCheckPanel
-      v-if="database && advices && showDetailPanel"
+      v-if="database && filteredAdvices && showDetailPanel"
       :database="database"
-      :advices="advices"
+      :advices="filteredAdvices"
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
-      :highlight-row-filter="highlightRowFilter"
+      :show-code-location="showCodeLocation"
+      :ignore-issue-creation-restriction="ignoreIssueCreationRestriction"
       @close="onPanelClose"
     >
-      <template #row-extra="{ row }">
-        <slot name="row-extra" :row="row" :confirm="confirmDialog" />
-      </template>
       <template #row-title-extra="{ row }">
         <slot name="row-title-extra" :row="row" :confirm="confirmDialog" />
       </template>
@@ -88,8 +86,8 @@ import type { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer, hasWorkspacePermissionV2 } from "@/utils";
-import type { PlanCheckDetailTableRow } from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 import ErrorList from "../misc/ErrorList.vue";
+import SQLCheckPanel from "./SQLCheckPanel.vue";
 import SQLCheckSummary from "./SQLCheckSummary.vue";
 import { useSQLCheckContext } from "./context";
 
@@ -101,14 +99,18 @@ const props = withDefaults(
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
     changeType?: CheckRequest_ChangeType;
-    highlightRowFilter?: (row: PlanCheckDetailTableRow) => boolean;
+    showCodeLocation?: boolean;
+    ignoreIssueCreationRestriction?: boolean;
+    adviceFilter?: (advices: Advice, index: number) => boolean;
   }>(),
   {
     databaseMetadata: undefined,
     buttonProps: undefined,
     buttonStyle: undefined,
     changeType: undefined,
-    highlightRowFilter: undefined,
+    showCodeLocation: undefined,
+    ignoreIssueCreationRestriction: false,
+    adviceFilter: undefined,
   }
 );
 
@@ -122,9 +124,17 @@ const currentUser = useCurrentUserV1();
 const SKIP_CHECK_THRESHOLD = 1024 * 1024;
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
-const advices = ref<Advice[]>();
+const rawAdvices = ref<Advice[]>();
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
+
+const filteredAdvices = computed(() => {
+  const { adviceFilter } = props;
+  if (!adviceFilter) {
+    return rawAdvices.value;
+  }
+  return rawAdvices.value?.filter(adviceFilter);
+});
 
 const reviewPolicy = useReviewPolicyForDatabase(
   computed(() => {
@@ -193,7 +203,7 @@ const runChecks = async () => {
 
   const handleErrors = (errors: string[]) => {
     // Mock the pre-check errors to advices
-    advices.value = errors.map((err) =>
+    rawAdvices.value = errors.map((err) =>
       Advice.fromPartial({
         title: "Pre check",
         status: Advice_Status.WARNING,
@@ -204,8 +214,8 @@ const runChecks = async () => {
   };
 
   isRunning.value = true;
-  if (!advices.value) {
-    advices.value = [];
+  if (!rawAdvices.value) {
+    rawAdvices.value = [];
   }
   const { statement, errors } = await props.getStatement();
   if (statement.length > SKIP_CHECK_THRESHOLD) {
@@ -216,7 +226,7 @@ const runChecks = async () => {
   }
   try {
     const result = await runCheckInternal(statement, props.databaseMetadata);
-    advices.value = result.advices;
+    rawAdvices.value = result.advices;
   } finally {
     isRunning.value = false;
   }
@@ -228,7 +238,7 @@ const onPanelClose = () => {
 };
 
 const hasError = computed(() => {
-  return advices.value?.some(
+  return filteredAdvices.value?.some(
     (advice) =>
       advice.status === Advice_Status.ERROR ||
       advice.status === Advice_Status.WARNING
@@ -263,7 +273,7 @@ onUnmounted(() => {
   context.runSQLCheck.value = undefined;
 });
 
-watch(advices, (advices) => {
+watch(filteredAdvices, (advices) => {
   emit("update:advices", advices);
 });
 </script>

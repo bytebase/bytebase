@@ -247,7 +247,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
+import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -325,7 +325,7 @@ const instanceEngine = computed(() => {
 });
 
 const allowQuery = computed(() => {
-  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
+  if (database.value.project === DEFAULT_PROJECT_NAME) {
     return hasProjectPermissionV2(
       defaultProject(),
       currentUserV1.value,

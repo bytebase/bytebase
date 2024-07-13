@@ -21,7 +21,7 @@
         class="overflow-y-auto"
         arrow-placement="left"
         :default-expanded-names="
-          databaseListGroupByEnvironment.map((group) => group.environment.uid)
+          databaseListGroupByEnvironment.map((group) => group.environment.name)
         "
       >
         <NCollapseItem
@@ -29,8 +29,8 @@
             environment,
             databaseList: databaseListInEnvironment,
           } in databaseListGroupByEnvironment"
-          :key="environment.uid"
-          :name="environment.uid"
+          :key="environment.name"
+          :name="environment.name"
         >
           <template #header>
             <label class="flex items-center gap-x-2" @click.stop.prevent>
@@ -143,7 +143,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
-  projectId: string;
+  projectName: string;
   engine: Engine;
   selectedDatabaseIdList: string[];
   loading?: boolean;
@@ -166,7 +166,7 @@ const state = reactive<LocalState>({
 const databaseListGroupByEnvironment = computed(() => {
   const databaseList =
     databaseStore.databaseList
-      .filter((db) => db.projectEntity.uid === props.projectId)
+      .filter((db) => db.project === props.projectName)
       .filter((db) => db.databaseName.includes(state.searchText))
       .filter((db) => db.instanceResource.engine === props.engine) || [];
   const listByEnv = environmentV1Store.environmentList.map((environment) => {

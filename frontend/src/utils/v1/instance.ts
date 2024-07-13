@@ -2,7 +2,7 @@ import { keyBy, orderBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { isValidProjectName } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type {
@@ -20,7 +20,7 @@ export function instanceV1Name(instance: Instance | InstanceResource) {
   if ((instance as Instance).state === State.DELETED) {
     name += ` (${t("common.archived")})`;
   } else if (
-    (instance as Instance).uid !== `${UNKNOWN_ID}` &&
+    isValidProjectName(instance.name) &&
     !instance.activation &&
     store.currentPlan !== PlanType.FREE
   ) {
@@ -40,7 +40,7 @@ export const sortInstanceV1List = (instanceList: ComposedInstance[]) => {
     instanceList,
     [
       (instance) => instance.environmentEntity.order,
-      (instance) => Number(instance.uid),
+      (instance) => instance.name,
       (instance) => instance.title,
     ],
     ["desc", "asc", "asc"]

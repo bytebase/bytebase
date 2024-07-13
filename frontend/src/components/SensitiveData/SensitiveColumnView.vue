@@ -17,25 +17,25 @@
     >
       <NInputGroup>
         <ProjectSelect
-          :project="state.selectedProjectUid"
+          :project-name="state.selectedProjectName"
           :include-default-project="true"
           :include-all="true"
           :disabled="false"
-          @update:project="
-            state.selectedProjectUid = $event ?? String(UNKNOWN_ID)
+          @update:project-name="
+            state.selectedProjectName = $event ?? UNKNOWN_PROJECT_NAME
           "
         />
         <InstanceSelect
           class="!w-48"
-          :instance="state.selectedInstanceUid"
+          :instance-name="state.selectedInstanceName"
           :include-all="true"
-          :environment="environment?.uid"
-          @update:instance="onInstanceSelect($event)"
+          :environment-name="environment?.name"
+          @update:instance-name="onInstanceSelect($event)"
         />
         <DatabaseSelect
           :include-all="true"
-          :project="state.selectedProjectUid"
-          :instance="state.selectedInstanceUid"
+          :project-name="state.selectedProjectName"
+          :instance-name="state.selectedInstanceName"
           :database="state.selectedDatabaseUid"
           @update:database="onDatabaseSelect($event)"
         />
@@ -141,7 +141,15 @@ import {
   usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { UNKNOWN_ID, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import {
+  UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
+  UNKNOWN_INSTANCE_NAME,
+  UNKNOWN_PROJECT_NAME,
+  isValidProjectName,
+  isValidEnvironmentName,
+  isValidInstanceName,
+} from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
   Instance,
@@ -161,8 +169,8 @@ import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface LocalState {
   selectedEnvironmentName: string;
-  selectedProjectUid: string;
-  selectedInstanceUid: string;
+  selectedProjectName: string;
+  selectedInstanceName: string;
   selectedDatabaseUid: string;
   showFeatureModal: boolean;
   isLoading: boolean;
@@ -192,8 +200,8 @@ const state = reactive<LocalState>({
   isLoading: false,
   sensitiveColumnList: [],
   selectedEnvironmentName: UNKNOWN_ENVIRONMENT_NAME,
-  selectedProjectUid: String(UNKNOWN_ID),
-  selectedInstanceUid: String(UNKNOWN_ID),
+  selectedProjectName: UNKNOWN_PROJECT_NAME,
+  selectedInstanceName: UNKNOWN_INSTANCE_NAME,
   selectedDatabaseUid: String(UNKNOWN_ID),
   pendingGrantAccessColumn: [],
   showGrantAccessDrawer: false,
@@ -345,25 +353,22 @@ const filteredColumnList = computed(() => {
       return false;
     }
     if (
-      state.selectedEnvironmentName !== UNKNOWN_ENVIRONMENT_NAME &&
-      column.database.effectiveEnvironmentEntity.name !==
-        state.selectedEnvironmentName
+      isValidEnvironmentName(state.selectedEnvironmentName) &&
+      column.database.effectiveEnvironment !== state.selectedEnvironmentName
     ) {
       return false;
     }
     if (
-      state.selectedProjectUid !== String(UNKNOWN_ID) &&
-      column.database.projectEntity.uid !== state.selectedProjectUid
+      isValidProjectName(state.selectedProjectName) &&
+      column.database.project !== state.selectedProjectName
     ) {
       return false;
     }
-    if (state.selectedInstanceUid !== String(UNKNOWN_ID)) {
-      const instance = useInstanceV1Store().getInstanceByUID(
-        state.selectedInstanceUid
-      );
-      if (instance.name !== column.database.instance) {
-        return false;
-      }
+    if (
+      isValidInstanceName(state.selectedInstanceName) &&
+      state.selectedInstanceName !== column.database.instance
+    ) {
+      return false;
     }
     if (
       state.selectedDatabaseUid !== String(UNKNOWN_ID) &&
@@ -389,14 +394,14 @@ const findInstanceWithoutLicense = (columnList: SensitiveColumn[]) => {
 };
 
 const environment = computed(() => {
-  if (state.selectedEnvironmentName === UNKNOWN_ENVIRONMENT_NAME) {
+  if (!isValidEnvironmentName(state.selectedEnvironmentName)) {
     return;
   }
   return environmentStore.getEnvironmentByName(state.selectedEnvironmentName);
 });
 
-const onInstanceSelect = (instanceUid: string | undefined) => {
-  state.selectedInstanceUid = instanceUid ?? String(UNKNOWN_ID);
+const onInstanceSelect = (name: string | undefined) => {
+  state.selectedInstanceName = name ?? UNKNOWN_INSTANCE_NAME;
   state.selectedDatabaseUid = String(UNKNOWN_ID);
 };
 
@@ -404,8 +409,7 @@ const onDatabaseSelect = (databaseUid: string | undefined) => {
   state.selectedDatabaseUid = databaseUid ?? String(UNKNOWN_ID);
   if (databaseUid) {
     const database = databaseStore.getDatabaseByUID(databaseUid);
-    const instance = useInstanceV1Store().getInstanceByName(database.instance);
-    state.selectedInstanceUid = instance.uid;
+    state.selectedInstanceName = database.instance;
   }
 };
 

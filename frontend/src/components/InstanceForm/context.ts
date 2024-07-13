@@ -11,7 +11,11 @@ import {
   useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { UNKNOWN_ID, unknownEnvironment, type FeatureType } from "@/types";
+import {
+  isValidEnvironmentName,
+  unknownEnvironment,
+  type FeatureType,
+} from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import {
@@ -200,7 +204,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (!hasWorkspacePermissionV2(me.value, "bb.instances.create")) {
       return false;
     }
-    if (environment.value.uid === String(UNKNOWN_ID)) {
+    if (!isValidEnvironmentName(environment.value.name)) {
       return false;
     }
     if (basicInfo.value.engine === Engine.SPANNER) {

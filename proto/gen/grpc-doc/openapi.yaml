@@ -8233,6 +8233,14 @@ components:
                 detail:
                     type: string
                     description: The advice detail.
+                startPosition:
+                    allOf:
+                        - $ref: '#/components/schemas/Position'
+                    description: |-
+                        1-based Position of the SQL statement.
+                         To supersede `line` and `column` above.
+                endPosition:
+                    $ref: '#/components/schemas/Position'
         AdviseIndexResponse:
             type: object
             properties:
@@ -11636,6 +11644,15 @@ components:
                     readOnly: true
                     type: string
                     description: The system-assigned, unique identifier for the resource.
+        Position:
+            type: object
+            properties:
+                line:
+                    type: integer
+                    format: int32
+                column:
+                    type: integer
+                    format: int32
         PrettyRequest:
             type: object
             properties:
@@ -12019,6 +12036,14 @@ components:
                     type: integer
                     description: Code from sql review.
                     format: int32
+                startPosition:
+                    allOf:
+                        - $ref: '#/components/schemas/Position'
+                    description: |-
+                        1-based Position of the SQL statement.
+                         To supersede `line` and `column` above.
+                endPosition:
+                    $ref: '#/components/schemas/Position'
         Result_SqlSummaryReport:
             type: object
             properties:
@@ -12668,14 +12693,14 @@ components:
                          use the default full mask algorithm.
         SetIamPolicyRequest:
             required:
-                - project
+                - resource
                 - policy
             type: object
             properties:
-                project:
+                resource:
                     type: string
                     description: |-
-                        The name of the project to set the IAM policy.
+                        The name of the resource to set the IAM policy.
                          Format: projects/{project}
                 policy:
                     $ref: '#/components/schemas/IamPolicy'

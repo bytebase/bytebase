@@ -41,7 +41,7 @@ import { useProjectV1Store, useCurrentUserV1, usePageMode } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { QuickActionType } from "@/types";
 import {
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   QuickActionProjectPermissionMap,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -69,7 +69,7 @@ watchEffect(() => {
 });
 
 const isDefaultProject = computed((): boolean => {
-  return project.value.name === DEFAULT_PROJECT_V1_NAME;
+  return project.value.name === DEFAULT_PROJECT_NAME;
 });
 
 const currentUser = useCurrentUserV1();

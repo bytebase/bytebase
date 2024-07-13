@@ -1,6 +1,6 @@
 <template>
   <InstanceV1EngineIcon
-    v-if="instance.uid !== String(UNKNOWN_ID)"
+    v-if="isValidInstanceName(instance.name)"
     :instance="instance"
     :tooltip="false"
     class="h-3.5 w-auto"
@@ -11,7 +11,7 @@
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useInstanceV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { isValidInstanceName } from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
 import { extractDatabaseResourceName } from "@/utils";
 

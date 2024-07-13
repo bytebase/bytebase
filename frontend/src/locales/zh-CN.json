@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "显示默认参数",
       "hide-default-parameters": "隐藏默认参数",
-      "enable": "启用在线大表变更"
+      "enable": "启用在线大表变更",
+      "disable": "关闭在线大表变更",
+      "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
     "prior-backup-tips": "提前备份受影响的数据"
   },
@@ -2391,7 +2393,14 @@
       "self": "标准模式"
     },
     "to-enable-standard-mode": "来开启标准模式",
-    "add-a-new-instance": "添加实例"
+    "add-a-new-instance": "添加实例",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket 连接失败",
+        "description": "自动补全功能可能会受到限制或无效。",
+        "disconnected": "WebSocket 已断开连接"
+      }
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",

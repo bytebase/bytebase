@@ -1,17 +1,18 @@
 <template>
   <NButton
-    v-if="allowEnableGhost"
+    v-if="advise"
     size="small"
     type="primary"
-    @click="enableGhost"
+    @click="toggleGhost(advise.on)"
   >
-    {{ $t("task.online-migration.enable") }}
+    {{ advise.text() }}
   </NButton>
 </template>
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { isGroupingChangeTaskV1, useIssueContext } from "../../logic";
 import { type PlanCheckDetailTableRow } from "../PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 import { allowGhostForTask } from "../Sidebar/GhostSection/common";
@@ -20,28 +21,46 @@ const emit = defineEmits<{
   (event: "toggle", on: boolean): void;
 }>();
 
-defineProps<{
+const props = defineProps<{
   row: PlanCheckDetailTableRow;
 }>();
 
+const { t } = useI18n();
 const { isCreating, issue, activeTask } = useIssueContext();
 
-const allowEnableGhost = computed(() => {
-  if (!isCreating.value) {
-    return false;
-  }
-  if (isGroupingChangeTaskV1(issue.value, activeTask.value)) {
-    return false;
-  }
-
-  if (!allowGhostForTask(issue.value, activeTask.value)) {
-    return false;
-  }
-
-  return true;
+const code = computed(() => {
+  return props.row.checkResult.sqlReviewReport?.code;
 });
 
-const enableGhost = () => {
-  emit("toggle", true);
+const advise = computed(() => {
+  if (!isCreating.value) {
+    return undefined;
+  }
+  if (!code.value) {
+    return undefined;
+  }
+  if (isGroupingChangeTaskV1(issue.value, activeTask.value)) {
+    return undefined;
+  }
+  if (!allowGhostForTask(issue.value, activeTask.value)) {
+    return undefined;
+  }
+  if (code.value === 1801) {
+    return {
+      text: () => t("task.online-migration.enable"),
+      on: true,
+    };
+  }
+  if (code.value === 1803) {
+    return {
+      text: () => t("task.online-migration.disable"),
+      on: false,
+    };
+  }
+  return undefined;
+});
+
+const toggleGhost = (on: boolean) => {
+  emit("toggle", on);
 };
 </script>

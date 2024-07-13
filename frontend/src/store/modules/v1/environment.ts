@@ -2,7 +2,6 @@ import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
 import { environmentServiceClient } from "@/grpcweb";
-import { environmentNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId } from "@/types";
 import { unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -121,12 +120,8 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       this.environmentMapByName.set(environment.name, environment);
       return environment;
     },
-    async getOrFetchEnvironmentByUID(uid: string) {
-      const name = `${environmentNamePrefix}${uid}`;
-      return this.getOrFetchEnvironmentByName(name);
-    },
     getEnvironmentByName(name: string) {
-      return this.environmentMapByName.get(name);
+      return this.environmentMapByName.get(name) ?? unknownEnvironment();
     },
     getEnvironmentByUID(uid: string) {
       return (

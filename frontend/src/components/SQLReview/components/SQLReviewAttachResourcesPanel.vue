@@ -19,11 +19,12 @@
             <EnvironmentSelect
               class="mt-3"
               required
-              :environments="environments"
-              :use-resource-id="true"
+              :environment-names="environmentNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:environments="onResourcesChange($event, projects)"
+              @update:environment-names="
+                onResourcesChange($event, environmentNames)
+              "
             />
           </div>
           <div class="flex items-center space-x-2">
@@ -41,11 +42,10 @@
               class="mt-3"
               style="width: 100%"
               required
-              :projects="projects"
-              :use-resource-id="true"
+              :project-names="projectNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:projects="onResourcesChange($event, environments)"
+              @update:project-names="onResourcesChange($event, projectNames)"
             />
           </div>
         </div>
@@ -72,7 +72,12 @@
 import { NDivider } from "naive-ui";
 import { watch, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Drawer, DrawerContent, ProjectSelect } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  EnvironmentSelect,
+  ProjectSelect,
+} from "@/components/v2";
 import { useSQLReviewStore, pushNotification, useCurrentUserV1 } from "@/store";
 import {
   environmentNamePrefix,
@@ -107,13 +112,13 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2(me.value, "bb.policies.update");
 });
 
-const environments = computed(() =>
+const environmentNames = computed(() =>
   resources.value.filter((resource) =>
     resource.startsWith(environmentNamePrefix)
   )
 );
 
-const projects = computed(() =>
+const projectNames = computed(() =>
   resources.value.filter((resource) => resource.startsWith(projectNamePrefix))
 );
 

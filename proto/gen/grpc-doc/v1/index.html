@@ -276,6 +276,10 @@
             <a href="#v1%2fcommon.proto">v1/common.proto</a>
             <ul>
               
+                <li>
+                  <a href="#bytebase.v1.Position"><span class="badge">M</span>Position</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.Engine"><span class="badge">E</span>Engine</a>
@@ -1084,7 +1088,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetIamPolicyRequest"><span class="badge">M</span>GetIamPolicyRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.IamPolicy"><span class="badge">M</span>IamPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SetIamPolicyRequest"><span class="badge">M</span>SetIamPolicyRequest</a>
                 </li>
               
               
@@ -1714,10 +1726,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetIamPolicyRequest"><span class="badge">M</span>GetIamPolicyRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetProjectProtectionRulesRequest"><span class="badge">M</span>GetProjectProtectionRulesRequest</a>
                 </li>
               
@@ -1783,10 +1791,6 @@
               
                 <li>
                   <a href="#bytebase.v1.SearchProjectsResponse"><span class="badge">M</span>SearchProjectsResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SetIamPolicyRequest"><span class="badge">M</span>SetIamPolicyRequest</a>
                 </li>
               
                 <li>
@@ -3665,6 +3669,37 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
       </div>
       <p></p>
 
+      
+        <h3 id="bytebase.v1.Position">Position</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>line</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
       
 
       
@@ -12620,6 +12655,31 @@ If the condition evaluates to false, then this binding does not apply to the cur
 
         
       
+        <h3 id="bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the project to get the IAM policy.
+Format: projects/{project} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.IamPolicy">IamPolicy</h3>
         <p></p>
 
@@ -12636,6 +12696,38 @@ If the condition evaluates to false, then this binding does not apply to the cur
                   <td>repeated</td>
                   <td><p>Collection of binding.
 A binding binds one or more project members to a single project role. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the resource to set the IAM policy.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>policy</td>
+                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -18140,6 +18232,21 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
                   <td><p>Code from sql review. </p></td>
                 </tr>
               
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>1-based Position of the SQL statement.
+To supersede `line` and `column` above. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -19152,31 +19259,6 @@ Format: projects/{project}/deploymentConfigs/default. </p></td>
 
         
       
-        <h3 id="bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the project to get the IAM policy.
-Format: projects/{project} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetProjectProtectionRulesRequest">GetProjectProtectionRulesRequest</h3>
         <p></p>
 
@@ -19788,38 +19870,6 @@ Format: projects/{project}/protectionRules </p></td>
                   <td><a href="#bytebase.v1.Project">Project</a></td>
                   <td>repeated</td>
                   <td><p>The projects from the specified request. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the project to set the IAM policy.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>policy</td>
-                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -20752,7 +20802,7 @@ The API will default to the BASIC view.</p></td>
               <tr>
                 <td>GetIamPolicy</td>
                 <td>GET</td>
-                <td>/v1/{project=projects/*}:getIamPolicy</td>
+                <td>/v1/{resource=projects/*}:getIamPolicy</td>
                 <td></td>
               </tr>
               
@@ -20772,7 +20822,7 @@ The API will default to the BASIC view.</p></td>
               <tr>
                 <td>SetIamPolicy</td>
                 <td>POST</td>
-                <td>/v1/{project=projects/*}:setIamPolicy</td>
+                <td>/v1/{resource=projects/*}:setIamPolicy</td>
                 <td>*</td>
               </tr>
               
@@ -26584,6 +26634,21 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The advice detail. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>1-based Position of the SQL statement.
+To supersede `line` and `column` above. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

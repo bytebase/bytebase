@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "デフォルトパラメータを表示",
       "hide-default-parameters": "デフォルトパラメータを非表示にする",
-      "enable": "オンラインでの大規模なテーブル変更を有効にする"
+      "enable": "オンラインでの大規模なテーブル変更を有効にする",
+      "disable": "オンライン移行を無効にする",
+      "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
     },
     "prior-backup-tips": "影響を受けるデータを事前にバックアップする"
   },
@@ -2391,7 +2393,14 @@
       "self": "標準モード"
     },
     "to-enable-standard-mode": "標準モードを有効にするには",
-    "add-a-new-instance": "新しいインスタンスを追加する"
+    "add-a-new-instance": "新しいインスタンスを追加する",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket接続に失敗しました",
+        "description": "オートコンプリートが制限されているか、無効になっている可能性があります。",
+        "disconnected": "WebSocketが切断されました"
+      }
+    }
   },
   "schema-editor": {
     "self": "スキーマエディタ",

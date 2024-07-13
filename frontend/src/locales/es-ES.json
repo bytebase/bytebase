@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados",
-      "enable": "Habilitar la migración en línea"
+      "enable": "Habilitar la migración en línea",
+      "disable": "Deshabilitar la migración en línea",
+      "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
     "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
   },
@@ -2391,7 +2393,14 @@
       "self": "Modo estandar"
     },
     "to-enable-standard-mode": "para habilitar el modo estándar",
-    "add-a-new-instance": "Agregar una nueva instancia"
+    "add-a-new-instance": "Agregar una nueva instancia",
+    "web-socket": {
+      "errors": {
+        "title": "La conexión WebSocket falló",
+        "description": "La finalización automática puede estar limitada o deshabilitada.",
+        "disconnected": "WebSocket desconectado"
+      }
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",

@@ -366,6 +366,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	var commands []base.SingleSQL
 	var originalIndex []int32
+	var nonTransactionAndSetRoleStmts []string
+	var nonTransactionAndSetRoleStmtsIndex []int32
 	var isPlsql bool
 	oneshot := true
 	// HACK(p0ny): always split for pg
@@ -389,6 +391,27 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if false && len(commands) <= common.MaximumCommands {
 			oneshot = false
 		}
+
+		var tmpCommands []base.SingleSQL
+		var tmpOriginalIndex []int32
+		for i, command := range commands {
+			switch {
+			case isSetRoleStatement(command.Text):
+				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+			case IsNonTransactionStatement(command.Text):
+				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+				continue
+			case isSuperuserStatement(command.Text):
+				// Use superuser privilege to run privileged statements.
+				slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
+				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", command.Text, owner)
+			}
+			tmpCommands = append(tmpCommands, command)
+			tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
+		}
+		commands, originalIndex = tmpCommands, tmpOriginalIndex
 	}
 	// HACK(p0ny): always split for pg
 	//nolint
@@ -422,38 +445,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
-	var remainingSQLs []base.SingleSQL
-	var remainingSQLsIndex, nonTransactionAndSetRoleStmtsIndex []int
-
-	var nonTransactionAndSetRoleStmts []string
-	for i, singleSQL := range commands {
-		if IsNonTransactionStatement(singleSQL.Text) {
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
-			continue
-		}
-
-		if isSetRoleStatement(singleSQL.Text) {
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
-			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, i)
-		}
-
-		if isSuperuserStatement(singleSQL.Text) {
-			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-			if strings.Contains(strings.ToUpper(singleSQL.Text), "CREATE EVENT TRIGGER") {
-				singleSQL.Text = strings.ReplaceAll(singleSQL.Text, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-			}
-			// Use superuser privilege to run privileged statements.
-			slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", singleSQL.Text))
-			singleSQL.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", singleSQL.Text, owner)
-		}
-		remainingSQLs = append(remainingSQLs, singleSQL)
-		remainingSQLsIndex = append(remainingSQLsIndex, i)
-	}
-
 	totalRowsAffected := int64(0)
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
@@ -461,9 +452,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	defer conn.Close()
 
-	if len(remainingSQLs) != 0 {
-		totalCommands := len(remainingSQLs)
-
+	totalCommands := len(commands)
+	if totalCommands > 0 {
 		err = conn.Raw(func(driverConn any) error {
 			conn := driverConn.(*stdlib.Conn).Conn()
 
@@ -492,7 +482,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				return err
 			}
 
-			for i, command := range remainingSQLs {
+			for i, command := range commands {
 				// Start the current chunk.
 				// Set the progress information for the current chunk.
 				if opts.UpdateExecutionStatus != nil {
@@ -510,7 +500,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 					})
 				}
 
-				indexes := []int32{int32(originalIndex[remainingSQLsIndex[i]])}
+				indexes := []int32{originalIndex[i]}
 				opts.LogCommandExecute(indexes)
 
 				rr := tx.Conn().PgConn().Exec(ctx, command.Text)
@@ -563,7 +553,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{int32(originalIndex[nonTransactionAndSetRoleStmtsIndex[i]])}
+		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
 		opts.LogCommandExecute(indexes)
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
 			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
@@ -596,14 +586,6 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 		}
 	}
 	return nil
-}
-
-func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
-	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
-		return true
-	}
-	return false
 }
 
 var (
@@ -639,6 +621,14 @@ func IsNonTransactionStatement(stmt string) bool {
 		return true
 	}
 	return len(vacuumReg.FindString(stmt)) > 0
+}
+
+func isSuperuserStatement(stmt string) bool {
+	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
+	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
+		return true
+	}
+	return false
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
