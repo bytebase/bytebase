@@ -12669,8 +12669,9 @@ If the condition evaluates to false, then this binding does not apply to the cur
                   <td>resource</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the project to get the IAM policy.
-Format: projects/{project} </p></td>
+                  <td><p>The name of the resource to get the IAM policy.
+Format: projects/{project}
+Format: workspaces/{workspace} </p></td>
                 </tr>
               
             </tbody>
@@ -12720,7 +12721,8 @@ A binding binds one or more project members to a single project role. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the resource to set the IAM policy.
-Format: projects/{project} </p></td>
+Format: projects/{project}
+Format: workspaces/{workspace} </p></td>
                 </tr>
               
                 <tr>
@@ -17077,6 +17079,20 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>GetIamPolicy</td>
+                <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SetIamPolicy</td>
+                <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -17282,6 +17298,26 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/policies/*}</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetIamPolicy</td>
+                <td>GET</td>
+                <td>/v1/{resource=workspaces/*}:getIamPolicy</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SetIamPolicy</td>
+                <td>POST</td>
+                <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
+                <td>*</td>
               </tr>
               
             

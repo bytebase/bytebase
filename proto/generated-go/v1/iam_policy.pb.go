@@ -28,8 +28,9 @@ type GetIamPolicyRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The name of the project to get the IAM policy.
+	// The name of the resource to get the IAM policy.
 	// Format: projects/{project}
+	// Format: workspaces/{workspace}
 	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 }
 
@@ -79,6 +80,7 @@ type SetIamPolicyRequest struct {
 
 	// The name of the resource to set the IAM policy.
 	// Format: projects/{project}
+	// Format: workspaces/{workspace}
 	Resource string     `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 	Policy   *IamPolicy `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
 }

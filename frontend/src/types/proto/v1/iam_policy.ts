@@ -8,8 +8,9 @@ export const protobufPackage = "bytebase.v1";
 
 export interface GetIamPolicyRequest {
   /**
-   * The name of the project to get the IAM policy.
+   * The name of the resource to get the IAM policy.
    * Format: projects/{project}
+   * Format: workspaces/{workspace}
    */
   resource: string;
 }
@@ -18,6 +19,7 @@ export interface SetIamPolicyRequest {
   /**
    * The name of the resource to set the IAM policy.
    * Format: projects/{project}
+   * Format: workspaces/{workspace}
    */
   resource: string;
   policy: IamPolicy | undefined;
