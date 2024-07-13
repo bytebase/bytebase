@@ -175,7 +175,7 @@ func getRequestResource(request any) string {
 	case *v1pb.BatchUpdateDatabasesRequest:
 		return r.Parent
 	case *v1pb.SetIamPolicyRequest:
-		return r.Project
+		return r.Resource
 	case *v1pb.CreateUserRequest:
 		return r.GetUser().GetName()
 	case *v1pb.UpdateUserRequest:

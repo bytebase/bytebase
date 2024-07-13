@@ -36,7 +36,7 @@ export const useProjectIamPolicyStore = defineStore(
 
       const request = projectServiceClient
         .getIamPolicy({
-          project,
+          resource: project,
         })
         .then((policy) => {
           policyMap.value.set(project, policy);
@@ -68,7 +68,7 @@ export const useProjectIamPolicyStore = defineStore(
         }
       });
       const updated = await projectServiceClient.setIamPolicy({
-        project,
+        resource: project,
         policy,
       });
       policyMap.value.set(project, updated);
