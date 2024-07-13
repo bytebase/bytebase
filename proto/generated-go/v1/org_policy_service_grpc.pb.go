@@ -25,6 +25,8 @@ const (
 	OrgPolicyService_CreatePolicy_FullMethodName = "/bytebase.v1.OrgPolicyService/CreatePolicy"
 	OrgPolicyService_UpdatePolicy_FullMethodName = "/bytebase.v1.OrgPolicyService/UpdatePolicy"
 	OrgPolicyService_DeletePolicy_FullMethodName = "/bytebase.v1.OrgPolicyService/DeletePolicy"
+	OrgPolicyService_GetIamPolicy_FullMethodName = "/bytebase.v1.OrgPolicyService/GetIamPolicy"
+	OrgPolicyService_SetIamPolicy_FullMethodName = "/bytebase.v1.OrgPolicyService/SetIamPolicy"
 )
 
 // OrgPolicyServiceClient is the client API for OrgPolicyService service.
@@ -36,6 +38,8 @@ type OrgPolicyServiceClient interface {
 	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 	UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 }
 
 type orgPolicyServiceClient struct {
@@ -96,6 +100,26 @@ func (c *orgPolicyServiceClient) DeletePolicy(ctx context.Context, in *DeletePol
 	return out, nil
 }
 
+func (c *orgPolicyServiceClient) GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IamPolicy)
+	err := c.cc.Invoke(ctx, OrgPolicyService_GetIamPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgPolicyServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IamPolicy)
+	err := c.cc.Invoke(ctx, OrgPolicyService_SetIamPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrgPolicyServiceServer is the server API for OrgPolicyService service.
 // All implementations must embed UnimplementedOrgPolicyServiceServer
 // for forward compatibility
@@ -105,6 +129,8 @@ type OrgPolicyServiceServer interface {
 	CreatePolicy(context.Context, *CreatePolicyRequest) (*Policy, error)
 	UpdatePolicy(context.Context, *UpdatePolicyRequest) (*Policy, error)
 	DeletePolicy(context.Context, *DeletePolicyRequest) (*emptypb.Empty, error)
+	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
+	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
 	mustEmbedUnimplementedOrgPolicyServiceServer()
 }
 
@@ -126,6 +152,12 @@ func (UnimplementedOrgPolicyServiceServer) UpdatePolicy(context.Context, *Update
 }
 func (UnimplementedOrgPolicyServiceServer) DeletePolicy(context.Context, *DeletePolicyRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePolicy not implemented")
+}
+func (UnimplementedOrgPolicyServiceServer) GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIamPolicy not implemented")
+}
+func (UnimplementedOrgPolicyServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
 }
 func (UnimplementedOrgPolicyServiceServer) mustEmbedUnimplementedOrgPolicyServiceServer() {}
 
@@ -230,6 +262,42 @@ func _OrgPolicyService_DeletePolicy_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrgPolicyService_GetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIamPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgPolicyServiceServer).GetIamPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrgPolicyService_GetIamPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrgPolicyServiceServer).GetIamPolicy(ctx, req.(*GetIamPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrgPolicyService_SetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetIamPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgPolicyServiceServer).SetIamPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrgPolicyService_SetIamPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrgPolicyServiceServer).SetIamPolicy(ctx, req.(*SetIamPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrgPolicyService_ServiceDesc is the grpc.ServiceDesc for OrgPolicyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -256,6 +324,14 @@ var OrgPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePolicy",
 			Handler:    _OrgPolicyService_DeletePolicy_Handler,
+		},
+		{
+			MethodName: "GetIamPolicy",
+			Handler:    _OrgPolicyService_GetIamPolicy_Handler,
+		},
+		{
+			MethodName: "SetIamPolicy",
+			Handler:    _OrgPolicyService_SetIamPolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
