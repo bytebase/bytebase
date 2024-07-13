@@ -23,7 +23,7 @@
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
               @update:environment-names="
-                onResourcesChange($event, environmentNames)
+                onResourcesChange($event, projectNames)
               "
             />
           </div>
@@ -45,7 +45,9 @@
               :project-names="projectNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:project-names="onResourcesChange($event, projectNames)"
+              @update:project-names="
+                onResourcesChange($event, environmentNames)
+              "
             />
           </div>
         </div>
