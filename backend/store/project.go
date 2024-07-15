@@ -176,7 +176,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, err
 	}
 
-	policy := &storepb.ProjectIamPolicy{
+	policy := &storepb.IamPolicy{
 		Bindings: []*storepb.Binding{
 			{
 				Role: common.FormatRole(api.ProjectOwner.String()),

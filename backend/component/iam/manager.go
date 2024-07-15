@@ -189,7 +189,7 @@ func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, 
 	return roles, nil
 }
 
-func getRolesFromProjectPolicy(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.ProjectIamPolicy) []string {
+func getRolesFromProjectPolicy(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.IamPolicy) []string {
 	var roles []string
 	bindings := utils.GetUserIAMPolicyBindings(ctx, stores, user, policy)
 

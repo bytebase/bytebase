@@ -22,9 +22,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// defaultWorkspaceResourceID is a placeholder for resource id in workspace level IAM policy.
-var defaultWorkspaceResourceID = 1
-
 // OrgPolicyService implements the workspace policy service.
 type OrgPolicyService struct {
 	v1pb.UnimplementedOrgPolicyServiceServer
@@ -234,7 +231,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 
 func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, requestName string) (api.PolicyResourceType, *int, error) {
 	if requestName == "" {
-		return api.PolicyResourceTypeWorkspace, &defaultWorkspaceResourceID, nil
+		return api.PolicyResourceTypeWorkspace, &api.DefaultWorkspaceResourceID, nil
 	}
 
 	if strings.HasPrefix(requestName, common.ProjectNamePrefix) {

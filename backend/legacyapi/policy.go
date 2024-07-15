@@ -81,6 +81,9 @@ const (
 	ReservedTagReviewConfig ReservedTag = "bb.tag.review_config"
 )
 
+// DefaultWorkspaceResourceID is a placeholder for resource id in workspace level IAM policy.
+var DefaultWorkspaceResourceID = 1
+
 var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
