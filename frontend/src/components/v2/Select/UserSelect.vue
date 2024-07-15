@@ -125,8 +125,8 @@ const prepare = () => {
 };
 watchEffect(prepare);
 
-const getUserListFromProject = (projectUID: string) => {
-  const project = projectV1Store.findProjectByUID(projectUID);
+const getUserListFromProject = (projectName: string) => {
+  const project = projectV1Store.getProjectByName(projectName);
   const memberList = memberListInProjectV1(project.iamPolicy);
   const filteredUserList = memberList
     .filter((member) => {
@@ -162,10 +162,9 @@ const getUserListFromWorkspace = () => {
 };
 
 const rawUserList = computed(() => {
-  const list =
-    props.projectName && props.projectName !== String(UNKNOWN_ID)
-      ? getUserListFromProject(props.projectName)
-      : getUserListFromWorkspace();
+  const list = isValidProjectName(props.projectName)
+    ? getUserListFromProject(props.projectName)
+    : getUserListFromWorkspace();
 
   return list.filter((user) => {
     if (
