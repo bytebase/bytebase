@@ -40,6 +40,8 @@ type State struct {
 
 	// RunningPlanChecks is the set of running plan checks.
 	RunningPlanChecks sync.Map
+	// RunningPlanCheckRunsCancelFunc is the cancelFunc of running plan checks.
+	RunningPlanCheckRunsCancelFunc sync.Map // map[planCheckRunUID]context.CancelFunc
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
 	InstanceOutstandingConnections *connectionLimiter
 

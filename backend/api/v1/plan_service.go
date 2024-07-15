@@ -818,6 +818,76 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanCh
 	return &v1pb.RunPlanChecksResponse{}, nil
 }
 
+// BatchCancelPlanCheckRuns cancels a list of plan check runs.
+func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *v1pb.BatchCancelPlanCheckRunsRequest) (*v1pb.BatchCancelPlanCheckRunsResponse, error) {
+	if len(request.PlanCheckRuns) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "plan check runs cannot be empty")
+	}
+
+	projectID, _, err := common.GetProjectIDPlanID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
+	}
+
+	var planCheckRunIDs []int
+	for _, planCheckRun := range request.PlanCheckRuns {
+		_, _, planCheckRunID, err := common.GetProjectIDPlanIDPlanCheckRunID(planCheckRun)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		planCheckRunIDs = append(planCheckRunIDs, planCheckRunID)
+	}
+
+	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		UIDs: &planCheckRunIDs,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
+	}
+
+	// Check if any of the given plan check runs are not running.
+	for _, planCheckRun := range planCheckRuns {
+		switch planCheckRun.Status {
+		case store.PlanCheckRunStatusRunning:
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "planCheckRun %v(%v) is not running", planCheckRun.UID, planCheckRun.Type)
+		}
+	}
+	// Cancel the plan check runs.
+	for _, planCheckRun := range planCheckRuns {
+		if cancelFunc, ok := s.stateCfg.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
+			cancelFunc.(context.CancelFunc)()
+		}
+	}
+	// Update the status of the plan check runs to canceled.
+	if err := s.store.BatchCancelPlanCheckRuns(ctx, planCheckRunIDs, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
+	}
+
+	return &v1pb.BatchCancelPlanCheckRunsResponse{}, nil
+}
+
 func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {
 	filters, err := parseFilter(filter)
 	if err != nil {
