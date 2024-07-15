@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="tsx">
+import { cloneDeep } from "lodash-es";
 import { NDivider, useDialog } from "naive-ui";
 import { watch, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -130,18 +131,21 @@ const onResourcesChange = (
 };
 
 const resourcesBindingWithOtherPolicy = computed(() => {
-  const resp = [];
+  const map = new Map<string, string[]>();
   for (const resource of resources.value) {
     const config = sqlReviewStore.getReviewPolicyByResouce(resource);
     if (config && config.id !== props.review.id) {
-      resp.push(resource);
+      if (!map.has(config.id)) {
+        map.set(config.id, []);
+      }
+      map.get(config.id)?.push(resource);
     }
   }
-  return resp;
+  return map;
 });
 
 const onConfirm = async () => {
-  if (resourcesBindingWithOtherPolicy.value.length === 0) {
+  if (resourcesBindingWithOtherPolicy.value.size === 0) {
     await upsertReviewResource();
   } else {
     $dialog.warning({
@@ -150,6 +154,12 @@ const onConfirm = async () => {
       negativeText: t("common.cancel"),
       positiveText: t("common.continue-anyway"),
       content: () => {
+        const resources = [
+          ...resourcesBindingWithOtherPolicy.value.values(),
+        ].reduce((list, resources) => {
+          list.push(...resources);
+          return list;
+        }, []);
         return (
           <div class="space-y-2">
             <p>
@@ -158,7 +168,7 @@ const onConfirm = async () => {
               })}
             </p>
             <ul class="list-disc ml-4 textinfolabel">
-              {resourcesBindingWithOtherPolicy.value.map((resource) => (
+              {resources.map((resource) => (
                 <li>
                   <SQLReviewAttachedResource
                     resource={resource}
@@ -172,7 +182,10 @@ const onConfirm = async () => {
         );
       },
       onPositiveClick: () => {
-        upsertReviewResource();
+        const map = cloneDeep(resourcesBindingWithOtherPolicy.value);
+        upsertReviewResource().then(() => {
+          sqlReviewStore.removeResourceForReview(map);
+        });
       },
     });
   }
