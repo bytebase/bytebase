@@ -45,7 +45,6 @@ const props = withDefaults(
     includeAll?: boolean;
     includeArchived?: boolean;
     autoReset?: boolean;
-    useResourceId?: boolean;
     filter?: (instance: ComposedInstance, index: number) => boolean;
   }>(),
   {
@@ -55,7 +54,6 @@ const props = withDefaults(
     includeAll: false,
     includeArchived: false,
     autoReset: true,
-    useResourceId: false,
     filter: undefined,
   }
 );

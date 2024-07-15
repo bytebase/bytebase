@@ -42,7 +42,6 @@ const props = withDefaults(
     environmentNames: undefined,
     includeArchived: false,
     showProductionIcon: true,
-    useResourceId: false,
     multiple: false,
     filter: () => true,
     renderSuffix: (environment: string) => "",

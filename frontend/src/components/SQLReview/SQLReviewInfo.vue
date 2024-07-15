@@ -61,11 +61,10 @@
         style="width: 100%"
         required
         :multiple="true"
-        :databases="attachedResources"
-        :use-resource-id="true"
+        :database-names="attachedResources"
         :disabled="!allowChangeAttachedResource"
         :filter="(db: Database, _: number) => filterResource(db.name)"
-        @update:databases="$emit('attached-resources-change', $event)"
+        @update:database-names="$emit('attached-resources-change', $event)"
       />
     </div>
     <div>
@@ -124,7 +123,7 @@ import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { getErrorCode } from "@/utils/grpcweb";
-import { ProjectSelect } from "../v2";
+import { DatabaseSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";
 import { type ResourceType } from "./components/useReviewConfigAttachedResource";
 

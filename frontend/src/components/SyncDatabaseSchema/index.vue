@@ -63,7 +63,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { isNull, isUndefined } from "lodash-es";
+import { isUndefined } from "lodash-es";
 import type { ButtonProps } from "naive-ui";
 import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { computed, reactive, ref } from "vue";
@@ -75,7 +75,7 @@ import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import {
-  UNKNOWN_ID,
+  isValidDatabaseName,
   isValidEnvironmentName,
   isValidProjectName,
 } from "@/types";
@@ -145,13 +145,6 @@ const handleChangeHistorySchemaVersionChanges = (
   Object.assign(changeHistorySourceSchemaState, schemaVersion);
 };
 
-const isValidId = (id: any): id is string => {
-  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
-    return false;
-  }
-  return true;
-};
-
 const stepTabList = computed(() => {
   return [
     { title: t("database.sync-schema.select-source-schema") },
@@ -167,7 +160,7 @@ const allowNext = computed(() => {
         isValidEnvironmentName(
           changeHistorySourceSchemaState.environmentName
         ) &&
-        isValidId(changeHistorySourceSchemaState.databaseId) &&
+        isValidDatabaseName(changeHistorySourceSchemaState.databaseName) &&
         !isUndefined(changeHistorySourceSchemaState.changeHistory)
       );
     } else {
@@ -183,9 +176,9 @@ const allowNext = computed(() => {
     const targetDatabaseList = targetDatabaseViewRef.value?.targetDatabaseList;
     const targetDatabaseDiffList = targetDatabaseList
       .map((db) => {
-        const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.uid];
+        const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.name];
         return {
-          id: db.uid,
+          name: db.name,
           diff: diff?.edited || "",
         };
       })
@@ -255,7 +248,7 @@ const tryFinishSetup = async () => {
   query.databaseList = targetDatabaseList.map((db) => db.name).join(",");
   const sqlMap: Record<string, string> = {};
   targetDatabaseList.forEach((db) => {
-    const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.uid];
+    const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.name];
     sqlMap[db.name] = diff.edited;
   });
   query.sqlMap = JSON.stringify(sqlMap);
