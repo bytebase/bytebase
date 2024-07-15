@@ -2,7 +2,10 @@ package plsql
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	plsql "github.com/bytebase/plsql-parser"
@@ -25,6 +28,12 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	if err != nil {
 		return nil, err
 	}
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
+	return trickyCompleter.completion()
 }
 
 func newIgnoredTokens() map[int]bool {
@@ -171,6 +180,34 @@ type Completer struct {
 	caretTokenIsQuoted bool
 }
 
+func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
+	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
+	core := base.NewCodeCompletionCore(
+		parser,
+		newIgnoredTokens(),
+		newPreferredRules(),
+		&globalFollowSetsByState,
+		0, // todo
+		0, // todo
+		0, // todo
+		0, // todo
+	)
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		scene:               cCtx.Scene,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		getMetadata:         cCtx.Metadata,
+		listDatabaseNames:   cCtx.ListDatabaseNames,
+		defaultDatabase:     cCtx.DefaultDatabase,
+		metadataCache:       make(map[string]*model.DatabaseMetadata),
+		noSeparatorRequired: newNoSeparatorRequired(),
+		cteCache:            make(map[int][]*base.VirtualTableReference),
+	}
+}
+
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
@@ -235,8 +272,150 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 
 type CompletionMap map[string]base.Candidate
 
+func (m CompletionMap) toSlice() []base.Candidate {
+	var result []base.Candidate
+	for _, candidate := range m {
+		result = append(result, candidate)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Type != result[j].Type {
+			return result[i].Type < result[j].Type
+		}
+		return result[i].Text < result[j].Text
+	})
+	return result
+}
+
 func (m CompletionMap) Insert(entry base.Candidate) {
 	m[entry.String()] = entry
+}
+
+func (m CompletionMap) insertDatabases(c *Completer) {
+	for _, name := range c.listAllDatabases() {
+		m.Insert(base.Candidate{
+			Type: base.CandidateTypeSchema, // For oracle, schema is the same as database modified by bytebase.
+			Text: name,
+		})
+	}
+}
+
+func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
+	for schema := range schemas {
+		for _, view := range c.listViews(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: c.quotedIdentifierIfNeeded(view),
+			})
+		}
+	}
+}
+
+func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
+	for schema := range schemas {
+		if len(schema) == 0 {
+			// User didn't specify the schema, so we need to append cte tables.
+			for _, table := range c.cteTables {
+				m.Insert(base.Candidate{
+					Type: base.CandidateTypeTable,
+					Text: c.quotedIdentifierIfNeeded(table.Table),
+				})
+			}
+			continue
+		}
+		for _, table := range c.listTables(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeTable,
+				Text: c.quotedIdentifierIfNeeded(table),
+			})
+		}
+	}
+}
+
+func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
+	for schema := range schemas {
+		if len(schema) == 0 {
+			// User didn't specify the schema, so we need to append cte tables.
+			for _, table := range c.cteTables {
+				if tables[table.Table] {
+					for _, column := range table.Columns {
+						m.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: c.quotedIdentifierIfNeeded(column),
+						})
+					}
+				}
+			}
+			continue
+		}
+		if _, exists := c.metadataCache[schema]; !exists {
+			_, metadata, err := c.getMetadata(c.ctx, schema)
+			if err != nil || metadata == nil {
+				continue
+			}
+			c.metadataCache[schema] = metadata
+		}
+
+		for table := range tables {
+			tableMeta := c.metadataCache[schema].GetSchema(schema).GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				definition := fmt.Sprintf("%s | %s", table, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				comment := column.UserComment
+				m.Insert(base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
+					Definition: definition,
+					Comment:    comment,
+				})
+			}
+		}
+	}
+}
+
+func (c *Completer) listAllDatabases() []string {
+	var result []string
+	if c.defaultDatabase != "" {
+		result = append(result, c.defaultDatabase)
+	}
+	list, err := c.listDatabaseNames(c.ctx)
+	if err != nil {
+		return result
+	}
+	for _, name := range list {
+		if name != c.defaultDatabase {
+			result = append(result, name)
+		}
+	}
+	return result
+}
+
+func (c *Completer) listTables(schema string) []string {
+	if _, exists := c.metadataCache[schema]; !exists {
+		_, metadata, err := c.getMetadata(c.ctx, schema)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[schema] = metadata
+	}
+
+	return c.metadataCache[schema].GetSchema(schema).ListTableNames()
+}
+
+func (c *Completer) listViews(schema string) []string {
+	if _, exists := c.metadataCache[schema]; !exists {
+		_, metadata, err := c.getMetadata(c.ctx, schema)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[schema] = metadata
+	}
+
+	return c.metadataCache[schema].GetSchema(schema).ListViewNames()
 }
 
 func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
@@ -271,8 +450,221 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				Type: base.CandidateTypeFunction,
 				Text: strings.ToUpper(entry) + "()",
 			})
+		default:
+			keywordEntries.Insert(base.Candidate{
+				Type: base.CandidateTypeKeyword,
+				Text: strings.ToUpper(entry),
+			})
 		}
 	}
+
+	for candidate := range candidates.Rules {
+		c.scanner.PopAndRestore()
+		c.scanner.Push()
+
+		// todo: fetchCommonTableExpression
+
+		switch candidate {
+		case plsql.PlSqlParserRULE_general_element_part:
+			schema, table, flags := c.determineGeneralElementPartCandidates()
+			if flags&ObjectFlagsShowSchemas != 0 {
+				schemaEntries.insertDatabases(c)
+			}
+
+			schemas := make(map[string]bool)
+			if len(schema) > 0 {
+				schemas[schema] = true
+			} else if len(c.references) > 0 {
+				for _, reference := range c.references {
+					if physicalTable, ok := reference.(*base.PhysicalTableReference); ok {
+						if len(physicalTable.Schema) > 0 {
+							schemas[physicalTable.Schema] = true
+						}
+					}
+				}
+			}
+
+			if len(schemas) == 0 {
+				schemas[c.defaultDatabase] = true
+				// User didn't specify the schema, so we need to append cte tables.
+				schemas[""] = true
+			}
+
+			if flags&ObjectFlagsShowTables != 0 {
+				tableEntries.insertTables(c, schemas)
+				viewEntries.insertViews(c, schemas)
+
+				for _, reference := range c.references {
+					switch reference := reference.(type) {
+					case *base.PhysicalTableReference:
+						if (len(schema) == 0 && len(reference.Schema) == 0) || schemas[reference.Schema] {
+							if len(reference.Alias) == 0 {
+								tableEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: c.quotedIdentifierIfNeeded(reference.Table),
+								})
+							} else {
+								tableEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: c.quotedIdentifierIfNeeded(reference.Alias),
+								})
+							}
+						}
+					case *base.VirtualTableReference:
+						if len(schema) > 0 {
+							continue
+						}
+						tableEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeTable,
+							Text: c.quotedIdentifierIfNeeded(reference.Table),
+						})
+					}
+				}
+			}
+
+			if flags&ObjectFlagsShowColumns != 0 {
+				if schema == table { // Schema and table are equal if it's not clear if we see a schema or table qualifier.
+					schemas[c.defaultDatabase] = true
+					// User didn't specify the schema, so we need to append cte tables.
+					schemas[""] = true
+				}
+
+				tables := make(map[string]bool)
+				if len(table) != 0 {
+					tables[table] = true
+
+					for _, reference := range c.references {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							// Could be an alias.
+							if strings.EqualFold(reference.Alias, table) {
+								tables[reference.Table] = true
+								schemas[reference.Schema] = true
+							}
+						case *base.VirtualTableReference:
+							// Could be a virtual table.
+							if strings.EqualFold(reference.Table, table) {
+								for _, column := range reference.Columns {
+									columnEntries.Insert(base.Candidate{
+										Type: base.CandidateTypeColumn,
+										Text: c.quotedIdentifierIfNeeded(column),
+									})
+								}
+							}
+						}
+					}
+				} else if len(c.references) > 0 {
+					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
+					for _, alias := range list {
+						columnEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: c.quotedIdentifierIfNeeded(alias),
+						})
+					}
+					for _, reference := range c.references {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							schemas[reference.Schema] = true
+							tables[reference.Table] = true
+						case *base.VirtualTableReference:
+							for _, column := range reference.Columns {
+								columnEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeColumn,
+									Text: c.quotedIdentifierIfNeeded(column),
+								})
+							}
+						}
+					}
+				}
+
+				if len(tables) > 0 {
+					columnEntries.insertColumns(c, schemas, tables)
+				}
+			}
+		}
+	}
+
+	c.scanner.PopAndRestore()
+	var result []base.Candidate
+	result = append(result, keywordEntries.toSlice()...)
+	result = append(result, runtimeFunctionEntries.toSlice()...)
+	result = append(result, schemaEntries.toSlice()...)
+	result = append(result, tableEntries.toSlice()...)
+	result = append(result, columnEntries.toSlice()...)
+	result = append(result, viewEntries.toSlice()...)
+	return result, nil
+}
+
+func (c *Completer) fetchSelectItemAliases(_ []*base.RuleContext) []string {
+	// todo
+	return nil
+}
+
+type ObjectFlags int
+
+const (
+	ObjectFlagsShowSchemas ObjectFlags = 1 << iota
+	ObjectFlagsShowTables
+	ObjectFlagsShowColumns
+	ObjectFlagsShowFirst
+	ObjectFlagsShowSecond
+)
+
+func (c *Completer) determineGeneralElementPartCandidates() (schema, table string, flags ObjectFlags) {
+	position := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != 0 {
+		c.scanner.Forward(true /* skipHidden */) // Skip whitespace.
+	}
+
+	tokenType := c.scanner.GetTokenType()
+	if tokenType != plsql.PlSqlLexerPERIOD && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if position > 0 {
+		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == plsql.PlSqlLexerPERIOD {
+			c.scanner.Backward(true /* skipHidden */)
+		}
+		if c.scanner.IsTokenType(plsql.PlSqlLexerPERIOD) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+			c.scanner.Backward(true /* skipHidden */)
+
+			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == plsql.PlSqlLexerPERIOD {
+				c.scanner.Backward(true /* skipHidden */)
+				if c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+					c.scanner.Backward(true /* skipHidden */)
+				}
+			}
+		}
+	}
+
+	schema = ""
+	table = ""
+	temp := ""
+	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		temp = unquote(c.scanner.GetTokenText())
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	if !c.scanner.IsTokenType(plsql.PlSqlLexerPERIOD) || position <= c.scanner.GetIndex() {
+		return schema, table, ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	}
+
+	c.scanner.Forward(true /* skipHidden */) // skip dot
+	table = temp
+	schema = temp
+	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		temp = unquote(c.scanner.GetTokenText())
+		c.scanner.Forward(true /* skipHidden */)
+
+		if !c.scanner.IsTokenType(plsql.PlSqlLexerPERIOD) || position <= c.scanner.GetIndex() {
+			return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
+		}
+
+		table = temp
+		return schema, table, ObjectFlagsShowColumns
+	}
+
+	return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
 }
 
 func unquote(s string) string {
@@ -463,6 +855,21 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 	return parser, lexer, scanner
 }
 
+func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*plsql.PlSqlParser, *plsql.PlSqlLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
+	input := antlr.NewInputStream(statement)
+	lexer := plsql.NewPlSqlLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := plsql.NewPlSqlParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
+
 func notEmptySQLCount(list []base.SingleSQL) int {
 	count := 0
 	for _, sql := range list {
@@ -497,6 +904,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 				// We just need to adjust the caret offset.
 				newCaretOffset = caretOffset - list[i-1].LastColumn - 1 // Convert to 0-based.
 			}
+			break
 		}
 	}
 
@@ -508,4 +916,56 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	}
 
 	return buf.String(), newCaretLine, newCaretOffset
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+	input := antlr.NewInputStream(statement)
+	lexer := plsql.NewPlSqlLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	lexer.RemoveErrorListeners()
+	lexerErrorListener := &base.ParseErrorListener{}
+	lexer.AddErrorListener(lexerErrorListener)
+
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	latestSelect := 0
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	for _, token := range tokens {
+		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+			break
+		}
+		if token.GetTokenType() == plsql.PlSqlLexerSELECT && token.GetColumn() == 0 {
+			latestSelect = token.GetTokenIndex()
+			newCaretLine = caretLine - token.GetLine() + 1 // Convert to 1-based.
+			newCaretOffset = caretOffset
+		}
+	}
+
+	if latestSelect == 0 {
+		return statement, caretLine, caretOffset
+	}
+	return stream.GetTextFromInterval(antlr.Interval{Start: latestSelect, Stop: stream.Size()}), newCaretLine, newCaretOffset
+}
+
+func (c *Completer) quotedIdentifierIfNeeded(s string) string {
+	if c.caretTokenIsQuoted {
+		return s
+	}
+
+	if c.lexer.IsReservedKeywords(s) {
+		return fmt.Sprintf(`"%s"`, s)
+	}
+	if s != strings.ToUpper(s) {
+		return fmt.Sprintf(`"%s"`, s)
+	}
+	for i, r := range s {
+		if i == 0 && !unicode.IsLetter(r) {
+			return fmt.Sprintf(`"%s"`, s)
+		}
+		if i > 0 && !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
+			return fmt.Sprintf(`"%s"`, s)
+		}
+	}
+	return s
 }
