@@ -57,11 +57,7 @@
           <NButton @click="$emit('close')">
             {{ $t("common.cancel") }}
           </NButton>
-          <NButton
-            :disabled="!hasPermission"
-            type="primary"
-            @click="upsertReviewResource"
-          >
+          <NButton :disabled="!hasPermission" type="primary" @click="onConfirm">
             {{ $t("common.confirm") }}
           </NButton>
         </div>
@@ -70,8 +66,8 @@
   </Drawer>
 </template>
 
-<script setup lang="ts">
-import { NDivider } from "naive-ui";
+<script setup lang="tsx">
+import { NDivider, useDialog } from "naive-ui";
 import { watch, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -87,6 +83,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
 
 const props = defineProps<{
   show: boolean;
@@ -101,6 +98,7 @@ const me = useCurrentUserV1();
 const resources = ref<string[]>([]);
 const sqlReviewStore = useSQLReviewStore();
 const { t } = useI18n();
+const $dialog = useDialog();
 
 watch(
   () => props.review.resources,
@@ -129,6 +127,55 @@ const onResourcesChange = (
   otherResources: string[]
 ) => {
   resources.value = [...newResources, ...otherResources];
+};
+
+const resourcesBindingWithOtherPolicy = computed(() => {
+  const resp = [];
+  for (const resource of resources.value) {
+    const config = sqlReviewStore.getReviewPolicyByResouce(resource);
+    if (config && config.id !== props.review.id) {
+      resp.push(resource);
+    }
+  }
+  return resp;
+});
+
+const onConfirm = async () => {
+  if (resourcesBindingWithOtherPolicy.value.length === 0) {
+    await upsertReviewResource();
+  } else {
+    $dialog.warning({
+      title: t("common.warning"),
+      style: "z-index: 100000",
+      negativeText: t("common.cancel"),
+      positiveText: t("common.continue-anyway"),
+      content: () => {
+        return (
+          <div class="space-y-2">
+            <p>
+              {t("sql-review.attach-resource.override-warning", {
+                button: t("common.continue-anyway"),
+              })}
+            </p>
+            <ul class="list-disc ml-4 textinfolabel">
+              {resourcesBindingWithOtherPolicy.value.map((resource) => (
+                <li>
+                  <SQLReviewAttachedResource
+                    resource={resource}
+                    link={false}
+                    showPrefix={true}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      },
+      onPositiveClick: () => {
+        upsertReviewResource();
+      },
+    });
+  }
 };
 
 const upsertReviewResource = async () => {

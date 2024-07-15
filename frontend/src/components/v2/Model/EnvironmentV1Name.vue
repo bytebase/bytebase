@@ -8,7 +8,9 @@
     <span class="line-clamp-1 select-none" :class="textClass">
       {{ prefix }}
       {{ environmentV1Name(environment) }}
-      {{ suffix }}
+      <slot name="suffix">
+        {{ suffix }}
+      </slot>
     </span>
     <ProductionEnvironmentV1Icon
       v-if="showIcon"
