@@ -22,7 +22,9 @@
               :environment-names="environmentNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:environment-names="onResourcesChange($event, projectNames)"
+              @update:environment-names="
+                onResourcesChange($event, projectNames)
+              "
             />
           </div>
           <div class="flex items-center space-x-2">
@@ -43,7 +45,9 @@
               :project-names="projectNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:project-names="onResourcesChange($event, environmentNames)"
+              @update:project-names="
+                onResourcesChange($event, environmentNames)
+              "
             />
           </div>
         </div>
@@ -70,7 +74,12 @@
 import { NDivider } from "naive-ui";
 import { watch, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Drawer, DrawerContent, EnvironmentSelect, ProjectSelect } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  EnvironmentSelect,
+  ProjectSelect,
+} from "@/components/v2";
 import { useSQLReviewStore, pushNotification, useCurrentUserV1 } from "@/store";
 import {
   environmentNamePrefix,

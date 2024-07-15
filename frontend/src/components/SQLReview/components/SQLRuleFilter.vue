@@ -53,7 +53,7 @@ const props = defineProps<{
 
 defineEmits<{
   (event: "toggle-checked-level", level: SQLReviewRuleLevel): void;
-  (event: "change-category", category: string | undefined): void;
+  (event: "change-category", category: string): void;
   (event: "change-search-text", keyword: string): void;
 }>();
 

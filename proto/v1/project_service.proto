@@ -58,7 +58,7 @@ service ProjectService {
   }
 
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
-    option (google.api.http) = {get: "/v1/{project=projects/*}:getIamPolicy"};
+    option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
   }
 
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
@@ -67,7 +67,7 @@ service ProjectService {
 
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {
-      post: "/v1/{project=projects/*}:setIamPolicy"
+      post: "/v1/{resource=projects/*}:setIamPolicy"
       body: "*"
     };
   }
@@ -236,12 +236,6 @@ message UndeleteProjectRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message GetIamPolicyRequest {
-  // The name of the project to get the IAM policy.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
 message BatchGetIamPolicyRequest {
   // The scope of the batch get. Typically it's "projects/-".
   string scope = 1 [(google.api.field_behavior) = REQUIRED];
@@ -256,14 +250,6 @@ message BatchGetIamPolicyResponse {
     IamPolicy policy = 2;
   }
   repeated PolicyResult policy_results = 1;
-}
-
-message SetIamPolicyRequest {
-  // The name of the project to set the IAM policy.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
-
-  IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetDeploymentConfigRequest {

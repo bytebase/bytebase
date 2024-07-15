@@ -313,13 +313,10 @@ const generateMultiDb = async (
     ),
     databaseList: props.databases.map((db) => db.name).join(","),
   };
-  const project = useProjectV1Store().findProjectByUID(
-    selectedProjectName.value
-  );
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(project.name),
+      projectId: extractProjectResourceName(selectedProjectName.value),
       issueSlug: "create",
     },
     query,

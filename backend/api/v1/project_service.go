@@ -302,7 +302,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := common.GetProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -361,7 +361,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := common.GetProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -387,10 +387,10 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Resource)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Resource)
 	}
 
 	policy, err := s.convertToStoreIamPolicy(ctx, request.Policy)

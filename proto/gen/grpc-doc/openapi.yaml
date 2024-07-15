@@ -8028,6 +8028,62 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/workspaces/{workspace}:getIamPolicy:
+        get:
+            tags:
+                - OrgPolicyService
+            operationId: OrgPolicyService_GetIamPolicy
+            parameters:
+                - name: workspace
+                  in: path
+                  description: The workspace id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IamPolicy'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/workspaces/{workspace}:setIamPolicy:
+        post:
+            tags:
+                - OrgPolicyService
+            operationId: OrgPolicyService_SetIamPolicy
+            parameters:
+                - name: workspace
+                  in: path
+                  description: The workspace id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetIamPolicyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IamPolicy'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1:adminExecute:
         get:
             tags:
@@ -12693,15 +12749,16 @@ components:
                          use the default full mask algorithm.
         SetIamPolicyRequest:
             required:
-                - project
+                - resource
                 - policy
             type: object
             properties:
-                project:
+                resource:
                     type: string
                     description: |-
-                        The name of the project to set the IAM policy.
+                        The name of the resource to set the IAM policy.
                          Format: projects/{project}
+                         Format: workspaces/{workspace}
                 policy:
                     $ref: '#/components/schemas/IamPolicy'
         Setting:

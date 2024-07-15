@@ -6,6 +6,25 @@ import { Expr } from "../google/type/expr";
 
 export const protobufPackage = "bytebase.v1";
 
+export interface GetIamPolicyRequest {
+  /**
+   * The name of the resource to get the IAM policy.
+   * Format: projects/{project}
+   * Format: workspaces/{workspace}
+   */
+  resource: string;
+}
+
+export interface SetIamPolicyRequest {
+  /**
+   * The name of the resource to set the IAM policy.
+   * Format: projects/{project}
+   * Format: workspaces/{workspace}
+   */
+  resource: string;
+  policy: IamPolicy | undefined;
+}
+
 export interface IamPolicy {
   /**
    * Collection of binding.
@@ -37,6 +56,139 @@ export interface Binding {
   /** The parsed expression of the condition. */
   parsedExpr: ParsedExpr | undefined;
 }
+
+function createBaseGetIamPolicyRequest(): GetIamPolicyRequest {
+  return { resource: "" };
+}
+
+export const GetIamPolicyRequest = {
+  encode(message: GetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.resource !== "") {
+      writer.uint32(10).string(message.resource);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetIamPolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetIamPolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.resource = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetIamPolicyRequest {
+    return { resource: isSet(object.resource) ? globalThis.String(object.resource) : "" };
+  },
+
+  toJSON(message: GetIamPolicyRequest): unknown {
+    const obj: any = {};
+    if (message.resource !== "") {
+      obj.resource = message.resource;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
+    return GetIamPolicyRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
+    const message = createBaseGetIamPolicyRequest();
+    message.resource = object.resource ?? "";
+    return message;
+  },
+};
+
+function createBaseSetIamPolicyRequest(): SetIamPolicyRequest {
+  return { resource: "", policy: undefined };
+}
+
+export const SetIamPolicyRequest = {
+  encode(message: SetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.resource !== "") {
+      writer.uint32(10).string(message.resource);
+    }
+    if (message.policy !== undefined) {
+      IamPolicy.encode(message.policy, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SetIamPolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetIamPolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.resource = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.policy = IamPolicy.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetIamPolicyRequest {
+    return {
+      resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
+      policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
+    };
+  },
+
+  toJSON(message: SetIamPolicyRequest): unknown {
+    const obj: any = {};
+    if (message.resource !== "") {
+      obj.resource = message.resource;
+    }
+    if (message.policy !== undefined) {
+      obj.policy = IamPolicy.toJSON(message.policy);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SetIamPolicyRequest>): SetIamPolicyRequest {
+    return SetIamPolicyRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetIamPolicyRequest>): SetIamPolicyRequest {
+    const message = createBaseSetIamPolicyRequest();
+    message.resource = object.resource ?? "";
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? IamPolicy.fromPartial(object.policy)
+      : undefined;
+    return message;
+  },
+};
 
 function createBaseIamPolicy(): IamPolicy {
   return { bindings: [] };
