@@ -25,6 +25,8 @@ const (
 	generateSeries     = "generate_series"
 	generateSubscripts = "generate_subscripts"
 	unnest             = "unnest"
+	jsonb_each         = "jsonb_each"
+	json_each          = "json_each"
 )
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
@@ -216,7 +218,7 @@ func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeF
 	return base.NewPseudoTable(node.RangeFunction.Alias.Aliasname, columns), nil
 }
 
-func (*querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.Node_RangeFunction, funcName string, args []*pgquery.Node) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.Node_RangeFunction, funcName string, args []*pgquery.Node) (*base.PseudoTable, error) {
 	// TODO(parser): We may need to consider the masking here, for example: SELECT * FROM issue LEFT JOIN LATERAL jsonb_to_recordset(issue.payload->'approval'->'approvers') as x(status text, "principalId" int) ON TRUE.
 
 	// The function we can handle easily do not need the explicit alias clause.
@@ -250,6 +252,55 @@ func (*querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.No
 			})
 		}
 		return table, nil
+	case jsonb_each, json_each:
+		// Should be only called while jsonb_each act as table source.
+		// SELECT * FROM json_test, jsonb_each(jb) AS hh(key, value) WHERE id = 1;
+		tableName := ""
+		columns := []string{"key", "value"}
+		if node.RangeFunction.Alias != nil {
+			tableName = node.RangeFunction.Alias.Aliasname
+			var aliasColumns []string
+			for _, columnName := range node.RangeFunction.Alias.Colnames {
+				name := columnName.GetString_().Sval
+				aliasColumns = append(aliasColumns, name)
+			}
+			if len(aliasColumns) > 0 {
+				columns = aliasColumns
+			}
+		}
+		if len(args) == 0 {
+			return nil, errors.Errorf("Unexpected empty args for function %s", funcName)
+		}
+		fieldArg := args[0]
+		fieldArgColumnRef, ok := fieldArg.Node.(*pgquery.Node_ColumnRef)
+		if !ok {
+			return nil, errors.Errorf("unexpected first arg type %+v for function %s", fieldArg.Node, funcName)
+		}
+		columnNameDef, err := pgrawparser.ConvertNodeListToColumnNameDef(fieldArgColumnRef.ColumnRef.Fields)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert node list to column name def")
+		}
+		schema, table, column := extractSchemaTableColumnName(columnNameDef)
+		set, ok := q.getFieldColumnSource(schema, table, column)
+		if !ok {
+			return nil, &parsererror.ResourceNotFoundError{
+				Err:    errors.Errorf("Cannot find field in function %s", funcName),
+				Schema: &schema,
+				Table:  &table,
+				Column: &column,
+			}
+		}
+		tableSource := &base.PseudoTable{
+			Name:    tableName,
+			Columns: []base.QuerySpanResult{},
+		}
+		for _, column := range columns {
+			tableSource.Columns = append(tableSource.Columns, base.QuerySpanResult{
+				Name:          column,
+				SourceColumns: set,
+			})
+		}
+		return tableSource, nil
 	}
 
 	if node.RangeFunction.Alias == nil {
