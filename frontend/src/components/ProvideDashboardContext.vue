@@ -16,6 +16,12 @@ import { ref, onMounted } from "vue";
 import { onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
+  AUTH_MFA_MODULE,
+  AUTH_PASSWORD_FORGOT_MODULE,
+  AUTH_SIGNIN_MODULE,
+  AUTH_SIGNUP_MODULE,
+} from "@/router/auth";
+import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   usePolicyV1Store,
@@ -61,8 +67,12 @@ const fetchDatabases = async (project: string) => {
 const instanceAndDatabaseInitialized = new Set<string /* project */>();
 const fetchInstancesAndDatabases = async (project: string) => {
   if (instanceAndDatabaseInitialized.has(project || "")) return;
-  await Promise.all([fetchInstances(project), fetchDatabases(project)]);
-  instanceAndDatabaseInitialized.add(project || "");
+  try {
+    await Promise.all([fetchInstances(project), fetchDatabases(project)]);
+    instanceAndDatabaseInitialized.add(project || "");
+  } catch {
+    // nothing
+  }
 };
 
 let unregisterBeforeEachHook: (() => void) | undefined;
@@ -91,6 +101,17 @@ onMounted(async () => {
   isInitializing.value = false;
 
   unregisterBeforeEachHook = router.beforeEach((to, from, next) => {
+    if (
+      to.name === AUTH_SIGNIN_MODULE ||
+      to.name === AUTH_SIGNUP_MODULE ||
+      to.name === AUTH_MFA_MODULE ||
+      to.name === AUTH_PASSWORD_FORGOT_MODULE
+    ) {
+      instanceAndDatabaseInitialized.clear();
+      next();
+      return;
+    }
+
     const fromProject = from.params.projectId as string;
     const toProject = to.params.projectId as string;
     if (fromProject !== toProject) {
