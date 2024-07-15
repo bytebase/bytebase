@@ -25,8 +25,10 @@ const (
 	generateSeries     = "generate_series"
 	generateSubscripts = "generate_subscripts"
 	unnest             = "unnest"
-	jsonb_each         = "jsonb_each"
-	json_each          = "json_each"
+	jsonbEach          = "jsonb_each"
+	jsonEach           = "json_each"
+	jsonbEachText      = "jsonb_each_text"
+	jsonEachText       = "json_each_text"
 )
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
@@ -252,7 +254,7 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 			})
 		}
 		return table, nil
-	case jsonb_each, json_each:
+	case jsonbEach, jsonEach, jsonbEachText, jsonEachText:
 		// Should be only called while jsonb_each act as table source.
 		// SELECT * FROM json_test, jsonb_each(jb) AS hh(key, value) WHERE id = 1;
 		tableName := ""
