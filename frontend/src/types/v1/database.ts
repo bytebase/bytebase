@@ -1,10 +1,16 @@
+import { extractDatabaseResourceName } from "@/utils";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { Database } from "../proto/v1/database_service";
 import type { Environment } from "../proto/v1/environment_service";
 import type { InstanceResource } from "../proto/v1/instance_service";
 import { emptyEnvironment, unknownEnvironment } from "./environment";
-import { emptyInstanceResource, unknownInstanceResource } from "./instance";
+import {
+  emptyInstance,
+  emptyInstanceResource,
+  unknownInstance,
+  unknownInstanceResource,
+} from "./instance";
 import type { ComposedProject } from "./project";
 import { emptyProject, unknownProject } from "./project";
 
@@ -20,6 +26,9 @@ export interface ComposedDatabase extends Database {
   /** non-empty instanceResource field, should be filled by unknownInstanceResource() if needed */
   instanceResource: InstanceResource;
 }
+
+export const EMPTY_DATABASE_NAME = `${emptyInstance().name}/databases/${EMPTY_ID}`;
+export const UNKNOWN_DATABASE_NAME = `${unknownInstance().name}/databases/${UNKNOWN_ID}`;
 
 export const emptyDatabase = (): ComposedDatabase => {
   const projectEntity = emptyProject();
@@ -61,4 +70,15 @@ export const unknownDatabase = (): ComposedDatabase => {
     projectEntity,
     effectiveEnvironmentEntity,
   };
+};
+
+export const isValidDatabaseName = (name: any): name is string => {
+  if (typeof name !== "string") return false;
+  const { instanceName, databaseName } = extractDatabaseResourceName(name);
+  return Boolean(
+    instanceName &&
+      instanceName !== String(UNKNOWN_ID) &&
+      databaseName &&
+      databaseName !== String(UNKNOWN_ID)
+  );
 };
