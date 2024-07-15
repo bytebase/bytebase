@@ -171,6 +171,8 @@
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
+    - [Binding](#bytebase-store-Binding)
+    - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
@@ -186,10 +188,8 @@
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
-    - [Binding](#bytebase-store-Binding)
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
-    - [ProjectIamPolicy](#bytebase-store-ProjectIamPolicy)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
@@ -2741,6 +2741,38 @@ Type is the database change type.
 
 
 
+<a name="bytebase-store-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+
+
+
+
+
+
+<a name="bytebase-store-IamPolicy"></a>
+
+### IamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single role. |
+
+
+
+
+
+
 <a name="bytebase-store-MaskData"></a>
 
 ### MaskData
@@ -2954,23 +2986,6 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
-<a name="bytebase-store-Binding"></a>
-
-### Binding
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-
-
-
-
-
-
 <a name="bytebase-store-Label"></a>
 
 ### Label
@@ -3001,21 +3016,6 @@ Format: users/{userUID} or groups/{group email} |
 | force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
 | allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
 | auto_resolve_issue | [bool](#bool) |  | Enable auto resolve issue. |
-
-
-
-
-
-
-<a name="bytebase-store-ProjectIamPolicy"></a>
-
-### ProjectIamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single project role. |
 
 
 

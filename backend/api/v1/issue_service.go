@@ -1714,7 +1714,7 @@ func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) b
 	return issueCreator.ID == user.ID
 }
 
-func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.ApprovalStep, user *store.UserMessage, policy *storepb.ProjectIamPolicy) (bool, error) {
+func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.ApprovalStep, user *store.UserMessage, policy *storepb.IamPolicy) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
