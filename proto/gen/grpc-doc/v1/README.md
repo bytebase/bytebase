@@ -355,6 +355,8 @@
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
 - [v1/plan_service.proto](#v1_plan_service-proto)
+    - [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest)
+    - [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse)
     - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
     - [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest)
@@ -6031,6 +6033,32 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
+<a name="bytebase-v1-BatchCancelPlanCheckRunsRequest"></a>
+
+### BatchCancelPlanCheckRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The name of the parent of the planChecks. Format: projects/{project}/plans/{plan} |
+| plan_check_runs | [string](#string) | repeated | The planCheckRuns to cancel. Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCancelPlanCheckRunsResponse"></a>
+
+### BatchCancelPlanCheckRunsResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-CreatePlanRequest"></a>
 
 ### CreatePlanRequest
@@ -6575,6 +6603,7 @@ Type is the database change type.
 | UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
+| BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |
 
  
 
