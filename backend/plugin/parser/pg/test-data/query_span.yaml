@@ -1,3 +1,77 @@
+- description: to_jsonb accept table as argument with from table alias
+  statement: SELECT to_jsonb(t1) FROM t t1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: to_jsonb
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+- description: Test for JSON function
+  statement: SELECT row_to_json(t) FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: row_to_json
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
 - description: Test For unnest function
   statement: SELECT * FROM unnest(ARRAY[1,2,3], ARRAY[4,5,6]);
   connectedDatabase: db

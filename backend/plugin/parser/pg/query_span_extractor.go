@@ -1037,8 +1037,27 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 			return base.SourceColumnSet{}, err
 		}
 		schema, table, column := extractSchemaTableColumnName(columnNameDef)
-		sources, ok := q.getFieldColumnSource(schema, table, column)
-		if !ok {
+		sources, columnSourceOk := q.getFieldColumnSource(schema, table, column)
+		// The column ref in function call can be record type, such as row_to_json.
+		if !columnSourceOk {
+			if schema == "" {
+				tableSource, err := q.findTableInFrom(table, column)
+				if err != nil || tableSource == nil {
+					return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+						Err:      errors.New("cannot find the column ref"),
+						Database: &q.connectedDB,
+						Schema:   &schema,
+						Table:    &table,
+						Column:   &column,
+					}
+				}
+				querySpanResult := tableSource.GetQuerySpanResult()
+				result := make(base.SourceColumnSet)
+				for _, span := range querySpanResult {
+					result, _ = base.MergeSourceColumnSet(result, span.SourceColumns)
+				}
+				return result, nil
+			}
 			return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
 				Err:      errors.New("cannot find the column ref"),
 				Database: &q.connectedDB,
@@ -1231,6 +1250,37 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 	}
 
 	return base.SourceColumnSet{}, false
+}
+
+func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string) (base.TableSource, error) {
+	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
+	//
+	//  with tt2 as (
+	//    with tt2 as (select * from t)
+	//    select max(a) from tt2)
+	//  select * from tt2
+	//
+	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
+	// This is the reason we loop the slice in reversed order.
+	if schemaName == "" {
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			table := q.ctes[i]
+			if table.Name == tableName {
+				return table, nil
+			}
+		}
+	}
+
+	for i := len(q.tableSourcesFrom) - 1; i >= 0; i-- {
+		tableSource := q.tableSourcesFrom[i]
+		emptySchemaNameMatch := schemaName == "" && (tableSource.GetSchemaName() == "" || tableSource.GetSchemaName() == "public") && tableName == tableSource.GetTableName()
+		nonEmptySchemaNameMatch := schemaName != "" && tableSource.GetSchemaName() == schemaName && tableName == tableSource.GetTableName()
+		if emptySchemaNameMatch || nonEmptySchemaNameMatch {
+			return tableSource, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string) (base.TableSource, error) {
