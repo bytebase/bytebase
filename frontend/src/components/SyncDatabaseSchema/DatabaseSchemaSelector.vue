@@ -51,7 +51,8 @@
           :options="schemaVersionOptions"
           :placeholder="$t('change-history.select')"
           :disabled="
-            !isValidId(state.projectName) || schemaVersionOptions.length === 0
+            !isValidProjectName(state.projectName) ||
+            schemaVersionOptions.length === 0
           "
           :render-label="renderSchemaVersionLabel"
           :fallback-option="
@@ -75,7 +76,7 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { head, isNull, isUndefined } from "lodash-es";
+import { head } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NEllipsis, NSelect } from "naive-ui";
 import { computed, h, reactive, ref, watch } from "vue";
@@ -92,7 +93,7 @@ import {
   useSubscriptionV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import { UNKNOWN_ID, isValidDatabaseName } from "@/types";
+import { UNKNOWN_ID, isValidDatabaseName, isValidProjectName } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
@@ -130,7 +131,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   projectName: props.selectState?.projectName,
   environmentName: props.selectState?.environmentName,
-  databaseName: props.selectState?.databaseId,
+  databaseName: props.selectState?.databaseName,
   changeHistoryName: props.selectState?.changeHistory?.name,
 });
 const { t } = useI18n();
@@ -139,11 +140,9 @@ const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 
 const database = computed(() => {
-  const databaseId = state.databaseName;
-  if (!isValidId(databaseId)) {
-    return;
-  }
-  return databaseStore.getDatabaseByUID(databaseId);
+  return isValidDatabaseName(state.databaseName)
+    ? databaseStore.getDatabaseByName(state.databaseName)
+    : undefined;
 });
 
 const isPreparingSchemaVersionOptions = ref(false);
@@ -169,13 +168,6 @@ const allowedEngineTypeList: Engine[] = [
   Engine.ORACLE,
   Engine.MSSQL,
 ];
-
-const isValidId = (id: any): id is string => {
-  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
-    return false;
-  }
-  return true;
-};
 
 const handleProjectSelect = async (name: string | undefined) => {
   if (name !== state.projectName) {
@@ -296,9 +288,9 @@ const isMockLatestSchemaChangeHistorySelected = computed(() => {
 });
 const fallbackSchemaVersionOption = (value: string): SelectOption => {
   if (extractChangeHistoryUID(value) === String(UNKNOWN_ID)) {
-    const { databaseName: databaseId } = state;
-    if (databaseId && databaseId !== String(UNKNOWN_ID)) {
-      const db = databaseStore.getDatabaseByUID(databaseId);
+    const { databaseName } = state;
+    if (isValidDatabaseName(databaseName)) {
+      const db = databaseStore.getDatabaseByName(databaseName);
       const changeHistory = mockLatestSchemaChangeHistory(db);
       return {
         changeHistory,
@@ -336,15 +328,15 @@ const mergedChangeHistorySourceSchema = computedAsync(
     | Pick<ChangeHistorySourceSchema, "changeHistory" | "conciseHistory">
     | undefined
   > => {
-    const { databaseName: databaseId, changeHistoryName } = state;
-    if (!isValidId(databaseId)) {
+    const { databaseName, changeHistoryName } = state;
+    if (!isValidDatabaseName(databaseName)) {
       return undefined;
     }
     if (!changeHistoryName) {
       return undefined;
     }
 
-    const database = databaseStore.getDatabaseByUID(databaseId);
+    const database = databaseStore.getDatabaseByName(databaseName);
     if (database) {
       if (isMockLatestSchemaChangeHistorySelected.value) {
         // If database has no migration history, we will use its latest schema.
@@ -402,15 +394,14 @@ const mergedChangeHistorySourceSchema = computedAsync(
 );
 
 watch(
-  () => [state.databaseName],
-  async () => {
-    const databaseId = state.databaseName;
-    if (!isValidId(databaseId)) {
+  () => state.databaseName,
+  async (databaseName) => {
+    if (!isValidDatabaseName(databaseName)) {
       state.changeHistoryName = undefined;
       return;
     }
 
-    const database = databaseStore.getDatabaseByUID(databaseId);
+    const database = databaseStore.getDatabaseByName(databaseName);
     if (database) {
       try {
         isPreparingSchemaVersionOptions.value = true;
@@ -449,11 +440,11 @@ watch(
     mergedChangeHistorySourceSchema,
     isFetchingChangeHistorySourceSchema,
   ],
-  ([projectName, environmentName, databaseId, source, isFetching]) => {
+  ([projectName, environmentName, databaseName, source, isFetching]) => {
     const params: ChangeHistorySourceSchema = {
       projectName,
       environmentName,
-      databaseId,
+      databaseName,
       changeHistory: source?.changeHistory,
       conciseHistory: source?.conciseHistory,
       isFetching,
@@ -469,21 +460,21 @@ watch(
   [
     () => props.selectState?.projectName,
     () => props.selectState?.environmentName,
-    () => props.selectState?.databaseId,
+    () => props.selectState?.databaseName,
     () => props.selectState?.changeHistory?.name,
     () => props.selectState?.isFetching,
   ],
   ([
     projectName,
     environmentName,
-    databaseId,
+    databaseName,
     changeHistoryName,
     isFetching,
   ]) => {
     if (isFetching) return;
     state.projectName = projectName;
     state.environmentName = environmentName;
-    state.databaseName = databaseId;
+    state.databaseName = databaseName;
     state.changeHistoryName = changeHistoryName;
   },
   {
