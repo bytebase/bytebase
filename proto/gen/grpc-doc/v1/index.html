@@ -1531,6 +1531,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchCancelPlanCheckRunsRequest"><span class="badge">M</span>BatchCancelPlanCheckRunsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchCancelPlanCheckRunsResponse"><span class="badge">M</span>BatchCancelPlanCheckRunsResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreatePlanRequest"><span class="badge">M</span>CreatePlanRequest</a>
                 </li>
               
@@ -17333,6 +17341,46 @@ In this situation, `update_mask` is ignored. </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchCancelPlanCheckRunsRequest">BatchCancelPlanCheckRunsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the parent of the planChecks.
+Format: projects/{project}/plans/{plan} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plan_check_runs</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The planCheckRuns to cancel.
+Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchCancelPlanCheckRunsResponse">BatchCancelPlanCheckRunsResponse</h3>
+        <p></p>
+
+        
+
+        
+      
         <h3 id="bytebase.v1.CreatePlanRequest">CreatePlanRequest</h3>
         <p></p>
 
@@ -18722,6 +18770,13 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>BatchCancelPlanCheckRuns</td>
+                <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsRequest">BatchCancelPlanCheckRunsRequest</a></td>
+                <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsResponse">BatchCancelPlanCheckRunsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -18806,6 +18861,16 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td>RunPlanChecks</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/plans/*}:runPlanChecks</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchCancelPlanCheckRuns</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel</td>
                 <td>*</td>
               </tr>
               
