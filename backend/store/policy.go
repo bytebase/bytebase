@@ -43,7 +43,7 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 		roleMap[common.FormatRole(role.String())] = true
 	}
 
-	member := fmt.Sprintf("%s%d", common.UserNamePrefix, update.UserUID)
+	member := common.FormatUserUID(update.UserUID)
 
 	for _, binding := range workspaceIamPolicy.Bindings {
 		index := slices.Index(binding.Members, member)
