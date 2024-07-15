@@ -20,10 +20,8 @@ import (
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*storepb.IamPolicy, error) {
 	resourceType := api.PolicyResourceTypeWorkspace
-	resourceUID := api.DefaultWorkspaceResourceID
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &resourceUID,
 	})
 }
 
@@ -42,7 +40,7 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 
 	roleMap := map[string]bool{}
 	for _, role := range update.Roles {
-		roleMap[fmt.Sprintf("%s%s", common.RolePrefix, role.String())] = true
+		roleMap[common.FormatRole(role.String())] = true
 	}
 
 	member := fmt.Sprintf("%s%d", common.UserNamePrefix, update.UserUID)
@@ -77,10 +75,9 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 	}
 
 	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
-		ResourceUID:       api.DefaultWorkspaceResourceID,
 		ResourceType:      api.PolicyResourceTypeWorkspace,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeProjectIAM,
+		Type:              api.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
@@ -92,7 +89,7 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 }
 
 func findBindingByRole(policy *storepb.IamPolicy, role api.Role) *storepb.Binding {
-	r := fmt.Sprintf("%s%s", common.RolePrefix, role.String())
+	r := common.FormatRole(role.String())
 	for _, binding := range policy.Bindings {
 		if binding.Role == r {
 			return binding
@@ -140,7 +137,7 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*store
 }
 
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*storepb.IamPolicy, error) {
-	pType := api.PolicyTypeProjectIAM
+	pType := api.PolicyTypeIAM
 	find.Type = &pType
 	policy, err := s.GetPolicyV2(ctx, find)
 	if err != nil {

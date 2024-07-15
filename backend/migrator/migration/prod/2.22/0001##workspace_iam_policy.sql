@@ -11,10 +11,10 @@ INSERT INTO policy
 SELECT
 	1,
 	1,
-	'bb.policy.project-iam',
+	'bb.policy.iam',
 	jsonb_build_object('bindings', jsonb_agg(t2.binding) || '{"role": "roles/workspaceMember", "members": ["allUsers"]}'::jsonb),
 	'WORKSPACE',
-	1,
+	0,
 	FALSE
 FROM
 (

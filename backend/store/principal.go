@@ -228,7 +228,7 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 		}
 
 		if b := binding; b != nil {
-			if !slices.Contains(b.Members, fmt.Sprintf("%s%d", common.UserNamePrefix, userMessage.ID)) {
+			if !slices.Contains(b.Members, common.FormatUserUID(userMessage.ID)) {
 				continue
 			}
 		}

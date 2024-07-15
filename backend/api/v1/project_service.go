@@ -406,7 +406,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		ResourceUID:       project.UID,
 		ResourceType:      api.PolicyResourceTypeProject,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeProjectIAM,
+		Type:              api.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,

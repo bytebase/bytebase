@@ -205,7 +205,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	if err != nil {
 		return nil, policyParent, err
 	}
-	if resourceID == nil {
+	if resourceID == nil && resourceType != api.PolicyResourceTypeWorkspace {
 		return nil, policyParent, status.Errorf(codes.InvalidArgument, "resource id for %s must be specific", resourceType)
 	}
 
@@ -231,7 +231,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 
 func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, requestName string) (api.PolicyResourceType, *int, error) {
 	if requestName == "" {
-		return api.PolicyResourceTypeWorkspace, &api.DefaultWorkspaceResourceID, nil
+		return api.PolicyResourceTypeWorkspace, nil, nil
 	}
 
 	if strings.HasPrefix(requestName, common.ProjectNamePrefix) {
@@ -381,7 +381,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 	if err != nil {
 		return nil, err
 	}
-	if resourceID == nil {
+	if resourceID == nil && resourceType != api.PolicyResourceTypeWorkspace {
 		return nil, status.Errorf(codes.InvalidArgument, "resource id for %s must be specific", resourceType)
 	}
 
@@ -403,15 +403,19 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		return nil, err
 	}
 
-	p, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       *resourceID,
+	create := &store.PolicyMessage{
 		ResourceType:      resourceType,
 		Payload:           payloadStr,
 		Type:              policyType,
 		InheritFromParent: policy.InheritFromParent,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, creatorID)
+	}
+	if resourceID != nil {
+		create.ResourceUID = *resourceID
+	}
+
+	p, err := s.store.CreatePolicyV2(ctx, create, creatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

@@ -177,7 +177,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 // TODO(p0ny): consider using sql for better performance?
 func (s *RoleService) getProjectUsingRole(ctx context.Context, role string) (bool, int, error) {
 	resourceType := api.PolicyResourceTypeProject
-	policyType := api.PolicyTypeProjectIAM
+	policyType := api.PolicyTypeIAM
 
 	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
