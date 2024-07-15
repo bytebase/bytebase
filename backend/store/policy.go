@@ -101,7 +101,7 @@ func findBindingByRole(policy *storepb.IamPolicy, role api.Role) *storepb.Bindin
 }
 
 func findRolesByUserID(policy *storepb.IamPolicy, userUID int) []api.Role {
-	member := fmt.Sprintf("%s%d", common.UserNamePrefix, userUID)
+	member := common.FormatUserUID(userUID)
 	roles := []api.Role{}
 	hasWorkspaceRole := false
 
