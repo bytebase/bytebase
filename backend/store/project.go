@@ -176,7 +176,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, err
 	}
 
-	policy := &storepb.ProjectIamPolicy{
+	policy := &storepb.IamPolicy{
 		Bindings: []*storepb.Binding{
 			{
 				Role: common.FormatRole(api.ProjectOwner.String()),
@@ -195,7 +195,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		ResourceUID:       project.UID,
 		ResourceType:      api.PolicyResourceTypeProject,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeProjectIAM,
+		Type:              api.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
