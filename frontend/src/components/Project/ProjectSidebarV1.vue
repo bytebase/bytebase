@@ -75,7 +75,7 @@ const navigationKbarActions = computed(() => {
     .filter((item) => !item.hide && item.path)
     .map((item) =>
       defineAction({
-        id: `bb.navigation.project.${project.value.uid}.${item.path}`,
+        id: `bb.navigation.project.${project.value.name}.${item.path}`,
         name: item.title,
         section: t("kbar.navigation"),
         keywords: [item.title.toLowerCase(), item.path].join(" "),
@@ -86,5 +86,5 @@ const navigationKbarActions = computed(() => {
 });
 useRegisterActions(navigationKbarActions);
 
-useProjectDatabaseActions(project);
+useProjectDatabaseActions(project, 10);
 </script>

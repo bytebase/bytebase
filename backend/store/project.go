@@ -21,7 +21,6 @@ type ProjectMessage struct {
 	ResourceID                 string
 	Title                      string
 	Key                        string
-	TenantMode                 api.ProjectTenantMode
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
 	Setting                    *storepb.Project
@@ -51,7 +50,6 @@ type UpdateProjectMessage struct {
 
 	Title                      *string
 	Key                        *string
-	TenantMode                 *api.ProjectTenantMode
 	DataClassificationConfigID *string
 	Setting                    *storepb.Project
 	Delete                     *bool
@@ -146,7 +144,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		ResourceID:                 create.ResourceID,
 		Title:                      create.Title,
 		Key:                        create.Key,
-		TenantMode:                 create.TenantMode,
 		DataClassificationConfigID: create.DataClassificationConfigID,
 		Setting:                    create.Setting,
 	}
@@ -157,11 +154,10 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				resource_id,
 				name,
 				key,
-				tenant_mode,
 				data_classification_config_id,
 				setting
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			RETURNING id
 		`,
 		creatorID,
@@ -169,7 +165,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.ResourceID,
 		create.Title,
 		create.Key,
-		create.TenantMode,
 		create.DataClassificationConfigID,
 		payload,
 	).Scan(
@@ -252,9 +247,6 @@ func updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessag
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
-	if v := patch.TenantMode; v != nil {
-		set, args = append(set, fmt.Sprintf("tenant_mode = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.DataClassificationConfigID; v != nil {
 		set, args = append(set, fmt.Sprintf("data_classification_config_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -297,7 +289,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			resource_id,
 			name,
 			key,
-			tenant_mode,
 			data_classification_config_id,
 			(SELECT COUNT(1) FROM vcs_connector WHERE project.id = vcs_connector.project_id) AS connectors,
 			setting,
@@ -321,7 +312,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
 			&projectMessage.Key,
-			&projectMessage.TenantMode,
 			&projectMessage.DataClassificationConfigID,
 			&projectMessage.VCSConnectorsCount,
 			&payload,

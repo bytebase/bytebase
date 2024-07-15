@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 import { computed } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import type { SignupInfo, ActivateInfo } from "@/types";
-import { unknownUser, PresetRoleType } from "@/types";
+import { unknownUser } from "@/types";
 import type {
   LoginRequest,
   LoginResponse,
@@ -49,7 +49,6 @@ export const useAuthStore = defineStore("auth_v1", {
           title: signupInfo.name,
           password: signupInfo.password,
           userType: UserType.USER,
-          roles: [PresetRoleType.WORKSPACE_MEMBER],
         },
       });
       await this.login({

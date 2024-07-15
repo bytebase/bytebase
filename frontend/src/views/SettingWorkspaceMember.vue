@@ -50,10 +50,12 @@
         <div class="flex items-center space-x-3">
           <SearchBox v-model:value="state.activeUserFilterText" />
 
-          <NPopover :disabled="workspaceProfileSetting.domains.length > 0">
+          <NPopover
+            v-if="allowCreateGroup"
+            :disabled="workspaceProfileSetting.domains.length > 0"
+          >
             <template #trigger>
               <NButton
-                v-if="allowCreateGroup"
                 :disabled="workspaceProfileSetting.domains.length === 0"
                 @click="handleCreateGroup"
               >

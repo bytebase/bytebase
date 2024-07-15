@@ -8,8 +8,8 @@
         class="mt-1 !w-full"
         required
         :disabled="!allowEditProject"
-        :project="state.projectId"
-        @update:project="selectProject"
+        :project-name="state.projectName"
+        @update:project-name="selectProject"
       />
     </div>
 
@@ -64,7 +64,7 @@
     <div class="w-full">
       <div class="flex flex-row items-center space-x-1">
         <InstanceV1EngineIcon
-          v-if="state.instance"
+          v-if="state.instanceName"
           :instance="selectedInstance"
         />
         <label for="instance" class="textlabel">
@@ -77,10 +77,9 @@
           name="instance"
           required
           :disabled="!allowEditInstance"
-          :instance="state.instance"
-          :use-resource-id="true"
+          :instance-name="state.instanceName"
           :filter="instanceV1HasCreateDatabase"
-          @update:instance="selectInstance"
+          @update:instance-name="selectInstance"
         />
       </div>
     </div>
@@ -90,11 +89,10 @@
         {{ $t("common.environment") }}
       </label>
       <EnvironmentSelect
-        v-model:environment="state.environment"
+        v-model:environment-name="state.environmentName"
         class="mt-1"
         required
         name="environment"
-        :use-resource-id="true"
       />
     </div>
 
@@ -106,7 +104,7 @@
       <InstanceRoleSelect
         class="mt-1"
         name="instance-user"
-        :instance="state.instance"
+        :instance-name="state.instanceName"
         :role="state.instanceRole"
         :filter="filterInstanceRole"
         @update:instance-role="selectInstanceRole"
@@ -177,7 +175,6 @@ import {
 } from "@/components/v2";
 import {
   experimentalCreateIssueByPlan,
-  hasFeature,
   useCurrentUserV1,
   useInstanceV1Store,
   useProjectV1Store,
@@ -186,7 +183,10 @@ import type { ComposedInstance } from "@/types";
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
-  UNKNOWN_ID,
+  isValidEnvironmentName,
+  isValidInstanceName,
+  isValidProjectName,
+  UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { Engine } from "@/types/proto/v1/common";
@@ -194,16 +194,15 @@ import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
 } from "@/utils";
 
 interface LocalState {
-  projectId?: string;
-  environment?: string;
-  instance?: string;
+  projectName?: string;
+  environmentName?: string;
+  instanceName?: string;
   instanceRole?: string;
   labels: Record<string, string>;
   databaseName: string;
@@ -216,9 +215,9 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectId?: string;
-  environment?: string;
-  instance?: string;
+  projectName?: string;
+  environmentName?: string;
+  instanceName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -233,9 +232,9 @@ const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
   databaseName: "",
-  projectId: props.projectId,
-  environment: props.environment,
-  instance: props.instance,
+  projectName: props.projectName,
+  environmentName: props.environmentName,
+  instanceName: props.instanceName,
   labels: {},
   tableName: "",
   characterSet: "",
@@ -246,19 +245,13 @@ const state = reactive<LocalState>({
 });
 
 const project = computed(() => {
-  return projectV1Store.getProjectByUID(state.projectId ?? String(UNKNOWN_ID));
+  return projectV1Store.getProjectByName(
+    state.projectName ?? UNKNOWN_PROJECT_NAME
+  );
 });
 
 const isReservedName = computed(() => {
   return state.databaseName.toLowerCase() == "bytebase";
-});
-
-const isTenantProject = computed((): boolean => {
-  if (parseInt(project.value.uid, 10) === UNKNOWN_ID) {
-    return false;
-  }
-
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 const allowCreate = computed(() => {
@@ -266,24 +259,24 @@ const allowCreate = computed(() => {
     !isEmpty(state.databaseName) &&
     validDatabaseOwnerName.value &&
     !isReservedName.value &&
-    state.projectId &&
-    state.environment &&
-    state.instance
+    isValidProjectName(state.projectName) &&
+    isValidEnvironmentName(state.environmentName) &&
+    isValidInstanceName(state.instanceName)
   );
 });
 
 // If project has been specified, then we disallow changing it.
 const allowEditProject = computed(() => {
-  return !props.projectId;
+  return !props.projectName;
 });
 
 // If instance has been specified, then we disallow changing it.
 const allowEditInstance = computed(() => {
-  return !props.instance;
+  return !props.instanceName;
 });
 
 const selectedInstance = computed((): ComposedInstance => {
-  return instanceV1Store.getInstanceByName(state.instance ?? "");
+  return instanceV1Store.getInstanceByName(state.instanceName ?? "");
 });
 
 const showCollationAndCharacterSet = computed((): boolean => {
@@ -293,7 +286,7 @@ const showCollationAndCharacterSet = computed((): boolean => {
 
 const requireDatabaseOwnerName = computed((): boolean => {
   const instance = selectedInstance.value;
-  if (instance.uid === String(UNKNOWN_ID)) {
+  if (!isValidInstanceName(instance.name)) {
     return false;
   }
   return [Engine.POSTGRES, Engine.REDSHIFT].includes(instance.engine);
@@ -307,13 +300,13 @@ const validDatabaseOwnerName = computed((): boolean => {
   return state.instanceRole !== undefined;
 });
 
-const selectProject = (projectId: string | undefined) => {
-  state.projectId = projectId;
+const selectProject = (name: string | undefined) => {
+  state.projectName = name;
 };
 
-const selectInstance = (instance: string | undefined) => {
-  state.instance = instance;
-  state.environment = selectedInstance.value.environment;
+const selectInstance = (instanceName: string | undefined) => {
+  state.instanceName = instanceName;
+  state.environmentName = selectedInstance.value.environment;
 };
 
 const selectInstanceRole = (name?: string) => {
@@ -335,7 +328,7 @@ const createV1 = async () => {
   if (!allowCreate.value) {
     return;
   }
-  if (!state.environment || !state.instance) {
+  if (!state.environmentName || !state.instanceName) {
     return;
   }
 
@@ -350,20 +343,13 @@ const createV1 = async () => {
     owner = instanceUser.roleName;
   }
 
-  if (isTenantProject.value) {
-    if (!hasFeature("bb.feature.multi-tenancy")) {
-      state.showFeatureModal = true;
-      return;
-    }
-  }
-
   const specs: Plan_Spec[] = [];
   const createDatabaseConfig: Plan_CreateDatabaseConfig = {
-    target: state.instance,
+    target: state.instanceName,
     database: databaseName,
     table: tableName,
     labels: state.labels,
-    environment: state.environment,
+    environment: state.environmentName,
 
     characterSet:
       state.characterSet ||

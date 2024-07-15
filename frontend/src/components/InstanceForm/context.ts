@@ -11,7 +11,11 @@ import {
   useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { UNKNOWN_ID, unknownEnvironment, type FeatureType } from "@/types";
+import {
+  isValidEnvironmentName,
+  unknownEnvironment,
+  type FeatureType,
+} from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import {
@@ -19,6 +23,7 @@ import {
   DataSourceExternalSecret_SecretType,
   DataSourceType,
   DataSource_AuthenticationType,
+  DataSource_RedisType,
 } from "@/types/proto/v1/instance_service";
 import {
   extractInstanceResourceName,
@@ -133,6 +138,10 @@ export const provideInstanceFormContext = (baseContext: {
         if (!ds.sid && !ds.serviceName) {
           return false;
         }
+      } else if (basicInfo.value.engine === Engine.DATABRICKS) {
+        if (!ds.warehouseId) {
+          return false;
+        }
       }
 
       if (ds.saslConfig?.krbConfig) {
@@ -195,7 +204,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (!hasWorkspacePermissionV2(me.value, "bb.instances.create")) {
       return false;
     }
-    if (environment.value.uid === String(UNKNOWN_ID)) {
+    if (!isValidEnvironmentName(environment.value.name)) {
       return false;
     }
     if (basicInfo.value.engine === Engine.SPANNER) {
@@ -209,6 +218,16 @@ export const provideInstanceFormContext = (baseContext: {
     // Check Host
     if (basicInfo.value.engine !== Engine.DYNAMODB) {
       if (adminDataSource.value.host === "") {
+        return false;
+      }
+    }
+
+    // Redis Check Master Name
+    if (basicInfo.value.engine === Engine.REDIS) {
+      if (
+        adminDataSource.value.redisType === DataSource_RedisType.SENTINEL &&
+        adminDataSource.value.masterName === ""
+      ) {
         return false;
       }
     }
@@ -234,6 +253,8 @@ export const provideInstanceFormContext = (baseContext: {
         "pendingCreate",
         "updatedPassword",
         "useEmptyPassword",
+        "updatedMasterPassword",
+        "useEmptyMasterPassword",
         "updateSsl",
         "updateSsh",
         "updateAuthenticationPrivateKey"
@@ -244,6 +265,13 @@ export const provideInstanceFormContext = (baseContext: {
     }
     if (edit.useEmptyPassword) {
       ds.password = "";
+    }
+
+    if (edit.updatedMasterPassword) {
+      ds.masterPassword = edit.updatedMasterPassword;
+    }
+    if (edit.useEmptyMasterPassword) {
+      ds.masterPassword = "";
     }
 
     // Clean up unused fields for certain engine types.

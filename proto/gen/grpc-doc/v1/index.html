@@ -276,6 +276,10 @@
             <a href="#v1%2fcommon.proto">v1/common.proto</a>
             <ul>
               
+                <li>
+                  <a href="#bytebase.v1.Position"><span class="badge">M</span>Position</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.Engine"><span class="badge">E</span>Engine</a>
@@ -528,6 +532,10 @@
               
                 <li>
                   <a href="#bytebase.v1.DataSource.AuthenticationType"><span class="badge">E</span>DataSource.AuthenticationType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DataSource.RedisType"><span class="badge">E</span>DataSource.RedisType</a>
                 </li>
               
                 <li>
@@ -1080,7 +1088,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetIamPolicyRequest"><span class="badge">M</span>GetIamPolicyRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.IamPolicy"><span class="badge">M</span>IamPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SetIamPolicyRequest"><span class="badge">M</span>SetIamPolicyRequest</a>
                 </li>
               
               
@@ -1710,10 +1726,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetIamPolicyRequest"><span class="badge">M</span>GetIamPolicyRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetProjectProtectionRulesRequest"><span class="badge">M</span>GetProjectProtectionRulesRequest</a>
                 </li>
               
@@ -1782,10 +1794,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SetIamPolicyRequest"><span class="badge">M</span>SetIamPolicyRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.TestWebhookRequest"><span class="badge">M</span>TestWebhookRequest</a>
                 </li>
               
@@ -1840,10 +1848,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ProtectionRule.Target"><span class="badge">E</span>ProtectionRule.Target</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.TenantMode"><span class="badge">E</span>TenantMode</a>
                 </li>
               
                 <li>
@@ -2106,7 +2110,19 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.DatabaseSync"><span class="badge">M</span>TaskRunLogEntry.DatabaseSync</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.SchemaDump"><span class="badge">M</span>TaskRunLogEntry.SchemaDump</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate"><span class="badge">M</span>TaskRunLogEntry.TaskRunStatusUpdate</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.TransactionControl"><span class="badge">M</span>TaskRunLogEntry.TransactionControl</a>
                 </li>
               
               
@@ -2128,6 +2144,14 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRun.Status"><span class="badge">E</span>TaskRun.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status"><span class="badge">E</span>TaskRunLogEntry.TaskRunStatusUpdate.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.TransactionControl.Type"><span class="badge">E</span>TaskRunLogEntry.TransactionControl.Type</a>
                 </li>
               
                 <li>
@@ -3645,6 +3669,37 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
       </div>
       <p></p>
 
+      
+        <h3 id="bytebase.v1.Position">Position</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>line</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
       
 
       
@@ -5234,6 +5289,13 @@ are /[a-z][0-9]-/. </p></td>
                 </tr>
               
                 <tr>
+                  <td>use_ssl</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Use SSL to connect to the data source. By default, we use system default SSL configuration. </p></td>
+                </tr>
+              
+                <tr>
                   <td>ssl_ca</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -5411,6 +5473,34 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>warehouse_id is used by Databricks. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>master_name is the master name used by connecting redis-master via redis sentinel. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>master_username and master_password are master credentials used by redis sentinel mode. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>redis_type</td>
+                  <td><a href="#bytebase.v1.DataSource.RedisType">DataSource.RedisType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -5797,6 +5887,22 @@ The default is 10 if the value is unset or zero. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the instance.
+Format: instances/{instance} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The environment resource.
+Format: environments/prod where prod is the environment resource ID. </p></td>
                 </tr>
               
             </tbody>
@@ -6265,6 +6371,41 @@ Format: instances/{instance} </p></td>
             
               <tr>
                 <td>AWS_RDS_IAM</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.DataSource.RedisType">DataSource.RedisType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REDIS_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STANDALONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SENTINEL</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLUSTER</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -8862,14 +9003,6 @@ The field only support in filter:
 for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance = &#34;instances/-&#34; to list all databases in the sample project. </p></td>
                 </tr>
               
-                <tr>
-                  <td>permission</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>By default, the permission &#34;bb.databases.get&#34; is used.
-Alternatively, &#34;bb.databases.query&#34; can be used to retrieve databases with query permissions to. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -9364,6 +9497,13 @@ Format: users/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The collation is the collation of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>charset</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The character set of table. </p></td>
                 </tr>
               
                 <tr>
@@ -12515,6 +12655,32 @@ If the condition evaluates to false, then this binding does not apply to the cur
 
         
       
+        <h3 id="bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the resource to get the IAM policy.
+Format: projects/{project}
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.IamPolicy">IamPolicy</h3>
         <p></p>
 
@@ -12531,6 +12697,39 @@ If the condition evaluates to false, then this binding does not apply to the cur
                   <td>repeated</td>
                   <td><p>Collection of binding.
 A binding binds one or more project members to a single project role. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the resource to set the IAM policy.
+Format: projects/{project}
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>policy</td>
+                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -16880,6 +17079,20 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>GetIamPolicy</td>
+                <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SetIamPolicy</td>
+                <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -17085,6 +17298,26 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/policies/*}</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetIamPolicy</td>
+                <td>GET</td>
+                <td>/v1/{resource=workspaces/*}:getIamPolicy</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SetIamPolicy</td>
+                <td>POST</td>
+                <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
+                <td>*</td>
               </tr>
               
             
@@ -17431,9 +17664,7 @@ Keys are:
                   <td></td>
                   <td><p>The resource name of the target.
 Format: instances/{instance-id}/databases/{database-name}.
-Format: projects/{project}/databaseGroups/{databaseGroup}.
-Format: projects/{project}/deploymentConfigs/default. The plan should
-have a single step and single spec for the deployment configuration type. </p></td>
+Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
                 </tr>
               
                 <tr>
@@ -18035,6 +18266,21 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>Code from sql review. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>1-based Position of the SQL statement.
+To supersede `line` and `column` above. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -18833,6 +19079,13 @@ For example, the placeholder for db1_2010, db1_2021, db1_2023 will be &#34;db1&#
                   <td><p>The list of databases that match the database group condition. </p></td>
                 </tr>
               
+                <tr>
+                  <td>multitenancy</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -19033,31 +19286,6 @@ Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
                   <td></td>
                   <td><p>The name of the resource.
 Format: projects/{project}/deploymentConfigs/default. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the project to get the IAM policy.
-Format: projects/{project} </p></td>
                 </tr>
               
             </tbody>
@@ -19427,13 +19655,6 @@ Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
-                  <td>tenant_mode</td>
-                  <td><a href="#bytebase.v1.TenantMode">TenantMode</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>webhooks</td>
                   <td><a href="#bytebase.v1.Webhook">Webhook</a></td>
                   <td>repeated</td>
@@ -19685,38 +19906,6 @@ Format: projects/{project}/protectionRules </p></td>
                   <td><a href="#bytebase.v1.Project">Project</a></td>
                   <td>repeated</td>
                   <td><p>The projects from the specified request. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the project to set the IAM policy.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>policy</td>
-                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -20295,35 +20484,6 @@ The API will default to the BASIC view.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.TenantMode">TenantMode</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TENANT_MODE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TENANT_MODE_DISABLED</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TENANT_MODE_ENABLED</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.Webhook.Type">Webhook.Type</h3>
         <p></p>
         <table class="enum-table">
@@ -20678,7 +20838,7 @@ The API will default to the BASIC view.</p></td>
               <tr>
                 <td>GetIamPolicy</td>
                 <td>GET</td>
-                <td>/v1/{project=projects/*}:getIamPolicy</td>
+                <td>/v1/{resource=projects/*}:getIamPolicy</td>
                 <td></td>
               </tr>
               
@@ -20698,7 +20858,7 @@ The API will default to the BASIC view.</p></td>
               <tr>
                 <td>SetIamPolicy</td>
                 <td>POST</td>
-                <td>/v1/{project=projects/*}:setIamPolicy</td>
+                <td>/v1/{resource=projects/*}:setIamPolicy</td>
                 <td>*</td>
               </tr>
               
@@ -22963,6 +23123,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                 </tr>
               
                 <tr>
+                  <td>log_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>schema_dump</td>
                   <td><a href="#bytebase.v1.TaskRunLogEntry.SchemaDump">TaskRunLogEntry.SchemaDump</a></td>
                   <td></td>
@@ -22972,6 +23139,27 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                 <tr>
                   <td>command_execute</td>
                   <td><a href="#bytebase.v1.TaskRunLogEntry.CommandExecute">TaskRunLogEntry.CommandExecute</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_sync</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.DatabaseSync">TaskRunLogEntry.DatabaseSync</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_run_status_update</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate">TaskRunLogEntry.TaskRunStatusUpdate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>transaction_control</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.TransactionControl">TaskRunLogEntry.TransactionControl</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -23067,6 +23255,44 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
 
         
       
+        <h3 id="bytebase.v1.TaskRunLogEntry.DatabaseSync">TaskRunLogEntry.DatabaseSync</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.TaskRunLogEntry.SchemaDump">TaskRunLogEntry.SchemaDump</h3>
         <p></p>
 
@@ -23087,6 +23313,61 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                 <tr>
                   <td>end_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate">TaskRunLogEntry.TaskRunStatusUpdate</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status">TaskRunLogEntry.TaskRunStatusUpdate.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.TransactionControl">TaskRunLogEntry.TransactionControl</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.TransactionControl.Type">TaskRunLogEntry.TransactionControl.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -23348,6 +23629,70 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status">TaskRunLogEntry.TaskRunStatusUpdate.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING_WAITING</td>
+                <td>1</td>
+                <td><p>the task run is ready to be executed by the scheduler</p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING_RUNNING</td>
+                <td>2</td>
+                <td><p>the task run is being executed by the scheduler</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.TransactionControl.Type">TaskRunLogEntry.TransactionControl.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BEGIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMIT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ROLLBACK</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.TaskRunLogEntry.Type">TaskRunLogEntry.Type</h3>
         <p></p>
         <table class="enum-table">
@@ -23371,6 +23716,24 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
               <tr>
                 <td>COMMAND_EXECUTE</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_SYNC</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TASK_RUN_STATUS_UPDATE</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TRANSACTION_CONTROL</td>
+                <td>5</td>
                 <td><p></p></td>
               </tr>
             
@@ -26307,6 +26670,21 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The advice detail. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>1-based Position of the SQL statement.
+To supersede `line` and `column` above. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

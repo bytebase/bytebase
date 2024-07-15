@@ -1,5 +1,8 @@
 <template>
   <template v-if="viewMode === 'RESULT'">
+    <BBAttention v-if="result.error" class="w-full mb-2" :type="'error'">
+      <ErrorView :error="result.error" />
+    </BBAttention>
     <div
       class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto"
     >
@@ -199,7 +202,7 @@ import type {
   SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, isValidInstanceName } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
 import type {
@@ -262,7 +265,7 @@ const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
-  if (result.error) {
+  if (result.error && data.value.length === 0) {
     return "ERROR";
   }
   const columnNames = result.columnNames;
@@ -276,7 +279,7 @@ const viewMode = computed((): ViewMode => {
 });
 
 const showSearchFeature = computed(() => {
-  if (connectedInstance.value.uid === String(UNKNOWN_ID)) {
+  if (!isValidInstanceName(connectedInstance.value.name)) {
     return false;
   }
   return instanceV1HasStructuredQueryResult(connectedInstance.value);

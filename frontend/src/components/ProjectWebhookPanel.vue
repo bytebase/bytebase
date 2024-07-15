@@ -52,9 +52,10 @@ const columnList = computed((): DataTableColumn<Webhook>[] => {
     {
       key: "title",
       title: t("common.name"),
+      width: "15rem",
       resizable: true,
       render: (webhook) =>
-        h("div", { class: "flex items-center gap-x-1" }, [
+        h("div", { class: "flex items-center gap-x-2" }, [
           h(WebhookTypeIcon, { type: webhook.type, class: "w-5 h-5" }),
           webhook.title,
         ]),
@@ -87,6 +88,7 @@ const columnList = computed((): DataTableColumn<Webhook>[] => {
     {
       key: "view",
       title: "",
+      width: "5rem",
       render: (webhook) =>
         h(
           "div",

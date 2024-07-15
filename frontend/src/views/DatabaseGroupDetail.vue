@@ -13,30 +13,21 @@
           <!-- Summary -->
           <div class="flex items-center">
             <div>
-              <div class="flex items-center">
+              <div class="flex items-center gap-2">
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
                   {{ databaseGroup.databasePlaceholder }}
-                  <BBBadge
-                    text="Database Group"
-                    :can-remove="false"
-                    class="text-xs"
-                  />
                 </h1>
+                <NTag v-if="databaseGroup.multitenancy" round type="info">
+                  <template #icon>
+                    <TenantIcon />
+                  </template>
+                  {{ $t("database-group.multitenancy.self") }}
+                </NTag>
               </div>
             </div>
           </div>
-          <dl
-            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
-          >
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.project") }}&nbsp;-&nbsp;</span
-              >
-              <ProjectV1Name :project="project" hash="#database-groups" />
-            </dd>
-          </dl>
         </div>
 
         <div
@@ -62,7 +53,7 @@
         </div>
       </div>
 
-      <hr />
+      <NDivider />
 
       <FeatureAttentionForInstanceLicense
         v-if="existMatchedUnactivateInstance"
@@ -105,7 +96,7 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { NButton } from "naive-ui";
+import { NButton, NDivider, NTag } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
@@ -116,6 +107,7 @@ import {
   DatabaseGroupFactorOptionsMap,
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
+import TenantIcon from "@/components/TenantIcon.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useCurrentUserV1,
@@ -253,7 +245,7 @@ const existMatchedUnactivateInstance = computed(() => {
     (database) =>
       !subscriptionV1Store.hasInstanceFeature(
         "bb.feature.database-grouping",
-        database.instanceEntity
+        database.instanceResource
       )
   );
 });

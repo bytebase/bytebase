@@ -5,7 +5,7 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM node:20.14.0 as frontend
+FROM node:20.15.0 as frontend
 
 ARG RELEASE="release"
 
@@ -18,14 +18,14 @@ COPY . .
 RUN pnpm --dir frontend install --frozen-lockfile
 RUN pnpm --dir frontend release-docker
 
-FROM golang:1.22.4 as backend
+FROM golang:1.22.5 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
 ARG TARGETARCH
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.22.4"
+ARG GO_VERSION="1.22.5"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"

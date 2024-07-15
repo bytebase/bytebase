@@ -49,7 +49,7 @@
 
   <FeatureModal
     feature="bb.feature.sensitive-data"
-    :instance="database.instanceEntity"
+    :instance="database.instanceResource"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -78,6 +78,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import type { MaskData } from "@/types/proto/v1/org_policy_service";
+import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SensitiveColumnDrawer from "../SensitiveData/SensitiveColumnDrawer.vue";
 
 type LocalState = {
@@ -108,7 +109,7 @@ const hasSensitiveDataFeature = computed(() => {
 const instanceMissingLicense = computed(() => {
   return subscriptionV1Store.instanceMissingLicense(
     "bb.feature.sensitive-data",
-    props.database.instanceEntity
+    props.database.instanceResource
   );
 });
 

@@ -423,13 +423,6 @@ paths:
                      for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
                   schema:
                     type: string
-                - name: permission
-                  in: query
-                  description: |-
-                    By default, the permission "bb.databases.get" is used.
-                     Alternatively, "bb.databases.query" can be used to retrieve databases with query permissions to.
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -8035,6 +8028,62 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/workspaces/{workspace}:getIamPolicy:
+        get:
+            tags:
+                - OrgPolicyService
+            operationId: OrgPolicyService_GetIamPolicy
+            parameters:
+                - name: workspace
+                  in: path
+                  description: The workspace id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IamPolicy'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/workspaces/{workspace}:setIamPolicy:
+        post:
+            tags:
+                - OrgPolicyService
+            operationId: OrgPolicyService_SetIamPolicy
+            parameters:
+                - name: workspace
+                  in: path
+                  description: The workspace id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetIamPolicyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IamPolicy'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1:adminExecute:
         get:
             tags:
@@ -8240,6 +8289,14 @@ components:
                 detail:
                     type: string
                     description: The advice detail.
+                startPosition:
+                    allOf:
+                        - $ref: '#/components/schemas/Position'
+                    description: |-
+                        1-based Position of the SQL statement.
+                         To supersede `line` and `column` above.
+                endPosition:
+                    $ref: '#/components/schemas/Position'
         AdviseIndexResponse:
             type: object
             properties:
@@ -9187,6 +9244,9 @@ components:
                 password:
                     writeOnly: true
                     type: string
+                useSsl:
+                    type: boolean
+                    description: Use SSL to connect to the data source. By default, we use system default SSL configuration.
                 sslCa:
                     writeOnly: true
                     type: string
@@ -9274,6 +9334,22 @@ components:
                 warehouseId:
                     type: string
                     description: warehouse_id is used by Databricks.
+                masterName:
+                    type: string
+                    description: master_name is the master name used by connecting redis-master via redis sentinel.
+                masterUsername:
+                    type: string
+                    description: master_username and master_password are master credentials used by redis sentinel mode.
+                masterPassword:
+                    type: string
+                redisType:
+                    enum:
+                        - REDIS_TYPE_UNSPECIFIED
+                        - STANDALONE
+                        - SENTINEL
+                        - CLUSTER
+                    type: string
+                    format: enum
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9430,6 +9506,8 @@ components:
                     items:
                         $ref: '#/components/schemas/DatabaseGroup_Database'
                     description: The list of databases that match the database group condition.
+                multitenancy:
+                    type: boolean
         DatabaseGroup_Database:
             type: object
             properties:
@@ -10257,6 +10335,16 @@ components:
                         $ref: '#/components/schemas/DataSource'
                 activation:
                     type: boolean
+                name:
+                    type: string
+                    description: |-
+                        The name of the instance.
+                         Format: instances/{instance}
+                environment:
+                    type: string
+                    description: |-
+                        The environment resource.
+                         Format: environments/prod where prod is the environment resource ID.
         InstanceRole:
             type: object
             properties:
@@ -11398,8 +11486,6 @@ components:
                         The resource name of the target.
                          Format: instances/{instance-id}/databases/{database-name}.
                          Format: projects/{project}/databaseGroups/{databaseGroup}.
-                         Format: projects/{project}/deploymentConfigs/default. The plan should
-                         have a single step and single spec for the deployment configuration type.
                 sheet:
                     type: string
                     description: |-
@@ -11614,6 +11700,15 @@ components:
                     readOnly: true
                     type: string
                     description: The system-assigned, unique identifier for the resource.
+        Position:
+            type: object
+            properties:
+                line:
+                    type: integer
+                    format: int32
+                column:
+                    type: integer
+                    format: int32
         PrettyRequest:
             type: object
             properties:
@@ -11997,6 +12092,14 @@ components:
                     type: integer
                     description: Code from sql review.
                     format: int32
+                startPosition:
+                    allOf:
+                        - $ref: '#/components/schemas/Position'
+                    description: |-
+                        1-based Position of the SQL statement.
+                         To supersede `line` and `column` above.
+                endPosition:
+                    $ref: '#/components/schemas/Position'
         Result_SqlSummaryReport:
             type: object
             properties:
@@ -12646,15 +12749,16 @@ components:
                          use the default full mask algorithm.
         SetIamPolicyRequest:
             required:
-                - project
+                - resource
                 - policy
             type: object
             properties:
-                project:
+                resource:
                     type: string
                     description: |-
-                        The name of the project to set the IAM policy.
+                        The name of the resource to set the IAM policy.
                          Format: projects/{project}
+                         Format: workspaces/{workspace}
                 policy:
                     $ref: '#/components/schemas/IamPolicy'
         Setting:
@@ -13131,6 +13235,9 @@ components:
                 collation:
                     type: string
                     description: The collation is the collation of a table.
+                charset:
+                    type: string
+                    description: The character set of table.
                 rowCount:
                     type: string
                     description: The row_count is the estimated number of rows of a table.
@@ -13380,6 +13487,10 @@ components:
                         - SCHEMA_DUMP_END
                         - COMMAND_EXECUTE
                         - COMMAND_RESPONSE
+                        - DATABASE_SYNC_START
+                        - DATABASE_SYNC_END
+                        - TASK_RUN_STATUS_UPDATE
+                        - TRANSACTION_CONTROL
                     type: string
                     format: enum
                 schemaDumpStart:
@@ -13390,6 +13501,14 @@ components:
                     $ref: '#/components/schemas/TaskRunLog_CommandExecute'
                 commandResponse:
                     $ref: '#/components/schemas/TaskRunLog_CommandResponse'
+                databaseSyncStart:
+                    $ref: '#/components/schemas/TaskRunLog_DatabaseSyncStart'
+                databaseSyncEnd:
+                    $ref: '#/components/schemas/TaskRunLog_DatabaseSyncEnd'
+                taskRunStatusUpdate:
+                    $ref: '#/components/schemas/TaskRunLog_TaskRunStatusUpdate'
+                transactionControl:
+                    $ref: '#/components/schemas/TaskRunLog_TransactionControl'
         TaskRunLog_CommandExecute:
             type: object
             properties:
@@ -13421,6 +13540,14 @@ components:
                     description: |-
                         `all_affected_rows` is the affected rows of each command.
                          `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
+        TaskRunLog_DatabaseSyncEnd:
+            type: object
+            properties:
+                error:
+                    type: string
+        TaskRunLog_DatabaseSyncStart:
+            type: object
+            properties: {}
         TaskRunLog_SchemaDumpEnd:
             type: object
             properties:
@@ -13429,6 +13556,29 @@ components:
         TaskRunLog_SchemaDumpStart:
             type: object
             properties: {}
+        TaskRunLog_TaskRunStatusUpdate:
+            type: object
+            properties:
+                status:
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - RUNNING_WAITING
+                        - RUNNING_RUNNING
+                    type: string
+                    format: enum
+        TaskRunLog_TransactionControl:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - BEGIN
+                        - COMMIT
+                        - ROLLBACK
+                    type: string
+                    format: enum
+                error:
+                    type: string
         TaskRun_ExecutionDetail:
             type: object
             properties:

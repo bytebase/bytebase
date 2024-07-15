@@ -2,8 +2,9 @@ import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { Database } from "../proto/v1/database_service";
 import type { Environment } from "../proto/v1/environment_service";
-import type { ComposedInstance } from "./instance";
-import { emptyInstance, unknownInstance } from "./instance";
+import type { InstanceResource } from "../proto/v1/instance_service";
+import { emptyEnvironment, unknownEnvironment } from "./environment";
+import { emptyInstanceResource, unknownInstanceResource } from "./instance";
 import type { ComposedProject } from "./project";
 import { emptyProject, unknownProject } from "./project";
 
@@ -14,17 +15,18 @@ export interface ComposedDatabase extends Database {
   databaseName: string;
   /** instance name. Format: instances/{instance} */
   instance: string;
-  /** related instance entity */
-  instanceEntity: ComposedInstance;
+  /** related environment entity composed by effectedEnvironment  */
   effectiveEnvironmentEntity: Environment;
+  /** non-empty instanceResource field, should be filled by unknownInstanceResource() if needed */
+  instanceResource: InstanceResource;
 }
 
 export const emptyDatabase = (): ComposedDatabase => {
   const projectEntity = emptyProject();
-  const instanceEntity = emptyInstance();
-  const effectiveEnvironmentEntity = instanceEntity.environmentEntity;
+  const instanceResource = emptyInstanceResource();
+  const effectiveEnvironmentEntity = emptyEnvironment();
   const database = Database.fromJSON({
-    name: `${instanceEntity.name}/databases/${EMPTY_ID}`,
+    name: `${instanceResource.name}/databases/${EMPTY_ID}`,
     uid: String(EMPTY_ID),
     syncState: State.ACTIVE,
     project: projectEntity.name,
@@ -33,8 +35,8 @@ export const emptyDatabase = (): ComposedDatabase => {
   return {
     ...database,
     databaseName: "",
-    instance: instanceEntity.name,
-    instanceEntity,
+    instance: instanceResource.name,
+    instanceResource,
     projectEntity,
     effectiveEnvironmentEntity,
   };
@@ -42,10 +44,10 @@ export const emptyDatabase = (): ComposedDatabase => {
 
 export const unknownDatabase = (): ComposedDatabase => {
   const projectEntity = unknownProject();
-  const instanceEntity = unknownInstance();
-  const effectiveEnvironmentEntity = instanceEntity.environmentEntity;
+  const instanceResource = unknownInstanceResource();
+  const effectiveEnvironmentEntity = unknownEnvironment();
   const database = Database.fromJSON({
-    name: `${instanceEntity.name}/databases/${UNKNOWN_ID}`,
+    name: `${instanceResource.name}/databases/${UNKNOWN_ID}`,
     uid: String(UNKNOWN_ID),
     syncState: State.ACTIVE,
     project: projectEntity.name,
@@ -54,9 +56,9 @@ export const unknownDatabase = (): ComposedDatabase => {
   return {
     ...database,
     databaseName: "<<Unknown database>>",
-    instance: instanceEntity.name,
-    instanceEntity,
+    instance: instanceResource.name,
+    instanceResource,
     projectEntity,
-    effectiveEnvironmentEntity: instanceEntity.environmentEntity,
+    effectiveEnvironmentEntity,
   };
 };

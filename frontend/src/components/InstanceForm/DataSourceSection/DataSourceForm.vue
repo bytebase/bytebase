@@ -497,6 +497,63 @@
             />
           </div>
         </div>
+
+        <div
+          v-if="
+            basicInfo.engine === Engine.REDIS &&
+            dataSource.redisType === DataSource_RedisType.SENTINEL
+          "
+        >
+          <div class="mt-4">
+            <label class="textlabel"> Master Name </label>
+            <span class="text-red-600 mr-2">*</span>
+            <NInput
+              v-model:value="dataSource.masterName"
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="''"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="textlabel"> Master Username </label>
+            <NInput
+              v-model:value="dataSource.masterUsername"
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="''"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="textlabel block"> Master Password </label>
+            <div class="mt-2">
+              <NCheckbox
+                v-if="!isCreating && allowUsingEmptyPassword"
+                :size="'small'"
+                :checked="dataSource.useEmptyMasterPassword"
+                :disabled="!allowEdit"
+                @update:checked="toggleUseEmptyMasterPassword"
+              >
+                {{ $t("instance.no-password") }}
+              </NCheckbox>
+              <NInput
+                type="password"
+                show-password-on="click"
+                class="w-full"
+                :input-props="{ autocomplete: 'off' }"
+                :placeholder="
+                  dataSource.useEmptyMasterPassword
+                    ? $t('instance.no-password')
+                    : $t('instance.password-write-only')
+                "
+                :disabled="!allowEdit || dataSource.useEmptyMasterPassword"
+                :value="
+                  dataSource.useEmptyMasterPassword ? '' : dataSource.updatedMasterPassword
+                "
+                @update:value="dataSource.updatedMasterPassword = $event.trim()"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </template>
@@ -568,7 +625,10 @@ MIIEvQ...
 
   <template v-if="basicInfo.engine === Engine.DATABRICKS">
     <div>
-      <div class="textlabel black mt-4">Warehouse ID</div>
+      <div class="textlabel black mt-4">
+        Warehouse ID
+        <span class="text-red-600">*</span>
+      </div>
       <NInput
         v-model:value="dataSource.warehouseId"
         class="mt-2"
@@ -577,25 +637,32 @@ MIIEvQ...
     </div>
     <div class="mt-2 sm:col-span-3 sm:col-start-1">
       <NRadioGroup v-model:value="databricksAuth">
-        <NRadio :value="'PASSWORD'"> Password </NRadio>
+        <NRadio :value="'PASSWORD'">
+          {{ $t("common.password") }}
+        </NRadio>
         <NRadio :value="'ACCESS_TOKEN'"> Access Token </NRadio>
       </NRadioGroup>
     </div>
 
     <div v-if="databricksAuth === 'PASSWORD'">
-      <div class="textlabel black mt-4">Username</div>
+      <div class="textlabel black mt-4">
+        {{ $t("common.username") }}
+      </div>
       <NInput
         v-model:value="dataSource.username"
         class="mt-2 w-full"
         :disabled="!allowEdit"
       />
-      <div class="textlabel black mt-4">Password</div>
+      <div class="textlabel black mt-4">
+        {{ $t("common.password") }}
+      </div>
       <NInput
         v-model:value="dataSource.password"
         type="password"
         show-password-on="click"
         class="mt-2 w-full"
         :disabled="!allowEdit"
+        :placeholder="$t('instance.password-write-only')"
       />
       <div class="textlabel black mt-4">Account ID</div>
       <NInput
@@ -606,7 +673,10 @@ MIIEvQ...
       />
     </div>
     <div v-else>
-      <div class="textlabel black mt-4">Token</div>
+      <div class="textlabel black mt-4">
+        Token
+        <span class="text-red-600">*</span>
+      </div>
       <NInput
         v-model:value="dataSource.authenticationPrivateKey"
         class="mt-2 w-full"
@@ -699,22 +769,19 @@ MIIEvQ...
     "
     class="mt-4 sm:col-span-3 sm:col-start-1"
   >
-    <div class="flex flex-row items-center">
+    <div class="flex flex-row items-center gap-2">
+      <NSwitch
+        :value="dataSource.useSsl"
+        size="small"
+        @update:value="handleUseSslChanged"
+      />
       <label for="ssl" class="textlabel block">
         {{ $t("data-source.ssl-connection") }}
       </label>
     </div>
-    <template v-if="dataSource.pendingCreate">
-      <SslCertificateForm
-        :value="dataSource"
-        :engine-type="basicInfo.engine"
-        :disabled="!allowEdit"
-        @change="handleSSLChange"
-      />
-    </template>
-    <template v-else>
-      <template v-if="dataSource.updateSsl">
-        <SslCertificateForm
+    <template v-if="dataSource.useSsl">
+      <template v-if="dataSource.pendingCreate">
+        <SslCertificateFormV1
           :value="dataSource"
           :engine-type="basicInfo.engine"
           :disabled="!allowEdit"
@@ -722,13 +789,23 @@ MIIEvQ...
         />
       </template>
       <template v-else>
-        <NButton
-          class="!mt-2"
-          :disabled="!allowEdit"
-          @click.prevent="handleEditSSL"
-        >
-          {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-        </NButton>
+        <template v-if="dataSource.updateSsl">
+          <SslCertificateFormV1
+            :value="dataSource"
+            :engine-type="basicInfo.engine"
+            :disabled="!allowEdit"
+            @change="handleSSLChange"
+          />
+        </template>
+        <template v-else>
+          <NButton
+            class="!mt-2"
+            :disabled="!allowEdit"
+            @click.prevent="handleEditSSL"
+          >
+            {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+          </NButton>
+        </template>
       </template>
     </template>
   </div>
@@ -789,6 +866,7 @@ import {
   NUpload,
   NUploadDragger,
   type UploadFileInfo,
+  NSwitch,
 } from "naive-ui";
 import { watch, reactive, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -805,12 +883,13 @@ import {
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
+import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import GcpCredentialInput from "./GcpCredentialInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
-import SslCertificateForm from "./SslCertificateForm.vue";
+import SslCertificateFormV1 from "./SslCertificateFormV1.vue";
 
 interface LocalState {
   passwordType: DataSourceExternalSecret_SecretType;
@@ -988,6 +1067,15 @@ const toggleUseEmptyPassword = (on: boolean) => {
     ds.updatedPassword = "";
   }
 };
+
+const toggleUseEmptyMasterPassword = (on: boolean) => {
+  const ds = props.dataSource;
+  ds.useEmptyMasterPassword = on;
+  if (on) {
+    ds.updatedMasterPassword = "";
+  }
+};
+
 const handleHostInput = (value: string) => {
   const ds = props.dataSource;
   if (ds.type === DataSourceType.READ_ONLY) {
@@ -1017,6 +1105,13 @@ const handlePortInput = (value: string) => {
   }
   ds.port = value.trim();
 };
+
+const handleUseSslChanged = (useSSL: boolean) => {
+  const ds = props.dataSource;
+  ds.useSsl = useSSL;
+  ds.updateSsl = true;
+};
+
 const handleEditSSL = () => {
   const ds = props.dataSource;
   ds.sslCa = "";
@@ -1072,7 +1167,6 @@ const handleKeytabUpload = (options: { file: UploadFileInfo }) => {
     const data = new Uint8Array(arrayBuffer);
     const ds = props.dataSource;
     if (ds.saslConfig && ds.saslConfig.krbConfig) {
-      console.log(data);
       ds.saslConfig.krbConfig.keytab = data;
     }
   };

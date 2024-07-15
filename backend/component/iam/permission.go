@@ -1,6 +1,6 @@
 package iam
 
-type Permission string
+type Permission = string
 
 const (
 	// Workspace-level permissions.
@@ -109,127 +109,136 @@ const (
 	PermissionTaskRunsList          Permission = "bb.taskRuns.list"
 )
 
-func (p Permission) String() string {
-	return string(p)
+var allWorkspacePermissions = []Permission{
+	PermissionEnvironmentsCreate,
+	PermissionEnvironmentsDelete,
+	PermissionEnvironmentsGet,
+	PermissionEnvironmentsList,
+	PermissionEnvironmentsUndelete,
+	PermissionEnvironmentsUpdate,
+	PermissionVCSProvidersCreate,
+	PermissionVCSProvidersDelete,
+	PermissionVCSProvidersGet,
+	PermissionVCSProvidersList,
+	PermissionVCSProvidersListProjects,
+	PermissionVCSProvidersSearchProjects,
+	PermissionVCSProvidersUpdate,
+	PermissionIdentityProvidersCreate,
+	PermissionIdentityProvidersDelete,
+	PermissionIdentityProvidersGet,
+	PermissionIdentityProvidersUndelete,
+	PermissionIdentityProvidersUpdate,
+	PermissionInstancesAdminExecute,
+	PermissionInstancesCreate,
+	PermissionInstancesDelete,
+	PermissionInstancesGet,
+	PermissionInstancesList,
+	PermissionInstancesSync,
+	PermissionInstancesUndelete,
+	PermissionInstancesUpdate,
+	PermissionPoliciesCreate,
+	PermissionPoliciesDelete,
+	PermissionPoliciesGet,
+	PermissionPoliciesList,
+	PermissionPoliciesUpdate,
+	PermissionProjectsCreate,
+	PermissionProjectsDelete,
+	PermissionProjectsList,
+	PermissionProjectsUndelete,
+	PermissionRisksCreate,
+	PermissionRisksDelete,
+	PermissionRisksList,
+	PermissionRisksUpdate,
+	PermissionRolesCreate,
+	PermissionRolesDelete,
+	PermissionRolesList,
+	PermissionRolesUpdate,
+	PermissionUserGroupsCreate,
+	PermissionUserGroupsDelete,
+	PermissionUserGroupsGet,
+	PermissionUserGroupsList,
+	PermissionUserGroupsUpdate,
+	PermissionSettingsGet,
+	PermissionSettingsList,
+	PermissionSettingsSet,
 }
+var allProjectPermissions = []Permission{
+	PermissionAuditLogsGet,
+	PermissionBranchesCreate,
+	PermissionBranchesDelete,
+	PermissionBranchesGet,
+	PermissionBranchesList,
+	PermissionBranchesUpdate,
+	PermissionChangeHistoriesGet,
+	PermissionChangeHistoriesList,
+	PermissionVCSConnectorsCreate,
+	PermissionVCSConnectorsDelete,
+	PermissionVCSConnectorsGet,
+	PermissionVCSConnectorsList,
+	PermissionVCSConnectorsUpdate,
+	PermissionChangelistsCreate,
+	PermissionChangelistsDelete,
+	PermissionChangelistsGet,
+	PermissionChangelistsList,
+	PermissionChangelistsUpdate,
+	PermissionDatabaseSecretsDelete,
+	PermissionDatabaseSecretsList,
+	PermissionDatabaseSecretsUpdate,
+	PermissionDatabasesAdviseIndex,
+	PermissionDatabasesExport,
+	PermissionDatabasesGet,
+	PermissionDatabasesGetSchema,
+	PermissionDatabasesList,
+	PermissionDatabasesQuery,
+	PermissionDatabasesSync,
+	PermissionDatabasesUpdate,
+	PermissionIssueCommentsCreate,
+	PermissionIssueCommentsUpdate,
+	PermissionIssuesCreate,
+	PermissionIssuesGet,
+	PermissionIssuesList,
+	PermissionIssuesUpdate,
+	PermissionPlanCheckRunsList,
+	PermissionPlanCheckRunsRun,
+	PermissionPlansCreate,
+	PermissionPlansGet,
+	PermissionPlansList,
+	PermissionPlansUpdate,
+	PermissionProjectsGet,
+	PermissionProjectsGetIAMPolicy,
+	PermissionProjectsSetIAMPolicy,
+	PermissionProjectsUpdate,
+	PermissionRolloutsCreate,
+	PermissionRolloutsGet,
+	PermissionRolloutsPreview,
+	PermissionSlowQueriesList,
+	PermissionTaskRunsList,
+}
+
+var allWorkspacePermissionsMap = func() map[Permission]bool {
+	m := make(map[Permission]bool)
+	for _, p := range allWorkspacePermissions {
+		m[p] = true
+	}
+	return m
+}()
+
+var allProjectPermissionsMap = func() map[Permission]bool {
+	m := make(map[Permission]bool)
+	for _, p := range allProjectPermissions {
+		m[p] = true
+	}
+	return m
+}()
 
 func PermissionExist(p Permission) bool {
-	//exhaustive:enforce
-	switch p {
-	case
-		PermissionAuditLogsGet,
-		PermissionBranchesCreate,
-		PermissionBranchesDelete,
-		PermissionBranchesGet,
-		PermissionBranchesList,
-		PermissionBranchesUpdate,
-		PermissionChangeHistoriesGet,
-		PermissionChangeHistoriesList,
-		PermissionVCSConnectorsCreate,
-		PermissionVCSConnectorsDelete,
-		PermissionVCSConnectorsGet,
-		PermissionVCSConnectorsList,
-		PermissionVCSConnectorsUpdate,
-		PermissionChangelistsCreate,
-		PermissionChangelistsDelete,
-		PermissionChangelistsGet,
-		PermissionChangelistsList,
-		PermissionChangelistsUpdate,
-		PermissionDatabaseSecretsDelete,
-		PermissionDatabaseSecretsList,
-		PermissionDatabaseSecretsUpdate,
-		PermissionDatabasesAdviseIndex,
-		PermissionDatabasesExport,
-		PermissionDatabasesGet,
-		PermissionDatabasesGetSchema,
-		PermissionDatabasesList,
-		PermissionDatabasesQuery,
-		PermissionDatabasesSync,
-		PermissionDatabasesUpdate,
-		PermissionEnvironmentsCreate,
-		PermissionEnvironmentsDelete,
-		PermissionEnvironmentsGet,
-		PermissionEnvironmentsList,
-		PermissionEnvironmentsUndelete,
-		PermissionEnvironmentsUpdate,
-		PermissionVCSProvidersCreate,
-		PermissionVCSProvidersDelete,
-		PermissionVCSProvidersGet,
-		PermissionVCSProvidersList,
-		PermissionVCSProvidersListProjects,
-		PermissionVCSProvidersSearchProjects,
-		PermissionVCSProvidersUpdate,
-		PermissionIdentityProvidersCreate,
-		PermissionIdentityProvidersDelete,
-		PermissionIdentityProvidersGet,
-		PermissionIdentityProvidersUndelete,
-		PermissionIdentityProvidersUpdate,
-		PermissionInstancesCreate,
-		PermissionInstancesDelete,
-		PermissionInstancesGet,
-		PermissionInstancesList,
-		PermissionInstancesSync,
-		PermissionInstancesUndelete,
-		PermissionInstancesUpdate,
-		PermissionInstancesAdminExecute,
-		PermissionIssueCommentsCreate,
-		PermissionIssueCommentsUpdate,
-		PermissionIssuesCreate,
-		PermissionIssuesGet,
-		PermissionIssuesList,
-		PermissionIssuesUpdate,
-		PermissionPlanCheckRunsList,
-		PermissionPlanCheckRunsRun,
-		PermissionPlansCreate,
-		PermissionPlansGet,
-		PermissionPlansList,
-		PermissionPlansUpdate,
-		PermissionPoliciesCreate,
-		PermissionPoliciesDelete,
-		PermissionPoliciesGet,
-		PermissionPoliciesList,
-		PermissionPoliciesUpdate,
-		PermissionProjectsCreate,
-		PermissionProjectsDelete,
-		PermissionProjectsGet,
-		PermissionProjectsGetIAMPolicy,
-		PermissionProjectsList,
-		PermissionProjectsSetIAMPolicy,
-		PermissionProjectsUndelete,
-		PermissionProjectsUpdate,
-		PermissionRisksCreate,
-		PermissionRisksDelete,
-		PermissionRisksList,
-		PermissionRisksUpdate,
-		PermissionRolesCreate,
-		PermissionRolesDelete,
-		PermissionRolesList,
-		PermissionRolesUpdate,
-		PermissionUserGroupsCreate,
-		PermissionUserGroupsDelete,
-		PermissionUserGroupsGet,
-		PermissionUserGroupsList,
-		PermissionUserGroupsUpdate,
-		PermissionRolloutsCreate,
-		PermissionRolloutsGet,
-		PermissionRolloutsPreview,
-		PermissionSettingsGet,
-		PermissionSettingsList,
-		PermissionSettingsSet,
-		PermissionSlowQueriesList,
-		PermissionTaskRunsList:
+	if allWorkspacePermissionsMap[p] {
 		return true
-	default:
-		return false
 	}
-}
-
-func NewPermission(s string) Permission {
-	p := Permission(s)
-	if !PermissionExist(p) {
-		panic("invalid permission: " + s)
+	if allProjectPermissionsMap[p] {
+		return true
 	}
-	return p
+	return false
 }
 
 type PermissionLevel string
@@ -244,114 +253,11 @@ func (p PermissionLevel) String() string {
 }
 
 func GetPermissionLevel(permission Permission) PermissionLevel {
-	//exhaustive:enforce
-	switch permission {
-	case
-		PermissionEnvironmentsCreate,
-		PermissionEnvironmentsDelete,
-		PermissionEnvironmentsGet,
-		PermissionEnvironmentsList,
-		PermissionEnvironmentsUndelete,
-		PermissionEnvironmentsUpdate,
-		PermissionVCSProvidersCreate,
-		PermissionVCSProvidersDelete,
-		PermissionVCSProvidersGet,
-		PermissionVCSProvidersList,
-		PermissionVCSProvidersListProjects,
-		PermissionVCSProvidersSearchProjects,
-		PermissionVCSProvidersUpdate,
-		PermissionIdentityProvidersCreate,
-		PermissionIdentityProvidersDelete,
-		PermissionIdentityProvidersGet,
-		PermissionIdentityProvidersUndelete,
-		PermissionIdentityProvidersUpdate,
-		PermissionInstancesAdminExecute,
-		PermissionInstancesCreate,
-		PermissionInstancesDelete,
-		PermissionInstancesGet,
-		PermissionInstancesList,
-		PermissionInstancesSync,
-		PermissionInstancesUndelete,
-		PermissionInstancesUpdate,
-		PermissionPoliciesCreate,
-		PermissionPoliciesDelete,
-		PermissionPoliciesGet,
-		PermissionPoliciesList,
-		PermissionPoliciesUpdate,
-		PermissionProjectsCreate,
-		PermissionProjectsDelete,
-		PermissionProjectsList,
-		PermissionProjectsUndelete,
-		PermissionRisksCreate,
-		PermissionRisksDelete,
-		PermissionRisksList,
-		PermissionRisksUpdate,
-		PermissionRolesCreate,
-		PermissionRolesDelete,
-		PermissionRolesList,
-		PermissionRolesUpdate,
-		PermissionUserGroupsCreate,
-		PermissionUserGroupsDelete,
-		PermissionUserGroupsGet,
-		PermissionUserGroupsList,
-		PermissionUserGroupsUpdate,
-		PermissionSettingsGet,
-		PermissionSettingsList,
-		PermissionSettingsSet:
+	if allWorkspacePermissionsMap[permission] {
 		return PermissionLevelWorkspace
-	case
-		PermissionAuditLogsGet,
-		PermissionBranchesCreate,
-		PermissionBranchesDelete,
-		PermissionBranchesGet,
-		PermissionBranchesList,
-		PermissionBranchesUpdate,
-		PermissionChangeHistoriesGet,
-		PermissionChangeHistoriesList,
-		PermissionVCSConnectorsCreate,
-		PermissionVCSConnectorsDelete,
-		PermissionVCSConnectorsGet,
-		PermissionVCSConnectorsList,
-		PermissionVCSConnectorsUpdate,
-		PermissionChangelistsCreate,
-		PermissionChangelistsDelete,
-		PermissionChangelistsGet,
-		PermissionChangelistsList,
-		PermissionChangelistsUpdate,
-		PermissionDatabaseSecretsDelete,
-		PermissionDatabaseSecretsList,
-		PermissionDatabaseSecretsUpdate,
-		PermissionDatabasesAdviseIndex,
-		PermissionDatabasesExport,
-		PermissionDatabasesGet,
-		PermissionDatabasesGetSchema,
-		PermissionDatabasesList,
-		PermissionDatabasesQuery,
-		PermissionDatabasesSync,
-		PermissionDatabasesUpdate,
-		PermissionIssueCommentsCreate,
-		PermissionIssueCommentsUpdate,
-		PermissionIssuesCreate,
-		PermissionIssuesGet,
-		PermissionIssuesList,
-		PermissionIssuesUpdate,
-		PermissionPlanCheckRunsList,
-		PermissionPlanCheckRunsRun,
-		PermissionPlansCreate,
-		PermissionPlansGet,
-		PermissionPlansList,
-		PermissionPlansUpdate,
-		PermissionProjectsGet,
-		PermissionProjectsGetIAMPolicy,
-		PermissionProjectsSetIAMPolicy,
-		PermissionProjectsUpdate,
-		PermissionRolloutsCreate,
-		PermissionRolloutsGet,
-		PermissionRolloutsPreview,
-		PermissionSlowQueriesList,
-		PermissionTaskRunsList:
-		return PermissionLevelProject
-	default:
-		return ""
 	}
+	if allProjectPermissionsMap[permission] {
+		return PermissionLevelProject
+	}
+	return ""
 }

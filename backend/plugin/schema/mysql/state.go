@@ -1335,7 +1335,7 @@ func (c *columnState) toString(buf io.StringWriter) error {
 		if !dontWriteDefaultNull {
 			// todo(zp): refactor column attribute.
 			if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
-				if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
+				if _, err := buf.WriteString(" " + autoIncrementSymbol); err != nil {
 					return err
 				}
 			} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {

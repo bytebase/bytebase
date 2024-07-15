@@ -29,7 +29,9 @@
     "bb-sql-review-dev": "基本的なテンプレート",
     "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",
     "bb-sql-review-sample": "サンプルテンプレート",
-    "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。"
+    "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。",
+    "bb-sql-review-empty": "ゼロから始めます",
+    "bb-sql-review-empty-desc": "空のテンプレートです。必要なルールを自分で追加する必要があります。"
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -637,7 +639,7 @@
       }
     },
     "advice-online-migration": {
-      "title": "オンライン移行の有効化を推奨",
+      "title": "オンライン移行",
       "description": "移行されたテーブル行数が設定値を超えた場合、オンライン移行の有効化を推奨します。推奨されるエラーレベル: 警告",
       "component": {
         "number": {

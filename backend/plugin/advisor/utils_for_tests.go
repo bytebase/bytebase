@@ -148,8 +148,9 @@ var (
 
 // TestCase is the data struct for test.
 type TestCase struct {
-	Statement string            `yaml:"statement"`
-	Want      []*storepb.Advice `yaml:"want"`
+	Statement  string                                        `yaml:"statement"`
+	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType `yaml:"changeType"`
+	Want       []*storepb.Advice                             `yaml:"want"`
 }
 
 type testCatalog struct {
@@ -225,6 +226,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Context:         context.Background(),
 			CurrentDatabase: curDB,
 			DBSchema:        schemaMetadata,
+			ChangeType:      tc.ChangeType,
 		}
 
 		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)

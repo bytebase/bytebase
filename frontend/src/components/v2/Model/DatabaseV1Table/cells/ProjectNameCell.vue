@@ -1,18 +1,15 @@
 <template>
   <div class="flex flex-row space-x-2 items-center">
-    <ProjectV1Name :project="project" :link="link" tag="div" />
-    <NTooltip
-      v-if="
-        showTenantIcon && project.tenantMode === TenantMode.TENANT_MODE_ENABLED
-      "
-    >
-      <template #trigger>
-        <TenantIcon class="text-control" />
-      </template>
-      <span class="whitespace-nowrap">
-        {{ $t("project.mode.batch") }}
-      </span>
-    </NTooltip>
+    <ProjectV1Name
+      :project="project"
+      :link="link"
+      tag="div"
+      :keyword="keyword"
+    />
+
+    <span v-if="suffix">
+      {{ suffix }}
+    </span>
 
     <NTooltip v-if="project.workflow === Workflow.VCS">
       <template #trigger>
@@ -39,26 +36,25 @@
 
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
-import { computed } from "vue";
 import { ProjectV1Name } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import { Workflow } from "@/types/proto/v1/project_service";
 import type { Mode } from "../DatabaseV1Table.vue";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     project: Project;
     mode?: Mode;
     link?: boolean;
+    keyword?: string;
+    suffix?: string;
   }>(),
   {
     mode: "ALL",
     link: false,
+    keyword: undefined,
+    suffix: "",
   }
 );
-
-const showTenantIcon = computed(() => {
-  return ["ALL", "ALL_SHORT", "INSTANCE"].includes(props.mode);
-});
 </script>

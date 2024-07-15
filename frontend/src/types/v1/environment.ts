@@ -25,3 +25,12 @@ export const unknownEnvironment = () => {
     title: "<<Unknown environment>>",
   };
 };
+
+export const isValidEnvironmentName = (name: any): name is string => {
+  return (
+    typeof name === "string" &&
+    name.startsWith("environments/") &&
+    name !== EMPTY_ENVIRONMENT_NAME &&
+    name !== UNKNOWN_ENVIRONMENT_NAME
+  );
+};

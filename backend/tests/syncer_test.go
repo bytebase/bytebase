@@ -281,6 +281,7 @@ func TestSyncerForMySQL(t *testing.T) {
 							  "visible":true
 						   }
 						],
+						"charset": "utf8mb4",
 						"engine":"InnoDB",
 						"collation":"utf8mb4_general_ci",
 						"dataSize":"16384"
@@ -336,6 +337,7 @@ func TestSyncerForMySQL(t *testing.T) {
 						   }
 						],
 						"engine":"InnoDB",
+						"charset": "utf8mb4",
 						"collation":"utf8mb4_general_ci",
 						"dataSize":"16384",
 						"indexSize":"16384",
@@ -424,6 +426,7 @@ func TestSyncerForMySQL(t *testing.T) {
 						   }
 						],
 						"engine":"InnoDB",
+						"charset": "utf8mb4",
 						"collation":"utf8mb4_general_ci",
 						"dataSize":"16384",
 						"indexSize":"16384"

@@ -5,7 +5,7 @@
     <div
       v-if="
         currentTab &&
-        instance.uid !== String(UNKNOWN_ID) &&
+        isValidInstanceName(instance.name) &&
         database.uid !== String(UNKNOWN_ID)
       "
       class="flex justify-start items-center h-8 px-2 whitespace-nowrap shrink-0 gap-x-2"
@@ -103,7 +103,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, isValidInstanceName } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { useSQLEditorContext } from "../context";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";

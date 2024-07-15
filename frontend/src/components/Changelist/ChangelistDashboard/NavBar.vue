@@ -3,7 +3,7 @@
     <div class="flex items-center justify-start">
       <ProjectSelect
         v-if="!disableProjectSelect"
-        v-model:project="projectUID"
+        v-model:project-name="projectName"
         :include-all="true"
       />
     </div>
@@ -28,8 +28,7 @@
 import { NButton } from "naive-ui";
 import { computed, watch } from "vue";
 import { ProjectSelect } from "@/components/v2";
-import { useProjectV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_PROJECT_NAME, isValidProjectName } from "@/types";
 import { useChangelistDashboardContext } from "./context";
 
 defineProps<{
@@ -39,20 +38,20 @@ defineProps<{
 
 const { filter, showCreatePanel, events } = useChangelistDashboardContext();
 
-const projectUID = computed({
+const projectName = computed({
   get() {
     const { project } = filter.value;
-    if (project === "projects/-") return String(UNKNOWN_ID);
-    return useProjectV1Store().getProjectByName(project).uid;
+    if (project === "projects/-") return UNKNOWN_PROJECT_NAME;
+    return project;
   },
-  set(uid) {
-    if (!uid || uid === String(UNKNOWN_ID)) {
+  set(name) {
+    if (!isValidProjectName(name)) {
       filter.value.project = "projects/-";
     } else {
-      filter.value.project = useProjectV1Store().getProjectByUID(uid).name;
+      filter.value.project = name;
     }
   },
 });
 
-watch(projectUID, () => events.emit("refresh"));
+watch(projectName, () => events.emit("refresh"));
 </script>

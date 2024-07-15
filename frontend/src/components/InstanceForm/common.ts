@@ -21,7 +21,9 @@ export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
 export type EditDataSource = DataSource & {
   pendingCreate: boolean;
   updatedPassword: string;
+  updatedMasterPassword: string;
   useEmptyPassword?: boolean;
+  useEmptyMasterPassword?: boolean;
   updateSsl?: boolean;
   updateSsh?: boolean;
   updateAuthenticationPrivateKey?: boolean;
@@ -85,7 +87,9 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
     ...cloneDeep(ds ?? emptyDataSource()),
     pendingCreate: ds === undefined,
     updatedPassword: "",
+    updatedMasterPassword: "",
     useEmptyPassword: false,
+    useEmptyMasterPassword: false,
   };
 };
 
@@ -110,6 +114,7 @@ export const calcDataSourceUpdateMask = (
     updateMask.add("password");
   }
   if (updateSsl) {
+    updateMask.add("use_ssl");
     updateMask.add("ssl_ca");
     updateMask.add("ssl_key");
     updateMask.add("ssl_cert");

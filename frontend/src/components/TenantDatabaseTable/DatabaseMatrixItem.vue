@@ -50,7 +50,7 @@
         </span>
       </div>
       <div class="px-4 py-2 flex items-center whitespace-pre-wrap space-x-1">
-        <InstanceV1Name :instance="database.instanceEntity" :link="false" />
+        <InstanceV1Name :instance="database.instanceResource" :link="false" />
       </div>
 
       <div class="px-4 py-2 flex items-center justify-between space-x-1">

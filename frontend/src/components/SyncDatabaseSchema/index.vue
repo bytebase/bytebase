@@ -40,7 +40,7 @@
         />
         <RawSQLEditor
           v-if="state.sourceSchemaType === 'RAW_SQL'"
-          :project-id="rawSQLState.projectId"
+          :project-name="rawSQLState.projectName"
           :engine="rawSQLState.engine"
           :statement="rawSQLState.statement"
           :sheet-id="rawSQLState.sheetId"
@@ -51,7 +51,7 @@
       <template #1>
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
-          :project-id="projectId!"
+          :project-name="projectName!"
           :source-schema-type="state.sourceSchemaType"
           :database-source-schema="changeHistorySourceSchemaState as any"
           :raw-sql-state="rawSQLState"
@@ -74,7 +74,11 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import {
+  UNKNOWN_ID,
+  isValidEnvironmentName,
+  isValidProjectName,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { extractProjectResourceName } from "@/utils";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
@@ -116,22 +120,22 @@ const state = reactive<LocalState>({
   currentStep: SELECT_SOURCE_SCHEMA,
 });
 const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({
-  projectId: props.project?.uid,
+  projectName: props.project?.name,
 });
 const rawSQLState = reactive<RawSQLState>({
-  projectId: props.project?.uid,
+  projectName: props.project?.name,
   engine: Engine.MYSQL,
   statement: "",
 });
 
-const projectId = computed(() => {
+const projectName = computed(() => {
   if (props.project) {
-    return props.project.uid;
+    return props.project.name;
   }
   if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
-    return changeHistorySourceSchemaState.projectId;
+    return changeHistorySourceSchemaState.projectName;
   } else {
-    return rawSQLState.projectId;
+    return rawSQLState.projectName;
   }
 });
 
@@ -160,13 +164,15 @@ const allowNext = computed(() => {
     if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
       return (
         !changeHistorySourceSchemaState.isFetching &&
-        isValidId(changeHistorySourceSchemaState.environmentId) &&
+        isValidEnvironmentName(
+          changeHistorySourceSchemaState.environmentName
+        ) &&
         isValidId(changeHistorySourceSchemaState.databaseId) &&
         !isUndefined(changeHistorySourceSchemaState.changeHistory)
       );
     } else {
       return (
-        !isUndefined(rawSQLState.projectId) &&
+        isValidProjectName(rawSQLState.projectName) &&
         (rawSQLState.statement !== "" || !isUndefined(rawSQLState.sheetId))
       );
     }
@@ -237,7 +243,9 @@ const tryFinishSetup = async () => {
   }
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
-  const project = await projectStore.getOrFetchProjectByUID(projectId.value!);
+  const project = await projectStore.getOrFetchProjectByName(
+    projectName.value!
+  );
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",

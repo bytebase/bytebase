@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="instance"
+    :value="instanceName"
     :options="options"
     :placeholder="$t('instance.select')"
     :render-label="renderLabel"
@@ -11,7 +11,7 @@
     :fallback-option="false"
     :consistent-menu-width="false"
     class="bb-instance-select"
-    @update:value="$emit('update:instance', $event)"
+    @update:value="$emit('update:instance-name', $event)"
   />
 </template>
 
@@ -20,9 +20,13 @@ import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useEnvironmentV1Store, useInstanceV1List } from "@/store";
+import { useInstanceV1List } from "@/store";
 import type { ComposedInstance } from "@/types";
-import { UNKNOWN_ID, unknownInstance } from "@/types";
+import {
+  UNKNOWN_INSTANCE_NAME,
+  isValidEnvironmentName,
+  unknownInstance,
+} from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import { State } from "@/types/proto/v1/common";
 import { supportedEngineV1List } from "@/utils";
@@ -35,8 +39,8 @@ interface InstanceSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    instance?: string | undefined;
-    environment?: string;
+    instanceName?: string | undefined;
+    environmentName?: string;
     allowedEngineList?: readonly Engine[];
     includeAll?: boolean;
     includeArchived?: boolean;
@@ -45,8 +49,8 @@ const props = withDefaults(
     filter?: (instance: ComposedInstance, index: number) => boolean;
   }>(),
   {
-    instance: undefined,
-    environment: undefined,
+    instanceName: undefined,
+    environmentName: undefined,
     allowedEngineList: () => supportedEngineV1List(),
     includeAll: false,
     includeArchived: false,
@@ -57,7 +61,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update:instance", value: string | undefined): void;
+  (event: "update:instance-name", value: string | undefined): void;
 }>();
 
 const { t } = useI18n();
@@ -67,12 +71,9 @@ const { instanceList: allInstanceList, ready } = useInstanceV1List(
 
 const rawInstanceList = computed(() => {
   let list = [...allInstanceList.value];
-  if (props.environment && props.environment !== String(UNKNOWN_ID)) {
-    const environment = useEnvironmentV1Store().getEnvironmentByUID(
-      props.environment
-    );
+  if (isValidEnvironmentName(props.environmentName)) {
     list = allInstanceList.value.filter(
-      (instance) => instance.environment === environment.name
+      (instance) => instance.environment === props.environmentName
     );
   }
   // Filter by engine type
@@ -82,16 +83,12 @@ const rawInstanceList = computed(() => {
   return list;
 });
 
-const getInstanceValue = (instance: ComposedInstance): string => {
-  return props.useResourceId ? instance.name : instance.uid;
-};
-
 const combinedInstanceList = computed(() => {
   let list = rawInstanceList.value.filter((instance) => {
     if (props.includeArchived) return true;
     if (instance.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (getInstanceValue(instance) === props.instance) return true;
+    if (instance.name === props.instanceName) return true;
     return false;
   });
 
@@ -99,10 +96,7 @@ const combinedInstanceList = computed(() => {
     list = list.filter(props.filter);
   }
 
-  if (
-    props.instance === getInstanceValue(unknownInstance()) ||
-    props.includeAll
-  ) {
+  if (props.instanceName === UNKNOWN_INSTANCE_NAME || props.includeAll) {
     const dummyAll = {
       ...unknownInstance(),
       title: t("instance.all"),
@@ -115,7 +109,7 @@ const combinedInstanceList = computed(() => {
 
 const renderLabel = (option: SelectOption) => {
   const { instance } = option as InstanceSelectOption;
-  if (instance.uid === String(UNKNOWN_ID)) {
+  if (instance.name === UNKNOWN_INSTANCE_NAME) {
     return t("instance.all");
   }
   const icon = h(InstanceV1EngineIcon, {
@@ -136,7 +130,7 @@ const options = computed(() => {
   return combinedInstanceList.value.map<InstanceSelectOption>((instance) => {
     return {
       instance,
-      value: getInstanceValue(instance),
+      value: instance.name,
       label: instance.title,
     };
   });
@@ -154,16 +148,14 @@ const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
     ready.value &&
-    props.instance &&
-    !combinedInstanceList.value.find(
-      (item) => getInstanceValue(item) === props.instance
-    )
+    props.instanceName &&
+    !combinedInstanceList.value.find((item) => item.name === props.instanceName)
   ) {
-    emit("update:instance", undefined);
+    emit("update:instance-name", undefined);
   }
 };
 
-watch([() => props.instance, combinedInstanceList], resetInvalidSelection, {
+watch([() => props.instanceName, combinedInstanceList], resetInvalidSelection, {
   immediate: true,
 });
 </script>

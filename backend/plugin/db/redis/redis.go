@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"strconv"
 	"strings"
@@ -21,7 +20,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -48,14 +46,11 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens the redis driver.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}
-
-	// connect to 0 by default
 	db := 0
 	if config.Database != "" {
 		database, err := strconv.Atoi(config.Database)
@@ -65,49 +60,98 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		db = database
 	}
 	d.databaseName = fmt.Sprintf("%d", db)
-
-	options := &redis.UniversalOptions{
-		Addrs:     []string{addr},
-		Username:  config.Username,
-		Password:  config.Password,
-		TLSConfig: tlsConfig,
-		ReadOnly:  config.ReadOnly,
-		DB:        db,
-	}
-	if config.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(config.SSHConfig)
-		if err != nil {
-			return nil, err
-		}
-		d.sshClient = sshClient
-
-		options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := sshClient.Dial(network, addr)
-			if err != nil {
-				return nil, err
-			}
-			return &noDeadlineConn{Conn: conn}, nil
-		}
-	}
-	d.rdb = redis.NewUniversalClient(options)
-
-	clusterEnabled, err := d.getClusterEnabled(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// switch to cluster if cluster is enabled.
-	if clusterEnabled {
-		if err := d.rdb.Close(); err != nil {
-			slog.Warn("failed to close redis driver when switching to redis cluster driver", log.BBError(err))
-		}
-		d.rdb = redis.NewClusterClient(&redis.ClusterOptions{
-			Addrs:     []string{addr},
+	switch config.RedisType {
+	case storepb.DataSourceOptions_REDIS_TYPE_UNSPECIFIED, storepb.DataSourceOptions_STANDALONE:
+		options := &redis.Options{
+			Addr:      fmt.Sprintf("%s:%s", config.Host, config.Port),
 			Username:  config.Username,
 			Password:  config.Password,
 			TLSConfig: tlsConfig,
-			ReadOnly:  config.ReadOnly,
-		})
+			DB:        db,
+		}
+		if config.SSHConfig.Host != "" {
+			sshClient, err := util.GetSSHClient(config.SSHConfig)
+			if err != nil {
+				return nil, err
+			}
+			d.sshClient = sshClient
+
+			options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
+				conn, err := sshClient.Dial(network, addr)
+				if err != nil {
+					return nil, err
+				}
+				return &noDeadlineConn{Conn: conn}, nil
+			}
+		}
+		client := redis.NewClient(options)
+		d.databaseName = fmt.Sprintf("%d", db)
+		d.rdb = client
+	case storepb.DataSourceOptions_SENTINEL:
+		sentinelAddrs := make([]string, 0, 1+len(config.AdditionalAddresses))
+		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
+		for _, sentinelAddr := range config.AdditionalAddresses {
+			sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", sentinelAddr.Host, sentinelAddr.Port))
+		}
+		options := &redis.FailoverOptions{
+			MasterName:       config.MasterName,
+			Username:         config.MasterUsername,
+			Password:         config.MasterPassword,
+			SentinelUsername: config.Username,
+			SentinelPassword: config.Password,
+			SentinelAddrs:    sentinelAddrs,
+			DB:               db,
+			TLSConfig:        tlsConfig,
+		}
+		if config.SSHConfig.Host != "" {
+			sshClient, err := util.GetSSHClient(config.SSHConfig)
+			if err != nil {
+				return nil, err
+			}
+			d.sshClient = sshClient
+
+			options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
+				conn, err := sshClient.Dial(network, addr)
+				if err != nil {
+					return nil, err
+				}
+				return &noDeadlineConn{Conn: conn}, nil
+			}
+		}
+		d.databaseName = fmt.Sprintf("%d", db)
+		client := redis.NewFailoverClient(options)
+		d.rdb = client
+	case storepb.DataSourceOptions_CLUSTER:
+		addrs := make([]string, 0, 1+len(config.AdditionalAddresses))
+		addrs = append(addrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
+		for _, addr := range config.AdditionalAddresses {
+			addrs = append(addrs, fmt.Sprintf("%s:%s", addr.Host, addr.Port))
+		}
+		options := &redis.ClusterOptions{
+			Addrs:     addrs,
+			Username:  config.Username,
+			Password:  config.Password,
+			TLSConfig: tlsConfig,
+		}
+		if config.SSHConfig.Host != "" {
+			sshClient, err := util.GetSSHClient(config.SSHConfig)
+			if err != nil {
+				return nil, err
+			}
+			d.sshClient = sshClient
+
+			options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
+				conn, err := sshClient.Dial(network, addr)
+				if err != nil {
+					return nil, err
+				}
+				return &noDeadlineConn{Conn: conn}, nil
+			}
+		}
+		client := redis.NewClusterClient(options)
+		d.rdb = client
+	default:
+		return nil, errors.Errorf("unsupported redis type %s", config.RedisType.String())
 	}
 
 	return d, nil

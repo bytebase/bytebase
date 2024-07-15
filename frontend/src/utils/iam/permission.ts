@@ -1,21 +1,18 @@
-import { useProjectV1List, useRoleStore } from "@/store";
+import { usePermissionStore, useProjectV1List } from "@/store";
 import type {
   ComposedProject,
   ProjectPermission,
   WorkspacePermission,
 } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
-import { roleListInProjectV1 } from "../v1/project";
 
 export const hasWorkspacePermissionV2 = (
   user: User,
   permission: WorkspacePermission
 ): boolean => {
-  const roleStore = useRoleStore();
-  const permissions = user.roles
-    .map((role) => roleStore.getRoleByName(role))
-    .flatMap((role) => (role ? role.permissions : []));
-  return permissions.includes(permission);
+  const permissions =
+    usePermissionStore().workspaceLevelPermissionsByUser(user);
+  return permissions.has(permission);
 };
 
 // hasProjectPermissionV2 checks if the user has the given permission on the project.
@@ -24,6 +21,8 @@ export const hasProjectPermissionV2 = (
   user: User,
   permission: ProjectPermission
 ): boolean => {
+  const permissionStore = usePermissionStore();
+
   // If the project is not provided, then check if the user has the given permission on any project in the workspace.
   if (!project) {
     const { projectList } = useProjectV1List();
@@ -32,23 +31,17 @@ export const hasProjectPermissionV2 = (
     );
   }
 
-  const roleStore = useRoleStore();
-
   // Check workspace-level permissions first.
   // For those users who have workspace-level project roles, they should have all project-level permissions.
-  const workspaceLevelPermissions = user.roles
-    .map((role) => roleStore.getRoleByName(role))
-    .flatMap((role) => (role ? role.permissions : []));
-  if (workspaceLevelPermissions.includes(permission)) {
+  const workspaceLevelPermissions =
+    permissionStore.workspaceLevelPermissionsByUser(user);
+  if (workspaceLevelPermissions.has(permission)) {
     return true;
   }
 
   // Check project-level permissions.
-  const roles = roleListInProjectV1(project.iamPolicy, user);
-  const permissions = roles
-    .map((role) => roleStore.getRoleByName(role))
-    .flatMap((role) => (role ? role.permissions : []));
-  return permissions.includes(permission);
+  const permissions = permissionStore.permissionsInProjectV1(project, user);
+  return permissions.has(permission);
 };
 
 // hasWorkspaceLevelProjectPermission checks if the user has the given permission on workspace-level-assigned project roles
@@ -56,15 +49,9 @@ export const hasWorkspaceLevelProjectPermission = (
   user: User,
   permission: ProjectPermission
 ): boolean => {
-  const roleStore = useRoleStore();
-  const workspaceLevelRoles = user.roles.map((roleName) =>
-    roleStore.getRoleByName(roleName)
-  );
-  // For those users who have workspace-level project roles, they should have all project-level permissions.
-  const workspaceLevelPermissions = workspaceLevelRoles.flatMap((role) =>
-    role ? role.permissions : []
-  );
-  return workspaceLevelPermissions.includes(permission);
+  const permissions =
+    usePermissionStore().workspaceLevelPermissionsByUser(user);
+  return permissions.has(permission);
 };
 
 // hasWorkspaceLevelProjectPermission checks if the user has the given permission on ANY project in the workspace.

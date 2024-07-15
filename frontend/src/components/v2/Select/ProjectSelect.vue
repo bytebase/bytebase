@@ -1,16 +1,17 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="project"
+    :value="combinedValue"
     :options="options"
     :placeholder="$t('project.select')"
     :filterable="true"
+    :multiple="multiple"
     :filter="filterByName"
     :disabled="disabled"
     :render-label="renderLabel"
     class="bb-project-select"
     style="width: 12rem"
-    @update:value="$emit('update:project', $event)"
+    @update:value="handleValueUpdated"
   />
 </template>
 
@@ -21,18 +22,23 @@ import { NSelect } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import { useCurrentUserV1, useProjectV1Store, useProjectV1List } from "@/store";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useProjectV1List,
+  usePermissionStore,
+} from "@/store";
 import type { ComposedProject } from "@/types";
 import {
-  DEFAULT_PROJECT_ID,
-  UNKNOWN_ID,
   unknownProject,
   defaultProject,
+  DEFAULT_PROJECT_NAME,
+  UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV2, roleListInProjectV1 } from "@/utils";
+import { Workflow } from "@/types/proto/v1/project_service";
+import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
   value: string;
@@ -42,43 +48,70 @@ interface ProjectSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     disabled?: boolean;
-    project?: string | undefined | null; // UNKNOWN_ID(-1) to "ALL"
+    projectName?: string | undefined | null; // UNKNOWN_PROJECT_NAME to "ALL"
+    projectNames?: string[] | undefined | null;
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
-    allowedProjectTenantModeList?: TenantMode[];
     allowedProjectWorkflowTypeList?: Workflow[];
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
     useResourceId?: boolean;
+    multiple?: boolean;
+    renderSuffix?: (project: string) => string;
     filter?: (project: ComposedProject, index: number) => boolean;
   }>(),
   {
     disabled: false,
-    project: undefined,
+    projectName: undefined,
+    projectNames: undefined,
     allowedProjectRoleList: () => [],
-    allowedProjectTenantModeList: () => [
-      TenantMode.TENANT_MODE_DISABLED,
-      TenantMode.TENANT_MODE_ENABLED,
-    ],
     allowedProjectWorkflowTypeList: () => [Workflow.UI, Workflow.VCS],
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
     useResourceId: false,
+    multiple: false,
     filter: () => true,
+    renderSuffix: (project: string) => "",
   }
 );
 
-defineEmits<{
-  (event: "update:project", id: string | undefined): void;
+const emit = defineEmits<{
+  (event: "update:project-name", name: string | undefined): void;
+  (event: "update:project-names", names: string[]): void;
 }>();
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
+const permissionStore = usePermissionStore();
 
 const prepare = () => {
   projectV1Store.fetchProjectList(true /* showDeleted */);
+};
+
+const combinedValue = computed(() => {
+  if (props.multiple) {
+    return props.projectNames || [];
+  } else {
+    return props.projectName;
+  }
+});
+
+const handleValueUpdated = (value: string | string[]) => {
+  if (props.multiple) {
+    if (!value) {
+      // normalize value
+      value = [];
+    }
+    emit("update:project-names", value as string[]);
+  } else {
+    if (value === null) {
+      // normalize value
+      value = "";
+    }
+    emit("update:project-name", value as string);
+  }
 };
 
 const hasWorkspaceManageProjectPermission = computed(() =>
@@ -89,24 +122,17 @@ const { projectList } = useProjectV1List();
 
 const rawProjectList = computed(() => {
   return projectList.value.filter((project) => {
-    if (project.uid === String(DEFAULT_PROJECT_ID)) {
+    if (project.name === DEFAULT_PROJECT_NAME) {
       return false;
     }
-    return (
-      props.allowedProjectTenantModeList.includes(project.tenantMode) &&
-      props.allowedProjectWorkflowTypeList.includes(project.workflow)
-    );
+    return props.allowedProjectWorkflowTypeList.includes(project.workflow);
   });
 });
 
-const getValue = (project: Project): string => {
-  return props.useResourceId ? project.name : project.uid;
-};
-
 const isOrphanValue = computed(() => {
-  if (props.project === undefined) return false;
+  if (props.projectName === undefined) return false;
 
-  return !rawProjectList.value.find((proj) => getValue(proj) === props.project);
+  return !rawProjectList.value.find((proj) => proj.name === props.projectName);
 });
 
 const combinedProjectList = computed(() => {
@@ -114,7 +140,7 @@ const combinedProjectList = computed(() => {
     if (props.includeArchived) return true;
     if (project.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (getValue(project) === props.project) return true;
+    if (project.name === props.projectName) return true;
     return false;
   });
 
@@ -124,7 +150,10 @@ const combinedProjectList = computed(() => {
     props.allowedProjectRoleList.length > 0
   ) {
     list = list.filter((project) => {
-      const roles = roleListInProjectV1(project.iamPolicy, currentUserV1.value);
+      const roles = permissionStore.roleListInProjectV1(
+        project,
+        currentUserV1.value
+      );
       return intersection(props.allowedProjectRoleList, roles).length > 0;
     });
   }
@@ -134,9 +163,9 @@ const combinedProjectList = computed(() => {
   }
 
   if (
-    props.project &&
-    props.project !== String(DEFAULT_PROJECT_ID) &&
-    props.project !== String(UNKNOWN_ID) &&
+    props.projectName &&
+    props.projectName !== DEFAULT_PROJECT_NAME &&
+    props.projectName !== UNKNOWN_PROJECT_NAME &&
     isOrphanValue.value
   ) {
     // It may happen the selected id might not be in the project list.
@@ -145,21 +174,20 @@ const combinedProjectList = computed(() => {
     // is orphaned and we just display the id
     const dummyProject = {
       ...unknownProject(),
-      name: `projects/${props.project}`,
-      uid: props.project,
-      title: props.project,
+      name: props.projectName,
+      title: extractProjectResourceName(props.projectName),
     };
     list.unshift(dummyProject);
   }
 
   if (
-    props.project === String(DEFAULT_PROJECT_ID) ||
+    props.projectName === DEFAULT_PROJECT_NAME ||
     props.includeDefaultProject
   ) {
     list.unshift({ ...defaultProject() });
   }
 
-  if (props.project === String(UNKNOWN_ID) || props.includeAll) {
+  if (props.projectName === UNKNOWN_PROJECT_NAME || props.includeAll) {
     const dummyAll = {
       ...unknownProject(),
       title: t("project.all"),
@@ -174,11 +202,11 @@ const options = computed(() => {
   return combinedProjectList.value.map<ProjectSelectOption>((project) => {
     return {
       project,
-      value: getValue(project),
+      value: project.name,
       label:
-        project.uid === String(DEFAULT_PROJECT_ID)
+        project.name === DEFAULT_PROJECT_NAME
           ? t("common.unassigned")
-          : project.uid === String(UNKNOWN_ID)
+          : project.name === UNKNOWN_PROJECT_NAME
             ? t("project.all")
             : project.title,
     };
@@ -198,6 +226,12 @@ watchEffect(prepare);
 
 const renderLabel = (option: SelectOption) => {
   const { project } = option as ProjectSelectOption;
-  return <ProjectNameCell project={project} mode="ALL_SHORT" />;
+  return (
+    <ProjectNameCell
+      project={project}
+      mode="ALL_SHORT"
+      suffix={props.renderSuffix(project.name)}
+    />
+  );
 };
 </script>

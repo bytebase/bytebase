@@ -62,7 +62,7 @@
       <BaselineSchemaSelector
         v-if="source === 'BASELINE'"
         v-model:database-id="databaseId"
-        :project-id="project.uid"
+        :project-name="project.name"
         :loading="isPreparingBranch"
       />
     </div>
@@ -145,7 +145,7 @@ const isPreparingBranch = ref(false);
 const EMPTY_BRANCH = Branch.fromPartial({});
 
 const allowCreateBranchFromDatabase = computed(() => {
-  return isOwnerOfProjectV1(props.project.iamPolicy, me.value);
+  return isOwnerOfProjectV1(props.project, me.value);
 });
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
@@ -190,7 +190,7 @@ const prepareBranchFromDatabaseHead = async (uid: string) => {
   // for baseline
   const branch = Branch.fromPartial({
     name: nextFakeBranchName(),
-    engine: database.instanceEntity.engine,
+    engine: database.instanceResource.engine,
     baselineDatabase: database.name,
     baselineSchemaMetadata: metadata,
     schemaMetadata: metadata,

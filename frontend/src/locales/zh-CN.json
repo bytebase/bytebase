@@ -274,7 +274,10 @@
     "configure-now": "现在配置",
     "connection": "连接",
     "permission-denied": "您没有权限执行此操作",
-    "resource": "资源"
+    "resource": "资源",
+    "closed": "已关闭",
+    "options": "配置项",
+    "reset": "重置"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -390,7 +393,9 @@
       },
       "show-default-parameters": "显示默认参数",
       "hide-default-parameters": "隐藏默认参数",
-      "enable": "启用在线大表变更"
+      "enable": "启用在线大表变更",
+      "disable": "关闭在线大表变更",
+      "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
     "prior-backup-tips": "提前备份受影响的数据"
   },
@@ -983,12 +988,14 @@
         "cancel": "取消整个工单?",
         "reopen": "重开工单？",
         "title": "{action}{type} [{name}]？",
-        "action-to-stage": "{action}阶段（{n}个任务）"
+        "action-to-stage": "{action}阶段（{n}个任务）",
+        "close": "关闭工单？"
       },
       "dropdown": {
         "resolve": "完成工单",
         "cancel": "取消工单",
-        "reopen": "重开"
+        "reopen": "重开",
+        "close": "关闭工单"
       },
       "form": {
         "note": "笔记",
@@ -1134,7 +1141,9 @@
       "reopen": "重开",
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",
-      "successfully-updated-n-issues": "成功更新 {n} 个工单"
+      "successfully-updated-n-issues": "成功更新 {n} 个工单",
+      "closed": "关闭",
+      "close": "关闭"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
@@ -1235,9 +1244,16 @@
         "affected-rows": "影响行数",
         "entry-type": {
           "command-execute": "执行指令",
-          "schema-dump": "导出 schema"
+          "schema-dump": "导出 schema",
+          "task-run-status-update": "状态更新",
+          "transaction-control": "事务控制",
+          "database-sync": "数据库同步"
         },
-        "affected-rows-n": "影响行数：{n}"
+        "affected-rows-n": "影响行数：{n}",
+        "status-update": {
+          "waiting": "准备就绪，等待执行",
+          "running": "开始执行"
+        }
       }
     },
     "sql-review": {
@@ -1801,6 +1817,7 @@
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
       "self": "分类分级",
+      "description": "通过分类分级，来批量管理列的脱敏规则。",
       "sync-from-comment": "从注释中同步分类分级",
       "sync-from-comment-tip": "启用后，分类分级将从表或列的注释同步。注释应遵循“{format}”格式。",
       "sync-from-comment-enable-warning": "分类分级将随着 DDL 而改变，并与原始注释同步。",
@@ -2141,6 +2158,7 @@
     "selectors": "选择条件",
     "add-stage": "添加阶段",
     "confirm-to-revert": "确定撤销编辑？",
+    "confirm-to-reset": "确认重置为默认值吗？",
     "name-placeholder": "阶段名称…",
     "error": {
       "at-least-one-stage": "至少需要 1 个阶段",
@@ -2215,6 +2233,7 @@
     "read-replica-port": "只读副本端口",
     "delete-read-only-data-source": "删除只读数据源",
     "connection-string-schema": "连接串模式",
+    "connection-type": "连接类型",
     "additional-node-addresses": "附加节点地址",
     "replica-set": "副本集",
     "admin": "主库",
@@ -2239,6 +2258,7 @@
     "search-databases": "搜索数据库",
     "search-results": "搜索结果",
     "loading-databases": "加载数据库信息...",
+    "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "close-pane": "关闭面板",
     "loading-data": "加载数据中...",
     "table-empty-placeholder": "点击 ”运行“ 执行查询",
@@ -2298,7 +2318,12 @@
     "rows-upper-limit": "到达查询结果条数上限",
     "tab-mode": {
       "readonly": "只读",
-      "admin": "管理员"
+      "admin": "管理员",
+      "standard": "标准",
+      "description": {
+        "standard": "支持 DDL 和 DML 语句。",
+        "readonly": "支持 SELECT、SHOW 和 SET 语句。"
+      }
     },
     "close-sheet": "关闭工作表",
     "connect": "连接",
@@ -2332,7 +2357,8 @@
     "batch-query": {
       "batch": "批量",
       "select-database": "选择下面的数据库",
-      "description": "批量查询 {project} 下的 {count} 个数据库。"
+      "description": "批量查询 {project} 下的 {count} 个数据库。",
+      "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
     "executing-query": "执行查询",
     "request-query": "请求查询",
@@ -2362,7 +2388,19 @@
     },
     "n-per-page": "{n} / 页",
     "customize-tree-structure": "自定义树结构",
-    "will-override-current-editing-statement": "将会覆盖当前的编辑中语句。"
+    "will-override-current-editing-statement": "将会覆盖当前的编辑中语句。",
+    "standard-mode": {
+      "self": "标准模式"
+    },
+    "to-enable-standard-mode": "来开启标准模式",
+    "add-a-new-instance": "添加实例",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket 连接失败",
+        "description": "自动补全功能可能会受到限制或无效。",
+        "disconnected": "WebSocket 已断开连接"
+      }
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2766,9 +2804,11 @@
   "sql-review": {
     "title": "SQL 审核策略",
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
-    "disabled": "已禁用",
+    "disabled": "SQL 审核策略已禁用",
     "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
+    "select-review": "选择 SQL 审核",
+    "select-review-label": "您可以将现有的 SQL 审核策略附加到资源，或者 {create}。",
     "duplicate-policy": "复制审核策略",
     "configure-policy": "配置审核策略",
     "policy-removed": "审核策略已删除",
@@ -2777,6 +2817,8 @@
     "policy-updated": "审核策略已更新",
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
+    "add-rules": "添加规则",
+    "add-or-remove-rules": "添加或删除规则",
     "filter": "筛选",
     "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
     "disable": "停用审核策略",
@@ -2786,7 +2828,14 @@
     "not-available-for-free": "{plan}订阅不能使用该规则",
     "unlock-full-feature": "解锁 100+ SQL Review 规则",
     "search-by-name": "按名称搜索",
-    "no-linked-resources": "没有绑定的资源",
+    "attach-resource": {
+      "no-linked-resources": "没有绑定的资源",
+      "change-resources": "更改绑定的资源",
+      "self": "绑定到资源",
+      "label": "将审核策略应用到环境或项目上。一个资源只能关联一个策略。数据库将使用附加到项目的 SQL 审核策略，否则将回退到环境策略。",
+      "label-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
+      "label-project": "SQL 审核策略将影响所选项目下的所有数据库。环境的 SQL 审核策略将被忽略。"
+    },
     "create": {
       "breadcrumb": "创建审核策略",
       "basic-info": {
@@ -2795,10 +2844,6 @@
         "display-name-placeholder": "审核策略名称",
         "display-name-default": "SQL 审核策略",
         "display-name-label": "用以区分不同审核策略的名称。",
-        "attach-resource": "附加到资源",
-        "attach-resource-label": "将审核策略应用于所选资源。一个资源只能关联一个策略。数据库将使用附加到项目的 SQL 审核策略，否则将回退到环境策略。",
-        "attach-resource-info-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
-        "attach-resource-info-project": "SQL 审核策略将影响所选项目下的所有数据库。环境的 SQL 审核策略将被忽略。",
         "choose-template": "选择模板"
       },
       "configure-rule": {
@@ -2865,7 +2910,8 @@
       "select-type": "选择类型",
       "method": "操作",
       "request": "请求信息",
-      "response": "响应信息"
+      "response": "响应信息",
+      "status": "状态"
     },
     "type": {
       "workspace": {
@@ -3358,6 +3404,10 @@
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
+    "multitenancy": {
+      "self": "多租户",
+      "description": "支持管理跨不同租户的多个同构数据库。"
+    },
     "condition": {
       "self": "条件"
     },

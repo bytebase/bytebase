@@ -25,7 +25,7 @@ interface InstanceRoleSelectOption extends SelectOption {
 
 const props = defineProps<{
   role?: string;
-  instance?: string;
+  instanceName?: string;
   filter: (role: InstanceRole) => boolean;
 }>();
 
@@ -37,7 +37,7 @@ const instanceV1Store = useInstanceV1Store();
 const instanceRoleList = ref<InstanceRole[]>([]);
 
 watch(
-  () => props.instance,
+  () => props.instanceName,
   async (instanceName) => {
     if (instanceName) {
       const instance = instanceV1Store.getInstanceByName(instanceName);

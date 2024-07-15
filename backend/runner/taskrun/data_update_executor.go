@@ -29,7 +29,7 @@ import (
 )
 
 // NewDataUpdateExecutor creates a data update (DML) task executor.
-func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &DataUpdateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -47,7 +47,7 @@ type DataUpdateExecutor struct {
 	license      enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 // RunOnce will run the data update (DML) task executor once.
@@ -81,13 +81,30 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	}
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &payload.SheetID)
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	// sync database schema anyways
+	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
+		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
+		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
+	})
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
+			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
+			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
+				Error: err.Error(),
+			},
+		})
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
 			slog.String("databaseName", database.DatabaseName),
 			log.BBError(err),
 		)
 	}
+	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_DATABASE_SYNC_END,
+		DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
+			Error: "",
+		},
+	})
 
 	return terminated, result, err
 }
@@ -223,14 +240,14 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	if instance.Engine != storepb.Engine_POSTGRES {
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, true /* force */); err != nil {
+		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, false /* force */); err != nil {
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", payload.PreUpdateBackupDetail.Database),
 				log.BBError(err),
 			)
 		}
 	} else {
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", fmt.Sprintf("/instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)),
 				log.BBError(err),

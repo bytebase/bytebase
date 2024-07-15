@@ -59,7 +59,7 @@ export const useVirtualBranch = (
     }
     return Branch.fromPartial({
       name: `${unref(project).name}/branches/-${uniqueId()}`,
-      engine: db.instanceEntity.engine,
+      engine: db.instanceResource.engine,
       baselineDatabase: db.name,
       schemaMetadata: cloneDeep(unref(branch).schemaMetadata),
       baselineSchemaMetadata: cloneDeep(databaseHeadMetadata.value),

@@ -25,7 +25,7 @@ import (
 )
 
 // NewSchemaUpdateSDLExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaUpdateSDLExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -43,7 +43,7 @@ type SchemaUpdateSDLExecutor struct {
 	license      enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
-	profile      config.Profile
+	profile      *config.Profile
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
@@ -84,7 +84,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, driverCtx cont
 	}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.MigrateSDL, ddl, version, &payload.SheetID)
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
 			slog.String("databaseName", database.DatabaseName),

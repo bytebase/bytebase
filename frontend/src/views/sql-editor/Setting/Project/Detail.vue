@@ -23,7 +23,6 @@
         :database-list="databaseList"
         :custom-click="true"
         :show-selection="false"
-        :show-sql-editor-button="false"
         :row-clickable="false"
       />
     </div>
@@ -31,7 +30,7 @@
 
     <Drawer v-model:show="showTransfer">
       <TransferDatabaseForm
-        :project-id="project.uid"
+        :project-name="project.name"
         :on-success="handleTransferSuccess"
         @dismiss="showTransfer = false"
       />

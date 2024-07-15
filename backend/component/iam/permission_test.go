@@ -14,7 +14,7 @@ func TestPermissionExists(t *testing.T) {
 	a.NoError(err)
 
 	for _, permissions := range m.predefinedRoles {
-		for _, p := range permissions {
+		for p := range permissions {
 			exist := PermissionExist(p)
 			a.True(exist, "permission %s is not defined as a constant", p)
 		}
@@ -28,7 +28,7 @@ func TestGetPermissionLevels(t *testing.T) {
 	a.NoError(err)
 
 	for _, permissions := range m.predefinedRoles {
-		for _, p := range permissions {
+		for p := range permissions {
 			level := GetPermissionLevel(p)
 			a.NotEqual("", level.String(), "permission %s has no level defined", p)
 		}

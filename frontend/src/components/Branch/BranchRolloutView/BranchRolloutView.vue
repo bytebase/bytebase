@@ -11,17 +11,17 @@
         <div class="flex flex-row items-center gap-x-2">
           <div class="textlabel">{{ $t("common.environment") }}</div>
           <EnvironmentSelect
-            :environment="environment?.uid"
+            :environment-name="environment?.name"
             style="width: 8rem"
-            @update:environment="handleSelectEnvironment"
+            @update:environment-name="handleSelectEnvironment"
           />
         </div>
         <div class="flex flex-row items-center gap-x-2">
           <div class="textlabel">{{ $t("common.database") }}</div>
           <DatabaseSelect
             :database="database?.uid"
-            :project="project.uid"
-            :environment="environment?.uid"
+            :project-name="project.name"
+            :environment-name="environment?.name"
             :filter="filterDatabase"
             style="width: 16rem"
             @update:database="handleSelectDatabase"
@@ -142,7 +142,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -193,14 +193,15 @@ const emptyBranch = Branch.fromJSON({});
 const isGeneratingDDL = ref(false);
 const $dialog = useDialog();
 
-const handleSelectEnvironment = (uid: string | undefined) => {
-  if (!uid || uid === String(UNKNOWN_ID)) {
+const handleSelectEnvironment = (name: string | undefined) => {
+  if (!isValidEnvironmentName(name)) {
     environment.value = undefined;
+    handleSelectDatabase(undefined);
     return;
   }
-  environment.value = useEnvironmentV1Store().getEnvironmentByUID(uid);
+  environment.value = useEnvironmentV1Store().getEnvironmentByName(name);
   if (database.value) {
-    if (database.value.effectiveEnvironment !== environment.value.name) {
+    if (database.value.effectiveEnvironment !== name) {
       // de-select database since environment changed
       handleSelectDatabase(undefined);
     }
@@ -218,7 +219,7 @@ const handleSelectDatabase = (uid: string | undefined) => {
   }
 };
 const filterDatabase = (db: ComposedDatabase) => {
-  return db.instanceEntity.engine === props.branch.engine;
+  return db.instanceResource.engine === props.branch.engine;
 };
 
 const allowPreviewIssue = computed(() => {
@@ -338,7 +339,7 @@ const handlePreviewIssue = async () => {
   }
   const sheet = Sheet.fromPartial({
     database: db.name,
-    engine: db.instanceEntity.engine,
+    engine: db.instanceResource.engine,
     payload: {
       type: SheetPayload_Type.SCHEMA_DESIGN,
       baselineDatabaseConfig: {

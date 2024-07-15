@@ -3,9 +3,9 @@
     <FeatureBadge
       feature="bb.feature.database-grouping"
       custom-class="mr-2"
-      :instance="database.instanceEntity"
+      :instance="database.instanceResource"
     />
-    <InstanceV1EngineIcon :instance="database.instanceEntity" />
+    <InstanceV1EngineIcon :instance="database.instanceResource" />
     <span class="text-sm ml-0.5 text-gray-500">{{
       database.databaseName
     }}</span>

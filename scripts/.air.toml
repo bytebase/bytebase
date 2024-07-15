@@ -11,8 +11,8 @@ cmd = """
   CGO_ENABLED=1 \
   go build \
   -p=8 \
-  -ldflags="-extldflags='-ld_classic' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
-  --tags "" \
+  -ldflags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
+  --tags "" -gcflags="all=-N -l" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500
 exclude_dir = [

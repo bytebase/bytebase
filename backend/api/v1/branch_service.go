@@ -479,8 +479,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	mergedSchemaBytes := []byte(mergedSchema)
 
+	reconcileMetadata(mergedMetadata, baseBranch.Engine)
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
-	reconcileMetadata(filteredMergedMetadata, baseBranch.Engine)
 	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, common.FormatUserUID(user.ID))
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
@@ -579,7 +579,6 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig.ClassificationFromConfig)
 		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
-		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata, baseBranch.Engine)
 		if err != nil {
@@ -613,6 +612,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
 	}
 
+	reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	filteredNewHeadMetadata := filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
 	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), newHeadMetadata)
 	newHeadSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, "", filteredNewHeadMetadata)
@@ -1087,7 +1087,7 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 
-			if !equalTable(table, tt.GetProto()) {
+			if !common.EqualTable(table, tt.GetProto()) {
 				trimSchema.Tables = append(trimSchema.Tables, table)
 				continue
 			}
@@ -1133,7 +1133,7 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 
-			if !equalTable(table, tt.GetProto()) {
+			if !common.EqualTable(table, tt.GetProto()) {
 				trimSchema.Tables = append(trimSchema.Tables, table)
 				continue
 			}
@@ -1179,121 +1179,21 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 	return s, t
 }
 
-func equalTable(s, t *storepb.TableMetadata) bool {
-	if len(s.GetColumns()) != len(t.GetColumns()) {
-		return false
-	}
-	if len(s.Indexes) != len(t.Indexes) {
-		return false
-	}
-	if len(s.Partitions) != len(t.Partitions) {
-		return false
-	}
-	if s.GetComment() != t.GetComment() {
-		return false
-	}
-	if s.GetUserComment() != t.GetUserComment() {
-		return false
-	}
-	for i := 0; i < len(s.GetColumns()); i++ {
-		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
-		if sc.Name != tc.Name {
-			return false
-		}
-		if sc.OnUpdate != tc.OnUpdate {
-			return false
-		}
-		if sc.Comment != tc.Comment {
-			return false
-		}
-		if sc.UserComment != tc.UserComment {
-			return false
-		}
-		if sc.Type != tc.Type {
-			return false
-		}
-		if sc.Nullable != tc.Nullable {
-			return false
-		}
-		if sc.GetDefault().GetValue() != tc.GetDefault().GetValue() {
-			return false
-		}
-		if sc.GetDefaultExpression() != tc.GetDefaultExpression() {
-			return false
-		}
-		if sc.GetDefaultNull() != tc.GetDefaultNull() {
-			return false
-		}
-	}
-	for i := 0; i < len(s.GetIndexes()); i++ {
-		si, ti := s.GetIndexes()[i], t.GetIndexes()[i]
-		if si.GetName() != ti.GetName() {
-			return false
-		}
-		if si.GetDefinition() != ti.GetDefinition() {
-			return false
-		}
-		if si.GetPrimary() != ti.GetPrimary() {
-			return false
-		}
-		if si.GetUnique() != ti.GetUnique() {
-			return false
-		}
-		if si.GetType() != ti.GetType() {
-			return false
-		}
-		if si.GetVisible() != ti.GetVisible() {
-			return false
-		}
-		if si.GetComment() != ti.GetComment() {
-			return false
-		}
-		if !slices.Equal(si.GetExpressions(), ti.GetExpressions()) {
-			return false
-		}
-	}
-
-	for i := 0; i < len(s.GetPartitions()); i++ {
-		si, ti := s.GetPartitions()[i], t.GetPartitions()[i]
-		if !equalPartitions(si, ti) {
-			return false
-		}
-	}
-	return true
-}
-
-func equalPartitions(s, t *storepb.TablePartitionMetadata) bool {
-	if s.GetName() != t.GetName() {
-		return false
-	}
-	if s.Type != t.Type {
-		return false
-	}
-	if s.Expression != t.Expression {
-		return false
-	}
-	if s.Value != t.Value {
-		return false
-	}
-	if s.UseDefault != t.UseDefault {
-		return false
-	}
-	if len(s.Subpartitions) != len(t.Subpartitions) {
-		return false
-	}
-	for i := 0; i < len(s.Subpartitions); i++ {
-		if !equalPartitions(s.Subpartitions[i], t.Subpartitions[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.Engine) {
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
 			if engine == storepb.Engine_MYSQL {
 				reconcileMySQLPartitionMetadata(table.Partitions, "")
+			}
+			if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
+				for _, column := range table.Columns {
+					// If the column can take NULL as a value, the column is defined with an explicit DEFAULT NULL clause.
+					if column.Nullable && column.DefaultValue == nil {
+						column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
+							DefaultNull: true,
+						}
+					}
+				}
 			}
 		}
 	}

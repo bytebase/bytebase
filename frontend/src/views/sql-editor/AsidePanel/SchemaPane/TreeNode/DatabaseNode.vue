@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <InstanceV1EngineIcon :instance="database.instanceEntity" />
+    <InstanceV1EngineIcon :instance="database.instanceResource" />
 
     <span class="flex-1 truncate">
       <HighlightLabelText :text="database.databaseName" :keyword="keyword" />

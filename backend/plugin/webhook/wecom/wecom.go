@@ -162,6 +162,7 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) {
 			multierr.AppendInto(&errs, err)
 		}
 		if len(users) == 0 {
+			slog.Debug("wecom dm: get 0 user id", log.BBError(errs))
 			return nil
 		}
 

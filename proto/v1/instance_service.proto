@@ -363,6 +363,8 @@ message DataSource {
   DataSourceType type = 2;
   string username = 3;
   string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
+  bool use_ssl = 30;
   string ssl_ca = 5 [(google.api.field_behavior) = INPUT_ONLY];
   string ssl_cert = 6 [(google.api.field_behavior) = INPUT_ONLY];
   string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
@@ -425,6 +427,21 @@ message DataSource {
   string account_id = 28;
   // warehouse_id is used by Databricks.
   string warehouse_id = 29;
+
+  // master_name is the master name used by connecting redis-master via redis sentinel.
+  string master_name = 31;
+
+  // master_username and master_password are master credentials used by redis sentinel mode.
+  string master_username = 32;
+  string master_password = 33;
+
+  enum RedisType {
+    REDIS_TYPE_UNSPECIFIED = 0;
+    STANDALONE = 1;
+    SENTINEL = 2;
+    CLUSTER = 3;
+  }
+  RedisType redis_type = 34;
 }
 
 enum DataSourceType {
@@ -443,6 +460,14 @@ message InstanceResource {
   repeated DataSource data_sources = 4;
 
   bool activation = 5;
+
+  // The name of the instance.
+  // Format: instances/{instance}
+  string name = 6;
+
+  // The environment resource.
+  // Format: environments/prod where prod is the environment resource ID.
+  string environment = 7;
 }
 
 message SASLConfig {

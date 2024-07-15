@@ -73,6 +73,12 @@ func StringifyTable(metadata *storepb.TableMetadata) (string, error) {
 		return "", err
 	}
 
+	if metadata.Charset != "" {
+		if _, err := fmt.Fprintf(&buf, " DEFAULT CHARSET=%s", metadata.Charset); err != nil {
+			return "", err
+		}
+	}
+
 	if metadata.Collation != "" {
 		if _, err := fmt.Fprintf(&buf, " COLLATE=%s", metadata.Collation); err != nil {
 			return "", err
@@ -284,7 +290,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata) err
 
 	// Handle auto_increment.
 	if isAutoIncrement(column) {
-		if _, err := fmt.Fprintf(buf, " AUTO_INCREMENT"); err != nil {
+		if _, err := fmt.Fprintf(buf, " %s", autoIncrementSymbol); err != nil {
 			return err
 		}
 	}

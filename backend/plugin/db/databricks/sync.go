@@ -96,7 +96,7 @@ func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storep
 func (d *Driver) listCatologTables(ctx context.Context, targetCatalogName string) (databricksCatalogMap, error) {
 	catalogMap := make(databricksCatalogMap)
 
-	catalogsInfo, err := d.Client.Catalogs.ListAll(ctx)
+	catalogsInfo, err := d.Client.Catalogs.ListAll(ctx, catalog.ListCatalogsRequest{})
 	if err != nil {
 		return nil, err
 	}

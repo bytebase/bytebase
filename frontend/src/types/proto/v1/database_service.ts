@@ -212,11 +212,6 @@ export interface SearchDatabasesRequest {
    * for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
    */
   filter: string;
-  /**
-   * By default, the permission "bb.databases.get" is used.
-   * Alternatively, "bb.databases.query" can be used to retrieve databases with query permissions to.
-   */
-  permission: string;
 }
 
 export interface SearchDatabasesResponse {
@@ -460,6 +455,8 @@ export interface TableMetadata {
   engine: string;
   /** The collation is the collation of a table. */
   collation: string;
+  /** The character set of table. */
+  charset: string;
   /** The row_count is the estimated number of rows of a table. */
   rowCount: Long;
   /** The data_size is the estimated data size of a table. */
@@ -1929,7 +1926,7 @@ export const ListDatabasesResponse = {
 };
 
 function createBaseSearchDatabasesRequest(): SearchDatabasesRequest {
-  return { pageSize: 0, pageToken: "", filter: "", permission: "" };
+  return { pageSize: 0, pageToken: "", filter: "" };
 }
 
 export const SearchDatabasesRequest = {
@@ -1942,9 +1939,6 @@ export const SearchDatabasesRequest = {
     }
     if (message.filter !== "") {
       writer.uint32(26).string(message.filter);
-    }
-    if (message.permission !== "") {
-      writer.uint32(34).string(message.permission);
     }
     return writer;
   },
@@ -1977,13 +1971,6 @@ export const SearchDatabasesRequest = {
 
           message.filter = reader.string();
           continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.permission = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1998,7 +1985,6 @@ export const SearchDatabasesRequest = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-      permission: isSet(object.permission) ? globalThis.String(object.permission) : "",
     };
   },
 
@@ -2013,9 +1999,6 @@ export const SearchDatabasesRequest = {
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
-    if (message.permission !== "") {
-      obj.permission = message.permission;
-    }
     return obj;
   },
 
@@ -2027,7 +2010,6 @@ export const SearchDatabasesRequest = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
-    message.permission = object.permission ?? "";
     return message;
   },
 };
@@ -3590,6 +3572,7 @@ function createBaseTableMetadata(): TableMetadata {
     indexes: [],
     engine: "",
     collation: "",
+    charset: "",
     rowCount: Long.ZERO,
     dataSize: Long.ZERO,
     indexSize: Long.ZERO,
@@ -3619,6 +3602,9 @@ export const TableMetadata = {
     }
     if (message.collation !== "") {
       writer.uint32(42).string(message.collation);
+    }
+    if (message.charset !== "") {
+      writer.uint32(138).string(message.charset);
     }
     if (!message.rowCount.isZero()) {
       writer.uint32(48).int64(message.rowCount);
@@ -3694,6 +3680,13 @@ export const TableMetadata = {
           }
 
           message.collation = reader.string();
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.charset = reader.string();
           continue;
         case 6:
           if (tag !== 48) {
@@ -3785,6 +3778,7 @@ export const TableMetadata = {
         : [],
       engine: isSet(object.engine) ? globalThis.String(object.engine) : "",
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
+      charset: isSet(object.charset) ? globalThis.String(object.charset) : "",
       rowCount: isSet(object.rowCount) ? Long.fromValue(object.rowCount) : Long.ZERO,
       dataSize: isSet(object.dataSize) ? Long.fromValue(object.dataSize) : Long.ZERO,
       indexSize: isSet(object.indexSize) ? Long.fromValue(object.indexSize) : Long.ZERO,
@@ -3820,6 +3814,9 @@ export const TableMetadata = {
     }
     if (message.collation !== "") {
       obj.collation = message.collation;
+    }
+    if (message.charset !== "") {
+      obj.charset = message.charset;
     }
     if (!message.rowCount.isZero()) {
       obj.rowCount = (message.rowCount || Long.ZERO).toString();
@@ -3864,6 +3861,7 @@ export const TableMetadata = {
     message.indexes = object.indexes?.map((e) => IndexMetadata.fromPartial(e)) || [];
     message.engine = object.engine ?? "";
     message.collation = object.collation ?? "";
+    message.charset = object.charset ?? "";
     message.rowCount = (object.rowCount !== undefined && object.rowCount !== null)
       ? Long.fromValue(object.rowCount)
       : Long.ZERO;

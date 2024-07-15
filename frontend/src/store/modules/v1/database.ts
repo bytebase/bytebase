@@ -1,6 +1,6 @@
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watch } from "vue";
+import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
@@ -8,11 +8,10 @@ import {
   EMPTY_ID,
   unknownDatabase,
   unknownEnvironment,
-  unknownInstance,
   UNKNOWN_ID,
-  UNKNOWN_INSTANCE_NAME,
+  unknownInstanceResource,
 } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import type {
   Database,
@@ -21,10 +20,10 @@ import type {
   SearchDatabasesRequest,
   BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
-import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";
 
 export const DEFAULT_DATABASE_PAGE_SIZE = 1000000;
@@ -67,10 +66,16 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
         continue;
       }
       if (databaseMapByName.has(database.name)) {
-        databaseMapByName.get(database.name)!.instanceEntity = instance;
+        const db = databaseMapByName.get(database.name);
+        if (db) {
+          db.instanceResource.activation = instance.activation;
+        }
       }
       if (databaseMapByUID.has(database.uid)) {
-        databaseMapByUID.get(database.uid)!.instanceEntity = instance;
+        const db = databaseMapByUID.get(database.uid);
+        if (db) {
+          db.instanceResource.activation = instance.activation;
+        }
       }
     }
   };
@@ -299,28 +304,17 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
 
 export const batchComposeDatabase = async (databaseList: Database[]) => {
   const projectV1Store = useProjectV1Store();
-  const instanceV1Store = useInstanceV1Store();
   const environmentV1Store = useEnvironmentV1Store();
 
   const distinctProjectList = uniq(databaseList.map((db) => db.project));
-  const distinctInstanceList = uniq(
-    databaseList
-      .map((db) => extractDatabaseResourceName(db.name).instance)
-      .filter((instance) => instance !== UNKNOWN_INSTANCE_NAME)
-  );
 
   await Promise.all(
     distinctProjectList.map((project) => {
-      if (project === DEFAULT_PROJECT_V1_NAME) {
+      if (project === DEFAULT_PROJECT_NAME) {
         return;
       }
       return projectV1Store.getOrFetchProjectByName(project);
     })
-  );
-  await Promise.all(
-    distinctInstanceList.map((instance) =>
-      instanceV1Store.getOrFetchInstanceByName(instance)
-    )
   );
   return databaseList.map((db) => {
     const composed = db as ComposedDatabase;
@@ -328,21 +322,27 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
 
     composed.databaseName = databaseName;
     composed.instance = instance;
-    const instanceEntity =
-      composed.instance === UNKNOWN_INSTANCE_NAME
-        ? unknownInstance()
-        : instanceV1Store.getInstanceByName(composed.instance) ??
-          unknownInstance();
-    composed.instanceEntity = {
-      ...instanceEntity,
-      environmentEntity:
-        environmentV1Store.getEnvironmentByName(instanceEntity.environment) ??
-        unknownEnvironment(),
-    };
+    composed.instanceResource = composeInstanceResourceForDatabase(
+      instance,
+      db
+    );
+    composed.environment = composed.instanceResource.environment;
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
     composed.effectiveEnvironmentEntity =
       environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
       unknownEnvironment();
-    return composed;
+    return markRaw(composed);
   });
+};
+
+export const composeInstanceResourceForDatabase = (
+  name: string,
+  db: Database
+): InstanceResource => {
+  return (
+    db.instanceResource ?? {
+      ...unknownInstanceResource(),
+      name,
+    }
+  );
 };

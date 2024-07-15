@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" v-bind="$attrs" class="relative">
+  <div ref="containerRef" v-bind="$attrs" class="relative bb-monaco-editor">
     <div
       v-if="!ready"
       class="absolute inset-0 flex flex-col items-center justify-center"
@@ -8,20 +8,34 @@
     </div>
     <div
       v-if="ready && !contentRef && placeholder"
-      class="absolute pointer-events-none font-mono text-control-placeholder"
-      style="
-        font-family: &quot;Droid Sans Mono&quot;, monospace;
-        font-size: 14px;
-        left: 52px;
-        top: 8px;
-      "
+      class="bb-monaco-editor--placeholder absolute pointer-events-none font-mono text-control-placeholder"
     >
       {{ placeholder }}
     </div>
+
+    <NPopover v-if="ready" placement="left">
+      <template #trigger>
+        <div
+          class="absolute top-[3px] right-[18px] w-4 h-4 flex items-center justify-center cursor-pointer z-50 opacity-50 hover:opacity-100 transition-all"
+        >
+          <div
+            class="w-3 h-3 rounded-full"
+            :class="connectionStateIndicatorClass"
+          />
+        </div>
+      </template>
+      <template #default>
+        <div class="inline-flex gap-1">
+          <span>Language server</span>
+          <span>{{ connectionStateText }}</span>
+        </div>
+      </template>
+    </NPopover>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NPopover } from "naive-ui";
 import {
   onMounted,
   ref,
@@ -31,8 +45,8 @@ import {
   onBeforeUnmount,
   watch,
   watchEffect,
+  computed,
 } from "vue";
-import { useLegacyAutoComplete } from "@/plugins/sql-lsp/client";
 import type { SQLDialect } from "@/types";
 import {
   type AutoCompleteContext,
@@ -48,8 +62,8 @@ import {
   useSelectedContent,
   useSuggestOptionByLanguage,
   useLineHighlights,
+  useLSPConnectionState,
 } from "./composables";
-import { shouldUseNewLSP } from "./dev";
 import monaco, { createMonacoEditor } from "./editor";
 import type {
   AdviceOption,
@@ -98,6 +112,27 @@ const containerRef = ref<HTMLDivElement>();
 const editorRef = shallowRef<IStandaloneCodeEditor>();
 const ready = ref(false);
 const contentRef = ref("");
+const { connectionState } = useLSPConnectionState();
+const connectionStateIndicatorClass = computed(() => {
+  const state = connectionState.value;
+  if (state === "ready") {
+    return "bg-green-500";
+  }
+  if (state === "initial" || state === "reconnecting") {
+    return "bg-yellow-500";
+  }
+  return "bg-gray-500";
+});
+const connectionStateText = computed(() => {
+  const state = connectionState.value;
+  if (state === "ready") {
+    return "connected";
+  }
+  if (state === "initial" || state === "reconnecting") {
+    return "connecting";
+  }
+  return "disconnected";
+});
 
 onMounted(async () => {
   const container = containerRef.value;
@@ -131,15 +166,7 @@ onMounted(async () => {
     useAdvices(monaco, editor, toRef(props, "advices"));
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
-    if (shouldUseNewLSP()) {
-      useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
-    } else {
-      useLegacyAutoComplete(
-        monaco,
-        editor,
-        toRef(props, "autoCompleteContext")
-      );
-    }
+    useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
 
     ready.value = true;
 
@@ -177,6 +204,15 @@ defineExpose({
 
 <style>
 .editor-widget.suggest-widget .signature-label {
-  @apply ml-2;
+  margin-left: 0.5rem;
+}
+</style>
+
+<style scoped>
+.bb-monaco-editor .bb-monaco-editor--placeholder {
+  font-family: "Droid Sans Mono", monospace;
+  font-size: 14px;
+  left: 52px;
+  top: 8px;
 }
 </style>

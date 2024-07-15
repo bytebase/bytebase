@@ -1,22 +1,22 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="environment"
+    :value="combinedValue"
     :options="options"
     :placeholder="$t('environment.select')"
     :filterable="true"
+    :multiple="multiple"
     :filter="filterByName"
     :render-label="renderLabel"
     class="bb-environment-select"
-    @update:value="$emit('update:environment', $event)"
+    @update:value="handleValueUpdated"
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed, h, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -29,28 +29,31 @@ interface EnvironmentSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    environment?: string | undefined;
-    defaultEnvironmentName?: string | undefined;
+    environmentName?: string | undefined;
+    environmentNames?: string[] | undefined;
     includeArchived?: boolean;
     showProductionIcon?: boolean;
-    useResourceId?: boolean;
+    multiple?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
+    renderSuffix?: (environment: string) => string;
   }>(),
   {
-    environment: undefined,
-    defaultEnvironmentName: undefined,
+    environmentName: undefined,
+    environmentNames: undefined,
     includeArchived: false,
     showProductionIcon: true,
     useResourceId: false,
+    multiple: false,
     filter: () => true,
+    renderSuffix: (environment: string) => "",
   }
 );
 
-defineEmits<{
-  (event: "update:environment", id: string | undefined): void;
+const emit = defineEmits<{
+  (event: "update:environment-name", name: string | undefined): void;
+  (event: "update:environment-names", names: string[]): void;
 }>();
 
-const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 
@@ -58,21 +61,41 @@ const prepare = () => {
   projectV1Store.fetchProjectList(true /* showDeleted */);
 };
 
+const combinedValue = computed(() => {
+  if (props.multiple) {
+    return props.environmentNames || [];
+  } else {
+    return props.environmentName;
+  }
+});
+
+const handleValueUpdated = (value: string | string[]) => {
+  if (props.multiple) {
+    if (!value) {
+      // normalize value
+      value = [];
+    }
+    emit("update:environment-names", value as string[]);
+  } else {
+    if (value === null) {
+      // normalize value
+      value = "";
+    }
+    emit("update:environment-name", value as string);
+  }
+};
+
 const rawEnvironmentList = computed(() => {
   const list = environmentV1Store.getEnvironmentList(true /* showDeleted */);
   return list;
 });
-
-const getEnvironmentValue = (environment: Environment): string => {
-  return props.useResourceId ? environment.name : environment.uid;
-};
 
 const combinedEnvironmentList = computed(() => {
   let list = rawEnvironmentList.value.filter((environment) => {
     if (props.includeArchived) return true;
     if (environment.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (getEnvironmentValue(environment) === props.environment) return true;
+    if (environment.name === props.environmentName) return true;
     return false;
   });
 
@@ -88,7 +111,7 @@ const options = computed(() => {
     (environment) => {
       return {
         environment,
-        value: getEnvironmentValue(environment),
+        value: environment.name,
         label: environment.title,
       };
     }
@@ -101,10 +124,7 @@ const renderLabel = (option: SelectOption) => {
     environment,
     showIcon: props.showProductionIcon,
     link: false,
-    suffix:
-      props.defaultEnvironmentName === environment.name
-        ? `(${t("common.default")})`
-        : "",
+    suffix: props.renderSuffix(environment.name),
   });
 };
 

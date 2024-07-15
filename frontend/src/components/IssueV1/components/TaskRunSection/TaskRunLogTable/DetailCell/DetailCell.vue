@@ -1,6 +1,12 @@
 <template>
   <AffectedRowsCell v-if="view === 'AFFECTED_ROWS'" v-bind="props" />
   <ErrorCell v-if="view === 'ERROR'" v-bind="props" />
+  <StatusUpdateCell v-if="view === 'STATUS_UPDATE'" v-bind="props" />
+  <TransactionControlCell
+    v-if="view === 'TRANSACTION_CONTROL'"
+    v-bind="props"
+  />
+  <DatabaseSyncCell v-if="view === 'DATABASE_SYNC'" v-bind="props" />
   <div v-if="view === 'N/A'" class="text-control-placeholder">-</div>
 </template>
 
@@ -12,7 +18,13 @@ import type { FlattenLogEntry } from "../common";
 import AffectedRowsCell from "./AffectedRowsCell.vue";
 import ErrorCell from "./ErrorCell.vue";
 
-type View = "N/A" | "ERROR" | "AFFECTED_ROWS";
+type View =
+  | "N/A"
+  | "ERROR"
+  | "AFFECTED_ROWS"
+  | "STATUS_UPDATE"
+  | "TRANSACTION_CONTROL"
+  | "DATABASE_SYNC";
 
 const props = defineProps<{
   entry: FlattenLogEntry;
@@ -20,12 +32,14 @@ const props = defineProps<{
 }>();
 
 const view = computed((): View => {
-  const { entry } = props;
-  if (
-    entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
-    entry.commandExecute
-  ) {
-    const { commandExecute } = entry;
+  const {
+    type,
+    commandExecute,
+    taskRunStatusUpdate,
+    transactionControl,
+    databaseSync,
+  } = props.entry;
+  if (type === TaskRunLogEntry_Type.COMMAND_EXECUTE && commandExecute) {
     if (!commandExecute.raw.response) {
       return "N/A";
     }
@@ -38,6 +52,18 @@ const view = computed((): View => {
     if (typeof commandExecute.raw.response.affectedRows !== "undefined") {
       return "AFFECTED_ROWS";
     }
+  }
+  if (
+    type === TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE &&
+    taskRunStatusUpdate
+  ) {
+    return "STATUS_UPDATE";
+  }
+  if (type === TaskRunLogEntry_Type.TRANSACTION_CONTROL && transactionControl) {
+    return "TRANSACTION_CONTROL";
+  }
+  if (type === TaskRunLogEntry_Type.DATABASE_SYNC && databaseSync) {
+    return "DATABASE_SYNC";
   }
   return "N/A";
 });

@@ -17,7 +17,10 @@
       />
       <template #footer>
         <div class="w-full flex justify-between items-center">
-          <NButton v-if="showDeleteButton" type="error" @click="doDelete">
+          <NButton v-if="showDeleteButton" text @click="doDelete">
+            <template #icon>
+              <Trash2Icon class="w-4 h-auto" />
+            </template>
             {{ $t("common.delete") }}
           </NButton>
           <div class="flex flex-row justify-end items-center gap-x-2">
@@ -37,6 +40,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Trash2Icon } from "lucide-vue-next";
 import { NButton, useDialog } from "naive-ui";
 import type { ClientError } from "nice-grpc-common";
 import { computed, onMounted, ref } from "vue";
@@ -156,6 +160,7 @@ const doConfirm = async () => {
           databaseExpr: Expr.fromJSON({
             expression: celStrings[0] || "true",
           }),
+          multitenancy: formState.multitenancy,
         },
         databaseGroupId: resourceId,
       });
@@ -170,8 +175,9 @@ const doConfirm = async () => {
         ...props.databaseGroup!,
         databasePlaceholder: formState.placeholder,
         databaseExpr: Expr.fromJSON({
-          expression: celStrings[0],
+          expression: celStrings[0] || "true",
         }),
+        multitenancy: formState.multitenancy,
       });
     }
 

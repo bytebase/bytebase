@@ -118,7 +118,6 @@ const makeUnknown = (type: ResourceType) => {
     key: "UNK",
     memberList: [],
     workflowType: "UI",
-    tenantMode: "DISABLED",
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
@@ -312,7 +311,6 @@ const makeEmpty = (type: ResourceType) => {
     key: "",
     memberList: [],
     workflowType: "UI",
-    tenantMode: "DISABLED",
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {

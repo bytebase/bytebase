@@ -274,7 +274,10 @@
     "configure-now": "Configure now",
     "connection": "Connection",
     "permission-denied": "Permission denied",
-    "resource": "Resource"
+    "resource": "Resource",
+    "closed": "Closed",
+    "options": "Options",
+    "reset": "Reset"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -390,7 +393,9 @@
       },
       "show-default-parameters": "Show default parameters",
       "hide-default-parameters": "Hide default parameters",
-      "enable": "Enable online migration"
+      "enable": "Enable online migration",
+      "disable": "Disable online migration",
+      "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
     "prior-backup-tips": "Back up affected data ahead of time"
   },
@@ -983,12 +988,14 @@
         "cancel": "Cancel this entire issue?",
         "reopen": "Reopen issue?",
         "title": "{action} {type} [{name}]?",
-        "action-to-stage": "{action} stage ({n} tasks)"
+        "action-to-stage": "{action} stage ({n} tasks)",
+        "close": "Close issue?"
       },
       "dropdown": {
         "resolve": "Resolve issue",
         "cancel": "Cancel issue",
-        "reopen": "Reopen issue"
+        "reopen": "Reopen issue",
+        "close": "Close issue"
       },
       "form": {
         "note": "Note",
@@ -1134,7 +1141,9 @@
       "reopen": "Reopen",
       "reopened": "reopened",
       "action-n-issues": "{action} {n} issue | {action} {n} issues",
-      "successfully-updated-n-issues": "Successfully updated {n} issue | Successfully updated {n} issues"
+      "successfully-updated-n-issues": "Successfully updated {n} issue | Successfully updated {n} issues",
+      "closed": "closed",
+      "close": "Close"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
@@ -1235,9 +1244,16 @@
         "affected-rows": "Affected rows",
         "entry-type": {
           "command-execute": "Command execute",
-          "schema-dump": "Schema dump"
+          "schema-dump": "Schema dump",
+          "task-run-status-update": "Status update",
+          "transaction-control": "Transaction control",
+          "database-sync": "Database sync"
         },
-        "affected-rows-n": "Affected rows: {n}"
+        "affected-rows-n": "Affected rows: {n}",
+        "status-update": {
+          "waiting": "Ready to be executed",
+          "running": "Being executed"
+        }
       }
     },
     "sql-review": {
@@ -1801,6 +1817,7 @@
     "transfer-database-from-to": "Transfer database from source project to target project",
     "classification": {
       "self": "Classification",
+      "description": "Use data classification to manage masking policy for many columns by controlling only a small number of classifications.",
       "sync-from-comment": "Sync classification from comment",
       "sync-from-comment-tip": "Once enabled, the classification will sync from the table/column comment. The comment should follow \"{format}\" format.",
       "sync-from-comment-enable-warning": "Classification will change with the DDL and sync from the original comment.",
@@ -2141,6 +2158,7 @@
     "selectors": "Selectors",
     "add-stage": "Add stage",
     "confirm-to-revert": "Confirm to revert your editing?",
+    "confirm-to-reset": "Confirm reset to default?",
     "name-placeholder": "Stage name...",
     "error": {
       "at-least-one-stage": "At least 1 stage",
@@ -2215,6 +2233,7 @@
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
     "connection-string-schema": "Connection String Schema",
+    "connection-type": "Connection Type",
     "additional-node-addresses": "Additional Node Addresses",
     "replica-set": "Replica Set",
     "admin": "Admin",
@@ -2239,6 +2258,7 @@
     "search-databases": "Search Databases",
     "search-results": "Search Results",
     "loading-databases": "Loading Databases...",
+    "show-databases-without-query-permission": "Show databases without query permissions",
     "close-pane": "Close Pane",
     "loading-data": "Loading Data...",
     "table-empty-placeholder": "Click Run to execute the query.",
@@ -2298,7 +2318,12 @@
     "rows-upper-limit": "reached the limit of query results",
     "tab-mode": {
       "readonly": "Read-only",
-      "admin": "Admin"
+      "admin": "Admin",
+      "standard": "Standard",
+      "description": {
+        "standard": "Allow DDL and DML statements.",
+        "readonly": "Allow SELECT, SHOW and SET statements."
+      }
     },
     "close-sheet": "Close sheet",
     "connect": "Connect",
@@ -2332,7 +2357,8 @@
     "batch-query": {
       "batch": "Batch",
       "select-database": "Select database below",
-      "description": "Batch query {count} additional databases under {project}."
+      "description": "Batch query {count} additional databases under {project}.",
+      "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
     "executing-query": "Executing query",
     "request-query": "Request query",
@@ -2362,7 +2388,19 @@
     },
     "n-per-page": "{n} / page",
     "customize-tree-structure": "Customize tree structure",
-    "will-override-current-editing-statement": "Will override current editing statement."
+    "will-override-current-editing-statement": "Will override current editing statement.",
+    "standard-mode": {
+      "self": "Standard mode"
+    },
+    "to-enable-standard-mode": "to enable the standard mode",
+    "add-a-new-instance": "Add a new instance",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket connection failed",
+        "description": "Auto Completion might be limited or disabled.",
+        "disconnected": "WebSocket disconnected"
+      }
+    }
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2766,9 +2804,11 @@
   "sql-review": {
     "title": "SQL Review",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
-    "disabled": "Disabled",
+    "disabled": "SQL review is disabled",
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
+    "select-review": "Select SQL review",
+    "select-review-label": "You can attach an existed SQL review policy to the resource, or {create}.",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
     "policy-removed": "Successfully removed the review policy.",
@@ -2777,6 +2817,8 @@
     "policy-updated": "Successfully updated the review policy.",
     "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
+    "add-rules": "Add rules",
+    "add-or-remove-rules": "Add or remove rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Admin has permission to create or update review policy.",
     "disable": "Disable",
@@ -2786,7 +2828,14 @@
     "not-available-for-free": "Rule is not available for {plan}",
     "unlock-full-feature": "Unlock 100+ SQL lint rules",
     "search-by-name": "Search by name",
-    "no-linked-resources": "No linked resources",
+    "attach-resource": {
+      "no-linked-resources": "No attached resources",
+      "change-resources": "Change attached resources",
+      "self": "Attach to resources",
+      "label": "You can apply the review policy to environments or projects. One resource can only link one policy. The database will use the SQL review policy attached to the project, otherwise fallback to the environment policy.",
+      "label-environment": "The SQL review policy will effect all databases belongs to the selected environment.",
+      "label-project": "The SQL review policy will effect all databases belongs to the selected project. The SQL review policy for environment will be ignored."
+    },
     "create": {
       "breadcrumb": "Create SQL review policy",
       "basic-info": {
@@ -2795,10 +2844,6 @@
         "display-name-placeholder": "The review policy name",
         "display-name-default": "SQL review policy",
         "display-name-label": "A display name to help identifying among different review policies.",
-        "attach-resource": "Attach to resource",
-        "attach-resource-label": "Apply the review policy to the selected resource. One resource can only link one policy. The database will use the SQL review policy attached to the project, otherwise fallback to the environment policy.",
-        "attach-resource-info-environment": "The SQL review policy will effect all databases belongs to the selected environment.",
-        "attach-resource-info-project": "The SQL review policy will effect all databases belongs to the selected project. The SQL review policy for environment will be ignored.",
         "choose-template": "Choose template"
       },
       "configure-rule": {
@@ -2865,7 +2910,8 @@
       "select-type": "Select Type",
       "method": "Method",
       "request": "Request",
-      "response": "Response"
+      "response": "Response",
+      "status": "Status"
     },
     "type": {
       "workspace": {
@@ -3358,6 +3404,10 @@
     "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
+    "multitenancy": {
+      "self": "Multitenancy",
+      "description": "Enables managing multiple homogeneous databases in one workflow across different tenants."
+    },
     "condition": {
       "self": "Condition"
     },

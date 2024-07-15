@@ -2,7 +2,13 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import type { MaybeRef, ResourceId } from "@/types";
-import type { DeploymentConfig } from "@/types/proto/v1/project_service";
+import {
+  DeploymentConfig,
+  OperatorType,
+  ScheduleDeployment,
+} from "@/types/proto/v1/project_service";
+import { extractEnvironmentResourceName } from "@/utils";
+import { useEnvironmentV1List } from "./environment";
 
 export const useDeploymentConfigV1Store = defineStore(
   "deploymentConfig_v1",
@@ -59,4 +65,32 @@ export const useDeploymentConfigV1ByProject = (
     return store.deploymentConfigByProjectName.get(unref(project));
   });
   return { deploymentConfig, ready };
+};
+
+export const getDefaultDeploymentConfig = (): DeploymentConfig => {
+  const environmentList = useEnvironmentV1List();
+  const deployments: ScheduleDeployment[] = [];
+  for (const env of environmentList.value) {
+    deployments.push(
+      ScheduleDeployment.fromPartial({
+        title: `${env.title} Stage`,
+        spec: {
+          labelSelector: {
+            matchExpressions: [
+              {
+                key: "environment",
+                operator: OperatorType.OPERATOR_TYPE_IN,
+                values: [extractEnvironmentResourceName(env.name)],
+              },
+            ],
+          },
+        },
+      })
+    );
+  }
+  return DeploymentConfig.fromPartial({
+    schedule: {
+      deployments,
+    },
+  });
 };

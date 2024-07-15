@@ -27,7 +27,12 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID, unknownDatabase } from "@/types";
+import {
+  UNKNOWN_ID,
+  isValidEnvironmentName,
+  isValidProjectName,
+  unknownDatabase,
+} from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import { instanceV1Name, supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model";
@@ -42,9 +47,9 @@ const props = withDefaults(
   defineProps<{
     database?: string;
     databases?: string[];
-    environment?: string;
-    instance?: string;
-    project?: string;
+    environmentName?: string;
+    instanceName?: string;
+    projectName?: string;
     allowedEngineTypeList?: readonly Engine[];
     includeAll?: boolean;
     autoReset?: boolean;
@@ -56,9 +61,9 @@ const props = withDefaults(
   {
     database: undefined,
     databases: undefined,
-    environment: undefined,
-    instance: undefined,
-    project: undefined,
+    environmentName: undefined,
+    instanceName: undefined,
+    projectName: undefined,
     allowedEngineTypeList: () => supportedEngineV1List(),
     includeAll: false,
     autoReset: true,
@@ -76,9 +81,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
-const { ready } = useSearchDatabaseV1List({
-  filter: "instance = instances/-",
-});
+const { ready } = useSearchDatabaseV1List(
+  computed(() => ({
+    filter: `instance = ${props.instanceName ?? "instances/-"}`,
+  }))
+);
 
 const value = computed(() => {
   if (props.multiple) {
@@ -112,18 +119,22 @@ const rawDatabaseList = computed(() => {
   const list = useDatabaseV1Store().databaseListByUser(currentUserV1.value);
 
   return list.filter((db) => {
-    if (props.environment && props.environment !== String(UNKNOWN_ID)) {
-      if (db.effectiveEnvironmentEntity.uid !== props.environment) {
-        return false;
-      }
+    if (
+      isValidEnvironmentName(props.environmentName) &&
+      db.effectiveEnvironment !== props.environmentName
+    ) {
+      return false;
     }
-    if (props.instance && props.instance !== String(UNKNOWN_ID)) {
-      if (db.instanceEntity.uid !== props.instance) return false;
+    if (props.instanceName && props.instanceName !== db.instance) {
+      return false;
     }
-    if (props.project && props.project !== String(UNKNOWN_ID)) {
-      if (db.projectEntity.uid !== props.project) return false;
+    if (
+      isValidProjectName(props.projectName) &&
+      db.project !== props.projectName
+    ) {
+      return false;
     }
-    if (!props.allowedEngineTypeList.includes(db.instanceEntity.engine)) {
+    if (!props.allowedEngineTypeList.includes(db.instanceResource.engine)) {
       return false;
     }
 
@@ -175,7 +186,7 @@ const renderLabel: SelectRenderLabel = (option) => {
     children.unshift(
       h(InstanceV1EngineIcon, {
         class: "mr-1",
-        instance: database.instanceEntity,
+        instance: database.instanceResource,
       })
     );
     // suffix engine name
@@ -185,7 +196,7 @@ const renderLabel: SelectRenderLabel = (option) => {
         {
           class: "text-xs opacity-60 ml-1",
         },
-        [`(${instanceV1Name(database.instanceEntity)})`]
+        [`(${instanceV1Name(database.instanceResource)})`]
       )
     );
   }
@@ -221,7 +232,7 @@ const resetInvalidSelection = () => {
 
 watch(
   [
-    () => [props.project, props.environment, props.database],
+    () => [props.projectName, props.environmentName, props.database],
     combinedDatabaseList,
   ],
   resetInvalidSelection,

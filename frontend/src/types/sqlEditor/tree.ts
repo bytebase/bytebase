@@ -110,7 +110,7 @@ export const instanceOfSQLEditorTreeNode = (node: SQLEditorTreeNode) => {
     return target as ComposedInstance;
   }
   if (type === "database") {
-    return (target as ComposedDatabase).instanceEntity;
+    return (target as ComposedDatabase).instanceResource;
   }
   return undefined;
 };

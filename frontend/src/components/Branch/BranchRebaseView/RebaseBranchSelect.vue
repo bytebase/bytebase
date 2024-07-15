@@ -41,7 +41,7 @@
       <DatabaseSelect
         v-if="sourceType === 'DATABASE'"
         :database="sourceDatabase?.uid"
-        :project="project.uid"
+        :project-name="project.name"
         :allowed-engine-type-list="headBranch ? [headBranch.engine] : undefined"
         :filter="databaseFilter"
         :loading="isPreparingDatabaseGroups"
@@ -115,7 +115,7 @@ const headBranchFilter = (branch: Branch) => {
     );
   } else {
     const sourceDatabase = source as ComposedDatabase;
-    return branch.engine === sourceDatabase.instanceEntity.engine;
+    return branch.engine === sourceDatabase.instanceResource.engine;
   }
 };
 </script>

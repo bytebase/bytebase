@@ -12,7 +12,7 @@
 <script lang="ts" setup>
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, withDefaults } from "vue";
+import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import {
   displayDeploymentMatchSelectorKey,

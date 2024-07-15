@@ -184,10 +184,6 @@ message SearchDatabasesRequest {
   //  - instance = "instances/-"
   // for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
   string filter = 3;
-
-  // By default, the permission "bb.databases.get" is used.
-  // Alternatively, "bb.databases.query" can be used to retrieve databases with query permissions to.
-  string permission = 4;
 }
 
 message SearchDatabasesResponse {
@@ -433,6 +429,9 @@ message TableMetadata {
 
   // The collation is the collation of a table.
   string collation = 5;
+
+  // The character set of table.
+  string charset = 17;
 
   // The row_count is the estimated number of rows of a table.
   int64 row_count = 6;

@@ -53,14 +53,12 @@ const props = withDefaults(
     singleSelection?: boolean;
     schemaless?: boolean;
     customClick?: boolean;
-    showSqlEditorButton?: boolean;
     rowClickable?: boolean;
   }>(),
   {
     mode: "ALL",
     bordered: true,
     showSelection: true,
-    showSqlEditorButton: true,
     rowClickable: true,
   }
 );
@@ -93,12 +91,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.name"),
     resizable: true,
     render: (data) => {
-      return (
-        <DatabaseNameCell
-          database={data as ComposedDatabase}
-          showSQLEditorButton={props.showSqlEditorButton}
-        />
-      );
+      return <DatabaseNameCell database={data} />;
     },
   };
   const ENVIRONMENT: DatabaseDataTableColumn = {
@@ -108,7 +101,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     resizable: true,
     render: (data) => (
       <EnvironmentV1Name
-        environment={(data as ComposedDatabase).effectiveEnvironmentEntity}
+        environment={data.effectiveEnvironmentEntity}
         link={false}
         tag="div"
       />
@@ -134,11 +127,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.instance"),
     resizable: true,
     render: (data) => (
-      <InstanceV1Name
-        instance={(data as ComposedDatabase).instanceEntity}
-        link={false}
-        tag="div"
-      />
+      <InstanceV1Name instance={data.instanceResource} link={false} tag="div" />
     ),
   };
   const DATABASE_LABELS: DatabaseDataTableColumn = {
@@ -146,11 +135,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.labels"),
     resizable: true,
     render: (data) => (
-      <DatabaseLabelsCell
-        labels={(data as ComposedDatabase).labels}
-        showCount={1}
-        placeholder="-"
-      />
+      <DatabaseLabelsCell labels={data.labels} showCount={1} placeholder="-" />
     ),
   };
 

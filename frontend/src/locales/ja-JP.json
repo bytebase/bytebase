@@ -274,7 +274,10 @@
     "configure-now": "今すぐ設定する",
     "connection": "接続する",
     "permission-denied": "許可が拒否されました",
-    "resource": "リソース"
+    "resource": "リソース",
+    "closed": "閉まっている",
+    "options": "オプション",
+    "reset": "リセット"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -390,7 +393,9 @@
       },
       "show-default-parameters": "デフォルトパラメータを表示",
       "hide-default-parameters": "デフォルトパラメータを非表示にする",
-      "enable": "オンラインでの大規模なテーブル変更を有効にする"
+      "enable": "オンラインでの大規模なテーブル変更を有効にする",
+      "disable": "オンライン移行を無効にする",
+      "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
     },
     "prior-backup-tips": "影響を受けるデータを事前にバックアップする"
   },
@@ -983,12 +988,14 @@
         "cancel": "作業指示全体をキャンセルしますか?",
         "reopen": "作業指示を再開しますか?",
         "title": "{action}{type} [{name}]?",
-        "action-to-stage": "{action} ステージ ({n} 個のタスク)"
+        "action-to-stage": "{action} ステージ ({n} 個のタスク)",
+        "close": "問題を閉じますか?"
       },
       "dropdown": {
         "resolve": "作業指示を完了する",
         "cancel": "作業指示をキャンセルする",
-        "reopen": "再開"
+        "reopen": "再開",
+        "close": "問題を閉じる"
       },
       "form": {
         "note": "ノート",
@@ -1134,7 +1141,9 @@
       "reopen": "再開",
       "reopened": "再開",
       "action-n-issues": "{action} {n} 枚のチケット",
-      "successfully-updated-n-issues": "{n} 個のチケットが正常に更新されました"
+      "successfully-updated-n-issues": "{n} 個のチケットが正常に更新されました",
+      "closed": "閉まっている",
+      "close": "近い"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "変更は他のすべてのタスクに適用されます",
@@ -1235,9 +1244,16 @@
         "affected-rows": "影響を受ける行",
         "entry-type": {
           "command-execute": "コマンド実行",
-          "schema-dump": "スキーマダンプ"
+          "schema-dump": "スキーマダンプ",
+          "task-run-status-update": "ステータスアップデート",
+          "transaction-control": "トランザクション制御",
+          "database-sync": "データベースの同期"
         },
-        "affected-rows-n": "影響を受ける行: {n}"
+        "affected-rows-n": "影響を受ける行: {n}",
+        "status-update": {
+          "waiting": "実行の準備完了",
+          "running": "処刑される"
+        }
       }
     },
     "sql-review": {
@@ -1801,6 +1817,7 @@
     "transfer-database-from-to": "データベースをソース プロジェクトからターゲット プロジェクトに転送する",
     "classification": {
       "self": "分類と格付け",
+      "description": "データ分類を使用して、少数の分類のみを制御することで、多数の列のマスキング ポリシーを管理します。",
       "sync-from-comment": "コメントからカテゴリと評価を同期する",
       "sync-from-comment-tip": "有効にすると、分類評価がテーブルまたは列のコメントから同期されます。コメントは「{format}」形式に従う必要があります。",
       "sync-from-comment-enable-warning": "分類評価は DDL とともに変更され、元の注釈と同期されます。",
@@ -2141,6 +2158,7 @@
     "selectors": "選定基準",
     "add-stage": "ステージを追加",
     "confirm-to-revert": "編集を元に戻してもよろしいですか?",
+    "confirm-to-reset": "デフォルトにリセットしますか?",
     "name-placeholder": "芸名…",
     "error": {
       "at-least-one-stage": "少なくとも 1 つのステージが必要です",
@@ -2215,6 +2233,7 @@
     "read-replica-port": "リードレプリカポート",
     "delete-read-only-data-source": "読み取り専用データソースを削除する",
     "connection-string-schema": "接続文字列モード",
+    "connection-type": "接続タイプ",
     "additional-node-addresses": "追加のノードアドレス",
     "replica-set": "レプリカセット",
     "admin": "メインライブラリ",
@@ -2239,6 +2258,7 @@
     "search-databases": "データベースを検索する",
     "search-results": "の検索結果",
     "loading-databases": "データベース情報をロードしています...",
+    "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "close-pane": "パネルを閉じる",
     "loading-data": "データのロード...",
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
@@ -2298,7 +2318,12 @@
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "tab-mode": {
       "readonly": "読み取り専用",
-      "admin": "管理者"
+      "admin": "管理者",
+      "standard": "標準",
+      "description": {
+        "standard": "DDL および DML ステートメントを許可します。",
+        "readonly": "SELECT、SHOW、SET ステートメントを許可します。"
+      }
     },
     "close-sheet": "ワークシートを閉じる",
     "connect": "接続する",
@@ -2332,7 +2357,8 @@
     "batch-query": {
       "batch": "バッチ",
       "select-database": "以下のデータベースを選択してください",
-      "description": "{project} の下にある {count} データベースをバッチクエリします。"
+      "description": "{project} の下にある {count} データベースをバッチクエリします。",
+      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
     "executing-query": "クエリの実行",
     "request-query": "リクエストクエリ",
@@ -2362,7 +2388,19 @@
     },
     "n-per-page": "{n} / ページ",
     "customize-tree-structure": "ツリー構造をカスタマイズする",
-    "will-override-current-editing-statement": "現在の編集ステートメントをオーバーライドします。"
+    "will-override-current-editing-statement": "現在の編集ステートメントをオーバーライドします。",
+    "standard-mode": {
+      "self": "標準モード"
+    },
+    "to-enable-standard-mode": "標準モードを有効にするには",
+    "add-a-new-instance": "新しいインスタンスを追加する",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket接続に失敗しました",
+        "description": "オートコンプリートが制限されているか、無効になっている可能性があります。",
+        "disconnected": "WebSocketが切断されました"
+      }
+    }
   },
   "schema-editor": {
     "self": "スキーマエディタ",
@@ -2766,9 +2804,11 @@
   "sql-review": {
     "title": "SQL監査ポリシー",
     "description": "SQL 監査ポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL 監査ルールによって対応する実行ステートメントがチェックされます。",
-    "disabled": "無効",
+    "disabled": "SQL監査ポリシーが無効になっています",
     "no-policy-set": "SQL監査ポリシーなし",
     "create-policy": "監査ポリシーを作成する",
+    "select-review": "SQLレビューを選択",
+    "select-review-label": "既存の SQL レビュー ポリシーをリソースまたは {create} に添付できます。",
     "duplicate-policy": "監査ポリシーをコピーする",
     "configure-policy": "監査ポリシーを構成する",
     "policy-removed": "監査ポリシーが削除されました",
@@ -2777,6 +2817,8 @@
     "policy-updated": "監査ポリシーが更新されました",
     "policy-duplicated": "監査ポリシーがコピーされました",
     "rules": "ルール",
+    "add-rules": "ルールを追加する",
+    "add-or-remove-rules": "ルールを追加または削除する",
     "filter": "フィルター",
     "no-permission": "管理者または DBA のみが監査ポリシーを作成または更新する権限を持っています。",
     "disable": "監査ポリシーを無効にする",
@@ -2786,7 +2828,14 @@
     "not-available-for-free": "{plan}定期購入ではこのルールを使用できません",
     "unlock-full-feature": "100 を超える SQL レビュー ルールのロックを解除する",
     "search-by-name": "名前で検索",
-    "no-linked-resources": "リンクされたリソースはありません",
+    "attach-resource": {
+      "no-linked-resources": "リソースのバインドはありません",
+      "change-resources": "バインドされたリソースを変更する",
+      "self": "リソースにバインドする",
+      "label": "監査ポリシーを環境またはプロジェクトに適用します。リソースは 1 つのポリシーにのみ関連付けることができます。データベースはプロジェクトに添付された SQL 監査ポリシーを使用します。それ以外の場合は、環境ポリシーにフォールバックします。",
+      "label-environment": "SQL 監査ポリシーは、選択した環境に属するすべてのデータベースに影響します。",
+      "label-project": "SQL 監査ポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL 監査ポリシーは無視されます。"
+    },
     "create": {
       "breadcrumb": "監査ポリシーを作成する",
       "basic-info": {
@@ -2795,10 +2844,6 @@
         "display-name-placeholder": "監査ポリシー名",
         "display-name-default": "SQL監査ポリシー",
         "display-name-label": "さまざまな監査ポリシーを区別するために使用される名前。",
-        "attach-resource": "リソースにアタッチする",
-        "attach-resource-label": "選択したリソースに監査ポリシーを適用します。リソースは 1 つのポリシーにのみ関連付けることができます。データベースはプロジェクトに添付された SQL 監査ポリシーを使用します。それ以外の場合は、環境ポリシーにフォールバックします。",
-        "attach-resource-info-environment": "SQL 監査ポリシーは、選択した環境に属するすべてのデータベースに影響します。",
-        "attach-resource-info-project": "SQL 監査ポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL 監査ポリシーは無視されます。",
         "choose-template": "テンプレートを選択"
       },
       "configure-rule": {
@@ -2865,7 +2910,8 @@
       "select-type": "タイプを選択してください",
       "method": "方法",
       "request": "リクエスト",
-      "response": "応答"
+      "response": "応答",
+      "status": "ポジション"
     },
     "type": {
       "workspace": {
@@ -3358,6 +3404,10 @@
     "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
+    "multitenancy": {
+      "self": "マルチテナント",
+      "description": "異なるテナント間で複数の同種データベースを 1 つのワークフローで管理できます。"
+    },
     "condition": {
       "self": "状態"
     },

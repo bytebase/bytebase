@@ -77,7 +77,7 @@
         </HideInStandaloneMode>
 
         <!-- Only show the error line for latest plan check run -->
-        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
+        <template v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line">
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
@@ -87,18 +87,15 @@
               )
             "
           >
-            L{{ row.checkResult.sqlReviewReport.line }}
+            Line {{ row.checkResult.sqlReviewReport.line }}
           </span>
         </template>
-
-        <slot name="row-extra" :row="row" />
       </div>
     </div>
   </div>
 
   <SQLRuleEditDialog
     v-if="state.activeRule"
-    :editable="false"
     :rule="state.activeRule"
     :disabled="true"
     @cancel="state.activeRule = undefined"
@@ -117,15 +114,13 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { useReviewPolicyByResource } from "@/store";
-import type { RuleTemplate } from "@/types";
+import { useReviewPolicyForDatabase } from "@/store";
+import type { RuleTemplateV2, ComposedDatabase } from "@/types";
 import {
   GeneralErrorCode,
   SQLReviewPolicyErrorCode,
-  UNKNOWN_ENVIRONMENT_NAME,
-  findRuleTemplate,
   getRuleLocalization,
-  ruleTemplateMap,
+  ruleTemplateMapV2,
 } from "@/types";
 import { convertPolicyRuleToRuleTemplate } from "@/types";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
@@ -150,14 +145,14 @@ export type PlanCheckDetailTableRow = {
 };
 
 type LocalState = {
-  activeRule?: RuleTemplate;
+  activeRule?: RuleTemplateV2;
   activeResultDefinition?: string;
 };
 
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
-  environment?: string;
-  isLatest?: boolean;
+  database?: ComposedDatabase;
+  showCodeLocation?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -206,6 +201,22 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
   return [];
 });
 
+const getRuleTemplateByType = (type: string) => {
+  if (props.database) {
+    return ruleTemplateMapV2
+      .get(props.database.instanceResource.engine)
+      ?.get(type);
+  }
+
+  // fallback
+  for (const mapByType of ruleTemplateMapV2.values()) {
+    if (mapByType.has(type)) {
+      return mapByType.get(type);
+    }
+  }
+  return;
+};
+
 const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
@@ -218,7 +229,7 @@ const categoryAndTitle = (
       const title = messageWithCode(checkResult.title, code);
       return ["", title];
     }
-    const rule = ruleTemplateMap.get(checkResult.title);
+    const rule = getRuleTemplateByType(checkResult.title);
     if (rule) {
       const ruleLocalization = getRuleLocalization(rule.type);
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
@@ -292,23 +303,24 @@ const showCategoryColumn = computed((): boolean =>
   tableRows.value.some((row) => row.category !== "")
 );
 
-const reviewPolicy = useReviewPolicyByResource(
+const reviewPolicy = useReviewPolicyForDatabase(
   computed(() => {
-    return props.environment || UNKNOWN_ENVIRONMENT_NAME;
+    return props.database;
   })
 );
-const getActiveRule = (type: string): RuleTemplate | undefined => {
+
+const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
   if (!rule) {
     return undefined;
   }
 
-  const ruleTemplate = findRuleTemplate(type);
+  const ruleTemplate = getRuleTemplateByType(type);
   if (!ruleTemplate) {
     return undefined;
   }
 
-  return convertPolicyRuleToRuleTemplate([rule], ruleTemplate);
+  return convertPolicyRuleToRuleTemplate(rule, ruleTemplate);
 };
 const setActiveRule = (type: string) => {
   state.activeRule = getActiveRule(type);

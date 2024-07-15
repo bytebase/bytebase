@@ -118,7 +118,7 @@ import {
   type ComposedIssueComment,
 } from "@/store";
 import { getIssueCommentId } from "@/store/modules/v1/common";
-import { UNKNOWN_PROJECT_NAME } from "@/types";
+import { isValidProjectName } from "@/types";
 import type { ComposedIssue } from "@/types";
 import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
@@ -156,7 +156,7 @@ const issueCommentStore = useIssueCommentStore();
 const prepareIssueListForMarkdownEditor = async () => {
   const project = issue.value.project;
   issueList.value = [];
-  if (project === UNKNOWN_PROJECT_NAME) return;
+  if (!isValidProjectName(project)) return;
 
   const list = await issueV1Store.listIssues({
     find: {

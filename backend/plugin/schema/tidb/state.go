@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -145,7 +146,13 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		indexes = append(indexes, index)
 	}
 	sort.Slice(indexes, func(i, j int) bool {
-		return indexes[i].id < indexes[j].id
+		if indexes[i].primary {
+			return true
+		}
+		if indexes[j].primary {
+			return false
+		}
+		return indexes[i].name < indexes[j].name
 	})
 
 	for i, index := range indexes {
@@ -164,7 +171,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		foreignKeys = append(foreignKeys, fk)
 	}
 	sort.Slice(foreignKeys, func(i, j int) bool {
-		return foreignKeys[i].id < foreignKeys[j].id
+		return foreignKeys[i].name < foreignKeys[j].name
 	})
 
 	for i, fk := range foreignKeys {
@@ -508,7 +515,8 @@ func (c *columnState) hasAutoRand() bool {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
+	columnCanonicalType := tidb.GetColumnTypeCanonicalSynonym(strings.ToLower(c.tp))
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, columnCanonicalType)); err != nil {
 		return err
 	}
 	if !c.nullable {
@@ -519,7 +527,7 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	if c.defaultValue != nil {
 		// todo(zp): refactor column attribute.
 		if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
-			if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
+			if _, err := buf.WriteString(fmt.Sprintf(" %s", autoIncrementSymbol)); err != nil {
 				return err
 			}
 		} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {

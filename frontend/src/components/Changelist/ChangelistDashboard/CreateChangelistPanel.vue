@@ -16,7 +16,7 @@
             </div>
             <div>
               <ProjectSelect
-                v-model:project="projectUID"
+                v-model:project-name="projectName"
                 :include-all="false"
                 style="width: 14rem"
               />
@@ -150,7 +150,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { ResourceId, ValidatedMessage } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { isValidProjectName } from "@/types";
 import type { ComposedProject } from "@/types";
 import {
   Changelist,
@@ -174,14 +174,14 @@ const { t } = useI18n();
 const { showCreatePanel, events } = useChangelistDashboardContext();
 
 const title = ref("");
-const projectUID = ref<string | undefined>(props.project?.uid);
+const projectName = ref<string | undefined>(props.project?.name);
 const isLoading = ref(false);
 const resourceId = ref("");
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const errors = asyncComputed(() => {
   const errors: string[] = [];
-  if (!projectUID.value || projectUID.value === String(UNKNOWN_ID)) {
+  if (!isValidProjectName(projectName.value)) {
     errors.push(t("changelist.error.project-is-required"));
   }
   if (!title.value.trim()) {
@@ -201,8 +201,8 @@ const validateResourceId = async (
     return [];
   }
 
-  if (!projectUID.value) return [];
-  const project = useProjectV1Store().getProjectByUID(projectUID.value);
+  if (!projectName.value) return [];
+  const project = useProjectV1Store().getProjectByName(projectName.value);
 
   try {
     const name = `${project.name}/changelists/${resourceId}`;
@@ -271,7 +271,7 @@ const doCreate = async () => {
 
   isLoading.value = true;
   try {
-    const project = useProjectV1Store().getProjectByUID(projectUID.value!);
+    const project = useProjectV1Store().getProjectByName(projectName.value!);
 
     const createdSheets = await Promise.all(
       files.value.map(async (f) => {
@@ -323,7 +323,7 @@ const doCreate = async () => {
 
 const reset = () => {
   title.value = "";
-  projectUID.value = props.project?.uid;
+  projectName.value = props.project?.name;
 };
 
 watch(showCreatePanel, (show) => {

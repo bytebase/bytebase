@@ -24,7 +24,7 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
 	}
 	if pushEvent.ObjectKind != mergeRequestObjectKind {
-		return nil, errors.Errorf("skip webhook event type, got %s, want push", pushEvent.ObjectKind)
+		return nil, errors.Errorf("skip webhook event type, got %s, want %s", pushEvent.ObjectKind, mergeRequestObjectKind)
 	}
 	if pushEvent.ObjectAttributes.Action != mergeAction {
 		return nil, errors.Errorf("skip webhook event action, got %s, want merge", pushEvent.ObjectAttributes.Action)

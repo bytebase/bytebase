@@ -16,14 +16,12 @@
         :placement="'left-start'"
       />
     </div>
-
     <div class="space-y-2">
       <DatabaseOperations
         v-if="showDatabaseOperations"
-        :project-uid="project.uid"
+        :project-name="project.name"
         :databases="selectedDatabases"
       />
-
       <DatabaseV1Table
         mode="PROJECT"
         :database-list="filteredDatabaseList"
@@ -110,8 +108,7 @@ const filteredDatabaseList = computed(() => {
   if (selectedInstance.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (db) =>
-        extractInstanceResourceName(db.instanceEntity.name) ===
-        selectedInstance.value
+        extractInstanceResourceName(db.instance) === selectedInstance.value
     );
   }
   const keyword = state.params.query.trim().toLowerCase();

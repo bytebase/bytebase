@@ -21,7 +21,6 @@ import {
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
   Task_Status,
-  Task_Type,
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
 import {
@@ -66,12 +65,6 @@ export const provideIssueGhostContext = () => {
     return ghostViewTypeForTask(issue.value, task.value);
   });
   const showFlagsPanel = ref(false);
-  const isDeploymentConfig = computed(() => {
-    const spec = specForTask(issue.value.planEntity, task.value);
-    return !!spec?.changeDatabaseConfig?.target?.match(
-      /\/deploymentConfigs\/[^/]+/
-    );
-  });
 
   const denyEditGhostFlagsReasons = computed(() => {
     if (isCreating.value) {
@@ -95,35 +88,12 @@ export const provideIssueGhostContext = () => {
         return [t("issue.error.you-don-have-privilege-to-edit-this-issue")];
       }
     }
-
-    if (isDeploymentConfig.value) {
-      // If a task is created by deploymentConfig. It is editable only when all
-      // its "brothers" (created by the same deploymentConfig) are editable.
-      // By which "editable" means a task's status meets the requirements.
-      const ghostSyncTasks = flattenTaskV1List(
-        issue.value.rolloutEntity
-      ).filter(
-        (task) => task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC
+    if (!allowChangeTaskGhostFlags(issue.value, task.value)) {
+      errors.push(
+        t("task.online-migration.error.x-status-task-is-not-editable", {
+          status: task_StatusToJSON(task.value.status),
+        })
       );
-      if (
-        ghostSyncTasks.some(
-          (task) => !allowChangeTaskGhostFlags(issue.value, task)
-        )
-      ) {
-        errors.push(
-          t(
-            "task.online-migration.error.some-tasks-are-not-editable-in-batch-mode"
-          )
-        );
-      }
-    } else {
-      if (!allowChangeTaskGhostFlags(issue.value, task.value)) {
-        errors.push(
-          t("task.online-migration.error.x-status-task-is-not-editable", {
-            status: task_StatusToJSON(task.value.status),
-          })
-        );
-      }
     }
     return errors;
   });
@@ -132,7 +102,7 @@ export const provideIssueGhostContext = () => {
   const showMissingInstanceLicense = computed(() => {
     const instances = uniqBy(
       flattenTaskV1List(issue.value.rolloutEntity).map(
-        (task) => databaseForTask(issue.value, task).instanceEntity
+        (task) => databaseForTask(issue.value, task).instanceResource
       ),
       (instance) => instance.name
     );
@@ -192,9 +162,9 @@ export const allowChangeTaskGhostFlags = (issue: ComposedIssue, task: Task) => {
 
 export const allowGhostForDatabase = (database: ComposedDatabase) => {
   return (
-    database.instanceEntity.engine === Engine.MYSQL &&
+    database.instanceResource.engine === Engine.MYSQL &&
     semverCompare(
-      database.instanceEntity.engineVersion,
+      database.instanceResource.engineVersion,
       MIN_GHOST_SUPPORT_MYSQL_VERSION,
       "gte"
     )

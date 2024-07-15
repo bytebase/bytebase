@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -828,7 +827,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, instance *st
 	if instance.Engine != storepb.Engine_ORACLE {
 		return nil
 	}
-	return func(ctx context.Context, linkedDatabaseName string) (string, *model.DatabaseMetadata, error) {
+	return func(ctx context.Context, linkedDatabaseName string, schemaName string) (string, *model.DatabaseMetadata, error) {
 		// Find the linked database metadata.
 		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
@@ -851,9 +850,12 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, instance *st
 		}
 		// Find the linked database in Bytebase.
 		var linkedDatabase *store.DatabaseMessage
-		username := linkedMeta.GetUsername()
+		databaseName := linkedMeta.GetUsername()
+		if schemaName != "" {
+			databaseName = schemaName
+		}
 		databaseList, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
-			DatabaseName: &username,
+			DatabaseName: &databaseName,
 			Engine:       &instance.Engine,
 		})
 		if err != nil {
@@ -866,7 +868,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, instance *st
 			}
 			if instanceMeta != nil {
 				for _, dataSource := range instanceMeta.DataSources {
-					if dataSource.Host == linkedMeta.GetHost() {
+					if strings.Contains(linkedMeta.GetHost(), dataSource.Host) {
 						linkedDatabase = database
 						break
 					}
@@ -1089,7 +1091,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if slices.Contains(permissions, wantPermission) {
+		if permissions[wantPermission] {
 			return true, nil
 		}
 	}
@@ -1100,7 +1102,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !slices.Contains(permissions, wantPermission) {
+		if !permissions[wantPermission] {
 			continue
 		}
 
@@ -1198,7 +1200,14 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 // sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
-func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (storepb.Advice_Status, []*v1pb.Advice, error) {
+func (s *SQLService) sqlReviewCheck(
+	ctx context.Context,
+	statement string,
+	changeType v1pb.CheckRequest_ChangeType,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	overrideMetadata *storepb.DatabaseSchemaMetadata,
+) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
@@ -1235,15 +1244,24 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 	}
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
+
+	context := advisor.SQLReviewCheckContext{
+		Charset:         dbMetadata.CharacterSet,
+		Collation:       dbMetadata.Collation,
+		ChangeType:      convertChangeType(changeType),
+		DBSchema:        dbMetadata,
+		DbType:          instance.Engine,
+		Catalog:         catalog,
+		Driver:          connection,
+		Context:         ctx,
+		CurrentDatabase: database.DatabaseName,
+	}
+
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
-		instance.Engine,
-		dbMetadata,
 		statement,
-		changeType,
-		catalog,
-		connection,
 		database,
+		context,
 	)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
@@ -1256,16 +1274,28 @@ func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 	var result []*v1pb.Advice
 	for _, advice := range list {
 		result = append(result, &v1pb.Advice{
-			Status:  convertAdviceStatus(advice.Status),
-			Code:    int32(advice.Code),
-			Title:   advice.Title,
-			Content: advice.Content,
-			Line:    int32(advice.GetStartPosition().GetLine()),
-			Column:  int32(advice.GetStartPosition().GetColumn()),
-			Detail:  advice.Detail,
+			Status:        convertAdviceStatus(advice.Status),
+			Code:          int32(advice.Code),
+			Title:         advice.Title,
+			Content:       advice.Content,
+			Line:          int32(advice.GetStartPosition().GetLine()),
+			Column:        int32(advice.GetStartPosition().GetColumn()),
+			Detail:        advice.Detail,
+			StartPosition: convertAdvicePosition(advice.StartPosition),
+			EndPosition:   convertAdvicePosition(advice.EndPosition),
 		})
 	}
 	return result
+}
+
+func convertAdvicePosition(p *storepb.Position) *v1pb.Position {
+	if p == nil {
+		return nil
+	}
+	return &v1pb.Position{
+		Line:   p.Line,
+		Column: p.Column,
+	}
 }
 
 func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
@@ -1283,13 +1313,9 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 
 func (s *SQLService) sqlCheck(
 	ctx context.Context,
-	dbType storepb.Engine,
-	dbSchema *storepb.DatabaseSchemaMetadata,
 	statement string,
-	changeType v1pb.CheckRequest_ChangeType,
-	catalog *catalog.Catalog,
-	driver *sql.DB,
 	database *store.DatabaseMessage,
+	context advisor.SQLReviewCheckContext,
 ) (storepb.Advice_Status, []*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
@@ -1300,17 +1326,7 @@ func (s *SQLService) sqlCheck(
 		return storepb.Advice_ERROR, nil, err
 	}
 
-	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
-		Charset:         dbSchema.CharacterSet,
-		Collation:       dbSchema.Collation,
-		ChangeType:      convertChangeType(changeType),
-		DBSchema:        dbSchema,
-		DbType:          dbType,
-		Catalog:         catalog,
-		Driver:          driver,
-		Context:         ctx,
-		CurrentDatabase: database.DatabaseName,
-	})
+	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, err
 	}

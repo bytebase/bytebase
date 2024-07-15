@@ -62,7 +62,6 @@ import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDatabaseGroupName,
-  extractDeploymentConfigName,
   extractProjectResourceName,
   extractSheetUID,
   flattenTaskV1List,
@@ -220,11 +219,8 @@ const createSheets = async () => {
   const sheetNameMap = new Map<string, string>();
   for (let i = 0; i < pendingCreateSheetList.length; i++) {
     const sheet = pendingCreateSheetList[i];
-    if (
-      extractDeploymentConfigName(sheet.database) ||
-      extractDatabaseGroupName(sheet.database)
-    ) {
-      // If a sheet's target is a deploymentConfig or a db group, it should be unset
+    if (extractDatabaseGroupName(sheet.database)) {
+      // If a sheet's target is a db group, it should be unset
       // since it actually doesn't belongs to any exact database.
       sheet.database = "";
     }
@@ -261,11 +257,11 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
   if (!db) {
     return;
   }
-  const language = languageOfEngineV1(db.instanceEntity.engine);
+  const language = languageOfEngineV1(db.instanceResource.engine);
   if (language !== "sql") {
     return;
   }
-  const dialect = dialectOfEngineV1(db.instanceEntity.engine);
+  const dialect = dialectOfEngineV1(db.instanceResource.engine);
 
   const statement = getSheetStatement(sheet);
   if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {

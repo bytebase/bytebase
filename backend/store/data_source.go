@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -45,18 +46,24 @@ type DataSourceMessage struct {
 	// (deprecated) Output only.
 	UID int
 	// external secret
-	ExternalSecret      *storepb.DataSourceExternalSecret
-	AuthenticationType  storepb.DataSourceOptions_AuthenticationType
-	AdditionalAddresses []*storepb.DataSourceOptions_Address
-	ReplicaSet          string
-	DirectConnection    bool
-	Region              string
-	AccountID           string
-	WarehouseID         string
+	ExternalSecret           *storepb.DataSourceExternalSecret
+	AuthenticationType       storepb.DataSourceOptions_AuthenticationType
+	AdditionalAddresses      []*storepb.DataSourceOptions_Address
+	ReplicaSet               string
+	DirectConnection         bool
+	Region                   string
+	AccountID                string
+	WarehouseID              string
+	UseSSL                   bool
+	RedisType                storepb.DataSourceOptions_RedisType
+	MasterName               string
+	MasterUsername           string
+	MasterObfuscatedPassword string
 }
 
 // Copy returns a copy of the data source message.
 func (m *DataSourceMessage) Copy() *DataSourceMessage {
+	deepCopyAdditionalAddresses := slices.Clone[[]*storepb.DataSourceOptions_Address](m.AdditionalAddresses)
 	return &DataSourceMessage{
 		ID:                                 m.ID,
 		Type:                               m.Type,
@@ -82,10 +89,15 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		ExternalSecret:                     m.ExternalSecret,
 		AuthenticationType:                 m.AuthenticationType,
 		SASLConfig:                         m.SASLConfig,
-		AdditionalAddresses:                m.AdditionalAddresses,
+		AdditionalAddresses:                deepCopyAdditionalAddresses,
 		ReplicaSet:                         m.ReplicaSet,
 		DirectConnection:                   m.DirectConnection,
 		Region:                             m.Region,
+		UseSSL:                             m.UseSSL,
+		RedisType:                          m.RedisType,
+		MasterName:                         m.MasterName,
+		MasterUsername:                     m.MasterUsername,
+		MasterObfuscatedPassword:           m.MasterObfuscatedPassword,
 	}
 }
 
@@ -130,12 +142,24 @@ type UpdateDataSourceMessage struct {
 	Region            *string
 	AccountID         *string
 	WarehouseID       *string
+	UseSSL            *bool
+
+	RedisType                *storepb.DataSourceOptions_RedisType
+	MasterName               *string
+	MasterUsername           *string
+	MasterObfuscatedPassword *string
 }
 
-func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
-	var dataSourceMessages []*DataSourceMessage
+func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID *string) (map[string][]*DataSourceMessage, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if instanceID != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *instanceID)
+	}
+
+	instanceDataSourcesMap := make(map[string][]*DataSourceMessage)
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
+			instance.resource_id,
 			data_source.id,
 			data_source.name,
 			data_source.type,
@@ -150,8 +174,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			data_source.options
 		FROM data_source
 		LEFT JOIN instance ON instance.id = data_source.instance_id
-		WHERE instance.resource_id = $1`,
-		instanceID,
+		WHERE `+strings.Join(where, " AND "),
+		args...,
 	)
 	if err != nil {
 		return nil, err
@@ -159,8 +183,10 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	defer rows.Close()
 	for rows.Next() {
 		var protoBytes []byte
+		var instanceID string
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
+			&instanceID,
 			&dataSourceMessage.UID,
 			&dataSourceMessage.ID,
 			&dataSourceMessage.Type,
@@ -199,13 +225,18 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.Region = dataSourceOptions.Region
 		dataSourceMessage.AccountID = dataSourceOptions.AccountId
 		dataSourceMessage.WarehouseID = dataSourceOptions.WarehouseId
-		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
+		dataSourceMessage.UseSSL = dataSourceOptions.UseSsl
+		dataSourceMessage.RedisType = dataSourceOptions.RedisType
+		dataSourceMessage.MasterName = dataSourceOptions.MasterName
+		dataSourceMessage.MasterObfuscatedPassword = dataSourceOptions.MasterObfuscatedPassword
+		dataSourceMessage.MasterUsername = dataSourceOptions.MasterUsername
+		instanceDataSourcesMap[instanceID] = append(instanceDataSourcesMap[instanceID], &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return dataSourceMessages, nil
+	return instanceDataSourcesMap, nil
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
@@ -369,6 +400,21 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.WarehouseID; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseId', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
+	if v := patch.UseSSL; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('useSsl', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.RedisType; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('redisType', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.MasterName; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('masterName', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.MasterUsername; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('masterUsername', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
+	if v := patch.MasterObfuscatedPassword; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('masterObfuscatedPassword', $%d::TEXT)", len(args)+1)), append(args, *v)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -427,6 +473,11 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		Region:                             dataSource.Region,
 		WarehouseId:                        dataSource.WarehouseID,
 		AccountId:                          dataSource.AccountID,
+		UseSsl:                             dataSource.UseSSL,
+		RedisType:                          dataSource.RedisType,
+		MasterName:                         dataSource.MasterName,
+		MasterUsername:                     dataSource.MasterName,
+		MasterObfuscatedPassword:           dataSource.MasterObfuscatedPassword,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

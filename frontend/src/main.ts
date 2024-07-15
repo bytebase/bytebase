@@ -21,7 +21,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useAuthStore,
-  useSubscriptionV1Store,
 } from "./store";
 import {
   environmentName,
@@ -154,10 +153,7 @@ app
   .directive("data-source-type", dataSourceType)
   .use(pinia);
 
-// We need to restore the basic info in order to perform route authentication.
-// Even using the <suspense>, it's still too late, thus we do the fetch here.
-// We use finally because we always want to mount the app regardless of the error.
-const initActuator = async () => {
+const initSearchParams = () => {
   const actuatorStore = useActuatorV1Store();
   const searchParams = new URLSearchParams(window.location.search);
   const mode = searchParams.get("mode") as PageMode;
@@ -173,29 +169,9 @@ const initActuator = async () => {
   if (lang) {
     i18n.global.locale.value = lang;
   }
-
-  actuatorStore.fetchServerInfo();
-};
-const initSubscription = async () => {
-  await useSubscriptionV1Store().fetchSubscription();
-};
-const initFeatureMatrix = async () => {
-  await useSubscriptionV1Store().fetchFeatureMatrix();
-};
-const restoreUser = async () => {
-  await useAuthStore().restoreUser();
-};
-const initBasicModules = async () => {
-  await Promise.all([
-    initActuator(),
-    initFeatureMatrix(),
-    initSubscription(),
-    restoreUser(),
-  ]);
 };
 
-initBasicModules().finally(() => {
-  // Install router after the necessary data fetching is complete.
-  app.use(router).use(highlight).use(i18n).use(NaiveUI);
-  app.mount("#app");
-});
+initSearchParams();
+
+app.use(router).use(highlight).use(i18n).use(NaiveUI);
+app.mount("#app");

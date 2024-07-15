@@ -11,9 +11,9 @@ func TestSpliter(t *testing.T) {
 	}{
 		input: `POST /_bulk
 { "index" : { "_index" : "books" } }
-{"name": "Revelation Space", "author": "Alastair Reynolds", "page_count": 585}
+{"name": "Revelation Space", "author": "天舟", "page_count": 585}
 { "index" : { "_index" : "books" } }
-{"name": "1984", "author": "George Orwell", "page_count": 328}
+{"name": "1984", "author": "天舟", "page_count": 328}
 GET books/_search 
 {
 	"query": {
@@ -25,9 +25,9 @@ GET _cat/indices`,
 			method: "POST",
 			route:  []byte("/_bulk"),
 			queryString: []byte(`{ "index" : { "_index" : "books" } }
-{"name": "Revelation Space", "author": "Alastair Reynolds", "page_count": 585}
+{"name": "Revelation Space", "author": "天舟", "page_count": 585}
 { "index" : { "_index" : "books" } }
-{"name": "1984", "author": "George Orwell", "page_count": 328}
+{"name": "1984", "author": "天舟", "page_count": 328}
 `),
 		}, {
 			method: "GET",

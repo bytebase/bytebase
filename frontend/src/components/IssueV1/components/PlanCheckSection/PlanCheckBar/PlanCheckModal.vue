@@ -8,6 +8,7 @@
     <PlanCheckPanel
       :plan-check-run-list="planCheckRunList"
       :selected-type="selectedType"
+      @close="$emit('close')"
     />
   </BBModal>
 </template>

@@ -10,10 +10,13 @@ import {
   PencilRuler,
   SearchCodeIcon,
   DownloadIcon,
+  SquareGanttChartIcon,
 } from "lucide-vue-next";
-import { computed, h } from "vue";
-import type { Ref } from "vue";
-import type { RouteRecordRaw } from "vue-router";
+import { computed, h, unref } from "vue";
+import type {
+  RouteLocationNormalizedLoaded,
+  RouteRecordRaw,
+} from "vue-router";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { t } from "@/plugins/i18n";
@@ -38,10 +41,9 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedProject } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import type { ComposedProject, MaybeRef } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { ProjectPermission } from "@/types";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -51,16 +53,15 @@ interface ProjectSidebarItem extends SidebarItem {
   children?: ProjectSidebarItem[];
 }
 
-export const useProjectSidebar = (project: Ref<ComposedProject>) => {
+export const useProjectSidebar = (
+  project: MaybeRef<ComposedProject>,
+  _route?: RouteLocationNormalizedLoaded
+) => {
   const currentUser = useCurrentUserV1();
-  const route = useRoute();
+  const route = _route ?? useRoute();
 
   const isDefaultProject = computed((): boolean => {
-    return project.value.name === DEFAULT_PROJECT_V1_NAME;
-  });
-
-  const isTenantProject = computed((): boolean => {
-    return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
+    return unref(project).name === DEFAULT_PROJECT_NAME;
   });
 
   const getFlattenProjectV1Routes = (
@@ -114,7 +115,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
           (projectV1Route) => projectV1Route.name === item.path
         );
         return (routeConfig?.permissions ?? []).every((permission) =>
-          hasProjectPermissionV2(project.value, currentUser.value, permission)
+          hasProjectPermissionV2(unref(project), currentUser.value, permission)
         );
       })
       .map((item) => ({
@@ -127,7 +128,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
     const sidebarList: ProjectSidebarItem[] = [
       {
         title: t("common.database"),
-        icon: h(Database),
+        icon: () => h(Database),
         type: "div",
         expand: true,
         children: [
@@ -140,12 +141,6 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             type: "div",
-          },
-          {
-            title: t("common.deployment-config"),
-            path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
-            type: "div",
-            hide: !isTenantProject.value,
           },
           {
             title: t("common.change-history"),
@@ -167,20 +162,20 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
       {
         title: t("common.issues"),
         path: PROJECT_V1_ROUTE_ISSUES,
-        icon: h(CircleDot),
+        icon: () => h(CircleDot),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("review-center.self"),
-        icon: h(SearchCodeIcon),
+        icon: () => h(SearchCodeIcon),
         path: PROJECT_V1_ROUTE_REVIEW_CENTER,
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("export-center.self"),
-        icon: h(DownloadIcon),
+        icon: () => h(DownloadIcon),
         path: PROJECT_V1_ROUTE_EXPORT_CENTER,
         type: "div",
         hide: isDefaultProject.value,
@@ -188,27 +183,27 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
       {
         title: t("common.branches"),
         path: PROJECT_V1_ROUTE_BRANCHES,
-        icon: h(GitBranch),
+        icon: () => h(GitBranch),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("changelist.changelists"),
         path: PROJECT_V1_ROUTE_CHANGELISTS,
-        icon: h(PencilRuler),
+        icon: () => h(PencilRuler),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("database.sync-schema.title"),
         path: PROJECT_V1_ROUTE_SYNC_SCHEMA,
-        icon: h(RefreshCcw),
+        icon: () => h(RefreshCcw),
         type: "div",
         hide: isDefaultProject.value,
       },
       {
         title: t("settings.sidebar.integration"),
-        icon: h(Link),
+        icon: () => h(Link),
         type: "div",
         hide: isDefaultProject.value,
         expand: true,
@@ -227,7 +222,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
       },
       {
         title: t("common.manage"),
-        icon: h(Users),
+        icon: () => h(Users),
         type: "div",
         hide: isDefaultProject.value,
         expand: true,
@@ -245,8 +240,15 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
         ],
       },
       {
+        title: t("common.deployment-config"),
+        icon: () => h(SquareGanttChartIcon),
+        path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
+        type: "div",
+        hide: isDefaultProject.value,
+      },
+      {
         title: t("common.setting"),
-        icon: h(Settings),
+        icon: () => h(Settings),
         path: PROJECT_V1_ROUTE_SETTINGS,
         type: "div",
         hide: isDefaultProject.value,

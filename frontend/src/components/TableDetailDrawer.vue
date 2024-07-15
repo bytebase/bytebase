@@ -50,7 +50,7 @@
                   <span class="ml-1 textlabel"
                     >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
                   >
-                  <InstanceV1Name :instance="database.instanceEntity" />
+                  <InstanceV1Name :instance="database.instanceResource" />
                 </dd>
                 <dt class="sr-only">{{ $t("common.project") }}</dt>
                 <dd class="flex items-center text-sm md:mr-4">
@@ -247,7 +247,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
+import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -321,11 +321,11 @@ const database = computed(() => {
 });
 
 const instanceEngine = computed(() => {
-  return database.value.instanceEntity.engine;
+  return database.value.instanceResource.engine;
 });
 
 const allowQuery = computed(() => {
-  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
+  if (database.value.project === DEFAULT_PROJECT_NAME) {
     return hasProjectPermissionV2(
       defaultProject(),
       currentUserV1.value,
@@ -344,7 +344,7 @@ const hasSchemaProperty = computed(
 const hasPartitionTables = computed(() => {
   return (
     // Only show partition tables for PostgreSQL.
-    database.value.instanceEntity.engine === Engine.POSTGRES &&
+    database.value.instanceResource.engine === Engine.POSTGRES &&
     table.value &&
     table.value.partitions.length > 0
   );

@@ -94,7 +94,7 @@ import {
   useSearchDatabaseV1List,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   extractProjectResourceName,
@@ -154,7 +154,7 @@ const databaseList = computed(() => {
 
   list = list.filter(
     (db) =>
-      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_V1_NAME
+      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
 
   list = list.filter((db) => {
@@ -171,7 +171,7 @@ const databaseList = computed(() => {
 const schemaDatabaseList = computed(() => {
   if (guessedDatabaseChangeType.value === "DDL") {
     return databaseList.value.filter((db) =>
-      instanceV1HasAlterSchema(db.instanceEntity)
+      instanceV1HasAlterSchema(db.instanceResource)
     );
   }
 
@@ -180,7 +180,7 @@ const schemaDatabaseList = computed(() => {
 
 const schemalessDatabaseList = computed(() => {
   return databaseList.value.filter(
-    (db) => !instanceV1HasAlterSchema(db.instanceEntity)
+    (db) => !instanceV1HasAlterSchema(db.instanceResource)
   );
 });
 

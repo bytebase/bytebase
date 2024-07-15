@@ -6,7 +6,8 @@
       content: ""
       detail: ""
       startposition: null
-- statement: SELECT * FROM t
+- statement: INSERT INTO t (id) VALUES (1);
+  changeType: 2
   want:
     - status: 2
       code: 217

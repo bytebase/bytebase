@@ -13,6 +13,7 @@ import {
   exportFormatFromJSON,
   exportFormatToJSON,
   exportFormatToNumber,
+  Position,
 } from "./common";
 import { DatabaseMetadata } from "./database_service";
 
@@ -156,6 +157,12 @@ export interface Advice {
   column: number;
   /** The advice detail. */
   detail: string;
+  /**
+   * 1-based Position of the SQL statement.
+   * To supersede `line` and `column` above.
+   */
+  startPosition: Position | undefined;
+  endPosition: Position | undefined;
 }
 
 export enum Advice_Status {
@@ -1610,7 +1617,17 @@ export const RowValue = {
 };
 
 function createBaseAdvice(): Advice {
-  return { status: Advice_Status.STATUS_UNSPECIFIED, code: 0, title: "", content: "", line: 0, column: 0, detail: "" };
+  return {
+    status: Advice_Status.STATUS_UNSPECIFIED,
+    code: 0,
+    title: "",
+    content: "",
+    line: 0,
+    column: 0,
+    detail: "",
+    startPosition: undefined,
+    endPosition: undefined,
+  };
 }
 
 export const Advice = {
@@ -1635,6 +1652,12 @@ export const Advice = {
     }
     if (message.detail !== "") {
       writer.uint32(58).string(message.detail);
+    }
+    if (message.startPosition !== undefined) {
+      Position.encode(message.startPosition, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.endPosition !== undefined) {
+      Position.encode(message.endPosition, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -1695,6 +1718,20 @@ export const Advice = {
 
           message.detail = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.startPosition = Position.decode(reader, reader.uint32());
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.endPosition = Position.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1713,6 +1750,8 @@ export const Advice = {
       line: isSet(object.line) ? globalThis.Number(object.line) : 0,
       column: isSet(object.column) ? globalThis.Number(object.column) : 0,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
+      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
+      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
   },
 
@@ -1739,6 +1778,12 @@ export const Advice = {
     if (message.detail !== "") {
       obj.detail = message.detail;
     }
+    if (message.startPosition !== undefined) {
+      obj.startPosition = Position.toJSON(message.startPosition);
+    }
+    if (message.endPosition !== undefined) {
+      obj.endPosition = Position.toJSON(message.endPosition);
+    }
     return obj;
   },
 
@@ -1754,6 +1799,12 @@ export const Advice = {
     message.line = object.line ?? 0;
     message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
+    message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
+      ? Position.fromPartial(object.startPosition)
+      : undefined;
+    message.endPosition = (object.endPosition !== undefined && object.endPosition !== null)
+      ? Position.fromPartial(object.endPosition)
+      : undefined;
     return message;
   },
 };

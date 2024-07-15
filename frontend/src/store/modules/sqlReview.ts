@@ -1,9 +1,14 @@
-import { pullAt, isEqual } from "lodash-es";
+import { pullAt, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { reviewConfigServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import type { SchemaPolicyRule, SQLReviewPolicy, MaybeRef } from "@/types";
+import type {
+  SchemaPolicyRule,
+  SQLReviewPolicy,
+  MaybeRef,
+  ComposedDatabase,
+} from "@/types";
 import {
   PolicyType,
   policyTypeToJSON,
@@ -104,6 +109,23 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         ];
       }
     },
+    async upsertReviewConfigTag({
+      oldResources,
+      newResources,
+      review,
+    }: {
+      oldResources: string[];
+      newResources: string[];
+      review: string;
+    }) {
+      await removeReviewConfigTag(uniq(oldResources));
+      await upsertReviewConfigTag(uniq(newResources), review);
+
+      const reviewPolicy = this.reviewPolicyList.find((r) => r.id === review);
+      if (reviewPolicy) {
+        reviewPolicy.resources = newResources;
+      }
+    },
     async createReviewPolicy({
       id,
       title,
@@ -132,7 +154,11 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         },
       });
 
-      await upsertReviewConfigTag(resources, reviewConfig.name);
+      await this.upsertReviewConfigTag({
+        oldResources: [],
+        newResources: resources,
+        review: reviewConfig.name,
+      });
 
       reviewConfig.resources = resources;
       const reviewPolicy = convertToSQLReviewPolicy(reviewConfig);
@@ -143,6 +169,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
 
       this.setReviewPolicy(reviewPolicy);
+      return reviewPolicy;
     },
     async removeReviewPolicy(id: string) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
@@ -164,13 +191,11 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       title,
       enforce,
       ruleList,
-      resources,
     }: {
       id: string;
       title?: string;
       enforce?: boolean;
       ruleList?: SchemaPolicyRule[];
-      resources?: string[];
     }) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
       if (index < 0) {
@@ -208,12 +233,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         reviewConfig: patch,
         updateMask,
       });
-
-      if (resources && !isEqual(resources, targetPolicy.resources)) {
-        await removeReviewConfigTag(targetPolicy.resources);
-        await upsertReviewConfigTag(resources, targetPolicy.id);
-        updated.resources = resources;
-      }
 
       const reviewPolicy = convertToSQLReviewPolicy(updated);
       if (reviewPolicy) {
@@ -326,5 +345,39 @@ export const useReviewPolicyByResource = (
   return computed(() => {
     if (!unref(resourcePath)) return undefined;
     return store.getReviewPolicyByResouce(unref(resourcePath)!);
+  });
+};
+
+export const useReviewPolicyForDatabase = (
+  database: MaybeRef<ComposedDatabase | undefined>
+) => {
+  const store = useSQLReviewStore();
+
+  watchEffect(async () => {
+    if (!unref(database)) return;
+
+    const reviewForProject = await store.getOrFetchReviewPolicyByResource(
+      unref(database)!.project
+    );
+    if (reviewForProject) {
+      return;
+    }
+
+    await store.getOrFetchReviewPolicyByResource(
+      unref(database)!.effectiveEnvironment
+    );
+  });
+
+  return computed(() => {
+    if (!unref(database)) return undefined;
+    const reviewForProject = store.getReviewPolicyByResouce(
+      unref(database)!.project
+    );
+    if (reviewForProject) {
+      return reviewForProject;
+    }
+    return store.getReviewPolicyByResouce(
+      unref(database)!.effectiveEnvironment
+    );
   });
 };

@@ -250,6 +250,14 @@ export interface DataSourceOptions {
   accountId: string;
   /** warehouse_id is used by Databricks. */
   warehouseId: string;
+  /** master_name is the master name used by connecting redis-master via redis sentinel. */
+  masterName: string;
+  /** master_username and master_obfuscated_password are master credentials used by redis sentinel mode. */
+  masterUsername: string;
+  masterObfuscatedPassword: string;
+  redisType: DataSourceOptions_RedisType;
+  /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
+  useSsl: boolean;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -308,6 +316,67 @@ export function dataSourceOptions_AuthenticationTypeToNumber(object: DataSourceO
     case DataSourceOptions_AuthenticationType.AWS_RDS_IAM:
       return 3;
     case DataSourceOptions_AuthenticationType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export enum DataSourceOptions_RedisType {
+  REDIS_TYPE_UNSPECIFIED = "REDIS_TYPE_UNSPECIFIED",
+  STANDALONE = "STANDALONE",
+  SENTINEL = "SENTINEL",
+  CLUSTER = "CLUSTER",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function dataSourceOptions_RedisTypeFromJSON(object: any): DataSourceOptions_RedisType {
+  switch (object) {
+    case 0:
+    case "REDIS_TYPE_UNSPECIFIED":
+      return DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
+    case 1:
+    case "STANDALONE":
+      return DataSourceOptions_RedisType.STANDALONE;
+    case 2:
+    case "SENTINEL":
+      return DataSourceOptions_RedisType.SENTINEL;
+    case 3:
+    case "CLUSTER":
+      return DataSourceOptions_RedisType.CLUSTER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceOptions_RedisType.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceOptions_RedisTypeToJSON(object: DataSourceOptions_RedisType): string {
+  switch (object) {
+    case DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED:
+      return "REDIS_TYPE_UNSPECIFIED";
+    case DataSourceOptions_RedisType.STANDALONE:
+      return "STANDALONE";
+    case DataSourceOptions_RedisType.SENTINEL:
+      return "SENTINEL";
+    case DataSourceOptions_RedisType.CLUSTER:
+      return "CLUSTER";
+    case DataSourceOptions_RedisType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function dataSourceOptions_RedisTypeToNumber(object: DataSourceOptions_RedisType): number {
+  switch (object) {
+    case DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceOptions_RedisType.STANDALONE:
+      return 1;
+    case DataSourceOptions_RedisType.SENTINEL:
+      return 2;
+    case DataSourceOptions_RedisType.CLUSTER:
+      return 3;
+    case DataSourceOptions_RedisType.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -645,6 +714,11 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     region: "",
     accountId: "",
     warehouseId: "",
+    masterName: "",
+    masterUsername: "",
+    masterObfuscatedPassword: "",
+    redisType: DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
+    useSsl: false,
   };
 }
 
@@ -706,6 +780,21 @@ export const DataSourceOptions = {
     }
     if (message.warehouseId !== "") {
       writer.uint32(154).string(message.warehouseId);
+    }
+    if (message.masterName !== "") {
+      writer.uint32(162).string(message.masterName);
+    }
+    if (message.masterUsername !== "") {
+      writer.uint32(170).string(message.masterUsername);
+    }
+    if (message.masterObfuscatedPassword !== "") {
+      writer.uint32(178).string(message.masterObfuscatedPassword);
+    }
+    if (message.redisType !== DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED) {
+      writer.uint32(184).int32(dataSourceOptions_RedisTypeToNumber(message.redisType));
+    }
+    if (message.useSsl === true) {
+      writer.uint32(192).bool(message.useSsl);
     }
     return writer;
   },
@@ -850,6 +939,41 @@ export const DataSourceOptions = {
 
           message.warehouseId = reader.string();
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.masterName = reader.string();
+          continue;
+        case 21:
+          if (tag !== 170) {
+            break;
+          }
+
+          message.masterUsername = reader.string();
+          continue;
+        case 22:
+          if (tag !== 178) {
+            break;
+          }
+
+          message.masterObfuscatedPassword = reader.string();
+          continue;
+        case 23:
+          if (tag !== 184) {
+            break;
+          }
+
+          message.redisType = dataSourceOptions_RedisTypeFromJSON(reader.int32());
+          continue;
+        case 24:
+          if (tag !== 192) {
+            break;
+          }
+
+          message.useSsl = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -892,6 +1016,15 @@ export const DataSourceOptions = {
       region: isSet(object.region) ? globalThis.String(object.region) : "",
       accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
+      masterName: isSet(object.masterName) ? globalThis.String(object.masterName) : "",
+      masterUsername: isSet(object.masterUsername) ? globalThis.String(object.masterUsername) : "",
+      masterObfuscatedPassword: isSet(object.masterObfuscatedPassword)
+        ? globalThis.String(object.masterObfuscatedPassword)
+        : "",
+      redisType: isSet(object.redisType)
+        ? dataSourceOptions_RedisTypeFromJSON(object.redisType)
+        : DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
+      useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
     };
   },
 
@@ -954,6 +1087,21 @@ export const DataSourceOptions = {
     if (message.warehouseId !== "") {
       obj.warehouseId = message.warehouseId;
     }
+    if (message.masterName !== "") {
+      obj.masterName = message.masterName;
+    }
+    if (message.masterUsername !== "") {
+      obj.masterUsername = message.masterUsername;
+    }
+    if (message.masterObfuscatedPassword !== "") {
+      obj.masterObfuscatedPassword = message.masterObfuscatedPassword;
+    }
+    if (message.redisType !== DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED) {
+      obj.redisType = dataSourceOptions_RedisTypeToJSON(message.redisType);
+    }
+    if (message.useSsl === true) {
+      obj.useSsl = message.useSsl;
+    }
     return obj;
   },
 
@@ -987,6 +1135,11 @@ export const DataSourceOptions = {
     message.region = object.region ?? "";
     message.accountId = object.accountId ?? "";
     message.warehouseId = object.warehouseId ?? "";
+    message.masterName = object.masterName ?? "";
+    message.masterUsername = object.masterUsername ?? "";
+    message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
+    message.redisType = object.redisType ?? DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
+    message.useSsl = object.useSsl ?? false;
     return message;
   },
 };

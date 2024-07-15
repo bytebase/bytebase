@@ -123,8 +123,8 @@ const title = computed(() => {
   switch (action) {
     case "RESOLVE":
       return t("issue.status-transition.modal.resolve");
-    case "CANCEL":
-      return t("issue.status-transition.modal.cancel");
+    case "CLOSE":
+      return t("issue.status-transition.modal.close");
     case "REOPEN":
       return t("issue.status-transition.modal.reopen");
   }

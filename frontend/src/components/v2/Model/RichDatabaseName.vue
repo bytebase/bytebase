@@ -17,11 +17,11 @@
         >
           <InstanceV1EngineIcon
             v-if="showEngineIcon"
-            :instance="database.instanceEntity"
+            :instance="database.instanceResource"
           />
           <InstanceV1Name
             v-if="showInstance"
-            :instance="database.instanceEntity"
+            :instance="database.instanceResource"
             :icon="false"
             :link="false"
           />
@@ -51,7 +51,7 @@
     <template #default>
       <InstanceV1Name
         v-if="tooltip === 'instance'"
-        :instance="database.instanceEntity"
+        :instance="database.instanceResource"
         :link="false"
       />
     </template>

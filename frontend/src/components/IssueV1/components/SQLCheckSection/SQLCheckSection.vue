@@ -15,6 +15,7 @@
       }"
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
+      :show-code-location="true"
       @update:advices="$emit('update:advices', $event)"
     >
       <template #result="{ advices, isRunning }">
@@ -26,7 +27,7 @@
         <SQLCheckBadge v-else :is-running="isRunning" :advices="advices" />
       </template>
 
-      <template #row-extra="{ row, confirm }">
+      <template #row-title-extra="{ row, confirm }">
         <OnlineMigrationAdviceExtra
           v-if="row.checkResult.title === 'advice.online-migration'"
           :row="row"
@@ -92,12 +93,10 @@ const handleToggleOnlineMigration = (
   on: boolean,
   confirm: Defer<boolean> | undefined
 ) => {
-  if (on) {
-    events.emit("toggle-online-migration", {
-      on: true,
-    });
-    confirm?.resolve(false);
-  }
+  events.emit("toggle-online-migration", {
+    on,
+  });
+  confirm?.resolve(false);
 };
 
 const changeType = computed((): CheckRequest_ChangeType | undefined => {

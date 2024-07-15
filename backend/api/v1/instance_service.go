@@ -120,7 +120,7 @@ func (s *InstanceService) SearchInstances(ctx context.Context, request *v1pb.Sea
 		databaseFind.ProjectID = &project.ResourceID
 	}
 
-	databases, err := searchDatabases(ctx, s.store, s.iamManager, databaseFind, iam.PermissionDatabasesGet)
+	databases, err := searchDatabases(ctx, s.store, s.iamManager, databaseFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get databases, error: %v", err)
 	}
@@ -230,8 +230,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 			instance = updatedInstance
 		}
 		// Sync all databases in the instance asynchronously.
-		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
-		s.stateCfg.InstanceSyncTickleChan <- 0
+		s.schemaSyncer.SyncAllDatabases(ctx, instance)
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
@@ -346,7 +345,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.DataSources = &datasources
 		case "activation":
-			patch.Activation = &request.Instance.Activation
+			if request.Instance.Activation != instance.Activation {
+				patch.Activation = &request.Instance.Activation
+			}
 		case "options.sync_interval":
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = instance.Options
@@ -428,15 +429,12 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 		findDatabase := &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
 		}
-		if project != nil {
-			findDatabase.ProjectID = &project.ResourceID
-		}
 		databases, err := s.store.ListDatabases(ctx, findDatabase)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
 		}
 
-		var enabledDatabases []*store.DatabaseMessage
+		enabled := false
 		for _, database := range databases {
 			if database.SyncState != api.OK {
 				continue
@@ -456,10 +454,11 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 				continue
 			}
 
-			enabledDatabases = append(enabledDatabases, database)
+			enabled = true
+			break
 		}
 
-		if len(enabledDatabases) == 0 {
+		if !enabled {
 			return nil
 		}
 
@@ -631,8 +630,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.
-	s.stateCfg.InstanceSyncs.Store(instance.UID, updatedInstance)
-	s.stateCfg.InstanceSyncTickleChan <- 0
+	s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 
 	return &v1pb.SyncInstanceResponse{}, nil
 }
@@ -647,10 +645,14 @@ func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.B
 		if instance.Deleted {
 			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
 		}
+
+		updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		if err != nil {
+			return nil, err
+		}
 		// Sync all databases in the instance asynchronously.
-		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
+		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 	}
-	s.stateCfg.InstanceSyncTickleChan <- 0
 
 	return &v1pb.BatchSyncInstanceResponse{}, nil
 }
@@ -869,6 +871,23 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "warehouse_id":
 			dataSource.WarehouseID = request.DataSource.WarehouseId
 			patch.WarehouseID = &request.DataSource.WarehouseId
+		case "use_ssl":
+			dataSource.UseSSL = request.DataSource.UseSsl
+			patch.UseSSL = &request.DataSource.UseSsl
+		case "redis_type":
+			redisType := convertToStoreRedisType(request.DataSource.RedisType)
+			dataSource.RedisType = redisType
+			patch.RedisType = &redisType
+		case "master_name":
+			dataSource.MasterName = request.DataSource.MasterName
+			patch.MasterName = &request.DataSource.MasterName
+		case "master_username":
+			dataSource.MasterUsername = request.DataSource.MasterUsername
+			patch.MasterUsername = &request.DataSource.MasterUsername
+		case "master_password":
+			obfuscated := common.Obfuscate(request.DataSource.MasterPassword, s.secret)
+			dataSource.MasterObfuscatedPassword = obfuscated
+			patch.MasterObfuscatedPassword = &obfuscated
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1079,6 +1098,8 @@ func convertToInstanceResource(instanceMessage *store.InstanceMessage) (*v1pb.In
 		EngineVersion: instance.EngineVersion,
 		DataSources:   instance.DataSources,
 		Activation:    instance.Activation,
+		Name:          instance.Name,
+		Environment:   instance.Environment,
 	}, nil
 }
 
@@ -1177,6 +1198,11 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			ReplicaSet:             ds.ReplicaSet,
 			DirectConnection:       ds.DirectConnection,
 			Region:                 ds.Region,
+			WarehouseId:            ds.WarehouseID,
+			UseSsl:                 ds.UseSSL,
+			RedisType:              convertToV1RedisType(ds.RedisType),
+			MasterName:             ds.MasterName,
+			MasterUsername:         ds.MasterUsername,
 		})
 	}
 
@@ -1309,6 +1335,32 @@ func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) st
 	return authenticationType
 }
 
+func convertToStoreRedisType(redisType v1pb.DataSource_RedisType) storepb.DataSourceOptions_RedisType {
+	authenticationType := storepb.DataSourceOptions_REDIS_TYPE_UNSPECIFIED
+	switch redisType {
+	case v1pb.DataSource_STANDALONE:
+		authenticationType = storepb.DataSourceOptions_STANDALONE
+	case v1pb.DataSource_SENTINEL:
+		authenticationType = storepb.DataSourceOptions_SENTINEL
+	case v1pb.DataSource_CLUSTER:
+		authenticationType = storepb.DataSourceOptions_CLUSTER
+	}
+	return authenticationType
+}
+
+func convertToV1RedisType(redisType storepb.DataSourceOptions_RedisType) v1pb.DataSource_RedisType {
+	authenticationType := v1pb.DataSource_STANDALONE
+	switch redisType {
+	case storepb.DataSourceOptions_STANDALONE:
+		authenticationType = v1pb.DataSource_STANDALONE
+	case storepb.DataSourceOptions_SENTINEL:
+		authenticationType = v1pb.DataSource_SENTINEL
+	case storepb.DataSourceOptions_CLUSTER:
+		authenticationType = v1pb.DataSource_CLUSTER
+	}
+	return authenticationType
+}
+
 func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
 	dsType, err := convertDataSourceTp(dataSource.Type)
 	if err != nil {
@@ -1350,6 +1402,11 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		Region:                             dataSource.Region,
 		AccountID:                          dataSource.AccountId,
 		WarehouseID:                        dataSource.WarehouseId,
+		UseSSL:                             dataSource.UseSsl,
+		RedisType:                          convertToStoreRedisType(dataSource.RedisType),
+		MasterName:                         dataSource.MasterName,
+		MasterUsername:                     dataSource.MasterUsername,
+		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
 	}, nil
 }
 

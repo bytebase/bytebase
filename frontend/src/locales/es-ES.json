@@ -274,7 +274,10 @@
     "configure-now": "Configurar ahora",
     "connection": "Conexión",
     "permission-denied": "Permiso denegado",
-    "resource": "Recurso"
+    "resource": "Recurso",
+    "closed": "Cerrado",
+    "options": "Opciones",
+    "reset": "Reiniciar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -390,7 +393,9 @@
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados",
-      "enable": "Habilitar la migración en línea"
+      "enable": "Habilitar la migración en línea",
+      "disable": "Deshabilitar la migración en línea",
+      "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
     "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
   },
@@ -983,12 +988,14 @@
         "cancel": "¿Cancelar todo el incidencia?",
         "reopen": "¿Reabrir incidencia?",
         "title": "{action} {type} [{name}]?",
-        "action-to-stage": "{action} etapa ({n} tareas)"
+        "action-to-stage": "{action} etapa ({n} tareas)",
+        "close": "¿Cerrar el problema?"
       },
       "dropdown": {
         "resolve": "Resolver incidencia",
         "cancel": "Cancelar incidencia",
-        "reopen": "Reabrir incidencia"
+        "reopen": "Reabrir incidencia",
+        "close": "Cerrar problema"
       },
       "form": {
         "note": "Nota",
@@ -1134,7 +1141,9 @@
       "reopen": "Reabrir",
       "reopened": "reabierto",
       "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",
-      "successfully-updated-n-issues": "Incidencia actualizada correctamente {n} | Incidencias actualizadas correctamente {n}"
+      "successfully-updated-n-issues": "Incidencia actualizada correctamente {n} | Incidencias actualizadas correctamente {n}",
+      "closed": "cerrado",
+      "close": "Cerca"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "El cambio se aplicará a todas las tareas",
@@ -1235,9 +1244,16 @@
         "affected-rows": "Filas afectadas",
         "entry-type": {
           "command-execute": "ejecutar comando",
-          "schema-dump": "Volcado de esquema"
+          "schema-dump": "Volcado de esquema",
+          "task-run-status-update": "Actualización de estado",
+          "transaction-control": "Control de transacciones",
+          "database-sync": "Sincronización de base de datos"
         },
-        "affected-rows-n": "Filas afectadas: {n}"
+        "affected-rows-n": "Filas afectadas: {n}",
+        "status-update": {
+          "waiting": "Listo para ser ejecutado",
+          "running": "Ser ejecutado"
+        }
       }
     },
     "sql-review": {
@@ -1801,6 +1817,7 @@
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
       "self": "Clasificación",
+      "description": "Utilice la clasificación de datos para administrar la política de enmascaramiento para muchas columnas controlando solo una pequeña cantidad de clasificaciones.",
       "sync-from-comment": "Sincronizar clasificación desde comentario",
       "sync-from-comment-tip": "Una vez habilitada, la clasificación se sincronizará desde el comentario de tabla/columna. El comentario debe seguir el formato \"{format}\".",
       "sync-from-comment-enable-warning": "La clasificación cambiará con el DDL y se sincronizará con el comentario original.",
@@ -2141,6 +2158,7 @@
     "selectors": "Selectores",
     "add-stage": "Agregar etapa",
     "confirm-to-revert": "¿Confirmar para revertir la edición?",
+    "confirm-to-reset": "¿Confirmar el restablecimiento de los valores predeterminados?",
     "name-placeholder": "Nombre de la etapa...",
     "error": {
       "at-least-one-stage": "Al menos 1 etapa",
@@ -2215,6 +2233,7 @@
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
     "connection-string-schema": "Esquema de cadena de conexión",
+    "connection-type": "Tipo de conección",
     "additional-node-addresses": "Direcciones de nodos adicionales",
     "replica-set": "Conjunto de réplicas",
     "admin": "Admin",
@@ -2239,6 +2258,7 @@
     "search-databases": "Buscar bases de datos",
     "search-results": "Resultados de búsqueda",
     "loading-databases": "Cargando bases de datos...",
+    "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "close-pane": "Cerrar panel",
     "loading-data": "Cargando datos...",
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
@@ -2298,7 +2318,12 @@
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
     "tab-mode": {
       "readonly": "Solo lectura",
-      "admin": "Admin"
+      "admin": "Admin",
+      "standard": "Estándar",
+      "description": {
+        "standard": "Permitir declaraciones DDL y DML.",
+        "readonly": "Permitir declaraciones SELECT, SHOW y SET."
+      }
     },
     "close-sheet": "Cerrar hoja",
     "connect": "Conectar",
@@ -2332,7 +2357,8 @@
     "batch-query": {
       "batch": "Lote",
       "select-database": "Seleccione la base de datos a continuación",
-      "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
+      "description": "Consulta por lotes {count} bases de datos adicionales en {project}.",
+      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
     "executing-query": "Ejecutando consulta",
     "request-query": "Solicitar consulta",
@@ -2362,7 +2388,19 @@
     },
     "n-per-page": "{n} / página",
     "customize-tree-structure": "Personalizar la estructura del árbol",
-    "will-override-current-editing-statement": "Anulará la declaración de edición actual."
+    "will-override-current-editing-statement": "Anulará la declaración de edición actual.",
+    "standard-mode": {
+      "self": "Modo estandar"
+    },
+    "to-enable-standard-mode": "para habilitar el modo estándar",
+    "add-a-new-instance": "Agregar una nueva instancia",
+    "web-socket": {
+      "errors": {
+        "title": "La conexión WebSocket falló",
+        "description": "La finalización automática puede estar limitada o deshabilitada.",
+        "disconnected": "WebSocket desconectado"
+      }
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2766,9 +2804,11 @@
   "sql-review": {
     "title": "Revisión de SQL",
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
-    "disabled": "Deshabilitado",
+    "disabled": "La revisión de SQL está deshabilitada",
     "no-policy-set": "Sin política de revisión de SQL",
     "create-policy": "Crear política",
+    "select-review": "Seleccione revisión SQL",
+    "select-review-label": "Puede adjuntar una política de revisión de SQL existente al recurso o {create}.",
     "duplicate-policy": "Duplicar política de revisión de SQL",
     "configure-policy": "Configurar política",
     "policy-removed": "La política de revisión se eliminó correctamente.",
@@ -2777,6 +2817,8 @@
     "policy-updated": "La política de revisión se actualizó correctamente.",
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
+    "add-rules": "Agregar reglas",
+    "add-or-remove-rules": "Agregar o eliminar reglas",
     "filter": "Filtro",
     "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
     "disable": "Deshabilitar",
@@ -2786,7 +2828,14 @@
     "not-available-for-free": "La regla no está disponible para {plan}",
     "unlock-full-feature": "Desbloquear más de 100 reglas de validación de SQL",
     "search-by-name": "Buscar por nombre",
-    "no-linked-resources": "No hay recursos vinculados",
+    "attach-resource": {
+      "no-linked-resources": "Sin recursos adjuntos",
+      "change-resources": "Cambiar recursos adjuntos",
+      "self": "Adjuntar a recursos",
+      "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
+      "label-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
+      "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno."
+    },
     "create": {
       "breadcrumb": "Crear política de revisión SQL",
       "basic-info": {
@@ -2795,10 +2844,6 @@
         "display-name-placeholder": "El nombre de la política de revisión",
         "display-name-default": "Política de revisión SQL",
         "display-name-label": "Un nombre para mostrar que ayuda a identificar entre diferentes políticas de revisión.",
-        "attach-resource": "Adjuntar al recurso",
-        "attach-resource-label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
-        "attach-resource-info-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
-        "attach-resource-info-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno.",
         "choose-template": "Elegir plantilla"
       },
       "configure-rule": {
@@ -2865,7 +2910,8 @@
       "select-type": "Seleccionar tipo",
       "method": "Método",
       "request": "Pedido",
-      "response": "Respuesta"
+      "response": "Respuesta",
+      "status": "Estatus"
     },
     "type": {
       "workspace": {
@@ -3358,6 +3404,10 @@
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
+    "multitenancy": {
+      "self": "Multi Alquiler",
+      "description": "Permite gestionar múltiples bases de datos homogéneas en un flujo de trabajo entre diferentes inquilinos."
+    },
     "condition": {
       "self": "Condición"
     },

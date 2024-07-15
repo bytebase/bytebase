@@ -3,7 +3,7 @@
     :column-list="COLUMNS"
     :data-source="composedSlowQueryPolicyList"
     :row-clickable="false"
-    :row-key="(item: ComposedSlowQueryPolicy) => item.instance.uid"
+    :row-key="(item: ComposedSlowQueryPolicy) => item.instance.name"
     class="border"
   >
     <template #item="{ item }: { item: ComposedSlowQueryPolicy }">

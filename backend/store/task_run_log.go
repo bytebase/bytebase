@@ -2,18 +2,26 @@ package store
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type TaskRunLog struct {
 	T       time.Time
 	Payload *storepb.TaskRunLog
+}
+
+func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Time, e *storepb.TaskRunLog) {
+	if err := s.CreateTaskRunLog(ctx, taskRunUID, t, e); err != nil {
+		slog.Error("failed to create task run log", log.BBError(err))
+	}
 }
 
 func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, e *storepb.TaskRunLog) error {

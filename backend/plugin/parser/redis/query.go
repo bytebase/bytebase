@@ -27,6 +27,7 @@ var readCommands = map[string]bool{
 	"scan":          true,
 	"scard":         true,
 	"sdiff":         true,
+	"select":        true,
 	"sismember":     true,
 	"smembers":      true,
 	"sunion":        true,

@@ -15,7 +15,12 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
+import {
+  emptyIssue,
+  isValidProjectName,
+  TaskTypeListWithStatement,
+  UNKNOWN_ID,
+} from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
@@ -65,7 +70,7 @@ export const createIssueSkeleton = async (
   );
   const databaseIdList = (query.databaseList ?? "").split(",");
   const databaseUIDList = await prepareDatabaseUIDList(databaseIdList);
-  await prepareDatabaseList(databaseUIDList, project.uid);
+  await prepareDatabaseList(databaseUIDList, project.name);
 
   const params: CreateIssueParams = {
     databaseUIDList,
@@ -139,23 +144,11 @@ export const buildPlan = async (params: CreateIssueParams) => {
       query.changelist,
       params
     );
-  } else if (query.batch === "1") {
-    // in tenant mode, all specs share a unique sheet
-    const sheetUID = nextUID();
-    // build tenant plan
-    if (databaseUIDList.length === 0) {
-      // evaluate DeploymentConfig and generate steps/specs
-      if (query.databaseGroupName) {
-        plan.steps = await buildStepsForDatabaseGroup(
-          params,
-          query.databaseGroupName
-        );
-      } else {
-        plan.steps = await buildStepsViaDeploymentConfig(params, sheetUID);
-      }
-    } else {
-      plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
-    }
+  } else if (query.databaseGroupName) {
+    plan.steps = await buildStepsForDatabaseGroup(
+      params,
+      query.databaseGroupName
+    );
   } else {
     // build standard plan
     // Use dedicated sheets if sqlMap is specified.
@@ -227,24 +220,6 @@ export const buildStepsForDatabaseGroup = async (
     extractSheetUID(sheet.name)
   );
   const step = Plan_Step.fromJSON({
-    specs: [spec],
-  });
-  return [step];
-};
-
-export const buildStepsViaDeploymentConfig = async (
-  params: CreateIssueParams,
-  sheetUID: string
-) => {
-  const { project } = params;
-  const spec = await buildSpecForTarget(
-    `${project.name}/deploymentConfigs/default`,
-    params,
-    sheetUID
-  );
-  maybeSetInitialSQLForSpec(spec, "", params);
-  maybeSetInitialDatabaseConfigForSpec(spec, params);
-  const step = Plan_Step.fromPartial({
     specs: [spec],
   });
   return [step];
@@ -512,16 +487,16 @@ const hasInitialSQL = (initialSQL?: InitialSQL) => {
 
 export const prepareDatabaseList = async (
   databaseUIDList: string[],
-  projectUID: string
+  projectName: string
 ) => {
   const databaseStore = useDatabaseV1Store();
-  if (projectUID && projectUID !== String(UNKNOWN_ID)) {
+  if (isValidProjectName(projectName)) {
     // For preparing the database if user visits creating issue url directly.
     // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
     // is big (100+ sometimes)
     // So we are fetching databaseList by project since that's better cached.
     const project =
-      await useProjectV1Store().getOrFetchProjectByUID(projectUID);
+      await useProjectV1Store().getOrFetchProjectByName(projectName);
     await prepareDatabaseListByProject(project.name);
   } else {
     // Otherwise, we don't have the projectUID (very rare to see, theoretically)

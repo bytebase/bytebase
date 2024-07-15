@@ -40,7 +40,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, isValidInstanceName } from "@/types";
 import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
 import { SettingButton } from "../../Setting";
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
@@ -71,7 +71,7 @@ const { props: buttonProps, style: buttonStyle } = useButton({
 });
 
 const isSchemalessInstance = computed(() => {
-  if (instance.value.uid === String(UNKNOWN_ID)) {
+  if (!isValidInstanceName(instance.value.name)) {
     return false;
   }
 

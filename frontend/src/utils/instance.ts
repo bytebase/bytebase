@@ -1,7 +1,8 @@
-import { keyBy } from "lodash-es";
 import { computed, unref } from "vue";
-import type { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
-import type { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
+import type {
+  InstanceResource,
+  Instance as InstanceV1,
+} from "@/types/proto/v1/instance_service";
 import type {
   EngineType,
   Environment,
@@ -65,21 +66,6 @@ export function sortInstanceList(
   });
 }
 
-// Sort the list to put prod items first.
-export function sortInstanceListByEnvironmentV1(
-  list: Instance[],
-  environmentList: EnvironmentV1[]
-): Instance[] {
-  const environmentMap = keyBy(environmentList, (env) => env.uid);
-
-  return list.sort((a, b) => {
-    const aEnvOrder = environmentMap[String(a.environment.id)]?.order ?? -1;
-    const bEnvOrder = environmentMap[String(b.environment.id)]?.order ?? -1;
-
-    return bEnvOrder - aEnvOrder;
-  });
-}
-
 export const useInstanceEditorLanguage = (
   instance: MaybeRef<Instance | undefined>
 ) => {
@@ -89,7 +75,7 @@ export const useInstanceEditorLanguage = (
 };
 
 export const useInstanceV1EditorLanguage = (
-  instance: MaybeRef<InstanceV1 | undefined>
+  instance: MaybeRef<InstanceV1 | InstanceResource | undefined>
 ) => {
   return computed((): Language => {
     return languageOfEngineV1(unref(instance)?.engine);

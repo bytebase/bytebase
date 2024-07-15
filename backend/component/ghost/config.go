@@ -61,9 +61,6 @@ type UserFlags struct {
 	assumeRBR                     *bool
 	heartbeatIntervalMillis       *int64
 	niceRatio                     *float64
-	aliyunRDS                     *bool
-	azure                         *bool
-	gcp                           *bool
 }
 
 var knownKeys = map[string]bool{
@@ -79,9 +76,6 @@ var knownKeys = map[string]bool{
 	"assume-rbr":                       true,
 	"heartbeat-interval-millis":        true,
 	"nice-ratio":                       true,
-	"aliyun-rds":                       true,
-	"azure":                            true,
-	"gcp":                              true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -179,27 +173,6 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 		}
 		f.niceRatio = &niceRatio
 	}
-	if v, ok := flags["aliyun-rds"]; ok {
-		aliyunRDS, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert aliyun-rds %q to bool", v)
-		}
-		f.aliyunRDS = &aliyunRDS
-	}
-	if v, ok := flags["azure"]; ok {
-		azure, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert azure %q to bool", v)
-		}
-		f.azure = &azure
-	}
-	if v, ok := flags["gcp"]; ok {
-		gcp, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert gcp %q to bool", v)
-		}
-		f.gcp = &gcp
-	}
 	return f, nil
 }
 
@@ -213,7 +186,7 @@ func GetPostponeFlagFilename(taskID int, taskCreatedTs int64, databaseID int, da
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
@@ -276,9 +249,7 @@ func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, d
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
 	migrationContext.ServeSocketFile = getSocketFilename(taskID, taskCreatedTs, database.UID, database.DatabaseName, tableName)
-	migrationContext.DropServeSocket = true
 	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID, taskCreatedTs, database.UID, database.DatabaseName, tableName)
-	migrationContext.InitiallyDropGhostTable = true
 	migrationContext.TimestampOldTable = defaultConfig.timestampOldTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(defaultConfig.heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(defaultConfig.niceRatio)
@@ -340,15 +311,10 @@ func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, d
 	if v := userFlags.niceRatio; v != nil {
 		migrationContext.SetNiceRatio(*v)
 	}
-	if v := userFlags.aliyunRDS; v != nil {
-		migrationContext.AliyunRDS = *v
-	}
-	if v := userFlags.azure; v != nil {
-		migrationContext.AzureMySQL = *v
-	}
-	if v := userFlags.gcp; v != nil {
-		migrationContext.GoogleCloudPlatform = *v
-	}
+	// Uses specified port. GCP, Aliyun, Azure are equivalent here.
+	migrationContext.GoogleCloudPlatform = true
+
+	migrationContext.ForceTmpTableName = tableName + tmpTableNameSuffix
 
 	if migrationContext.SwitchToRowBinlogFormat && migrationContext.AssumeRBR {
 		return nil, errors.Errorf("switchToRBR and assumeRBR are mutually exclusive")

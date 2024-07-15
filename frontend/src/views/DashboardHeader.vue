@@ -10,7 +10,7 @@
       >
         <div class="min-w-[8rem] text-left">
           <ProjectNameCell
-            v-if="project.uid !== `${UNKNOWN_ID}`"
+            v-if="isValidProjectName(project.name)"
             mode="ALL_SHORT"
             :project="project"
           />
@@ -113,7 +113,7 @@ import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { useLanguage } from "../composables/useLanguage";
-import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "../types";
+import { isValidProjectName } from "../types";
 
 interface LocalState {
   showQRCodeModal: boolean;
@@ -154,7 +154,7 @@ const hasGetSettingPermission = computed(() => {
 });
 
 const sqlEditorLink = computed(() => {
-  if (project.value.name !== UNKNOWN_PROJECT_NAME) {
+  if (isValidProjectName(project.value.name)) {
     return router.resolve({
       name: SQL_EDITOR_PROJECT_MODULE,
       params: {

@@ -117,24 +117,27 @@ func transformDatabaseGroupTargetToSteps(ctx context.Context, s *store.Store, sp
 		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
 	}
 
-	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list environments")
+		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}
-
-	dbByEnv := map[string][]*store.DatabaseMessage{}
-	for _, db := range matchedDatabases {
-		dbByEnv[db.EffectiveEnvironmentID] = append(dbByEnv[db.EffectiveEnvironmentID], db)
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
+		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
+	}
+	// Calculate the matrix of databases based on the deployment schedule.
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, matchedDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 	}
 
 	var steps []*storepb.PlanConfig_Step
-	for _, env := range environments {
-		databases := dbByEnv[env.ResourceID]
+	for i, databases := range matrix {
 		if len(databases) == 0 {
 			continue
 		}
+
 		step := &storepb.PlanConfig_Step{
-			Title: env.Title,
+			Title: deploymentConfig.Schedule.Deployments[i].Name,
 		}
 		for _, database := range databases {
 			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
@@ -164,7 +167,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *s
 
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, licenseService, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
@@ -174,7 +177,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *s
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
@@ -227,13 +230,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		labelsJSON, err := convertDatabaseLabels(c.Labels)
 		if err != nil {
 			return nil, errors.Wrapf(err, "invalid database label %q", c.Labels)
-		}
-
-		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-		if project.TenantMode == api.TenantModeTenant {
-			if err := licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
-				return nil, err
-			}
 		}
 
 		// Get admin data source username.
@@ -325,15 +321,11 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	// 2. projects/{project}/databaseGroups/{databaseGroup}
-	// 3. projects/{project}/deploymentConfigs/{deploymentConfig}
 	if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
 		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
 	}
 	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
 		return nil, nil, errors.Errorf("unexpected database group target %q", c.Target)
-	}
-	if _, _, err := common.GetProjectIDDeploymentConfigID(c.Target); err == nil {
-		return nil, nil, errors.Errorf("unexpected deployment config target %q", c.Target)
 	}
 
 	return nil, nil, errors.Errorf("unknown target %q", c.Target)
@@ -669,7 +661,6 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		// query: CREATE DATABASE h1 WITH OWNER hello;
 		// ERROR:  must be member of role "hello"
 		//
-		// For tenant project, the schema for the newly created database will belong to the same owner.
 		// TODO(d): alter schema "public" owner to the database owner.
 		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
 	case storepb.Engine_CLICKHOUSE:

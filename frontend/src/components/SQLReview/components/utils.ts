@@ -1,68 +1,64 @@
-import { groupBy, cloneDeep } from "lodash-es";
 import type {
   RuleConfigComponent,
-  RuleTemplate,
+  RuleTemplateV2,
   SQLReviewPolicy,
-  IndividualConfigForEngine,
 } from "@/types";
-import { convertPolicyRuleToRuleTemplate, TEMPLATE_LIST } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { convertPolicyRuleToRuleTemplate, ruleTemplateMapV2 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { PayloadForEngine } from "./RuleConfigComponents";
+import type { PayloadValueType } from "./RuleConfigComponents";
+
+export const getRuleKey = (rule: RuleTemplateV2) =>
+  `${rule.engine}:${rule.type}`;
+
+export const getTemplateId = (review: SQLReviewPolicy) =>
+  `bb.sql-review.${review.id}`;
 
 export const rulesToTemplate = (
   review: SQLReviewPolicy,
-  withDisabled = false
+  withDisabled: boolean
 ) => {
-  const ruleTemplateList: RuleTemplate[] = [];
-  const ruleTemplateMap: Map<string, RuleTemplate> = TEMPLATE_LIST.reduce(
-    (map, template) => {
-      for (const rule of template.ruleList) {
-        map.set(rule.type, rule);
-      }
-      return map;
-    },
-    new Map<string, RuleTemplate>()
-  );
+  const ruleTemplateList: RuleTemplateV2[] = [];
+  const usedRule = new Set<string>();
 
-  const groupByRule = groupBy(review.ruleList, (rule) => rule.type);
-
-  for (const [type, ruleList] of Object.entries(groupByRule)) {
-    const rule = ruleTemplateMap.get(type);
-    if (!rule) {
+  for (const rule of review.ruleList) {
+    const ruleTemplate = ruleTemplateMapV2.get(rule.engine)?.get(rule.type);
+    if (!ruleTemplate) {
       continue;
     }
-    if (rule.level === SQLReviewRuleLevel.DISABLED && !withDisabled) {
-      continue;
-    }
-    const data = convertPolicyRuleToRuleTemplate(ruleList, rule);
+
+    usedRule.add(`${rule.engine}-${rule.type}`);
+    const data = convertPolicyRuleToRuleTemplate(rule, ruleTemplate);
     if (data) {
       ruleTemplateList.push(data);
     }
   }
 
   if (withDisabled) {
-    for (const rule of ruleTemplateMap.values()) {
-      ruleTemplateList.push({
-        ...rule,
-        level: SQLReviewRuleLevel.DISABLED,
-      });
+    for (const map of ruleTemplateMapV2.values()) {
+      for (const rule of map.values()) {
+        if (usedRule.has(`${rule.engine}-${rule.type}`)) {
+          continue;
+        }
+        ruleTemplateList.push({
+          ...rule,
+          level: SQLReviewRuleLevel.DISABLED,
+        });
+      }
     }
   }
 
   return {
-    id: `bb.sql-review.${review.id}`,
+    id: getTemplateId(review),
     review,
     ruleList: ruleTemplateList,
   };
 };
 
 export const payloadValueListToComponentList = (
-  rule: RuleTemplate,
-  data: PayloadForEngine
+  rule: RuleTemplateV2,
+  data: PayloadValueType[]
 ) => {
-  const allEnginePayload = data.get(Engine.ENGINE_UNSPECIFIED) || [];
-  const componentList = rule.componentList.reduce<RuleConfigComponent[]>(
+  return rule.componentList.reduce<RuleConfigComponent[]>(
     (list, component, index) => {
       switch (component.payload.type) {
         case "STRING_ARRAY":
@@ -70,7 +66,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: allEnginePayload[index] as string[],
+              value: data[index] as string[],
             },
           });
           break;
@@ -79,7 +75,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: allEnginePayload[index] as number,
+              value: data[index] as number,
             },
           });
           break;
@@ -88,7 +84,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: allEnginePayload[index] as boolean,
+              value: data[index] as boolean,
             },
           });
           break;
@@ -97,7 +93,7 @@ export const payloadValueListToComponentList = (
             ...component,
             payload: {
               ...component.payload,
-              value: allEnginePayload[index] as string,
+              value: data[index] as string,
             },
           });
           break;
@@ -106,24 +102,4 @@ export const payloadValueListToComponentList = (
     },
     []
   );
-
-  const individualConfigList: IndividualConfigForEngine[] = [];
-  for (const individualConfig of rule.individualConfigList) {
-    const payloadList = data.get(individualConfig.engine) ?? [];
-    const payload = cloneDeep(individualConfig.payload);
-
-    for (const [index, component] of rule.componentList.entries()) {
-      payload[component.key] = {
-        default: payload[component.key].default,
-        value: payloadList[index],
-      };
-    }
-
-    individualConfigList.push({
-      engine: individualConfig.engine,
-      payload,
-    });
-  }
-
-  return { componentList, individualConfigList };
 };

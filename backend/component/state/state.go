@@ -12,13 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DefaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
-const DefaultInstanceMaximumConnections = 10
+// defaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
+const defaultInstanceMaximumConnections = 10
 
 // State is the state for all in-memory states within the server.
 type State struct {
-	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
-	InstanceSyncs sync.Map // map[instance.ID]*store.InstanceMessage
 	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
 	InstanceSlowQuerySyncChan chan *InstanceSlowQuerySyncMessage
 
@@ -43,7 +41,7 @@ type State struct {
 	// RunningPlanChecks is the set of running plan checks.
 	RunningPlanChecks sync.Map
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
-	InstanceOutstandingConnections map[int]int
+	InstanceOutstandingConnections *connectionLimiter
 
 	// IssueExternalApprovalRelayCancelChan cancels the external approval from relay for issue issueUID.
 	IssueExternalApprovalRelayCancelChan chan int
@@ -51,16 +49,12 @@ type State struct {
 	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
 	TaskSkippedOrDoneChan chan int
 
-	// InstanceSyncTickleChan is the tickler for syncing instances.
-	InstanceSyncTickleChan chan int
 	// PlanCheckTickleChan is the tickler for plan check scheduler.
 	PlanCheckTickleChan chan int
 	// TaskRunTickleChan is the tickler for task run scheduler.
 	TaskRunTickleChan chan int
 
 	ExpireCache *lru.Cache[string, bool]
-
-	sync.Mutex
 }
 
 func New() (*State, error) {
@@ -70,10 +64,9 @@ func New() (*State, error) {
 	}
 	return &State{
 		InstanceSlowQuerySyncChan:            make(chan *InstanceSlowQuerySyncMessage, 100),
-		InstanceOutstandingConnections:       make(map[int]int),
+		InstanceOutstandingConnections:       &connectionLimiter{connections: map[int]int{}},
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
-		InstanceSyncTickleChan:               make(chan int, 1000),
 		PlanCheckTickleChan:                  make(chan int, 1000),
 		TaskRunTickleChan:                    make(chan int, 1000),
 		ExpireCache:                          expireCache,
@@ -94,4 +87,29 @@ type TaskRunExecutionStatus struct {
 	ExecutionStatus v1pb.TaskRun_ExecutionStatus
 	ExecutionDetail *v1pb.TaskRun_ExecutionDetail
 	UpdateTime      time.Time
+}
+
+type connectionLimiter struct {
+	sync.Mutex
+	connections map[int]int
+}
+
+func (c *connectionLimiter) Increment(instanceID, maxConnections int) bool {
+	c.Lock()
+	defer c.Unlock()
+	if maxConnections == 0 {
+		maxConnections = defaultInstanceMaximumConnections
+	}
+
+	if c.connections[instanceID] >= maxConnections {
+		return true
+	}
+	c.connections[instanceID]++
+	return false
+}
+
+func (c *connectionLimiter) Decrement(instanceID int) {
+	c.Lock()
+	defer c.Unlock()
+	c.connections[instanceID]--
 }
