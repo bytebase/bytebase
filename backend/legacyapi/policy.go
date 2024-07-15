@@ -44,8 +44,8 @@ const (
 	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
 	// PolicyTypeRestrictIssueCreationForSQLReview is the policy type for restricting issue creation for SQL review.
 	PolicyTypeRestrictIssueCreationForSQLReview PolicyType = "bb.policy.restrict-issue-creation-for-sql-review"
-	// PolicyTypeProjectIAM is the policy for IAM in the project.
-	PolicyTypeProjectIAM PolicyType = "bb.policy.project-iam"
+	// PolicyTypeIAM is the policy for IAM.
+	PolicyTypeIAM PolicyType = "bb.policy.iam"
 	// PolicyTypeTag is the policy type for resource tags.
 	PolicyTypeTag PolicyType = "bb.policy.tag"
 
@@ -93,6 +93,7 @@ var (
 		PolicyTypeMaskingRule:                       {PolicyResourceTypeWorkspace},
 		PolicyTypeMaskingException:                  {PolicyResourceTypeProject},
 		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace, PolicyResourceTypeProject},
+		PolicyTypeIAM:                               {PolicyResourceTypeWorkspace},
 	}
 )
 

@@ -23,7 +23,7 @@ func validateIAMBinding(binding *storepb.Binding) bool {
 }
 
 // GetUsersByRoleInIAMPolicy gets users in the iam policy.
-func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role api.Role, policy *storepb.ProjectIamPolicy) []*store.UserMessage {
+func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role api.Role, policy *storepb.IamPolicy) []*store.UserMessage {
 	roleFullName := common.FormatRole(role.String())
 	var users []*store.UserMessage
 
@@ -107,7 +107,7 @@ func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier st
 }
 
 // GetUserIAMPolicyBindings return the valid bindings for the user.
-func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.ProjectIamPolicy) []*storepb.Binding {
+func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.IamPolicy) []*storepb.Binding {
 	userIDFullName := common.FormatUserUID(user.ID)
 
 	var bindings []*storepb.Binding
@@ -159,7 +159,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 // getUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
 // the condition of role binding is respected and evaluated with request.time=time.Now().
 // the returned role name should in the roles/{id} format.
-func getUserRoles(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) ([]string, error) {
+func getUserRoles(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) ([]string, error) {
 	var roles []string
 	for _, userRole := range user.Roles {
 		roles = append(roles, common.FormatRole(userRole.String()))
@@ -177,7 +177,7 @@ func getUserRoles(ctx context.Context, stores *store.Store, user *store.UserMess
 }
 
 // See GetUserRoles.
-func GetUserRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[api.Role]bool, error) {
+func GetUserRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) (map[api.Role]bool, error) {
 	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func GetUserRolesMap(ctx context.Context, stores *store.Store, user *store.UserM
 }
 
 // See GetUserRoles. The returned map key format is roles/{role}.
-func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.ProjectIamPolicy) (map[string]bool, error) {
+func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) (map[string]bool, error) {
 	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
 	if err != nil {
 		return nil, err

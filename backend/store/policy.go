@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -16,22 +18,136 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*storepb.ProjectIamPolicy, error) {
+func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*storepb.IamPolicy, error) {
+	resourceType := api.PolicyResourceTypeWorkspace
+	return s.getIamPolicy(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+	})
+}
+
+type UpdateIamPolicyMessage struct {
+	UserUID    int
+	Roles      []api.Role
+	UpdaterUID int
+}
+
+// UpdateWorkspaceIamPolicy will set or remove the member for the workspace role.
+func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamPolicyMessage) (*storepb.IamPolicy, error) {
+	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	roleMap := map[string]bool{}
+	for _, role := range update.Roles {
+		roleMap[common.FormatRole(role.String())] = true
+	}
+
+	member := common.FormatUserUID(update.UserUID)
+
+	for _, binding := range workspaceIamPolicy.Bindings {
+		index := slices.Index(binding.Members, member)
+		if !roleMap[binding.Role] {
+			if index >= 0 {
+				binding.Members = slices.Delete(binding.Members, index, index+1)
+			}
+		} else {
+			if index < 0 {
+				binding.Members = append(binding.Members, member)
+			}
+		}
+
+		delete(roleMap, binding.Role)
+	}
+
+	for role := range roleMap {
+		workspaceIamPolicy.Bindings = append(workspaceIamPolicy.Bindings, &storepb.Binding{
+			Role: role,
+			Members: []string{
+				member,
+			},
+		})
+	}
+
+	policyPayload, err := protojson.Marshal(workspaceIamPolicy)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
+		ResourceType:      api.PolicyResourceTypeWorkspace,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeIAM,
+		InheritFromParent: false,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, update.UpdaterUID); err != nil {
+		return nil, err
+	}
+
+	return s.GetWorkspaceIamPolicy(ctx)
+}
+
+func findBindingByRole(policy *storepb.IamPolicy, role api.Role) *storepb.Binding {
+	r := common.FormatRole(role.String())
+	for _, binding := range policy.Bindings {
+		if binding.Role == r {
+			return binding
+		}
+	}
+	return &storepb.Binding{
+		Role: r,
+	}
+}
+
+func findRolesByUserID(policy *storepb.IamPolicy, userUID int) []api.Role {
+	member := common.FormatUserUID(userUID)
+	roles := []api.Role{}
+	hasWorkspaceRole := false
+
+	for _, binding := range policy.Bindings {
+		roleID, err := common.GetRoleID(binding.Role)
+		if err != nil {
+			slog.Error("cannot get role id", slog.String("role", binding.Role))
+			continue
+		}
+		if roleID == api.WorkspaceMember.String() {
+			continue
+		}
+
+		if slices.Contains(binding.Members, api.AllUsers) || slices.Contains(binding.Members, member) {
+			if strings.HasPrefix(roleID, "workspace") {
+				hasWorkspaceRole = true
+			}
+			roles = append(roles, api.Role(roleID))
+		}
+	}
+	if !hasWorkspaceRole {
+		roles = append(roles, api.WorkspaceMember)
+	}
+	return roles
+}
+
+func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*storepb.IamPolicy, error) {
 	resourceType := api.PolicyResourceTypeProject
-	pType := api.PolicyTypeProjectIAM
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		ResourceUID:  &projectUID,
-		Type:         &pType,
 	})
+}
+
+func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*storepb.IamPolicy, error) {
+	pType := api.PolicyTypeIAM
+	find.Type = &pType
+	policy, err := s.GetPolicyV2(ctx, find)
 	if err != nil {
 		return nil, err
 	}
 	if policy == nil {
-		return &storepb.ProjectIamPolicy{}, nil
+		return &storepb.IamPolicy{}, nil
 	}
 
-	p := &storepb.ProjectIamPolicy{}
+	p := &storepb.IamPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal iam policy")
 	}
@@ -461,7 +577,8 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 				inherit_from_parent = EXCLUDED.inherit_from_parent,
 				payload = EXCLUDED.payload,
 				updated_ts = extract(epoch from now()),
-				row_status = EXCLUDED.row_status
+				row_status = EXCLUDED.row_status,
+				updater_id = EXCLUDED.updater_id
 			RETURNING id
 		`,
 		creatorID,
