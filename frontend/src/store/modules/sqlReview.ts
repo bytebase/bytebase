@@ -109,6 +109,19 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         ];
       }
     },
+    removeResourceForReview(map: Map<string, string[]>) {
+      for (const [configId, resources] of map.entries()) {
+        const reviewPolicy = this.reviewPolicyList.find(
+          (r) => r.id === configId
+        );
+        if (!reviewPolicy) {
+          continue;
+        }
+        reviewPolicy.resources = reviewPolicy.resources.filter(
+          (resource) => !resources.includes(resource)
+        );
+      }
+    },
     async upsertReviewConfigTag({
       oldResources,
       newResources,
