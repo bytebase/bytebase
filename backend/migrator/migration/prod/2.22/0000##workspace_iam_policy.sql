@@ -22,7 +22,7 @@ FROM
 		'roles/'||role AS role,
 		array_agg('users/' || principal_id) AS members
 	FROM member
-	WHERE role IN ('workspaceAdmin', 'workspaceDBA')
+	WHERE role != 'workspaceMember'
 	GROUP BY role
 ) t1
 LEFT JOIN LATERAL (
