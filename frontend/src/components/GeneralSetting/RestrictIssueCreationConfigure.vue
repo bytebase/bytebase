@@ -1,28 +1,22 @@
 <template>
   <div>
-    <NTooltip placement="top-start" :disabled="allowEdit">
-      <template #trigger>
-        <label
-          class="flex items-center gap-x-2"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
-          <NCheckbox
-            :disabled="!allowEdit"
-            :checked="restrictIssueCreationForSQLReview"
-            :label="
-              $t(
-                'settings.general.workspace.restrict-issue-creation-for-sql-review.title'
-              )
-            "
-            @update:checked="handleRestrictIssueCreationForSQLReviewToggle"
-          />
-        </label>
-      </template>
-      <span class="text-sm text-gray-400 -translate-y-2">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
+    <div class="flex items-center gap-x-2">
+      <Switch
+        :value="restrictIssueCreationForSQLReview"
+        :text="true"
+        :disabled="!allowEdit"
+        @update:value="handleRestrictIssueCreationForSQLReviewToggle"
+      />
+      <span class="textlabel">
+        {{
+          $t(
+            "settings.general.workspace.restrict-issue-creation-for-sql-review.title"
+          )
+        }}
       </span>
-    </NTooltip>
-    <div class="mb-3 text-sm text-gray-400">
+      <FeatureBadge feature="bb.feature.access-control" />
+    </div>
+    <div class="mt-1 mb-3 text-sm text-gray-400">
       {{
         $t(
           "settings.general.workspace.restrict-issue-creation-for-sql-review.description"
@@ -33,14 +27,19 @@
 </template>
 
 <script setup lang="ts">
-import { NTooltip, NCheckbox } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification, usePolicyV1Store } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentUserV1,
+  usePolicyV1Store,
+} from "@/store";
 import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   resource: string;
@@ -48,7 +47,16 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const me = useCurrentUserV1();
 const policyV1Store = usePolicyV1Store();
+
+const allowEdit = computed(() => {
+  return (
+    props.allowEdit &&
+    hasWorkspacePermissionV2(me.value, "bb.policies.update") &&
+    hasFeature("bb.feature.access-control")
+  );
+});
 
 watchEffect(async () => {
   await policyV1Store.getOrFetchPolicyByParentAndType({
