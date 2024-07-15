@@ -75,7 +75,10 @@ export const unknownDatabase = (): ComposedDatabase => {
 export const isValidDatabaseName = (name: any): name is string => {
   if (typeof name !== "string") return false;
   const { instanceName, databaseName } = extractDatabaseResourceName(name);
-  return (
-    instanceName !== String(UNKNOWN_ID) && databaseName !== String(UNKNOWN_ID)
+  return Boolean(
+    instanceName &&
+      instanceName !== String(UNKNOWN_ID) &&
+      databaseName &&
+      databaseName !== String(UNKNOWN_ID)
   );
 };
