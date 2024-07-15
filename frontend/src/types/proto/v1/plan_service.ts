@@ -416,6 +416,22 @@ export interface RunPlanChecksRequest {
 export interface RunPlanChecksResponse {
 }
 
+export interface BatchCancelPlanCheckRunsRequest {
+  /**
+   * The name of the parent of the planChecks.
+   * Format: projects/{project}/plans/{plan}
+   */
+  parent: string;
+  /**
+   * The planCheckRuns to cancel.
+   * Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
+   */
+  planCheckRuns: string[];
+}
+
+export interface BatchCancelPlanCheckRunsResponse {
+}
+
 export interface PlanCheckRun {
   /** Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} */
   name: string;
@@ -2820,6 +2836,125 @@ export const RunPlanChecksResponse = {
   },
 };
 
+function createBaseBatchCancelPlanCheckRunsRequest(): BatchCancelPlanCheckRunsRequest {
+  return { parent: "", planCheckRuns: [] };
+}
+
+export const BatchCancelPlanCheckRunsRequest = {
+  encode(message: BatchCancelPlanCheckRunsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    for (const v of message.planCheckRuns) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchCancelPlanCheckRunsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchCancelPlanCheckRunsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.planCheckRuns.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchCancelPlanCheckRunsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      planCheckRuns: globalThis.Array.isArray(object?.planCheckRuns)
+        ? object.planCheckRuns.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BatchCancelPlanCheckRunsRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.planCheckRuns?.length) {
+      obj.planCheckRuns = message.planCheckRuns;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchCancelPlanCheckRunsRequest>): BatchCancelPlanCheckRunsRequest {
+    return BatchCancelPlanCheckRunsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchCancelPlanCheckRunsRequest>): BatchCancelPlanCheckRunsRequest {
+    const message = createBaseBatchCancelPlanCheckRunsRequest();
+    message.parent = object.parent ?? "";
+    message.planCheckRuns = object.planCheckRuns?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseBatchCancelPlanCheckRunsResponse(): BatchCancelPlanCheckRunsResponse {
+  return {};
+}
+
+export const BatchCancelPlanCheckRunsResponse = {
+  encode(_: BatchCancelPlanCheckRunsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchCancelPlanCheckRunsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchCancelPlanCheckRunsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): BatchCancelPlanCheckRunsResponse {
+    return {};
+  },
+
+  toJSON(_: BatchCancelPlanCheckRunsResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchCancelPlanCheckRunsResponse>): BatchCancelPlanCheckRunsResponse {
+    return BatchCancelPlanCheckRunsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<BatchCancelPlanCheckRunsResponse>): BatchCancelPlanCheckRunsResponse {
+    const message = createBaseBatchCancelPlanCheckRunsResponse();
+    return message;
+  },
+};
+
 function createBasePlanCheckRun(): PlanCheckRun {
   return {
     name: "",
@@ -3803,6 +3938,85 @@ export const PlanServiceDefinition = {
               99,
               107,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    batchCancelPlanCheckRuns: {
+      name: "BatchCancelPlanCheckRuns",
+      requestType: BatchCancelPlanCheckRunsRequest,
+      requestStream: false,
+      responseType: BatchCancelPlanCheckRunsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              62,
+              58,
+              1,
+              42,
+              34,
+              57,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              112,
+              108,
+              97,
+              110,
+              115,
+              47,
+              42,
+              125,
+              47,
+              112,
+              108,
+              97,
+              110,
+              67,
+              104,
+              101,
+              99,
+              107,
+              82,
+              117,
+              110,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              67,
+              97,
+              110,
+              99,
+              101,
+              108,
             ]),
           ],
         },
