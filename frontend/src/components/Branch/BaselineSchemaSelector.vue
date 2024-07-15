@@ -13,9 +13,9 @@
       :allowed-engine-type-list="allowedEngineTypeList"
       :environment-name="state.environmentName"
       :project-name="props.projectName"
-      :database="state.databaseId ?? String(UNKNOWN_ID)"
+      :database-name="state.databaseName ?? UNKNOWN_DATABASE_NAME"
       :fallback-option="false"
-      @update:database="handleDatabaseSelect"
+      @update:database-name="handleDatabaseSelect"
     />
   </div>
 </template>
@@ -25,7 +25,11 @@ import { isNull, isUndefined } from "lodash-es";
 import { reactive, watch } from "vue";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import {
+  UNKNOWN_DATABASE_NAME,
+  UNKNOWN_ID,
+  isValidDatabaseName,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps<{
@@ -41,7 +45,7 @@ const emit = defineEmits<{
 
 interface LocalState {
   environmentName?: string;
-  databaseId?: string;
+  databaseName?: string;
 }
 
 const state = reactive<LocalState>({});
@@ -50,28 +54,28 @@ const databaseStore = useDatabaseV1Store();
 watch(
   () => props.projectName,
   () => {
-    const database = isValidId(state.databaseId)
-      ? databaseStore.getDatabaseByUID(state.databaseId)
+    const database = isValidId(state.databaseName)
+      ? databaseStore.getDatabaseByUID(state.databaseName)
       : undefined;
     if (!database || !props.projectName) {
       return;
     }
     if (database.project !== props.projectName) {
       state.environmentName = undefined;
-      state.databaseId = undefined;
+      state.databaseName = undefined;
     }
   }
 );
 
 watch(
-  () => state.databaseId,
+  () => state.databaseName,
   async (databaseId) => {
-    const database = isValidId(state.databaseId)
-      ? databaseStore.getDatabaseByUID(state.databaseId)
+    const database = isValidId(state.databaseName)
+      ? databaseStore.getDatabaseByUID(state.databaseName)
       : undefined;
     try {
       if (database) {
-        state.databaseId = database.uid;
+        state.databaseName = database.uid;
         state.environmentName = database.effectiveEnvironment;
       }
     } catch (error) {
@@ -98,18 +102,18 @@ const isValidId = (id: any): id is string => {
 const handleEnvironmentSelect = (name?: string) => {
   if (name !== state.environmentName) {
     state.environmentName = name;
-    state.databaseId = undefined;
+    state.databaseName = undefined;
   }
 };
 
-const handleDatabaseSelect = (databaseId?: string) => {
-  if (isValidId(databaseId)) {
-    const database = databaseStore.getDatabaseByUID(databaseId);
+const handleDatabaseSelect = (name?: string) => {
+  if (isValidDatabaseName(name)) {
+    const database = databaseStore.getDatabaseByName(name);
     if (!database) {
       return;
     }
     state.environmentName = database.effectiveEnvironment;
-    state.databaseId = databaseId;
+    state.databaseName = name;
   }
 };
 </script>

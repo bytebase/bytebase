@@ -40,13 +40,13 @@
       />
       <DatabaseSelect
         v-if="sourceType === 'DATABASE'"
-        :database="sourceDatabase?.uid"
+        :database-name="sourceDatabase?.name"
         :project-name="project.name"
         :allowed-engine-type-list="headBranch ? [headBranch.engine] : undefined"
         :filter="databaseFilter"
         :loading="isPreparingDatabaseGroups"
         style="width: 100%"
-        @update:database="$emit('update:source-database-uid', $event)"
+        @update:database-name="$emit('update:source-database-name', $event)"
       />
     </div>
   </div>
@@ -77,7 +77,7 @@ defineEmits<{
   (event: "update:source-type", type: RebaseSourceType): void;
   (event: "update:head-branch-name", branch: string | undefined): void;
   (event: "update:source-branch-name", branch: string | undefined): void;
-  (event: "update:source-database-uid", uid: string | undefined): void;
+  (event: "update:source-database-name", uid: string | undefined): void;
 }>();
 
 const referencedDatabase = computed(() => {

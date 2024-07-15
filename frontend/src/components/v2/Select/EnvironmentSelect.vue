@@ -16,7 +16,7 @@
 <script lang="tsx" setup>
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, h, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -42,7 +42,6 @@ const props = withDefaults(
     environmentNames: undefined,
     includeArchived: false,
     showProductionIcon: true,
-    useResourceId: false,
     multiple: false,
     filter: () => true,
     renderSuffix: (environment: string) => "",
@@ -120,12 +119,22 @@ const options = computed(() => {
 
 const renderLabel = (option: SelectOption) => {
   const { environment } = option as EnvironmentSelectOption;
-  return h(EnvironmentV1Name, {
-    environment,
-    showIcon: props.showProductionIcon,
-    link: false,
-    suffix: props.renderSuffix(environment.name),
-  });
+
+  return (
+    <EnvironmentV1Name
+      environment={environment}
+      showIcon={props.showProductionIcon}
+      link={false}
+    >
+      {{
+        suffix: () => (
+          <span class="opacity-60 ml-1">
+            {props.renderSuffix(environment.name)}
+          </span>
+        ),
+      }}
+    </EnvironmentV1Name>
+  );
 };
 
 const filterByName = (pattern: string, option: SelectOption) => {

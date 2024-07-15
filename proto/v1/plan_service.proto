@@ -56,6 +56,14 @@ service PlanService {
     };
     option (google.api.method_signature) = "name";
   }
+
+  rpc BatchCancelPlanCheckRuns(BatchCancelPlanCheckRunsRequest) returns (BatchCancelPlanCheckRunsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+  }
 }
 
 message GetPlanRequest {
@@ -324,6 +332,17 @@ message RunPlanChecksRequest {
 }
 
 message RunPlanChecksResponse {}
+
+message BatchCancelPlanCheckRunsRequest {
+  // The name of the parent of the planChecks.
+  // Format: projects/{project}/plans/{plan}
+  string parent = 1;
+  // The planCheckRuns to cancel.
+  // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
+  repeated string plan_check_runs = 2;
+}
+
+message BatchCancelPlanCheckRunsResponse {}
 
 message PlanCheckRun {
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
