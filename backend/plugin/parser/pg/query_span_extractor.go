@@ -25,6 +25,10 @@ const (
 	generateSeries     = "generate_series"
 	generateSubscripts = "generate_subscripts"
 	unnest             = "unnest"
+	jsonbEach          = "jsonb_each"
+	jsonEach           = "json_each"
+	jsonbEachText      = "jsonb_each_text"
+	jsonEachText       = "json_each_text"
 )
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
@@ -216,7 +220,7 @@ func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeF
 	return base.NewPseudoTable(node.RangeFunction.Alias.Aliasname, columns), nil
 }
 
-func (*querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.Node_RangeFunction, funcName string, args []*pgquery.Node) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.Node_RangeFunction, funcName string, args []*pgquery.Node) (*base.PseudoTable, error) {
 	// TODO(parser): We may need to consider the masking here, for example: SELECT * FROM issue LEFT JOIN LATERAL jsonb_to_recordset(issue.payload->'approval'->'approvers') as x(status text, "principalId" int) ON TRUE.
 
 	// The function we can handle easily do not need the explicit alias clause.
@@ -250,6 +254,55 @@ func (*querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.No
 			})
 		}
 		return table, nil
+	case jsonbEach, jsonEach, jsonbEachText, jsonEachText:
+		// Should be only called while jsonb_each act as table source.
+		// SELECT * FROM json_test, jsonb_each(jb) AS hh(key, value) WHERE id = 1;
+		tableName := ""
+		columns := []string{"key", "value"}
+		if node.RangeFunction.Alias != nil {
+			tableName = node.RangeFunction.Alias.Aliasname
+			var aliasColumns []string
+			for _, columnName := range node.RangeFunction.Alias.Colnames {
+				name := columnName.GetString_().Sval
+				aliasColumns = append(aliasColumns, name)
+			}
+			if len(aliasColumns) > 0 {
+				columns = aliasColumns
+			}
+		}
+		if len(args) == 0 {
+			return nil, errors.Errorf("Unexpected empty args for function %s", funcName)
+		}
+		fieldArg := args[0]
+		fieldArgColumnRef, ok := fieldArg.Node.(*pgquery.Node_ColumnRef)
+		if !ok {
+			return nil, errors.Errorf("unexpected first arg type %+v for function %s", fieldArg.Node, funcName)
+		}
+		columnNameDef, err := pgrawparser.ConvertNodeListToColumnNameDef(fieldArgColumnRef.ColumnRef.Fields)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert node list to column name def")
+		}
+		schema, table, column := extractSchemaTableColumnName(columnNameDef)
+		set, ok := q.getFieldColumnSource(schema, table, column)
+		if !ok {
+			return nil, &parsererror.ResourceNotFoundError{
+				Err:    errors.Errorf("Cannot find field in function %s", funcName),
+				Schema: &schema,
+				Table:  &table,
+				Column: &column,
+			}
+		}
+		tableSource := &base.PseudoTable{
+			Name:    tableName,
+			Columns: []base.QuerySpanResult{},
+		}
+		for _, column := range columns {
+			tableSource.Columns = append(tableSource.Columns, base.QuerySpanResult{
+				Name:          column,
+				SourceColumns: set,
+			})
+		}
+		return tableSource, nil
 	}
 
 	if node.RangeFunction.Alias == nil {
@@ -1037,8 +1090,27 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 			return base.SourceColumnSet{}, err
 		}
 		schema, table, column := extractSchemaTableColumnName(columnNameDef)
-		sources, ok := q.getFieldColumnSource(schema, table, column)
-		if !ok {
+		sources, columnSourceOk := q.getFieldColumnSource(schema, table, column)
+		// The column ref in function call can be record type, such as row_to_json.
+		if !columnSourceOk {
+			if schema == "" {
+				tableSource, err := q.findTableInFrom(table, column)
+				if err != nil || tableSource == nil {
+					return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+						Err:      errors.New("cannot find the column ref"),
+						Database: &q.connectedDB,
+						Schema:   &schema,
+						Table:    &table,
+						Column:   &column,
+					}
+				}
+				querySpanResult := tableSource.GetQuerySpanResult()
+				result := make(base.SourceColumnSet)
+				for _, span := range querySpanResult {
+					result, _ = base.MergeSourceColumnSet(result, span.SourceColumns)
+				}
+				return result, nil
+			}
 			return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
 				Err:      errors.New("cannot find the column ref"),
 				Database: &q.connectedDB,
@@ -1231,6 +1303,37 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 	}
 
 	return base.SourceColumnSet{}, false
+}
+
+func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string) (base.TableSource, error) {
+	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
+	//
+	//  with tt2 as (
+	//    with tt2 as (select * from t)
+	//    select max(a) from tt2)
+	//  select * from tt2
+	//
+	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
+	// This is the reason we loop the slice in reversed order.
+	if schemaName == "" {
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			table := q.ctes[i]
+			if table.Name == tableName {
+				return table, nil
+			}
+		}
+	}
+
+	for i := len(q.tableSourcesFrom) - 1; i >= 0; i-- {
+		tableSource := q.tableSourcesFrom[i]
+		emptySchemaNameMatch := schemaName == "" && (tableSource.GetSchemaName() == "" || tableSource.GetSchemaName() == "public") && tableName == tableSource.GetTableName()
+		nonEmptySchemaNameMatch := schemaName != "" && tableSource.GetSchemaName() == schemaName && tableName == tableSource.GetTableName()
+		if emptySchemaNameMatch || nonEmptySchemaNameMatch {
+			return tableSource, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string) (base.TableSource, error) {
