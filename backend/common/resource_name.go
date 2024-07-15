@@ -320,6 +320,23 @@ func GetProjectIDPlanID(name string) (string, int64, error) {
 	return tokens[0], planID, nil
 }
 
+// GetProjectIDPlanIDPlanCheckRunID returns the project ID, plan ID and plan check run ID from a resource name.
+func GetProjectIDPlanIDPlanCheckRunID(name string) (string, int, int, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, PlanPrefix, PlanCheckRunPrefix)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	planID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, 0, errors.Errorf("invalid plan ID %q", tokens[1])
+	}
+	planCheckRunID, err := strconv.Atoi(tokens[2])
+	if err != nil {
+		return "", 0, 0, errors.Errorf("invalid plan check run ID %q", tokens[2])
+	}
+	return tokens[0], planID, planCheckRunID, nil
+}
+
 // GetProjectIDRolloutID returns the project ID and rollout ID from a resource name.
 func GetProjectIDRolloutID(name string) (string, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix)
