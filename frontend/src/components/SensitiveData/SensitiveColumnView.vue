@@ -36,8 +36,8 @@
           :include-all="true"
           :project-name="state.selectedProjectName"
           :instance-name="state.selectedInstanceName"
-          :database="state.selectedDatabaseUid"
-          @update:database="onDatabaseSelect($event)"
+          :database-name="state.selectedDatabaseName"
+          @update:database-name="onDatabaseSelect($event)"
         />
       </NInputGroup>
       <NButton
@@ -149,6 +149,8 @@ import {
   isValidProjectName,
   isValidEnvironmentName,
   isValidInstanceName,
+  UNKNOWN_DATABASE_NAME,
+  isValidDatabaseName,
 } from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
@@ -171,7 +173,7 @@ interface LocalState {
   selectedEnvironmentName: string;
   selectedProjectName: string;
   selectedInstanceName: string;
-  selectedDatabaseUid: string;
+  selectedDatabaseName: string;
   showFeatureModal: boolean;
   isLoading: boolean;
   sensitiveColumnList: SensitiveColumn[];
@@ -202,7 +204,7 @@ const state = reactive<LocalState>({
   selectedEnvironmentName: UNKNOWN_ENVIRONMENT_NAME,
   selectedProjectName: UNKNOWN_PROJECT_NAME,
   selectedInstanceName: UNKNOWN_INSTANCE_NAME,
-  selectedDatabaseUid: String(UNKNOWN_ID),
+  selectedDatabaseName: String(UNKNOWN_ID),
   pendingGrantAccessColumn: [],
   showGrantAccessDrawer: false,
   showSensitiveColumnDrawer: false,
@@ -371,8 +373,8 @@ const filteredColumnList = computed(() => {
       return false;
     }
     if (
-      state.selectedDatabaseUid !== String(UNKNOWN_ID) &&
-      column.database.uid !== state.selectedDatabaseUid
+      state.selectedDatabaseName !== String(UNKNOWN_ID) &&
+      column.database.name !== state.selectedDatabaseName
     ) {
       return false;
     }
@@ -402,13 +404,13 @@ const environment = computed(() => {
 
 const onInstanceSelect = (name: string | undefined) => {
   state.selectedInstanceName = name ?? UNKNOWN_INSTANCE_NAME;
-  state.selectedDatabaseUid = String(UNKNOWN_ID);
+  state.selectedDatabaseName = UNKNOWN_DATABASE_NAME;
 };
 
-const onDatabaseSelect = (databaseUid: string | undefined) => {
-  state.selectedDatabaseUid = databaseUid ?? String(UNKNOWN_ID);
-  if (databaseUid) {
-    const database = databaseStore.getDatabaseByUID(databaseUid);
+const onDatabaseSelect = (name: string | undefined) => {
+  state.selectedDatabaseName = name ?? UNKNOWN_DATABASE_NAME;
+  if (isValidDatabaseName(name)) {
+    const database = databaseStore.getDatabaseByName(name);
     state.selectedInstanceName = database.instance;
   }
 };

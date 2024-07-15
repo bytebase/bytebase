@@ -1,6 +1,6 @@
 <template>
   <NSelect
-    :value="value"
+    :value="combinedValue"
     :options="options"
     :placeholder="placeholder ?? $t('database.select')"
     :virtual-scroll="true"
@@ -30,6 +30,7 @@ import type { ComposedDatabase } from "@/types";
 import {
   UNKNOWN_ID,
   isValidEnvironmentName,
+  isValidInstanceName,
   isValidProjectName,
   unknownDatabase,
 } from "@/types";
@@ -45,8 +46,8 @@ interface DatabaseSelectOption extends SelectOption {
 const slots = useSlots();
 const props = withDefaults(
   defineProps<{
-    database?: string;
-    databases?: string[];
+    databaseName?: string; // UNKNOWN_DATABASE_NAME stands for "ALL"
+    databaseNames?: string[];
     environmentName?: string;
     instanceName?: string;
     projectName?: string;
@@ -55,12 +56,11 @@ const props = withDefaults(
     autoReset?: boolean;
     placeholder?: string;
     filter?: (database: ComposedDatabase, index: number) => boolean;
-    useResourceId?: boolean;
     multiple?: boolean;
   }>(),
   {
-    database: undefined,
-    databases: undefined,
+    databaseName: undefined,
+    databaseNames: undefined,
     environmentName: undefined,
     instanceName: undefined,
     projectName: undefined,
@@ -69,14 +69,13 @@ const props = withDefaults(
     autoReset: true,
     placeholder: undefined,
     filter: undefined,
-    useResourceId: false,
     multiple: false,
   }
 );
 
 const emit = defineEmits<{
-  (event: "update:database", value: string | undefined): void;
-  (event: "update:databases", value: string[]): void;
+  (event: "update:database-name", value: string | undefined): void;
+  (event: "update:database-names", value: string[]): void;
 }>();
 
 const { t } = useI18n();
@@ -87,11 +86,11 @@ const { ready } = useSearchDatabaseV1List(
   }))
 );
 
-const value = computed(() => {
+const combinedValue = computed(() => {
   if (props.multiple) {
-    return props.databases || [];
+    return props.databaseNames || [];
   } else {
-    return props.database;
+    return props.databaseName;
   }
 });
 
@@ -101,18 +100,14 @@ const handleValueUpdated = (value: string | string[]) => {
       // normalize value
       value = [];
     }
-    emit("update:databases", value as string[]);
+    emit("update:database-names", value as string[]);
   } else {
     if (value === null) {
       // normalize value
       value = "";
     }
-    emit("update:database", value as string);
+    emit("update:database-name", value as string);
   }
-};
-
-const getDatabaseValue = (database: ComposedDatabase): string => {
-  return props.useResourceId ? database.name : database.uid;
 };
 
 const rawDatabaseList = computed(() => {
@@ -125,7 +120,10 @@ const rawDatabaseList = computed(() => {
     ) {
       return false;
     }
-    if (props.instanceName && props.instanceName !== db.instance) {
+    if (
+      isValidInstanceName(props.instanceName) &&
+      props.instanceName !== db.instance
+    ) {
       return false;
     }
     if (
@@ -164,7 +162,7 @@ const options = computed(() => {
   return combinedDatabaseList.value.map<DatabaseSelectOption>((database) => {
     return {
       database,
-      value: getDatabaseValue(database),
+      value: database.name,
       label: database.databaseName,
     };
   });
@@ -221,18 +219,16 @@ const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
     ready.value &&
-    props.database &&
-    !combinedDatabaseList.value.find(
-      (item) => getDatabaseValue(item) === props.database
-    )
+    props.databaseName &&
+    !combinedDatabaseList.value.find((item) => item.name === props.databaseName)
   ) {
-    emit("update:database", undefined);
+    emit("update:database-name", undefined);
   }
 };
 
 watch(
   [
-    () => [props.projectName, props.environmentName, props.database],
+    () => [props.projectName, props.environmentName, props.databaseName],
     combinedDatabaseList,
   ],
   resetInvalidSelection,
