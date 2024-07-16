@@ -135,7 +135,7 @@
     "tailwindcss": "3.4.5",
     "ts-node": "^10.9.2",
     "ts-proto": "^1.165.1",
-    "typescript": "5.5.2",
+    "typescript": "5.5.3",
     "unplugin-icons": "0.19.0",
     "unplugin-vue-components": "0.27.2",
     "vite": "5.3.3",
