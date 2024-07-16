@@ -9,7 +9,7 @@
     <PlanCheckBadgeBar
       :plan-check-run-list="planCheckRunList"
       :selected-type="selectedTypeRef"
-      @select-type="(type) => (selectedTypeRef = type)"
+      @select-type="handlePlanCheckRunTypeChange"
     />
 
     <PlanCheckDetail
@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { first, orderBy } from "lodash-es";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { databaseForSpec, useIssueContext } from "@/components/IssueV1/logic";
 import type { TabFilterItem } from "@/components/v2";
@@ -100,23 +100,19 @@ const isLatestPlanCheckRun = computed(() => {
 
 const tabItemList = computed(() => {
   return selectedPlanCheckRunList.value.map<TabFilterItem<string>>(
-    (checkRun, i) => {
+    (planCheckRun, i) => {
       const label =
         i === 0
           ? t("common.latest")
-          : checkRun.createTime
-            ? humanizeDate(checkRun.createTime)
-            : `UID(${checkRun.uid})`;
+          : planCheckRun.createTime
+            ? humanizeDate(planCheckRun.createTime)
+            : `UID(${planCheckRun.uid})`;
       return {
         label,
-        value: checkRun.uid,
+        value: planCheckRun.uid,
       };
     }
   );
-});
-
-watch(selectedPlanCheckRunList, (list) => {
-  selectedPlanCheckRunUID.value = first(list)?.uid;
 });
 
 const database = computed(() => {
@@ -126,4 +122,9 @@ const database = computed(() => {
   }
   return databaseForSpec(issue.value, spec);
 });
+
+const handlePlanCheckRunTypeChange = (type: PlanCheckRun_Type) => {
+  selectedTypeRef.value = type;
+  selectedPlanCheckRunUID.value = first(selectedPlanCheckRunList.value)?.uid;
+};
 </script>
