@@ -1195,6 +1195,21 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		return q.extractSourceColumnSetFromExpressionNode(node.BooleanTest.Arg)
 	case *pgquery.Node_GroupingFunc:
 		return q.extractSourceColumnSetFromExpressionNodeList(node.GroupingFunc.Args)
+	case *pgquery.Node_JsonArrayConstructor:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.JsonArrayConstructor.Exprs...)
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
+	case *pgquery.Node_JsonValueExpr:
+		return q.extractSourceColumnSetFromExpressionNode(node.JsonValueExpr.RawExpr)
+	case *pgquery.Node_JsonObjectConstructor:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.JsonObjectConstructor.Exprs...)
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
+	case *pgquery.Node_JsonKeyValue:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.JsonKeyValue.GetKey())
+		nodeList = append(nodeList, node.JsonKeyValue.GetValue().GetRawExpr())
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
 	}
 	return base.SourceColumnSet{}, nil
 }
