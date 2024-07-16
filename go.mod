@@ -4,7 +4,7 @@ go 1.22.5
 
 require (
 	cloud.google.com/go/bigquery v1.61.0
-	cloud.google.com/go/cloudsqlconn v1.11.0
+	cloud.google.com/go/cloudsqlconn v1.11.1
 	cloud.google.com/go/secretmanager v1.13.4
 	cloud.google.com/go/spanner v1.64.0
 	gitee.com/chunanyong/dm v1.8.15
