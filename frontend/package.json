@@ -82,7 +82,7 @@
     "vueuc": "0.4.58"
   },
   "devDependencies": {
-    "@iconify/json": "2.2.224",
+    "@iconify/json": "2.2.228",
     "@intlify/unplugin-vue-i18n": "4.0.0",
     "@rollup/plugin-yaml": "4.1.2",
     "@tailwindcss/forms": "0.5.7",
