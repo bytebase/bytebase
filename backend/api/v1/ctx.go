@@ -93,6 +93,8 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.OrgPolicyService_CreatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_UpdatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_DeletePolicy_FullMethodName,
+		v1pb.WorkspaceService_GetIamPolicy_FullMethodName,
+		v1pb.WorkspaceService_SetIamPolicy_FullMethodName,
 		v1pb.ReviewConfigService_CreateReviewConfig_FullMethodName,
 		v1pb.ReviewConfigService_ListReviewConfigs_FullMethodName,
 		v1pb.ReviewConfigService_GetReviewConfig_FullMethodName,
