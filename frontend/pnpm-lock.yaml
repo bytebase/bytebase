@@ -106,7 +106,7 @@ importers:
         version: 0.2.6
       nice-grpc-web:
         specifier: ^3.3.2
-        version: 3.3.4(ws@8.17.1)
+        version: 3.3.4(ws@8.18.0)
       node-sql-parser:
         specifier: 5.2.0
         version: 5.2.0
@@ -377,7 +377,7 @@ importers:
         version: 2.0.24(typescript@5.5.2)
       ws:
         specifier: ^8.15.1
-        version: 8.17.1
+        version: 8.18.0
 
 packages:
 
@@ -3974,8 +3974,8 @@ packages:
   write-stream@0.4.3:
     resolution: {integrity: sha512-IJrvkhbAnj89W/GAVdVgbnPiVw5Ntg/B4tc/MUCIEwj/g6JIww1DWJyB/yBMT3yw2/TkT6IUZ0+IYef3flEw8A==}
 
-  ws@8.17.1:
-    resolution: {integrity: sha512-6XQFvXTkbfUOZOKKILFG1PDK2NDQs4azKQl26T0YS5CxqWLgXajbPZ+h4gZekJyRqFU8pvnbAbbs/3TgRPy+GQ==}
+  ws@8.18.0:
+    resolution: {integrity: sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -6347,9 +6347,9 @@ snapshots:
 
   isexe@2.0.0: {}
 
-  isomorphic-ws@5.0.0(ws@8.17.1):
+  isomorphic-ws@5.0.0(ws@8.18.0):
     dependencies:
-      ws: 8.17.1
+      ws: 8.18.0
 
   jackspeak@3.1.2:
     dependencies:
@@ -6404,7 +6404,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.0.0
-      ws: 8.17.1
+      ws: 8.18.0
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -6731,10 +6731,10 @@ snapshots:
       nice-grpc-common: 2.0.2
       protobufjs: 7.3.2
 
-  nice-grpc-web@3.3.4(ws@8.17.1):
+  nice-grpc-web@3.3.4(ws@8.18.0):
     dependencies:
       abort-controller-x: 0.4.3
-      isomorphic-ws: 5.0.0(ws@8.17.1)
+      isomorphic-ws: 5.0.0(ws@8.18.0)
       js-base64: 3.7.7
       nice-grpc-common: 2.0.2
     transitivePeerDependencies:
@@ -7856,7 +7856,7 @@ snapshots:
     dependencies:
       readable-stream: 0.0.4
 
-  ws@8.17.1: {}
+  ws@8.18.0: {}
 
   xml-name-validator@4.0.0: {}
 
