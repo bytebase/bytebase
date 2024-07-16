@@ -295,7 +295,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	roles := uniq(create.Roles)
 	if len(roles) > 0 {
 		if _, err := s.UpdateWorkspaceIamPolicy(ctx, &UpdateIamPolicyMessage{
-			UserUID:    userID,
+			Member:     common.FormatUserUID(userID),
 			Roles:      roles,
 			UpdaterUID: creatorID,
 		}); err != nil {
@@ -375,7 +375,7 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	// patch.Roles overrides patch.Role
 	if v := patch.Roles; v != nil {
 		if _, err := s.UpdateWorkspaceIamPolicy(ctx, &UpdateIamPolicyMessage{
-			UserUID:    currentUser.ID,
+			Member:     common.FormatUserUID(currentUser.ID),
 			Roles:      *v,
 			UpdaterUID: updaterID,
 		}); err != nil {

@@ -18,12 +18,12 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (string, time.Duration, error) {
+func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
 	// initial branding
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding slogo image in base64 string format.",
@@ -36,7 +36,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to generate random JWT secret")
 	}
-	authSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	authSetting, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAuthSecret,
 		Value:       secret,
 		Description: "Random string used to sign the JWT auth token.",
@@ -48,7 +48,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	secret = authSetting.Value
 
 	// initial workspace
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
 		Description: "The workspace identifier",
@@ -57,7 +57,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	}
 
 	// initial license
-	if _, _, err = datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err = s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingEnterpriseLicense,
 		Value:       "",
 		Description: "Enterprise license",
@@ -66,7 +66,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	}
 
 	// initial IM app
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAppIM,
 		Value:       "{}",
 		Description: "",
@@ -75,7 +75,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	}
 
 	// initial watermark setting
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWatermark,
 		Value:       "0",
 		Description: "Display watermark",
@@ -84,14 +84,14 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	}
 
 	// initial OpenAI key setting
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingPluginOpenAIKey,
 		Value:       "",
 		Description: "API key to request OpenAI (ChatGPT)",
 	}, api.SystemBotID); err != nil {
 		return "", 0, err
 	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingPluginOpenAIEndpoint,
 		Value:       "",
 		Description: "API Endpoint for OpenAI",
@@ -104,7 +104,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to marshal initial external approval setting")
 	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceExternalApproval,
 		Value:       string(externalApprovalSettingValue),
 		Description: "The external approval setting",
@@ -117,7 +117,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to marshal initial schema template setting")
 	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingSchemaTemplate,
 		Value:       string(schemaTemplateSettingValue),
 		Description: "The schema template setting",
@@ -130,7 +130,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to marshal initial data classification setting")
 	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingDataClassification,
 		Value:       string(dataClassificationSettingValue),
 		Description: "The data classification setting",
@@ -143,7 +143,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to marshal initial workspace approval setting")
 	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name: api.SettingWorkspaceApproval,
 		// Value is ""
 		Value:       string(approvalSettingValue),
@@ -180,10 +180,30 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 		return "", 0, err
 	}
 
-	if _, err := datastore.UpsertSettingV2(ctx, &store.SetSettingMessage{
+	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  api.SettingWorkspaceProfile,
 		Value: string(bytes),
 	}, api.SystemBotID); err != nil {
+		return "", 0, err
+	}
+
+	// Init workspace IAM policy
+	if _, err := s.store.UpdateWorkspaceIamPolicy(ctx, &store.UpdateIamPolicyMessage{
+		Member: common.FormatUserUID(api.SystemBotID),
+		Roles: []api.Role{
+			api.WorkspaceAdmin,
+		},
+		UpdaterUID: api.SystemBotID,
+	}); err != nil {
+		return "", 0, err
+	}
+	if _, err := s.store.UpdateWorkspaceIamPolicy(ctx, &store.UpdateIamPolicyMessage{
+		Member: api.AllUsers,
+		Roles: []api.Role{
+			api.WorkspaceMember,
+		},
+		UpdaterUID: api.SystemBotID,
+	}); err != nil {
 		return "", 0, err
 	}
 

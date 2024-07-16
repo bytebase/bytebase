@@ -2803,6 +2803,21 @@
             </ul>
           </li>
         
+          
+          <li>
+            <a href="#v1%2fworkspace_service.proto">v1/workspace_service.proto</a>
+            <ul>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.WorkspaceService"><span class="badge">S</span>WorkspaceService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
         <li><a href="#scalar-value-types">Scalar Value Types</a></li>
       </ul>
     </div>
@@ -17087,20 +17102,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>GetIamPolicy</td>
-                <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
-                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SetIamPolicy</td>
-                <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
-                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -17306,26 +17307,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/policies/*}</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetIamPolicy</td>
-                <td>GET</td>
-                <td>/v1/{resource=workspaces/*}:getIamPolicy</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SetIamPolicy</td>
-                <td>POST</td>
-                <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
-                <td>*</td>
               </tr>
               
             
@@ -30131,6 +30112,84 @@ Format: worksheets/{worksheet} </p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=worksheets/*}</td>
                 <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/workspace_service.proto">v1/workspace_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.WorkspaceService">WorkspaceService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetIamPolicy</td>
+                <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SetIamPolicy</td>
+                <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetIamPolicy</td>
+                <td>GET</td>
+                <td>/v1/{resource=workspaces/*}:getIamPolicy</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SetIamPolicy</td>
+                <td>POST</td>
+                <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
+                <td>*</td>
               </tr>
               
             

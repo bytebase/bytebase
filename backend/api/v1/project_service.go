@@ -321,7 +321,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return s.convertToV1IamPolicy(ctx, policy)
+	return convertToV1IamPolicy(ctx, s.store, policy)
 }
 
 // BatchGetIamPolicy returns the IAM policy for projects in batch.
@@ -347,7 +347,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 
-		iamPolicy, err := s.convertToV1IamPolicy(ctx, policy)
+		iamPolicy, err := convertToV1IamPolicy(ctx, s.store, policy)
 		if err != nil {
 			return nil, err
 		}
@@ -393,7 +393,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Resource)
 	}
 
-	policy, err := s.convertToStoreIamPolicy(ctx, request.Policy)
+	policy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -418,7 +418,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return s.convertToV1IamPolicy(ctx, iamPolicyMessage)
+	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
@@ -1352,7 +1352,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *storepb.IamPolicy) (*v1pb.IamPolicy, error) {
+func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *storepb.IamPolicy) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
@@ -1363,7 +1363,7 @@ func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *st
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to parse user id from member %s with error: %v", member, err)
 				}
-				user, err := s.store.GetUserByID(ctx, userUID)
+				user, err := stores.GetUserByID(ctx, userUID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get user %s with error: %v", member, err)
 				}
@@ -1413,7 +1413,7 @@ func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *st
 	}, nil
 }
 
-func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, error) {
+func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, error) {
 	var bindings []*storepb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
@@ -1421,7 +1421,7 @@ func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy 
 		for _, member := range binding.Members {
 			if strings.HasPrefix(member, "user:") {
 				email := strings.TrimPrefix(member, "user:")
-				user, err := s.store.GetUserByEmail(ctx, email)
+				user, err := stores.GetUserByEmail(ctx, email)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, err.Error())
 				}
