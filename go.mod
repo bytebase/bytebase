@@ -26,7 +26,7 @@ require (
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/databricks/databricks-sdk-go v0.43.0
+	github.com/databricks/databricks-sdk-go v0.43.2
 	github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4
 	github.com/github/gh-ost v1.1.6
 	github.com/go-ego/gse v0.80.2
