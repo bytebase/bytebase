@@ -138,7 +138,7 @@
     "typescript": "5.5.2",
     "unplugin-icons": "0.19.0",
     "unplugin-vue-components": "0.27.2",
-    "vite": "5.3.2",
+    "vite": "5.3.3",
     "vite-bundle-visualizer": "^1.0.1",
     "vitest": "1.6.0",
     "vue-i18n": "9.13.1",
