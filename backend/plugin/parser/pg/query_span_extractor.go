@@ -21,14 +21,22 @@ import (
 )
 
 const (
-	pgUnknownFieldName = "?column?"
-	generateSeries     = "generate_series"
-	generateSubscripts = "generate_subscripts"
-	unnest             = "unnest"
-	jsonbEach          = "jsonb_each"
-	jsonEach           = "json_each"
-	jsonbEachText      = "jsonb_each_text"
-	jsonEachText       = "json_each_text"
+	pgUnknownFieldName     = "?column?"
+	generateSeries         = "generate_series"
+	generateSubscripts     = "generate_subscripts"
+	unnest                 = "unnest"
+	jsonbEach              = "jsonb_each"
+	jsonEach               = "json_each"
+	jsonbEachText          = "jsonb_each_text"
+	jsonEachText           = "json_each_text"
+	jsonPopulateRecord     = "json_populate_record"
+	jsonbPopulateRecord    = "jsonb_populate_record"
+	jsonPopulateRecordset  = "json_populate_recordset"
+	jsonbPopulateRecordset = "jsonb_populate_recordset"
+	jsonToRecord           = "json_to_record"
+	jsonbToRecord          = "jsonb_to_record"
+	jsonToRecordset        = "json_to_recordset"
+	jsonbToRecordset       = "jsonb_to_recordset"
 )
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
@@ -303,6 +311,13 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 			})
 		}
 		return tableSource, nil
+	case jsonPopulateRecord, jsonbPopulateRecord, jsonPopulateRecordset, jsonbPopulateRecordset,
+		jsonToRecord, jsonbToRecord, jsonToRecordset, jsonbToRecordset:
+		return nil, &parsererror.TypeNotSupportedError{
+			Extra: fmt.Sprintf("Unsupport function %s", funcName),
+			Type:  "function",
+			Name:  funcName,
+		}
 	}
 
 	if node.RangeFunction.Alias == nil {
