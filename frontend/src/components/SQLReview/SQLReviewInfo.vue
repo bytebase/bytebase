@@ -24,11 +24,10 @@
         class="mt-2"
         required
         name="environment"
-        :environment="attachedResources[0]"
-        :use-resource-id="true"
+        :environment-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
         :filter="(env: Environment, _: number) => filterResource(env.name)"
-        @update:environment="
+        @update:environment-name="
           (val: string | undefined) => {
             if (!val) {
               $emit('attached-resources-change', []);
@@ -43,11 +42,10 @@
         class="mt-2"
         style="width: 100%"
         required
-        :project="attachedResources[0]"
-        :use-resource-id="true"
+        :project-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
-        :filter="(proj: Project, _: number) => filterResource(proj.name)"
-        @update:project="
+        :filter="(proj) => filterResource(proj.name)"
+        @update:project-name="
           (val: string | undefined) => {
             if (!val) {
               $emit('attached-resources-change', []);
@@ -63,11 +61,10 @@
         style="width: 100%"
         required
         :multiple="true"
-        :databases="attachedResources"
-        :use-resource-id="true"
+        :database-names="attachedResources"
         :disabled="!allowChangeAttachedResource"
         :filter="(db: Database, _: number) => filterResource(db.name)"
-        @update:databases="$emit('attached-resources-change', $event)"
+        @update:database-names="$emit('attached-resources-change', $event)"
       />
     </div>
     <div>
@@ -102,9 +99,8 @@
     <div>
       <SQLReviewTemplateSelector
         :required="true"
-        :selected-template="selectedTemplate"
+        :selected-template-id="selectedTemplateId"
         @select-template="$emit('select-template', $event)"
-        @templates-change="onTemplatesChange($event)"
       />
     </div>
   </div>
@@ -126,8 +122,8 @@ import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
-import type { Project } from "@/types/proto/v1/project_service";
 import { getErrorCode } from "@/utils/grpcweb";
+import { DatabaseSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";
 import { type ResourceType } from "./components/useReviewConfigAttachedResource";
 
@@ -136,7 +132,7 @@ const props = defineProps<{
   resourceId: string;
   attachedResources: string[];
   isCreate: boolean;
-  selectedTemplate?: SQLReviewPolicyTemplateV2;
+  selectedTemplateId?: string;
   isEdit: boolean;
   allowChangeAttachedResource: boolean;
 }>();
@@ -180,15 +176,6 @@ const filterResource = (name: string): boolean => {
     return true;
   }
   return !sqlReviewStore.getReviewPolicyByResouce(name);
-};
-
-const onTemplatesChange = (templates: {
-  policy: SQLReviewPolicyTemplateV2[];
-  builtin: SQLReviewPolicyTemplateV2[];
-}) => {
-  if (!props.selectedTemplate) {
-    emit("select-template", templates.policy[0] ?? templates.builtin[0]);
-  }
 };
 
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();

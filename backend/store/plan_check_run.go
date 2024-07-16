@@ -64,9 +64,9 @@ type PlanCheckRunMessage struct {
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
 	PlanUID *int64
-
-	Status *[]PlanCheckRunStatus
-	Type   *[]PlanCheckRunType
+	UIDs    *[]int
+	Status  *[]PlanCheckRunStatus
+	Type    *[]PlanCheckRunType
 }
 
 // CreatePlanCheckRuns creates new plan check runs.
@@ -129,6 +129,9 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 	if v := find.PlanUID; v != nil {
 		where = append(where, fmt.Sprintf("plan_check_run.plan_id = $%d", len(args)+1))
 		args = append(args, *v)
+	}
+	if v := find.UIDs; v != nil {
+		where, args = append(where, fmt.Sprintf("plan_check_run.id = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.Status; v != nil {
 		where = append(where, fmt.Sprintf("plan_check_run.status = ANY($%d)", len(args)+1))
@@ -212,6 +215,21 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status P
 	WHERE id = $5`
 	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, time.Now().Unix(), status, resultBytes, uid); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
+	}
+	return nil
+}
+
+// BatchCancelPlanCheckRuns updates the status of planCheckRuns to CANCELED.
+func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs []int, updaterID int) error {
+	query := `
+		UPDATE plan_check_run
+		SET 
+			status = $1, 
+			updater_id = $2, 
+			updated_ts = $3
+		WHERE id = ANY($4)`
+	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, updaterID, time.Now().Unix(), planCheckRunUIDs); err != nil {
+		return err
 	}
 	return nil
 }

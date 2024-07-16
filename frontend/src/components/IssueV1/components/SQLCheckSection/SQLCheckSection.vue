@@ -13,11 +13,9 @@
       :button-props="{
         size: 'tiny',
       }"
-      :highlight-row-filter="
-        (row) => row.checkResult.title === 'advice.online-migration'
-      "
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
+      :show-code-location="true"
       @update:advices="$emit('update:advices', $event)"
     >
       <template #result="{ advices, isRunning }">
@@ -46,7 +44,6 @@ import {
   useIssueContext,
   databaseForTask,
   specForTask,
-  databaseForSpec,
 } from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
@@ -62,15 +59,11 @@ defineEmits<{
   (event: "update:advices", advices: Advice[] | undefined): void;
 }>();
 
-const { issue, selectedTask, selectedSpec, events } = useIssueContext();
+const { issue, selectedTask, events } = useIssueContext();
 const { sheetStatement } = useTaskSheet();
 
-const rolloutMode = computed(() => !!issue.value.rollout);
-
 const database = computed(() => {
-  return rolloutMode.value
-    ? databaseForTask(issue.value, selectedTask.value)
-    : databaseForSpec(issue.value, selectedSpec.value);
+  return databaseForTask(issue.value, selectedTask.value);
 });
 
 const show = computed(() => {
@@ -95,12 +88,10 @@ const handleToggleOnlineMigration = (
   on: boolean,
   confirm: Defer<boolean> | undefined
 ) => {
-  if (on) {
-    events.emit("toggle-online-migration", {
-      on: true,
-    });
-    confirm?.resolve(false);
-  }
+  events.emit("toggle-online-migration", {
+    on,
+  });
+  confirm?.resolve(false);
 };
 
 const changeType = computed((): CheckRequest_ChangeType | undefined => {

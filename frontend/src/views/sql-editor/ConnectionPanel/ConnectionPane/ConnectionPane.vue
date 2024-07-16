@@ -85,6 +85,7 @@ import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   ExpandableTreeNodeTypes,
   UNKNOWN_ID,
+  isValidInstanceName,
 } from "@/types";
 import { findAncestor, isDescendantOf, isDatabaseV1Queryable } from "@/utils";
 import { useSQLEditorContext } from "../../context";
@@ -306,7 +307,7 @@ watch(
     if (treeState !== "READY") {
       return;
     }
-    if (instance.uid !== String(UNKNOWN_ID)) {
+    if (isValidInstanceName(instance.name)) {
       expandNodesByType("instance", instance);
     }
     if (database.uid !== String(UNKNOWN_ID)) {

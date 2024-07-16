@@ -27,9 +27,6 @@
       v-if="showDetailPanel"
       :database="database"
       :advices="advices"
-      :highlight-row-filter="
-        (row) => row.checkResult.title === 'advice.online-migration'
-      "
       @close="showDetailPanel = false"
     >
       <template #row-title-extra="{ row }">
@@ -48,7 +45,7 @@ import { computed, ref } from "vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
-import { databaseForSpec, databaseForTask, useIssueContext } from "../../logic";
+import { databaseForTask, useIssueContext } from "../../logic";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 
 const props = defineProps<{
@@ -60,15 +57,11 @@ defineEmits<{
   (event: "click"): void;
 }>();
 
-const { issue, selectedTask, selectedSpec, events } = useIssueContext();
+const { issue, selectedTask, events } = useIssueContext();
 const showDetailPanel = ref(false);
 
-const rolloutMode = computed(() => !!issue.value.rollout);
-
 const database = computed(() => {
-  return rolloutMode.value
-    ? databaseForTask(issue.value, selectedTask.value)
-    : databaseForSpec(issue.value, selectedSpec.value);
+  return databaseForTask(issue.value, selectedTask.value);
 });
 
 const status = computed(() => {
@@ -131,11 +124,9 @@ const handleClick = () => {
 };
 
 const handleToggleOnlineMigration = (on: boolean) => {
-  if (on) {
-    events.emit("toggle-online-migration", {
-      on: true,
-    });
-    showDetailPanel.value = true;
-  }
+  events.emit("toggle-online-migration", {
+    on,
+  });
+  showDetailPanel.value = true;
 };
 </script>

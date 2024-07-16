@@ -29,7 +29,7 @@
           </a>
         </div>
       </div>
-      <div v-if="editable" class="space-y-1">
+      <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("sql-review.rule.active") }}
         </h3>
@@ -49,12 +49,11 @@
           <RuleLevelSwitch
             :level="state.level"
             :disabled="disabled"
-            :editable="editable"
             @level-change="state.level = $event"
           />
         </div>
       </div>
-      <div v-if="editable" class="space-y-1">
+      <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("common.description") }}
         </h3>
@@ -71,68 +70,13 @@
           />
         </div>
       </div>
-      <div v-else-if="displayDescription" class="space-y-1">
-        <h3 class="text-lg text-control font-medium">
-          {{ $t("common.description") }}
-        </h3>
-        <div class="flex flex-col gap-x-2">
-          {{ displayDescription }}
-        </div>
-      </div>
-      <div
-        v-for="(config, index) in rule.componentList"
-        :key="index"
-        class="space-y-1"
-      >
-        <p class="text-lg text-control font-medium mb-2">
-          {{ configTitle(config) }}
-        </p>
-        <StringComponent
-          v-if="config.payload.type === 'STRING'"
-          :value="state.payload[index] as string"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <NumberComponent
-          v-if="config.payload.type === 'NUMBER'"
-          :value="state.payload[index] as number"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <BooleanComponent
-          v-else-if="config.payload.type == 'BOOLEAN'"
-          :rule="rule"
-          :value="state.payload[index] as boolean"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <StringArrayComponent
-          v-else-if="
-            config.payload.type == 'STRING_ARRAY' &&
-            Array.isArray(state.payload[index])
-          "
-          :value="state.payload[index] as string[]"
-          :config="config"
-          :disabled="disabled"
-          :editable="editable"
-          @update:value="state.payload[index] = $event"
-        />
-        <TemplateComponent
-          v-else-if="config.payload.type == 'TEMPLATE'"
-          :rule="rule"
-          :value="state.payload[index] as string"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="state.payload[index] = $event"
-        />
-      </div>
-      <div
-        v-if="editable"
-        class="mt-4 pt-2 border-t flex justify-end space-x-3"
-      >
+      <RuleConfig
+        ref="ruleConfig"
+        :disabled="disabled"
+        :rule="rule"
+        :size="'medium'"
+      />
+      <div class="mt-4 pt-2 border-t flex justify-end space-x-3">
         <NButton @click.prevent="$emit('cancel')">
           {{ $t("common.cancel") }}
         </NButton>
@@ -146,30 +90,20 @@
 
 <script lang="ts" setup>
 import { NSwitch } from "naive-ui";
-import { computed, nextTick, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { nextTick, reactive, watch, ref } from "vue";
 import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { RuleConfigComponent, RuleTemplateV2 } from "@/types/sqlReview";
-import { getRuleLocalization, getRuleLocalizationKey } from "@/types/sqlReview";
-import type { PayloadValueType } from "./RuleConfigComponents";
-import {
-  StringComponent,
-  NumberComponent,
-  BooleanComponent,
-  StringArrayComponent,
-  TemplateComponent,
-} from "./RuleConfigComponents";
+import type { RuleTemplateV2 } from "@/types/sqlReview";
+import { getRuleLocalization } from "@/types/sqlReview";
+import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
-  payload: PayloadValueType[];
   level: SQLReviewRuleLevel;
   comment: string;
 };
 
 const props = defineProps<{
-  editable: boolean;
   rule: RuleTemplateV2;
   disabled: boolean;
 }>();
@@ -179,45 +113,13 @@ const emit = defineEmits<{
   (event: "cancel"): void;
 }>();
 
-const { t } = useI18n();
-
-const getRulePayload = (): PayloadValueType[] => {
-  const { componentList } = props.rule;
-
-  if (componentList.length === 0) {
-    return [];
-  }
-
-  const basePayload = componentList.reduce<
-    { key: string; value: PayloadValueType }[]
-  >((list, component) => {
-    list.push({
-      key: component.key,
-      value: component.payload.value ?? component.payload.default,
-    });
-    return list;
-  }, []);
-
-  return basePayload.map((val) => val.value);
-};
+const ruleConfig = ref<InstanceType<typeof RuleConfig>>();
 
 const state = reactive<LocalState>({
-  payload: getRulePayload(),
   level: props.rule.level,
   comment:
     props.rule.comment || getRuleLocalization(props.rule.type).description,
 });
-
-const displayDescription = computed(() => {
-  return state.comment || getRuleLocalization(props.rule.type).description;
-});
-
-const configTitle = (config: RuleConfigComponent): string => {
-  const key = `sql-review.rule.${getRuleLocalizationKey(
-    props.rule.type
-  )}.component.${config.key}.title`;
-  return t(key);
-};
 
 const toggleActivity = (on: boolean) => {
   state.level = on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED;
@@ -232,7 +134,10 @@ watch(
 
 const confirm = () => {
   emit("update:rule", {
-    componentList: payloadValueListToComponentList(props.rule, state.payload),
+    componentList: payloadValueListToComponentList(
+      props.rule,
+      ruleConfig.value?.payload ?? []
+    ),
     level: state.level,
     comment: state.comment,
   });

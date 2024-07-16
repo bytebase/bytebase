@@ -194,18 +194,11 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		PasswordHash: string(passwordHash),
 	}
 
-	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{})
-	if err != nil {
-		return nil, err
-	}
-	firstUser := true
-	for _, user := range users {
-		if user.ID >= 100 {
-			firstUser = false
-			break
-		}
-	}
-	if !firstUser {
+	if firstEndUser {
+		// The first end user should be workspace admin.
+		userMessage.Roles = []api.Role{api.WorkspaceAdmin}
+	} else {
+		// Otherwise only workspace admin can set roles while creating the user.
 		rolePtr := ctx.Value(common.RoleContextKey)
 		if rolePtr != nil && rolePtr.(api.Role) == api.WorkspaceAdmin {
 			for _, role := range request.User.Roles {
@@ -215,15 +208,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 				}
 				userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
 			}
-		}
-	}
-	// If multiple roles are specified, checks if the current user is workspace admin.
-	if len(userMessage.Roles) > 1 {
-		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-		if !ok {
-			return nil, status.Error(codes.PermissionDenied, "user not found in context")
-		}
-		if !slices.Contains(user.Roles, api.WorkspaceAdmin) {
+		} else if len(request.User.Roles) > 0 {
 			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with multiple roles")
 		}
 	}

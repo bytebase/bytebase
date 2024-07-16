@@ -30,6 +30,8 @@
     - [AnomalyService](#bytebase-v1-AnomalyService)
   
 - [v1/common.proto](#v1_common-proto)
+    - [Position](#bytebase-v1-Position)
+  
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
@@ -240,7 +242,9 @@
   
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
+    - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [IamPolicy](#bytebase-v1-IamPolicy)
+    - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
   
 - [v1/idp_service.proto](#v1_idp_service-proto)
     - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
@@ -352,6 +356,8 @@
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
 - [v1/plan_service.proto](#v1_plan_service-proto)
+    - [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest)
+    - [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse)
     - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
     - [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest)
@@ -402,7 +408,6 @@
     - [DeploymentSpec](#bytebase-v1-DeploymentSpec)
     - [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest)
     - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
-    - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [GetProjectProtectionRulesRequest](#bytebase-v1-GetProjectProtectionRulesRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [Label](#bytebase-v1-Label)
@@ -420,7 +425,6 @@
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
-    - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
@@ -683,6 +687,9 @@
     - [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility)
   
     - [WorksheetService](#bytebase-v1-WorksheetService)
+  
+- [v1/workspace_service.proto](#v1_workspace_service-proto)
+    - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -1037,6 +1044,22 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 <p align="right"><a href="#top">Top</a></p>
 
 ## v1/common.proto
+
+
+
+<a name="bytebase-v1-Position"></a>
+
+### Position
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
+
+
+
 
 
  
@@ -4290,6 +4313,21 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
+<a name="bytebase-v1-GetIamPolicyRequest"></a>
+
+### GetIamPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
+
+
+
+
+
+
 <a name="bytebase-v1-IamPolicy"></a>
 
 ### IamPolicy
@@ -4300,6 +4338,22 @@ The environment&#39;s `name` field is used to identify the environment to update
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
 | diffs | [Diff](#bytebase-v1-Diff) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SetIamPolicyRequest"></a>
+
+### SetIamPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
+| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 
 
 
@@ -6000,6 +6054,32 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
+<a name="bytebase-v1-BatchCancelPlanCheckRunsRequest"></a>
+
+### BatchCancelPlanCheckRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The name of the parent of the planChecks. Format: projects/{project}/plans/{plan} |
+| plan_check_runs | [string](#string) | repeated | The planCheckRuns to cancel. Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCancelPlanCheckRunsResponse"></a>
+
+### BatchCancelPlanCheckRunsResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-CreatePlanRequest"></a>
 
 ### CreatePlanRequest
@@ -6358,6 +6438,8 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | column | [int32](#int32) |  |  |
 | detail | [string](#string) |  |  |
 | code | [int32](#int32) |  | Code from sql review. |
+| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
 
 
 
@@ -6542,6 +6624,7 @@ Type is the database change type.
 | UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
+| BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |
 
  
 
@@ -6788,21 +6871,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the resource. Format: projects/{project}/deploymentConfigs/default. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetIamPolicyRequest"></a>
-
-### GetIamPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project to get the IAM policy. Format: projects/{project} |
 
 
 
@@ -7089,22 +7157,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-SetIamPolicyRequest"></a>
-
-### SetIamPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project to set the IAM policy. Format: projects/{project} |
-| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 
 
 
@@ -9685,6 +9737,8 @@ Type of the SheetPayload.
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
 | column | [int32](#int32) |  | The advice column number in the SQL statement. |
 | detail | [string](#string) |  | The advice detail. |
+| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
 
 
 
@@ -10938,6 +10992,33 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) |  |
 | UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  |
 | DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
+<a name="v1_workspace_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/workspace_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-WorkspaceService"></a>
+
+### WorkspaceService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
+| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 
  
 

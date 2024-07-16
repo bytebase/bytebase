@@ -151,11 +151,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetType returns the database type.
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_REDSHIFT
-}
-
 // GetDB gets the database.
 func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
@@ -189,6 +184,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		commands = base.FilterEmptySQL(singleSQLs)
 		if len(commands) <= common.MaximumCommands {
 			oneshot = false
+			for _, singleSQL := range commands {
+				if isSuperuserStatement(singleSQL.Text) {
+					// Use superuser privilege to run privileged statements.
+					singleSQL.Text = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", singleSQL.Text, owner)
+				}
+			}
 		}
 	}
 	if oneshot {
@@ -198,32 +199,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			},
 		}
 	}
-
-	var remainingSQLs []base.SingleSQL
-	var nonTransactionStmts []string
-	for _, singleSQL := range commands {
-		if isNonTransactionStatement(singleSQL.Text) {
-			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
-			continue
-		}
-
-		if isSuperuserStatement(singleSQL.Text) {
-			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-			if strings.Contains(strings.ToUpper(singleSQL.Text), "CREATE EVENT TRIGGER") {
-				singleSQL.Text = strings.ReplaceAll(singleSQL.Text, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-			}
-			// Use superuser privilege to run privileged statements.
-			singleSQL.Text = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", singleSQL.Text, owner)
-		}
-		remainingSQLs = append(remainingSQLs, singleSQL)
-	}
-
 	totalRowsAffected := int64(0)
-	if len(remainingSQLs) != 0 {
-		totalCommands := len(remainingSQLs)
+	if len(commands) != 0 {
+		totalCommands := len(commands)
 		tx, err := driver.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
@@ -234,7 +212,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, err
 		}
 
-		for i, command := range remainingSQLs {
+		for i, command := range commands {
 			// Start the current chunk.
 			// Set the progress information for the current chunk.
 			if opts.UpdateExecutionStatus != nil {
@@ -274,22 +252,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			totalRowsAffected += rowsAffected
 		}
 
-		// Restore the current transaction role to the current user.
-		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT"); err != nil {
-			slog.Warn("Failed to restore the current transaction role to the current user", log.BBError(err))
-		}
-
 		if err := tx.Commit(); err != nil {
 			return 0, err
 		}
 	}
 
-	// Run non-transaction statements at the end.
-	for _, stmt := range nonTransactionStmts {
-		if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-			return 0, err
-		}
-	}
 	return totalRowsAffected, nil
 }
 
@@ -319,24 +286,7 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 
 func isSuperuserStatement(stmt string) bool {
 	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
-	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
-		return true
-	}
-	return false
-}
-
-func isNonTransactionStatement(stmt string) bool {
-	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
-	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
-	createIndexReg := regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
-	if len(createIndexReg.FindString(stmt)) > 0 {
-		return true
-	}
-
-	// DROP INDEX CONCURRENTLY cannot run inside a transaction block.
-	// DROP INDEX [ CONCURRENTLY ] [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ]
-	dropIndexReg := regexp.MustCompile(`(?i)DROP(\s+)INDEX(\s+)CONCURRENTLY`)
-	return len(dropIndexReg.FindString(stmt)) > 0
+	return strings.HasPrefix(upperCaseStmt, "GRANT")
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
@@ -425,6 +375,11 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
+	}
+
+	// TODO(d): use a Redshift extraction for shared database.
+	if queryContext != nil && queryContext.ShareDB {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
 
 	startTime := time.Now()

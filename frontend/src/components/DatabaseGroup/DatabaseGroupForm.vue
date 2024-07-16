@@ -25,7 +25,7 @@
       <div>
         <p class="text-lg mb-2">{{ $t("common.project") }}</p>
         <ProjectSelect
-          :project="project.uid"
+          :project-name="project.name"
           :disabled="true"
           style="width: auto"
         />

@@ -7,6 +7,10 @@
       :keyword="keyword"
     />
 
+    <slot name="suffix">
+      {{ suffix }}
+    </slot>
+
     <NTooltip v-if="project.workflow === Workflow.VCS">
       <template #trigger>
         <GitIcon class="w-4 h-4 text-control" />
@@ -44,11 +48,13 @@ withDefaults(
     mode?: Mode;
     link?: boolean;
     keyword?: string;
+    suffix?: string;
   }>(),
   {
     mode: "ALL",
     link: false,
     keyword: undefined,
+    suffix: "",
   }
 );
 </script>

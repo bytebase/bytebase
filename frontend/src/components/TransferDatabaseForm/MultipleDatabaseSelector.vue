@@ -3,15 +3,15 @@
     <!-- Leave some margin space to avoid accidentally clicking the Collaspe when trying to click the selector -->
     <NCollapse
       arrow-placement="left"
-      :default-expanded-names="environmentList.map((env) => env.uid)"
+      :default-expanded-names="environmentList.map((env) => env.name)"
     >
       <NCollapseItem
         v-for="{
           environment,
           databaseList: databaseListInEnvironment,
         } in databaseListGroupByEnvironment"
-        :key="environment.uid"
-        :name="environment.uid"
+        :key="environment.name"
+        :name="environment.name"
       >
         <template #header>
           <label class="flex items-center gap-x-2" @click.stop.prevent>
@@ -64,13 +64,13 @@
                   :checked="
                     isDatabaseSelectedForEnvironment(
                       database.uid,
-                      environment.uid
+                      environment.name
                     )
                   "
                   @update:checked="
                     toggleDatabaseIdForEnvironment(
                       database.uid,
-                      environment.uid,
+                      environment.name,
                       $event
                     )
                   "
@@ -142,17 +142,17 @@ const state = reactive<LocalState>({
 
 const toggleDatabaseIdForEnvironment = (
   databaseId: string,
-  environmentId: string,
+  environmentName: string,
   selected: boolean
 ) => {
   const map = state.selectedDatabaseUidListForEnvironment;
-  const set = map.get(environmentId) || new Set();
+  const set = map.get(environmentName) || new Set();
   if (selected) {
     set.add(databaseId);
   } else {
     set.delete(databaseId);
   }
-  map.set(environmentId, set);
+  map.set(environmentName, set);
 };
 
 watch(
@@ -167,11 +167,7 @@ watch(
       if (!database) {
         continue;
       }
-      toggleDatabaseIdForEnvironment(
-        uid,
-        database.effectiveEnvironmentEntity.uid,
-        true
-      );
+      toggleDatabaseIdForEnvironment(uid, database.effectiveEnvironment, true);
     }
   },
   { immediate: true }
@@ -235,10 +231,10 @@ watch(
 
 const isDatabaseSelectedForEnvironment = (
   databaseId: string,
-  environmentId: string
+  environmentName: string
 ) => {
   const map = state.selectedDatabaseUidListForEnvironment;
-  const set = map.get(environmentId) || new Set();
+  const set = map.get(environmentName) || new Set();
   return set.has(databaseId);
 };
 
@@ -247,7 +243,7 @@ const getAllSelectionStateForEnvironment = (
   databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
   const set =
-    state.selectedDatabaseUidListForEnvironment.get(environment.uid) ??
+    state.selectedDatabaseUidListForEnvironment.get(environment.name) ??
     new Set();
   const checked = set.size > 0 && databaseList.every((db) => set.has(db.uid));
   const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
@@ -264,7 +260,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList.forEach((db) =>
-    toggleDatabaseIdForEnvironment(db.uid, environment.uid, on)
+    toggleDatabaseIdForEnvironment(db.uid, environment.name, on)
   );
 };
 
@@ -273,7 +269,7 @@ const getSelectionStateSummaryForEnvironment = (
   databaseList: ComposedDatabase[]
 ) => {
   const set =
-    state.selectedDatabaseUidListForEnvironment.get(environment.uid) ||
+    state.selectedDatabaseUidListForEnvironment.get(environment.name) ||
     new Set();
   const selected = databaseList.filter((db) => set.has(db.uid)).length;
   const total = databaseList.length;
@@ -282,11 +278,11 @@ const getSelectionStateSummaryForEnvironment = (
 };
 
 const handleClickRow = (db: ComposedDatabase) => {
-  const environment = db.effectiveEnvironmentEntity;
+  const environmentName = db.effectiveEnvironment;
   toggleDatabaseIdForEnvironment(
     db.uid,
-    environment.uid,
-    !isDatabaseSelectedForEnvironment(db.uid, environment.uid)
+    environmentName,
+    !isDatabaseSelectedForEnvironment(db.uid, environmentName)
   );
 };
 </script>

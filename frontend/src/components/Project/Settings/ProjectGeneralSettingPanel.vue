@@ -70,7 +70,7 @@ import { useI18n } from "vue-i18n";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { pushNotification, useProjectV1Store } from "@/store";
 import type { FeatureType } from "@/types";
-import { DEFAULT_PROJECT_ID } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { extractProjectResourceName } from "@/utils";
 
@@ -96,7 +96,7 @@ const state = reactive<LocalState>({
 
 const allowSave = computed((): boolean => {
   return (
-    parseInt(props.project.uid, 10) !== DEFAULT_PROJECT_ID &&
+    props.project.name !== DEFAULT_PROJECT_NAME &&
     !isEmpty(state.title) &&
     (state.title !== props.project.title || state.key !== props.project.key)
   );

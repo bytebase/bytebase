@@ -82,8 +82,10 @@
         <SchemaEditorSQLCheckButton
           :database-list="databaseList"
           :get-statement="generateOrGetEditingDDL"
-          :use-online-schema-change="state.useOnlineSchemaChange"
-          @enable-online-schema-change="state.useOnlineSchemaChange = true"
+          :use-online-schema-migration="state.useOnlineSchemaMigration"
+          @toggle-online-schema-migration="
+            state.useOnlineSchemaMigration = $event
+          "
         />
       </template>
     </NTabs>
@@ -95,8 +97,8 @@
           {{ $t("issue.sql-review-only") }}
         </NCheckbox>
         <NCheckbox
-          v-if="allowUseOnlineSchemaChange"
-          v-model:checked="state.useOnlineSchemaChange"
+          v-if="allowUseOnlineSchemaMigration"
+          v-model:checked="state.useOnlineSchemaMigration"
         >
           {{ $t("task.online-migration.enable") }}
         </NCheckbox>
@@ -144,11 +146,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import {
-  dialectOfEngineV1,
-  UNKNOWN_PROJECT_NAME,
-  unknownProject,
-} from "@/types";
+import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
@@ -176,7 +174,7 @@ interface LocalState {
   isUploadingFile: boolean;
   // planOnly is used to indicate whether only to create plan.
   planOnly: boolean;
-  useOnlineSchemaChange: boolean;
+  useOnlineSchemaMigration: boolean;
 }
 
 const props = defineProps({
@@ -215,7 +213,7 @@ const state = reactive<LocalState>({
   targets: [],
   isUploadingFile: false,
   planOnly: props.planOnly,
-  useOnlineSchemaChange: false,
+  useOnlineSchemaMigration: false,
 });
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
@@ -257,7 +255,7 @@ const editTargetsKey = computed(() => {
   });
 });
 
-const allowUseOnlineSchemaChange = computed(() => {
+const allowUseOnlineSchemaMigration = computed(() => {
   return databaseList.value.every((db) => allowGhostForDatabase(db));
 });
 
@@ -303,7 +301,7 @@ watch(editTargetsKey, prepareDatabaseMetadata, {
 onMounted(async () => {
   if (
     databaseList.value.length === 0 ||
-    project.value.name === UNKNOWN_PROJECT_NAME
+    !isValidProjectName(project.value.name)
   ) {
     notificationStore.pushNotification({
       module: "bytebase",
@@ -435,7 +433,7 @@ const handlePreviewIssue = async () => {
     template: "bb.issue.database.schema.update",
   };
   query.databaseList = databaseList.value.map((db) => db.name).join(",");
-  if (state.useOnlineSchemaChange) {
+  if (state.useOnlineSchemaMigration) {
     query.ghost = "1";
   }
 

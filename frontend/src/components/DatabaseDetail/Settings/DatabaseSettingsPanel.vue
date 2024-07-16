@@ -7,10 +7,15 @@
         </p>
         <EnvironmentSelect
           class="mt-1 max-w-md"
-          :environment="environment?.uid"
+          :environment-name="environment?.name"
           :disabled="!allowUpdateDatabase"
-          :default-environment-name="database.instanceResource.environment"
-          @update:environment="handleSelectEnvironmentUID"
+          :render-suffix="
+            (env: string) =>
+              database.instanceResource.environment === env
+                ? `(${$t('common.default')})`
+                : ''
+          "
+          @update:environment-name="handleSelectEnvironment"
         />
       </div>
     </div>
@@ -63,13 +68,12 @@ const {
   allowDeleteSecrets,
 } = useDatabaseDetailContext();
 
-const handleSelectEnvironmentUID = async (uid?: string) => {
-  const environment = envStore.getEnvironmentByUID(String(uid));
-  if (environment.name === props.database.effectiveEnvironment) {
+const handleSelectEnvironment = async (name: string | undefined) => {
+  if (!name || name === props.database.effectiveEnvironment) {
     return;
   }
   const databasePatch = cloneDeep(props.database);
-  databasePatch.environment = environment.name;
+  databasePatch.environment = name;
   await databaseStore.updateDatabase({
     database: databasePatch,
     updateMask: ["environment"],

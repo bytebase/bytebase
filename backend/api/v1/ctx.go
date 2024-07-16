@@ -93,6 +93,8 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.OrgPolicyService_CreatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_UpdatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_DeletePolicy_FullMethodName,
+		v1pb.WorkspaceService_GetIamPolicy_FullMethodName,
+		v1pb.WorkspaceService_SetIamPolicy_FullMethodName,
 		v1pb.ReviewConfigService_CreateReviewConfig_FullMethodName,
 		v1pb.ReviewConfigService_ListReviewConfigs_FullMethodName,
 		v1pb.ReviewConfigService_GetReviewConfig_FullMethodName,
@@ -401,9 +403,9 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 	case *v1pb.UpdateProjectRequest:
 		projects = append(projects, r.GetProject().GetName())
 	case *v1pb.SetIamPolicyRequest:
-		projects = append(projects, r.GetProject())
+		projects = append(projects, r.GetResource())
 	case *v1pb.GetIamPolicyRequest:
-		projects = append(projects, r.GetProject())
+		projects = append(projects, r.GetResource())
 	case *v1pb.BatchGetIamPolicyRequest:
 		projects = append(projects, r.GetNames()...)
 	case *v1pb.GetDeploymentConfigRequest:

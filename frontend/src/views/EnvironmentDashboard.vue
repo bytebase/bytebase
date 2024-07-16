@@ -17,7 +17,7 @@
       >
         <EnvironmentDetail
           v-if="!state.reorder"
-          :environment-id="item.id"
+          :environment-name="item.id"
           @archive="doArchive"
         />
       </NTabPane>

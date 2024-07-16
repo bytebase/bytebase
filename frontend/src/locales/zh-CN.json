@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "显示默认参数",
       "hide-default-parameters": "隐藏默认参数",
-      "enable": "启用在线大表变更"
+      "enable": "启用在线大表变更",
+      "disable": "关闭在线大表变更",
+      "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
     "prior-backup-tips": "提前备份受影响的数据"
   },
@@ -1815,6 +1817,7 @@
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
       "self": "分类分级",
+      "description": "通过分类分级，来批量管理列的脱敏规则。",
       "sync-from-comment": "从注释中同步分类分级",
       "sync-from-comment-tip": "启用后，分类分级将从表或列的注释同步。注释应遵循“{format}”格式。",
       "sync-from-comment-enable-warning": "分类分级将随着 DDL 而改变，并与原始注释同步。",
@@ -2390,7 +2393,14 @@
       "self": "标准模式"
     },
     "to-enable-standard-mode": "来开启标准模式",
-    "add-a-new-instance": "添加实例"
+    "add-a-new-instance": "添加实例",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket 连接失败",
+        "description": "自动补全功能可能会受到限制或无效。",
+        "disconnected": "WebSocket 已断开连接"
+      }
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2807,6 +2817,8 @@
     "policy-updated": "审核策略已更新",
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
+    "add-rules": "添加规则",
+    "add-or-remove-rules": "添加或删除规则",
     "filter": "筛选",
     "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
     "disable": "停用审核策略",
@@ -2820,9 +2832,10 @@
       "no-linked-resources": "没有绑定的资源",
       "change-resources": "更改绑定的资源",
       "self": "绑定到资源",
-      "label": "将审核策略应用于所选资源。一个资源只能关联一个策略。数据库将使用附加到项目的 SQL 审核策略，否则将回退到环境策略。",
+      "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
       "label-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
-      "label-project": "SQL 审核策略将影响所选项目下的所有数据库。环境的 SQL 审核策略将被忽略。"
+      "label-project": "SQL 审核策略将影响所选项目下的所有数据库。环境的 SQL 审核策略将被忽略。",
+      "override-warning": "以下资源已与其他 SQL 审核策略绑定。点击“{button}”将覆盖配置。"
     },
     "create": {
       "breadcrumb": "创建审核策略",

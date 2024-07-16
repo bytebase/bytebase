@@ -440,14 +440,14 @@ func request_ProjectService_GetIamPolicy_0(ctx context.Context, marshaler runtim
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["resource"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resource")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Resource, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resource", err)
 	}
 
 	msg, err := client.GetIamPolicy(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -466,14 +466,14 @@ func local_request_ProjectService_GetIamPolicy_0(ctx context.Context, marshaler 
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["resource"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resource")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Resource, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resource", err)
 	}
 
 	msg, err := server.GetIamPolicy(ctx, &protoReq)
@@ -566,14 +566,14 @@ func request_ProjectService_SetIamPolicy_0(ctx context.Context, marshaler runtim
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["resource"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resource")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Resource, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resource", err)
 	}
 
 	msg, err := client.SetIamPolicy(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -596,14 +596,14 @@ func local_request_ProjectService_SetIamPolicy_0(ctx context.Context, marshaler 
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["resource"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resource")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Resource, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resource", err)
 	}
 
 	msg, err := server.SetIamPolicy(ctx, &protoReq)
@@ -1634,7 +1634,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetIamPolicy", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:getIamPolicy"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetIamPolicy", runtime.WithHTTPPathPattern("/v1/{resource=projects/*}:getIamPolicy"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1684,7 +1684,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetIamPolicy", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:setIamPolicy"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetIamPolicy", runtime.WithHTTPPathPattern("/v1/{resource=projects/*}:setIamPolicy"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2227,7 +2227,7 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetIamPolicy", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:getIamPolicy"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetIamPolicy", runtime.WithHTTPPathPattern("/v1/{resource=projects/*}:getIamPolicy"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2271,7 +2271,7 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetIamPolicy", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:setIamPolicy"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetIamPolicy", runtime.WithHTTPPathPattern("/v1/{resource=projects/*}:setIamPolicy"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2591,11 +2591,11 @@ var (
 
 	pattern_ProjectService_UndeleteProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "name"}, "undelete"))
 
-	pattern_ProjectService_GetIamPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "getIamPolicy"))
+	pattern_ProjectService_GetIamPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "resource"}, "getIamPolicy"))
 
 	pattern_ProjectService_BatchGetIamPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 1, 0, 4, 2, 5, 1, 2, 2}, []string{"v1", "scope", "iamPolicies"}, "batchGet"))
 
-	pattern_ProjectService_SetIamPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "setIamPolicy"))
+	pattern_ProjectService_SetIamPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "resource"}, "setIamPolicy"))
 
 	pattern_ProjectService_GetDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "deploymentConfigs", "name"}, ""))
 

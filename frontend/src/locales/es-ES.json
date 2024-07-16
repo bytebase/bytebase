@@ -393,7 +393,9 @@
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados",
-      "enable": "Habilitar la migración en línea"
+      "enable": "Habilitar la migración en línea",
+      "disable": "Deshabilitar la migración en línea",
+      "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
     "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
   },
@@ -1815,6 +1817,7 @@
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
       "self": "Clasificación",
+      "description": "Utilice la clasificación de datos para administrar la política de enmascaramiento para muchas columnas controlando solo una pequeña cantidad de clasificaciones.",
       "sync-from-comment": "Sincronizar clasificación desde comentario",
       "sync-from-comment-tip": "Una vez habilitada, la clasificación se sincronizará desde el comentario de tabla/columna. El comentario debe seguir el formato \"{format}\".",
       "sync-from-comment-enable-warning": "La clasificación cambiará con el DDL y se sincronizará con el comentario original.",
@@ -2390,7 +2393,14 @@
       "self": "Modo estandar"
     },
     "to-enable-standard-mode": "para habilitar el modo estándar",
-    "add-a-new-instance": "Agregar una nueva instancia"
+    "add-a-new-instance": "Agregar una nueva instancia",
+    "web-socket": {
+      "errors": {
+        "title": "La conexión WebSocket falló",
+        "description": "La finalización automática puede estar limitada o deshabilitada.",
+        "disconnected": "WebSocket desconectado"
+      }
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2807,6 +2817,8 @@
     "policy-updated": "La política de revisión se actualizó correctamente.",
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
+    "add-rules": "Agregar reglas",
+    "add-or-remove-rules": "Agregar o eliminar reglas",
     "filter": "Filtro",
     "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
     "disable": "Deshabilitar",
@@ -2820,9 +2832,10 @@
       "no-linked-resources": "Sin recursos adjuntos",
       "change-resources": "Cambiar recursos adjuntos",
       "self": "Adjuntar a recursos",
-      "label": "Aplicar la política de revisión al recurso seleccionado. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
+      "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
       "label-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
-      "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno."
+      "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno.",
+      "override-warning": "Siguiendo los recursos ya vinculados con otras políticas de revisión de SQL. Haga clic en \"{button}\" para anular la configuración."
     },
     "create": {
       "breadcrumb": "Crear política de revisión SQL",

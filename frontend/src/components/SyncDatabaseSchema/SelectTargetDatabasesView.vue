@@ -214,7 +214,7 @@
 
   <TargetDatabasesSelectPanel
     v-if="state.showSelectDatabasePanel"
-    :project-id="projectId"
+    :project-name="projectName"
     :engine="engine"
     :selected-database-id-list="state.selectedDatabaseIdList"
     @close="state.showSelectDatabasePanel = false"
@@ -258,7 +258,7 @@ import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import type { RawSQLState, SourceSchemaType } from "./types";
 
 interface DatabaseSourceSchema {
-  environmentId: string;
+  environmentName: string;
   databaseId: string;
   changeHistory: ChangeHistory;
   conciseHistory?: string;
@@ -274,7 +274,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectId: string;
+  projectName: string;
   sourceSchemaType: SourceSchemaType;
   databaseSourceSchema?: DatabaseSourceSchema;
   rawSqlState?: RawSQLState;
@@ -305,7 +305,7 @@ const databaseDiffCache = reactive<
   >
 >({});
 const project = computed(() => {
-  return useProjectV1Store().getProjectByUID(props.projectId);
+  return useProjectV1Store().findProjectByUID(props.projectName);
 });
 
 const displayOnlySourceDatabaseSchema = computed(() => {
@@ -432,8 +432,8 @@ const getDatabaseSourceSchemaEnvironment = () => {
   if (!props.databaseSourceSchema) {
     return;
   }
-  return environmentV1Store.getEnvironmentByUID(
-    props.databaseSourceSchema.environmentId
+  return environmentV1Store.getEnvironmentByName(
+    props.databaseSourceSchema.environmentName
   );
 };
 

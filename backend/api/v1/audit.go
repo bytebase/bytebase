@@ -93,7 +93,7 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	response, rerr := handler(ctx, request)
-	if isAuditMethod(serverInfo.FullMethod, request) {
+	if isAuditMethod(serverInfo.FullMethod) {
 		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
@@ -175,7 +175,7 @@ func getRequestResource(request any) string {
 	case *v1pb.BatchUpdateDatabasesRequest:
 		return r.Parent
 	case *v1pb.SetIamPolicyRequest:
-		return r.Project
+		return r.Resource
 	case *v1pb.CreateUserRequest:
 		return r.GetUser().GetName()
 	case *v1pb.UpdateUserRequest:
@@ -189,10 +189,6 @@ func getRequestResource(request any) string {
 	case *v1pb.UpdateSettingRequest:
 		if r.Setting != nil {
 			return r.Setting.Name
-		}
-	case *v1pb.CreateIssueRequest:
-		if r.Issue != nil && r.Issue.GrantRequest != nil {
-			return r.Issue.GrantRequest.Role
 		}
 	default:
 	}
@@ -236,8 +232,6 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.DeleteRiskRequest:
 			return r
 		case *v1pb.UpdateSettingRequest:
-			return r
-		case *v1pb.CreateIssueRequest:
 			return r
 		default:
 			return nil
@@ -402,7 +396,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 	return n
 }
 
-func isAuditMethod(method string, request any) bool {
+func isAuditMethod(method string) bool {
 	switch method {
 	case
 		v1pb.AuthService_Login_FullMethodName,
@@ -418,12 +412,6 @@ func isAuditMethod(method string, request any) bool {
 		v1pb.RiskService_UpdateRisk_FullMethodName,
 		v1pb.SettingService_UpdateSetting_FullMethodName:
 		return true
-	case v1pb.IssueService_CreateIssue_FullMethodName:
-		if r, ok := request.(*v1pb.CreateIssueRequest); ok {
-			if r, ok = proto.Clone(r).(*v1pb.CreateIssueRequest); ok && r.Issue != nil && r.Issue.GrantRequest != nil {
-				return true
-			}
-		}
 	default:
 	}
 	return false

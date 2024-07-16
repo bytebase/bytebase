@@ -92,48 +92,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 
-	schemaNameMap := make(map[string]bool)
 	for _, schemaName := range schemaList {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range tableMap {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range viewMap {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range streamMap {
-		schemaNameMap[schemaName] = true
-	}
-	var schemaNames []string
-	for schemaName := range schemaNameMap {
-		schemaNames = append(schemaNames, schemaName)
-	}
-	sort.Strings(schemaNames)
-	for _, schemaName := range schemaNames {
-		var tables []*storepb.TableMetadata
-		var views []*storepb.ViewMetadata
-		var streams []*storepb.StreamMetadata
-		var tasks []*storepb.TaskMetadata
-		var exists bool
-		if tables, exists = tableMap[schemaName]; !exists {
-			tables = []*storepb.TableMetadata{}
-		}
-		if views, exists = viewMap[schemaName]; !exists {
-			views = []*storepb.ViewMetadata{}
-		}
-		if streams, exists = streamMap[schemaName]; !exists {
-			streams = []*storepb.StreamMetadata{}
-		}
-		if tasks, exists = taskMap[schemaName]; !exists {
-			tasks = []*storepb.TaskMetadata{}
-		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:    schemaName,
-			Tables:  tables,
-			Views:   views,
-			Streams: streams,
-			Tasks:   tasks,
+			Tables:  tableMap[schemaName],
+			Views:   viewMap[schemaName],
+			Streams: streamMap[schemaName],
+			Tasks:   taskMap[schemaName],
 		})
 	}
 	return databaseMetadata, nil
@@ -152,7 +117,7 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 		SELECT
 			SCHEMA_NAME
 		FROM "%s".INFORMATION_SCHEMA.SCHEMATA
-		WHERE %s`, database, excludeWhere)
+		WHERE %s ORDER BY SCHEMA_NAME`, database, excludeWhere)
 
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {

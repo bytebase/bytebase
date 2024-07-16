@@ -3,32 +3,6 @@
 
 ## Table of Contents
 
-- [store/approval.proto](#store_approval-proto)
-    - [ApprovalFlow](#bytebase-store-ApprovalFlow)
-    - [ApprovalNode](#bytebase-store-ApprovalNode)
-    - [ApprovalStep](#bytebase-store-ApprovalStep)
-    - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
-    - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
-    - [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver)
-  
-    - [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue)
-    - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
-    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
-    - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
-    - [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel)
-  
-- [store/activity.proto](#store_activity-proto)
-    - [ActivityIssueApprovalNotifyPayload](#bytebase-store-ActivityIssueApprovalNotifyPayload)
-    - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
-    - [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent)
-    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
-    - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
-    - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
-  
-    - [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status)
-    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
-    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
-  
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
     - [Position](#bytebase-store-Position)
@@ -42,6 +16,20 @@
     - [Advice](#bytebase-store-Advice)
   
     - [Advice.Status](#bytebase-store-Advice-Status)
+  
+- [store/approval.proto](#store_approval-proto)
+    - [ApprovalFlow](#bytebase-store-ApprovalFlow)
+    - [ApprovalNode](#bytebase-store-ApprovalNode)
+    - [ApprovalStep](#bytebase-store-ApprovalStep)
+    - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
+    - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
+    - [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver)
+  
+    - [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue)
+    - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
+    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
+    - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
+    - [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel)
   
 - [store/audit_log.proto](#store_audit_log-proto)
     - [AuditLog](#bytebase-store-AuditLog)
@@ -183,6 +171,8 @@
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
+    - [Binding](#bytebase-store-Binding)
+    - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
@@ -198,10 +188,8 @@
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
-    - [Binding](#bytebase-store-Binding)
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
-    - [ProjectIamPolicy](#bytebase-store-ProjectIamPolicy)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
@@ -298,6 +286,184 @@
     - [VCSConnector](#bytebase-store-VCSConnector)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="store_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/common.proto
+
+
+
+<a name="bytebase-store-PageToken"></a>
+
+### PageToken
+Used internally for obfuscating the page token.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| limit | [int32](#int32) |  |  |
+| offset | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Position"></a>
+
+### Position
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+| DM | 15 |  |
+| RISINGWAVE | 16 |  |
+| OCEANBASE_ORACLE | 17 |  |
+| STARROCKS | 18 |  |
+| DORIS | 19 |  |
+| HIVE | 20 |  |
+| ELASTICSEARCH | 21 |  |
+| BIGQUERY | 22 |  |
+| DYNAMODB | 23 |  |
+| DATABRICKS | 24 |  |
+
+
+
+<a name="bytebase-store-ExportFormat"></a>
+
+### ExportFormat
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| CSV | 1 |  |
+| JSON | 2 |  |
+| SQL | 3 |  |
+| XLSX | 4 |  |
+
+
+
+<a name="bytebase-store-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
+
+
+
+<a name="bytebase-store-VCSType"></a>
+
+### VCSType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
+| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
+| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_advice-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/advice.proto
+
+
+
+<a name="bytebase-store-Advice"></a>
+
+### Advice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Advice.Status](#bytebase-store-Advice-Status) |  | The advice status. |
+| code | [int32](#int32) |  | The advice code. |
+| title | [string](#string) |  | The advice title. |
+| content | [string](#string) |  | The advice content. |
+| detail | [string](#string) |  | The advice detail. |
+| start_position | [Position](#bytebase-store-Position) |  | 1-based positions of the sql statment. |
+| end_position | [Position](#bytebase-store-Position) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Advice-Status"></a>
+
+### Advice.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| SUCCESS | 1 |  |
+| WARNING | 2 |  |
+| ERROR | 3 |  |
+
+
+ 
+
+ 
+
+ 
 
 
 
@@ -487,341 +653,6 @@ ANY means approving any node will proceed.
 | LOW | 1 |  |
 | MODERATE | 2 |  |
 | HIGH | 3 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_activity-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/activity.proto
-
-
-
-<a name="bytebase-store-ActivityIssueApprovalNotifyPayload"></a>
-
-### ActivityIssueApprovalNotifyPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| approval_step | [ApprovalStep](#bytebase-store-ApprovalStep) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload"></a>
-
-### ActivityIssueCommentCreatePayload
-ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
-| task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
-| approval_event | [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent) |  |  |
-| issue_name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent"></a>
-
-### ActivityIssueCommentCreatePayload.ApprovalEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status) |  | The new status. |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent"></a>
-
-### ActivityIssueCommentCreatePayload.ExternalApprovalEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type) |  |  |
-| action | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action) |  |  |
-| stage_name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy"></a>
-
-### ActivityIssueCommentCreatePayload.TaskRollbackBy
-TaskRollbackBy records an issue rollback activity.
-The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_id | [int64](#int64) |  |  |
-| task_id | [int64](#int64) |  |  |
-| rollback_by_issue_id | [int64](#int64) |  |  |
-| rollback_by_task_id | [int64](#int64) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCreatePayload"></a>
-
-### ActivityIssueCreatePayload
-ActivityIssueCreatePayload is the payloads for creating issues.
-These payload types are only used when marshalling to the json format for saving into the database.
-So we annotate with json tag using camelCase naming which is consistent with normal
-json naming convention. More importantly, frontend code can simply use JSON.parse to
-convert to the expected struct there.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_name | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status"></a>
-
-### ActivityIssueCommentCreatePayload.ApprovalEvent.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
-| REJECTED | 3 |  |
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action"></a>
-
-### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| ACTION_APPROVE | 1 |  |
-| ACTION_REJECT | 2 |  |
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type"></a>
-
-### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TYPE_FEISHU | 1 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/common.proto
-
-
-
-<a name="bytebase-store-PageToken"></a>
-
-### PageToken
-Used internally for obfuscating the page token.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| limit | [int32](#int32) |  |  |
-| offset | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-Position"></a>
-
-### Position
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-Engine"></a>
-
-### Engine
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENGINE_UNSPECIFIED | 0 |  |
-| CLICKHOUSE | 1 |  |
-| MYSQL | 2 |  |
-| POSTGRES | 3 |  |
-| SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
-| TIDB | 6 |  |
-| MONGODB | 7 |  |
-| REDIS | 8 |  |
-| ORACLE | 9 |  |
-| SPANNER | 10 |  |
-| MSSQL | 11 |  |
-| REDSHIFT | 12 |  |
-| MARIADB | 13 |  |
-| OCEANBASE | 14 |  |
-| DM | 15 |  |
-| RISINGWAVE | 16 |  |
-| OCEANBASE_ORACLE | 17 |  |
-| STARROCKS | 18 |  |
-| DORIS | 19 |  |
-| HIVE | 20 |  |
-| ELASTICSEARCH | 21 |  |
-| BIGQUERY | 22 |  |
-| DYNAMODB | 23 |  |
-| DATABRICKS | 24 |  |
-
-
-
-<a name="bytebase-store-ExportFormat"></a>
-
-### ExportFormat
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| FORMAT_UNSPECIFIED | 0 |  |
-| CSV | 1 |  |
-| JSON | 2 |  |
-| SQL | 3 |  |
-| XLSX | 4 |  |
-
-
-
-<a name="bytebase-store-MaskingLevel"></a>
-
-### MaskingLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_LEVEL_UNSPECIFIED | 0 |  |
-| NONE | 1 |  |
-| PARTIAL | 2 |  |
-| FULL | 3 |  |
-
-
-
-<a name="bytebase-store-VCSType"></a>
-
-### VCSType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
-| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
-| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
-| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_advice-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/advice.proto
-
-
-
-<a name="bytebase-store-Advice"></a>
-
-### Advice
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [Advice.Status](#bytebase-store-Advice-Status) |  | The advice status. |
-| code | [int32](#int32) |  | The advice code. |
-| title | [string](#string) |  | The advice title. |
-| content | [string](#string) |  | The advice content. |
-| detail | [string](#string) |  | The advice detail. |
-| start_position | [Position](#bytebase-store-Position) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-Advice-Status"></a>
-
-### Advice.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified. |
-| SUCCESS | 1 |  |
-| WARNING | 2 |  |
-| ERROR | 3 |  |
 
 
  
@@ -2839,6 +2670,8 @@ Type is the database change type.
 | column | [int32](#int32) |  |  |
 | detail | [string](#string) |  |  |
 | code | [int32](#int32) |  | Code from sql review. |
+| start_position | [Position](#bytebase-store-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-store-Position) |  |  |
 
 
 
@@ -2905,6 +2738,38 @@ Type is the database change type.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/policy.proto
+
+
+
+<a name="bytebase-store-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+
+
+
+
+
+
+<a name="bytebase-store-IamPolicy"></a>
+
+### IamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single role. |
+
+
+
 
 
 
@@ -3121,23 +2986,6 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
-<a name="bytebase-store-Binding"></a>
-
-### Binding
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-
-
-
-
-
-
 <a name="bytebase-store-Label"></a>
 
 ### Label
@@ -3168,21 +3016,6 @@ Format: users/{userUID} or groups/{group email} |
 | force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
 | allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
 | auto_resolve_issue | [bool](#bool) |  | Enable auto resolve issue. |
-
-
-
-
-
-
-<a name="bytebase-store-ProjectIamPolicy"></a>
-
-### ProjectIamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single project role. |
 
 
 

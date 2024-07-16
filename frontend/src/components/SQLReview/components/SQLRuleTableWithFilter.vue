@@ -2,6 +2,7 @@
   <SQLRuleFilter
     :rule-list="ruleList"
     :params="filterParams"
+    :hide-level-filter="hideLevel"
     v-on="filterEvents"
   >
     <template
@@ -15,7 +16,12 @@
         v-if="filteredRuleList.length > 0"
         :rule-list="filteredRuleList"
         :editable="editable"
-        @rule-change="onRuleChange"
+        :hide-level="hideLevel"
+        :select-rule="selectRule"
+        :selected-rule-keys="selectedRuleKeys"
+        :size="size"
+        @rule-upsert="onRuleChange"
+        @update:selected-rule-keys="$emit('update:selectedRuleKeys', $event)"
       />
       <NoDataPlaceholder v-else class="my-5" />
     </template>
@@ -33,18 +39,31 @@ import type { RuleTemplateV2 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 
-const props = defineProps<{
-  engine: Engine;
-  ruleList: RuleTemplateV2[];
-  editable: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    engine: Engine;
+    ruleList: RuleTemplateV2[];
+    editable: boolean;
+    hideLevel?: boolean;
+    selectRule?: boolean;
+    selectedRuleKeys?: string[];
+    size?: "small" | "medium";
+  }>(),
+  {
+    selectRule: false,
+    hideLevel: false,
+    selectedRuleKeys: () => [],
+    size: "medium",
+  }
+);
 
 const emit = defineEmits<{
   (
-    event: "rule-change",
+    event: "rule-upsert",
     rule: RuleTemplateV2,
     update: Partial<RuleTemplateV2>
   ): void;
+  (event: "update:selectedRuleKeys", keys: string[]): void;
 }>();
 
 const { params: filterParams, events: filterEvents } = useSQLRuleFilter();
@@ -58,6 +77,6 @@ const onRuleChange = (
   rule: RuleTemplateV2,
   update: Partial<RuleTemplateV2>
 ) => {
-  emit("rule-change", rule, update);
+  emit("rule-upsert", rule, update);
 };
 </script>

@@ -9,20 +9,14 @@ export type EditState = {
 };
 
 export const useTempEditState = (state: EditState) => {
-  const { isCreating, issue, selectedTask } = useIssueContext();
+  const { isCreating, selectedTask } = useIssueContext();
   const { sheet, sheetName, sheetReady, sheetStatement } = useTaskSheet();
-  const rolloutMode = computed(() => !!issue.value.rollout);
 
   let stopWatching = () => {
     // noop
   };
 
   const startWatching = () => {
-    // In non-rollout mode, we don't have the task sheet.
-    if (!rolloutMode.value) {
-      return () => {};
-    }
-
     const tempEditStateMap = new Map<string, EditState>();
     const isSwitchingTask = ref(false);
 
@@ -31,7 +25,6 @@ export const useTempEditState = (state: EditState) => {
     // So we need to watch the id instead of the object ref.
     const selectedTaskUID = computed((): string => {
       if (isCreating.value) return String(UNKNOWN_ID);
-      if (!rolloutMode.value) return String(UNKNOWN_ID);
       return selectedTask.value.uid;
     });
 

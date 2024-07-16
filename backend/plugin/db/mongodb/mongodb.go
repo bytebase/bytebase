@@ -87,11 +87,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return nil
 }
 
-// GetType returns the database type.
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_MONGODB
-}
-
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
 	return nil

@@ -62,7 +62,7 @@
       <BaselineSchemaSelector
         v-if="source === 'BASELINE'"
         v-model:database-id="databaseId"
-        :project-id="project.uid"
+        :project-name="project.name"
         :loading="isPreparingBranch"
       />
     </div>

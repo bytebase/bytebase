@@ -130,11 +130,16 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { WorkspacePermission } from "@/types";
-import { UNKNOWN_ID, PresetRoleType } from "@/types";
+import {
+  PresetRoleType,
+  UNKNOWN_PROJECT_NAME,
+  isValidProjectName,
+} from "@/types";
 import {
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
   hasWorkspaceLevelProjectPermission,
+  extractProjectResourceName,
 } from "@/utils";
 
 type IntroItem = {
@@ -157,8 +162,8 @@ const show = computed(() => {
 });
 
 const sampleProject = computed(() => {
-  const project = projectStore.getProjectByUID("101");
-  if (project.uid === `${UNKNOWN_ID}`) {
+  const project = projectStore.findProjectByUID("101");
+  if (!isValidProjectName(project.name)) {
     return;
   }
   return project;
@@ -182,7 +187,9 @@ const introList = computed(() => {
       link: {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
-          projectId: sampleProject.value?.uid,
+          projectId: extractProjectResourceName(
+            sampleProject.value?.name ?? UNKNOWN_PROJECT_NAME
+          ),
           issueSlug: "101",
         },
       },
@@ -354,7 +361,10 @@ watchEffect(async () => {
   if (
     hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
   ) {
-    await projectStore.getOrFetchProjectByUID("101", true /* silent */);
+    await projectStore.getOrFetchProjectByName(
+      "projects/101",
+      true /* silent */
+    );
   }
 });
 </script>

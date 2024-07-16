@@ -2,9 +2,9 @@
   <DrawerContent :title="$t('quick-action.create-db')">
     <CreateDatabasePrepForm
       ref="form"
-      :project-id="projectId"
-      :environment="environment"
-      :instance="instance"
+      :project-name="projectName"
+      :environment-name="environmentName"
+      :instance-name="instanceName"
       @dismiss="$emit('dismiss')"
     />
     <template #footer>
@@ -20,9 +20,9 @@ import CreateDatabasePrepButtonGroup from "./CreateDatabasePrepButtonGroup.vue";
 import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 
 defineProps<{
-  projectId?: string;
-  environment?: string;
-  instance?: string;
+  projectName?: string;
+  environmentName?: string;
+  instanceName?: string;
 }>();
 
 defineEmits<{

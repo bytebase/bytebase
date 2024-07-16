@@ -15,7 +15,12 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
+import {
+  emptyIssue,
+  isValidProjectName,
+  TaskTypeListWithStatement,
+  UNKNOWN_ID,
+} from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
@@ -65,7 +70,7 @@ export const createIssueSkeleton = async (
   );
   const databaseIdList = (query.databaseList ?? "").split(",");
   const databaseUIDList = await prepareDatabaseUIDList(databaseIdList);
-  await prepareDatabaseList(databaseUIDList, project.uid);
+  await prepareDatabaseList(databaseUIDList, project.name);
 
   const params: CreateIssueParams = {
     databaseUIDList,
@@ -482,16 +487,16 @@ const hasInitialSQL = (initialSQL?: InitialSQL) => {
 
 export const prepareDatabaseList = async (
   databaseUIDList: string[],
-  projectUID: string
+  projectName: string
 ) => {
   const databaseStore = useDatabaseV1Store();
-  if (projectUID && projectUID !== String(UNKNOWN_ID)) {
+  if (isValidProjectName(projectName)) {
     // For preparing the database if user visits creating issue url directly.
     // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
     // is big (100+ sometimes)
     // So we are fetching databaseList by project since that's better cached.
     const project =
-      await useProjectV1Store().getOrFetchProjectByUID(projectUID);
+      await useProjectV1Store().getOrFetchProjectByName(projectName);
     await prepareDatabaseListByProject(project.name);
   } else {
     // Otherwise, we don't have the projectUID (very rare to see, theoretically)

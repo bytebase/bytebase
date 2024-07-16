@@ -217,6 +217,10 @@ export function defer<T = any>() {
   return d;
 }
 
+export const sleep = (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
 /**
  * Wrap a Ref as a Promise, will be resolved when the Ref turns to expectedValue
  * first time
