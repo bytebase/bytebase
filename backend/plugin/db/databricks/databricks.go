@@ -85,10 +85,6 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_DATABRICKS
-}
-
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, stmt string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	return d.RunStatement(ctx, nil, stmt)
 }

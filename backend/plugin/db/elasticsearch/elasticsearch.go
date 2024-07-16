@@ -237,7 +237,3 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
-
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_ELASTICSEARCH
-}

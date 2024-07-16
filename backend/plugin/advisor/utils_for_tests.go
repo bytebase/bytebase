@@ -275,11 +275,6 @@ func (*MockDriver) Ping(_ context.Context) error {
 	return nil
 }
 
-// GetType implements the Driver interface.
-func (*MockDriver) GetType() storepb.Engine {
-	return storepb.Engine_ENGINE_UNSPECIFIED
-}
-
 // GetDB gets the database.
 func (*MockDriver) GetDB() *sql.DB {
 	return nil
