@@ -151,11 +151,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetType returns the database type.
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_REDSHIFT
-}
-
 // GetDB gets the database.
 func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
@@ -380,6 +375,11 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		} else if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
+	}
+
+	// TODO(d): use a Redshift extraction for shared database.
+	if queryContext != nil && queryContext.ShareDB {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
 
 	startTime := time.Now()
