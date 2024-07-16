@@ -25,7 +25,7 @@ defineProps<{
   advices?: Advice[];
 }>();
 
-const { isCreating, selectedTask, selectedSpec } = useIssueContext();
+const { isCreating, selectedTask } = useIssueContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 const router = useRouter();
@@ -46,10 +46,6 @@ const viewMode = computed((): ViewMode => {
       return "EDITOR";
     }
   }
-  if (selectedSpec.value.id !== String(EMPTY_ID)) {
-    return "EDITOR";
-  }
-
   return "NONE";
 });
 
