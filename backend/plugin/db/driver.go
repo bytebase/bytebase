@@ -282,7 +282,6 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	GetType() storepb.Engine
 	GetDB() *sql.DB
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, opts ExecuteOptions) (int64, error)

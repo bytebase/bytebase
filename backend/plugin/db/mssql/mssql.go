@@ -128,11 +128,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetType returns the database type.
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_MSSQL
-}
-
 // GetDB gets the database.
 func (driver *Driver) GetDB() *sql.DB {
 	return driver.db

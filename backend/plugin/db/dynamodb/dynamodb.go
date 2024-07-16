@@ -77,11 +77,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return nil
 }
 
-// GetType returns the database type.
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_DYNAMODB
-}
-
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
 	return nil
@@ -102,7 +97,7 @@ func (*Driver) GetDB() *sql.DB {
 // NOTE: Each api contains some constraints which do not be described in api docs. For example, in ExecuteTransaction, cannot include multiple operations on one item.
 // So we use a simple solution here, use parser to split the statement and execute them one by one, unfortunately, we lose the transaction feature.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	statements, err := base.SplitMultiSQL(d.GetType(), statement)
+	statements, err := base.SplitMultiSQL(storepb.Engine_DYNAMODB, statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split multi statement")
 	}
@@ -158,7 +153,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, errors.New("DynamoDB does not support EXPLAIN")
 	}
 
-	statements, err := base.SplitMultiSQL(d.GetType(), statement)
+	statements, err := base.SplitMultiSQL(storepb.Engine_DYNAMODB, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split multi statement")
 	}
@@ -410,7 +405,7 @@ func convertAttributeValueToRowValue(attributeValue types.AttributeValue) (*v1pb
 
 // RunStatement executes a SQL statement.
 func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	statements, err := base.SplitMultiSQL(d.GetType(), statement)
+	statements, err := base.SplitMultiSQL(storepb.Engine_DYNAMODB, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split multi statement")
 	}
