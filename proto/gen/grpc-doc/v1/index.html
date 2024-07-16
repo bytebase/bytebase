@@ -16587,6 +16587,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>iam_policy</td>
+                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -17002,6 +17009,12 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>IAM</td>
+                <td>14</td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -17084,20 +17097,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DeletePolicy</td>
                 <td><a href="#bytebase.v1.DeletePolicyRequest">DeletePolicyRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GetIamPolicy</td>
-                <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
-                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SetIamPolicy</td>
-                <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
-                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -17306,26 +17305,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/policies/*}</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetIamPolicy</td>
-                <td>GET</td>
-                <td>/v1/{resource=workspaces/*}:getIamPolicy</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SetIamPolicy</td>
-                <td>POST</td>
-                <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
-                <td>*</td>
               </tr>
               
             

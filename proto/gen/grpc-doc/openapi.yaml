@@ -621,6 +621,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
                 - name: pageSize
@@ -685,6 +686,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
             requestBody:
@@ -1839,6 +1841,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
                 - name: pageSize
@@ -1909,6 +1912,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
             requestBody:
@@ -2608,6 +2612,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
                 - name: pageSize
@@ -2672,6 +2677,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
             requestBody:
@@ -3375,6 +3381,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
                 - name: pageSize
@@ -3443,6 +3450,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
             requestBody:
@@ -5556,6 +5564,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
                 - name: pageSize
@@ -5620,6 +5629,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
             requestBody:
@@ -8059,62 +8069,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/SearchWorksheetsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/workspaces/{workspace}:getIamPolicy:
-        get:
-            tags:
-                - OrgPolicyService
-            operationId: OrgPolicyService_GetIamPolicy
-            parameters:
-                - name: workspace
-                  in: path
-                  description: The workspace id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/IamPolicy'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/workspaces/{workspace}:setIamPolicy:
-        post:
-            tags:
-                - OrgPolicyService
-            operationId: OrgPolicyService_SetIamPolicy
-            parameters:
-                - name: workspace
-                  in: path
-                  description: The workspace id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SetIamPolicyRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/IamPolicy'
                 default:
                     description: Default error response
                     content:
@@ -11719,6 +11673,7 @@ components:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - IAM
                     type: string
                     format: enum
                 rolloutPolicy:
@@ -11737,6 +11692,8 @@ components:
                     $ref: '#/components/schemas/RestrictIssueCreationForSQLReviewPolicy'
                 tagPolicy:
                     $ref: '#/components/schemas/TagPolicy'
+                iamPolicy:
+                    $ref: '#/components/schemas/IamPolicy'
                 enforce:
                     type: boolean
                 resourceType:

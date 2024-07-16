@@ -26,7 +26,7 @@ func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*storepb.IamPolicy, 
 }
 
 type UpdateIamPolicyMessage struct {
-	UserUID    int
+	Member     string
 	Roles      []api.Role
 	UpdaterUID int
 }
@@ -43,17 +43,15 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 		roleMap[common.FormatRole(role.String())] = true
 	}
 
-	member := common.FormatUserUID(update.UserUID)
-
 	for _, binding := range workspaceIamPolicy.Bindings {
-		index := slices.Index(binding.Members, member)
+		index := slices.Index(binding.Members, update.Member)
 		if !roleMap[binding.Role] {
 			if index >= 0 {
 				binding.Members = slices.Delete(binding.Members, index, index+1)
 			}
 		} else {
 			if index < 0 {
-				binding.Members = append(binding.Members, member)
+				binding.Members = append(binding.Members, update.Member)
 			}
 		}
 
@@ -64,7 +62,7 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 		workspaceIamPolicy.Bindings = append(workspaceIamPolicy.Bindings, &storepb.Binding{
 			Role: role,
 			Members: []string{
-				member,
+				update.Member,
 			},
 		})
 	}

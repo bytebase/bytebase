@@ -99,17 +99,6 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "name";
   }
-
-  rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
-    option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
-  }
-
-  rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
-    option (google.api.http) = {
-      post: "/v1/{resource=workspaces/*}:setIamPolicy"
-      body: "*"
-    };
-  }
 }
 
 message CreatePolicyRequest {
@@ -221,6 +210,7 @@ message Policy {
     MaskingExceptionPolicy masking_exception_policy = 18;
     RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
     TagPolicy tag_policy = 21;
+    IamPolicy iam_policy = 22;
   }
 
   bool enforce = 13;
@@ -244,6 +234,7 @@ enum PolicyType {
   MASKING_EXCEPTION = 10;
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
   TAG = 13;
+  IAM = 14;
 }
 
 enum PolicyResourceType {
