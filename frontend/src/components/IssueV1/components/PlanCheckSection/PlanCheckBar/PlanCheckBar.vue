@@ -11,34 +11,11 @@
       <PlanCheckBadgeBar
         :plan-check-run-list="planCheckRunList"
         @select-type="selectedType = $event"
-      >
-        <NTooltip v-if="planCheckRunList.length > 0" trigger="hover">
-          <template #trigger>
-            <NButton
-              strong
-              secondary
-              circle
-              bordered
-              size="small"
-              type="tertiary"
-              @click="state.showPlanCheckDetail = true"
-            >
-              <template #icon>
-                <ChevronsUpDownIcon class="w-4 h-auto" />
-              </template>
-            </NButton>
-          </template>
-          {{ $t("common.expand") }}
-        </NTooltip>
-      </PlanCheckBadgeBar>
+      />
     </div>
 
     <div class="flex justify-end items-center shrink-0">
       <PlanCheckRunButton v-if="allowRunChecks" @run-checks="runChecks" />
-    </div>
-
-    <div v-if="state.showPlanCheckDetail" class="w-full mt-2">
-      <PlanCheckPanel :plan-check-run-list="planCheckRunList" />
     </div>
 
     <PlanCheckModal
@@ -51,9 +28,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronsUpDownIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
-import { reactive, ref } from "vue";
+import { ref } from "vue";
 import {
   notifyNotEditableLegacyIssue,
   useIssueContext,
@@ -66,12 +41,7 @@ import type {
 import type { VueClass } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckModal from "./PlanCheckModal.vue";
-import PlanCheckPanel from "./PlanCheckPanel.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";
-
-interface LocalState {
-  showPlanCheckDetail: boolean;
-}
 
 withDefaults(
   defineProps<{
@@ -87,9 +57,6 @@ withDefaults(
 );
 
 const { issue, events } = useIssueContext();
-const state = reactive<LocalState>({
-  showPlanCheckDetail: !issue.value.rollout, // Show plan check detail by default if there is no rollout.
-});
 const selectedType = ref<PlanCheckRun_Type>();
 
 const runChecks = () => {
