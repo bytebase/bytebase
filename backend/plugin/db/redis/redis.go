@@ -178,11 +178,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.rdb.Ping(ctx).Err()
 }
 
-// GetType returns redis.
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_REDIS
-}
-
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
 	return nil

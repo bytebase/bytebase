@@ -229,7 +229,13 @@ const renderLabel = (option: SelectOption) => {
       project={project}
       mode="ALL_SHORT"
       suffix={props.renderSuffix(project.name)}
-    />
+    >
+      {{
+        suffix: () => (
+          <span class="opacity-60">{props.renderSuffix(project.name)}</span>
+        ),
+      }}
+    </ProjectNameCell>
   );
 };
 </script>

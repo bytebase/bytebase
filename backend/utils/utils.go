@@ -601,7 +601,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		ResourceUID:       issue.Project.UID,
 		ResourceType:      api.PolicyResourceTypeProject,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeProjectIAM,
+		Type:              api.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,

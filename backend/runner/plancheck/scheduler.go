@@ -101,6 +101,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		slog.Error("Skip running plan check for unknown type", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.String("type", string(planCheckRun.Type)))
 		return
 	}
+	// Skip the plan check run if it is already running.
 	if _, ok := s.stateCfg.RunningPlanChecks.Load(planCheckRun.UID); ok {
 		return
 	}
@@ -121,14 +122,24 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 	go func() {
 		defer func() {
 			s.stateCfg.RunningPlanChecks.Delete(planCheckRun.UID)
+			s.stateCfg.RunningPlanCheckRunsCancelFunc.Delete(planCheckRun.UID)
 			s.stateCfg.InstanceOutstandingConnections.Decrement(instanceUID)
 		}()
-		results, err := runExecutorOnce(ctx, executor, planCheckRun.Config)
+
+		ctxWithCancel, cancel := context.WithCancel(ctx)
+		defer cancel()
+		s.stateCfg.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
+
+		results, err := runExecutorOnce(ctxWithCancel, executor, planCheckRun.Config)
 		if err != nil {
-			s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
-			return
+			if errors.Is(err, context.Canceled) {
+				s.markPlanCheckRunCanceled(ctx, planCheckRun, err.Error())
+			} else {
+				s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
+			}
+		} else {
+			s.markPlanCheckRunDone(ctx, planCheckRun, results)
 		}
-		s.markPlanCheckRunDone(ctx, planCheckRun, results)
 	}()
 }
 
@@ -142,7 +153,7 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 		result,
 		planCheckRun.UID,
 	); err != nil {
-		slog.Error("failed to mark plan check run failed", log.BBError(err))
+		slog.Error("failed to mark plan check run done", log.BBError(err))
 	}
 }
 
@@ -157,5 +168,19 @@ func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, planCheckRun *st
 		planCheckRun.UID,
 	); err != nil {
 		slog.Error("failed to mark plan check run failed", log.BBError(err))
+	}
+}
+
+func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, reason string) {
+	result := &storepb.PlanCheckRunResult{
+		Error: reason,
+	}
+	if err := s.store.UpdatePlanCheckRun(ctx,
+		api.SystemBotID,
+		store.PlanCheckRunStatusCanceled,
+		result,
+		planCheckRun.UID,
+	); err != nil {
+		slog.Error("failed to mark plan check run canceled", log.BBError(err))
 	}
 }

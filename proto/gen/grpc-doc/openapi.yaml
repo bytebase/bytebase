@@ -10171,7 +10171,7 @@ components:
                         $ref: '#/components/schemas/Binding'
                     description: |-
                         Collection of binding.
-                         A binding binds one or more project members to a single project role.
+                         A binding binds one or more members or groups to a single role.
         IdentityProvider:
             type: object
             properties:

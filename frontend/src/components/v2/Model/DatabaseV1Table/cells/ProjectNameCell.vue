@@ -7,9 +7,9 @@
       :keyword="keyword"
     />
 
-    <span v-if="suffix">
+    <slot name="suffix">
       {{ suffix }}
-    </span>
+    </slot>
 
     <NTooltip v-if="project.workflow === Workflow.VCS">
       <template #trigger>
