@@ -382,6 +382,11 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		}
 	}
 
+	// TODO(d): use a Redshift extraction for shared database.
+	if queryContext != nil && queryContext.ShareDB {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
+	}
+
 	startTime := time.Now()
 	result, err := util.Query(ctx, storepb.Engine_REDSHIFT, conn, statement, queryContext)
 	if err != nil {
