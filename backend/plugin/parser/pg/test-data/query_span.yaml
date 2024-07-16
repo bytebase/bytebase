@@ -1,3 +1,77 @@
+- description: json_object as target field
+  statement: 'SELECT json_object(''id'': a) FROM t'
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: ?column?
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+- description: json_array as target field
+  statement: SELECT json_array(a) FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: ?column?
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
 - description: json_each as target field
   statement: SELECT jsonb_each(a) FROM t;
   connectedDatabase: db
