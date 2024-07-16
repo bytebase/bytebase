@@ -21,9 +21,9 @@
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import {
-  planCheckRunListForSpec,
   planCheckRunListForTask,
   planSpecHasPlanChecks,
+  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { planServiceClient } from "@/grpcweb";
@@ -33,16 +33,17 @@ import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 import PlanCheckBar from "./PlanCheckBar";
 
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, selectedSpec, selectedTask } = useIssueContext();
+const { isCreating, issue, selectedTask } = useIssueContext();
 
 const show = computed(() => {
   if (isCreating.value) {
     return false;
   }
-  if (selectedSpec.value.id === String(EMPTY_ID)) {
+  const spec = specForTask(issue.value.planEntity, selectedTask.value);
+  if (!spec) {
     return false;
   }
-  return planSpecHasPlanChecks(selectedSpec.value);
+  return planSpecHasPlanChecks(spec);
 });
 
 const allowRunChecks = computed(() => {
@@ -69,10 +70,6 @@ const planCheckRunList = computed(() => {
   // If a task is selected, show plan checks for the task.
   if (selectedTask.value && selectedTask.value.uid !== String(EMPTY_ID)) {
     return planCheckRunListForTask(issue.value, selectedTask.value);
-  }
-  // If a spec is selected, show plan checks for the spec.
-  if (selectedSpec.value && selectedSpec.value.id !== String(EMPTY_ID)) {
-    return planCheckRunListForSpec(issue.value, selectedSpec.value);
   }
   // Otherwise, show plan checks for the issue.
   return issue.value.planCheckRunList;
