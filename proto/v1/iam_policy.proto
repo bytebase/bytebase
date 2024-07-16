@@ -29,7 +29,7 @@ message IamPolicy {
   // Collection of binding.
   // A binding binds one or more project members to a single project role.
   repeated Binding bindings = 1;
-  
+
   repeated Diff diffs = 2;
 }
 
