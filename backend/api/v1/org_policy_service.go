@@ -539,24 +539,6 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 
 func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
-	case v1pb.PolicyType_IAM:
-		// TODO(ed): consider move project IAM policy API to policy api.
-		role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-		if !ok {
-			return "", status.Errorf(codes.Internal, "role not found for current user")
-		}
-		if role != api.WorkspaceAdmin {
-			return "", status.Errorf(codes.PermissionDenied, "only workspace owner can upsert iam policy")
-		}
-		iamPolicy, err := convertToStoreIamPolicy(ctx, s.store, policy.GetIamPolicy())
-		if err != nil {
-			return "", err
-		}
-		payloadBytes, err := protojson.Marshal(iamPolicy)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal iam policy")
-		}
-		return string(payloadBytes), nil
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
 		if !rolloutPolicy.Automatic {
@@ -670,19 +652,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
 	switch policyMessage.Type {
-	case api.PolicyTypeIAM:
-		pType = v1pb.PolicyType_IAM
-		p := &storepb.IamPolicy{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), p); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal iam policy payload")
-		}
-		iamPolicy, err := convertToV1IamPolicy(ctx, s.store, p)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = &v1pb.Policy_IamPolicy{
-			IamPolicy: iamPolicy,
-		}
 	case api.PolicyTypeRollout:
 		pType = v1pb.PolicyType_ROLLOUT_POLICY
 		payload, err := convertToV1RolloutPolicyPayload(policyMessage.Payload)
@@ -1121,8 +1090,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeDisableCopyData, nil
 	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW.String():
 		return api.PolicyTypeRestrictIssueCreationForSQLReview, nil
-	case v1pb.PolicyType_IAM.String():
-		return api.PolicyTypeIAM, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
 }

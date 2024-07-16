@@ -14,7 +14,6 @@ import {
   maskingLevelToJSON,
   maskingLevelToNumber,
 } from "./common";
-import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -28,7 +27,6 @@ export enum PolicyType {
   MASKING_EXCEPTION = "MASKING_EXCEPTION",
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW",
   TAG = "TAG",
-  IAM = "IAM",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -61,9 +59,6 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 13:
     case "TAG":
       return PolicyType.TAG;
-    case 14:
-    case "IAM":
-      return PolicyType.IAM;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -91,8 +86,6 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW";
     case PolicyType.TAG:
       return "TAG";
-    case PolicyType.IAM:
-      return "IAM";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -119,8 +112,6 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 12;
     case PolicyType.TAG:
       return 13;
-    case PolicyType.IAM:
-      return 14;
     case PolicyType.UNRECOGNIZED:
     default:
       return -1;
@@ -384,7 +375,6 @@ export interface Policy {
   maskingExceptionPolicy?: MaskingExceptionPolicy | undefined;
   restrictIssueCreationForSqlReviewPolicy?: RestrictIssueCreationForSQLReviewPolicy | undefined;
   tagPolicy?: TagPolicy | undefined;
-  iamPolicy?: IamPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -1043,7 +1033,6 @@ function createBasePolicy(): Policy {
     maskingExceptionPolicy: undefined,
     restrictIssueCreationForSqlReviewPolicy: undefined,
     tagPolicy: undefined,
-    iamPolicy: undefined,
     enforce: false,
     resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
     resourceUid: "",
@@ -1090,9 +1079,6 @@ export const Policy = {
     }
     if (message.tagPolicy !== undefined) {
       TagPolicy.encode(message.tagPolicy, writer.uint32(170).fork()).ldelim();
-    }
-    if (message.iamPolicy !== undefined) {
-      IamPolicy.encode(message.iamPolicy, writer.uint32(178).fork()).ldelim();
     }
     if (message.enforce === true) {
       writer.uint32(104).bool(message.enforce);
@@ -1200,13 +1186,6 @@ export const Policy = {
 
           message.tagPolicy = TagPolicy.decode(reader, reader.uint32());
           continue;
-        case 22:
-          if (tag !== 178) {
-            break;
-          }
-
-          message.iamPolicy = IamPolicy.decode(reader, reader.uint32());
-          continue;
         case 13:
           if (tag !== 104) {
             break;
@@ -1259,7 +1238,6 @@ export const Policy = {
         ? RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy)
         : undefined,
       tagPolicy: isSet(object.tagPolicy) ? TagPolicy.fromJSON(object.tagPolicy) : undefined,
-      iamPolicy: isSet(object.iamPolicy) ? IamPolicy.fromJSON(object.iamPolicy) : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType)
         ? policyResourceTypeFromJSON(object.resourceType)
@@ -1307,9 +1285,6 @@ export const Policy = {
     }
     if (message.tagPolicy !== undefined) {
       obj.tagPolicy = TagPolicy.toJSON(message.tagPolicy);
-    }
-    if (message.iamPolicy !== undefined) {
-      obj.iamPolicy = IamPolicy.toJSON(message.iamPolicy);
     }
     if (message.enforce === true) {
       obj.enforce = message.enforce;
@@ -1359,9 +1334,6 @@ export const Policy = {
         : undefined;
     message.tagPolicy = (object.tagPolicy !== undefined && object.tagPolicy !== null)
       ? TagPolicy.fromPartial(object.tagPolicy)
-      : undefined;
-    message.iamPolicy = (object.iamPolicy !== undefined && object.iamPolicy !== null)
-      ? IamPolicy.fromPartial(object.iamPolicy)
       : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;

@@ -687,6 +687,9 @@
   
     - [WorksheetService](#bytebase-v1-WorksheetService)
   
+- [v1/workspace_service.proto](#v1_workspace_service-proto)
+    - [WorkspaceService](#bytebase-v1-WorkspaceService)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -5813,7 +5816,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
 | restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
-| iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
@@ -5987,7 +5989,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | MASKING_EXCEPTION | 10 |  |
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
-| IAM | 14 |  |
 
 
 
@@ -10971,6 +10972,33 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) |  |
 | UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  |
 | DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
+<a name="v1_workspace_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/workspace_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-WorkspaceService"></a>
+
+### WorkspaceService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
+| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 
  
 
