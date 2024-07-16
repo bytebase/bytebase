@@ -159,8 +159,8 @@ cloud.google.com/go/cloudbuild v1.9.0/go.mod h1:qK1d7s4QlO0VwfYn5YuClDGg2hfmLZEb
 cloud.google.com/go/clouddms v1.3.0/go.mod h1:oK6XsCDdW4Ib3jCCBugx+gVjevp2TMXFtgxvPSee3OM=
 cloud.google.com/go/clouddms v1.4.0/go.mod h1:Eh7sUGCC+aKry14O1NRljhjyrr0NFC0G2cjwX0cByRk=
 cloud.google.com/go/clouddms v1.5.0/go.mod h1:QSxQnhikCLUw13iAbffF2CZxAER3xDGNHjsTAkQJcQA=
-cloud.google.com/go/cloudsqlconn v1.11.0 h1:/OEFGCNUG2TWefrsfNJE0UWJ+7/YIkkNUWd06ZGbAL4=
-cloud.google.com/go/cloudsqlconn v1.11.0/go.mod h1:c0f/ftQkRxEpIfGNQQIeBtE6Nj+17x9tol/WaGhNSEA=
+cloud.google.com/go/cloudsqlconn v1.11.1 h1:bWIYhsSv9Nqpvhy7CyKJLf5rPeSMsU5aHGXdXEuYQ5E=
+cloud.google.com/go/cloudsqlconn v1.11.1/go.mod h1:SInCUgNOQy5EuVT0U5iS+eDEJi/YSAutqlPSyUETwa0=
 cloud.google.com/go/cloudtasks v1.5.0/go.mod h1:fD92REy1x5woxkKEkLdvavGnPJGEn8Uic9nWuLzqCpY=
 cloud.google.com/go/cloudtasks v1.6.0/go.mod h1:C6Io+sxuke9/KNRkbQpihnW93SWDU3uXt92nu85HkYI=
 cloud.google.com/go/cloudtasks v1.7.0/go.mod h1:ImsfdYWwlWNJbdgPIIGJWC+gemEGTBK/SunNQQNCAb4=
