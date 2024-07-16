@@ -8068,8 +8068,8 @@ paths:
     /v1/workspaces/{workspace}:getIamPolicy:
         get:
             tags:
-                - OrgPolicyService
-            operationId: OrgPolicyService_GetIamPolicy
+                - WorkspaceService
+            operationId: WorkspaceService_GetIamPolicy
             parameters:
                 - name: workspace
                   in: path
@@ -8093,8 +8093,8 @@ paths:
     /v1/workspaces/{workspace}:setIamPolicy:
         post:
             tags:
-                - OrgPolicyService
-            operationId: OrgPolicyService_SetIamPolicy
+                - WorkspaceService
+            operationId: WorkspaceService_SetIamPolicy
             parameters:
                 - name: workspace
                   in: path
@@ -14398,3 +14398,4 @@ tags:
     - name: VCSConnectorService
     - name: VCSProviderService
     - name: WorksheetService
+    - name: WorkspaceService
