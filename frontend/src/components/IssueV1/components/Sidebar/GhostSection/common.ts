@@ -119,6 +119,8 @@ export const provideIssueGhostContext = () => {
     const overrides: Record<string, string> = {};
     if (on) {
       overrides["ghost"] = "1";
+    } else {
+      overrides["ghost"] = "";
     }
 
     // Backup editing statements to `overrides.sqlMap`
