@@ -57,8 +57,8 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5
       highlight.js:
-        specifier: 11.9.0
-        version: 11.9.0
+        specifier: 11.10.0
+        version: 11.10.0
       html-to-image:
         specifier: ^1.11.11
         version: 1.11.11
@@ -2403,8 +2403,8 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
-  highlight.js@11.9.0:
-    resolution: {integrity: sha512-fJ7cW7fQGCYAkgv4CPfwFHrfd/cLS4Hau96JuJ+ZTOWhjnhoeN1ub1tFmALm/+lW5z4WCAuAV9bm05AP0mS6Gw==}
+  highlight.js@11.10.0:
+    resolution: {integrity: sha512-SYVnVFswQER+zu1laSya563s+F8VDGt7o35d4utbamowvUNLLMovFqwCLSocpZTz3MgaSRA1IbqRWZv97dtErQ==}
     engines: {node: '>=12.0.0'}
 
   html-encoding-sniffer@4.0.0:
@@ -6237,7 +6237,7 @@ snapshots:
 
   he@1.2.0: {}
 
-  highlight.js@11.9.0: {}
+  highlight.js@11.10.0: {}
 
   html-encoding-sniffer@4.0.0:
     dependencies:
@@ -6698,7 +6698,7 @@ snapshots:
       date-fns: 2.30.0
       date-fns-tz: 2.0.1(date-fns@2.30.0)
       evtd: 0.2.4
-      highlight.js: 11.9.0
+      highlight.js: 11.10.0
       lodash: 4.17.21
       lodash-es: 4.17.21
       seemly: 0.3.8
@@ -6876,7 +6876,7 @@ snapshots:
       d3: 7.9.0
       d3-flextree: 2.1.2
       emitter: 0.0.2
-      highlight.js: 11.9.0
+      highlight.js: 11.10.0
       humanize-duration: 3.32.1
       lodash: 4.17.21
       sass: 1.77.4
