@@ -540,6 +540,7 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_IAM:
+		// TODO(ed): consider move project IAM policy API to policy api.
 		role, ok := ctx.Value(common.RoleContextKey).(api.Role)
 		if !ok {
 			return "", status.Errorf(codes.Internal, "role not found for current user")
