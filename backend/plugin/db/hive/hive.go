@@ -114,10 +114,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_HIVE
-}
-
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }

@@ -434,7 +434,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 
 	partitionTables := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
 	// Query partition info.
-	if driver.GetType() == storepb.Engine_MYSQL {
+	if driver.dbType == storepb.Engine_MYSQL {
 		partitionTables, err = driver.listPartitionTables(ctx, driver.databaseName)
 		if err != nil {
 			return nil, err

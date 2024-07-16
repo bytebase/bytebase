@@ -34,11 +34,6 @@ func FormatErrorWithQuery(err error, query string) error {
 
 // Query will execute a readonly / SELECT query.
 func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	// TODO(d): use a Redshift extraction for shared database.
-	if dbType == storepb.Engine_REDSHIFT && queryContext != nil && queryContext.ShareDB {
-		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
-	}
-
 	startTime := time.Now()
 	readOnly := false
 	if queryContext != nil {

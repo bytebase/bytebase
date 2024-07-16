@@ -74,10 +74,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_OCEANBASE_ORACLE
-}
-
 func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
