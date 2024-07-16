@@ -5,7 +5,7 @@
     :disabled="hasRunningPlanCheck"
     preference-key="issue.task.run-checks"
     default-action-key="RUN-CHECKS"
-    @click="$emit('run-checks')"
+    @click="handleRunChecks"
   >
     <template #icon>
       <BBSpin v-if="hasRunningPlanCheck" :size="20" />
@@ -26,7 +26,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  planCheckRunListForSpec,
+  planCheckRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { ContextMenuButtonAction } from "@/components/v2";
@@ -34,12 +34,12 @@ import { ContextMenuButton } from "@/components/v2";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { PlanCheckRun_Status } from "@/types/proto/v1/plan_service";
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "run-checks"): void;
 }>();
 
 const { t } = useI18n();
-const { isCreating, issue, selectedSpec } = useIssueContext();
+const { isCreating, issue, selectedTask } = useIssueContext();
 
 const allowRunCheckForIssue = computed(() => {
   if (isCreating.value) {
@@ -66,12 +66,18 @@ const actionList = computed(() => {
 const hasRunningPlanCheck = computed((): boolean => {
   if (isCreating.value) return false;
 
-  const planCheckRunList = planCheckRunListForSpec(
+  const planCheckRunList = planCheckRunListForTask(
     issue.value,
-    selectedSpec.value
+    selectedTask.value
   );
   return planCheckRunList.some(
     (checkRun) => checkRun.status === PlanCheckRun_Status.RUNNING
   );
 });
+
+const handleRunChecks = () => {
+  if (!allowRunCheckForIssue.value) return;
+  if (hasRunningPlanCheck.value) return;
+  emit("run-checks");
+};
 </script>

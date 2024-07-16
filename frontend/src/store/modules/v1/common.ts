@@ -23,6 +23,8 @@ export const protectionRulesSuffix = "/protectionRules";
 export const issueCommentNamePrefix = "issueComments/";
 export const userGroupNamePrefix = "groups/";
 export const reviewConfigNamePrefix = "reviewConfigs/";
+export const planNamePrefix = "plans/";
+export const planCheckRunPrefix = "planCheckRuns/";
 
 export const getNameParentTokens = (
   name: string,
@@ -69,6 +71,15 @@ export const getProjectName = (name: string): string => {
   const tokens = getNameParentTokens(name, [projectNamePrefix]);
   const projectId = tokens[0];
   return projectId;
+};
+
+export const getProjectNamePlanIdPlanCheckRunId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    planNamePrefix,
+    planCheckRunPrefix,
+  ]);
+  return [tokens[0], tokens[1], tokens[2]];
 };
 
 export const getWorksheetId = (name: string): string => {
