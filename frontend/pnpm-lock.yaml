@@ -129,8 +129,8 @@ importers:
         specifier: ^1.5.3
         version: 1.5.3
       qs:
-        specifier: 6.12.1
-        version: 6.12.1
+        specifier: 6.12.3
+        version: 6.12.3
       rxjs:
         specifier: ^7.8.1
         version: 7.8.1
@@ -3224,8 +3224,8 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  qs@6.12.1:
-    resolution: {integrity: sha512-zWmv4RSuB9r2mYQw3zxQuHWeU+42aKi1wWig/j4ele4ygELZ7PEO6MM7rim9oAQH2A5MWfsAVf/jPvTPgCbvUQ==}
+  qs@6.12.3:
+    resolution: {integrity: sha512-AWJm14H1vVaO/iNZ4/hO+HyaTehuy9nRqVdkTqlJt0HWvBiBIEXFmb4C0DGeYo3Xes9rrEW+TxHsaigCbN5ICQ==}
     engines: {node: '>=0.6'}
 
   querystringify@2.2.0:
@@ -7093,7 +7093,7 @@ snapshots:
       pngjs: 5.0.0
       yargs: 15.4.1
 
-  qs@6.12.1:
+  qs@6.12.3:
     dependencies:
       side-channel: 1.0.6
 
