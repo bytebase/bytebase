@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Expr } from "../google/type/expr";
+import { Diff } from "./auth_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -12,6 +13,7 @@ export interface IamPolicy {
    * A binding binds one or more project members to a single project role.
    */
   bindings: Binding[];
+  diffs: Diff[];
 }
 
 export interface Binding {
@@ -39,13 +41,16 @@ export interface Binding {
 }
 
 function createBaseIamPolicy(): IamPolicy {
-  return { bindings: [] };
+  return { bindings: [], diffs: [] };
 }
 
 export const IamPolicy = {
   encode(message: IamPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.bindings) {
       Binding.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.diffs) {
+      Diff.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -64,6 +69,13 @@ export const IamPolicy = {
 
           message.bindings.push(Binding.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.diffs.push(Diff.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -76,6 +88,7 @@ export const IamPolicy = {
   fromJSON(object: any): IamPolicy {
     return {
       bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
+      diffs: globalThis.Array.isArray(object?.diffs) ? object.diffs.map((e: any) => Diff.fromJSON(e)) : [],
     };
   },
 
@@ -83,6 +96,9 @@ export const IamPolicy = {
     const obj: any = {};
     if (message.bindings?.length) {
       obj.bindings = message.bindings.map((e) => Binding.toJSON(e));
+    }
+    if (message.diffs?.length) {
+      obj.diffs = message.diffs.map((e) => Diff.toJSON(e));
     }
     return obj;
   },
@@ -93,6 +109,7 @@ export const IamPolicy = {
   fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
+    message.diffs = object.diffs?.map((e) => Diff.fromPartial(e)) || [];
     return message;
   },
 };

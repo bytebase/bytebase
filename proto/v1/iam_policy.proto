@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/type/expr.proto";
+import "v1/auth_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -12,6 +13,8 @@ message IamPolicy {
   // Collection of binding.
   // A binding binds one or more project members to a single project role.
   repeated Binding bindings = 1;
+  
+  repeated Diff diffs = 2;
 }
 
 message Binding {

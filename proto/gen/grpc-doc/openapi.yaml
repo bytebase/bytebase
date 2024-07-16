@@ -10062,6 +10062,10 @@ components:
                     description: |-
                         Collection of binding.
                          A binding binds one or more project members to a single project role.
+                diffs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Diff'
         IdentityProvider:
             type: object
             properties:

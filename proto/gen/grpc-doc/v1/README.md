@@ -4299,6 +4299,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
+| diffs | [Diff](#bytebase-v1-Diff) | repeated |  |
 
 
 

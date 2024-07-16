@@ -398,6 +398,10 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	oriIamPolicyMsg, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -418,7 +422,16 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return s.convertToV1IamPolicy(ctx, iamPolicyMessage)
+	v1IamPolicy, err := s.convertToV1IamPolicy(ctx, iamPolicyMessage)
+	if err != nil {
+		return nil, err
+	}
+	diffs, err := common.FindDiff(oriIamPolicyMsg, iamPolicyMessage)
+	if err != nil {
+		return nil, err
+	}
+	v1IamPolicy.Diffs = common.ConvertToV1pbDiffs(diffs, nil, nil)
+	return v1IamPolicy, nil
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
