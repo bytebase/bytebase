@@ -217,6 +217,14 @@ message User {
   // The roles of the user.
   // This filed is to supersede the `user_role` field.
   repeated string roles = 13;
+
+  repeated Diff diffs = 14;
+}
+
+message Diff {
+  string action = 1;
+  string name = 2;
+  string value = 3;
 }
 
 enum UserType {

@@ -50,6 +50,7 @@
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
     - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
+    - [Diff](#bytebase-v1-Diff)
     - [GetUserRequest](#bytebase-v1-GetUserRequest)
     - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
     - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
@@ -1312,6 +1313,23 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 
 
 
+<a name="bytebase-v1-Diff"></a>
+
+### Diff
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [string](#string) |  |  |
+| name | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetUserRequest"></a>
 
 ### GetUserRequest
@@ -1507,6 +1525,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | recovery_codes | [string](#string) | repeated | The recovery_codes is the temporary recovery codes using in two phase verification. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | roles | [string](#string) | repeated | The roles of the user. This filed is to supersede the `user_role` field. |
+| diffs | [Diff](#bytebase-v1-Diff) | repeated |  |
 
 
 

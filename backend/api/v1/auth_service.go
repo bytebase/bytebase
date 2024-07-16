@@ -259,6 +259,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 
 // UpdateUser updates a user.
 func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRequest) (*v1pb.User, error) {
+	var oriUser *store.UserMessage
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
@@ -278,6 +279,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
 	}
+	oriUser = user
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
@@ -445,8 +447,18 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
-
 	userResponse := convertToUser(user)
+	diffs, err := common.FindDiff(oriUser, user)
+	if err != nil {
+		return nil, err
+	}
+	userResponse.Diffs = common.ConvertToV1pbDiffs(diffs, map[string]bool{
+		"PasswordHash":                true,
+		"MFAConfig.OtpSecret":         true,
+		"MFAConfig.TempOtpSecret":     true,
+		"MFAConfig.RecoveryCodes":     true,
+		"MFAConfig.TempRecoveryCodes": true,
+	}, nil)
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
 		userResponse.ServiceKey = *passwordPatch
 	}

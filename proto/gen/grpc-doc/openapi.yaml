@@ -9502,6 +9502,15 @@ components:
             properties:
                 labelSelector:
                     $ref: '#/components/schemas/LabelSelector'
+        Diff:
+            type: object
+            properties:
+                action:
+                    type: string
+                name:
+                    type: string
+                value:
+                    type: string
         DiffDatabaseResponse:
             type: object
             properties:
@@ -13796,6 +13805,10 @@ components:
                     description: |-
                         The roles of the user.
                          This filed is to supersede the `user_role` field.
+                diffs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Diff'
         UserGroup:
             type: object
             properties:

@@ -355,6 +355,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Diff"><span class="badge">M</span>Diff</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetUserRequest"><span class="badge">M</span>GetUserRequest</a>
                 </li>
               
@@ -4425,6 +4429,44 @@ Format: users/{user} </p></td>
 
         
       
+        <h3 id="bytebase.v1.Diff">Diff</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>action</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetUserRequest">GetUserRequest</h3>
         <p></p>
 
@@ -4877,6 +4919,13 @@ Could be empty. </p></td>
                   <td>repeated</td>
                   <td><p>The roles of the user.
 This filed is to supersede the `user_role` field. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>diffs</td>
+                  <td><a href="#bytebase.v1.Diff">Diff</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
