@@ -1221,7 +1221,8 @@
     "error": {
       "issue-is-not-open": "El tema no está abierto.",
       "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número.",
-      "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
+      "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción.",
+      "cannot-close-issue-with-running-tasks": "No se puede cerrar el problema con las tareas en ejecución"
     },
     "approval-requested": "Aprobación solicitada",
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
