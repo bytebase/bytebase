@@ -618,13 +618,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	return result, nil
 }
 
-func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
-	canUseAliases := false
-	for i := len(ruleStack) - 1; i >= 0; i-- {
-		switch ruleStack[i].ID {
-		}
-	}
-	_ = canUseAliases
+func (*Completer) fetchSelectItemAliases(_ []*base.RuleContext) []string {
+	// todo
 	return nil
 }
 
