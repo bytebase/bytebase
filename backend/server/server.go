@@ -226,13 +226,13 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	secret, tokenDuration, err := s.getInitSetting(ctx, storeInstance)
+	secret, tokenDuration, err := s.getInitSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = secret
 	s.webhookManager = webhook.NewManager(storeInstance)
-	s.iamManager, err = iam.NewManager(storeInstance)
+	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
@@ -283,7 +283,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, s.profile)
 	contextProvider := apiv1.NewContextProvider(s.store)
 	auditProvider := apiv1.NewAuditInterceptor(s.store)
-	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, s.iamManager, s.profile)
+	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.iamManager, s.profile)
 	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)

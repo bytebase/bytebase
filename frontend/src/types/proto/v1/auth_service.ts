@@ -226,6 +226,7 @@ export interface User {
   /**
    * The roles of the user.
    * This filed is to supersede the `user_role` field.
+   * TODO(ed): deprecate roles field.
    */
   roles: string[];
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -39,14 +38,6 @@ var (
 	deletePatch   = true
 	undeletePatch = false
 )
-
-func isNumber(v string) (int, bool) {
-	n, err := strconv.Atoi(v)
-	if err == nil {
-		return int(n), true
-	}
-	return 0, false
-}
 
 func convertDeletedToState(deleted bool) v1pb.State {
 	if deleted {

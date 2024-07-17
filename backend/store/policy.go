@@ -25,35 +25,33 @@ func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*storepb.IamPolicy, 
 	})
 }
 
-type UpdateIamPolicyMessage struct {
-	UserUID    int
-	Roles      []api.Role
+type PatchIamPolicyMessage struct {
+	Member     string
+	Roles      []string
 	UpdaterUID int
 }
 
-// UpdateWorkspaceIamPolicy will set or remove the member for the workspace role.
-func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamPolicyMessage) (*storepb.IamPolicy, error) {
+// PatchWorkspaceIamPolicy will set or remove the member for the workspace role.
+func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPolicyMessage) (*storepb.IamPolicy, error) {
 	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	roleMap := map[string]bool{}
-	for _, role := range update.Roles {
-		roleMap[common.FormatRole(role.String())] = true
+	for _, role := range patch.Roles {
+		roleMap[role] = true
 	}
 
-	member := common.FormatUserUID(update.UserUID)
-
 	for _, binding := range workspaceIamPolicy.Bindings {
-		index := slices.Index(binding.Members, member)
+		index := slices.Index(binding.Members, patch.Member)
 		if !roleMap[binding.Role] {
 			if index >= 0 {
 				binding.Members = slices.Delete(binding.Members, index, index+1)
 			}
 		} else {
 			if index < 0 {
-				binding.Members = append(binding.Members, member)
+				binding.Members = append(binding.Members, patch.Member)
 			}
 		}
 
@@ -64,7 +62,7 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 		workspaceIamPolicy.Bindings = append(workspaceIamPolicy.Bindings, &storepb.Binding{
 			Role: role,
 			Members: []string{
-				member,
+				patch.Member,
 			},
 		})
 	}
@@ -81,7 +79,7 @@ func (s *Store) UpdateWorkspaceIamPolicy(ctx context.Context, update *UpdateIamP
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, update.UpdaterUID); err != nil {
+	}, patch.UpdaterUID); err != nil {
 		return nil, err
 	}
 
@@ -98,34 +96,6 @@ func findBindingByRole(policy *storepb.IamPolicy, role api.Role) *storepb.Bindin
 	return &storepb.Binding{
 		Role: r,
 	}
-}
-
-func findRolesByUserID(policy *storepb.IamPolicy, userUID int) []api.Role {
-	member := common.FormatUserUID(userUID)
-	roles := []api.Role{}
-	hasWorkspaceRole := false
-
-	for _, binding := range policy.Bindings {
-		roleID, err := common.GetRoleID(binding.Role)
-		if err != nil {
-			slog.Error("cannot get role id", slog.String("role", binding.Role))
-			continue
-		}
-		if roleID == api.WorkspaceMember.String() {
-			continue
-		}
-
-		if slices.Contains(binding.Members, api.AllUsers) || slices.Contains(binding.Members, member) {
-			if strings.HasPrefix(roleID, "workspace") {
-				hasWorkspaceRole = true
-			}
-			roles = append(roles, api.Role(roleID))
-		}
-	}
-	if !hasWorkspaceRole {
-		roles = append(roles, api.WorkspaceMember)
-	}
-	return roles
 }
 
 func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*storepb.IamPolicy, error) {

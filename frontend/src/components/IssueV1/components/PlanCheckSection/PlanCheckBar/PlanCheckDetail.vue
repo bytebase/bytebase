@@ -1,5 +1,14 @@
 <template>
   <div class="flex flex-col gap-y-0.5">
+    <div v-if="showCancelButton">
+      <NButton secondary size="small" @click="cancelPlanCheckRun">
+        <template #icon>
+          <XIcon class="w-4 h-auto" />
+        </template>
+        {{ $t("common.cancel") }}
+      </NButton>
+    </div>
+
     <div
       v-for="(row, i) in highlightTableRows"
       :key="i"
@@ -231,13 +240,22 @@
 </template>
 
 <script setup lang="ts">
+import { XIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { useIssueContext } from "@/components/IssueV1/logic";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
+import { planServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
+import {
+  getProjectNamePlanIdPlanCheckRunId,
+  planNamePrefix,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import type { RuleTemplateV2, ComposedDatabase } from "@/types";
 import {
   GeneralErrorCode,
@@ -278,6 +296,8 @@ const props = defineProps<{
   showCodeLocation?: boolean;
   database?: ComposedDatabase;
 }>();
+
+const { events } = useIssueContext();
 
 const { t } = useI18n();
 const router = useRouter();
@@ -324,6 +344,11 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
 
   return [];
 });
+
+const showCancelButton = computed(
+  // Only allow canceling plan check run when it's running.
+  () => props.planCheckRun.status === PlanCheckRun_Status.RUNNING
+);
 
 const getRuleTemplateByType = (type: string) => {
   if (props.database) {
@@ -466,5 +491,16 @@ const setActiveRule = (type: string) => {
 const handleClickPlanCheckDetailLine = (line: number) => {
   window.location.hash = `L${line}`;
   emit("close");
+};
+
+const cancelPlanCheckRun = async () => {
+  const planCheckRunName = props.planCheckRun.name;
+  const [projectName, planId] =
+    getProjectNamePlanIdPlanCheckRunId(planCheckRunName);
+  await planServiceClient.batchCancelPlanCheckRuns({
+    parent: `${projectNamePrefix}${projectName}/${planNamePrefix}${planId}`,
+    planCheckRuns: [planCheckRunName],
+  });
+  events.emit("status-changed", { eager: true });
 };
 </script>

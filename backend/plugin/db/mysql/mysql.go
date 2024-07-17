@@ -242,11 +242,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.db.PingContext(ctx)
 }
 
-// GetType returns the database type.
-func (d *Driver) GetType() storepb.Engine {
-	return d.dbType
-}
-
 // GetDB gets the database.
 func (d *Driver) GetDB() *sql.DB {
 	return d.db

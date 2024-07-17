@@ -87,7 +87,7 @@ const buttonClasses = computed(() => {
     case PlanCheckRun_Status.RUNNING:
       bgColor = "bg-blue-100";
       textColor = "text-blue-800";
-      borderColor = "bg-blue-800";
+      borderColor = "border-blue-800";
       break;
     case PlanCheckRun_Status.FAILED:
       bgColor = "bg-red-100";

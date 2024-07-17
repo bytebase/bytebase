@@ -85,7 +85,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	find := &store.FindDatabaseMessage{}
-	databaseUID, isNumber := isNumber(databaseName)
+	databaseUID, isNumber := utils.IsNumber(databaseName)
 	if instanceID == "-" && isNumber {
 		// Expected format: "instances/-/database/{uid}"
 		find.UID = &databaseUID
@@ -282,14 +282,12 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	for _, role := range user.Roles {
-		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get permissions")
-		}
-		if permissions[needPermission] {
-			return databases, nil
-		}
+	hasPermission, err := iamManager.CheckPermission(ctx, needPermission, user)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to check permissions")
+	}
+	if hasPermission {
+		return databases, nil
 	}
 
 	projectDatabases := make(map[string][]*store.DatabaseMessage)
@@ -479,7 +477,7 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	find := &store.FindDatabaseMessage{}
-	databaseUID, isNumber := isNumber(databaseName)
+	databaseUID, isNumber := utils.IsNumber(databaseName)
 	if instanceID == "-" && isNumber {
 		// Expected format: "instances/{ignored_value}/database/{uid}"
 		find.UID = &databaseUID

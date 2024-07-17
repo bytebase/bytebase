@@ -24,6 +24,7 @@ const (
 	RolloutService_PreviewRollout_FullMethodName      = "/bytebase.v1.RolloutService/PreviewRollout"
 	RolloutService_ListTaskRuns_FullMethodName        = "/bytebase.v1.RolloutService/ListTaskRuns"
 	RolloutService_GetTaskRunLog_FullMethodName       = "/bytebase.v1.RolloutService/GetTaskRunLog"
+	RolloutService_GetTaskRunSession_FullMethodName   = "/bytebase.v1.RolloutService/GetTaskRunSession"
 	RolloutService_BatchRunTasks_FullMethodName       = "/bytebase.v1.RolloutService/BatchRunTasks"
 	RolloutService_BatchSkipTasks_FullMethodName      = "/bytebase.v1.RolloutService/BatchSkipTasks"
 	RolloutService_BatchCancelTaskRuns_FullMethodName = "/bytebase.v1.RolloutService/BatchCancelTaskRuns"
@@ -38,6 +39,7 @@ type RolloutServiceClient interface {
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	ListTaskRuns(ctx context.Context, in *ListTaskRunsRequest, opts ...grpc.CallOption) (*ListTaskRunsResponse, error)
 	GetTaskRunLog(ctx context.Context, in *GetTaskRunLogRequest, opts ...grpc.CallOption) (*TaskRunLog, error)
+	GetTaskRunSession(ctx context.Context, in *GetTaskRunSessionRequest, opts ...grpc.CallOption) (*TaskRunSession, error)
 	BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error)
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
@@ -101,6 +103,16 @@ func (c *rolloutServiceClient) GetTaskRunLog(ctx context.Context, in *GetTaskRun
 	return out, nil
 }
 
+func (c *rolloutServiceClient) GetTaskRunSession(ctx context.Context, in *GetTaskRunSessionRequest, opts ...grpc.CallOption) (*TaskRunSession, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TaskRunSession)
+	err := c.cc.Invoke(ctx, RolloutService_GetTaskRunSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *rolloutServiceClient) BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BatchRunTasksResponse)
@@ -140,6 +152,7 @@ type RolloutServiceServer interface {
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
 	ListTaskRuns(context.Context, *ListTaskRunsRequest) (*ListTaskRunsResponse, error)
 	GetTaskRunLog(context.Context, *GetTaskRunLogRequest) (*TaskRunLog, error)
+	GetTaskRunSession(context.Context, *GetTaskRunSessionRequest) (*TaskRunSession, error)
 	BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error)
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
@@ -164,6 +177,9 @@ func (UnimplementedRolloutServiceServer) ListTaskRuns(context.Context, *ListTask
 }
 func (UnimplementedRolloutServiceServer) GetTaskRunLog(context.Context, *GetTaskRunLogRequest) (*TaskRunLog, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaskRunLog not implemented")
+}
+func (UnimplementedRolloutServiceServer) GetTaskRunSession(context.Context, *GetTaskRunSessionRequest) (*TaskRunSession, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTaskRunSession not implemented")
 }
 func (UnimplementedRolloutServiceServer) BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchRunTasks not implemented")
@@ -277,6 +293,24 @@ func _RolloutService_GetTaskRunLog_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RolloutService_GetTaskRunSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskRunSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).GetTaskRunSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_GetTaskRunSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).GetTaskRunSession(ctx, req.(*GetTaskRunSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RolloutService_BatchRunTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BatchRunTasksRequest)
 	if err := dec(in); err != nil {
@@ -357,6 +391,10 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTaskRunLog",
 			Handler:    _RolloutService_GetTaskRunLog_Handler,
+		},
+		{
+			MethodName: "GetTaskRunSession",
+			Handler:    _RolloutService_GetTaskRunSession_Handler,
 		},
 		{
 			MethodName: "BatchRunTasks",

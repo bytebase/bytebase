@@ -122,7 +122,9 @@ func isSkippedMethod(fullMethod string) bool {
 		return true
 	// handled in the method because we need to consider plan.Creator.
 	case
-		v1pb.PlanService_UpdatePlan_FullMethodName:
+		v1pb.PlanService_UpdatePlan_FullMethodName,
+		// TODO: maybe needs to add permission checks.
+		v1pb.PlanService_BatchCancelPlanCheckRuns_FullMethodName:
 		return true
 	// handled in the method because we need to consider issue.Creator and issue type.
 	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
@@ -231,19 +233,4 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 		return false, errors.Wrapf(err, "failed to search databases")
 	}
 	return len(databases) > 0, nil
-}
-
-func uniq[T comparable](array []T) []T {
-	res := make([]T, 0, len(array))
-	seen := make(map[T]struct{}, len(array))
-
-	for _, e := range array {
-		if _, ok := seen[e]; ok {
-			continue
-		}
-		seen[e] = struct{}{}
-		res = append(res, e)
-	}
-
-	return res
 }

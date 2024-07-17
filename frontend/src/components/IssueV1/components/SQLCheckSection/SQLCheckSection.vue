@@ -44,7 +44,6 @@ import {
   useIssueContext,
   databaseForTask,
   specForTask,
-  databaseForSpec,
 } from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
@@ -60,15 +59,11 @@ defineEmits<{
   (event: "update:advices", advices: Advice[] | undefined): void;
 }>();
 
-const { issue, selectedTask, selectedSpec, events } = useIssueContext();
+const { issue, selectedTask, events } = useIssueContext();
 const { sheetStatement } = useTaskSheet();
 
-const rolloutMode = computed(() => !!issue.value.rollout);
-
 const database = computed(() => {
-  return rolloutMode.value
-    ? databaseForTask(issue.value, selectedTask.value)
-    : databaseForSpec(issue.value, selectedSpec.value);
+  return databaseForTask(issue.value, selectedTask.value);
 });
 
 const show = computed(() => {
