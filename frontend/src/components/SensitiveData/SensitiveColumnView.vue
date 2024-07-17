@@ -142,7 +142,6 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import {
-  UNKNOWN_ID,
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
   UNKNOWN_PROJECT_NAME,
@@ -204,7 +203,7 @@ const state = reactive<LocalState>({
   selectedEnvironmentName: UNKNOWN_ENVIRONMENT_NAME,
   selectedProjectName: UNKNOWN_PROJECT_NAME,
   selectedInstanceName: UNKNOWN_INSTANCE_NAME,
-  selectedDatabaseName: String(UNKNOWN_ID),
+  selectedDatabaseName: UNKNOWN_DATABASE_NAME,
   pendingGrantAccessColumn: [],
   showGrantAccessDrawer: false,
   showSensitiveColumnDrawer: false,
@@ -373,7 +372,7 @@ const filteredColumnList = computed(() => {
       return false;
     }
     if (
-      state.selectedDatabaseName !== String(UNKNOWN_ID) &&
+      isValidDatabaseName(state.selectedDatabaseName) &&
       column.database.name !== state.selectedDatabaseName
     ) {
       return false;
