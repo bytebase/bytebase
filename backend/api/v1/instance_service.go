@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -996,7 +997,7 @@ func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	var project *store.ProjectMessage
-	projectUID, isNumber := isNumber(projectID)
+	projectUID, isNumber := utils.IsNumber(projectID)
 	if isNumber {
 		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			UID:         &projectUID,
@@ -1025,7 +1026,7 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	}
 
 	find := &store.FindInstanceMessage{}
-	instanceUID, isNumber := isNumber(instanceID)
+	instanceUID, isNumber := utils.IsNumber(instanceID)
 	if isNumber {
 		find.UID = &instanceUID
 	} else {

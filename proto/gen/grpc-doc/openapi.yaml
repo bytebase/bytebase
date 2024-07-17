@@ -8139,6 +8139,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/workspaces/{workspace}:patchIamPolicy:
+        patch:
+            tags:
+                - WorkspaceService
+            operationId: WorkspaceService_PatchIamPolicy
+            parameters:
+                - name: workspace
+                  in: path
+                  description: The workspace id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PatchIamPolicyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IamPolicy'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/workspaces/{workspace}:setIamPolicy:
         post:
             tags:
@@ -11457,6 +11488,28 @@ components:
                         - $ref: '#/components/schemas/SourceInfo'
                     description: The source info derived from input that generated the parsed `expr`.
             description: An expression together with source information as returned by the parser.
+        PatchIamPolicyRequest:
+            required:
+                - resource
+            type: object
+            properties:
+                resource:
+                    type: string
+                    description: |-
+                        The name of the resource to get the IAM policy.
+                         Format: workspaces/{workspace}
+                member:
+                    type: string
+                    description: |-
+                        Specifies the principals requesting access for a Bytebase resource.
+                         Format: user:{email}
+                roles:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The roles that is assigned to the member.
+                         Format: roles/{role}
         PatchSubscription:
             type: object
             properties:
@@ -14030,6 +14083,7 @@ components:
                     description: |-
                         The roles of the user.
                          This filed is to supersede the `user_role` field.
+                         TODO(ed): deprecate roles field.
         UserGroup:
             type: object
             properties:

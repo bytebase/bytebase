@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"log/slog"
@@ -15,21 +14,25 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // WorksheetService implements the worksheet service.
 type WorksheetService struct {
 	v1pb.UnimplementedWorksheetServiceServer
-	store *store.Store
+	store      *store.Store
+	iamManager *iam.Manager
 }
 
 // NewWorksheetService creates a new WorksheetService.
-func NewWorksheetService(store *store.Store) *WorksheetService {
+func NewWorksheetService(store *store.Store, iamManager *iam.Manager) *WorksheetService {
 	return &WorksheetService{
-		store: store,
+		store:      store,
+		iamManager: iamManager,
 	}
 }
 
@@ -84,7 +87,7 @@ func (s *WorksheetService) CreateWorksheet(ctx context.Context, request *v1pb.Cr
 		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}, sometimes the name will convert to int id incorrectly.
 		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
 		// We need to remove legacy code after the migration.
-		dbUID, isNumber := isNumber(databaseName)
+		dbUID, isNumber := utils.IsNumber(databaseName)
 		if instanceResourceID == "-" && isNumber {
 			find.UID = &dbUID
 		} else {
@@ -467,7 +470,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	if worksheet.CreatorID == user.ID {
 		return true, nil
 	}
-	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
+	if s.checkUserRoles(ctx, user) {
 		return true, nil
 	}
 
@@ -485,7 +488,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	case store.ProjectWriteWorkSheet:
 		return len(projectRoles) > 0, nil
 	case store.ProjectReadWorkSheet:
-		return projectRoles[api.ProjectOwner], nil
+		return projectRoles[common.FormatRole(api.ProjectOwner.String())], nil
 	}
 
 	return false, nil
@@ -506,7 +509,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	if worksheet.CreatorID == user.ID {
 		return true, nil
 	}
-	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
+	if s.checkUserRoles(ctx, user) {
 		return true, nil
 	}
 
@@ -523,6 +526,15 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	}
 
 	return false, nil
+}
+
+func (s *WorksheetService) checkUserRoles(ctx context.Context, user *store.UserMessage) bool {
+	containsRole, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin, api.WorkspaceDBA)
+	if err != nil {
+		slog.Error("failed to check workspace role", log.BBError(err))
+		return false
+	}
+	return containsRole
 }
 
 func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {

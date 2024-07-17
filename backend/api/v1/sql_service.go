@@ -224,7 +224,7 @@ func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteReques
 	}
 
 	find := &store.FindInstanceMessage{}
-	instanceUID, isNumber := isNumber(instanceID)
+	instanceUID, isNumber := utils.IsNumber(instanceID)
 	if isNumber {
 		find.UID = &instanceUID
 	} else {
@@ -941,7 +941,10 @@ func (s *SQLService) accessCheck(
 	isAdmin,
 	isExport bool) error {
 	// Check if the caller is admin for exporting with admin mode.
-	role := utils.BackfillRoleFromRoles(user.Roles)
+	role, err := s.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
+	if err != nil {
+		return err
+	}
 	if isAdmin && isExport && (role != api.WorkspaceAdmin && role != api.WorkspaceDBA) {
 		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
 	}
@@ -1025,7 +1028,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 
 	find := &store.FindInstanceMessage{}
-	instanceUID, isNumber := isNumber(instanceID)
+	instanceUID, isNumber := utils.IsNumber(instanceID)
 	if isNumber {
 		find.UID = &instanceUID
 	} else {
@@ -1086,14 +1089,12 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		wantPermission = iam.PermissionDatabasesExport
 	}
 
-	for _, role := range user.Roles {
-		permissions, err := s.iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to get permissions")
-		}
-		if permissions[wantPermission] {
-			return true, nil
-		}
+	hasPermission, err := s.iamManager.CheckPermission(ctx, wantPermission, user)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check permissions")
+	}
+	if hasPermission {
+		return true, nil
 	}
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, projectPolicy)

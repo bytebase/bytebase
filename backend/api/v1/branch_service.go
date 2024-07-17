@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -838,7 +839,7 @@ func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetada
 
 func (s *BranchService) getProject(ctx context.Context, projectID string) (*store.ProjectMessage, error) {
 	var project *store.ProjectMessage
-	projectUID, isNumber := isNumber(projectID)
+	projectUID, isNumber := utils.IsNumber(projectID)
 	if isNumber {
 		v, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			UID: &projectUID,
@@ -870,7 +871,11 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		return nil
 	}
 	// Skip protection check for workspace owner and DBA.
-	if isOwnerOrDBA(user) {
+	containsRole, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin, api.WorkspaceDBA)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check workspace role")
+	}
+	if containsRole {
 		return nil
 	}
 
@@ -878,10 +883,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 	if err != nil {
 		return err
 	}
-	roles, err := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get user roles")
-	}
+	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
 
 	for _, rule := range project.Setting.ProtectionRules {
 		if rule.Target != storepb.ProtectionRule_BRANCH {

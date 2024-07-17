@@ -1726,10 +1726,7 @@ func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.Appr
 		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
 	}
 
-	roles, err := utils.GetUserFormattedRolesMap(ctx, stores, user, policy)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get user roles")
-	}
+	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, policy)
 
 	switch val := node.Payload.(type) {
 	case *storepb.ApprovalNode_GroupValue_:

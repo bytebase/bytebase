@@ -3,16 +3,18 @@ package iam
 import (
 	"context"
 	_ "embed"
-	"strconv"
+	"slices"
+	"strings"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed acl.yaml
@@ -28,12 +30,20 @@ type acl struct {
 type Manager struct {
 	predefinedRoles map[string]map[Permission]bool
 	store           *store.Store
+	licenseService  enterprise.LicenseService
+	// user uid: workspace role list
+	userRoleCache *lru.Cache[int, []string]
 }
 
-func NewManager(store *store.Store) (*Manager, error) {
+func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*Manager, error) {
 	predefinedACL := new(acl)
 	if err := yaml.Unmarshal(aclYaml, predefinedACL); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
+	}
+
+	userRoleCache, err := lru.New[int, []string](32768)
+	if err != nil {
+		return nil, err
 	}
 
 	predefinedRoles := make(map[string]map[Permission]bool)
@@ -49,6 +59,8 @@ func NewManager(store *store.Store) (*Manager, error) {
 	return &Manager{
 		predefinedRoles: predefinedRoles,
 		store:           store,
+		licenseService:  licenseService,
+		userRoleCache:   userRoleCache,
 	}, nil
 }
 
@@ -69,8 +81,40 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
 }
 
+// CheckUserContainsWorkspaceRoles checks if the user has any of the roles in the workspace IAM policy.
+func (m *Manager) CheckUserContainsWorkspaceRoles(ctx context.Context, user *store.UserMessage, roles ...api.Role) (bool, error) {
+	workspaceRoles, err := m.GetWorkspaceRoles(ctx, user)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get workspace roles")
+	}
+
+	for _, role := range roles {
+		if slices.Contains(workspaceRoles, common.FormatRole(role.String())) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// See backfillRoleFromRoles.
+func (m *Manager) BackfillWorkspaceRoleForUser(ctx context.Context, user *store.UserMessage) (api.Role, error) {
+	workspaceRoles, err := m.GetWorkspaceRoles(ctx, user)
+	if err != nil {
+		return api.WorkspaceMember, errors.Wrapf(err, "failed to get workspace roles")
+	}
+
+	return backfillRoleFromRoles(workspaceRoles), nil
+}
+
+func (m *Manager) RemoveCache(userUID int) {
+	m.userRoleCache.Remove(userUID)
+}
+
 func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
-	workspaceRoles := m.getWorkspaceRoles(user)
+	workspaceRoles, err := m.GetWorkspaceRoles(ctx, user)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get workspace roles")
+	}
 	projectRoles, err := m.getProjectRoles(ctx, user, projectIDs)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project roles")
@@ -152,10 +196,24 @@ func (m *Manager) hasPermissionOnEveryProject(ctx context.Context, p Permission,
 	return true, nil
 }
 
-func (*Manager) getWorkspaceRoles(user *store.UserMessage) []string {
-	var roles []string
-	for _, r := range user.Roles {
-		roles = append(roles, common.FormatRole(r.String()))
+// GetWorkspaceRoles returns roles for the user in the workspace IAM policy.
+func (m *Manager) GetWorkspaceRoles(ctx context.Context, user *store.UserMessage) ([]string, error) {
+	if v, ok := m.userRoleCache.Get(user.ID); ok {
+		return m.getWorkspaceRolesByRBAC(v), nil
+	}
+	workspaceIamPolicy, err := m.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, err
+	}
+	roles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, workspaceIamPolicy)
+	m.userRoleCache.Add(user.ID, roles)
+
+	return m.getWorkspaceRolesByRBAC(roles), nil
+}
+
+func (m *Manager) getWorkspaceRolesByRBAC(roles []string) []string {
+	if m.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
+		return utils.Uniq(append(roles, common.FormatRole(api.WorkspaceAdmin.String())))
 	}
 	return roles
 }
@@ -163,7 +221,7 @@ func (*Manager) getWorkspaceRoles(user *store.UserMessage) []string {
 func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
 	var roles [][]string
 	for _, projectID := range projectIDs {
-		projectUID, isNumber := isNumber(projectID)
+		projectUID, isNumber := utils.IsNumber(projectID)
 
 		if !isNumber {
 			project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -183,26 +241,30 @@ func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, 
 			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
 		}
 
-		projectRoles := getRolesFromProjectPolicy(ctx, m.store, user, iamPolicy)
+		projectRoles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, iamPolicy)
 		roles = append(roles, projectRoles)
 	}
 	return roles, nil
 }
 
-func getRolesFromProjectPolicy(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.IamPolicy) []string {
-	var roles []string
-	bindings := utils.GetUserIAMPolicyBindings(ctx, stores, user, policy)
-
-	for _, binding := range bindings {
-		roles = append(roles, binding.Role)
+// backfillRoleFromRoles finds the highest workspace level role from roles.
+func backfillRoleFromRoles(roles []string) api.Role {
+	admin, dba := false, false
+	for _, role := range roles {
+		r := api.Role(strings.TrimPrefix(role, "roles/"))
+		if r == api.WorkspaceAdmin {
+			admin = true
+			break
+		}
+		if r == api.WorkspaceDBA {
+			dba = true
+		}
 	}
-	return roles
-}
-
-func isNumber(v string) (int, bool) {
-	n, err := strconv.Atoi(v)
-	if err == nil {
-		return int(n), true
+	if admin {
+		return api.WorkspaceAdmin
 	}
-	return 0, false
+	if dba {
+		return api.WorkspaceDBA
+	}
+	return api.WorkspaceMember
 }

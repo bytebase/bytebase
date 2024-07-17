@@ -156,71 +156,30 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 	return bindings
 }
 
-// getUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
+// GetUserRolesInIamPolicy returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
 // the condition of role binding is respected and evaluated with request.time=time.Now().
 // the returned role name should in the roles/{id} format.
-func getUserRoles(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) ([]string, error) {
+func GetUserRolesInIamPolicy(ctx context.Context, stores *store.Store, user *store.UserMessage, policies ...*storepb.IamPolicy) []string {
 	var roles []string
-	for _, userRole := range user.Roles {
-		roles = append(roles, common.FormatRole(userRole.String()))
-	}
 
-	for _, projectPolicy := range projectPolicies {
-		bindings := GetUserIAMPolicyBindings(ctx, stores, user, projectPolicy)
+	for _, policy := range policies {
+		bindings := GetUserIAMPolicyBindings(ctx, stores, user, policy)
 		for _, binding := range bindings {
 			roles = append(roles, binding.Role)
 		}
 	}
-	roles = uniq(roles)
+	roles = Uniq(roles)
 
-	return roles, nil
-}
-
-// See GetUserRoles.
-func GetUserRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) (map[api.Role]bool, error) {
-	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
-	if err != nil {
-		return nil, err
-	}
-
-	rolesMap := make(map[api.Role]bool)
-	for _, role := range roles {
-		rolesMap[api.Role(strings.TrimPrefix(role, "roles/"))] = true
-	}
-	return rolesMap, nil
+	return roles
 }
 
 // See GetUserRoles. The returned map key format is roles/{role}.
-func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) (map[string]bool, error) {
-	roles, err := getUserRoles(ctx, stores, user, projectPolicies...)
-	if err != nil {
-		return nil, err
-	}
+func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) map[string]bool {
+	roles := GetUserRolesInIamPolicy(ctx, stores, user, projectPolicies...)
 
 	rolesMap := make(map[string]bool)
 	for _, role := range roles {
 		rolesMap[role] = true
 	}
-	return rolesMap, nil
-}
-
-// BackfillRoleFromRoles finds the highest workspace level role from roles.
-func BackfillRoleFromRoles(roles []api.Role) api.Role {
-	admin, dba := false, false
-	for _, r := range roles {
-		if r == api.WorkspaceAdmin {
-			admin = true
-			break
-		}
-		if r == api.WorkspaceDBA {
-			dba = true
-		}
-	}
-	if admin {
-		return api.WorkspaceAdmin
-	}
-	if dba {
-		return api.WorkspaceDBA
-	}
-	return api.WorkspaceMember
+	return rolesMap
 }
