@@ -59,8 +59,8 @@
           <div class="w-full">
             <NRadioGroup
               :value="state.type"
-              @update:value="onTypeChange"
               class="space-x-2"
+              @update:value="onTypeChange"
             >
               <NRadio value="MEMBER">{{ $t("project.members.users") }}</NRadio>
               <NRadio value="GROUP">
@@ -119,7 +119,7 @@ import { groupBy, uniq } from "lodash-es";
 import { NButton, NCheckbox, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, UserGroupSelect, UserSelect } from "@/components/v2";
 import {
   usePolicyV1Store,
   useUserStore,
