@@ -6,6 +6,7 @@ import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   extractUserResourceName,
   flattenTaskV1List,
@@ -47,7 +48,7 @@ export const getApplicableIssueStatusActionList = (
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
     if (isGrantRequestIssue(issue) || isDatabaseDataExportIssue(issue)) {
-      // Don't show RESOLVE or REOPEN for request granting issues.
+      // Don't show RESOLVE or REOPEN for grantRequest/dataExport issues.
       if (action === "RESOLVE" || action === "REOPEN") {
         return false;
       }
@@ -56,15 +57,6 @@ export const getApplicableIssueStatusActionList = (
       const tasks = flattenTaskV1List(issue.rolloutEntity);
       // Ths issue cannot be resolved if some tasks are not finished yet.
       if (tasks.some((task) => !isTaskFinished(task))) {
-        return false;
-      }
-    }
-    // For SQL review issues, only allow RESOLVE when the review is approved.
-    if (!issue.rollout) {
-      if (
-        action === "RESOLVE" &&
-        reviewStatus !== Issue_Approver_Status.APPROVED
-      ) {
         return false;
       }
     }
@@ -101,20 +93,25 @@ export const issueStatusActionButtonProps = (
       };
   }
 };
+
 export const allowUserToApplyIssueStatusAction = (
   issue: ComposedIssue,
   user: User,
   action: IssueStatusAction
-) => {
-  // Allowed if the user has issues.update permission in the project
-  if (hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")) {
-    return true;
+): [boolean /** ok */, string /** reason */] => {
+  // User does not have permission to update the issue and is not the creator of the issue.
+  if (
+    !hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update") &&
+    extractUserResourceName(issue.creator) !== user.email
+  ) {
+    return [false, t("issue.error.you-don-have-privilege-to-edit-this-issue")];
   }
-
-  // The creator is allowed.
-  if (extractUserResourceName(issue.creator) === user.email) {
-    return true;
+  if (action === "CLOSE") {
+    const tasks = flattenTaskV1List(issue.rolloutEntity);
+    // The issue cannot be closed if some tasks are running.
+    if (tasks.some((task) => task.status === Task_Status.RUNNING)) {
+      return [false, t("issue.error.cannot-close-issue-with-running-tasks")];
+    }
   }
-
-  return false;
+  return [true, ""];
 };
