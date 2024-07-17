@@ -147,8 +147,6 @@ CREATE TABLE environment (
     resource_id TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
-
 CREATE UNIQUE INDEX idx_environment_unique_resource_id ON environment(resource_id);
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 101;
