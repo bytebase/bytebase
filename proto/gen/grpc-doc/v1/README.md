@@ -487,6 +487,7 @@
     - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
     - [GetRolloutRequest](#bytebase-v1-GetRolloutRequest)
     - [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest)
+    - [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest)
     - [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest)
     - [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse)
     - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
@@ -510,6 +511,9 @@
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
     - [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate)
     - [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl)
+    - [TaskRunSession](#bytebase-v1-TaskRunSession)
+    - [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres)
+    - [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session)
   
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
@@ -8017,6 +8021,21 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-GetTaskRunSessionRequest"></a>
+
+### GetTaskRunSessionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
 <a name="bytebase-v1-ListTaskRunsRequest"></a>
 
 ### ListTaskRunsRequest
@@ -8435,6 +8454,64 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+
+<a name="bytebase-v1-TaskRunSession"></a>
+
+### TaskRunSession
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session |
+| postgres | [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunSession-Postgres"></a>
+
+### TaskRunSession.Postgres
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sessions | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunSession-Postgres-Session"></a>
+
+### TaskRunSession.Postgres.Session
+Read from `pg_stat_activity`
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pid | [string](#string) |  |  |
+| query | [string](#string) |  |  |
+| state | [string](#string) | optional |  |
+| wait_event_type | [string](#string) | optional |  |
+| wait_event | [string](#string) | optional |  |
+| datname | [string](#string) | optional |  |
+| usename | [string](#string) | optional |  |
+| application_name | [string](#string) |  |  |
+| client_addr | [string](#string) | optional |  |
+| client_port | [string](#string) | optional |  |
+| backend_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| xact_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| query_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+
+
+
+
+
  
 
 
@@ -8578,6 +8655,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |
 | GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) |  |
+| GetTaskRunSession | [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest) | [TaskRunSession](#bytebase-v1-TaskRunSession) |  |
 | BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) |  |
 | BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) |  |
 | BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) |  |
