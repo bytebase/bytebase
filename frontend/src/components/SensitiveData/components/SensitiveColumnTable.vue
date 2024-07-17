@@ -81,8 +81,9 @@ const checkedItemKeys = computed(() => {
   const keys: string[] = [];
   props.checkedColumnIndexList.forEach((index) => {
     const item = props.columnList[index];
-    if (!item) return;
-    keys.push(itemKey(item));
+    if (item) {
+      keys.push(itemKey(item));
+    }
   });
   return keys;
 });
