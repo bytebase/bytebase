@@ -26,11 +26,6 @@ type querySpanExtractor struct {
 	tableSourcesFrom  []base.TableSource
 }
 
-type linkedMetaCacheData struct {
-	linkedInstanceID string
-	databaseMeta     *model.DatabaseMetadata
-}
-
 func newQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDatabase: connectionDatabase,
