@@ -19,8 +19,6 @@ type querySpanExtractor struct {
 	ctx               context.Context
 	gCtx              base.GetQuerySpanContext
 	connectedDatabase string
-	metaCache         map[string]*model.DatabaseMetadata
-	linkedMetaCache   map[string]*linkedMetaCacheData
 
 	ctes []*base.PseudoTable
 
@@ -36,23 +34,14 @@ type linkedMetaCacheData struct {
 func newQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDatabase: connectionDatabase,
-		metaCache:         make(map[string]*model.DatabaseMetadata),
-		linkedMetaCache:   make(map[string]*linkedMetaCacheData),
 		gCtx:              gCtx,
 	}
 }
 
 func (q *querySpanExtractor) getLinkedDatabaseMetadata(linkName string, schema string) (string, string, *model.DatabaseMetadata, error) {
-	if meta, ok := q.linkedMetaCache[linkName]; ok {
-		return meta.linkedInstanceID, linkName, meta.databaseMeta, nil
-	}
 	linkedInstanceID, databaseName, meta, err := q.gCtx.GetLinkedDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, linkName, schema)
 	if err != nil {
 		return "", "", nil, errors.Wrapf(err, "failed to get linked database metadata for schema: %s", schema)
-	}
-	q.linkedMetaCache[databaseName] = &linkedMetaCacheData{
-		linkedInstanceID: linkedInstanceID,
-		databaseMeta:     meta,
 	}
 	return linkedInstanceID, databaseName, meta, nil
 }
@@ -62,14 +51,10 @@ func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.
 	// We deal with two models in f, so we use schema name here.
 	// The f will return the real database name and the metadata.
 	// We just return them to the caller.
-	if meta, ok := q.metaCache[schema]; ok {
-		return schema, meta, nil
-	}
 	databaseName, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, schema)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
 	}
-	q.metaCache[databaseName] = meta
 	return databaseName, meta, nil
 }
 
@@ -462,7 +447,6 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
-			metaCache:         q.metaCache,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -486,7 +470,6 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
-			metaCache:         q.metaCache,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -667,7 +650,6 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
-			metaCache:         q.metaCache,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
