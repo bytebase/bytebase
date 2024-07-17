@@ -129,12 +129,12 @@
           >
             <div
               v-for="database of shownDatabaseList"
-              :key="database.uid"
+              :key="database.name"
               class="w-full group flex flex-row justify-start items-center px-2 py-1 leading-8 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded hover:bg-gray-50"
               :class="
-                database.uid === state.selectedDatabaseId ? '!bg-gray-100' : ''
+                database.name === state.selectedDatabaseName ? '!bg-gray-100' : ''
               "
-              @click="() => (state.selectedDatabaseId = database.uid)"
+              @click="() => (state.selectedDatabaseName = database.name)"
             >
               <InstanceV1EngineIcon
                 class="shrink-0"
@@ -180,8 +180,8 @@
         <DiffViewPanel
           v-show="selectedDatabase"
           :statement="
-            state.selectedDatabaseId
-              ? databaseDiffCache[state.selectedDatabaseId].edited
+            state.selectedDatabaseName
+              ? databaseDiffCache[state.selectedDatabaseName].edited
               : ''
           "
           :engine="engine"
@@ -216,9 +216,9 @@
     v-if="state.showSelectDatabasePanel"
     :project-name="projectName"
     :engine="engine"
-    :selected-database-id-list="state.selectedDatabaseIdList"
+    :selected-database-name-list="state.selectedDatabaseNameList"
     @close="state.showSelectDatabasePanel = false"
-    @update="handleSelectedDatabaseIdListChanged"
+    @update="handleSelectedDatabaseNameListChanged"
   />
 
   <RawSQLEditorPanel
@@ -259,7 +259,7 @@ import type { RawSQLState, SourceSchemaType } from "./types";
 
 interface DatabaseSourceSchema {
   environmentName: string;
-  databaseId: string;
+  databaseName: string;
   changeHistory: ChangeHistory;
   conciseHistory?: string;
 }
@@ -267,8 +267,8 @@ interface DatabaseSourceSchema {
 interface LocalState {
   isLoading: boolean;
   showDatabaseWithDiff: boolean;
-  selectedDatabaseId: string | undefined;
-  selectedDatabaseIdList: string[];
+  selectedDatabaseName: string | undefined;
+  selectedDatabaseNameList: string[];
   showSelectDatabasePanel: boolean;
   showViewRawSQLPanel: boolean;
 }
@@ -289,8 +289,8 @@ const state = reactive<LocalState>({
   isLoading: true,
   showDatabaseWithDiff: true,
   showSelectDatabasePanel: false,
-  selectedDatabaseId: undefined,
-  selectedDatabaseIdList: [],
+  selectedDatabaseName: undefined,
+  selectedDatabaseNameList: [],
   showViewRawSQLPanel: false,
 });
 const databaseSchemaCache = reactive<Record<string, string>>({});
@@ -305,7 +305,7 @@ const databaseDiffCache = reactive<
   >
 >({});
 const project = computed(() => {
-  return useProjectV1Store().findProjectByUID(props.projectName);
+  return useProjectV1Store().getProjectByName(props.projectName);
 });
 
 const displayOnlySourceDatabaseSchema = computed(() => {
@@ -338,8 +338,8 @@ const sourceDatabaseSchema = computed(() => {
 });
 const engine = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
-    return databaseStore.getDatabaseByUID(
-      props.databaseSourceSchema!.databaseId
+    return databaseStore.getDatabaseByName(
+      props.databaseSourceSchema!.databaseName
     ).instanceResource.engine;
   } else if (props.sourceSchemaType === "RAW_SQL") {
     return props.rawSqlState!.engine;
@@ -348,38 +348,38 @@ const engine = computed(() => {
   }
 });
 const targetDatabaseList = computed(() => {
-  return state.selectedDatabaseIdList.map((id) => {
-    return databaseStore.getDatabaseByUID(id);
+  return state.selectedDatabaseNameList.map((name) => {
+    return databaseStore.getDatabaseByName(name);
   });
 });
 const targetDatabaseSchema = computed(() => {
   if (engine.value === Engine.ORACLE) {
-    return state.selectedDatabaseId
-      ? conciseSchemaCache[state.selectedDatabaseId]
+    return state.selectedDatabaseName
+      ? conciseSchemaCache[state.selectedDatabaseName]
       : "";
   }
-  return state.selectedDatabaseId
-    ? databaseSchemaCache[state.selectedDatabaseId]
+  return state.selectedDatabaseName
+    ? databaseSchemaCache[state.selectedDatabaseName]
     : "";
 });
 const selectedDatabase = computed(() => {
-  return state.selectedDatabaseId
-    ? databaseStore.getDatabaseByUID(state.selectedDatabaseId)
+  return state.selectedDatabaseName
+    ? databaseStore.getDatabaseByName(state.selectedDatabaseName)
     : undefined;
 });
 const shouldShowDiff = computed(() => {
   return !!(
-    state.selectedDatabaseId &&
-    databaseDiffCache[state.selectedDatabaseId]?.raw !== ""
+    state.selectedDatabaseName &&
+    databaseDiffCache[state.selectedDatabaseName]?.raw !== ""
   );
 });
 const previewSchemaChangeMessage = computed(() => {
-  if (!state.selectedDatabaseId) {
+  if (!state.selectedDatabaseName) {
     return "";
   }
 
   const database = targetDatabaseList.value.find(
-    (database) => database.uid === state.selectedDatabaseId
+    (database) => database.name === state.selectedDatabaseName
   );
   if (!database) {
     return "";
@@ -393,12 +393,12 @@ const previewSchemaChangeMessage = computed(() => {
 });
 const databaseListWithDiff = computed(() => {
   return targetDatabaseList.value.filter(
-    (db) => databaseDiffCache[db.uid]?.raw !== ""
+    (db) => databaseDiffCache[db.name]?.raw !== ""
   );
 });
 const databaseListWithoutDiff = computed(() => {
   return targetDatabaseList.value.filter(
-    (db) => databaseDiffCache[db.uid]?.raw === ""
+    (db) => databaseDiffCache[db.name]?.raw === ""
   );
 });
 const shownDatabaseList = computed(() => {
@@ -425,7 +425,7 @@ const getSourceDatabase = () => {
   if (!props.databaseSourceSchema) {
     return;
   }
-  return databaseStore.getDatabaseByUID(props.databaseSourceSchema.databaseId);
+  return databaseStore.getDatabaseByName(props.databaseSourceSchema.databaseName);
 };
 
 const getDatabaseSourceSchemaEnvironment = () => {
@@ -437,23 +437,23 @@ const getDatabaseSourceSchemaEnvironment = () => {
   );
 };
 
-const handleSelectedDatabaseIdListChanged = (databaseIdList: string[]) => {
-  state.selectedDatabaseIdList = databaseIdList;
+const handleSelectedDatabaseNameListChanged = (databaseNameList: string[]) => {
+  state.selectedDatabaseNameList = databaseNameList;
   state.showSelectDatabasePanel = false;
 };
 
 const handleUnselectDatabase = (database: ComposedDatabase) => {
-  state.selectedDatabaseIdList = state.selectedDatabaseIdList.filter(
-    (id) => id !== database.uid
+  state.selectedDatabaseNameList = state.selectedDatabaseNameList.filter(
+    (name) => name !== database.name
   );
-  if (state.selectedDatabaseId === database.uid) {
-    state.selectedDatabaseId = undefined;
+  if (state.selectedDatabaseName === database.name) {
+    state.selectedDatabaseName = undefined;
   }
 };
 
 const onCopyStatement = () => {
-  const editStatement = state.selectedDatabaseId
-    ? databaseDiffCache[state.selectedDatabaseId].edited
+  const editStatement = state.selectedDatabaseName
+    ? databaseDiffCache[state.selectedDatabaseName].edited
     : "";
 
   toClipboard(editStatement).then(() => {
@@ -466,20 +466,20 @@ const onCopyStatement = () => {
 };
 
 const onStatementChange = (value: string) => {
-  if (state.selectedDatabaseId) {
-    databaseDiffCache[state.selectedDatabaseId].edited = value;
+  if (state.selectedDatabaseName) {
+    databaseDiffCache[state.selectedDatabaseName].edited = value;
   }
 };
 
 watch(
-  () => state.selectedDatabaseId,
+  () => state.selectedDatabaseName,
   () => {
     diffViewerRef.value?.scrollTo(0, 0);
   }
 );
 
 watch(
-  () => [state.selectedDatabaseIdList, sourceDatabaseSchema.value],
+  () => [state.selectedDatabaseNameList, sourceDatabaseSchema.value],
   async (_, oldValue) => {
     if (!sourceDatabaseSchema.value) {
       return;
@@ -491,24 +491,24 @@ watch(
       state.isLoading = true;
     }, 300);
 
-    for (const id of state.selectedDatabaseIdList) {
-      if (databaseSchemaCache[id] && !skipCache) {
+    for (const name of state.selectedDatabaseNameList) {
+      if (databaseSchemaCache[name] && !skipCache) {
         continue;
       }
-      const db = databaseStore.getDatabaseByUID(id);
+      const db = databaseStore.getDatabaseByName(name);
       const schema = await databaseStore.fetchDatabaseSchema(
         `${db.name}/schema`
       );
-      databaseSchemaCache[id] = schema.schema;
+      databaseSchemaCache[name] = schema.schema;
       if (engine.value === Engine.ORACLE) {
         const conciseSchema = await databaseStore.fetchDatabaseSchema(
           `${db.name}/schema`,
           false /* sdlFormat */,
           true /* concise */
         );
-        conciseSchemaCache[id] = conciseSchema.schema;
+        conciseSchemaCache[name] = conciseSchema.schema;
       }
-      if (databaseDiffCache[id] && !skipCache) {
+      if (databaseDiffCache[name] && !skipCache) {
         continue;
       } else {
         const diffResp = await databaseStore.diffSchema({
@@ -517,7 +517,7 @@ watch(
           sdlFormat: false,
         });
         const schemaDiff = diffResp.diff ?? "";
-        databaseDiffCache[id] = {
+        databaseDiffCache[name] = {
           raw: schemaDiff,
           edited: schemaDiff,
         };
@@ -530,14 +530,14 @@ watch(
     // Auto select the first target database to view diff.
     nextTick(() => {
       if (
-        state.selectedDatabaseId &&
-        !state.selectedDatabaseIdList.includes(state.selectedDatabaseId)
+        state.selectedDatabaseName &&
+        !state.selectedDatabaseNameList.includes(state.selectedDatabaseName)
       ) {
-        state.selectedDatabaseId = undefined;
+        state.selectedDatabaseName = undefined;
       }
 
-      if (state.selectedDatabaseId === undefined) {
-        state.selectedDatabaseId = head(databaseListWithDiff.value)?.uid;
+      if (state.selectedDatabaseName === undefined) {
+        state.selectedDatabaseName = head(databaseListWithDiff.value)?.name;
       }
     });
   }

@@ -44,14 +44,13 @@ const currentUser = useCurrentUserV1();
 
 const errors = computed(() => {
   const errors: string[] = [];
-  if (
-    !allowUserToApplyIssueStatusAction(
-      issue.value,
-      currentUser.value,
-      props.action
-    )
-  ) {
-    errors.push("You are not allowed to perform this action.");
+  const [ok, reason] = allowUserToApplyIssueStatusAction(
+    issue.value,
+    currentUser.value,
+    props.action
+  );
+  if (!ok) {
+    errors.push(reason);
   }
   return errors;
 });

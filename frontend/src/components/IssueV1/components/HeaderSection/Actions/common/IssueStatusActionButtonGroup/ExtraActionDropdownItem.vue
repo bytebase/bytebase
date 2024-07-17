@@ -32,14 +32,13 @@ const errors = computed(() => {
   const errors: string[] = [];
   const { type, action } = props.option;
   if (type === "ISSUE") {
-    if (
-      !allowUserToApplyIssueStatusAction(
-        issue.value,
-        currentUser.value,
-        action as IssueStatusAction
-      )
-    ) {
-      errors.push("You are not allowed to perform this action");
+    const [ok, reason] = allowUserToApplyIssueStatusAction(
+      issue.value,
+      currentUser.value,
+      action as IssueStatusAction
+    );
+    if (!ok) {
+      errors.push(reason);
     }
   }
   return errors;
