@@ -324,8 +324,8 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 
 		selectListElements := selectedList.AllSelect_list_elements()
 		for _, element := range selectListElements {
-			if element.ASTERISK() != nil {
-				_, schemaName, tableName := NormalizeTableViewName(q.connectedDatabase, element.Tableview_name())
+			if element.Table_wild() != nil {
+				_, schemaName, tableName := NormalizeTableViewName(q.connectedDatabase, element.Table_wild().Tableview_name())
 				find := false
 				for _, tableSource := range fromTableSource {
 					if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
