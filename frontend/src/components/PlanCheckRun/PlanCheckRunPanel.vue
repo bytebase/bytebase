@@ -6,18 +6,17 @@
       :items="tabItemList"
     />
 
-    <PlanCheckBadgeBar
+    <PlanCheckRunBadgeBar
       :plan-check-run-list="planCheckRunList"
       :selected-type="selectedTypeRef"
       @select-type="handlePlanCheckRunTypeChange"
     />
 
-    <PlanCheckDetail
+    <PlanCheckRunDetail
       v-if="selectedPlanCheckRun"
       :plan-check-run="selectedPlanCheckRun"
       :database="database"
       :show-code-location="isLatestPlanCheckRun"
-      @close="$emit('close')"
     />
   </div>
 </template>
@@ -26,26 +25,22 @@
 import { first, orderBy } from "lodash-es";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { databaseForSpec, useIssueContext } from "@/components/IssueV1/logic";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import { EMPTY_ID } from "@/types";
+import { type ComposedDatabase } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
 import { humanizeDate } from "@/utils";
-import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
-import PlanCheckDetail from "./PlanCheckDetail.vue";
+import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
+import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
+  database: ComposedDatabase;
   selectedType?: PlanCheckRun_Type;
-}>();
-
-defineEmits<{
-  (event: "close"): void;
 }>();
 
 const getInitialSelectedType = () => {
@@ -69,7 +64,6 @@ const getInitialSelectedType = () => {
 };
 
 const { t } = useI18n();
-const { issue, selectedSpec } = useIssueContext();
 const selectedTypeRef = ref<PlanCheckRun_Type>(getInitialSelectedType());
 
 const selectedPlanCheckRunList = computed(() => {
@@ -113,14 +107,6 @@ const tabItemList = computed(() => {
       };
     }
   );
-});
-
-const database = computed(() => {
-  const spec = selectedSpec.value;
-  if (!spec || spec.id === String(EMPTY_ID)) {
-    return;
-  }
-  return databaseForSpec(issue.value, spec);
 });
 
 const handlePlanCheckRunTypeChange = (type: PlanCheckRun_Type) => {

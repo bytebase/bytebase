@@ -8,7 +8,7 @@
     @click="handleRunChecks"
   >
     <template #icon>
-      <BBSpin v-if="hasRunningPlanCheck" :size="20" />
+      <BBSpin v-if="hasRunningPlanCheck" :size="16" />
       <heroicons-outline:play v-else class="w-4 h-4" />
     </template>
     <template #default="{ action }">
