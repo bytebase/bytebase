@@ -86,7 +86,8 @@
                     :checked="isDatabaseSelected(database.name)"
                     :label="database.databaseName"
                     @update:checked="
-                      (checked) => toggleDatabaseSelected(database.name, checked)
+                      (checked) =>
+                        toggleDatabaseSelected(database.name, checked)
                     "
                   />
                 </div>
@@ -151,7 +152,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "close"): void;
-  (event: "update", databaseIdList: string[]): void;
+  (event: "update", databaseNameList: string[]): void;
 }>();
 
 const environmentV1Store = useEnvironmentV1Store();
@@ -188,14 +189,10 @@ const isDatabaseSelected = (name: string) => {
 };
 
 const toggleDatabaseSelected = (name: string, selected: boolean) => {
-  const index = state.selectedDatabaseList.findIndex(
-    (db) => db.name === name
-  );
+  const index = state.selectedDatabaseList.findIndex((db) => db.name === name);
   if (selected) {
     if (index < 0) {
-      state.selectedDatabaseList.push(
-        databaseStore.getDatabaseByName(name)
-      );
+      state.selectedDatabaseList.push(databaseStore.getDatabaseByName(name));
     }
   } else {
     if (index >= 0) {
@@ -248,9 +245,9 @@ const getSelectionStateSummaryForEnvironment = (
 };
 
 const handleConfirm = async () => {
-  const databaseIdList = state.selectedDatabaseList
+  const databaseNameList = state.selectedDatabaseList
     .filter((db) => db.databaseName.includes(state.searchText))
     .map((db) => db.name);
-  emit("update", databaseIdList);
+  emit("update", databaseNameList);
 };
 </script>
