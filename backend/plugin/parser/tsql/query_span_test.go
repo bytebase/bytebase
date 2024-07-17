@@ -77,7 +77,7 @@ func TestGetQuerySpan(t *testing.T) {
 }
 
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
 				m[metadata.Name] = model.NewDatabaseMetadata(metadata)
@@ -88,7 +88,7 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 			}
 
 			return "", nil, errors.Errorf("database %q not found", databaseName)
-		}, func(_ context.Context) ([]string, error) {
+		}, func(_ context.Context, _ string) ([]string, error) {
 			var names []string
 			for _, metadata := range databaseMetadata {
 				names = append(names, metadata.Name)

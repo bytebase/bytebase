@@ -217,6 +217,7 @@ type Completer struct {
 	parser              *mysql.MySQLParser
 	lexer               *mysql.MySQLLexer
 	scanner             *base.Scanner
+	instanceID          string
 	defaultDatabase     string
 	getMetadata         base.GetDatabaseMetadataFunc
 	listDatabaseNames   base.ListDatabaseNamesFunc
@@ -254,6 +255,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		getMetadata:         cCtx.Metadata,
 		listDatabaseNames:   cCtx.ListDatabaseNames,
@@ -284,6 +286,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		getMetadata:         cCtx.Metadata,
 		listDatabaseNames:   cCtx.ListDatabaseNames,
@@ -1375,7 +1378,7 @@ func (m CompletionMap) insertColumns(c *Completer, databases, tables map[string]
 			continue
 		}
 		if _, exists := c.metadataCache[database]; !exists {
-			_, metadata, err := c.getMetadata(c.ctx, database)
+			_, metadata, err := c.getMetadata(c.ctx, c.instanceID, database)
 			if err != nil || metadata == nil {
 				continue
 			}
@@ -1421,7 +1424,7 @@ func (c *Completer) listAllDatabases() []string {
 
 func (c *Completer) listTables(database string) []string {
 	if _, exists := c.metadataCache[database]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, database)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, database)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1433,7 +1436,7 @@ func (c *Completer) listTables(database string) []string {
 
 func (c *Completer) listViews(database string) []string {
 	if _, exists := c.metadataCache[database]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, database)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, database)
 		if err != nil || metadata == nil {
 			return nil
 		}

@@ -16,6 +16,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	instanceIDA = "INSTANCE_ID_A"
+	instanceIDB = "INSTANCE_ID_B"
+)
+
 func TestGetQuerySpan(t *testing.T) {
 	type testCase struct {
 		Description       string `yaml:"description,omitempty"`
@@ -47,6 +52,7 @@ func TestGetQuerySpan(t *testing.T) {
 		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
 		databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
 		result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+			InstanceID:                    instanceIDA,
 			GetDatabaseMetadataFunc:       databaseMetadataGetter,
 			ListDatabaseNamesFunc:         databaseNamesLister,
 			GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
@@ -70,7 +76,10 @@ func TestGetQuerySpan(t *testing.T) {
 }
 
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
-	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+	return func(_ context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
+			if instanceID == instanceIDB {
+				databaseMetadata = getLinkedDatabaseMetadata()
+			}
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
 				m[metadata.Name] = model.NewDatabaseMetadata(metadata)
@@ -81,13 +90,16 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 			}
 
 			return "", nil, errors.Errorf("database %q not found", databaseName)
-		}, func(_ context.Context) ([]string, error) {
+		}, func(_ context.Context, instanceID string) ([]string, error) {
+			if instanceID == instanceIDB {
+				return listLinkedDatabaseNames()
+			}
 			names := make([]string, 0, len(databaseMetadata))
 			for _, metadata := range databaseMetadata {
 				names = append(names, metadata.Name)
 			}
 			return names, nil
-		}, func(_ context.Context, linkedDatabaseName, _ string) (string, *model.DatabaseMetadata, error) {
+		}, func(_ context.Context, _, linkedDatabaseName, _ string) (string, string, *model.DatabaseMetadata, error) {
 			var linkedDBInfo *storepb.LinkedDatabaseMetadata
 			for _, metadata := range databaseMetadata {
 				for _, linkedDatabase := range metadata.GetLinkedDatabases() {
@@ -101,15 +113,64 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 				}
 			}
 			if linkedDBInfo == nil {
-				return "", nil, errors.Errorf("linked database %q not found", linkedDatabaseName)
+				return "", "", nil, errors.Errorf("linked database %q not found", linkedDatabaseName)
 			}
 
-			for _, metadata := range databaseMetadata {
+			for _, metadata := range getLinkedDatabaseMetadata() {
 				if metadata.Name == linkedDBInfo.Username {
-					return metadata.Name, model.NewDatabaseMetadata(metadata), nil
+					return instanceIDB, metadata.Name, model.NewDatabaseMetadata(metadata), nil
 				}
 			}
 
-			return "", nil, errors.Errorf("database %q not found", linkedDBInfo.Username)
+			return "", "", nil, errors.Errorf("database %q not found", linkedDBInfo.Username)
 		}
+}
+
+func listLinkedDatabaseNames() ([]string, error) {
+	return []string{"SCHEMA1", "SCHEMA2"}, nil
+}
+
+func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
+	return []*storepb.DatabaseSchemaMetadata{
+		{
+			Name: "SCHEMA1",
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "SCHEMA1",
+					Tables: []*storepb.TableMetadata{
+						{
+							Name: "LT1",
+							Columns: []*storepb.ColumnMetadata{
+								{
+									Name: "LC1",
+									Type: "int",
+								},
+							},
+						},
+						{
+							Name: "LT2",
+							Columns: []*storepb.ColumnMetadata{
+								{
+									Name: "LC1",
+									Type: "int",
+								},
+								{
+									Name: "LC2",
+									Type: "int",
+								},
+							},
+						},
+					},
+					Views: []*storepb.ViewMetadata{
+						{
+							Name: "LV1",
+							Definition: `SELECT LC1, LC2
+											FROM LT2
+							`,
+						},
+					},
+				},
+			},
+		},
+	}
 }

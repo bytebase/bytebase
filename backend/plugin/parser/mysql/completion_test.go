@@ -44,7 +44,7 @@ func TestCompletion(t *testing.T) {
 			Scene:             base.SceneTypeAll,
 			DefaultDatabase:   "db",
 			Metadata:          getMetadataForTest,
-			ListDatabaseNames: listDatbaseNamesForTest,
+			ListDatabaseNames: listDatabaseNamesForTest,
 		}, text, 1, caretOffset)
 		a.NoError(err)
 		var filteredResult []base.Candidate
@@ -71,11 +71,11 @@ func TestCompletion(t *testing.T) {
 	}
 }
 
-func listDatbaseNamesForTest(_ context.Context) ([]string, error) {
+func listDatabaseNamesForTest(_ context.Context, _ string) ([]string, error) {
 	return []string{"db"}, nil
 }
 
-func getMetadataForTest(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+func getMetadataForTest(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 	if databaseName != "db" {
 		return "", nil, nil
 	}

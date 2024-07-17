@@ -102,7 +102,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer) {
 			if database == "" {
 				continue
 			}
-			_, databaseMetadata, err := c.metadataGetter(c.ctx, c.defaultDatabase)
+			_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, c.defaultDatabase)
 			if err != nil {
 				return
 			}
@@ -143,7 +143,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer) {
 	if c.defaultDatabase == "" {
 		return
 	}
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.defaultDatabase)
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, c.defaultDatabase)
 	if err != nil {
 		return
 	}
@@ -176,6 +176,7 @@ type Completer struct {
 	lexer   *partiqlparser.PartiQLLexer
 	scanner *base.Scanner
 
+	instanceID      string
 	defaultDatabase string
 	defaultSchema   string
 	metadataGetter  base.GetDatabaseMetadataFunc
@@ -223,6 +224,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
 		metadataGetter:      cCtx.Metadata,
@@ -250,6 +252,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
 		metadataGetter:      cCtx.Metadata,

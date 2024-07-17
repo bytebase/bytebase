@@ -82,9 +82,10 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	spans, err := base.GetQuerySpan(
 		ctx,
 		base.GetQuerySpanContext{
-			GetDatabaseMetadataFunc:       apiv1.BuildGetDatabaseMetadataFunc(exec.store, instance),
-			ListDatabaseNamesFunc:         apiv1.BuildListDatabaseNamesFunc(exec.store, instance),
-			GetLinkedDatabaseMetadataFunc: apiv1.BuildGetLinkedDatabaseMetadataFunc(exec.store, instance),
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       apiv1.BuildGetDatabaseMetadataFunc(exec.store),
+			ListDatabaseNamesFunc:         apiv1.BuildListDatabaseNamesFunc(exec.store),
+			GetLinkedDatabaseMetadataFunc: apiv1.BuildGetLinkedDatabaseMetadataFunc(exec.store, instance.Engine),
 		},
 		instance.Engine,
 		statement,

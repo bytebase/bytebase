@@ -1,5 +1,5 @@
-- description: Test For Database Link
-  statement: SELECT * FROM PUBLIC.T@REMOTE;
+- description: Test For Database Link With View
+  statement: SELECT * FROM SCHEMA1.LV1@REMOTE;
   connectedDatabase: PUBLIC
   metadata: |-
     {
@@ -22,25 +22,70 @@
       "linkedDatabases":  [
         {
           "name":  "REMOTE",
-          "username":  "PUBLIC"
+          "username":  "SCHEMA1"
         }
       ]
     }
   querySpan:
     results:
-        - name: A
+        - name: LC1
           sourcecolumns:
             - server: ""
-              database: PUBLIC
-              schema: PUBLIC
-              table: T
-              column: A
+              database: SCHEMA1
+              schema: SCHEMA1
+              table: LT2
+              column: LC1
+        - name: LC2
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: SCHEMA1
+              table: LT2
+              column: LC2
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
-          table: T
+          schema: SCHEMA1
+          table: LV1
           column: ""
+- description: Test For Database Link
+  statement: SELECT * FROM SCHEMA1.LT1@REMOTE;
+  connectedDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: LC1
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: SCHEMA1
+              table: LT1
+              column: LC1
+    sourcecolumns: []
 - description: Test For Explain statements
   statement: EXPLAIN PLAN for SELECT 1 FROM DUAL;
   connectedDatabase: PUBLIC
