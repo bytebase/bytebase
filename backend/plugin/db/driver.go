@@ -356,6 +356,10 @@ type ExecuteOptions struct {
 	CreateDatabase        bool
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
 	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
+
+	// Record the connection id first before executing.
+	SetConnectionID    func(id string)
+	DeleteConnectionID func()
 }
 
 func (o *ExecuteOptions) LogSchemaDumpStart() {
