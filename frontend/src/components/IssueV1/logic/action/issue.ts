@@ -104,13 +104,13 @@ export const allowUserToApplyIssueStatusAction = (
     !hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update") &&
     extractUserResourceName(issue.creator) !== user.email
   ) {
-    return [false, "You are not allowed to perform this action"];
+    return [false, t("issue.error.you-don-have-privilege-to-edit-this-issue")];
   }
   if (action === "CLOSE") {
     const tasks = flattenTaskV1List(issue.rolloutEntity);
     // The issue cannot be closed if some tasks are running.
     if (tasks.some((task) => task.status === Task_Status.RUNNING)) {
-      return [false, "Cannot close issue with running tasks"];
+      return [false, t("issue.error.cannot-close-issue-with-running-tasks")];
     }
   }
   return [true, ""];

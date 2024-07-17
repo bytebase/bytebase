@@ -1221,7 +1221,8 @@
     "error": {
       "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
-      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
+      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action",
+      "cannot-close-issue-with-running-tasks": "Cannot close issue with running tasks"
     },
     "approval-requested": "Approval Requested",
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",

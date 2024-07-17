@@ -41,6 +41,7 @@
 import { NButton, NDropdown, type DropdownOption } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h } from "vue";
+import { useI18n } from "vue-i18n";
 import { DropdownItemWithErrorList } from "@/components/IssueV1/components/common";
 import type {
   IssueStatusAction,
@@ -66,6 +67,7 @@ const props = defineProps<{
   extraActionList: ExtraActionOption[];
 }>();
 
+const { t } = useI18n();
 const { issue, events } = useIssueContext();
 const currentUser = useCurrentUserV1();
 
@@ -103,7 +105,10 @@ const renderDropdownOption = ({
 }) => {
   const { disabled, description } = option as IssueActionDropdownOption;
   const errors = disabled
-    ? [description || "You are not allowed to perform this action"]
+    ? [
+        description ||
+          t("issue.error.you-are-not-allowed-to-perform-this-action"),
+      ]
     : [];
   return h(
     DropdownItemWithErrorList,

@@ -1221,7 +1221,8 @@
     "error": {
       "issue-is-not-open": "作業指示はオープンされていません",
       "you-don-have-privilege-to-edit-this-issue": "このチケットを編集する権限がありません",
-      "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません"
+      "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません",
+      "cannot-close-issue-with-running-tasks": "実行中のタスクに関する問題を解決できません"
     },
     "approval-requested": "承認リクエスト",
     "unfinished-resolved-issue-tips": "作業指示書は「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
