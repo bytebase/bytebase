@@ -57,7 +57,11 @@
 
         <div class="space-y-2">
           <div class="w-full">
-            <NRadioGroup v-model:value="state.type" class="space-x-2">
+            <NRadioGroup
+              :value="state.type"
+              @update:value="onTypeChange"
+              class="space-x-2"
+            >
               <NRadio value="MEMBER">{{ $t("project.members.users") }}</NRadio>
               <NRadio value="GROUP">
                 {{ $t("settings.members.groups.self") }}
@@ -180,6 +184,11 @@ const resetState = () => {
   state.supportActions = new Set(ACTIONS);
   state.memberList = [];
   state.type = "MEMBER";
+};
+
+const onTypeChange = (type: "MEMBER" | "GROUP") => {
+  state.memberList = [];
+  state.type = type;
 };
 
 const onDismiss = () => {
