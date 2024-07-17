@@ -20,7 +20,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/bq-parser v0.0.0-20240529032606-614a0230b8f7
 	github.com/bytebase/mysql-parser v0.0.0-20240708171745-888dff8b5915
-	github.com/bytebase/plsql-parser v0.0.0-20240715072343-791a107a9b81
+	github.com/bytebase/plsql-parser v0.0.0-20240717034002-f24d3a878210
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
@@ -339,5 +339,3 @@ replace (
 replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240613094500-7f9ca9381f8f
 
 replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
-
-replace github.com/bytebase/plsql-parser => /Users/rebelice/Github/plsql-parser
