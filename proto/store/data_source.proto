@@ -113,6 +113,24 @@ message DataSourceOptions {
   string account_id = 18;
   // warehouse_id is used by Databricks.
   string warehouse_id = 19;
+
+  // master_name is the master name used by connecting redis-master via redis sentinel.
+  string master_name = 20;
+
+  // master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
+  string master_username = 21;
+  string master_obfuscated_password = 22;
+
+  enum RedisType {
+    REDIS_TYPE_UNSPECIFIED = 0;
+    STANDALONE = 1;
+    SENTINEL = 2;
+    CLUSTER = 3;
+  }
+  RedisType redis_type = 23;
+
+  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
+  bool use_ssl = 24;
 }
 
 message SASLConfig {

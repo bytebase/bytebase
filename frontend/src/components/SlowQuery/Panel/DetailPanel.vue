@@ -36,7 +36,7 @@
               {{ $t("common.instance") }}
             </label>
 
-            <InstanceV1Name :instance="database.instanceEntity" />
+            <InstanceV1Name :instance="database.instanceResource" />
           </div>
 
           <div class="contents">
@@ -67,7 +67,7 @@
           :slow-query-log="slowQueryLog"
         />
         <div
-          v-if="instanceV1HasSlowQueryDetail(database.instanceEntity)"
+          v-if="instanceV1HasSlowQueryDetail(database.instanceResource)"
           class="flex-1 overflow-auto border"
         >
           <BBGrid

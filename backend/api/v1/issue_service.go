@@ -1415,6 +1415,19 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		issueIDs = append(issueIDs, issue.UID)
 		issues = append(issues, issue)
 
+		// Check if there is any running/pending task runs.
+		if issue.PipelineUID != nil {
+			taskRunStatusList := []api.TaskRunStatus{api.TaskRunRunning, api.TaskRunPending}
+			taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{PipelineUID: issue.PipelineUID, Status: &taskRunStatusList})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to list task runs, err: %v", err)
+			}
+			if len(taskRuns) > 0 {
+				return nil, status.Errorf(codes.FailedPrecondition, "cannot update status because there are running/pending task runs for issue %q", issueName)
+			}
+		}
+
+		// Check if current user has permission to update the issue status.
 		ok, err := func() (bool, error) {
 			if issue.Creator.ID == user.ID {
 				return true, nil
@@ -1701,7 +1714,7 @@ func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) b
 	return issueCreator.ID == user.ID
 }
 
-func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.ApprovalStep, user *store.UserMessage, policy *storepb.ProjectIamPolicy) (bool, error) {
+func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.ApprovalStep, user *store.UserMessage, policy *storepb.IamPolicy) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}

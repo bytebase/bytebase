@@ -5,15 +5,14 @@
         v-for="(val, i) in value"
         :key="i"
         :text="`${val}`"
-        :can-remove="!disabled && editable"
+        :can-remove="!disabled"
         @remove="remove(val)"
       />
     </div>
     <BBTextField
-      v-if="editable"
+      v-if="!disabled"
       v-model:value="inputValue"
       pattern="[a-z]+"
-      :disabled="disabled"
       :placeholder="$t('sql-review.input-then-press-enter')"
       @keyup.enter="push($event)"
     />
@@ -28,7 +27,6 @@ const props = defineProps<{
   config: RuleConfigComponent;
   value: string[];
   disabled: boolean;
-  editable: boolean;
 }>();
 
 const emit = defineEmits<{

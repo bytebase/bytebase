@@ -390,8 +390,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						ID:        task.ID,
 						UpdaterID: user.ID,
 					}
-					tasksMap[task.ID] = task
-
 					var taskSpecID struct {
 						SpecID string `json:"specId"`
 					}
@@ -433,14 +431,21 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						taskPatch.EarliestAllowedTs = &seconds
 						doUpdate = true
 
+						var fromEarliestAllowedTime, toEarliestAllowedTime *timestamppb.Timestamp
+						if task.EarliestAllowedTs != 0 {
+							fromEarliestAllowedTime = timestamppb.New(time.Unix(task.EarliestAllowedTs, 0))
+						}
+						if seconds != 0 {
+							toEarliestAllowedTime = timestamppb.New(time.Unix(seconds, 0))
+						}
 						issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 							IssueUID: issue.UID,
 							Payload: &storepb.IssueCommentPayload{
 								Event: &storepb.IssueCommentPayload_TaskUpdate_{
 									TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
 										Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
-										FromEarliestAllowedTime: timestamppb.New(time.Unix(task.EarliestAllowedTs, 0)),
-										ToEarliestAllowedTime:   timestamppb.New(time.Unix(seconds, 0)),
+										FromEarliestAllowedTime: fromEarliestAllowedTime,
+										ToEarliestAllowedTime:   toEarliestAllowedTime,
 									},
 								},
 							},
@@ -636,15 +641,30 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					if !doUpdate {
 						continue
 					}
-
+					tasksMap[task.ID] = task
 					taskPatchList = append(taskPatchList, taskPatch)
+				}
+
+				if len(taskPatchList) != 0 {
+					issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+						PipelineID: oldPlan.PipelineUID,
+					})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+					}
+					if issue != nil {
+						// Do not allow to update task if issue is done or canceled.
+						if issue.Status == api.IssueDone || issue.Status == api.IssueCanceled {
+							return nil, status.Errorf(codes.FailedPrecondition, "cannot update task because issue %q is %s", issue.Title, issue.Status)
+						}
+					}
 				}
 			}
 
 			for _, taskPatch := range taskPatchList {
 				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
 					task := tasksMap[taskPatch.ID]
-					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning {
+					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning || task.LatestTaskRunStatus == api.TaskRunSkipped || task.LatestTaskRunStatus == api.TaskRunDone {
 						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %q is %s", task.Name, task.LatestTaskRunStatus)
 					}
 				}
@@ -796,6 +816,76 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanCh
 	s.stateCfg.PlanCheckTickleChan <- 0
 
 	return &v1pb.RunPlanChecksResponse{}, nil
+}
+
+// BatchCancelPlanCheckRuns cancels a list of plan check runs.
+func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *v1pb.BatchCancelPlanCheckRunsRequest) (*v1pb.BatchCancelPlanCheckRunsResponse, error) {
+	if len(request.PlanCheckRuns) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "plan check runs cannot be empty")
+	}
+
+	projectID, _, err := common.GetProjectIDPlanID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
+	}
+
+	var planCheckRunIDs []int
+	for _, planCheckRun := range request.PlanCheckRuns {
+		_, _, planCheckRunID, err := common.GetProjectIDPlanIDPlanCheckRunID(planCheckRun)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		planCheckRunIDs = append(planCheckRunIDs, planCheckRunID)
+	}
+
+	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		UIDs: &planCheckRunIDs,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
+	}
+
+	// Check if any of the given plan check runs are not running.
+	for _, planCheckRun := range planCheckRuns {
+		switch planCheckRun.Status {
+		case store.PlanCheckRunStatusRunning:
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "planCheckRun %v(%v) is not running", planCheckRun.UID, planCheckRun.Type)
+		}
+	}
+	// Cancel the plan check runs.
+	for _, planCheckRun := range planCheckRuns {
+		if cancelFunc, ok := s.stateCfg.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
+			cancelFunc.(context.CancelFunc)()
+		}
+	}
+	// Update the status of the plan check runs to canceled.
+	if err := s.store.BatchCancelPlanCheckRuns(ctx, planCheckRunIDs, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
+	}
+
+	return &v1pb.BatchCancelPlanCheckRunsResponse{}, nil
 }
 
 func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {

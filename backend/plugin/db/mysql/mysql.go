@@ -346,9 +346,24 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		txer := driverConn.(driver.ConnBeginTx)
 		tx, err := txer.BeginTx(ctx, driver.TxOptions{})
 		if err != nil {
+			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 			return err
+		} else {
+			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
 		}
-		defer tx.Rollback()
+
+		committed := false
+		defer func() {
+			err := tx.Rollback()
+			if committed {
+				return
+			}
+			var rerr string
+			if err != nil {
+				rerr = err.Error()
+			}
+			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
+		}()
 
 		for i, command := range commands {
 			// Set the progress information for the current chunk.
@@ -407,7 +422,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 
 		if err := tx.Commit(); err != nil {
+			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 			return errors.Wrapf(err, "failed to commit execute transaction")
+		} else {
+			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+			committed = true
 		}
 		return nil
 	}); err != nil {

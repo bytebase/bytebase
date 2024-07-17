@@ -29,7 +29,7 @@
       :advices="advices"
       @close="showDetailPanel = false"
     >
-      <template #row-extra="{ row }">
+      <template #row-title-extra="{ row }">
         <OnlineMigrationAdviceExtra
           v-if="row.checkResult.title === 'advice.online-migration'"
           :row="row"
@@ -128,11 +128,9 @@ const handleClick = () => {
 };
 
 const handleToggleOnlineMigration = (on: boolean) => {
-  if (on) {
-    events.emit("toggle-online-migration", {
-      on: true,
-    });
-    showDetailPanel.value = true;
-  }
+  events.emit("toggle-online-migration", {
+    on,
+  });
+  showDetailPanel.value = true;
 };
 </script>

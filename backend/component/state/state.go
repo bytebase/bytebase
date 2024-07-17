@@ -12,13 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DefaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
-const DefaultInstanceMaximumConnections = 10
+// defaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
+const defaultInstanceMaximumConnections = 10
 
 // State is the state for all in-memory states within the server.
 type State struct {
-	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
-	InstanceSyncs sync.Map // map[instance.ID]*store.InstanceMessage
 	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
 	InstanceSlowQuerySyncChan chan *InstanceSlowQuerySyncMessage
 
@@ -42,6 +40,8 @@ type State struct {
 
 	// RunningPlanChecks is the set of running plan checks.
 	RunningPlanChecks sync.Map
+	// RunningPlanCheckRunsCancelFunc is the cancelFunc of running plan checks.
+	RunningPlanCheckRunsCancelFunc sync.Map // map[planCheckRunUID]context.CancelFunc
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
 	InstanceOutstandingConnections *connectionLimiter
 
@@ -51,8 +51,6 @@ type State struct {
 	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
 	TaskSkippedOrDoneChan chan int
 
-	// InstanceSyncTickleChan is the tickler for syncing instances.
-	InstanceSyncTickleChan chan int
 	// PlanCheckTickleChan is the tickler for plan check scheduler.
 	PlanCheckTickleChan chan int
 	// TaskRunTickleChan is the tickler for task run scheduler.
@@ -71,7 +69,6 @@ func New() (*State, error) {
 		InstanceOutstandingConnections:       &connectionLimiter{connections: map[int]int{}},
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
-		InstanceSyncTickleChan:               make(chan int, 50000),
 		PlanCheckTickleChan:                  make(chan int, 1000),
 		TaskRunTickleChan:                    make(chan int, 1000),
 		ExpireCache:                          expireCache,
@@ -102,6 +99,10 @@ type connectionLimiter struct {
 func (c *connectionLimiter) Increment(instanceID, maxConnections int) bool {
 	c.Lock()
 	defer c.Unlock()
+	if maxConnections == 0 {
+		maxConnections = defaultInstanceMaximumConnections
+	}
+
 	if c.connections[instanceID] >= maxConnections {
 		return true
 	}

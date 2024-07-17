@@ -1,70 +1,68 @@
 <template>
-  <div>
-    <SQLRuleFilter
-      :rule-list="selectedRuleList"
-      :params="filterParams"
-      v-on="filterEvents"
-    />
-    <SQLRuleTable
-      class="w-full"
-      :rule-list="filteredRuleList"
-      :editable="true"
-      @level-change="onLevelChange"
-      @payload-change="onPayloadChange"
-      @comment-change="onCommentChange"
-    />
+  <div v-if="ruleMapByEngine.size > 0">
+    <div class="flex justify-end">
+      <NButton type="primary" @click="showRuleSelectPanel = true">
+        {{ $t("sql-review.add-or-remove-rules") }}
+      </NButton>
+    </div>
+    <SQLReviewTabsByEngine :rule-map-by-engine="ruleMapByEngine">
+      <template
+        #default="{
+          ruleList: ruleListFilteredByEngine,
+          engine,
+        }: {
+          ruleList: RuleTemplateV2[];
+          engine: Engine;
+        }"
+      >
+        <SQLRuleTableWithFilter
+          :engine="engine"
+          :rule-list="ruleListFilteredByEngine"
+          :editable="true"
+          @rule-upsert="onRuleChange"
+        />
+      </template>
+    </SQLReviewTabsByEngine>
   </div>
+  <NoDataPlaceholder v-else>
+    <NButton type="primary" @click="showRuleSelectPanel = true">
+      {{ $t("sql-review.add-rules") }}
+    </NButton>
+  </NoDataPlaceholder>
+
+  <SQLReviewRulesSelectPanel
+    :show="showRuleSelectPanel"
+    :selected-rule-map="ruleMapByEngine"
+    @close="showRuleSelectPanel = false"
+    @rule-select="$emit('rule-upsert', $event, {})"
+    @rule-remove="$emit('rule-remove', $event)"
+  />
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
-import { toRef } from "vue";
-import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { RuleTemplate } from "@/types/sqlReview";
-import {
-  SQLRuleTable,
-  SQLRuleFilter,
-  useSQLRuleFilter,
-  payloadValueListToComponentList,
-} from "./components/";
-import type { PayloadForEngine } from "./components/RuleConfigComponents";
+import { ref } from "vue";
+import type { Engine } from "@/types/proto/v1/common";
+import type { RuleTemplateV2 } from "@/types/sqlReview";
 
-const props = defineProps({
-  selectedRuleList: {
-    required: true,
-    type: Object as PropType<RuleTemplate[]>,
-  },
-});
-
-const emit = defineEmits<{
-  (event: "apply-template", index: number): void;
-  (
-    event: "payload-change",
-    rule: RuleTemplate,
-    update: Partial<RuleTemplate>
-  ): void;
-  (event: "level-change", rule: RuleTemplate, level: SQLReviewRuleLevel): void;
-  (event: "comment-change", rule: RuleTemplate, comment: string): void;
+defineProps<{
+  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
 }>();
 
-const {
-  params: filterParams,
-  events: filterEvents,
-  filteredRuleList,
-} = useSQLRuleFilter(toRef(props, "selectedRuleList"));
+const emit = defineEmits<{
+  (
+    event: "rule-upsert",
+    rule: RuleTemplateV2,
+    update: Partial<RuleTemplateV2>
+  ): void;
+  (event: "rule-remove", rule: RuleTemplateV2): void;
+}>();
 
-const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
-  if (!rule.componentList) {
-    return;
-  }
-  emit("payload-change", rule, payloadValueListToComponentList(rule, data));
+const onRuleChange = (
+  rule: RuleTemplateV2,
+  overrides: Partial<RuleTemplateV2>
+) => {
+  emit("rule-upsert", rule, overrides);
 };
 
-const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
-  emit("level-change", rule, level);
-};
-
-const onCommentChange = (rule: RuleTemplate, comment: string) => {
-  emit("comment-change", rule, comment);
-};
+const showRuleSelectPanel = ref<boolean>(false);
 </script>

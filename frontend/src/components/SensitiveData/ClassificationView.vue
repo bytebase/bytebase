@@ -1,5 +1,12 @@
 <template>
   <div class="w-full space-y-4">
+    <div class="text-sm text-control-light">
+      {{ $t("database.classification.description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/security/data-masking/data-classification?source=console"
+        class="ml-1"
+      />
+    </div>
     <div>
       <div class="flex items-center space-x-2">
         <NSwitch
@@ -12,12 +19,12 @@
         </div>
       </div>
       <i18n-t
-        class="textinfolabel"
+        class="textinfolabel mt-1"
         tag="div"
         keypath="database.classification.sync-from-comment-tip"
       >
         <template #format>
-          <span class="font-semibold">{calssification id}-{comment}</span>
+          <span class="font-semibold">{classification id}-{comment}</span>
         </template>
       </i18n-t>
     </div>
@@ -35,13 +42,19 @@
         </span>
       </div>
 
-      <div class="flex items-center justify-end">
+      <div class="flex items-center justify-end gap-2">
         <NButton
-          type="primary"
           :disabled="!allowEdit || !hasSensitiveDataFeature"
           @click="onUpload"
         >
           {{ $t("settings.sensitive-data.classification.upload") }}
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="!allowEdit || !hasSensitiveDataFeature || !allowSave"
+          @click="upsertSetting"
+        >
+          {{ $t("common.save") }}
         </NButton>
         <input
           ref="uploader"
@@ -55,10 +68,7 @@
     </div>
 
     <div
-      v-if="
-        settingStore.classification.length === 0 ||
-        Object.keys(settingStore.classification[0].classification).length === 0
-      "
+      v-if="Object.keys(state.classification.classification).length === 0"
       class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-72"
     >
       <SingleFileSelector
@@ -77,9 +87,7 @@
       </SingleFileSelector>
     </div>
     <div v-else class="h-full">
-      <ClassificationTree
-        :classification-config="settingStore.classification[0]"
-      />
+      <ClassificationTree :classification-config="state.classification" />
     </div>
   </div>
 
@@ -88,22 +96,13 @@
     :example="JSON.stringify(example, null, 2)"
     @dismiss="state.showExampleModal = false"
   />
-
-  <BBAlert
-    v-model:show="state.showOverrideModal"
-    type="warning"
-    :ok-text="$t('settings.sensitive-data.classification.override-confirm')"
-    :title="$t('settings.sensitive-data.classification.override-title')"
-    :description="$t('settings.sensitive-data.classification.override-desc')"
-    @ok="upsertSetting"
-    @cancel="state.showOverrideModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
+import { head, isEqual } from "lodash-es";
 import { NSwitch, useDialog, NDivider } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -130,7 +129,6 @@ interface UploadClassificationConfig {
 interface LocalState {
   classification: DataClassificationSetting_DataClassificationConfig;
   showExampleModal: boolean;
-  showOverrideModal: boolean;
 }
 
 const { t } = useI18n();
@@ -139,53 +137,36 @@ const settingStore = useSettingV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   showExampleModal: false,
-  showOverrideModal: false,
   classification:
     DataClassificationSetting_DataClassificationConfig.fromPartial({
       id: uuidv4(),
+      ...head(settingStore.classification),
     }),
 });
 
-const onClassificationConfigChange = (on: boolean) => {
-  state.classification.classificationFromConfig = !on;
+const allowSave = computed(() => {
+  return (
+    allowEdit.value &&
+    hasSensitiveDataFeature.value &&
+    !isEqual(head(settingStore.classification), state.classification)
+  );
+});
 
+const onClassificationConfigChange = (fromComment: boolean) => {
   $dialog.warning({
     title: t("common.warning"),
-    content: on
+    content: fromComment
       ? t("database.classification.sync-from-comment-enable-warning")
       : t("database.classification.sync-from-comment-disable-warning"),
     style: "z-index: 100000",
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {
-      await settingStore.upsertSetting({
-        name: "bb.workspace.data-classification",
-        value: {
-          dataClassificationSettingValue: {
-            configs: [state.classification],
-          },
-        },
-      });
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
+      state.classification.classificationFromConfig = !fromComment;
+      await upsertSetting();
     },
   });
 };
-
-watch(
-  () => state.classification,
-  async () => {
-    if (settingStore.classification.length !== 0) {
-      state.showOverrideModal = true;
-      return;
-    }
-
-    await upsertSetting();
-  }
-);
 
 const upsertSetting = async () => {
   await settingStore.upsertSetting({
@@ -199,9 +180,8 @@ const upsertSetting = async () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("settings.sensitive-data.classification.upload-succeed"),
+    title: t("common.updated"),
   });
-  state.showOverrideModal = false;
 };
 
 const allowEdit = computed(() => {
@@ -271,20 +251,17 @@ const onFileSelect = (file: File) => {
         description: "Should not contains duplicate classification id",
       });
     }
-    Object.assign(
-      state.classification,
-      DataClassificationSetting_DataClassificationConfig.fromPartial({
-        title: data.title || state.classification.title || "",
-        levels: data.levels,
-        classification: data.classifications.reduce(
-          (obj, item) => {
-            obj[item.id] = item;
-            return obj;
-          },
-          {} as { [key: string]: DataClassification }
-        ),
-      })
-    );
+    Object.assign(state.classification, {
+      title: data.title || state.classification.title || "",
+      levels: data.levels,
+      classification: data.classifications.reduce(
+        (obj, item) => {
+          obj[item.id] = item;
+          return obj;
+        },
+        {} as { [key: string]: DataClassification }
+      ),
+    });
   };
   fr.onerror = () => {
     pushNotification({
@@ -311,6 +288,16 @@ const example: UploadClassificationConfig = {
       title: "Level 2",
       description: "",
     },
+    {
+      id: "3",
+      title: "Level 3",
+      description: "",
+    },
+    {
+      id: "4",
+      title: "Level 4",
+      description: "",
+    },
   ],
   classifications: [
     {
@@ -322,21 +309,19 @@ const example: UploadClassificationConfig = {
       id: "1-1",
       title: "Basic",
       description: "",
+      levelId: "1",
     },
     {
       id: "1-2",
-      title: "Assert",
+      title: "Contact",
       description: "",
+      levelId: "2",
     },
     {
       id: "1-3",
-      title: "Contact",
-      description: "",
-    },
-    {
-      id: "1-4",
       title: "Health",
       description: "",
+      levelId: "4",
     },
     {
       id: "2",
@@ -347,11 +332,13 @@ const example: UploadClassificationConfig = {
       id: "2-1",
       title: "Social",
       description: "",
+      levelId: "1",
     },
     {
       id: "2-2",
       title: "Business",
       description: "",
+      levelId: "3",
     },
   ],
 };

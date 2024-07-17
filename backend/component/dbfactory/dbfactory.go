@@ -164,6 +164,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if err != nil {
 		return nil, err
 	}
+	masterPassword, err := common.Unobfuscate(dataSource.MasterName, d.secret)
+	if err != nil {
+		return nil, err
+	}
 
 	updatedPassword, err := secret.ReplaceExternalSecret(ctx, password, dataSource.ExternalSecret)
 	if err != nil {
@@ -206,6 +210,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			Username: dataSource.Username,
 			Password: password,
 			TLSConfig: db.TLSConfig{
+				UseSSL:  dataSource.UseSSL,
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
@@ -230,6 +235,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			Region:                   dataSource.Region,
 			AccountID:                dataSource.AccountID,
 			WarehouseID:              dataSource.WarehouseID,
+			RedisType:                dataSource.RedisType,
+			MasterName:               dataSource.MasterName,
+			MasterUsername:           dataSource.MasterUsername,
+			MasterPassword:           masterPassword,
 		},
 	)
 	if err != nil {

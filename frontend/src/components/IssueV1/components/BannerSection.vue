@@ -15,10 +15,10 @@
   </template>
   <template v-else>
     <div
-      v-if="showCancelBanner"
+      v-if="showClosedBanner"
       class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
     >
-      {{ $t("common.canceled") }}
+      {{ $t("common.closed") }}
     </div>
     <div
       v-else-if="showSuccessBanner"
@@ -55,7 +55,11 @@ import {
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
+import {
+  activeTaskInRollout,
+  isDatabaseChangeRelatedIssue,
+  isIssueActuallyRolledout,
+} from "@/utils";
 import {
   useIssueContext,
   isUnfinishedResolvedTask as checkUnfinishedResolvedTask,
@@ -67,6 +71,7 @@ const { status: reviewStatus } = reviewContext;
 const showPendingReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
+  if (isIssueActuallyRolledout(issue.value)) return false;
   return reviewStatus.value === Issue_Approver_Status.PENDING;
 });
 
@@ -76,7 +81,7 @@ const showRejectedReview = computed(() => {
   return reviewStatus.value === Issue_Approver_Status.REJECTED;
 });
 
-const showCancelBanner = computed(() => {
+const showClosedBanner = computed(() => {
   return issue.value.status === IssueStatus.CANCELED;
 });
 

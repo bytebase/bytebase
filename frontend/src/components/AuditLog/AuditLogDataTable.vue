@@ -122,6 +122,19 @@ const columnList = computed((): ProjectDataTableColumn[] => {
             "-"
           ),
       },
+      {
+        key: "status",
+        resizable: true,
+        minWidth: 256,
+        width: 256,
+        title: t("audit-log.table.status"),
+        render: (auditLog) =>
+          auditLog.status ? (
+            <JSONStringView jsonString={JSON.stringify(auditLog.status)} />
+          ) : (
+            "-"
+          ),
+      },
     ] as ProjectDataTableColumn[]
   ).filter((column) => !column.hide);
 });

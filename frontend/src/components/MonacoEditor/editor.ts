@@ -8,7 +8,6 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import "monaco-editor/esm/vs/editor/standalone/browser/standaloneCodeEditorService";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution.js";
 import { defer } from "@/utils";
-import { shouldUseNewLSP } from "./dev";
 import { initializeMonacoServices } from "./services";
 import { getBBTheme } from "./themes/bb";
 import { getBBDarkTheme } from "./themes/bb-dark";
@@ -41,15 +40,13 @@ const initializeTheme = () => {
 
 const initialize = async () => {
   await initializeMonacoServices();
-  if (shouldUseNewLSP()) {
+
+  try {
     const { initializeLSPClient } = await import("./lsp-client");
     await initializeLSPClient();
-  } else {
-    const { useLanguageClient } = await import("@/plugins/sql-lsp/client");
-    const { start } = useLanguageClient();
-    start();
+  } catch (err) {
+    console.error("[MonacoEditor] initialize", err);
   }
-
   initializeTheme();
 };
 
@@ -93,7 +90,7 @@ export const defaultEditorOptions =
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       renderValidationDecorations: "on",
       // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
-      accessibilitySupport: 'off',
+      accessibilitySupport: "off",
       theme: "bb",
       tabSize: 2,
       insertSpaces: true,
@@ -128,7 +125,7 @@ export const defaultDiffEditorOptions =
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       enableSplitViewResizing: false,
       // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
-      accessibilitySupport: 'off',
+      accessibilitySupport: "off",
       renderValidationDecorations: "on",
       theme: "bb",
       autoClosingQuotes: "always",

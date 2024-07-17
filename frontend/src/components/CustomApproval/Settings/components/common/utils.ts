@@ -7,7 +7,7 @@ import {
   engineName,
   PresetRiskLevelList,
   SupportedSourceList,
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
 } from "@/types";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
@@ -145,10 +145,10 @@ export const getFactorList = (source: Risk_Source) => {
 const getEnvironmentIdOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
-    const environmentId = extractEnvironmentResourceName(env.name);
+    const environmentName = extractEnvironmentResourceName(env.name);
     return {
-      label: environmentId,
-      value: environmentId,
+      label: environmentName,
+      value: environmentName,
     };
   });
 };
@@ -156,7 +156,7 @@ const getEnvironmentIdOptions = () => {
 const getProjectIdOptions = () => {
   const { projectList } = useProjectV1List();
   return projectList.value
-    .filter((proj) => proj.name != DEFAULT_PROJECT_V1_NAME)
+    .filter((proj) => proj.name != DEFAULT_PROJECT_NAME)
     .map<SelectOption>((proj) => {
       const projectId = extractProjectResourceName(proj.name);
       return {

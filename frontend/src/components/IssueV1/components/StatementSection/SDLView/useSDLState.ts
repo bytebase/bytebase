@@ -89,7 +89,7 @@ export const useSDLState = () => {
 
     const { currentSchema, expectedSchema } = await sqlServiceClient.pretty(
       {
-        engine: database.instanceEntity.engine,
+        engine: database.instanceResource.engine,
         currentSchema: previousSDL ?? "",
         expectedSchema: expectedSDL ?? "",
       },

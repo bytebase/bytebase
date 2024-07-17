@@ -1,35 +1,23 @@
-import { computed, reactive, unref } from "vue";
+import { reactive } from "vue";
 import { useRoute } from "vue-router";
-import type { MaybeRef, RuleTemplate } from "@/types";
-import { getRuleLocalization } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
-import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 
 export type SQLRuleFilterParams = {
-  checkedEngine: Set<Engine>;
   checkedLevel: Set<SQLReviewRuleLevel>;
-  selectedCategory: string | undefined;
+  selectedCategory: string;
   searchText: string;
 };
 
-export const useSQLRuleFilter = (ruleList: MaybeRef<RuleTemplate[]>) => {
+export const useSQLRuleFilter = () => {
   const route = useRoute();
   const params = reactive<SQLRuleFilterParams>({
-    checkedEngine: new Set(),
-    checkedLevel: new Set(),
+    checkedLevel: new Set([]),
     selectedCategory: route.query.category
       ? (route.query.category as string)
-      : undefined,
+      : "all",
     searchText: "",
   });
   const events = {
-    toggleCheckedEngine(engine: Engine) {
-      if (params.checkedEngine.has(engine)) {
-        params.checkedEngine.delete(engine);
-      } else {
-        params.checkedEngine.add(engine);
-      }
-    },
     toggleCheckedLevel(level: SQLReviewRuleLevel) {
       if (params.checkedLevel.has(level)) {
         params.checkedLevel.delete(level);
@@ -37,47 +25,16 @@ export const useSQLRuleFilter = (ruleList: MaybeRef<RuleTemplate[]>) => {
         params.checkedLevel.add(level);
       }
     },
-    changeCategory(category: string | undefined) {
+    changeCategory(category: string) {
       params.selectedCategory = category;
     },
     changeSearchText(keyword: string) {
       params.searchText = keyword;
     },
+    reset() {
+      this.changeCategory("all");
+      params.checkedLevel = new Set([]);
+    },
   };
-  const filteredRuleList = computed(() => {
-    return unref(ruleList)
-      .filter((rule) => {
-        if (
-          !params.selectedCategory &&
-          params.checkedEngine.size === 0 &&
-          params.checkedLevel.size === 0
-        ) {
-          // Select "All"
-          return true;
-        }
-
-        return (
-          (!params.selectedCategory ||
-            rule.category === params.selectedCategory) &&
-          (params.checkedEngine.size === 0 ||
-            rule.engineList.some((engine) =>
-              params.checkedEngine.has(engine)
-            )) &&
-          (params.checkedLevel.size === 0 ||
-            params.checkedLevel.has(rule.level))
-        );
-      })
-      .filter((rule) => filterRuleByKeyword(rule, params.searchText));
-  });
-  return { params, events, filteredRuleList };
-};
-
-const filterRuleByKeyword = (rule: RuleTemplate, keyword: string) => {
-  keyword = keyword.trim().toLowerCase();
-  if (!keyword) return true;
-  if (rule.type.toLowerCase().includes(keyword)) return true;
-  const localization = getRuleLocalization(rule.type);
-  if (localization.title.toLowerCase().includes(keyword)) return true;
-  if (localization.description.toLowerCase().includes(keyword)) return true;
-  return false;
+  return { params, events };
 };

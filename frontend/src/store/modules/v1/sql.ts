@@ -7,11 +7,10 @@ import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/plan_servi
 import type {
   ExportRequest,
   QueryRequest,
-  Advice,
   GenerateRestoreSQLRequest,
   ExecuteRequest,
 } from "@/types/proto/v1/sql_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 const getSqlReviewReports = (err: unknown): Advice[] => {
@@ -25,15 +24,17 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
         const sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.decode(
           extra.value
         );
-        advices.push({
-          status: Advice_Status.ERROR,
-          code: sqlReviewReport.code,
-          title: "",
-          content: sqlReviewReport.detail,
-          detail: sqlReviewReport.detail,
-          line: sqlReviewReport.line,
-          column: sqlReviewReport.column,
-        });
+        advices.push(
+          Advice.fromJSON({
+            status: Advice_Status.ERROR,
+            code: sqlReviewReport.code,
+            title: "",
+            content: sqlReviewReport.detail,
+            detail: sqlReviewReport.detail,
+            line: sqlReviewReport.line,
+            column: sqlReviewReport.column,
+          })
+        );
       }
     }
   }

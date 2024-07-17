@@ -258,7 +258,7 @@ func newTypeInfo(id int, createType *ast.CreateTypeStmt) *typeInfo {
 }
 
 func (m schemaMap) addView(id int, view *ast.CreateViewStmt) error {
-	if IsSystemSchema(view.Name.Schema) || IsBackupSchema(view.Name.Schema) {
+	if IsSystemSchema(view.Name.Schema) {
 		return nil
 	}
 	schema, exists := m[view.Name.Schema]
@@ -278,7 +278,7 @@ func (m schemaMap) getView(schemaName string, viewName string) *viewInfo {
 }
 
 func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
-	if IsSystemSchema(table.Name.Schema) || IsBackupSchema(table.Name.Schema) {
+	if IsSystemSchema(table.Name.Schema) {
 		return nil
 	}
 	schema, exists := m[table.Name.Schema]
@@ -298,7 +298,7 @@ func (m schemaMap) getTable(schemaName string, tableName string) *tableInfo {
 }
 
 func (m schemaMap) addConstraint(id int, addConstraint *ast.AddConstraintStmt) error {
-	if IsSystemSchema(addConstraint.Table.Schema) || IsBackupSchema(addConstraint.Table.Schema) {
+	if IsSystemSchema(addConstraint.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[addConstraint.Table.Schema]
@@ -330,7 +330,7 @@ func (m schemaMap) getConstraint(schemaName string, tableName string, constraint
 }
 
 func (m schemaMap) addExtension(id int, extension *ast.CreateExtensionStmt) error {
-	if IsSystemSchema(extension.Schema) || IsBackupSchema(extension.Schema) {
+	if IsSystemSchema(extension.Schema) {
 		return nil
 	}
 	schema, exists := m[extension.Schema]
@@ -350,7 +350,7 @@ func (m schemaMap) getExtension(schemaName string, extensionName string) *extens
 }
 
 func (m schemaMap) addFunction(id int, function *ast.CreateFunctionStmt) error {
-	if IsSystemSchema(function.Function.Schema) || IsBackupSchema(function.Function.Schema) {
+	if IsSystemSchema(function.Function.Schema) {
 		return nil
 	}
 	schema, exists := m[function.Function.Schema]
@@ -374,7 +374,7 @@ func (m schemaMap) getFunction(schemaName string, signature string) *functionInf
 }
 
 func (m schemaMap) addIndex(id int, index *ast.CreateIndexStmt) error {
-	if IsSystemSchema(index.Index.Table.Schema) || IsBackupSchema(index.Index.Table.Schema) {
+	if IsSystemSchema(index.Index.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[index.Index.Table.Schema]
@@ -394,7 +394,7 @@ func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
 }
 
 func (m schemaMap) addSequence(id int, sequence *ast.CreateSequenceStmt) error {
-	if IsSystemSchema(sequence.SequenceDef.SequenceName.Schema) || IsBackupSchema(sequence.SequenceDef.SequenceName.Schema) {
+	if IsSystemSchema(sequence.SequenceDef.SequenceName.Schema) {
 		return nil
 	}
 	schema, exists := m[sequence.SequenceDef.SequenceName.Schema]
@@ -414,7 +414,7 @@ func (m schemaMap) getSequence(schemaName string, sequenceName string) *sequence
 }
 
 func (m schemaMap) addTrigger(id int, trigger *ast.CreateTriggerStmt) error {
-	if IsSystemSchema(trigger.Trigger.Table.Schema) || IsBackupSchema(trigger.Trigger.Table.Schema) {
+	if IsSystemSchema(trigger.Trigger.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[trigger.Trigger.Table.Schema]
@@ -442,7 +442,7 @@ func (m schemaMap) getTrigger(schemaName string, tableName string, triggerName s
 }
 
 func (m schemaMap) addType(id int, createType *ast.CreateTypeStmt) error {
-	if IsSystemSchema(createType.Type.TypeName().Schema) || IsBackupSchema(createType.Type.TypeName().Schema) {
+	if IsSystemSchema(createType.Type.TypeName().Schema) {
 		return nil
 	}
 	schema, exists := m[createType.Type.TypeName().Schema]
@@ -629,7 +629,7 @@ func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) 
 		return errors.Errorf("expect OwnedBy only, but found %v", alterStmt)
 	}
 
-	if IsSystemSchema(alterStmt.Name.Schema) || IsBackupSchema(alterStmt.Name.Schema) {
+	if IsSystemSchema(alterStmt.Name.Schema) {
 		return nil
 	}
 	schema, exists := m[alterStmt.Name.Schema]
@@ -838,7 +838,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
 				continue
 			}
-			if IsSystemSchema(stmt.Name.Schema) || IsBackupSchema(stmt.Name.Schema) {
+			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
@@ -853,7 +853,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateSchemaStmt:
-			if IsSystemSchema(stmt.Name) || IsBackupSchema(stmt.Name) {
+			if IsSystemSchema(stmt.Name) {
 				continue
 			}
 			schema, hasSchema := oldSchemaMap[stmt.Name]
@@ -863,7 +863,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			schema.existsInNew = true
 		case *ast.CreateViewStmt:
-			if IsSystemSchema(stmt.Name.Schema) || IsBackupSchema(stmt.Name.Schema) {
+			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldView := oldSchemaMap.getView(stmt.Name.Schema, stmt.Name.Name)
@@ -886,7 +886,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
 				continue
 			}
-			if IsSystemSchema(stmt.Table.Schema) || IsBackupSchema(stmt.Table.Schema) {
+			if IsSystemSchema(stmt.Table.Schema) {
 				continue
 			}
 			for _, alterItem := range stmt.AlterItemList {
@@ -926,7 +926,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
 				continue
 			}
-			if IsSystemSchema(stmt.Index.Table.Schema) || IsBackupSchema(stmt.Index.Table.Schema) {
+			if IsSystemSchema(stmt.Index.Table.Schema) {
 				continue
 			}
 			oldIndex := oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
@@ -941,7 +941,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateSequenceStmt:
-			if IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) || IsBackupSchema(stmt.SequenceDef.SequenceName.Schema) {
+			if IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) {
 				continue
 			}
 			oldSequence := oldSchemaMap.getSequence(stmt.SequenceDef.SequenceName.Schema, stmt.SequenceDef.SequenceName.Name)
@@ -959,7 +959,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if !onlySetOwnedBy(stmt) {
 				return "", errors.Errorf("expect OwnedBy only, but found %v", stmt)
 			}
-			if IsSystemSchema(stmt.Name.Schema) || IsBackupSchema(stmt.Name.Schema) {
+			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldSequence := oldSchemaMap.getSequence(stmt.Name.Schema, stmt.Name.Name)
@@ -973,7 +973,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateExtensionStmt:
-			if IsSystemSchema(stmt.Schema) || IsBackupSchema(stmt.Schema) {
+			if IsSystemSchema(stmt.Schema) {
 				continue
 			}
 			oldExtension := oldSchemaMap.getExtension(stmt.Schema, stmt.Name)
@@ -988,7 +988,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateFunctionStmt:
-			if IsSystemSchema(stmt.Function.Schema) || IsBackupSchema(stmt.Function.Schema) {
+			if IsSystemSchema(stmt.Function.Schema) {
 				continue
 			}
 			signature, err := functionSignature(stmt.Function)
@@ -1007,7 +1007,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateTriggerStmt:
-			if IsSystemSchema(stmt.Trigger.Table.Schema) || IsBackupSchema(stmt.Trigger.Table.Schema) {
+			if IsSystemSchema(stmt.Trigger.Table.Schema) {
 				continue
 			}
 			oldTrigger := oldSchemaMap.getTrigger(stmt.Trigger.Table.Schema, stmt.Trigger.Table.Name, stmt.Trigger.Name)
@@ -1022,7 +1022,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateTypeStmt:
-			if IsSystemSchema(stmt.Type.TypeName().Schema) || IsBackupSchema(stmt.Type.TypeName().Schema) {
+			if IsSystemSchema(stmt.Type.TypeName().Schema) {
 				continue
 			}
 			oldType := oldSchemaMap.getType(stmt.Type.TypeName().Schema, stmt.Type.TypeName().Name)

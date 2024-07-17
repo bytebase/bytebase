@@ -1,6 +1,5 @@
 <template>
   <ProjectDeploymentConfigPanel
-    v-if="isTenantProject"
     id="deployment-config"
     :project="project"
     :database-list="databaseV1List"
@@ -14,7 +13,6 @@ import ProjectDeploymentConfigPanel from "@/components/ProjectDeploymentConfigPa
 import { useProjectV1Store } from "@/store";
 import { useDatabaseV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { sortDatabaseV1List } from "@/utils";
 
 const props = defineProps<{
@@ -28,10 +26,6 @@ const project = computed(() => {
   return projectV1Store.getProjectByName(
     `${projectNamePrefix}${props.projectId}`
   );
-});
-
-const isTenantProject = computed(() => {
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 const databaseV1List = computed(() => {

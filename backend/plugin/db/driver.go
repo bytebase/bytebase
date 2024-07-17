@@ -208,6 +208,11 @@ type ConnectionConfig struct {
 
 	// WarehouseID is used by Databricks.
 	WarehouseID string
+
+	RedisType      storepb.DataSourceOptions_RedisType
+	MasterName     string
+	MasterUsername string
+	MasterPassword string
 }
 
 // SSHConfig is the configuration for connection over SSH.
@@ -412,6 +417,22 @@ func (o *ExecuteOptions) LogCommandResponse(commandIndexes []int32, affectedRows
 	})
 	if err != nil {
 		slog.Warn("failed to log command response", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogTransactionControl(t storepb.TaskRunLog_TransactionControl_Type, rerr string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_TRANSACTION_CONTROL,
+		TransactionControl: &storepb.TaskRunLog_TransactionControl{
+			Type:  t,
+			Error: rerr,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log command transaction control", log.BBError(err))
 	}
 }
 

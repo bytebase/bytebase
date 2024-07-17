@@ -37,16 +37,11 @@ func newQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanCont
 	}
 }
 
-func (q *querySpanExtractor) getLinkedDatabaseMetadata(name []string, schema string) (string, *model.DatabaseMetadata, error) {
-	if len(name) == 0 {
-		return "", nil, errors.New("empty linked database name")
-	}
-	// TODO: The last element may not be the name.
-	linkName := name[len(name)-1]
+func (q *querySpanExtractor) getLinkedDatabaseMetadata(linkName string, schema string) (string, *model.DatabaseMetadata, error) {
 	if meta, ok := q.linkedMetaCache[linkName]; ok {
 		return linkName, meta, nil
 	}
-	databaseName, meta, err := q.gCtx.GetLinkedDatabaseMetadataFunc(q.ctx, linkName)
+	databaseName, meta, err := q.gCtx.GetLinkedDatabaseMetadataFunc(q.ctx, linkName, schema)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to get linked database metadata for schema: %s", schema)
 	}
@@ -1225,6 +1220,10 @@ func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml
 	tableViewName := ctx.Tableview_name()
 	if tableViewName != nil {
 		dbLink, schema, table := NormalizeTableViewName(q.connectedDatabase, tableViewName)
+		if len(dbLink) != 0 {
+			// Use the user in db link as default instead of the connected database.
+			dbLink, schema, table = NormalizeTableViewName("", tableViewName)
+		}
 		return q.plsqlFindTableSchema(dbLink, schema, table)
 	}
 
@@ -1244,17 +1243,17 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}, nil
 	}
 	if len(dbLink) > 0 {
-		databaseName, linkedMeta, err := q.getLinkedDatabaseMetadata(dbLink, schemaName)
+		linkName := strings.Join(dbLink, ".")
+		_, linkedMeta, err := q.getLinkedDatabaseMetadata(linkName, schemaName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get linked database metadata for: %s", dbLink)
 		}
 		if linkedMeta == nil {
-			linkName := strings.Join(dbLink, ".")
 			return nil, &parsererror.ResourceNotFoundError{
 				DatabaseLink: &linkName,
 			}
 		}
-		return q.findTableSchemaInMetadata(linkedMeta, databaseName, schemaName, tableName)
+		return q.findTableSchemaInMetadata(linkedMeta, linkedMeta.GetName(), schemaName, tableName)
 	}
 
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:

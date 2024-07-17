@@ -258,7 +258,7 @@ const {
   selectionEnabled,
 } = useSchemaEditorContext();
 const engine = computed(() => {
-  return props.db.instanceEntity.engine;
+  return props.db.instanceResource.engine;
 });
 const state = reactive<LocalState>({
   mode: "COLUMNS",

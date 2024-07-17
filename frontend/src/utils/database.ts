@@ -1,6 +1,4 @@
-import { keyBy } from "lodash-es";
 import { Engine } from "@/types/proto/v1/common";
-import type { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import type { Database, Environment } from "../types";
 import { semverCompare } from "./util";
 
@@ -29,22 +27,6 @@ export function sortDatabaseList(
   });
 }
 
-// Sort the list to put prod items first.
-export function sortDatabaseListByEnvironmentV1(
-  list: Database[],
-  environmentList: EnvironmentV1[]
-): Database[] {
-  const environmentMap = keyBy(environmentList, (env) => env.uid);
-  return list.sort((a: Database, b: Database) => {
-    const aEnvOrder =
-      environmentMap[String(a.instance.environment.id)]?.order ?? -1;
-    const bEnvOrder =
-      environmentMap[String(b.instance.environment.id)]?.order ?? -1;
-
-    return bEnvOrder - aEnvOrder;
-  });
-}
-
 const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
 
 export function allowGhostMigration(databaseList: Database[]): boolean {
@@ -56,12 +38,7 @@ export function allowGhostMigration(databaseList: Database[]): boolean {
   });
 }
 
-type DatabaseFilterFields =
-  | "name"
-  | "project"
-  | "instance"
-  | "environment"
-  | "tenant";
+type DatabaseFilterFields = "name" | "project" | "instance" | "environment";
 export function filterDatabaseByKeyword(
   db: Database,
   keyword: string,
@@ -94,16 +71,6 @@ export function filterDatabaseByKeyword(
   if (
     columns.includes("environment") &&
     db.instance.environment.name.toLowerCase().includes(keyword)
-  ) {
-    return true;
-  }
-
-  if (
-    columns.includes("tenant") &&
-    db.labels
-      .find((label) => label.key === "tenant")
-      ?.value.toLowerCase()
-      .includes(keyword)
   ) {
     return true;
   }

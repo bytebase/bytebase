@@ -61,8 +61,8 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
     databaseList,
     [
       (db) => db.effectiveEnvironmentEntity.order,
-      (db) => Number(db.instanceEntity.uid),
-      (db) => Number(db.projectEntity.uid),
+      (db) => db.instance,
+      (db) => db.projectEntity.key,
       (db) => db.databaseName,
     ],
     ["desc", "asc", "asc", "asc"]
@@ -70,9 +70,10 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
 };
 
 export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
-  if (db.instanceEntity.state === State.DELETED) {
-    return true;
-  }
+  // TODO(steven): check if the related instance is deleted.
+  // if (db.instanceEntity.state === State.DELETED) {
+  //   return true;
+  // }
   if (db.effectiveEnvironmentEntity.state === State.DELETED) {
     return true;
   }
@@ -96,8 +97,8 @@ export const isDatabaseV1Alterable = (
 
   // If user is owner or developer of its projects, we will show the database in the UI.
   if (
-    isOwnerOfProjectV1(database.projectEntity.iamPolicy, user) ||
-    isDeveloperOfProjectV1(database.projectEntity.iamPolicy, user)
+    isOwnerOfProjectV1(database.projectEntity, user) ||
+    isDeveloperOfProjectV1(database.projectEntity, user)
   ) {
     return true;
   }
@@ -151,12 +152,7 @@ export const isTableQueryable = (
   return false;
 };
 
-type DatabaseV1FilterFields =
-  | "name"
-  | "project"
-  | "instance"
-  | "environment"
-  | "tenant";
+type DatabaseV1FilterFields = "name" | "project" | "instance" | "environment";
 export function filterDatabaseV1ByKeyword(
   db: ComposedDatabase,
   keyword: string,
@@ -184,7 +180,7 @@ export function filterDatabaseV1ByKeyword(
 
   if (
     columns.includes("instance") &&
-    db.instanceEntity.title.toLowerCase().includes(keyword)
+    db.instanceResource.title.toLowerCase().includes(keyword)
   ) {
     return true;
   }
@@ -194,13 +190,6 @@ export function filterDatabaseV1ByKeyword(
     db.effectiveEnvironmentEntity.title.toLowerCase().includes(keyword)
   ) {
     return true;
-  }
-
-  if (columns.includes("tenant")) {
-    const tenantValue = db.labels["tenant"] ?? "";
-    if (tenantValue.toLowerCase().includes(keyword)) {
-      return true;
-    }
   }
 
   return false;
@@ -214,13 +203,13 @@ export function allowGhostMigrationV1(
   const subscriptionV1Store = useSubscriptionV1Store();
   return databaseList.every((db) => {
     return (
-      db.instanceEntity.engine === Engine.MYSQL &&
+      db.instanceResource.engine === Engine.MYSQL &&
       subscriptionV1Store.hasInstanceFeature(
         "bb.feature.online-migration",
-        db.instanceEntity
+        db.instanceResource
       ) &&
       semverCompare(
-        db.instanceEntity.engineVersion,
+        db.instanceResource.engineVersion,
         MIN_GHOST_SUPPORT_MYSQL_VERSION,
         "gte"
       )

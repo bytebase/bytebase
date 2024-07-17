@@ -381,10 +381,17 @@ message TaskRunLogEntry {
     TYPE_UNSPECIFIED = 0;
     SCHEMA_DUMP = 1;
     COMMAND_EXECUTE = 2;
+    DATABASE_SYNC = 3;
+    TASK_RUN_STATUS_UPDATE = 4;
+    TRANSACTION_CONTROL = 5;
   }
   Type type = 1;
+  google.protobuf.Timestamp log_time = 6;
   SchemaDump schema_dump = 2;
   CommandExecute command_execute = 3;
+  DatabaseSync database_sync = 4;
+  TaskRunStatusUpdate task_run_status_update = 5;
+  TransactionControl transaction_control = 7;
 
   message SchemaDump {
     google.protobuf.Timestamp start_time = 1;
@@ -406,5 +413,33 @@ message TaskRunLogEntry {
       // `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
       repeated int32 all_affected_rows = 4;
     }
+  }
+
+  message DatabaseSync {
+    google.protobuf.Timestamp start_time = 1;
+    google.protobuf.Timestamp end_time = 2;
+    string error = 3;
+  }
+
+  message TaskRunStatusUpdate {
+    Status status = 1;
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      // the task run is ready to be executed by the scheduler
+      RUNNING_WAITING = 1;
+      // the task run is being executed by the scheduler
+      RUNNING_RUNNING = 2;
+    }
+  }
+
+  message TransactionControl {
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      BEGIN = 1;
+      COMMIT = 2;
+      ROLLBACK = 3;
+    }
+    Type type = 1;
+    string error = 2;
   }
 }

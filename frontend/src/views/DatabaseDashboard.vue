@@ -45,7 +45,7 @@ import {
   useUIStateStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
 import type { SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
@@ -157,8 +157,9 @@ onMounted(() => {
 });
 
 const databaseV1List = computed(() => {
+  const projects = new Set(projectList.value.map((project) => project.name));
   return sortDatabaseV1List(databaseV1Store.databaseList).filter((db) =>
-    projectList.value.map((project) => project.name).includes(db.project)
+    projects.has(db.project)
   );
 });
 
@@ -174,17 +175,16 @@ const filteredDatabaseList = computed(() => {
   if (selectedProjectAssigned.value !== `${UNKNOWN_ID}`) {
     list = list.filter((db) => {
       if (selectedProjectAssigned.value == "yes") {
-        return db.project !== DEFAULT_PROJECT_V1_NAME;
+        return db.project !== DEFAULT_PROJECT_NAME;
       } else {
-        return db.project === DEFAULT_PROJECT_V1_NAME;
+        return db.project === DEFAULT_PROJECT_NAME;
       }
     });
   }
   if (selectedInstance.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (db) =>
-        extractInstanceResourceName(db.instanceEntity.name) ===
-        selectedInstance.value
+        extractInstanceResourceName(db.instance) === selectedInstance.value
     );
   }
   if (selectedProject.value !== `${UNKNOWN_ID}`) {
@@ -199,7 +199,7 @@ const filteredDatabaseList = computed(() => {
   }
   if (isStandaloneMode.value) {
     list = list.filter(
-      (db) => db.projectEntity.name !== DEFAULT_PROJECT_V1_NAME
+      (db) => db.projectEntity.name !== DEFAULT_PROJECT_NAME
     );
   }
   const keyword = state.params.query.trim().toLowerCase();

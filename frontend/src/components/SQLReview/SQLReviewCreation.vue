@@ -18,12 +18,12 @@
           :name="state.name"
           :resource-id="state.resourceId"
           :attached-resources="state.attachedResources"
-          :selected-template="
-            state.pendingApplyTemplate || state.selectedTemplate
+          :selected-template-id="
+            state.pendingApplyTemplate?.id ?? state.selectedTemplateId
           "
           :is-edit="!!policy"
           :is-create="!isUpdate"
-          :allow-change-attached-resource="allowChangeAttachedResource"
+          :allow-change-attached-resource="false"
           @select-template="tryApplyTemplate"
           @name-change="(val: string) => (state.name = val)"
           @resource-id-change="(val: string) => (state.resourceId = val)"
@@ -34,10 +34,9 @@
       </template>
       <template #1>
         <SQLReviewConfig
-          :selected-rule-list="state.selectedRuleList"
-          @level-change="onLevelChange"
-          @payload-change="onPayloadChange"
-          @comment-change="onCommentChange"
+          :rule-map-by-engine="state.selectedRuleMapByEngine"
+          @rule-upsert="upsertRule"
+          @rule-remove="removeRole"
         />
       </template>
     </StepTab>
@@ -46,11 +45,14 @@
 
 <script lang="ts" setup>
 import { useDialog } from "naive-ui";
-import { reactive, computed, withDefaults } from "vue";
+import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
+import {
+  WORKSPACE_ROUTE_SQL_REVIEW,
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -62,43 +64,45 @@ import {
   getReviewConfigId,
 } from "@/store/modules/v1/common";
 import type {
-  RuleTemplate,
-  SQLReviewPolicyTemplate,
+  RuleTemplateV2,
+  SQLReviewPolicyTemplateV2,
   SQLReviewPolicy,
-  SchemaPolicyRule,
 } from "@/types";
 import {
-  convertToCategoryList,
-  convertRuleTemplateToPolicyRule,
+  getRuleMapByEngine,
+  convertRuleMapToPolicyRuleList,
   ruleIsAvailableInSubscription,
+  TEMPLATE_LIST_V2 as builtInTemplateList,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
-import { rulesToTemplate } from "./components";
+import { getTemplateId } from "./components";
 
 interface LocalState {
   currentStep: number;
   name: string;
   resourceId: string;
   attachedResources: string[];
-  selectedRuleList: RuleTemplate[];
-  selectedTemplate: SQLReviewPolicyTemplate | undefined;
+  selectedRuleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
+  selectedTemplateId: string | undefined;
   ruleUpdated: boolean;
-  pendingApplyTemplate: SQLReviewPolicyTemplate | undefined;
+  pendingApplyTemplate: SQLReviewPolicyTemplateV2 | undefined;
 }
 
 const props = withDefaults(
   defineProps<{
     policy?: SQLReviewPolicy;
     name?: string;
-    selectedResources: string[];
-    selectedRuleList?: RuleTemplate[];
+    selectedResources?: string[];
+    selectedRuleList?: RuleTemplateV2[];
   }>(),
   {
     policy: undefined,
     name: "",
+    selectedResources: () => [],
     selectedRuleList: () => [],
   }
 );
@@ -126,71 +130,64 @@ const state = reactive<LocalState>({
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   resourceId: props.policy ? getReviewConfigId(props.policy.id) : "",
   attachedResources: props.selectedResources,
-  selectedRuleList: [...props.selectedRuleList],
-  selectedTemplate: props.policy
-    ? rulesToTemplate(props.policy, false /* withDisabled=false */)
-    : undefined,
+  selectedRuleMapByEngine: getRuleMapByEngine(props.selectedRuleList),
+  selectedTemplateId: props.policy
+    ? getTemplateId(props.policy)
+    : builtInTemplateList[0]?.id,
   ruleUpdated: false,
   pendingApplyTemplate: undefined,
 });
 
 const isUpdate = computed(() => !!props.policy);
 
-const allowChangeAttachedResource = computed(() => {
-  if (isUpdate.value) {
-    return (props.policy?.resources ?? []).length === 0;
-  }
-  return props.selectedResources.length === 0;
-});
-
-const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
+const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   if (!template) {
     return;
   }
-  state.selectedTemplate = template;
+  state.selectedTemplateId = template.id;
   state.pendingApplyTemplate = undefined;
 
-  const categoryList = convertToCategoryList(template.ruleList);
-  state.selectedRuleList = categoryList.reduce<RuleTemplate[]>(
-    (res, category) => {
-      res.push(
-        ...category.ruleList.map((rule) => ({
-          ...rule,
-          level: ruleIsAvailableInSubscription(
-            rule.type,
-            subscriptionStore.currentPlan
-          )
-            ? rule.level
-            : SQLReviewRuleLevel.DISABLED,
-        }))
-      );
-      return res;
-    },
-    []
+  state.selectedRuleMapByEngine = getRuleMapByEngine(
+    template.ruleList.map((rule) => ({
+      ...rule,
+      level: ruleIsAvailableInSubscription(
+        rule.type,
+        subscriptionStore.currentPlan
+      )
+        ? rule.level
+        : SQLReviewRuleLevel.DISABLED,
+    }))
   );
 };
 
-const onCancel = () => {
+const onCancel = (newPolicy: SQLReviewPolicy | undefined = undefined) => {
   if (props.policy) {
     emit("cancel");
   } else {
-    router.push({
-      name: WORKSPACE_ROUTE_SQL_REVIEW,
-    });
+    if (newPolicy) {
+      router.push({
+        name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+        params: {
+          sqlReviewPolicySlug: sqlReviewPolicySlug(newPolicy),
+        },
+        query: {
+          attachResourcePanel: newPolicy.resources.length === 0 ? 1 : undefined,
+        },
+      });
+    } else {
+      router.push({
+        name: WORKSPACE_ROUTE_SQL_REVIEW,
+      });
+    }
   }
 };
 
 const allowNext = computed((): boolean => {
   switch (state.currentStep) {
     case BASIC_INFO_STEP:
-      return (
-        !!state.name &&
-        !!state.resourceId &&
-        state.attachedResources.length > 0 &&
-        state.selectedRuleList.length > 0
-      );
+      return !!state.name && !!state.resourceId;
     case CONFIGURE_RULE_STEP:
-      return state.selectedRuleList.length > 0;
+      return state.selectedRuleMapByEngine.size > 0;
     case PREVIEW_STEP:
       return true;
   }
@@ -226,15 +223,9 @@ const tryFinishSetup = async () => {
     });
   }
 
-  const ruleList: SchemaPolicyRule[] = [];
-  for (const rule of state.selectedRuleList) {
-    ruleList.push(...convertRuleTemplateToPolicyRule(rule));
-  }
-
   const upsert = {
     title: state.name,
-    ruleList,
-    resources: state.attachedResources,
+    ruleList: convertRuleMapToPolicyRuleList(state.selectedRuleMapByEngine),
   };
 
   if (isUpdate.value) {
@@ -248,13 +239,12 @@ const tryFinishSetup = async () => {
       style: "SUCCESS",
       title: t("sql-review.policy-updated"),
     });
+    onCancel();
   } else {
-    if (state.attachedResources.length === 0) {
-      return;
-    }
     try {
-      await store.createReviewPolicy({
+      const policy = await store.createReviewPolicy({
         ...upsert,
+        resources: state.attachedResources,
         id: `${reviewConfigNamePrefix}${state.resourceId}`,
       });
       pushNotification({
@@ -262,6 +252,7 @@ const tryFinishSetup = async () => {
         style: "SUCCESS",
         title: t("sql-review.policy-created"),
       });
+      onCancel(policy);
     } catch {
       pushNotification({
         module: "bytebase",
@@ -270,13 +261,11 @@ const tryFinishSetup = async () => {
       });
     }
   }
-
-  onCancel();
 };
 
-const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {
+const tryApplyTemplate = (template: SQLReviewPolicyTemplateV2) => {
   if (state.ruleUpdated || props.policy) {
-    if (template.id === state.selectedTemplate?.id) {
+    if (template.id === state.selectedTemplateId) {
       state.pendingApplyTemplate = undefined;
       return;
     }
@@ -286,34 +275,44 @@ const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {
   onTemplateApply(template);
 };
 
-const change = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
+const removeRole = (rule: RuleTemplateV2) => {
+  state.selectedRuleMapByEngine.get(rule.engine)?.delete(rule.type);
+  if (state.selectedRuleMapByEngine.get(rule.engine)?.size === 0) {
+    state.selectedRuleMapByEngine.delete(rule.engine);
+  }
+};
+
+const upsertRule = (
+  rule: RuleTemplateV2,
+  overrides: Partial<RuleTemplateV2>
+) => {
   if (
     !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
   ) {
     return;
   }
 
-  const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
-  if (index < 0) {
+  if (!state.selectedRuleMapByEngine.has(rule.engine)) {
+    state.selectedRuleMapByEngine.set(
+      rule.engine,
+      new Map<string, RuleTemplateV2>()
+    );
+  }
+
+  const selectedRule = state.selectedRuleMapByEngine
+    .get(rule.engine)
+    ?.get(rule.type);
+  if (!selectedRule) {
+    state.selectedRuleMapByEngine.get(rule.engine)?.set(rule.type, {
+      ...rule,
+      level: SQLReviewRuleLevel.WARNING,
+    });
     return;
   }
-  const newRule = {
-    ...state.selectedRuleList[index],
-    ...overrides,
-  };
-  state.selectedRuleList[index] = newRule;
+  state.selectedRuleMapByEngine
+    .get(rule.engine)
+    ?.set(rule.type, Object.assign(selectedRule, overrides));
+
   state.ruleUpdated = true;
-};
-
-const onPayloadChange = (rule: RuleTemplate, update: Partial<RuleTemplate>) => {
-  change(rule, update);
-};
-
-const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
-  change(rule, { level });
-};
-
-const onCommentChange = (rule: RuleTemplate, comment: string) => {
-  change(rule, { comment });
 };
 </script>

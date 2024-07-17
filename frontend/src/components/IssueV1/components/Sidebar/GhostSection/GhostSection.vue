@@ -82,7 +82,7 @@ const shouldShowGhostSection = computed(() => {
     return (
       tasks.some((task) => {
         const database = databaseForTask(issue.value, task);
-        return database.instanceEntity.engine === Engine.MYSQL;
+        return database.instanceResource.engine === Engine.MYSQL;
       }) &&
       tasks.every((task) => ghostViewTypeForTask(issue.value, task) !== "NONE")
     );
@@ -94,6 +94,6 @@ const shouldShowGhostSection = computed(() => {
 const hasOnlineMigrationFeature = featureToRef("bb.feature.online-migration");
 
 const instance = computed(() => {
-  return databaseForTask(issue.value, task.value).instanceEntity;
+  return databaseForTask(issue.value, task.value).instanceResource;
 });
 </script>

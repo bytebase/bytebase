@@ -85,13 +85,13 @@
           <EnvironmentSelect
             class="mt-1 w-full"
             required="true"
-            :environment="
-              environment.uid === String(UNKNOWN_ID)
-                ? undefined
-                : environment.uid
+            :environment-name="
+              isValidEnvironmentName(environment.name)
+                ? environment.name
+                : undefined
             "
             :disabled="!allowEdit"
-            @update:environment="handleSelectEnvironmentUID"
+            @update:environment-name="handleSelectEnvironment"
           />
         </div>
 
@@ -205,13 +205,37 @@
               :key="type"
               :value="type"
             >
-              <span class="textlabel">{{ type }}</span>
+              {{ type }}
             </NRadio>
           </NRadioGroup>
         </div>
 
         <div
-          v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
+          v-if="basicInfo.engine === Engine.REDIS"
+          class="sm:col-span-4 sm:col-start-1"
+        >
+          <label
+            for="connectionStringSchema"
+            class="textlabel flex flex-row items-center"
+          >
+            {{ $t("data-source.connection-type") }}
+          </label>
+          <NRadioGroup
+            :value="currentRedisConnectionType"
+            @update:value="handleRedisConnectionTypeChange"
+          >
+            <NRadio
+              v-for="type in RedisConnectionType"
+              :key="type"
+              :value="type"
+            >
+              {{ type }}
+            </NRadio>
+          </NRadioGroup>
+        </div>
+
+        <div
+          v-if="showAdditionalAddresses"
           class="sm:col-span-4 sm:col-start-1"
         >
           <label
@@ -220,7 +244,7 @@
           >
             {{ $t("data-source.additional-node-addresses") }}
           </label>
-          <div class="grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
+          <div class="mt-1 grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
             <template
               v-for="(_, index) in adminDataSource.additionalAddresses"
               :key="index"
@@ -229,7 +253,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesHost"
-                  class="textlabel flex flex-row items-center"
+                  class="textlabel !font-normal flex flex-row items-center"
                 >
                   {{ $t("instance.host-or-socket") }}
                 </label>
@@ -247,7 +271,7 @@
                 <label
                   v-if="index === 0"
                   for="additionalAddressesPort"
-                  class="textlabel flex flex-row items-center"
+                  class="textlabel !font-normal flex flex-row items-center"
                 >
                   {{ $t("instance.port") }}
                 </label>
@@ -270,7 +294,7 @@
                 </MiniActionButton>
               </div>
             </template>
-            <div class="sm:col-span-12 sm:col-start-1">
+            <div class="mt-1 sm:col-span-12 sm:col-start-1">
               <NButton
                 class="ml-auto !w-12"
                 size="small"
@@ -439,19 +463,22 @@ import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspa
 import {
   useSettingV1Store,
   useActuatorV1Store,
-  useEnvironmentV1Store,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import {
+  UNKNOWN_ID,
+  isValidEnvironmentName,
+} from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
 import {
   InstanceOptions,
   DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
+import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { isDev, extractInstanceResourceName, onlyAllowNumber } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -463,6 +490,7 @@ import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
   EngineList,
+  RedisConnectionType,
 } from "./constants";
 import { useInstanceFormContext } from "./context";
 
@@ -526,6 +554,33 @@ const currentMongoDBConnectionSchema = computed(() => {
     : MongoDBConnectionStringSchemaList[1];
 });
 
+const currentRedisConnectionType = computed(() => {
+  switch (adminDataSource.value.redisType) {
+    case DataSource_RedisType.STANDALONE:
+      return RedisConnectionType[0];
+    case DataSource_RedisType.SENTINEL:
+      return RedisConnectionType[1];
+    case DataSource_RedisType.CLUSTER:
+      return RedisConnectionType[2];
+    default:
+      return RedisConnectionType[0];
+  }
+});
+
+const showAdditionalAddresses = computed(() => {
+  if (basicInfo.value.engine === Engine.MONGODB && !adminDataSource.value.srv) {
+    return true;
+  }
+  if (
+    basicInfo.value.engine === Engine.REDIS &&
+    (adminDataSource.value.redisType === DataSource_RedisType.CLUSTER ||
+      adminDataSource.value.redisType === DataSource_RedisType.SENTINEL)
+  ) {
+    return true;
+  }
+  return false;
+});
+
 const outboundIpList = computed(() => {
   if (!settingV1Store.workspaceProfileSetting) {
     return "";
@@ -570,6 +625,25 @@ const changeMaximumConnections = (maximumConnections: number) => {
     basicInfo.value.options = InstanceOptions.fromPartial({});
   }
   basicInfo.value.options.maximumConnections = maximumConnections;
+};
+
+const handleRedisConnectionTypeChange = (type: string) => {
+  const ds = editingDataSource.value;
+  if (!ds) return;
+  switch (type) {
+    case RedisConnectionType[0]:
+      ds.redisType = DataSource_RedisType.STANDALONE;
+      break;
+    case RedisConnectionType[1]:
+      ds.redisType = DataSource_RedisType.SENTINEL;
+      break;
+    case RedisConnectionType[2]:
+      ds.redisType = DataSource_RedisType.CLUSTER;
+      break;
+    default:
+      ds.redisType = DataSource_RedisType.STANDALONE;
+      break;
+  }
 };
 
 const handleMongodbConnectionStringSchemaChange = (type: string) => {
@@ -650,10 +724,9 @@ const changeInstanceActivation = async (on: boolean) => {
   }
 };
 
-const handleSelectEnvironmentUID = (uid: string | undefined) => {
-  if (!uid) return;
-  const environment = useEnvironmentV1Store().getEnvironmentByUID(uid);
-  basicInfo.value.environment = environment.name;
+const handleSelectEnvironment = (name: string | undefined) => {
+  if (!isValidEnvironmentName(name)) return;
+  basicInfo.value.environment = name;
 };
 
 const testConnectionForCurrentEditingDS = () => {

@@ -36,17 +36,15 @@ import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.v
 import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
-  PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
 } from "@/router/dashboard/projectV1";
 import { useProjectV1Store, useCurrentUserV1, usePageMode } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { QuickActionType } from "@/types";
 import {
-  DEFAULT_PROJECT_V1_NAME,
+  DEFAULT_PROJECT_NAME,
   QuickActionProjectPermissionMap,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -71,7 +69,7 @@ watchEffect(() => {
 });
 
 const isDefaultProject = computed((): boolean => {
-  return project.value.name === DEFAULT_PROJECT_V1_NAME;
+  return project.value.name === DEFAULT_PROJECT_NAME;
 });
 
 const currentUser = useCurrentUserV1();
@@ -131,20 +129,6 @@ const quickActionListForDatabaseGroup = computed((): QuickActionType[] => {
   ];
 });
 
-const quickActionListForDeploymentConfig = computed((): QuickActionType[] => {
-  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-    return [];
-  }
-  if (project.value.state !== State.ACTIVE) {
-    return [];
-  }
-
-  return [
-    "quickaction.bb.database.schema.update",
-    "quickaction.bb.database.data.update",
-  ];
-});
-
 const quickActionListForDatabase = computed((): QuickActionType[] => {
   if (project.value.state !== State.ACTIVE) {
     return [];
@@ -164,8 +148,6 @@ const quickActionList = computed(() => {
       return getQuickActionList(quickActionListForDatabase.value);
     case PROJECT_V1_ROUTE_DATABASE_GROUPS:
       return getQuickActionList(quickActionListForDatabaseGroup.value);
-    case PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG:
-      return getQuickActionList(quickActionListForDeploymentConfig.value);
   }
   return [];
 });

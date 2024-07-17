@@ -9,7 +9,7 @@
           <FeatureBadge
             feature="bb.feature.encrypted-secrets"
             custom-class="ml-2"
-            :instance="database.instanceEntity"
+            :instance="database.instanceResource"
           />
         </div>
         <div class="textinfolabel">
@@ -34,7 +34,7 @@
     </div>
     <FeatureAttention
       feature="bb.feature.encrypted-secrets"
-      :instance="database.instanceEntity"
+      :instance="database.instanceResource"
     />
     <div>
       <BBGrid
@@ -187,7 +187,7 @@
   <FeatureModal
     feature="bb.feature.encrypted-secrets"
     :open="showFeatureModal"
-    :instance="database.instanceEntity"
+    :instance="database.instanceResource"
     @cancel="showFeatureModal = false"
   />
 </template>
@@ -198,6 +198,7 @@ import { NButton, NInput } from "naive-ui";
 import { computed, ref, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
+import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
@@ -263,7 +264,7 @@ const extractSecretName = (name: string) => {
 const hasSecretFeature = computed(() => {
   return subscriptionV1Store.hasInstanceFeature(
     "bb.feature.encrypted-secrets",
-    props.database.instanceEntity
+    props.database.instanceResource
   );
 });
 

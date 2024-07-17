@@ -19,8 +19,8 @@
         </span>
       </div>
       <NButton
-        v-else-if="allowCreateSQLReviewPolicy"
-        @click.prevent="onSQLReviewPolicyClick"
+        v-else-if="allowEditSQLReviewPolicy"
+        @click.prevent="showReviewSelectPanel = true"
       >
         {{ $t("sql-review.configure-policy") }}
       </NButton>
@@ -29,16 +29,19 @@
       </span>
     </div>
   </div>
+
+  <SQLReviewPolicySelectPanel
+    :resource="resource"
+    :show="showReviewSelectPanel"
+    @close="showReviewSelectPanel = false"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import {
-  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -56,16 +59,11 @@ const { t } = useI18n();
 const router = useRouter();
 const me = useCurrentUserV1();
 const reviewStore = useSQLReviewStore();
+const showReviewSelectPanel = ref<boolean>(false);
 
 const allowEditSQLReviewPolicy = computed(() => {
   return (
     props.allowEdit && hasWorkspacePermissionV2(me.value, "bb.policies.update")
-  );
-});
-
-const allowCreateSQLReviewPolicy = computed(() => {
-  return (
-    props.allowEdit && hasWorkspacePermissionV2(me.value, "bb.policies.create")
   );
 });
 
@@ -91,13 +89,6 @@ const onSQLReviewPolicyClick = () => {
       name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
       params: {
         sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
-      },
-    });
-  } else {
-    router.push({
-      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-      query: {
-        attachedResource: props.resource,
       },
     });
   }

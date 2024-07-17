@@ -9,8 +9,6 @@ import type { RepositoryConfig } from "./repository";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 
-export type ProjectTenantMode = "DISABLED" | "TENANT";
-
 // Project
 export type Project = {
   id: ProjectId;
@@ -24,7 +22,6 @@ export type Project = {
   // to do various access check.
   memberList: ProjectMember[];
   workflowType: ProjectWorkflowType;
-  tenantMode: ProjectTenantMode;
 };
 
 // Project Member

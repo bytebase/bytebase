@@ -1,20 +1,25 @@
 <template>
   <BBModal
-    :title="
-      editable
-        ? $t('sql-review.edit-rule.self')
-        : $t('sql-review.edit-rule.readonly')
-    "
+    :title="getRuleLocalization(rule.type).title"
     @close="$emit('cancel')"
   >
     <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
       <div class="space-y-1">
-        <h3 class="text-lg text-control font-medium">
-          {{ $t("common.name") }}
-        </h3>
+        <div class="flex items-center space-x-2">
+          <h3 class="text-lg text-control font-medium">
+            {{ $t("common.name") }}
+          </h3>
+          <div class="flex items-center space-x-2">
+            <EngineIcon :engine="rule.engine" custom-class="ml-1" />
+            <RichEngineName
+              :engine="rule.engine"
+              tag="p"
+              class="text-center text-sm !text-main"
+            />
+          </div>
+        </div>
         <div class="textinfolabel flex items-center gap-x-2">
           {{ getRuleLocalization(rule.type).title }}
-          <RuleEngineIcons :rule="rule" />
           <a
             :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
             target="__blank"
@@ -24,7 +29,7 @@
           </a>
         </div>
       </div>
-      <div v-if="editable" class="space-y-1">
+      <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("sql-review.rule.active") }}
         </h3>
@@ -32,7 +37,7 @@
           <NSwitch
             :disabled="disabled"
             :value="state.level !== SQLReviewRuleLevel.DISABLED"
-            @update-value="(val) => toggleActivity(rule, val)"
+            @update-value="toggleActivity"
           />
         </div>
       </div>
@@ -44,12 +49,11 @@
           <RuleLevelSwitch
             :level="state.level"
             :disabled="disabled"
-            :editable="editable"
             @level-change="state.level = $event"
           />
         </div>
       </div>
-      <div v-if="editable" class="space-y-1">
+      <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("common.description") }}
         </h3>
@@ -66,85 +70,13 @@
           />
         </div>
       </div>
-      <div v-else-if="displayDescription" class="space-y-1">
-        <h3 class="text-lg text-control font-medium">
-          {{ $t("common.description") }}
-        </h3>
-        <div class="flex flex-col gap-x-2">
-          {{ displayDescription }}
-        </div>
-      </div>
-      <RuleEngineTabFilter
-        v-if="rule.individualConfigList.length > 0"
-        :selected="state.selectedEngine"
-        :engine-list="rule.engineList"
-        :individual-engine-list="rule.individualConfigList.map((c) => c.engine)"
-        @update:engine="(val: Engine) => (state.selectedEngine = val)"
+      <RuleConfig
+        ref="ruleConfig"
+        :disabled="disabled"
+        :rule="rule"
+        :size="'medium'"
       />
-      <div
-        v-for="(config, index) in rule.componentList"
-        :key="index"
-        class="space-y-1"
-      >
-        <p class="text-lg text-control font-medium mb-2">
-          {{ configTitle(config) }}
-        </p>
-        <StringComponent
-          v-if="config.payload.type === 'STRING'"
-          :value="state.payload.get(state.selectedEngine)![index] as string"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
-        />
-        <NumberComponent
-          v-if="config.payload.type === 'NUMBER'"
-          :value="state.payload.get(state.selectedEngine)![index] as number"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
-        />
-        <BooleanComponent
-          v-else-if="config.payload.type == 'BOOLEAN'"
-          :rule="rule"
-          :value="state.payload.get(state.selectedEngine)![index] as boolean"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
-        />
-        <StringArrayComponent
-          v-else-if="
-            config.payload.type == 'STRING_ARRAY' &&
-            Array.isArray(state.payload.get(state.selectedEngine)![index])
-          "
-          :value="state.payload.get(state.selectedEngine)![index] as string[]"
-          :config="config"
-          :disabled="disabled"
-          :editable="editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
-        />
-        <TemplateComponent
-          v-else-if="config.payload.type == 'TEMPLATE'"
-          :rule="rule"
-          :value="state.payload.get(state.selectedEngine)![index] as string"
-          :config="config"
-          :disabled="disabled || !editable"
-          @update:value="
-            state.payload.get(state.selectedEngine)![index] = $event
-          "
-        />
-      </div>
-      <div
-        v-if="editable"
-        class="mt-4 pt-2 border-t flex justify-end space-x-3"
-      >
+      <div class="mt-4 pt-2 border-t flex justify-end space-x-3">
         <NButton @click.prevent="$emit('cancel')">
           {{ $t("common.cancel") }}
         </NButton>
@@ -158,116 +90,38 @@
 
 <script lang="ts" setup>
 import { NSwitch } from "naive-ui";
-import { computed, nextTick, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { Engine } from "@/types/proto/v1/common";
+import { nextTick, reactive, watch, ref } from "vue";
+import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { RuleConfigComponent, RuleTemplate } from "@/types/sqlReview";
-import { getRuleLocalization, getRuleLocalizationKey } from "@/types/sqlReview";
-import type {
-  PayloadValueType,
-  PayloadForEngine,
-} from "./RuleConfigComponents";
-import {
-  StringComponent,
-  NumberComponent,
-  BooleanComponent,
-  StringArrayComponent,
-  TemplateComponent,
-} from "./RuleConfigComponents";
-import RuleEngineIcons from "./RuleEngineIcons.vue";
-import RuleEngineTabFilter from "./RuleEngineTabFilter.vue";
+import type { RuleTemplateV2 } from "@/types/sqlReview";
+import { getRuleLocalization } from "@/types/sqlReview";
+import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
-  payload: PayloadForEngine;
   level: SQLReviewRuleLevel;
   comment: string;
-  selectedEngine: Engine;
 };
 
 const props = defineProps<{
-  editable: boolean;
-  rule: RuleTemplate;
+  rule: RuleTemplateV2;
   disabled: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:payload", payload: PayloadForEngine): void;
-  (event: "update:level", level: SQLReviewRuleLevel): void;
-  (event: "update:comment", comment: string): void;
+  (event: "update:rule", update: Partial<RuleTemplateV2>): void;
   (event: "cancel"): void;
 }>();
 
-const { t } = useI18n();
-
-const getRulePayload = () => {
-  const { componentList, individualConfigList, engineList } = props.rule;
-  const resp: PayloadForEngine = new Map();
-
-  if (componentList.length === 0) {
-    return resp;
-  }
-
-  const basePayload = componentList.reduce<
-    { key: string; value: PayloadValueType }[]
-  >((list, component) => {
-    list.push({
-      key: component.key,
-      value: component.payload.value ?? component.payload.default,
-    });
-    return list;
-  }, []);
-
-  if (engineList.length > individualConfigList.length) {
-    resp.set(
-      Engine.ENGINE_UNSPECIFIED,
-      basePayload.map((val) => val.value)
-    );
-  }
-
-  for (const individualConfig of individualConfigList) {
-    const individualPayload = [...basePayload];
-    for (const key of Object.keys(individualConfig.payload)) {
-      const index = individualPayload.findIndex((val) => val.key === key);
-      if (index >= 0) {
-        individualPayload[index] = {
-          ...individualPayload[index],
-          value:
-            individualConfig.payload[key].value ??
-            individualConfig.payload[key].default,
-        };
-      }
-    }
-    resp.set(
-      individualConfig.engine,
-      individualPayload.map((val) => val.value)
-    );
-  }
-
-  return resp;
-};
+const ruleConfig = ref<InstanceType<typeof RuleConfig>>();
 
 const state = reactive<LocalState>({
-  payload: getRulePayload(),
   level: props.rule.level,
   comment:
     props.rule.comment || getRuleLocalization(props.rule.type).description,
-  selectedEngine: Engine.ENGINE_UNSPECIFIED,
 });
 
-const displayDescription = computed(() => {
-  return state.comment || getRuleLocalization(props.rule.type).description;
-});
-
-const configTitle = (config: RuleConfigComponent): string => {
-  const key = `sql-review.rule.${getRuleLocalizationKey(
-    props.rule.type
-  )}.component.${config.key}.title`;
-  return t(key);
-};
-
-const toggleActivity = (rule: RuleTemplate, on: boolean) => {
+const toggleActivity = (on: boolean) => {
   state.level = on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED;
 };
 
@@ -279,9 +133,14 @@ watch(
 );
 
 const confirm = () => {
-  emit("update:level", state.level);
-  emit("update:payload", state.payload);
-  emit("update:comment", state.comment);
+  emit("update:rule", {
+    componentList: payloadValueListToComponentList(
+      props.rule,
+      ruleConfig.value?.payload ?? []
+    ),
+    level: state.level,
+    comment: state.comment,
+  });
   nextTick(() => {
     emit("cancel");
   });

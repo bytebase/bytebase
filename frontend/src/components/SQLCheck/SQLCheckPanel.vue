@@ -10,18 +10,18 @@
   >
     <PlanCheckDetail
       :plan-check-run="planCheckRun"
-      :environment="environment"
-      :is-latest="true"
+      :database="database"
+      :show-code-location="showCodeLocation"
       @close="$emit('close')"
     >
-      <template #row-extra="{ row }">
-        <slot name="row-extra" :row="row" />
+      <template #row-title-extra="{ row }">
+        <slot name="row-title-extra" :row="row" />
       </template>
     </PlanCheckDetail>
 
     <div
       v-if="confirm"
-      class="flex flex-row justify-end items-center gap-x-3 mt-4"
+      class="flex flex-row justify-end items-center gap-x-3 mt-3"
     >
       <NButton @click="confirm!.resolve(false)">
         {{ $t("issue.sql-check.back-to-edit") }}
@@ -55,11 +55,12 @@ import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";
 import PlanCheckDetail from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 
-const { advices, database } = defineProps<{
+const props = defineProps<{
   database: ComposedDatabase;
   advices: Advice[];
   overrideTitle?: string;
   confirm?: Defer<boolean>;
+  showCodeLocation?: boolean;
 }>();
 
 defineEmits<{
@@ -73,7 +74,7 @@ const policyV1Store = usePolicyV1Store();
 const restrictIssueCreationForSQLReview = computed((): boolean => {
   return (
     restrictIssueCreationForSqlReviewPolicy.value &&
-    advices.some((advice) => advice.status === Advice_Status.ERROR)
+    props.advices.some((advice) => advice.status === Advice_Status.ERROR)
   );
 });
 
@@ -90,7 +91,7 @@ watchEffect(async () => {
 
   const projectLevelPolicy =
     await policyV1Store.getOrFetchPolicyByParentAndType({
-      parentPath: database.project,
+      parentPath: props.database.project,
       policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
     });
   if (projectLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
@@ -99,14 +100,10 @@ watchEffect(async () => {
   }
 });
 
-const environment = computed(() => {
-  return database.effectiveEnvironmentEntity.name;
-});
-
 const planCheckRun = computed((): PlanCheckRun => {
   return PlanCheckRun.fromPartial({
     status: PlanCheckRun_Status.DONE,
-    results: advices.map((advice) => {
+    results: props.advices.map((advice) => {
       let status = PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
       switch (advice.status) {
         case Advice_Status.SUCCESS:

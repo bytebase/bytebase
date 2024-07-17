@@ -186,7 +186,6 @@ CREATE TABLE project (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     key TEXT NOT NULL,
-    tenant_mode TEXT NOT NULL CHECK (tenant_mode IN ('DISABLED', 'TENANT')) DEFAULT 'DISABLED',
     resource_id TEXT NOT NULL,
     data_classification_config_id TEXT NOT NULL DEFAULT '',
     setting JSONB NOT NULL DEFAULT '{}'
@@ -203,7 +202,6 @@ INSERT INTO
         updater_id,
         name,
         key,
-        tenant_mode,
         resource_id
     )
 VALUES
@@ -213,7 +211,6 @@ VALUES
         1,
         'Default',
         'DEFAULT',
-        'DISABLED',
         'default'
     );
 
@@ -892,7 +889,8 @@ CREATE TABLE db_group (
     project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,
     placeholder TEXT NOT NULL DEFAULT '',
-    expression JSONB NOT NULL DEFAULT '{}'
+    expression JSONB NOT NULL DEFAULT '{}',
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON db_group(project_id, resource_id);

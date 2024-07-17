@@ -47,7 +47,7 @@
               <span class="ml-1 textlabel"
                 >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
               >
-              <InstanceV1Name :instance="database.instanceEntity" />
+              <InstanceV1Name :instance="database.instanceResource" />
             </dd>
             <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -221,7 +221,7 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID, unknownEnvironment } from "@/types";
+import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -245,7 +245,7 @@ interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
   showSchemaEditorModal: boolean;
-  currentProjectId: string;
+  currentProjectName: string;
   selectedIndex: number;
   selectedTab: DatabaseHash;
 }
@@ -263,7 +263,7 @@ const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
   showSchemaEditorModal: false,
-  currentProjectId: String(UNKNOWN_ID),
+  currentProjectName: UNKNOWN_PROJECT_NAME,
   selectedIndex: 0,
   selectedTab: "overview",
 });
@@ -321,7 +321,7 @@ const allowToChangeDatabase = computed(() => {
 });
 
 const hasSchemaDiagramFeature = computed((): boolean => {
-  return instanceV1HasAlterSchema(database.value.instanceEntity);
+  return instanceV1HasAlterSchema(database.value.instanceResource);
 });
 
 const allowQuery = computed(() => {
@@ -329,7 +329,7 @@ const allowQuery = computed(() => {
 });
 
 const tryTransferProject = () => {
-  state.currentProjectId = project.value.uid;
+  state.currentProjectName = project.value.name;
   state.showTransferDatabaseModal = true;
 };
 
@@ -373,7 +373,7 @@ const createMigration = async (
 };
 
 const handleGotoSQLEditorFailed = () => {
-  state.currentProjectId = database.value.projectEntity.uid;
+  state.currentProjectName = database.value.project;
   state.showIncorrectProjectModal = true;
 };
 

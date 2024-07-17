@@ -26,7 +26,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ResourceID: "project-sample",
 		Title:      "Sample Project",
 		Key:        "SAM",
-		TenantMode: api.TenantModeDisabled,
 	}, userID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding project")
@@ -87,7 +86,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
 	// update issue later.
-	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, testDatabase, true /* force */); err != nil {
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, testDatabase, false /* force */); err != nil {
 		return errors.Wrapf(err, "failed to sync test sample database schema")
 	}
 
@@ -146,13 +145,14 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
 	// update issue later.
-	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, prodDatabase, true /* force */); err != nil {
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, prodDatabase, false /* force */); err != nil {
 		return errors.Wrapf(err, "failed to sync prod sample database schema")
 	}
 
 	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
 	// change issue to demonstrate the SQL Review feature.
 	sqlReviewConfig := &store.ReviewConfigMessage{
+		ID:         "sample",
 		Name:       "SQL Review Sample Policy",
 		CreatorUID: userID,
 		Enforce:    true,

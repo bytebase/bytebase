@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -132,11 +131,6 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 	find.Limit = &limitPlusOne
 	find.Offset = &offset
 
-	permission := iam.PermissionDatabasesGet
-	if request.GetPermission() == iam.PermissionDatabasesQuery.String() {
-		permission = iam.PermissionDatabasesQuery
-	}
-
 	databases, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -153,7 +147,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		}
 	}
 
-	databaseMessages, err := filterDatabasesV2(ctx, s.store, s.iamManager, databases, permission)
+	databaseMessages, err := filterDatabasesV2(ctx, s.store, s.iamManager, databases, iam.PermissionDatabasesGet)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
 	}
@@ -171,12 +165,12 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 	return response, nil
 }
 
-func searchDatabases(ctx context.Context, s *store.Store, iamManager *iam.Manager, find *store.FindDatabaseMessage, permission iam.Permission) ([]*store.DatabaseMessage, error) {
+func searchDatabases(ctx context.Context, s *store.Store, iamManager *iam.Manager, find *store.FindDatabaseMessage) ([]*store.DatabaseMessage, error) {
 	databases, err := s.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return filterDatabasesV2(ctx, s, iamManager, databases, permission)
+	return filterDatabasesV2(ctx, s, iamManager, databases, iam.PermissionDatabasesGet)
 }
 
 // ListDatabases lists all databases.
@@ -293,7 +287,7 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
 		}
-		if slices.Contains(permissions, needPermission) {
+		if permissions[needPermission] {
 			return databases, nil
 		}
 	}
@@ -337,7 +331,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !slices.Contains(permissions, needPermission) {
+		if !permissions[needPermission] {
 			continue
 		}
 
@@ -2248,15 +2242,15 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 			},
 		)
 		if err != nil {
-			retErr = err
+			retErr = errors.Wrap(err, "failed to create chat completion")
 			continue
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
-			retErr = err
+			retErr = errors.Wrapf(err, "failed to unmarshal chat completion response content: %s", resp.Choices[0].Message.Content)
 			continue
 		}
 		if err = generateResponse(&result); err != nil {
-			retErr = err
+			retErr = errors.Wrap(err, "failed to generate response")
 			continue
 		}
 		successful = true

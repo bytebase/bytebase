@@ -287,7 +287,7 @@ type GetDatabaseMetadataFunc func(context.Context, string) (string, *model.Datab
 // ListDatabaseNamesFunc is the function to list database names.
 type ListDatabaseNamesFunc func(context.Context) ([]string, error)
 
-type GetLinkedDatabaseMetadataFunc func(context.Context, string) (string, *model.DatabaseMetadata, error)
+type GetLinkedDatabaseMetadataFunc func(context.Context, string, string) (string, *model.DatabaseMetadata, error)
 
 func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 	y := &YamlQuerySpan{

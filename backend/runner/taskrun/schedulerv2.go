@@ -298,6 +298,12 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to running")
 	}
+	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
+		TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
+			Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_WAITING,
+		},
+	})
 	return nil
 }
 
@@ -340,10 +346,12 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		}
 		if task.DatabaseID != nil {
 			if minTaskIDForDatabase[*task.DatabaseID] != task.ID {
+				slog.Debug("skip running task run because another task on the database has a smaller id", "task run id", taskRun.ID, "task id", task.ID, "database id", *task.DatabaseID)
 				continue
 			}
 			// Skip the task run if there is an ongoing migration on the database.
 			if _, ok := s.stateCfg.RunningDatabaseMigration.Load(*task.DatabaseID); ok {
+				slog.Debug("skip running task run because another task is running on the database", "task run id", taskRun.ID, "task id", task.ID, "database id", *task.DatabaseID)
 				continue
 			}
 		}
@@ -365,10 +373,8 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			continue
 		}
 		maximumConnections := int(instance.Options.GetMaximumConnections())
-		if maximumConnections == 0 {
-			maximumConnections = state.DefaultInstanceMaximumConnections
-		}
 		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
+			slog.Debug("skip running task run because instance connection is not available", "task run id", taskRun.ID, "task id", task.ID, "instance id", task.InstanceID, "database id", *task.DatabaseID)
 			continue
 		}
 
@@ -376,6 +382,13 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		if task.DatabaseID != nil {
 			s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, true)
 		}
+
+		s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), &storepb.TaskRunLog{
+			Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
+			TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
+				Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING,
+			},
+		})
 		go s.runTaskRunOnce(ctx, taskRun, task, executor)
 	}
 

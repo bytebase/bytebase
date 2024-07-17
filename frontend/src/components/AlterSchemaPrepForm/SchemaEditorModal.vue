@@ -82,20 +82,25 @@
         <SchemaEditorSQLCheckButton
           :database-list="databaseList"
           :get-statement="generateOrGetEditingDDL"
+          :use-online-schema-migration="state.useOnlineSchemaMigration"
+          @toggle-online-schema-migration="
+            state.useOnlineSchemaMigration = $event
+          "
         />
       </template>
     </NTabs>
 
     <div class="w-full flex flex-row justify-between items-center">
-      <div class="flex flex-row items-center text-sm text-gray-500">
-        <template v-if="isBatchMode">
-          <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
-          {{ $t("schema-editor.tenant-mode-tips") }}
-        </template>
-      </div>
+      <div class="flex flex-row items-center text-sm text-gray-500"></div>
       <div class="flex justify-end items-center space-x-3">
         <NCheckbox v-model:checked="state.planOnly">
           {{ $t("issue.sql-review-only") }}
+        </NCheckbox>
+        <NCheckbox
+          v-if="allowUseOnlineSchemaMigration"
+          v-model:checked="state.useOnlineSchemaMigration"
+        >
+          {{ $t("task.online-migration.enable") }}
         </NCheckbox>
         <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
@@ -141,16 +146,12 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import {
-  dialectOfEngineV1,
-  UNKNOWN_PROJECT_NAME,
-  unknownProject,
-} from "@/types";
+import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
+import { allowGhostForDatabase } from "../IssueV1/components/Sidebar/GhostSection/common";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import type { EditTarget, GenerateDiffDDLResult } from "../SchemaEditorLite";
@@ -173,6 +174,7 @@ interface LocalState {
   isUploadingFile: boolean;
   // planOnly is used to indicate whether only to create plan.
   planOnly: boolean;
+  useOnlineSchemaMigration: boolean;
 }
 
 const props = defineProps({
@@ -181,7 +183,7 @@ const props = defineProps({
     required: true,
   },
   alterType: {
-    type: String as PropType<"TENANT" | "MULTI_DB" | "SINGLE_DB">,
+    type: String as PropType<"MULTI_DB" | "SINGLE_DB">,
     required: true,
   },
   newWindow: {
@@ -211,6 +213,7 @@ const state = reactive<LocalState>({
   targets: [],
   isUploadingFile: false,
   planOnly: props.planOnly,
+  useOnlineSchemaMigration: false,
 });
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
@@ -236,7 +239,7 @@ const databaseList = computed(() => {
 // Returns Engine.UNRECOGNIZED if there are more than ONE types.
 const databaseEngine = computed((): Engine => {
   const engineTypes = uniq(
-    databaseList.value.map((db) => db.instanceEntity.engine)
+    databaseList.value.map((db) => db.instanceResource.engine)
   );
   if (engineTypes.length !== 1) return Engine.UNRECOGNIZED;
   return engineTypes[0];
@@ -245,14 +248,15 @@ const databaseEngine = computed((): Engine => {
 const project = computed(
   () => head(databaseList.value)?.projectEntity ?? unknownProject()
 );
-const isBatchMode = computed(
-  () => project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED
-);
 const editTargetsKey = computed(() => {
   return JSON.stringify({
     databaseIdList: props.databaseIdList,
     alterType: props.alterType,
   });
+});
+
+const allowUseOnlineSchemaMigration = computed(() => {
+  return databaseList.value.every((db) => allowGhostForDatabase(db));
 });
 
 const prepareDatabaseMetadata = async () => {
@@ -297,7 +301,7 @@ watch(editTargetsKey, prepareDatabaseMetadata, {
 onMounted(async () => {
   if (
     databaseList.value.length === 0 ||
-    project.value.name === UNKNOWN_PROJECT_NAME
+    !isValidProjectName(project.value.name)
   ) {
     notificationStore.pushNotification({
       module: "bytebase",
@@ -428,22 +432,9 @@ const handlePreviewIssue = async () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
   };
-  if (isBatchMode.value) {
-    if (props.databaseIdList.length > 1) {
-      // A tenant pipeline with 2 or more databases will be generated
-      // via deployment config, so we don't need the databaseList parameter.
-      query.batch = "1";
-    } else {
-      // A tenant pipeline with only 1 database will be downgraded to
-      // a standard pipeline.
-      // So we need to provide the databaseList parameter
-      query.databaseList = databaseList.value.map((db) => db.name).join(",");
-    }
-  }
-  if (props.alterType !== "TENANT") {
-    // If we are not using tenant deployment config pipeline
-    // we need to pass the databaseList explicitly.
-    query.databaseList = databaseList.value.map((db) => db.name).join(",");
+  query.databaseList = databaseList.value.map((db) => db.name).join(",");
+  if (state.useOnlineSchemaMigration) {
+    query.ghost = "1";
   }
 
   if (state.selectedTab === "raw-sql") {
@@ -481,24 +472,17 @@ const handlePreviewIssue = async () => {
         return cleanup();
       }
     }
-    if (isBatchMode.value) {
-      query.sql = statementList.join("\n\n");
-      query.name = generateIssueName(
-        databaseList.value.map((db) => db.databaseName),
-        !!query.ghost
-      );
-    } else {
-      query.databaseList = databaseList.value.map((db) => db.name).join(",");
 
-      const sqlMap: Record<string, string> = {};
-      databaseList.value.forEach((db, i) => {
-        const sql = statementList[i];
-        sqlMap[db.name] = sql;
-      });
-      query.sqlMap = JSON.stringify(sqlMap);
-      const databaseNameList = databaseList.value.map((db) => db.databaseName);
-      query.name = generateIssueName(databaseNameList, !!query.ghost);
-    }
+    query.databaseList = databaseList.value.map((db) => db.name).join(",");
+
+    const sqlMap: Record<string, string> = {};
+    databaseList.value.forEach((db, i) => {
+      const sql = statementList[i];
+      sqlMap[db.name] = sql;
+    });
+    query.sqlMap = JSON.stringify(sqlMap);
+    const databaseNameList = databaseList.value.map((db) => db.databaseName);
+    query.name = generateIssueName(databaseNameList, !!query.ghost);
   }
 
   const routeInfo = {

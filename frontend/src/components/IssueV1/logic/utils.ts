@@ -2,14 +2,15 @@ import { NButton } from "naive-ui";
 import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
+  composeInstanceResourceForDatabase,
   pushNotification,
   useDatabaseV1Store,
+  useEnvironmentV1Store,
   useInstanceV1Store,
 } from "@/store";
-import type { ComposedIssue, ComposedProject } from "@/types";
-import { unknownDatabase, UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
+import { unknownDatabase, UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { InstanceResource } from "@/types/proto/v1/instance_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
@@ -48,14 +49,13 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
         const { instance, databaseName } = extractDatabaseResourceName(db.name);
         db.databaseName = databaseName;
         db.instance = instance;
-        const instanceEntity = useInstanceV1Store().getInstanceByName(
-          db.instance
-        );
-        db.instanceEntity = instanceEntity;
-        db.instanceResource = InstanceResource.fromJSON(instanceEntity);
-        db.environment = instanceEntity.environment;
-        db.effectiveEnvironment = instanceEntity.environment;
-        db.effectiveEnvironmentEntity = instanceEntity.environmentEntity;
+        const ir = composeInstanceResourceForDatabase(instance, db);
+        db.instanceResource = ir;
+        db.environment = ir.environment;
+        db.effectiveEnvironment = ir.environment;
+        db.effectiveEnvironmentEntity =
+          useEnvironmentV1Store().getEnvironmentByName(ir.environment) ??
+          unknownEnvironment();
         db.syncState = State.DELETED;
       }
       return db;
@@ -68,25 +68,28 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   project: ComposedProject,
   task: Task
 ) => {
-  const coreDatabaseInfo = (instance: string, databaseName: string) => {
-    const name = `${instance}/databases/${databaseName}`;
+  const coreDatabaseInfo = (
+    instanceName: string,
+    databaseName: string
+  ): ComposedDatabase => {
+    const name = `${instanceName}/databases/${databaseName}`;
     const maybeExistedDatabase = useDatabaseV1Store().getDatabaseByName(name);
     if (maybeExistedDatabase.uid !== String(UNKNOWN_ID)) {
       return maybeExistedDatabase;
     }
 
-    const instanceEntity = useInstanceV1Store().getInstanceByName(instance);
+    const instance = useInstanceV1Store().getInstanceByName(instanceName);
     return {
       ...unknownDatabase(),
       name,
       uid: String(UNKNOWN_ID),
       databaseName,
-      instance,
-      instanceEntity,
+      instance: instanceName,
       project: project.name,
       projectEntity: project,
-      effectiveEnvironment: instanceEntity.environment,
-      effectiveEnvironmentEntity: instanceEntity.environmentEntity,
+      effectiveEnvironment: instance.environment,
+      effectiveEnvironmentEntity: instance.environmentEntity,
+      instanceResource: instance,
     };
   };
 

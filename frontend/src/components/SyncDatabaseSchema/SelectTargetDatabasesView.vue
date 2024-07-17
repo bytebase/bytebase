@@ -138,7 +138,7 @@
             >
               <InstanceV1EngineIcon
                 class="shrink-0"
-                :instance="database.instanceEntity"
+                :instance="database.instanceResource"
               />
               <NEllipsis :tooltip="false">
                 <span class="mx-0.5 text-gray-400"
@@ -146,7 +146,7 @@
                 >
                 <span>{{ database.databaseName }}</span>
                 <span class="ml-0.5 text-gray-400"
-                  >({{ database.instanceEntity.title }})</span
+                  >({{ database.instanceResource.title }})</span
                 >
               </NEllipsis>
               <div class="grow"></div>
@@ -214,7 +214,7 @@
 
   <TargetDatabasesSelectPanel
     v-if="state.showSelectDatabasePanel"
-    :project-id="projectId"
+    :project-name="projectName"
     :engine="engine"
     :selected-database-id-list="state.selectedDatabaseIdList"
     @close="state.showSelectDatabasePanel = false"
@@ -258,7 +258,7 @@ import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import type { RawSQLState, SourceSchemaType } from "./types";
 
 interface DatabaseSourceSchema {
-  environmentId: string;
+  environmentName: string;
   databaseId: string;
   changeHistory: ChangeHistory;
   conciseHistory?: string;
@@ -274,7 +274,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectId: string;
+  projectName: string;
   sourceSchemaType: SourceSchemaType;
   databaseSourceSchema?: DatabaseSourceSchema;
   rawSqlState?: RawSQLState;
@@ -305,7 +305,7 @@ const databaseDiffCache = reactive<
   >
 >({});
 const project = computed(() => {
-  return useProjectV1Store().getProjectByUID(props.projectId);
+  return useProjectV1Store().findProjectByUID(props.projectName);
 });
 
 const displayOnlySourceDatabaseSchema = computed(() => {
@@ -340,7 +340,7 @@ const engine = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return databaseStore.getDatabaseByUID(
       props.databaseSourceSchema!.databaseId
-    ).instanceEntity.engine;
+    ).instanceResource.engine;
   } else if (props.sourceSchemaType === "RAW_SQL") {
     return props.rawSqlState!.engine;
   } else {
@@ -388,7 +388,7 @@ const previewSchemaChangeMessage = computed(() => {
     database.effectiveEnvironment
   );
   return t("database.sync-schema.schema-change-preview", {
-    database: `${database.databaseName} (${environment?.title} - ${database.instanceEntity.title})`,
+    database: `${database.databaseName} (${environment?.title} - ${database.instanceResource.title})`,
   });
 });
 const databaseListWithDiff = computed(() => {
@@ -432,8 +432,8 @@ const getDatabaseSourceSchemaEnvironment = () => {
   if (!props.databaseSourceSchema) {
     return;
   }
-  return environmentV1Store.getEnvironmentByUID(
-    props.databaseSourceSchema.environmentId
+  return environmentV1Store.getEnvironmentByName(
+    props.databaseSourceSchema.environmentName
   );
 };
 

@@ -52,13 +52,6 @@
     </IssueSearch>
 
     <div class="relative min-h-[20rem]">
-      <div
-        v-if="state.loading && !state.loadingMore"
-        class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
-      >
-        <BBSpin />
-      </div>
-
       <PagedIssueTableV1
         :key="keyForTab(tab)"
         v-model:loading="state.loading"
@@ -159,12 +152,13 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { planTypeToString } from "@/types";
-import type { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
+  getSemanticIssueStatusFromSearchParams,
   getValueFromSearchParams,
   upsertScope,
 } from "@/utils";
@@ -195,13 +189,28 @@ const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
 
+const storedStatus = useLocalStorage<SemanticIssueStatus>(
+  "bb.home.issue-list-status",
+  "OPEN",
+  {
+    serializer: {
+      read(raw: SemanticIssueStatus) {
+        if (!["OPEN", "CLOSED"].includes(raw)) return "OPEN";
+        return raw;
+      },
+      write(value) {
+        return value;
+      },
+    },
+  } as UseStorageOptions<SemanticIssueStatus>
+);
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
     scopes: [
       {
         id: "status",
-        value: "OPEN",
+        value: storedStatus.value,
       },
     ],
   };
@@ -461,5 +470,12 @@ watch(
     }
   },
   { deep: true }
+);
+
+watch(
+  () => getSemanticIssueStatusFromSearchParams(state.params),
+  (status) => {
+    storedStatus.value = status;
+  }
 );
 </script>

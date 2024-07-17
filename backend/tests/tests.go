@@ -118,7 +118,7 @@ CREATE TABLE book2 (
 
 type controller struct {
 	server                    *server.Server
-	profile                   component.Profile
+	profile                   *component.Profile
 	client                    *http.Client
 	grpcConn                  *grpc.ClientConn
 	issueServiceClient        v1pb.IssueServiceClient
@@ -308,8 +308,8 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) component.Profile {
-	return component.Profile{
+func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) *component.Profile {
+	return &component.Profile{
 		Mode:                 common.ReleaseModeDev,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		Port:                 port,
@@ -327,8 +327,8 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) compon
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, skipOnboardingData bool) component.Profile {
-	return component.Profile{
+func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, skipOnboardingData bool) *component.Profile {
+	return &component.Profile{
 		Mode:                       common.ReleaseModeDev,
 		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
 		Port:                       port,

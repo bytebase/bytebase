@@ -13,7 +13,7 @@
 
 <script lang="ts" setup>
 import isChinese from "is-chinese";
-import { computed, withDefaults } from "vue";
+import { computed } from "vue";
 import { SYSTEM_BOT_EMAIL } from "@/types";
 import type { VueClass } from "@/utils";
 import { callCssVariable } from "@/utils";

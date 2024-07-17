@@ -1,32 +1,5 @@
 <template>
-  <NRadioGroup
-    v-model:value="state.type"
-    :disabled="disabled"
-    class="!flex flex-row items-center gap-x-4 mt-2"
-  >
-    <NRadio
-      v-for="type in sslTypeCandidatesOfEngine(props.engineType)"
-      :key="type"
-      :value="type"
-    >
-      <span class="textlabel">{{ getSslTypeLabel(type) }}</span>
-    </NRadio>
-  </NRadioGroup>
-
-  <DroppableTextarea
-    v-if="state.type === 'CA'"
-    v-model:value="state.value.sslCa"
-    :resizable="false"
-    :disabled="disabled"
-    class="w-full h-24 mt-4 whitespace-pre-wrap"
-    placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
-  />
-  <NTabs
-    v-else-if="state.type === 'CA+KEY+CERT'"
-    v-model:value="state.tab"
-    class="mt-2"
-    pane-style="padding-top: 0.25rem"
-  >
+  <NTabs :default-value="'CA'" class="mt-2" pane-style="padding-top: 0.25rem">
     <NTabPane
       name="CA"
       :tab="$t('data-source.ssl.ca-cert')"
@@ -41,7 +14,7 @@
       />
     </NTabPane>
     <NTabPane
-      v-if="state.type === 'CA+KEY+CERT'"
+      v-if="hasSSLKeyField"
       name="KEY"
       :tab="$t('data-source.ssl.client-key')"
       display-directive="show"
@@ -55,7 +28,7 @@
       />
     </NTabPane>
     <NTabPane
-      v-if="state.type === 'CA+KEY+CERT'"
+      v-if="hasSSLCertField"
       name="CERT"
       :tab="$t('data-source.ssl.client-cert')"
       display-directive="show"
@@ -73,21 +46,16 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { NTabs, NTabPane, NRadio, NRadioGroup } from "naive-ui";
-import { reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { NTabs, NTabPane } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Engine } from "@/types/proto/v1/common";
 import type { DataSource } from "@/types/proto/v1/instance_service";
 
-type SslType = "NONE" | "CA" | "CA+KEY+CERT";
-
 type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>;
 
 type LocalState = {
-  type: SslType;
   value: WithSslOptions;
-  tab: "CA" | "KEY" | "CERT";
 };
 
 const props = defineProps<{
@@ -100,23 +68,26 @@ const emit = defineEmits<{
   (e: "change", value: WithSslOptions): void;
 }>();
 
-const { t } = useI18n();
-
 const state = reactive<LocalState>({
-  type: guessSslType(props.value),
   value: {
     sslCa: props.value.sslCa,
     sslCert: props.value.sslCert,
     sslKey: props.value.sslKey,
   },
-  tab: "CA",
+});
+
+const hasSSLKeyField = computed(() => {
+  return ![Engine.MONGODB, Engine.MSSQL].includes(props.engineType);
+});
+
+const hasSSLCertField = computed(() => {
+  return ![Engine.MONGODB, Engine.MSSQL].includes(props.engineType);
 });
 
 // Sync the latest version to local state when props.value changed.
 watch(
   () => props.value,
   (newValue) => {
-    state.type = guessSslType(newValue);
     state.value = {
       sslCa: newValue.sslCa,
       sslCert: newValue.sslCert,
@@ -133,44 +104,4 @@ watch(
   },
   { deep: true }
 );
-
-watch(
-  () => state.type,
-  (type) => {
-    if (type === "NONE") {
-      state.value.sslCa = "";
-      state.value.sslCert = "";
-      state.value.sslKey = "";
-    } else if (type === "CA") {
-      state.value.sslCert = "";
-      state.value.sslKey = "";
-      state.tab = "CA";
-    }
-  }
-);
-
-function getSslTypeLabel(type: SslType): string {
-  if (type === "CA") {
-    return t("data-source.ssl-type.ca");
-  }
-  if (type === "CA+KEY+CERT") {
-    return t("data-source.ssl-type.ca-and-key-and-cert");
-  }
-  return t("data-source.ssl-type.none");
-}
-
-function guessSslType(value: WithSslOptions): SslType {
-  if (value.sslCa) {
-    if (value.sslCert && value.sslKey) return "CA+KEY+CERT";
-    return "CA";
-  }
-  return "NONE";
-}
-
-function sslTypeCandidatesOfEngine(engineType: Engine): SslType[] {
-  if (engineType === Engine.MONGODB || engineType === Engine.MSSQL) {
-    return ["NONE", "CA"];
-  }
-  return ["NONE", "CA", "CA+KEY+CERT"];
-}
 </script>

@@ -36,6 +36,7 @@ import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import {
   authInterceptorMiddleware,
   errorNotificationMiddleware,
+  simulateLatencyMiddleware,
 } from "./middlewares";
 
 // Create each grpc service client.
@@ -58,7 +59,8 @@ const clientFactory = createClientFactory()
   // A middleware that is attached first, will be invoked last.
   .use(authInterceptorMiddleware)
   .use(errorDetailsClientMiddleware)
-  .use(errorNotificationMiddleware);
+  .use(errorNotificationMiddleware)
+  .use(simulateLatencyMiddleware);
 /**
  * Example to use error notification middleware.
  * Errors occurs during all requests will cause UI notifications automatically.

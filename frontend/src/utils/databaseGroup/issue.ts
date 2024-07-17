@@ -23,7 +23,6 @@ export const generateDatabaseGroupIssueRoute = (
 
   const query: Record<string, any> = {
     template: type,
-    batch: "1",
     name: issueNameParts.join(" "),
     project: databaseGroup.projectEntity.uid,
     databaseGroupName: databaseGroup.name,
@@ -35,7 +34,7 @@ export const generateDatabaseGroupIssueRoute = (
       ? PROJECT_V1_ROUTE_PLAN_DETAIL
       : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(databaseGroup.projectEntity.name),
+      projectId: extractProjectResourceName(databaseGroup.name),
       issueSlug: "create",
       planSlug: "create",
     },

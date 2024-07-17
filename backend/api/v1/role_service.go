@@ -65,13 +65,15 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 		return nil, err
 	}
 
+	permissions := make(map[string]bool)
+	for _, v := range request.GetRole().GetPermissions() {
+		permissions[v] = true
+	}
 	create := &store.RoleMessage{
 		ResourceID:  request.RoleId,
 		Name:        request.Role.Title,
 		Description: request.Role.Description,
-		Permissions: &storepb.RolePermissions{
-			Permissions: request.Role.Permissions,
-		},
+		Permissions: permissions,
 	}
 	if valid := validatePermissions(request.Role.Permissions); !valid {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
@@ -121,9 +123,11 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 		case "description":
 			patch.Description = &request.Role.Description
 		case "permissions":
-			patch.Permissions = &storepb.RolePermissions{
-				Permissions: request.Role.Permissions,
+			permissions := make(map[string]bool)
+			for _, v := range request.GetRole().GetPermissions() {
+				permissions[v] = true
 			}
+			patch.Permissions = &permissions
 			if valid := validatePermissions(request.Role.Permissions); !valid {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
 			}
@@ -173,7 +177,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 // TODO(p0ny): consider using sql for better performance?
 func (s *RoleService) getProjectUsingRole(ctx context.Context, role string) (bool, int, error) {
 	resourceType := api.PolicyResourceTypeProject
-	policyType := api.PolicyTypeProjectIAM
+	policyType := api.PolicyTypeIAM
 
 	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -184,7 +188,7 @@ func (s *RoleService) getProjectUsingRole(ctx context.Context, role string) (boo
 	}
 
 	for _, policy := range policies {
-		iamPolicy := &storepb.ProjectIamPolicy{}
+		iamPolicy := &storepb.IamPolicy{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), iamPolicy); err != nil {
 			return false, 0, errors.Wrapf(err, "failed to unmarshal iam policy")
 		}
@@ -218,7 +222,7 @@ func convertToRole(ctx context.Context, iamManager *iam.Manager, role *store.Rol
 		return nil, errors.Wrapf(err, "failed to get permissions")
 	}
 	convertedPermissions := []string{}
-	for _, permission := range permissions {
+	for permission := range permissions {
 		convertedPermissions = append(convertedPermissions, string(permission))
 	}
 	return &v1pb.Role{

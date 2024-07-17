@@ -10,10 +10,13 @@ import {
   PencilRuler,
   SearchCodeIcon,
   DownloadIcon,
+  SquareGanttChartIcon,
 } from "lucide-vue-next";
-import { computed, h } from "vue";
-import type { Ref } from "vue";
-import type { RouteRecordRaw } from "vue-router";
+import { computed, h, unref } from "vue";
+import type {
+  RouteLocationNormalizedLoaded,
+  RouteRecordRaw,
+} from "vue-router";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { t } from "@/plugins/i18n";
@@ -38,10 +41,9 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedProject } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import type { ComposedProject, MaybeRef } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { ProjectPermission } from "@/types";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -51,16 +53,15 @@ interface ProjectSidebarItem extends SidebarItem {
   children?: ProjectSidebarItem[];
 }
 
-export const useProjectSidebar = (project: Ref<ComposedProject>) => {
+export const useProjectSidebar = (
+  project: MaybeRef<ComposedProject>,
+  _route?: RouteLocationNormalizedLoaded
+) => {
   const currentUser = useCurrentUserV1();
-  const route = useRoute();
+  const route = _route ?? useRoute();
 
   const isDefaultProject = computed((): boolean => {
-    return project.value.name === DEFAULT_PROJECT_V1_NAME;
-  });
-
-  const isTenantProject = computed((): boolean => {
-    return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
+    return unref(project).name === DEFAULT_PROJECT_NAME;
   });
 
   const getFlattenProjectV1Routes = (
@@ -114,7 +115,7 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
           (projectV1Route) => projectV1Route.name === item.path
         );
         return (routeConfig?.permissions ?? []).every((permission) =>
-          hasProjectPermissionV2(project.value, currentUser.value, permission)
+          hasProjectPermissionV2(unref(project), currentUser.value, permission)
         );
       })
       .map((item) => ({
@@ -140,12 +141,6 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             type: "div",
-          },
-          {
-            title: t("common.deployment-config"),
-            path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
-            type: "div",
-            hide: !isTenantProject.value,
           },
           {
             title: t("common.change-history"),
@@ -243,6 +238,13 @@ export const useProjectSidebar = (project: Ref<ComposedProject>) => {
             type: "div",
           },
         ],
+      },
+      {
+        title: t("common.deployment-config"),
+        icon: () => h(SquareGanttChartIcon),
+        path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
+        type: "div",
+        hide: isDefaultProject.value,
       },
       {
         title: t("common.setting"),

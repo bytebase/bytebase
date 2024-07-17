@@ -71,15 +71,15 @@ const props = defineProps({
 const { t } = useI18n();
 const showVisibleColumn = computed(() => {
   return (
-    props.database.instanceEntity.engine !== Engine.POSTGRES &&
-    props.database.instanceEntity.engine !== Engine.MONGODB
+    props.database.instanceResource.engine !== Engine.POSTGRES &&
+    props.database.instanceResource.engine !== Engine.MONGODB
   );
 });
 const showPositionColumn = computed(() => {
-  return props.database.instanceEntity.engine !== Engine.MONGODB;
+  return props.database.instanceResource.engine !== Engine.MONGODB;
 });
 const showCommentColumn = computed(() => {
-  return props.database.instanceEntity.engine !== Engine.MONGODB;
+  return props.database.instanceResource.engine !== Engine.MONGODB;
 });
 const columnList = computed(() => [
   {

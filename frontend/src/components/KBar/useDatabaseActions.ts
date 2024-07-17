@@ -9,7 +9,7 @@ import {
   useEnvironmentV1List,
 } from "@/store";
 import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   groupBy,
@@ -45,11 +45,11 @@ const useDatabaseActions = (databaseList: MaybeRef<ComposedDatabase[]>) => {
       .map((environment) => {
         const databases = databasesByEnv.get(environment.name)!;
         return {
-          id: `bb.env.${environment.uid}`,
+          id: `bb.env.${environment.name}`,
           name: environmentV1Name(environment),
           children: databases.map((db) => ({
             id: `bb.database.${db.uid}`,
-            name: `${db.databaseName} (${db.instanceEntity.title})`,
+            name: `${db.databaseName} (${db.instanceResource.title})`,
             link: databaseV1Url(db),
           })),
         };
@@ -86,21 +86,25 @@ const useDatabaseActions = (databaseList: MaybeRef<ComposedDatabase[]>) => {
 };
 
 export const useProjectDatabaseActions = (
-  project: MaybeRef<ComposedProject>
+  project: MaybeRef<ComposedProject>,
+  limit: number
 ) => {
   const projectDatabaseList = computed(() => {
-    return useDatabaseV1Store().databaseListByProject(unref(project).name);
+    return useDatabaseV1Store()
+      .databaseListByProject(unref(project).name)
+      .slice(0, limit); // Don't create too many actions
   });
   useDatabaseActions(projectDatabaseList);
 };
 
-export const useGlobalDatabaseActions = () => {
+export const useGlobalDatabaseActions = (limit: number) => {
   const me = useCurrentUserV1();
   // Use this to make the list reactive when project is transferred.
   const databaseList = computed(() => {
     return useDatabaseV1Store()
       .databaseListByUser(me.value)
-      .filter((db) => db.project !== DEFAULT_PROJECT_V1_NAME);
+      .filter((db) => db.project !== DEFAULT_PROJECT_NAME)
+      .slice(0, limit); // Don't create too many actions
   });
   useDatabaseActions(databaseList);
 };

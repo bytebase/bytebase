@@ -5,7 +5,7 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
-import { IamPolicy } from "./iam_policy";
+import { GetIamPolicyRequest, IamPolicy, SetIamPolicyRequest } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -57,59 +57,6 @@ export function workflowToNumber(object: Workflow): number {
     case Workflow.VCS:
       return 2;
     case Workflow.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export enum TenantMode {
-  TENANT_MODE_UNSPECIFIED = "TENANT_MODE_UNSPECIFIED",
-  TENANT_MODE_DISABLED = "TENANT_MODE_DISABLED",
-  TENANT_MODE_ENABLED = "TENANT_MODE_ENABLED",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function tenantModeFromJSON(object: any): TenantMode {
-  switch (object) {
-    case 0:
-    case "TENANT_MODE_UNSPECIFIED":
-      return TenantMode.TENANT_MODE_UNSPECIFIED;
-    case 1:
-    case "TENANT_MODE_DISABLED":
-      return TenantMode.TENANT_MODE_DISABLED;
-    case 2:
-    case "TENANT_MODE_ENABLED":
-      return TenantMode.TENANT_MODE_ENABLED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return TenantMode.UNRECOGNIZED;
-  }
-}
-
-export function tenantModeToJSON(object: TenantMode): string {
-  switch (object) {
-    case TenantMode.TENANT_MODE_UNSPECIFIED:
-      return "TENANT_MODE_UNSPECIFIED";
-    case TenantMode.TENANT_MODE_DISABLED:
-      return "TENANT_MODE_DISABLED";
-    case TenantMode.TENANT_MODE_ENABLED:
-      return "TENANT_MODE_ENABLED";
-    case TenantMode.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function tenantModeToNumber(object: TenantMode): number {
-  switch (object) {
-    case TenantMode.TENANT_MODE_UNSPECIFIED:
-      return 0;
-    case TenantMode.TENANT_MODE_DISABLED:
-      return 1;
-    case TenantMode.TENANT_MODE_ENABLED:
-      return 2;
-    case TenantMode.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -334,14 +281,6 @@ export interface UndeleteProjectRequest {
   name: string;
 }
 
-export interface GetIamPolicyRequest {
-  /**
-   * The name of the project to get the IAM policy.
-   * Format: projects/{project}
-   */
-  project: string;
-}
-
 export interface BatchGetIamPolicyRequest {
   /** The scope of the batch get. Typically it's "projects/-". */
   scope: string;
@@ -353,15 +292,6 @@ export interface BatchGetIamPolicyResponse {
 }
 
 export interface BatchGetIamPolicyResponse_PolicyResult {
-  project: string;
-  policy: IamPolicy | undefined;
-}
-
-export interface SetIamPolicyRequest {
-  /**
-   * The name of the project to set the IAM policy.
-   * Format: projects/{project}
-   */
   project: string;
   policy: IamPolicy | undefined;
 }
@@ -398,7 +328,6 @@ export interface Project {
   /** The key is a short and upper-case identifier for a project. It's unique within the workspace. */
   key: string;
   workflow: Workflow;
-  tenantMode: TenantMode;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
   issueLabels: Label[];
@@ -965,6 +894,7 @@ export interface DatabaseGroup {
   matchedDatabases: DatabaseGroup_Database[];
   /** The list of databases that match the database group condition. */
   unmatchedDatabases: DatabaseGroup_Database[];
+  multitenancy: boolean;
 }
 
 export interface DatabaseGroup_Database {
@@ -1728,63 +1658,6 @@ export const UndeleteProjectRequest = {
   },
 };
 
-function createBaseGetIamPolicyRequest(): GetIamPolicyRequest {
-  return { project: "" };
-}
-
-export const GetIamPolicyRequest = {
-  encode(message: GetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetIamPolicyRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetIamPolicyRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.project = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetIamPolicyRequest {
-    return { project: isSet(object.project) ? globalThis.String(object.project) : "" };
-  },
-
-  toJSON(message: GetIamPolicyRequest): unknown {
-    const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
-    return GetIamPolicyRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
-    const message = createBaseGetIamPolicyRequest();
-    message.project = object.project ?? "";
-    return message;
-  },
-};
-
 function createBaseBatchGetIamPolicyRequest(): BatchGetIamPolicyRequest {
   return { scope: "", names: [] };
 }
@@ -1989,82 +1862,6 @@ export const BatchGetIamPolicyResponse_PolicyResult = {
   },
   fromPartial(object: DeepPartial<BatchGetIamPolicyResponse_PolicyResult>): BatchGetIamPolicyResponse_PolicyResult {
     const message = createBaseBatchGetIamPolicyResponse_PolicyResult();
-    message.project = object.project ?? "";
-    message.policy = (object.policy !== undefined && object.policy !== null)
-      ? IamPolicy.fromPartial(object.policy)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseSetIamPolicyRequest(): SetIamPolicyRequest {
-  return { project: "", policy: undefined };
-}
-
-export const SetIamPolicyRequest = {
-  encode(message: SetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
-    }
-    if (message.policy !== undefined) {
-      IamPolicy.encode(message.policy, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetIamPolicyRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetIamPolicyRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.project = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.policy = IamPolicy.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SetIamPolicyRequest {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
-    };
-  },
-
-  toJSON(message: SetIamPolicyRequest): unknown {
-    const obj: any = {};
-    if (message.project !== "") {
-      obj.project = message.project;
-    }
-    if (message.policy !== undefined) {
-      obj.policy = IamPolicy.toJSON(message.policy);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SetIamPolicyRequest>): SetIamPolicyRequest {
-    return SetIamPolicyRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SetIamPolicyRequest>): SetIamPolicyRequest {
-    const message = createBaseSetIamPolicyRequest();
     message.project = object.project ?? "";
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? IamPolicy.fromPartial(object.policy)
@@ -2286,7 +2083,6 @@ function createBaseProject(): Project {
     title: "",
     key: "",
     workflow: Workflow.WORKFLOW_UNSPECIFIED,
-    tenantMode: TenantMode.TENANT_MODE_UNSPECIFIED,
     webhooks: [],
     dataClassificationConfigId: "",
     issueLabels: [],
@@ -2315,9 +2111,6 @@ export const Project = {
     }
     if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
       writer.uint32(48).int32(workflowToNumber(message.workflow));
-    }
-    if (message.tenantMode !== TenantMode.TENANT_MODE_UNSPECIFIED) {
-      writer.uint32(64).int32(tenantModeToNumber(message.tenantMode));
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
@@ -2389,13 +2182,6 @@ export const Project = {
 
           message.workflow = workflowFromJSON(reader.int32());
           continue;
-        case 8:
-          if (tag !== 64) {
-            break;
-          }
-
-          message.tenantMode = tenantModeFromJSON(reader.int32());
-          continue;
         case 11:
           if (tag !== 90) {
             break;
@@ -2455,7 +2241,6 @@ export const Project = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : Workflow.WORKFLOW_UNSPECIFIED,
-      tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : TenantMode.TENANT_MODE_UNSPECIFIED,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
         ? globalThis.String(object.dataClassificationConfigId)
@@ -2491,9 +2276,6 @@ export const Project = {
     if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
       obj.workflow = workflowToJSON(message.workflow);
     }
-    if (message.tenantMode !== TenantMode.TENANT_MODE_UNSPECIFIED) {
-      obj.tenantMode = tenantModeToJSON(message.tenantMode);
-    }
     if (message.webhooks?.length) {
       obj.webhooks = message.webhooks.map((e) => Webhook.toJSON(e));
     }
@@ -2526,7 +2308,6 @@ export const Project = {
     message.title = object.title ?? "";
     message.key = object.key ?? "";
     message.workflow = object.workflow ?? Workflow.WORKFLOW_UNSPECIFIED;
-    message.tenantMode = object.tenantMode ?? TenantMode.TENANT_MODE_UNSPECIFIED;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];
@@ -3997,7 +3778,14 @@ export const DeleteDatabaseGroupRequest = {
 };
 
 function createBaseDatabaseGroup(): DatabaseGroup {
-  return { name: "", databasePlaceholder: "", databaseExpr: undefined, matchedDatabases: [], unmatchedDatabases: [] };
+  return {
+    name: "",
+    databasePlaceholder: "",
+    databaseExpr: undefined,
+    matchedDatabases: [],
+    unmatchedDatabases: [],
+    multitenancy: false,
+  };
 }
 
 export const DatabaseGroup = {
@@ -4016,6 +3804,9 @@ export const DatabaseGroup = {
     }
     for (const v of message.unmatchedDatabases) {
       DatabaseGroup_Database.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.multitenancy === true) {
+      writer.uint32(48).bool(message.multitenancy);
     }
     return writer;
   },
@@ -4062,6 +3853,13 @@ export const DatabaseGroup = {
 
           message.unmatchedDatabases.push(DatabaseGroup_Database.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.multitenancy = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4082,6 +3880,7 @@ export const DatabaseGroup = {
       unmatchedDatabases: globalThis.Array.isArray(object?.unmatchedDatabases)
         ? object.unmatchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
         : [],
+      multitenancy: isSet(object.multitenancy) ? globalThis.Boolean(object.multitenancy) : false,
     };
   },
 
@@ -4102,6 +3901,9 @@ export const DatabaseGroup = {
     if (message.unmatchedDatabases?.length) {
       obj.unmatchedDatabases = message.unmatchedDatabases.map((e) => DatabaseGroup_Database.toJSON(e));
     }
+    if (message.multitenancy === true) {
+      obj.multitenancy = message.multitenancy;
+    }
     return obj;
   },
 
@@ -4117,6 +3919,7 @@ export const DatabaseGroup = {
       : undefined;
     message.matchedDatabases = object.matchedDatabases?.map((e) => DatabaseGroup_Database.fromPartial(e)) || [];
     message.unmatchedDatabases = object.unmatchedDatabases?.map((e) => DatabaseGroup_Database.fromPartial(e)) || [];
+    message.multitenancy = object.multitenancy ?? false;
     return message;
   },
 };
@@ -4818,21 +4621,22 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              39,
+              40,
               18,
-              37,
+              38,
               47,
               118,
               49,
               47,
               123,
-              112,
               114,
-              111,
-              106,
               101,
+              115,
+              111,
+              117,
+              114,
               99,
-              116,
+              101,
               61,
               112,
               114,
@@ -4927,24 +4731,25 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              42,
+              43,
               58,
               1,
               42,
               34,
-              37,
+              38,
               47,
               118,
               49,
               47,
               123,
-              112,
               114,
-              111,
-              106,
               101,
+              115,
+              111,
+              117,
+              114,
               99,
-              116,
+              101,
               61,
               112,
               114,

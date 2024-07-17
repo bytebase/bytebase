@@ -1,904 +1,2022 @@
-ruleList:
-  - type: engine.mysql.use-innodb
-    category: ENGINE
-    engineList:
-      - MYSQL
-      - MARIADB
-  - type: table.require-pk
-    category: TABLE
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-  - type: table.no-foreign-key
-    category: TABLE
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-  - type: table.drop-naming-convention
-    category: TABLE
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-    componentList:
-      - key: format
-        payload:
-          type: STRING
-          default: _del$
-  - type: table.comment
-    category: TABLE
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: required
-        payload:
-          type: BOOLEAN
-          default: false
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: table.disallow-partition
-    category: TABLE
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-  - type: table.disallow-trigger
-    category: TABLE
-    engineList:
-      - MYSQL
-  - type: table.no-duplicate-index
-    category: TABLE
-    engineList:
-      - MYSQL
-  - type: table.text-fields-total-length
-    category: TABLE
-    engineList:
-      - MYSQL
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 1000
-  - type: table.disallow-set-charset
-    category: TABLE
-    engineList:
-      - MYSQL
-  - type: table.disallow-ddl
-    category: TABLE
-    engineList:
-      - MSSQL
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: table.disallow-dml
-    category: TABLE
-    engineList:
-      - MSSQL
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: table.limit-size
-    category: TABLE
-    engineList:
-      - MYSQL
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 10000000
-  - type: statement.select.no-select-all
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-  - type: statement.where.require
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-  - type: statement.where.no-leading-wildcard-like
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - MARIADB
-  - type: statement.disallow-on-del-cascade
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.disallow-rm-tbl-cascade
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.disallow-commit
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-  - type: statement.disallow-limit
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: statement.disallow-order-by
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: statement.merge-alter-table
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-  - type: statement.insert.row-limit
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 1000
-  - type: statement.insert.must-specify-column
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - MARIADB
-  - type: statement.insert.disallow-order-by-rand
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-  - type: statement.affected-row-limit
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 1000
-  - type: statement.dml-dry-run
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-      - TIDB
-      - ORACLE
-  - type: statement.disallow-add-column-with-default
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.add-check-not-valid
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.disallow-add-not-null
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.select-full-table-scan
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - OCEANBASE
-      - MARIADB
-  - type: statement.create-specify-schema
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.check-set-role-variable
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.disallow-using-temporary
-    category: STATEMENT
-    engineList:
-      - MYSQL
-  - type: statement.disallow-using-filesort
-    category: STATEMENT
-    engineList:
-      - MYSQL
-  - type: statement.where.no-equal-null
-    category: STATEMENT
-    engineList:
-      - MYSQL
-  - type: statement.where.disallow-functions-and-calculations
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - MSSQL
-  - type: statement.query.minimum-plan-level
-    category: STATEMENT
-    engineList:
-      - MYSQL
-    componentList:
-      - key: level
-        payload:
-          type: STRING
-          default: INDEX
-  - type: statement.where.maximum-logical-operator-count
-    category: STATEMENT
-    engineList:
-      - MYSQL
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 10
-  - type: statement.maximum-limit-value
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - OCEANBASE
-      - MARIADB
-      - TIDB
-      - POSTGRES
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 1000
-  - type: statement.maximum-join-table-count
-    category: STATEMENT
-    engineList:
-      - MYSQL
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 2
-  - type: statement.maximum-statements-in-transaction
-    category: STATEMENT
-    engineList:
-      - MYSQL
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 10
-  - type: statement.join-strict-column-attrs
-    category: STATEMENT
-    engineList:
-      - MYSQL
-  - type: statement.disallow-mix-ddl-dml
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - POSTGRES
-      - TIDB
-  - type: statement.prior-backup-check
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - POSTGRES
-      - TIDB
-  - type: statement.add-column-without-position
-    category: STATEMENT
-    engineList:
-      - OCEANBASE
-  - type: statement.disallow-offline-ddl
-    category: STATEMENT
-    engineList:
-      - OCEANBASE
-  - type: statement.disallow-cross-db-queries
-    category: STATEMENT
-    engineList:
-      - MSSQL
-  - type: naming.fully-qualified
-    category: NAMING
-    engineList:
-      - POSTGRES
-  - type: naming.table
-    category: NAMING
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-    componentList:
-      - key: format
-        payload:
-          type: STRING
-          default: "^[a-z]+(_[a-z]+)*$"
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: naming.column
-    category: NAMING
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: format
-        payload:
-          type: STRING
-          default: "^[a-z]+(_[a-z]+)*$"
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: naming.index.uk
-    category: NAMING
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: format
-        payload:
-          type: TEMPLATE
-          default: "^uk_{{table}}_{{column_list}}$"
-          templateList:
-            - table
-            - column_list
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: naming.index.idx
-    category: NAMING
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: format
-        payload:
-          type: TEMPLATE
-          default: "^idx_{{table}}_{{column_list}}$"
-          templateList:
-            - table
-            - column_list
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: naming.index.fk
-    category: NAMING
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: format
-        payload:
-          type: TEMPLATE
-          default: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$"
-          templateList:
-            - referencing_table
-            - referencing_column
-            - referenced_table
-            - referenced_column
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: naming.index.pk
-    category: NAMING
-    engineList:
-      - POSTGRES
-    componentList:
-      - key: format
-        payload:
-          type: TEMPLATE
-          default: "^pk_{{table}}_{{column_list}}$"
-          templateList:
-            - table
-            - column_list
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 63
-  - type: naming.column.auto-increment
-    category: NAMING
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: format
-        payload:
-          type: STRING
-          default: "^id$"
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: naming.table.no-keyword
-    category: NAMING
-    engineList:
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - SNOWFLAKE
-      - MSSQL
-  - type: naming.identifier.no-keyword
-    category: NAMING
-    engineList:
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - SNOWFLAKE
-      - MSSQL
-      - MYSQL
-  - type: naming.identifier.case
-    category: NAMING
-    engineList:
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - SNOWFLAKE
-    componentList:
-      - key: upper
-        payload:
-          type: BOOLEAN
-          default: true
-  - type: column.required
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default:
-            - id
-            - created_ts
-            - updated_ts
-            - creator_id
-            - updater_id
-    individualConfigList:
-      - engine: SNOWFLAKE
-        payload:
-          list:
-            default:
-              - ID
-              - CREATED_TS
-              - UPDATED_TS
-              - CREATOR_ID
-              - UPDATER_ID
-      - engine: ORACLE
-        payload:
-          list:
-            default:
-              - ID
-              - CREATED_TS
-              - UPDATED_TS
-              - CREATOR_ID
-              - UPDATER_ID
-  - type: column.no-null
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-  - type: column.disallow-change-type
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-  - type: column.set-default-for-not-null
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - MARIADB
-  - type: column.disallow-change
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: column.disallow-changing-order
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: column.disallow-drop
-    category: COLUMN
-    engineList:
-      - OCEANBASE
-  - type: column.disallow-drop-in-index
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: column.comment
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: required
-        payload:
-          type: BOOLEAN
-          default: false
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
-  - type: column.auto-increment-must-integer
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: column.type-disallow-list
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - MARIADB
-      - MSSQL
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: column.disallow-set-charset
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: column.maximum-character-length
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 20
-  - type: column.maximum-varchar-length
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - OCEANBASE
-      - MARIADB
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - SNOWFLAKE
-      - MSSQL
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 2560
-  - type: column.auto-increment-initial-value
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 1
-  - type: column.auto-increment-must-unsigned
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: column.current-time-count-limit
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: column.require-default
-    category: COLUMN
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - MARIADB
-  - type: schema.backward-compatibility
-    category: SCHEMA
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - SNOWFLAKE
-      - MSSQL
-      - MARIADB
-  - type: database.drop-empty-database
-    category: DATABASE
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: index.no-duplicate-column
-    category: INDEX
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-  - type: index.key-number-limit
-    category: INDEX
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - ORACLE
-      - OCEANBASE_ORACLE
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 5
-  - type: index.pk-type-limit
-    category: INDEX
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: index.type-no-blob
-    category: INDEX
-    engineList:
-      - MYSQL
-      - TIDB
-      - OCEANBASE
-      - MARIADB
-  - type: index.total-number-limit
-    category: INDEX
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 5
-  - type: index.primary-key-type-allowlist
-    category: INDEX
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: index.create-concurrently
-    category: INDEX
-    engineList:
-      - POSTGRES
-  - type: index.type-allow-list
-    category: INDEX
-    engineList:
-      - MYSQL
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: index.not-redundant
-    category: INDEX
-    engineList:
-      - MSSQL
-  - type: system.charset.allowlist
-    category: SYSTEM
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: system.collation.allowlist
-    category: SYSTEM
-    engineList:
-      - MYSQL
-      - TIDB
-      - POSTGRES
-      - OCEANBASE
-      - MARIADB
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: system.comment.length
-    category: SYSTEM
-    engineList:
-      - POSTGRES
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 64
-  - type: system.procedure.disallow-create
-    category: SYSTEM
-    engineList:
-      - MYSQL
-      - MSSQL
-  - type: system.event.disallow-create
-    category: SYSTEM
-    engineList:
-      - MYSQL
-  - type: system.view.disallow-create
-    category: SYSTEM
-    engineList:
-      - MYSQL
-  - type: system.function.disallow-create
-    category: SYSTEM
-    engineList:
-      - MYSQL
-      - MSSQL
-  - type: system.function.disallowed-list
-    category: SYSTEM
-    engineList:
-      - MYSQL
-    componentList:
-      - key: list
-        payload:
-          type: STRING_ARRAY
-          default: []
-  - type: advice.online-migration
-    category: ADVICE
-    engineList:
-      - MYSQL
-    componentList:
-      - key: number
-        payload:
-          type: NUMBER
-          default: 100000000
-  - type: statement.add-foreign-key-not-valid
-    category: STATEMENT
-    engineList:
-      - POSTGRES
-  - type: statement.non-transactional
-    category: STATEMENT
-    engineList:
-      - POSTGRES
+- type: engine.mysql.use-innodb
+  category: ENGINE
+  engine: MYSQL
+- type: engine.mysql.use-innodb
+  category: ENGINE
+  engine: MARIADB
+- type: table.require-pk
+  category: TABLE
+  engine: MYSQL
+- type: table.require-pk
+  category: TABLE
+  engine: TIDB
+- type: table.require-pk
+  category: TABLE
+  engine: POSTGRES
+- type: table.require-pk
+  category: TABLE
+  engine: ORACLE
+- type: table.require-pk
+  category: TABLE
+  engine: OCEANBASE_ORACLE
+- type: table.require-pk
+  category: TABLE
+  engine: OCEANBASE
+- type: table.require-pk
+  category: TABLE
+  engine: SNOWFLAKE
+- type: table.require-pk
+  category: TABLE
+  engine: MSSQL
+- type: table.require-pk
+  category: TABLE
+  engine: MARIADB
+- type: table.no-foreign-key
+  category: TABLE
+  engine: MYSQL
+- type: table.no-foreign-key
+  category: TABLE
+  engine: TIDB
+- type: table.no-foreign-key
+  category: TABLE
+  engine: POSTGRES
+- type: table.no-foreign-key
+  category: TABLE
+  engine: ORACLE
+- type: table.no-foreign-key
+  category: TABLE
+  engine: OCEANBASE_ORACLE
+- type: table.no-foreign-key
+  category: TABLE
+  engine: OCEANBASE
+- type: table.no-foreign-key
+  category: TABLE
+  engine: SNOWFLAKE
+- type: table.no-foreign-key
+  category: TABLE
+  engine: MSSQL
+- type: table.no-foreign-key
+  category: TABLE
+  engine: MARIADB
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
+  engine: MYSQL
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
+  engine: TIDB
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
+  engine: POSTGRES
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
+  engine: OCEANBASE
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
+  engine: SNOWFLAKE
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
+  engine: MSSQL
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
+  engine: MARIADB
+- type: table.comment
+  category: TABLE
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: table.comment
+  category: TABLE
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: table.comment
+  category: TABLE
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: table.comment
+  category: TABLE
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: table.disallow-partition
+  category: TABLE
+  engine: MYSQL
+- type: table.disallow-partition
+  category: TABLE
+  engine: TIDB
+- type: table.disallow-partition
+  category: TABLE
+  engine: POSTGRES
+- type: table.disallow-partition
+  category: TABLE
+  engine: OCEANBASE
+- type: table.disallow-partition
+  category: TABLE
+  engine: MARIADB
+- type: table.disallow-trigger
+  category: TABLE
+  engine: MYSQL
+- type: table.no-duplicate-index
+  category: TABLE
+  engine: MYSQL
+- type: table.text-fields-total-length
+  category: TABLE
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: MYSQL
+- type: table.disallow-set-charset
+  category: TABLE
+  engine: MYSQL
+- type: table.disallow-ddl
+  category: TABLE
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MSSQL
+- type: table.disallow-dml
+  category: TABLE
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MSSQL
+- type: table.limit-size
+  category: TABLE
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 10000000
+  engine: MYSQL
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: TIDB
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: OCEANBASE_ORACLE
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: SNOWFLAKE
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: MSSQL
+- type: statement.select.no-select-all
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.where.require
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.where.require
+  category: STATEMENT
+  engine: TIDB
+- type: statement.where.require
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.where.require
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.where.require
+  category: STATEMENT
+  engine: OCEANBASE_ORACLE
+- type: statement.where.require
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.where.require
+  category: STATEMENT
+  engine: SNOWFLAKE
+- type: statement.where.require
+  category: STATEMENT
+  engine: MSSQL
+- type: statement.where.require
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.where.no-leading-wildcard-like
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.where.no-leading-wildcard-like
+  category: STATEMENT
+  engine: TIDB
+- type: statement.where.no-leading-wildcard-like
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.where.no-leading-wildcard-like
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.where.no-leading-wildcard-like
+  category: STATEMENT
+  engine: OCEANBASE_ORACLE
+- type: statement.where.no-leading-wildcard-like
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.where.no-leading-wildcard-like
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.disallow-on-del-cascade
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-rm-tbl-cascade
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-commit
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.disallow-commit
+  category: STATEMENT
+  engine: TIDB
+- type: statement.disallow-commit
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-commit
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.disallow-commit
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.disallow-limit
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.disallow-limit
+  category: STATEMENT
+  engine: TIDB
+- type: statement.disallow-limit
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.disallow-limit
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.disallow-order-by
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.disallow-order-by
+  category: STATEMENT
+  engine: TIDB
+- type: statement.disallow-order-by
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.disallow-order-by
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.merge-alter-table
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.merge-alter-table
+  category: STATEMENT
+  engine: TIDB
+- type: statement.merge-alter-table
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.merge-alter-table
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.merge-alter-table
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.insert.row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: MYSQL
+- type: statement.insert.row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: POSTGRES
+- type: statement.insert.row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: OCEANBASE
+- type: statement.insert.row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: MARIADB
+- type: statement.insert.must-specify-column
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.insert.must-specify-column
+  category: STATEMENT
+  engine: TIDB
+- type: statement.insert.must-specify-column
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.insert.must-specify-column
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.insert.must-specify-column
+  category: STATEMENT
+  engine: OCEANBASE_ORACLE
+- type: statement.insert.must-specify-column
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.insert.must-specify-column
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.insert.disallow-order-by-rand
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.insert.disallow-order-by-rand
+  category: STATEMENT
+  engine: TIDB
+- type: statement.insert.disallow-order-by-rand
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.insert.disallow-order-by-rand
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.insert.disallow-order-by-rand
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.affected-row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: MYSQL
+- type: statement.affected-row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: POSTGRES
+- type: statement.affected-row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: OCEANBASE
+- type: statement.affected-row-limit
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: MARIADB
+- type: statement.dml-dry-run
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.dml-dry-run
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.dml-dry-run
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.dml-dry-run
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.dml-dry-run
+  category: STATEMENT
+  engine: TIDB
+- type: statement.dml-dry-run
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.disallow-add-column-with-default
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.add-check-not-valid
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-add-not-null
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.select-full-table-scan
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.select-full-table-scan
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.select-full-table-scan
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.create-specify-schema
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.check-set-role-variable
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-using-temporary
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.disallow-using-filesort
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.where.no-equal-null
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.where.disallow-functions-and-calculations
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.where.disallow-functions-and-calculations
+  category: STATEMENT
+  engine: MSSQL
+- type: statement.query.minimum-plan-level
+  category: STATEMENT
+  componentList:
+    - key: level
+      payload:
+        type: STRING
+        default: INDEX
+  engine: MYSQL
+- type: statement.where.maximum-logical-operator-count
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 10
+  engine: MYSQL
+- type: statement.maximum-limit-value
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: MYSQL
+- type: statement.maximum-limit-value
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: OCEANBASE
+- type: statement.maximum-limit-value
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: MARIADB
+- type: statement.maximum-limit-value
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: TIDB
+- type: statement.maximum-limit-value
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1000
+  engine: POSTGRES
+- type: statement.maximum-join-table-count
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+  engine: MYSQL
+- type: statement.maximum-statements-in-transaction
+  category: STATEMENT
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 10
+  engine: MYSQL
+- type: statement.join-strict-column-attrs
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.disallow-mix-ddl-dml
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.disallow-mix-ddl-dml
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-mix-ddl-dml
+  category: STATEMENT
+  engine: TIDB
+- type: statement.prior-backup-check
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.prior-backup-check
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.prior-backup-check
+  category: STATEMENT
+  engine: TIDB
+- type: statement.add-column-without-position
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.disallow-offline-ddl
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.disallow-cross-db-queries
+  category: STATEMENT
+  engine: MSSQL
+- type: naming.fully-qualified
+  category: NAMING
+  engine: POSTGRES
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: POSTGRES
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: ORACLE
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE_ORACLE
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: SNOWFLAKE
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MSSQL
+- type: naming.table
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: naming.column
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: naming.column
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: naming.column
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: POSTGRES
+- type: naming.column
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: naming.column
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: '^[a-z]+(_[a-z]+)*$'
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: naming.index.uk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^uk_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: naming.index.uk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^uk_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: naming.index.uk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^uk_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: POSTGRES
+- type: naming.index.uk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^uk_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: naming.index.uk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^uk_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: naming.index.idx
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^idx_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: naming.index.idx
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^idx_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: naming.index.idx
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^idx_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: POSTGRES
+- type: naming.index.idx
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^idx_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: naming.index.idx
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^idx_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: naming.index.fk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: >-
+          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        templateList:
+          - referencing_table
+          - referencing_column
+          - referenced_table
+          - referenced_column
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: naming.index.fk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: >-
+          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        templateList:
+          - referencing_table
+          - referencing_column
+          - referenced_table
+          - referenced_column
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: naming.index.fk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: >-
+          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        templateList:
+          - referencing_table
+          - referencing_column
+          - referenced_table
+          - referenced_column
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: POSTGRES
+- type: naming.index.fk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: >-
+          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        templateList:
+          - referencing_table
+          - referencing_column
+          - referenced_table
+          - referenced_column
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: naming.index.fk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: >-
+          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        templateList:
+          - referencing_table
+          - referencing_column
+          - referenced_table
+          - referenced_column
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: naming.index.pk
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: TEMPLATE
+        default: '^pk_{{table}}_{{column_list}}$'
+        templateList:
+          - table
+          - column_list
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 63
+  engine: POSTGRES
+- type: naming.column.auto-increment
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: ^id$
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: naming.column.auto-increment
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: ^id$
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: naming.column.auto-increment
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: ^id$
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: naming.column.auto-increment
+  category: NAMING
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: ^id$
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: naming.table.no-keyword
+  category: NAMING
+  engine: ORACLE
+- type: naming.table.no-keyword
+  category: NAMING
+  engine: OCEANBASE_ORACLE
+- type: naming.table.no-keyword
+  category: NAMING
+  engine: SNOWFLAKE
+- type: naming.table.no-keyword
+  category: NAMING
+  engine: MSSQL
+- type: naming.identifier.no-keyword
+  category: NAMING
+  engine: ORACLE
+- type: naming.identifier.no-keyword
+  category: NAMING
+  engine: OCEANBASE_ORACLE
+- type: naming.identifier.no-keyword
+  category: NAMING
+  engine: SNOWFLAKE
+- type: naming.identifier.no-keyword
+  category: NAMING
+  engine: MSSQL
+- type: naming.identifier.no-keyword
+  category: NAMING
+  engine: MYSQL
+- type: naming.identifier.case
+  category: NAMING
+  componentList:
+    - key: upper
+      payload:
+        type: BOOLEAN
+        default: true
+  engine: ORACLE
+- type: naming.identifier.case
+  category: NAMING
+  componentList:
+    - key: upper
+      payload:
+        type: BOOLEAN
+        default: true
+  engine: OCEANBASE_ORACLE
+- type: naming.identifier.case
+  category: NAMING
+  componentList:
+    - key: upper
+      payload:
+        type: BOOLEAN
+        default: true
+  engine: SNOWFLAKE
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - id
+          - created_ts
+          - updated_ts
+          - creator_id
+          - updater_id
+  engine: MYSQL
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - id
+          - created_ts
+          - updated_ts
+          - creator_id
+          - updater_id
+  engine: TIDB
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - id
+          - created_ts
+          - updated_ts
+          - creator_id
+          - updater_id
+  engine: POSTGRES
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - ID
+          - CREATED_TS
+          - UPDATED_TS
+          - CREATOR_ID
+          - UPDATER_ID
+  engine: ORACLE
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - id
+          - created_ts
+          - updated_ts
+          - creator_id
+          - updater_id
+  engine: OCEANBASE_ORACLE
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - id
+          - created_ts
+          - updated_ts
+          - creator_id
+          - updater_id
+  engine: OCEANBASE
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - ID
+          - CREATED_TS
+          - UPDATED_TS
+          - CREATOR_ID
+          - UPDATER_ID
+  engine: SNOWFLAKE
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - id
+          - created_ts
+          - updated_ts
+          - creator_id
+          - updater_id
+  engine: MSSQL
+- type: column.required
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default:
+          - id
+          - created_ts
+          - updated_ts
+          - creator_id
+          - updater_id
+  engine: MARIADB
+- type: column.no-null
+  category: COLUMN
+  engine: MYSQL
+- type: column.no-null
+  category: COLUMN
+  engine: TIDB
+- type: column.no-null
+  category: COLUMN
+  engine: POSTGRES
+- type: column.no-null
+  category: COLUMN
+  engine: ORACLE
+- type: column.no-null
+  category: COLUMN
+  engine: OCEANBASE_ORACLE
+- type: column.no-null
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.no-null
+  category: COLUMN
+  engine: SNOWFLAKE
+- type: column.no-null
+  category: COLUMN
+  engine: MSSQL
+- type: column.no-null
+  category: COLUMN
+  engine: MARIADB
+- type: column.disallow-change-type
+  category: COLUMN
+  engine: MYSQL
+- type: column.disallow-change-type
+  category: COLUMN
+  engine: TIDB
+- type: column.disallow-change-type
+  category: COLUMN
+  engine: POSTGRES
+- type: column.disallow-change-type
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.disallow-change-type
+  category: COLUMN
+  engine: MARIADB
+- type: column.set-default-for-not-null
+  category: COLUMN
+  engine: MYSQL
+- type: column.set-default-for-not-null
+  category: COLUMN
+  engine: TIDB
+- type: column.set-default-for-not-null
+  category: COLUMN
+  engine: ORACLE
+- type: column.set-default-for-not-null
+  category: COLUMN
+  engine: OCEANBASE_ORACLE
+- type: column.set-default-for-not-null
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.set-default-for-not-null
+  category: COLUMN
+  engine: MARIADB
+- type: column.disallow-change
+  category: COLUMN
+  engine: MYSQL
+- type: column.disallow-change
+  category: COLUMN
+  engine: TIDB
+- type: column.disallow-change
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.disallow-change
+  category: COLUMN
+  engine: MARIADB
+- type: column.disallow-changing-order
+  category: COLUMN
+  engine: MYSQL
+- type: column.disallow-changing-order
+  category: COLUMN
+  engine: TIDB
+- type: column.disallow-changing-order
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.disallow-changing-order
+  category: COLUMN
+  engine: MARIADB
+- type: column.disallow-drop
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.disallow-drop-in-index
+  category: COLUMN
+  engine: MYSQL
+- type: column.disallow-drop-in-index
+  category: COLUMN
+  engine: TIDB
+- type: column.disallow-drop-in-index
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.disallow-drop-in-index
+  category: COLUMN
+  engine: MARIADB
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MYSQL
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: TIDB
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: MARIADB
+- type: column.auto-increment-must-integer
+  category: COLUMN
+  engine: MYSQL
+- type: column.auto-increment-must-integer
+  category: COLUMN
+  engine: TIDB
+- type: column.auto-increment-must-integer
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.auto-increment-must-integer
+  category: COLUMN
+  engine: MARIADB
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: TIDB
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: POSTGRES
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: ORACLE
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: OCEANBASE_ORACLE
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: OCEANBASE
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MARIADB
+- type: column.type-disallow-list
+  category: COLUMN
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MSSQL
+- type: column.disallow-set-charset
+  category: COLUMN
+  engine: MYSQL
+- type: column.disallow-set-charset
+  category: COLUMN
+  engine: TIDB
+- type: column.disallow-set-charset
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.disallow-set-charset
+  category: COLUMN
+  engine: MARIADB
+- type: column.maximum-character-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 20
+  engine: MYSQL
+- type: column.maximum-character-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 20
+  engine: TIDB
+- type: column.maximum-character-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 20
+  engine: POSTGRES
+- type: column.maximum-character-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 20
+  engine: ORACLE
+- type: column.maximum-character-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 20
+  engine: OCEANBASE_ORACLE
+- type: column.maximum-character-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 20
+  engine: OCEANBASE
+- type: column.maximum-character-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 20
+  engine: MARIADB
+- type: column.maximum-varchar-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2560
+  engine: MYSQL
+- type: column.maximum-varchar-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2560
+  engine: OCEANBASE
+- type: column.maximum-varchar-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2560
+  engine: MARIADB
+- type: column.maximum-varchar-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2560
+  engine: ORACLE
+- type: column.maximum-varchar-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2560
+  engine: OCEANBASE_ORACLE
+- type: column.maximum-varchar-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2560
+  engine: SNOWFLAKE
+- type: column.maximum-varchar-length
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2560
+  engine: MSSQL
+- type: column.auto-increment-initial-value
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1
+  engine: MYSQL
+- type: column.auto-increment-initial-value
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1
+  engine: TIDB
+- type: column.auto-increment-initial-value
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1
+  engine: OCEANBASE
+- type: column.auto-increment-initial-value
+  category: COLUMN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 1
+  engine: MARIADB
+- type: column.auto-increment-must-unsigned
+  category: COLUMN
+  engine: MYSQL
+- type: column.auto-increment-must-unsigned
+  category: COLUMN
+  engine: TIDB
+- type: column.auto-increment-must-unsigned
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.auto-increment-must-unsigned
+  category: COLUMN
+  engine: MARIADB
+- type: column.current-time-count-limit
+  category: COLUMN
+  engine: MYSQL
+- type: column.current-time-count-limit
+  category: COLUMN
+  engine: TIDB
+- type: column.current-time-count-limit
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.current-time-count-limit
+  category: COLUMN
+  engine: MARIADB
+- type: column.require-default
+  category: COLUMN
+  engine: MYSQL
+- type: column.require-default
+  category: COLUMN
+  engine: TIDB
+- type: column.require-default
+  category: COLUMN
+  engine: POSTGRES
+- type: column.require-default
+  category: COLUMN
+  engine: ORACLE
+- type: column.require-default
+  category: COLUMN
+  engine: OCEANBASE_ORACLE
+- type: column.require-default
+  category: COLUMN
+  engine: OCEANBASE
+- type: column.require-default
+  category: COLUMN
+  engine: MARIADB
+- type: schema.backward-compatibility
+  category: SCHEMA
+  engine: MYSQL
+- type: schema.backward-compatibility
+  category: SCHEMA
+  engine: TIDB
+- type: schema.backward-compatibility
+  category: SCHEMA
+  engine: POSTGRES
+- type: schema.backward-compatibility
+  category: SCHEMA
+  engine: OCEANBASE
+- type: schema.backward-compatibility
+  category: SCHEMA
+  engine: SNOWFLAKE
+- type: schema.backward-compatibility
+  category: SCHEMA
+  engine: MSSQL
+- type: schema.backward-compatibility
+  category: SCHEMA
+  engine: MARIADB
+- type: database.drop-empty-database
+  category: DATABASE
+  engine: MYSQL
+- type: database.drop-empty-database
+  category: DATABASE
+  engine: TIDB
+- type: database.drop-empty-database
+  category: DATABASE
+  engine: OCEANBASE
+- type: database.drop-empty-database
+  category: DATABASE
+  engine: MARIADB
+- type: index.no-duplicate-column
+  category: INDEX
+  engine: MYSQL
+- type: index.no-duplicate-column
+  category: INDEX
+  engine: TIDB
+- type: index.no-duplicate-column
+  category: INDEX
+  engine: POSTGRES
+- type: index.no-duplicate-column
+  category: INDEX
+  engine: OCEANBASE
+- type: index.no-duplicate-column
+  category: INDEX
+  engine: MARIADB
+- type: index.key-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: MYSQL
+- type: index.key-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: TIDB
+- type: index.key-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: POSTGRES
+- type: index.key-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: ORACLE
+- type: index.key-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: OCEANBASE_ORACLE
+- type: index.key-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: OCEANBASE
+- type: index.key-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: MARIADB
+- type: index.pk-type-limit
+  category: INDEX
+  engine: MYSQL
+- type: index.pk-type-limit
+  category: INDEX
+  engine: TIDB
+- type: index.pk-type-limit
+  category: INDEX
+  engine: OCEANBASE
+- type: index.pk-type-limit
+  category: INDEX
+  engine: MARIADB
+- type: index.type-no-blob
+  category: INDEX
+  engine: MYSQL
+- type: index.type-no-blob
+  category: INDEX
+  engine: TIDB
+- type: index.type-no-blob
+  category: INDEX
+  engine: OCEANBASE
+- type: index.type-no-blob
+  category: INDEX
+  engine: MARIADB
+- type: index.total-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: MYSQL
+- type: index.total-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: TIDB
+- type: index.total-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: POSTGRES
+- type: index.total-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: OCEANBASE
+- type: index.total-number-limit
+  category: INDEX
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 5
+  engine: MARIADB
+- type: index.primary-key-type-allowlist
+  category: INDEX
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
+- type: index.primary-key-type-allowlist
+  category: INDEX
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: TIDB
+- type: index.primary-key-type-allowlist
+  category: INDEX
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: POSTGRES
+- type: index.primary-key-type-allowlist
+  category: INDEX
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: OCEANBASE
+- type: index.create-concurrently
+  category: INDEX
+  engine: POSTGRES
+- type: index.type-allow-list
+  category: INDEX
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
+- type: index.not-redundant
+  category: INDEX
+  engine: MSSQL
+- type: system.charset.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
+- type: system.charset.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: TIDB
+- type: system.charset.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: POSTGRES
+- type: system.charset.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: OCEANBASE
+- type: system.charset.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MARIADB
+- type: system.collation.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
+- type: system.collation.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: TIDB
+- type: system.collation.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: POSTGRES
+- type: system.collation.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: OCEANBASE
+- type: system.collation.allowlist
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MARIADB
+- type: system.comment.length
+  category: SYSTEM
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 64
+  engine: POSTGRES
+- type: system.procedure.disallow-create
+  category: SYSTEM
+  engine: MYSQL
+- type: system.procedure.disallow-create
+  category: SYSTEM
+  engine: MSSQL
+- type: system.event.disallow-create
+  category: SYSTEM
+  engine: MYSQL
+- type: system.view.disallow-create
+  category: SYSTEM
+  engine: MYSQL
+- type: system.function.disallow-create
+  category: SYSTEM
+  engine: MYSQL
+- type: system.function.disallow-create
+  category: SYSTEM
+  engine: MSSQL
+- type: system.function.disallowed-list
+  category: SYSTEM
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
+- type: advice.online-migration
+  category: ADVICE
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 100000000
+  engine: MYSQL
+- type: statement.add-foreign-key-not-valid
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.non-transactional
+  category: STATEMENT
+  engine: POSTGRES

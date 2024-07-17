@@ -108,7 +108,7 @@ const renderLabel = (option: SelectOption) => {
     },
     [
       h(InstanceV1EngineIcon, {
-        instance: database.instanceEntity,
+        instance: database.instanceResource,
       }),
       h(EnvironmentV1Name, {
         environment: database.effectiveEnvironmentEntity,

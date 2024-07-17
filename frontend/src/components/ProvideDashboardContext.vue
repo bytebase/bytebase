@@ -1,10 +1,26 @@
 <template>
-  <slot v-if="!isLoading" />
+  <slot v-if="!isInitializing" />
+  <MaskSpinner v-else class="!bg-white" />
+
+  <div
+    v-if="!isInitializing && isSwitchingProject"
+    class="fixed inset-0 z-[1000000] bg-white/50 flex flex-col items-center justify-center"
+  >
+    <NSpin />
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from "vue";
+import { NSpin } from "naive-ui";
+import { ref, onMounted } from "vue";
+import { onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import {
+  AUTH_MFA_MODULE,
+  AUTH_PASSWORD_FORGOT_MODULE,
+  AUTH_SIGNIN_MODULE,
+  AUTH_SIGNUP_MODULE,
+} from "@/router/auth";
 import {
   useEnvironmentV1Store,
   useInstanceV1Store,
@@ -19,10 +35,12 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import MaskSpinner from "./misc/MaskSpinner.vue";
 
 const route = useRoute();
 const router = useRouter();
-const isLoading = ref<boolean>(true);
+const isInitializing = ref<boolean>(true);
+const isSwitchingProject = ref(false);
 
 const policyStore = usePolicyV1Store();
 const databaseStore = useDatabaseV1Store();
@@ -45,11 +63,19 @@ const fetchDatabases = async (project: string) => {
     filter: filters.join(" && "),
   });
 };
+
+const instanceAndDatabaseInitialized = new Set<string /* project */>();
 const fetchInstancesAndDatabases = async (project: string) => {
-  await fetchInstances(project);
-  await fetchDatabases(project);
+  if (instanceAndDatabaseInitialized.has(project || "")) return;
+  try {
+    await Promise.all([fetchInstances(project), fetchDatabases(project)]);
+    instanceAndDatabaseInitialized.add(project || "");
+  } catch {
+    // nothing
+  }
 };
 
+let unregisterBeforeEachHook: (() => void) | undefined;
 onMounted(async () => {
   await router.isReady();
 
@@ -72,14 +98,40 @@ onMounted(async () => {
   await Promise.all([useUIStateStore().restoreState()]);
   await fetchInstancesAndDatabases(route.params.projectId as string);
 
-  watch(
-    () => route.params.projectId,
-    (project) => {
-      fetchInstancesAndDatabases(project as string);
-    },
-    { immediate: false }
-  );
+  isInitializing.value = false;
 
-  isLoading.value = false;
+  unregisterBeforeEachHook = router.beforeEach((to, from, next) => {
+    if (
+      to.name === AUTH_SIGNIN_MODULE ||
+      to.name === AUTH_SIGNUP_MODULE ||
+      to.name === AUTH_MFA_MODULE ||
+      to.name === AUTH_PASSWORD_FORGOT_MODULE
+    ) {
+      instanceAndDatabaseInitialized.clear();
+      next();
+      return;
+    }
+
+    const fromProject = from.params.projectId as string;
+    const toProject = to.params.projectId as string;
+    if (fromProject !== toProject) {
+      console.debug(
+        `[ProvideDashboardContext] project switched ${fromProject} -> ${toProject}`
+      );
+      isSwitchingProject.value = true;
+      fetchInstancesAndDatabases(toProject).finally(() => {
+        isSwitchingProject.value = false;
+
+        next();
+      });
+      return;
+    }
+
+    next();
+  });
+});
+
+onUnmounted(() => {
+  unregisterBeforeEachHook && unregisterBeforeEachHook();
 });
 </script>

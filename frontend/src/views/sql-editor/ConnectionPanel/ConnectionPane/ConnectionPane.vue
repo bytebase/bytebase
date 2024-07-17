@@ -4,6 +4,13 @@
       <SearchBox v-model:searchPattern="searchPattern" class="flex-1" />
       <GroupingBar class="shrink-0" />
     </div>
+    <div class="flex items-center space-x-2 px-2 py-2">
+      <NCheckbox v-model:checked="showMissingQueryDatabases">
+        <span class="textinfolabel text-sm">
+          {{ $t("sql-editor.show-databases-without-query-permission") }}
+        </span>
+      </NCheckbox>
+    </div>
     <div
       ref="treeContainerElRef"
       class="sql-editor-tree--tree flex-1 px-1 pb-1 text-sm overflow-hidden select-none"
@@ -51,7 +58,7 @@
 <script lang="ts" setup>
 import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
-import { NTree, NDropdown, type TreeOption } from "naive-ui";
+import { NTree, NDropdown, NCheckbox, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { onMounted } from "vue";
@@ -78,6 +85,7 @@ import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   ExpandableTreeNodeTypes,
   UNKNOWN_ID,
+  isValidInstanceName,
 } from "@/types";
 import { findAncestor, isDescendantOf, isDatabaseV1Queryable } from "@/utils";
 import { useSQLEditorContext } from "../../context";
@@ -145,7 +153,7 @@ const selectedKeys = computed(() => {
   }
   return [];
 });
-const { expandedKeys } = storeToRefs(treeStore);
+const { expandedKeys, showMissingQueryDatabases } = storeToRefs(treeStore);
 const upsertExpandedKeys = (key: string) => {
   if (expandedKeys.value.includes(key)) {
     return;
@@ -299,7 +307,7 @@ watch(
     if (treeState !== "READY") {
       return;
     }
-    if (instance.uid !== String(UNKNOWN_ID)) {
+    if (isValidInstanceName(instance.name)) {
       expandNodesByType("instance", instance);
     }
     if (database.uid !== String(UNKNOWN_ID)) {

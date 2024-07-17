@@ -110,12 +110,6 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	if projectMessage.TenantMode == api.TenantModeTenant {
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
-		}
-	}
-
 	setting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		slog.Error("failed to find classification setting", log.BBError(err))
@@ -173,14 +167,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.Title = &request.Project.Title
 		case "key":
 			patch.Key = &request.Project.Key
-		case "tenant_mode":
-			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
-			if tenantMode == api.TenantModeTenant {
-				if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
-					return nil, status.Errorf(codes.PermissionDenied, err.Error())
-				}
-			}
-			patch.TenantMode = &tenantMode
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
@@ -316,7 +302,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := common.GetProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -375,7 +361,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	projectID, err := common.GetProjectID(request.Project)
+	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -401,10 +387,10 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Resource)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Resource)
 	}
 
 	policy, err := s.convertToStoreIamPolicy(ctx, request.Policy)
@@ -420,7 +406,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		ResourceUID:       project.UID,
 		ResourceType:      api.PolicyResourceTypeProject,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeProjectIAM,
+		Type:              api.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
@@ -773,6 +759,11 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 		Placeholder: request.DatabaseGroup.DatabasePlaceholder,
 		Expression:  request.DatabaseGroup.DatabaseExpr,
 	}
+	if request.DatabaseGroup.Multitenancy {
+		storeDatabaseGroup.Payload = &storepb.DatabaseGroupPayload{
+			Multitenancy: true,
+		}
+	}
 	if request.ValidateOnly {
 		return s.convertStoreToAPIDatabaseGroupFull(ctx, storeDatabaseGroup, projectResourceID)
 	}
@@ -829,16 +820,17 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 			}
 			updateDatabaseGroup.Placeholder = &request.DatabaseGroup.DatabasePlaceholder
 		case "database_expr":
-			if request.DatabaseGroup.DatabaseExpr == nil {
-				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
-			}
-			if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+			if request.DatabaseGroup.DatabaseExpr == nil || request.DatabaseGroup.DatabaseExpr.Expression == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
 			}
 			if _, err := common.ValidateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
 			}
 			updateDatabaseGroup.Expression = request.DatabaseGroup.DatabaseExpr
+		case "multitenancy":
+			updateDatabaseGroup.Payload = &storepb.DatabaseGroupPayload{
+				Multitenancy: request.DatabaseGroup.Multitenancy,
+			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
@@ -1088,14 +1080,10 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	ret := convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID)
 	matches, unmatches, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
-	}
-	ret := &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
-		DatabasePlaceholder: databaseGroup.Placeholder,
-		DatabaseExpr:        databaseGroup.Expression,
 	}
 	for _, database := range matches {
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
@@ -1111,11 +1099,15 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 }
 
 func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
-	return &v1pb.DatabaseGroup{
+	databaseGroupV1 := &v1pb.DatabaseGroup{
 		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
+	if databaseGroup.Payload != nil {
+		databaseGroupV1.Multitenancy = databaseGroup.Payload.Multitenancy
+	}
+	return databaseGroupV1
 }
 
 func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectWebhookMessage, error) {
@@ -1308,7 +1300,7 @@ func validateAndConvertToStoreDeploymentSchedule(deployment *v1pb.DeploymentConf
 				return nil, common.Errorf(common.Invalid, "label selector expression must not be empty")
 			}
 			switch e.Operator {
-			case v1pb.OperatorType_OPERATOR_TYPE_IN:
+			case v1pb.OperatorType_OPERATOR_TYPE_IN, v1pb.OperatorType_OPERATOR_TYPE_NOT_IN:
 				if len(e.Values) == 0 {
 					return nil, common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
 				}
@@ -1360,7 +1352,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *storepb.ProjectIamPolicy) (*v1pb.IamPolicy, error) {
+func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *storepb.IamPolicy) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
@@ -1421,7 +1413,7 @@ func (s *ProjectService) convertToV1IamPolicy(ctx context.Context, iamPolicy *st
 	}, nil
 }
 
-func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*storepb.ProjectIamPolicy, error) {
+func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, error) {
 	var bindings []*storepb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
@@ -1458,7 +1450,7 @@ func (s *ProjectService) convertToStoreIamPolicy(ctx context.Context, iamPolicy 
 		bindings = append(bindings, storeBinding)
 	}
 
-	return &storepb.ProjectIamPolicy{
+	return &storepb.IamPolicy{
 		Bindings: bindings,
 	}, nil
 }
@@ -1467,13 +1459,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	workflow := v1pb.Workflow_UI
 	if projectMessage.VCSConnectorsCount > 0 {
 		workflow = v1pb.Workflow_VCS
-	}
-	tenantMode := v1pb.TenantMode_TENANT_MODE_UNSPECIFIED
-	switch projectMessage.TenantMode {
-	case api.TenantModeDisabled:
-		tenantMode = v1pb.TenantMode_TENANT_MODE_DISABLED
-	case api.TenantModeTenant:
-		tenantMode = v1pb.TenantMode_TENANT_MODE_ENABLED
 	}
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
@@ -1503,7 +1488,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Title:                      projectMessage.Title,
 		Key:                        projectMessage.Key,
 		Workflow:                   workflow,
-		TenantMode:                 tenantMode,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 		IssueLabels:                issueLabels,
@@ -1513,24 +1497,16 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 }
 
-func convertToProjectTenantMode(tenantMode v1pb.TenantMode) api.ProjectTenantMode {
-	switch tenantMode {
-	case v1pb.TenantMode_TENANT_MODE_DISABLED:
-		return api.TenantModeDisabled
-	case v1pb.TenantMode_TENANT_MODE_ENABLED:
-		return api.TenantModeTenant
-	default:
-		return api.TenantModeDisabled
-	}
-}
-
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
-	tenantMode := convertToProjectTenantMode(project.TenantMode)
+	setting := &storepb.Project{
+		AllowModifyStatement: project.AllowModifyStatement,
+		AutoResolveIssue:     project.AutoResolveIssue,
+	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
 		Title:      project.Title,
 		Key:        project.Key,
-		TenantMode: tenantMode,
+		Setting:    setting,
 	}, nil
 }
 

@@ -413,6 +413,13 @@ export class DiffMerge {
           // mark it as 'created'
           mergedPartitions.push(targetPartition);
           context.markEditStatusByKey(key, "created");
+
+          // Then mark all its subpartitions as 'created', by performing
+          // a diff from empty array to targetPartition.subpartitions
+          doMergePartitions(
+            /* sourcePartitions */ [],
+            targetPartition.subpartitions
+          );
         }
       }
       return mergedPartitions;

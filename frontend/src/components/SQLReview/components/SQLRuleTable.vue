@@ -1,92 +1,32 @@
 <template>
   <div>
-    <template v-for="category in categoryList" :key="category.id">
+    <template v-for="category in ruleList" :key="category.value">
       <div class="flex my-3 items-center">
         <span class="text-xl text-main font-semibold">
-          {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
+          {{ category.label }}
         </span>
-        <span class="text-control-light text-md ml-1"
-          >({{ category.ruleList.length }})</span
-        >
+        <span class="text-control-light text-md ml-1">
+          ({{ category.ruleList.length }})
+        </span>
       </div>
-      <BBGrid
-        :column-list="columnList"
-        :data-source="category.ruleList"
-        :row-clickable="false"
-        class="border hidden lg:grid"
-      >
-        <template #item="{ item: rule }: { item: RuleTemplate }">
-          <div class="bb-grid-cell justify-center">
-            <NSwitch
-              size="small"
-              :disabled="!editable || !isRuleAvailable(rule)"
-              :value="rule.level !== SQLReviewRuleLevel.DISABLED"
-              @update-value="(val) => toggleActivity(rule, val)"
-            />
-          </div>
-          <div class="bb-grid-cell gap-x-1">
-            <NTooltip
-              v-if="!isRuleAvailable(rule)"
-              trigger="hover"
-              :show-arrow="false"
-            >
-              <template #trigger>
-                <div class="flex justify-center">
-                  <heroicons-outline:exclamation
-                    class="h-5 w-5 text-yellow-600"
-                  />
-                </div>
-              </template>
-              <span class="whitespace-nowrap">
-                {{
-                  $t("sql-review.not-available-for-free", {
-                    plan: $t(
-                      `subscription.plan.${planTypeToString(currentPlan)}.title`
-                    ),
-                  })
-                }}
-              </span>
-            </NTooltip>
-            <span>
-              {{ getRuleLocalization(rule.type).title }}
-            </span>
-            <a
-              :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
-              target="_blank"
-              class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
-            >
-              <heroicons-outline:external-link class="w-4 h-4" />
-            </a>
-          </div>
-          <div class="bb-grid-cell gap-x-2">
-            <RuleEngineIcons :rule="rule" />
-          </div>
-          <div class="bb-grid-cell">
-            <RuleLevelSwitch
-              :level="rule.level"
-              :disabled="!isRuleAvailable(rule)"
-              :editable="editable"
-              @level-change="$emit('level-change', rule, $event)"
-            />
-          </div>
-          <div class="bb-grid-cell justify-center">
-            <NButton
-              :disabled="!isRuleAvailable(rule)"
-              @click="setActiveRule(rule)"
-            >
-              {{ editable ? $t("common.edit") : $t("common.view") }}
-            </NButton>
-          </div>
-          <div
-            v-if="rule.comment || getRuleLocalization(rule.type).description"
-            class="bb-grid-cell col-span-full pl-24 border-t-0"
-          >
-            <p class="w-full text-left pl-2 text-gray-500 -mt-2 mb-1">
-              {{ rule.comment || getRuleLocalization(rule.type).description }}
-            </p>
-          </div>
-        </template>
-      </BBGrid>
+      <div class="hidden lg:block">
+        <NDataTable
+          :size="size"
+          :striped="true"
+          :columns="columns"
+          :data="category.ruleList"
+          :row-key="getRuleKey"
+          :max-height="'100%'"
+          :virtual-scroll="true"
+          :bordered="true"
+          :default-expand-all="true"
+          :row-props="rowProps"
+          :checked-row-keys="selectedRuleKeys"
+          @update:checked-row-keys="
+            (val) => $emit('update:selectedRuleKeys', val as string[])
+          "
+        />
+      </div>
       <div
         class="flex flex-col lg:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
       >
@@ -132,7 +72,12 @@
                 </a>
               </span>
             </div>
-            <div class="flex items-center space-x-2">
+            <NCheckbox
+              v-if="selectRule"
+              :checked="selectedRuleKeys.includes(getRuleKey(rule))"
+              @update:checked="(_) => toggleRule(rule)"
+            />
+            <div v-else class="flex items-center space-x-2">
               <PencilIcon
                 v-if="editable"
                 class="w-4 h-4"
@@ -146,15 +91,12 @@
               />
             </div>
           </div>
-          <div class="flex gap-x-2 items-center">
-            <RuleEngineIcons :rule="rule" />
-          </div>
           <RuleLevelSwitch
+            v-if="!hideLevel"
             class="text-xs"
             :level="rule.level"
-            :disabled="!isRuleAvailable(rule)"
-            :editable="editable"
-            @level-change="$emit('level-change', rule, $event)"
+            :disabled="!editable || !isRuleAvailable(rule)"
+            @level-change="updateLevel(rule, $event)"
           />
           <p class="textinfolabel">
             {{ getRuleLocalization(rule.type).description }}
@@ -165,59 +107,64 @@
 
     <SQLRuleEditDialog
       v-if="state.activeRule"
-      :editable="editable"
       :rule="state.activeRule"
-      :disabled="!isRuleAvailable(state.activeRule)"
+      :disabled="!editable || !isRuleAvailable(state.activeRule)"
       @cancel="state.activeRule = undefined"
-      @update:payload="updatePayload(state.activeRule!, $event)"
-      @update:level="updateLevel(state.activeRule!, $event)"
-      @update:comment="updateComment(state.activeRule!, $event)"
+      @update:rule="onRuleChanged"
     />
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
-import { NSwitch } from "naive-ui";
+import { NSwitch, NCheckbox, NDataTable, NButton, NDivider } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { useCurrentPlan } from "@/store";
-import type { RuleTemplate } from "@/types";
+import type { RuleTemplateV2 } from "@/types";
 import {
-  convertToCategoryList,
   getRuleLocalization,
   ruleIsAvailableInSubscription,
   planTypeToString,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import type { PayloadForEngine } from "./RuleConfigComponents";
+import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
+import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
+import { getRuleKey } from "./utils";
 
 type LocalState = {
-  activeRule: RuleTemplate | undefined;
+  activeRule: RuleTemplateV2 | undefined;
 };
 
 const props = withDefaults(
   defineProps<{
-    ruleList?: RuleTemplate[];
+    ruleList?: RuleListWithCategory[];
     editable: boolean;
+    selectRule?: boolean;
+    hideLevel?: boolean;
+    selectedRuleKeys?: string[];
+    size?: "small" | "medium";
   }>(),
   {
     ruleList: () => [],
     editable: true,
+    selectRule: false,
+    hideLevel: false,
+    selectedRuleKeys: () => [],
+    size: "medium",
   }
 );
 
 const emit = defineEmits<{
   (
-    event: "payload-change",
-    rule: RuleTemplate,
-    payload: PayloadForEngine
+    event: "rule-upsert",
+    rule: RuleTemplateV2,
+    update: Partial<RuleTemplateV2>
   ): void;
-  (event: "level-change", rule: RuleTemplate, level: SQLReviewRuleLevel): void;
-  (event: "comment-change", rule: RuleTemplate, comment: string): void;
+  (event: "update:selectedRuleKeys", keys: string[]): void;
 }>();
 
 const { t } = useI18n();
@@ -226,52 +173,174 @@ const state = reactive<LocalState>({
   activeRule: undefined,
 });
 
-const categoryList = computed(() => {
-  return convertToCategoryList(props.ruleList);
-});
-
-const columnList = computed((): BBGridColumn[] => {
-  const columns: BBGridColumn[] = [
+const columns = computed(() => {
+  const columns: (DataTableColumn<RuleTemplateV2> & { hide?: boolean })[] = [
+    {
+      type: "selection",
+      cellProps: (rule: RuleTemplateV2) => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+      hide: !props.selectRule,
+    },
+    {
+      type: "expand",
+      expandable: (rule: RuleTemplateV2) => {
+        return !!(
+          rule.comment ||
+          getRuleLocalization(rule.type).description ||
+          rule.componentList.length > 0
+        );
+      },
+      renderExpand: (rule: RuleTemplateV2) => {
+        const comment =
+          rule.comment || getRuleLocalization(rule.type).description;
+        return (
+          <div class="px-10">
+            <p class="w-full text-left text-gray-500">{comment}</p>
+            {rule.componentList.length > 0 && !!comment && (
+              <NDivider class={"!my-4"} />
+            )}
+            {rule.componentList.length > 0 && (
+              <RuleConfig
+                disabled={true}
+                rule={rule}
+                size={"small"}
+                class={"mb-3"}
+              />
+            )}
+          </div>
+        );
+      },
+      cellProps: (rule: RuleTemplateV2) => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+    },
     {
       title: t("sql-review.rule.active"),
-      width: "6rem",
-      class: "justify-center",
+      key: "active",
+      width: "5rem",
+      hide: props.hideLevel,
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <NSwitch
+            size={"small"}
+            disabled={!props.editable || !isRuleAvailable(rule)}
+            value={rule.level !== SQLReviewRuleLevel.DISABLED}
+            onUpdate:value={(val) => toggleActivity(rule, val)}
+          />
+        );
+      },
     },
-    { title: t("common.name"), width: "1fr" },
-    { title: t("common.databases"), width: "12rem" },
-    { title: t("sql-review.level.name"), width: "12rem" },
+    {
+      title: t("common.name"),
+      resizable: true,
+      key: "name",
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <div class="flex items-center space-x-2">
+            <span>{getRuleLocalization(rule.type).title}</span>
+            <a
+              href={`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`}
+              target="_blank"
+              class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
+            >
+              <ExternalLinkIcon class="w-4 h-4" />
+            </a>
+          </div>
+        );
+      },
+    },
+    {
+      title: t("sql-review.level.name"),
+      hide: props.hideLevel,
+      key: "level",
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <RuleLevelSwitch
+            level={rule.level}
+            disabled={!props.editable || !isRuleAvailable(rule)}
+            onLevel-change={(on) => updateLevel(rule, on)}
+          />
+        );
+      },
+    },
     {
       title: t("common.operations"),
+      hide: props.selectRule,
+      key: "operations",
       width: "10rem",
-      class: "justify-center",
+      render: (rule: RuleTemplateV2) => {
+        return (
+          <NButton
+            disabled={!isRuleAvailable(rule)}
+            onClick={() => setActiveRule(rule)}
+          >
+            {props.editable ? t("common.edit") : t("common.view")}
+          </NButton>
+        );
+      },
     },
   ];
-  return columns;
+
+  return columns.filter((item) => !item.hide);
 });
 
-const isRuleAvailable = (rule: RuleTemplate) => {
+const rowProps = (rule: RuleTemplateV2) => {
+  return {
+    style: props.selectRule ? "cursor: pointer;" : "",
+    onClick: (e: MouseEvent) => {
+      if (props.selectRule) {
+        toggleRule(rule);
+        return;
+      }
+    },
+  };
+};
+
+const toggleRule = (rule: RuleTemplateV2) => {
+  const key = getRuleKey(rule);
+  const index = props.selectedRuleKeys.findIndex((k) => k === key);
+  if (index < 0) {
+    emit("update:selectedRuleKeys", [...props.selectedRuleKeys, key]);
+  } else {
+    emit("update:selectedRuleKeys", [
+      ...props.selectedRuleKeys.slice(0, index),
+      ...props.selectedRuleKeys.slice(index + 1),
+    ]);
+  }
+};
+
+const isRuleAvailable = (rule: RuleTemplateV2) => {
   return ruleIsAvailableInSubscription(rule.type, currentPlan.value);
 };
 
-const setActiveRule = (rule: RuleTemplate) => {
+const setActiveRule = (rule: RuleTemplateV2) => {
   state.activeRule = rule;
 };
 
-const toggleActivity = (rule: RuleTemplate, on: boolean) => {
-  emit(
-    "level-change",
+const toggleActivity = (rule: RuleTemplateV2, on: boolean) => {
+  updateLevel(
     rule,
     on ? SQLReviewRuleLevel.WARNING : SQLReviewRuleLevel.DISABLED
   );
 };
 
-const updatePayload = (rule: RuleTemplate, payload: PayloadForEngine) => {
-  emit("payload-change", rule, payload);
+const onRuleChanged = (update: Partial<RuleTemplateV2>) => {
+  if (!state.activeRule) {
+    return;
+  }
+  emit("rule-upsert", state.activeRule, update);
 };
-const updateLevel = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
-  emit("level-change", rule, level);
-};
-const updateComment = (rule: RuleTemplate, comment: string) => {
-  emit("comment-change", rule, comment);
+
+const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRuleLevel) => {
+  emit("rule-upsert", rule, { level });
 };
 </script>

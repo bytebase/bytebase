@@ -27,19 +27,23 @@
       </a>
     </div>
 
-    <div class="space-y-6">
-      <SQLReviewPolicyTable
-        :review-list="reviewConfigWithResourceList"
-        :filter="searchText"
-      />
-      <div v-if="reviewConfigWithoutResourceList.length > 0">
-        <h2 class="mb-3">{{ $t("sql-review.no-linked-resources") }}</h2>
-        <SQLReviewPolicyTable
-          :review-list="reviewConfigWithoutResourceList"
-          :filter="searchText"
-        />
-      </div>
-    </div>
+    <SQLReviewPolicyTable
+      v-if="sqlReviewStore.reviewPolicyList.length > 0"
+      :review-list="filteredReviewConfigList"
+      :filter="searchText"
+    />
+    <NoDataPlaceholder v-else>
+      <template #default>
+        <NButton
+          :size="'small'"
+          type="primary"
+          :disabled="!hasCreatePolicyPermission"
+          @click="createSQLReview"
+        >
+          {{ $t("sql-review.create-policy") }}
+        </NButton>
+      </template>
+    </NoDataPlaceholder>
   </div>
 </template>
 
@@ -47,20 +51,13 @@
 import { watchEffect, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";
-import {
-  useSQLReviewStore,
-  useCurrentUserV1,
-  useEnvironmentV1List,
-} from "@/store";
-import { environmentNamePrefix } from "@/store/modules/v1/common";
-import type { SQLReviewPolicy } from "@/types";
+import { useSQLReviewStore, useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const router = useRouter();
 const sqlReviewStore = useSQLReviewStore();
 const searchText = ref("");
 const currentUserV1 = useCurrentUserV1();
-const environmentList = useEnvironmentV1List();
 
 watchEffect(() => {
   sqlReviewStore.fetchReviewPolicyList();
@@ -82,47 +79,6 @@ const filteredReviewConfigList = computed(() => {
   }
   return sqlReviewStore.reviewPolicyList.filter((config) => {
     return config.name.toLowerCase().includes(searchText.value.toLowerCase());
-  });
-});
-
-const reviewConfigWithResourceList = computed(() => {
-  const reviewConfigWithEnvironmentList = environmentList.value
-    .map<SQLReviewPolicy>((environment) => {
-      const review = sqlReviewStore.getReviewPolicyByResouce(environment.name);
-
-      return (
-        review ?? {
-          id: "",
-          enforce: false,
-          name: "",
-          ruleList: [],
-          resources: [environment.name],
-        }
-      );
-    })
-    .filter((review) => {
-      if (!searchText.value) {
-        return true;
-      }
-      return review.name.toLowerCase().includes(searchText.value.toLowerCase());
-    });
-
-  return [
-    ...reviewConfigWithEnvironmentList,
-    ...filteredReviewConfigList.value.filter((review) => {
-      return (
-        review.resources.length > 0 &&
-        !review.resources.some((resource) =>
-          resource.startsWith(environmentNamePrefix)
-        )
-      );
-    }),
-  ];
-});
-
-const reviewConfigWithoutResourceList = computed(() => {
-  return filteredReviewConfigList.value.filter((review) => {
-    return review.resources.length === 0;
   });
 });
 </script>

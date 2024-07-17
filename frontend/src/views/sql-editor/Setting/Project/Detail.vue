@@ -30,7 +30,7 @@
 
     <Drawer v-model:show="showTransfer">
       <TransferDatabaseForm
-        :project-id="project.uid"
+        :project-name="project.name"
         :on-success="handleTransferSuccess"
         @dismiss="showTransfer = false"
       />
