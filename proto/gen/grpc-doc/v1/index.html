@@ -23522,7 +23522,8 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td>sessions</td>
                   <td><a href="#bytebase.v1.TaskRunSession.Postgres.Session">TaskRunSession.Postgres.Session</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>The first session is the session of the task run executing commands.
+The remaining sessions are the sessions that block the first session. </p></td>
                 </tr>
               
             </tbody>

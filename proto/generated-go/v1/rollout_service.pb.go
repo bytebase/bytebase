@@ -2792,6 +2792,8 @@ type TaskRunSession_Postgres struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The first session is the session of the task run executing commands.
+	// The remaining sessions are the sessions that block the first session.
 	Sessions []*TaskRunSession_Postgres_Session `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
 }
 
