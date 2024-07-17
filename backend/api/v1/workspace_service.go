@@ -83,6 +83,7 @@ func (s *WorkspaceService) PatchIamPolicy(ctx context.Context, request *v1pb.Pat
 		return nil, err
 	}
 
+	// TODO(ed): Check if the user is the only workspace admin.
 	storeMember, err := convertToStoreIamPolicyMember(ctx, s.store, request.Member)
 	if err != nil {
 		return nil, err
@@ -97,6 +98,8 @@ func (s *WorkspaceService) PatchIamPolicy(ctx context.Context, request *v1pb.Pat
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to patch iam policy with error: %v", err.Error())
 	}
+
+	s.iamManager.RemoveCache(userUID)
 
 	return convertToV1IamPolicy(ctx, s.store, policy)
 }

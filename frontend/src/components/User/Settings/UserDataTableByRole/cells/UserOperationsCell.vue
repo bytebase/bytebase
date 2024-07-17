@@ -20,12 +20,15 @@ import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import { PresetRoleType, SYSTEM_BOT_USER_NAME } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import {
+  PresetRoleType,
+  SYSTEM_BOT_USER_NAME,
+  type ComposedUser,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 
 defineProps<{
-  user: User;
+  user: ComposedUser;
 }>();
 
 defineEmits<{
@@ -38,7 +41,7 @@ const allowEdit = computed(() => {
   return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
 });
 
-const allowUpdateUser = (user: User) => {
+const allowUpdateUser = (user: ComposedUser) => {
   if (user.name === SYSTEM_BOT_USER_NAME) {
     return false;
   }

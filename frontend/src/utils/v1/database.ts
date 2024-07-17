@@ -10,8 +10,7 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
-import type { ComposedDatabase } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedDatabase, ComposedUser } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
@@ -83,7 +82,7 @@ export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
 // isDatabaseV1Alterable checks if database alterable for user.
 export const isDatabaseV1Alterable = (
   database: ComposedDatabase,
-  user: User
+  user: ComposedUser
 ): boolean => {
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
@@ -109,7 +108,7 @@ export const isDatabaseV1Alterable = (
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.
 export const isDatabaseV1Queryable = (
   database: ComposedDatabase,
-  user: User
+  user: ComposedUser
 ): boolean => {
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
@@ -135,7 +134,7 @@ export const isTableQueryable = (
   database: ComposedDatabase,
   schema: string,
   table: string,
-  user: User
+  user: ComposedUser
 ): boolean => {
   if (hasWorkspaceLevelProjectPermission(user, "bb.databases.query")) {
     // The current user has the super privilege to access all databases.
@@ -219,7 +218,7 @@ export function allowGhostMigrationV1(
 
 export function allowDatabaseV1Access(
   database: ComposedDatabase,
-  user: User,
+  user: ComposedUser,
   type: DataSourceType
 ): boolean {
   // "ADMIN" data source should only be used by the system, thus it shouldn't

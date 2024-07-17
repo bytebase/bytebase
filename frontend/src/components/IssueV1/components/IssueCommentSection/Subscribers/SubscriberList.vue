@@ -47,14 +47,14 @@ import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserResourceName } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";
 
 type UserSelectOption = SelectOption & {
-  user: User;
+  user: ComposedUser;
   value: string;
 };
 

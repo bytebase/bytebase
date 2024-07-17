@@ -25,7 +25,7 @@ import { NDataTable } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
-import type { User } from "@/types/proto/v1/auth_service";
+import { type ComposedUser } from "@/types";
 import type { UserGroup } from "@/types/proto/v1/user_group";
 import { copyServiceKeyToClipboardIfNeeded } from "../common";
 import UserGroupsCell from "./cells/UserGroupsCell.vue";
@@ -35,15 +35,15 @@ import UserRolesCell from "./cells/UserRolesCell.vue";
 
 interface LocalState {
   showResetKeyAlert: boolean;
-  targetServiceAccount?: User;
+  targetServiceAccount?: ComposedUser;
 }
 
 defineProps<{
-  userList: User[];
+  userList: ComposedUser[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-user", user: User): void;
+  (event: "update-user", user: ComposedUser): void;
   (event: "select-group", group: UserGroup): void;
 }>();
 
@@ -60,7 +60,7 @@ const columns = computed(() => {
       title: t("settings.members.table.account"),
       width: "32rem",
       resizable: true,
-      render: (user: User) => {
+      render: (user: ComposedUser) => {
         return h(UserNameCell, {
           user,
           "onReset-service-key": tryResetServiceKey,
@@ -71,7 +71,7 @@ const columns = computed(() => {
       key: "roles",
       title: t("settings.members.table.role"),
       resizable: true,
-      render: (user: User) => {
+      render: (user: ComposedUser) => {
         return h(UserRolesCell, {
           roles: user.roles,
         });
@@ -81,7 +81,7 @@ const columns = computed(() => {
       key: "groups",
       title: t("settings.members.table.groups"),
       resizable: true,
-      render: (user: User) => {
+      render: (user: ComposedUser) => {
         return h(UserGroupsCell, {
           user,
           "onSelect-group": (group) => emit("select-group", group),
@@ -92,7 +92,7 @@ const columns = computed(() => {
       key: "operations",
       title: "",
       width: "4rem",
-      render: (user: User) => {
+      render: (user: ComposedUser) => {
         return h(UserOperationsCell, {
           user,
           "onUpdate-user": () => {
@@ -101,10 +101,10 @@ const columns = computed(() => {
         });
       },
     },
-  ] as DataTableColumn<User>[];
+  ] as DataTableColumn<ComposedUser>[];
 });
 
-const tryResetServiceKey = (user: User) => {
+const tryResetServiceKey = (user: ComposedUser) => {
   state.showResetKeyAlert = true;
   state.targetServiceAccount = user;
 };

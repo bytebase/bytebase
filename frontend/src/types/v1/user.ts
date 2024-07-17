@@ -6,17 +6,24 @@ import { State } from "../proto/v1/common";
 export const UNKNOWN_USER_NAME = `users/${UNKNOWN_ID}`;
 export const SYSTEM_BOT_USER_NAME = `users/${SYSTEM_BOT_ID}`;
 
-export const emptyUser = () => {
-  return User.fromJSON({
-    name: `users/${EMPTY_ID}`,
-    state: State.ACTIVE,
-    email: "",
-    title: "",
-    userType: UserType.USER,
-  });
+export interface ComposedUser extends User {
+  roles: string[];
+}
+
+export const emptyUser = (): ComposedUser => {
+  return {
+    ...User.fromPartial({
+      name: `users/${EMPTY_ID}`,
+      state: State.ACTIVE,
+      email: "",
+      title: "",
+      userType: UserType.USER,
+    }),
+    roles: [],
+  };
 };
 
-export const unknownUser = () => {
+export const unknownUser = (): ComposedUser => {
   return {
     ...emptyUser(),
     name: UNKNOWN_USER_NAME,
@@ -27,7 +34,7 @@ export const unknownUser = () => {
 export const ALL_USERS_USER_ID = "2";
 export const ALL_USERS_USER_EMAIL = "allUsers";
 // Pseudo allUsers account.
-export const allUsersUser = () => {
+export const allUsersUser = (): ComposedUser => {
   return {
     ...emptyUser(),
     name: `users/${ALL_USERS_USER_ID}`,
@@ -37,7 +44,10 @@ export const allUsersUser = () => {
   };
 };
 
-export const filterUserListByKeyword = (userList: User[], keyword: string) => {
+export const filterUserListByKeyword = (
+  userList: ComposedUser[],
+  keyword: string
+) => {
   keyword = keyword.trim().toLowerCase();
   if (!keyword) return userList;
   return userList.filter((user) => {

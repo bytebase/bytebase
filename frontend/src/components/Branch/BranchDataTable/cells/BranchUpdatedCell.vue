@@ -4,7 +4,7 @@
       class="flex flex-row gap-x-1 mr-1 justify-start items-center border border-gray-200 rounded-md p-0.5 px-2"
     >
       <UserAvatar size="TINY" :user="updater" />
-      <span>{{ updater.title }}</span>
+      <span>{{ updater?.title }}</span>
     </div>
     <span>{{ updateTimeStr }}</span>
   </div>
@@ -15,7 +15,6 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import type { User } from "@/types/proto/v1/auth_service";
 import type { Branch } from "@/types/proto/v1/branch_service";
 
 const props = defineProps<{
@@ -26,7 +25,7 @@ const userStore = useUserStore();
 
 const updater = computed(() => {
   const email = getUserEmailFromIdentifier(props.branch.updater);
-  return userStore.getUserByEmail(email) as User;
+  return userStore.getUserByEmail(email);
 });
 
 const updateTimeStr = computed(() => {

@@ -33,6 +33,7 @@ import { UserGroupServiceDefinition } from "@/types/proto/v1/user_group";
 import { VCSConnectorServiceDefinition } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProviderServiceDefinition } from "@/types/proto/v1/vcs_provider_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
+import { WorkspaceServiceDefinition } from "@/types/proto/v1/workspace_service";
 import {
   authInterceptorMiddleware,
   errorNotificationMiddleware,
@@ -124,6 +125,7 @@ export const settingServiceClient = clientFactory.create(
   SettingServiceDefinition,
   channel
 );
+
 export const sheetServiceClient = clientFactory.create(
   SheetServiceDefinition,
   channel
@@ -208,8 +210,14 @@ export const userGroupServiceClient = clientFactory.create(
   UserGroupServiceDefinition,
   channel
 );
+
 export const reviewConfigServiceClient = clientFactory.create(
   ReviewConfigServiceDefinition,
+  channel
+);
+
+export const workspaceServiceClient = clientFactory.create(
+  WorkspaceServiceDefinition,
   channel
 );
 

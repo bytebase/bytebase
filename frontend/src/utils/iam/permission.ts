@@ -3,11 +3,11 @@ import type {
   ComposedProject,
   ProjectPermission,
   WorkspacePermission,
+  ComposedUser,
 } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
 
 export const hasWorkspacePermissionV2 = (
-  user: User,
+  user: ComposedUser,
   permission: WorkspacePermission
 ): boolean => {
   const permissions =
@@ -18,7 +18,7 @@ export const hasWorkspacePermissionV2 = (
 // hasProjectPermissionV2 checks if the user has the given permission on the project.
 export const hasProjectPermissionV2 = (
   project: ComposedProject | undefined,
-  user: User,
+  user: ComposedUser,
   permission: ProjectPermission
 ): boolean => {
   const permissionStore = usePermissionStore();
@@ -46,7 +46,7 @@ export const hasProjectPermissionV2 = (
 
 // hasWorkspaceLevelProjectPermission checks if the user has the given permission on workspace-level-assigned project roles
 export const hasWorkspaceLevelProjectPermission = (
-  user: User,
+  user: ComposedUser,
   permission: ProjectPermission
 ): boolean => {
   const permissions =
@@ -56,7 +56,7 @@ export const hasWorkspaceLevelProjectPermission = (
 
 // hasWorkspaceLevelProjectPermission checks if the user has the given permission on ANY project in the workspace.
 export const hasWorkspaceLevelProjectPermissionInAnyProject = (
-  user: User,
+  user: ComposedUser,
   permission: ProjectPermission
 ): boolean => {
   const { projectList } = useProjectV1List();

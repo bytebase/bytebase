@@ -14079,14 +14079,6 @@ components:
                     description: |-
                         Should be a valid E.164 compliant phone number.
                          Could be empty.
-                roles:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The roles of the user.
-                         This filed is to supersede the `user_role` field.
-                         TODO(ed): deprecate roles field.
         UserGroup:
             type: object
             properties:

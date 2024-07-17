@@ -169,7 +169,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head, isEmpty } from "lodash-es";
+import { cloneDeep, head, isEmpty, isEqual, isUndefined } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import {
@@ -198,22 +198,22 @@ import {
   PRESET_WORKSPACE_ROLES,
   PresetRoleType,
   emptyUser,
+  type ComposedUser,
 } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
 import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, randomString } from "@/utils";
 
 interface LocalState {
   isRequesting: boolean;
-  user: User;
+  user: ComposedUser;
   passwordConfirm: string;
 }
 
 const serviceAccountEmailSuffix = "@service.bytebase.com";
 
 const props = defineProps<{
-  user?: User;
+  user?: ComposedUser;
 }>();
 
 const emit = defineEmits<{
@@ -396,6 +396,12 @@ const tryCreateOrUpdateUser = async () => {
         updateMask: getUpdateMaskFromUsers(props.user!, state.user),
       })
     );
+    if (
+      !isUndefined(state.user.roles) &&
+      !isEqual(props.user?.roles, state.user.roles)
+    ) {
+      await userStore.updateUserRoles(state.user);
+    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

@@ -85,7 +85,7 @@ import {
   useUserStore,
   useUserGroupStore,
 } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { ComposedProject, ComposedUser } from "@/types";
 import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
@@ -93,7 +93,6 @@ import {
   PRESET_WORKSPACE_ROLES,
   groupBindingPrefix,
 } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { UserGroup } from "@/types/proto/v1/user_group";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -150,7 +149,7 @@ const activeUserList = computed(() => {
         ({
           ...unknownUser(),
           email,
-        } as User)
+        } as ComposedUser)
       );
     });
 

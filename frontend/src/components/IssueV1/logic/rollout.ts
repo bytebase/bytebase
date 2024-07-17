@@ -1,6 +1,5 @@
 import { t } from "@/plugins/i18n";
-import type { ComposedIssue } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue, ComposedUser } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
@@ -29,7 +28,7 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
 export const allowUserToEditStatementForTask = (
   issue: ComposedIssue,
   task: Task,
-  user: User
+  user: ComposedUser
 ): string[] => {
   const denyReasons: string[] = [];
 
