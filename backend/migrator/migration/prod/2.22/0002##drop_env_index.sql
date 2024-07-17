@@ -1,0 +1,1 @@
+DROP INDEX idx_environment_unique_name;
