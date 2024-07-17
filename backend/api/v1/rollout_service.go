@@ -311,46 +311,46 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 				backend_start,
 				xact_start,
 				query_start
-            FROM (
-                SELECT
-                    1 AS lvl,
-                    pid,
-                    query,
-                    state,
-                    wait_event_type,
-                    wait_event,
-                    datname,
-                    usename,
-                    application_name,
-                    client_addr,
-                    client_port,
-                    backend_start,
-                    xact_start,
-                    query_start
-                FROM
-                    pg_stat_activity
-                WHERE pid = $1
-                UNION
-                SELECT
-                    2 AS lvl,
-                    pid,
-                    query,
-                    state,
-                    wait_event_type,
-                    wait_event,
-                    datname,
-                    usename,
-                    application_name,
-                    client_addr,
-                    client_port,
-                    backend_start,
-                    xact_start,
-                    query_start
-                FROM
-                    pg_stat_activity
-                WHERE pid = ANY(pg_blocking_pids($1))
-                ORDER BY lvl, pid
-            ) t
+			FROM (
+				SELECT
+					1 AS lvl,
+					pid,
+					query,
+					state,
+					wait_event_type,
+					wait_event,
+					datname,
+					usename,
+					application_name,
+					client_addr,
+					client_port,
+					backend_start,
+					xact_start,
+					query_start
+				FROM
+					pg_stat_activity
+				WHERE pid = $1
+				UNION
+				SELECT
+					2 AS lvl,
+					pid,
+					query,
+					state,
+					wait_event_type,
+					wait_event,
+					datname,
+					usename,
+					application_name,
+					client_addr,
+					client_port,
+					backend_start,
+					xact_start,
+					query_start
+				FROM
+					pg_stat_activity
+				WHERE pid = ANY(pg_blocking_pids($1))
+				ORDER BY lvl, pid
+			) t
 		`
 		rows, err := db.QueryContext(ctx, query, connID)
 		if err != nil {
