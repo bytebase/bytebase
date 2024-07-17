@@ -21,15 +21,10 @@
 </template>
 
 <script lang="ts" setup>
-import { isNull, isUndefined } from "lodash-es";
 import { reactive, watch } from "vue";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import {
-  UNKNOWN_DATABASE_NAME,
-  UNKNOWN_ID,
-  isValidDatabaseName,
-} from "@/types";
+import { UNKNOWN_DATABASE_NAME, isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps<{
@@ -54,8 +49,8 @@ const databaseStore = useDatabaseV1Store();
 watch(
   () => props.projectName,
   () => {
-    const database = isValidId(state.databaseName)
-      ? databaseStore.getDatabaseByUID(state.databaseName)
+    const database = isValidDatabaseName(state.databaseName)
+      ? databaseStore.getDatabaseByName(state.databaseName)
       : undefined;
     if (!database || !props.projectName) {
       return;
@@ -69,19 +64,19 @@ watch(
 
 watch(
   () => state.databaseName,
-  async (databaseId) => {
-    const database = isValidId(state.databaseName)
-      ? databaseStore.getDatabaseByUID(state.databaseName)
+  async (name) => {
+    const database = isValidDatabaseName(name)
+      ? databaseStore.getDatabaseByName(name)
       : undefined;
     try {
       if (database) {
-        state.databaseName = database.uid;
+        state.databaseName = database.name;
         state.environmentName = database.effectiveEnvironment;
       }
     } catch (error) {
       // do nothing.
     }
-    emit("update:database-id", databaseId);
+    emit("update:database-id", database?.uid);
   }
 );
 
@@ -91,13 +86,6 @@ const allowedEngineTypeList: Engine[] = [
   Engine.POSTGRES,
   Engine.ORACLE,
 ];
-
-const isValidId = (id: any): id is string => {
-  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
-    return false;
-  }
-  return true;
-};
 
 const handleEnvironmentSelect = (name?: string) => {
   if (name !== state.environmentName) {
