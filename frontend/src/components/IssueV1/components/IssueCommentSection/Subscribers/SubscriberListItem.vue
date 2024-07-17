@@ -10,9 +10,9 @@
 
 <script setup lang="ts">
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedUser } from "@/types";
 
 defineProps<{
-  user: User;
+  user: ComposedUser;
 }>();
 </script>

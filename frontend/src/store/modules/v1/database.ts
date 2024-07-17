@@ -2,7 +2,12 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
-import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
+import type {
+  ComposedInstance,
+  ComposedDatabase,
+  MaybeRef,
+  ComposedUser,
+} from "@/types";
 import {
   emptyDatabase,
   EMPTY_ID,
@@ -12,7 +17,6 @@ import {
   unknownInstanceResource,
 } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
 import type {
   Database,
   UpdateDatabaseRequest,
@@ -95,7 +99,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       await fetchDatabaseByName(database);
     }
   };
-  const databaseListByUser = (user: User) => {
+  const databaseListByUser = (user: ComposedUser) => {
     return databaseList.value.filter((db) => {
       if (hasProjectPermissionV2(db.projectEntity, user, "bb.databases.get"))
         return true;

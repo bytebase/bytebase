@@ -96,7 +96,7 @@ func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
-	return s.convertToUser(ctx, user)
+	return convertToUser(user), nil
 }
 
 // ListUsers lists all users.
@@ -107,11 +107,7 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 	}
 	response := &v1pb.ListUsersResponse{}
 	for _, user := range users {
-		v1User, err := s.convertToUser(ctx, user)
-		if err != nil {
-			return nil, err
-		}
-		response.Users = append(response.Users, v1User)
+		response.Users = append(response.Users, convertToUser(user))
 	}
 	return response, nil
 }
@@ -212,28 +208,16 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 	}
 
-	// TODO(ed): deprecate this.
-	updateRole := &store.PatchIamPolicyMessage{
-		Member:     common.FormatUserUID(user.ID),
-		UpdaterUID: creatorUID,
-	}
-
 	if firstEndUser {
 		// The first end user should be workspace admin.
-		updateRole.Roles = []string{common.FormatRole(api.WorkspaceAdmin.String())}
-	} else {
-		// Otherwise only workspace admin can set roles while creating the user.
-		rolePtr := ctx.Value(common.RoleContextKey)
-		if rolePtr != nil && rolePtr.(api.Role) == api.WorkspaceAdmin {
-			// TODO(ed):
-			updateRole.Roles = request.User.Roles
-		} else if len(request.User.Roles) > 0 {
-			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with multiple roles")
+		updateRole := &store.PatchIamPolicyMessage{
+			Member:     common.FormatUserUID(user.ID),
+			UpdaterUID: creatorUID,
+			Roles:      []string{common.FormatRole(api.WorkspaceAdmin.String())},
 		}
-	}
-
-	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
-		return nil, err
+		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := s.postCreateUser(ctx, user, firstEndUser); err != nil {
@@ -254,10 +238,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		},
 	})
 
-	userResponse, err := s.convertToUser(ctx, user)
-	if err != nil {
-		return nil, err
-	}
+	userResponse := convertToUser(user)
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		userResponse.ServiceKey = password
 	}
@@ -342,30 +323,6 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
 			passwordPatch = &password
-		case "roles":
-			// TODO(ed): deprecate roles field.
-			if role != api.WorkspaceAdmin {
-				return nil, status.Errorf(codes.PermissionDenied, "only workspace admin can update roles")
-			}
-			// Check if the user is the only workspace admin.
-			isAdmin, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check admin role with error: %v", err.Error())
-			}
-			if isAdmin && !slices.Contains(request.User.Roles, common.FormatRole(api.WorkspaceAdmin.String())) {
-				workspaceAdmin, userType := api.WorkspaceAdmin, api.EndUser
-				adminUser, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-					Role: &workspaceAdmin,
-					Type: &userType,
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to find workspace admin, error: %v", err)
-				}
-				if len(adminUser) == 1 && adminUser[0].ID == userID {
-					return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
-				}
-			}
-			patch.Roles = &request.User.Roles
 		case "mfa_enabled":
 			if request.User.MfaEnabled {
 				if user.MFAConfig.TempOtpSecret == "" || len(user.MFAConfig.TempRecoveryCodes) == 0 {
@@ -450,16 +407,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
 
-	// TODO(ed):
-	if patch.Roles != nil {
-		s.iamManager.RemoveCache(user.ID)
-	}
-
-	userResponse, err := s.convertToUser(ctx, user)
-	if err != nil {
-		return nil, err
-	}
-
+	userResponse := convertToUser(user)
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
 		userResponse.ServiceKey = *passwordPatch
 	}
@@ -556,10 +504,10 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return s.convertToUser(ctx, user)
+	return convertToUser(user), nil
 }
 
-func (s *AuthService) convertToUser(ctx context.Context, user *store.UserMessage) (*v1pb.User, error) {
+func convertToUser(user *store.UserMessage) *v1pb.User {
 	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
 	switch user.Type {
 	case api.EndUser:
@@ -579,17 +527,12 @@ func (s *AuthService) convertToUser(ctx context.Context, user *store.UserMessage
 		UserType: userType,
 	}
 
-	workspaceRoles, err := s.iamManager.GetWorkspaceRoles(ctx, user)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get workspace roles for user with error: %v", err.Error())
-	}
-	convertedUser.Roles = workspaceRoles
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
 		convertedUser.MfaSecret = user.MFAConfig.TempOtpSecret
 		convertedUser.RecoveryCodes = user.MFAConfig.TempRecoveryCodes
 	}
-	return convertedUser, nil
+	return convertedUser
 }
 
 func convertToPrincipalType(userType v1pb.UserType) (api.PrincipalType, error) {

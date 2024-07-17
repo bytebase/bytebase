@@ -17,11 +17,11 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useUserGroupStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedUser } from "@/types";
 import type { UserGroup } from "@/types/proto/v1/user_group";
 
 const props = defineProps<{
-  user: User;
+  user: ComposedUser;
 }>();
 
 defineEmits<{

@@ -183,7 +183,7 @@ message LoginResponse {
 message LogoutRequest {}
 
 message User {
-  reserved 6;
+  reserved 6, 13;
 
   // The name of the user.
   // Format: users/{user}. {user} is a system-generated unique ID.
@@ -213,11 +213,6 @@ message User {
   // Should be a valid E.164 compliant phone number.
   // Could be empty.
   string phone = 12;
-
-  // The roles of the user.
-  // This filed is to supersede the `user_role` field.
-  // TODO(ed): deprecate roles field.
-  repeated string roles = 13;
 }
 
 enum UserType {

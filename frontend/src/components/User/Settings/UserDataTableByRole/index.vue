@@ -17,8 +17,7 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoleStore } from "@/store";
-import { PRESET_WORKSPACE_ROLES } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import { PRESET_WORKSPACE_ROLES, type ComposedUser } from "@/types";
 import { displayRoleTitle, sortRoles } from "@/utils";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
@@ -32,15 +31,15 @@ interface RoleRowData {
 interface UserRowData {
   type: "user";
   name: string;
-  user: User;
+  user: ComposedUser;
 }
 
 const props = defineProps<{
-  userList: User[];
+  userList: ComposedUser[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-user", user: User): void;
+  (event: "update-user", user: ComposedUser): void;
 }>();
 
 const { t } = useI18n();

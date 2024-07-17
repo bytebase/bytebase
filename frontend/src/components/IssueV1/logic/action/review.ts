@@ -1,8 +1,7 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { candidatesOfApprovalStepV1 } from "@/store";
-import type { ComposedIssue } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue, ComposedUser } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
@@ -58,7 +57,7 @@ export const issueReviewActionButtonProps = (
 export const allowUserToApplyReviewAction = (
   issue: ComposedIssue,
   context: ReviewContext,
-  user: User,
+  user: ComposedUser,
   action: IssueReviewAction
 ) => {
   const { ready, done, flow } = context;

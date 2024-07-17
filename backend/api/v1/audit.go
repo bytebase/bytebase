@@ -344,7 +344,6 @@ func redactUser(r *v1pb.User) *v1pb.User {
 		Email:    r.Email,
 		Title:    r.Title,
 		UserType: r.UserType,
-		Roles:    r.Roles,
 	}
 }
 

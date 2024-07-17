@@ -1,4 +1,4 @@
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedUser } from "@/types";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 import type { UserGroup } from "@/types/proto/v1/user_group";
 
@@ -14,6 +14,6 @@ export interface ProjectBinding extends ProjectRole {
   // like user:{email} or group:{email}
   binding: string;
   type: "users" | "groups";
-  user?: User;
+  user?: ComposedUser;
   group?: UserGroup;
 }
