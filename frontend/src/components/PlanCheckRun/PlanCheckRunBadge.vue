@@ -1,10 +1,4 @@
 <template>
-  <div class="issue-debug">
-    <div>type: {{ type }}</div>
-    <div>count in type: {{ planCheckRunList.length }}</div>
-    <div>latest: {{ latestPlanCheckRun.name }}</div>
-  </div>
-
   <button
     class="inline-flex items-center px-3 leading-6 rounded-full text-sm border"
     :class="buttonClasses"
@@ -45,14 +39,14 @@
 import { maxBy } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { planCheckRunResultStatus } from "@/components/IssueV1/logic";
+import { TaskSpinner } from "@/components/IssueV1/components/common";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/plan_service";
-import { TaskSpinner } from "../../common";
+import { planCheckRunResultStatus } from "./common";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

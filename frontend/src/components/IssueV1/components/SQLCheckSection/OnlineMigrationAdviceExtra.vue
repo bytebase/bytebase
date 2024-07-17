@@ -13,8 +13,8 @@
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { type PlanCheckDetailTableRow } from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { isGroupingChangeTaskV1, useIssueContext } from "../../logic";
-import { type PlanCheckDetailTableRow } from "../PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 import { allowGhostForTask } from "../Sidebar/GhostSection/common";
 
 const emit = defineEmits<{

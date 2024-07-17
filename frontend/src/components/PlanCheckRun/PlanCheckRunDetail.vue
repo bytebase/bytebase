@@ -12,8 +12,8 @@
     <div
       v-for="(row, i) in highlightTableRows"
       :key="i"
-      class="py-2 px-2 space-y-2"
       :class="[
+        'py-2 px-2 space-y-2',
         row.checkResult.status === PlanCheckRun_Result_Status.ERROR &&
           'border-error border rounded',
         row.checkResult.status === PlanCheckRun_Result_Status.WARNING &&
@@ -235,7 +235,7 @@
   <PlanCheckResultDefinitionModal
     v-if="state.activeResultDefinition"
     :definition="state.activeResultDefinition"
-    @cancel="state.activeResultDefinition = undefined"
+    @close="state.activeResultDefinition = undefined"
   />
 </template>
 
@@ -245,7 +245,6 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useIssueContext } from "@/components/IssueV1/logic";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { planServiceClient } from "@/grpcweb";
@@ -262,8 +261,8 @@ import {
   SQLReviewPolicyErrorCode,
   getRuleLocalization,
   ruleTemplateMapV2,
+  convertPolicyRuleToRuleTemplate,
 } from "@/types";
-import { convertPolicyRuleToRuleTemplate } from "@/types";
 import {
   PlanCheckRun,
   PlanCheckRun_Result,
@@ -271,6 +270,7 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto/v1/plan_service";
 import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
+import { usePlanCheckRunContext } from "./context";
 import { OnlineMigrationDetail } from "./detail";
 
 interface ErrorCodeLink {
@@ -297,18 +297,13 @@ const props = defineProps<{
   database?: ComposedDatabase;
 }>();
 
-const { events } = useIssueContext();
-
 const { t } = useI18n();
 const router = useRouter();
+const { events } = usePlanCheckRunContext();
 const state = reactive<LocalState>({
   activeRule: undefined,
   activeResultDefinition: undefined,
 });
-
-const emit = defineEmits<{
-  (event: "close"): void;
-}>();
 
 const statusIconClass = (status: PlanCheckRun_Result_Status) => {
   switch (status) {
@@ -490,7 +485,6 @@ const setActiveRule = (type: string) => {
 
 const handleClickPlanCheckDetailLine = (line: number) => {
   window.location.hash = `L${line}`;
-  emit("close");
 };
 
 const cancelPlanCheckRun = async () => {
@@ -501,6 +495,6 @@ const cancelPlanCheckRun = async () => {
     parent: `${projectNamePrefix}${projectName}/${planNamePrefix}${planId}`,
     planCheckRuns: [planCheckRunName],
   });
-  events.emit("status-changed", { eager: true });
+  events.emit("status-changed");
 };
 </script>
