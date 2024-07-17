@@ -328,7 +328,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 					xact_start,
 					query_start
 				FROM
-					pg_stat_activity
+					pg_catalog.pg_stat_activity
 				WHERE pid = $1
 				UNION
 				SELECT
@@ -347,7 +347,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 					xact_start,
 					query_start
 				FROM
-					pg_stat_activity
+					pg_catalog.pg_stat_activity
 				WHERE pid = ANY(pg_blocking_pids($1))
 				ORDER BY lvl, pid
 			) t
