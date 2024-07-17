@@ -15,7 +15,11 @@
     </div>
 
     <div class="flex justify-end items-center shrink-0">
-      <PlanCheckRunButton v-if="allowRunChecks" @run-checks="runChecks" />
+      <PlanCheckRunButton
+        v-if="allowRunChecks"
+        :plan-check-run-list="planCheckRunList"
+        @run-checks="runChecks"
+      />
     </div>
 
     <PlanCheckRunModal

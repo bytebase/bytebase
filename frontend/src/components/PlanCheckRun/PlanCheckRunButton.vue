@@ -25,35 +25,24 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  planCheckRunListForTask,
-  useIssueContext,
-} from "@/components/IssueV1/logic";
 import type { ContextMenuButtonAction } from "@/components/v2";
 import { ContextMenuButton } from "@/components/v2";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { PlanCheckRun_Status } from "@/types/proto/v1/plan_service";
+import {
+  PlanCheckRun,
+  PlanCheckRun_Status,
+} from "@/types/proto/v1/plan_service";
+
+const props = defineProps<{
+  planCheckRunList: PlanCheckRun[];
+}>();
 
 const emit = defineEmits<{
   (event: "run-checks"): void;
 }>();
 
 const { t } = useI18n();
-const { isCreating, issue, selectedTask } = useIssueContext();
-
-const allowRunCheckForIssue = computed(() => {
-  if (isCreating.value) {
-    return false;
-  }
-  if (issue.value.status !== IssueStatus.OPEN) {
-    return false;
-  }
-  return true;
-});
 
 const actionList = computed(() => {
-  if (!allowRunCheckForIssue.value) return [];
-
   const actionList: ContextMenuButtonAction[] = [];
   actionList.push({
     key: "RUN-CHECKS",
@@ -64,19 +53,12 @@ const actionList = computed(() => {
 });
 
 const hasRunningPlanCheck = computed((): boolean => {
-  if (isCreating.value) return false;
-
-  const planCheckRunList = planCheckRunListForTask(
-    issue.value,
-    selectedTask.value
-  );
-  return planCheckRunList.some(
+  return props.planCheckRunList.some(
     (checkRun) => checkRun.status === PlanCheckRun_Status.RUNNING
   );
 });
 
 const handleRunChecks = () => {
-  if (!allowRunCheckForIssue.value) return;
   if (hasRunningPlanCheck.value) return;
   emit("run-checks");
 };
