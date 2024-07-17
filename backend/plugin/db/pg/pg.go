@@ -419,13 +419,25 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		originalIndex = []int32{0}
 	}
 
-	if isPlsql {
-		conn, err := driver.db.Conn(ctx)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to get connection")
-		}
-		defer conn.Close()
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get connection")
+	}
+	defer conn.Close()
 
+	if opts.SetConnectionID != nil {
+		var pid string
+		if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
+			return 0, errors.Wrapf(err, "failed to get connection id")
+		}
+		opts.SetConnectionID(pid)
+
+		if opts.DeleteConnectionID != nil {
+			defer opts.DeleteConnectionID()
+		}
+	}
+
+	if isPlsql {
 		// USE SET SESSION ROLE to set the role for the current session.
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -441,11 +453,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	totalRowsAffected := int64(0)
-	conn, err := driver.db.Conn(ctx)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get connection")
-	}
-	defer conn.Close()
 
 	totalCommands := len(commands)
 	if totalCommands > 0 {

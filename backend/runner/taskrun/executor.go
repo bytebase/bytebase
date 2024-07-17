@@ -218,6 +218,13 @@ func executeMigration(
 	var migrationID string
 	opts := db.ExecuteOptions{}
 
+	opts.SetConnectionID = func(id string) {
+		stateCfg.TaskRunConnectionID.Store(taskRunUID, id)
+	}
+	opts.DeleteConnectionID = func() {
+		stateCfg.TaskRunConnectionID.Delete(taskRunUID)
+	}
+
 	if profile.ExecuteDetail && stateCfg != nil {
 		switch task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:

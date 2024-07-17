@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -23,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -249,6 +252,154 @@ func (s *RolloutService) GetTaskRunLog(ctx context.Context, request *v1pb.GetTas
 		return nil, status.Errorf(codes.InvalidArgument, "failed to list task run logs, error: %v", err)
 	}
 	return convertToTaskRunLog(request.Parent, logs), nil
+}
+
+func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.GetTaskRunSessionRequest) (*v1pb.TaskRunSession, error) {
+	_, _, _, taskUID, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
+	}
+	connIDAny, ok := s.stateCfg.TaskRunConnectionID.Load(taskRunUID)
+	if !ok {
+		return nil, status.Errorf(codes.FailedPrecondition, "connection id not found for task run %d", taskRunUID)
+	}
+	connID, ok := connIDAny.(string)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "expect connection id to be of type string but found %T", connIDAny)
+	}
+
+	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get task, error: %v", err)
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+	}
+
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil, db.ConnectionContext{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get driver, error: %v", err)
+	}
+
+	session, err := getSession(ctx, instance.Engine, driver.GetDB(), connID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get session, error: %v", err)
+	}
+
+	session.Name = request.Parent + "/session"
+
+	return session, nil
+}
+
+func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID string) (*v1pb.TaskRunSession, error) {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		query := `
+			SELECT
+				pid,
+				query,
+				state,
+				wait_event_type,
+				wait_event,
+				datname,
+				usename,
+				application_name,
+				client_addr,
+				client_port,
+				backend_start,
+				xact_start,
+				query_start
+			FROM (
+				SELECT
+					1 AS lvl,
+					pid,
+					query,
+					state,
+					wait_event_type,
+					wait_event,
+					datname,
+					usename,
+					application_name,
+					client_addr,
+					client_port,
+					backend_start,
+					xact_start,
+					query_start
+				FROM
+					pg_stat_activity
+				WHERE pid = $1
+				UNION
+				SELECT
+					2 AS lvl,
+					pid,
+					query,
+					state,
+					wait_event_type,
+					wait_event,
+					datname,
+					usename,
+					application_name,
+					client_addr,
+					client_port,
+					backend_start,
+					xact_start,
+					query_start
+				FROM
+					pg_stat_activity
+				WHERE pid = ANY(pg_blocking_pids($1))
+				ORDER BY lvl, pid
+			) t
+		`
+		rows, err := db.QueryContext(ctx, query, connID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to query rows")
+		}
+		defer rows.Close()
+
+		ss := &v1pb.TaskRunSession_Postgres{}
+		for rows.Next() {
+			var s v1pb.TaskRunSession_Postgres_Session
+
+			var bs, xs, qs time.Time
+			if err := rows.Scan(
+				&s.Pid,
+				&s.Query,
+				&s.State,
+				&s.WaitEventType,
+				&s.WaitEvent,
+				&s.Datname,
+				&s.Usename,
+				&s.ApplicationName,
+				&s.ClientAddr,
+				&s.ClientPort,
+				&bs,
+				&xs,
+				&qs,
+			); err != nil {
+				return nil, errors.Wrapf(err, "failed to scan")
+			}
+
+			s.BackendStart = timestamppb.New(bs)
+			s.XactStart = timestamppb.New(xs)
+			s.QueryStart = timestamppb.New(qs)
+
+			ss.Sessions = append(ss.Sessions, &s)
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan rows")
+		}
+
+		return &v1pb.TaskRunSession{
+			Session: &v1pb.TaskRunSession_Postgres_{
+				Postgres: ss,
+			},
+		}, nil
+	default:
+		return nil, errors.Errorf("unsupported engine type %v", engine.String())
+	}
 }
 
 // BatchRunTasks runs tasks in batch.
