@@ -70,7 +70,7 @@
           <div class="relative bg-white rounded-md -space-y-px px-2">
             <template
               v-for="database in databaseListInEnvironment"
-              :key="database.uid"
+              :key="database.name"
             >
               <label
                 class="border-control-border relative border p-3 flex flex-col gap-y-2 md:flex-row md:pl-4 md:pr-6"
@@ -83,10 +83,10 @@
                 <div class="radio text-sm flex justify-start md:flex-1">
                   <NCheckbox
                     :class="database.syncState !== State.ACTIVE && 'opacity-40'"
-                    :checked="isDatabaseSelected(database.uid)"
+                    :checked="isDatabaseSelected(database.name)"
                     :label="database.databaseName"
                     @update:checked="
-                      (checked) => toggleDatabaseSelected(database.uid, checked)
+                      (checked) => toggleDatabaseSelected(database.name, checked)
                     "
                   />
                 </div>
@@ -145,7 +145,7 @@ type LocalState = {
 const props = defineProps<{
   projectName: string;
   engine: Engine;
-  selectedDatabaseIdList: string[];
+  selectedDatabaseNameList: string[];
   loading?: boolean;
 }>();
 
@@ -158,8 +158,8 @@ const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   searchText: "",
-  selectedDatabaseList: props.selectedDatabaseIdList.map((id) => {
-    return databaseStore.getDatabaseByUID(id);
+  selectedDatabaseList: props.selectedDatabaseNameList.map((name) => {
+    return databaseStore.getDatabaseByName(name);
   }),
 });
 
@@ -182,19 +182,19 @@ const databaseListGroupByEnvironment = computed(() => {
   return listByEnv.filter((group) => group.databaseList.length > 0);
 });
 
-const isDatabaseSelected = (databaseId: string) => {
-  const idList = state.selectedDatabaseList.map((db) => db.uid);
-  return idList.includes(databaseId);
+const isDatabaseSelected = (name: string) => {
+  const nameList = state.selectedDatabaseList.map((db) => db.name);
+  return nameList.includes(name);
 };
 
-const toggleDatabaseSelected = (databaseId: string, selected: boolean) => {
+const toggleDatabaseSelected = (name: string, selected: boolean) => {
   const index = state.selectedDatabaseList.findIndex(
-    (db) => db.uid === databaseId
+    (db) => db.name === name
   );
   if (selected) {
     if (index < 0) {
       state.selectedDatabaseList.push(
-        databaseStore.getDatabaseByUID(databaseId)
+        databaseStore.getDatabaseByName(name)
       );
     }
   } else {
@@ -211,7 +211,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
 ) => {
   databaseList
     .filter((db) => db.effectiveEnvironment === environment.name)
-    .forEach((db) => toggleDatabaseSelected(db.uid, on));
+    .forEach((db) => toggleDatabaseSelected(db.name, on));
 };
 
 const getAllSelectionStateForEnvironment = (
@@ -221,10 +221,10 @@ const getAllSelectionStateForEnvironment = (
   const set = new Set(
     state.selectedDatabaseList
       .filter((db) => db.effectiveEnvironment === environment.name)
-      .map((db) => db.uid)
+      .map((db) => db.name)
   );
-  const checked = set.size > 0 && databaseList.every((db) => set.has(db.uid));
-  const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
+  const checked = set.size > 0 && databaseList.every((db) => set.has(db.name));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.name));
 
   return {
     checked,
@@ -239,9 +239,9 @@ const getSelectionStateSummaryForEnvironment = (
   const set = new Set(
     state.selectedDatabaseList
       .filter((db) => db.effectiveEnvironment === environment.name)
-      .map((db) => db.uid)
+      .map((db) => db.name)
   );
-  const selected = databaseList.filter((db) => set.has(db.uid)).length;
+  const selected = databaseList.filter((db) => set.has(db.name)).length;
   const total = databaseList.length;
 
   return { selected, total };
@@ -250,7 +250,7 @@ const getSelectionStateSummaryForEnvironment = (
 const handleConfirm = async () => {
   const databaseIdList = state.selectedDatabaseList
     .filter((db) => db.databaseName.includes(state.searchText))
-    .map((db) => db.uid);
+    .map((db) => db.name);
   emit("update", databaseIdList);
 };
 </script>
