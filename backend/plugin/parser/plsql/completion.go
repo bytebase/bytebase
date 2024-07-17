@@ -22,6 +22,11 @@ var (
 	globalFollowSetsByState = base.NewFollowSetsByState()
 )
 
+func init() {
+	base.RegisterCompleteFunc(store.Engine_ORACLE, Completion)
+	base.RegisterCompleteFunc(store.Engine_OCEANBASE_ORACLE, Completion)
+}
+
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
 	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	result, err := completer.completion()
@@ -116,7 +121,6 @@ func newPreferredRules() map[int]bool {
 		plsql.PlSqlParserRULE_trigger_name:             true,
 		plsql.PlSqlParserRULE_variable_name:            true,
 		plsql.PlSqlParserRULE_index_name:               true,
-		plsql.PlSqlParserRULE_cursor_name:              true,
 		plsql.PlSqlParserRULE_record_name:              true,
 		plsql.PlSqlParserRULE_collection_name:          true,
 		plsql.PlSqlParserRULE_link_name:                true,
@@ -465,6 +469,25 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		// todo: fetchCommonTableExpression
 
 		switch candidate {
+		case plsql.PlSqlParserRULE_tableview_name:
+			schema, flags := c.determineTableViewName()
+
+			if flags&ObjectFlagsShowFirst != 0 {
+				schemaEntries.insertDatabases(c)
+			}
+
+			if flags&ObjectFlagsShowSecond != 0 {
+				schemas := make(map[string]bool)
+				if len(schema) == 0 {
+					schemas[c.defaultDatabase] = true
+					schemas[""] = true
+				} else {
+					schemas[schema] = true
+				}
+
+				tableEntries.insertTables(c, schemas)
+				viewEntries.insertViews(c, schemas)
+			}
 		case plsql.PlSqlParserRULE_general_element_part:
 			schema, table, flags := c.determineGeneralElementPartCandidates()
 			if flags&ObjectFlagsShowSchemas != 0 {
@@ -595,8 +618,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	return result, nil
 }
 
-func (c *Completer) fetchSelectItemAliases(_ []*base.RuleContext) []string {
-	// todo
+func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
+	canUseAliases := false
+	for i := len(ruleStack) - 1; i >= 0; i-- {
+		switch ruleStack[i].ID {
+		}
+	}
+	_ = canUseAliases
 	return nil
 }
 
@@ -609,6 +637,40 @@ const (
 	ObjectFlagsShowFirst
 	ObjectFlagsShowSecond
 )
+
+func (c *Completer) determineTableViewName() (string, ObjectFlags) {
+	position := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != 0 {
+		c.scanner.Forward(true /* skipHidden */) // Skip whitespace.
+	}
+
+	if !c.scanner.IsTokenType(plsql.PlSqlLexerPERIOD) && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if position > 0 {
+		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == plsql.PlSqlLexerPERIOD {
+			c.scanner.Backward(true /* skipHidden */)
+		}
+		if c.scanner.IsTokenType(plsql.PlSqlLexerPERIOD) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+			c.scanner.Backward(true /* skipHidden */)
+		}
+	}
+
+	schema := ""
+	temp := ""
+	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		temp = unquote(c.scanner.GetTokenText())
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	if !c.scanner.IsTokenType(plsql.PlSqlLexerPERIOD) || position <= c.scanner.GetIndex() {
+		return schema, ObjectFlagsShowFirst | ObjectFlagsShowSecond
+	}
+
+	schema = temp
+	return schema, ObjectFlagsShowSecond
+}
 
 func (c *Completer) determineGeneralElementPartCandidates() (schema, table string, flags ObjectFlags) {
 	position := c.scanner.GetIndex()
@@ -825,7 +887,7 @@ func (l *TableRefListener) ExitDml_table_expression_clause(ctx *plsql.Dml_table_
 	}
 }
 
-func (l *TableRefListener) ExitTable_lias(ctx *plsql.Table_aliasContext) {
+func (l *TableRefListener) ExitTable_alias(ctx *plsql.Table_aliasContext) {
 	if l.done {
 		return
 	}
