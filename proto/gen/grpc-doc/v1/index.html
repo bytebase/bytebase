@@ -2042,6 +2042,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetTaskRunSessionRequest"><span class="badge">M</span>GetTaskRunSessionRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListTaskRunsRequest"><span class="badge">M</span>ListTaskRunsRequest</a>
                 </li>
               
@@ -2131,6 +2135,18 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.TransactionControl"><span class="badge">M</span>TaskRunLogEntry.TransactionControl</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunSession"><span class="badge">M</span>TaskRunSession</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunSession.Postgres"><span class="badge">M</span>TaskRunSession.Postgres</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunSession.Postgres.Session"><span class="badge">M</span>TaskRunSession.Postgres.Session</a>
                 </li>
               
               
@@ -22355,6 +22371,30 @@ Format: projects/{project}/rollouts/{rollout} </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetTaskRunSessionRequest">GetTaskRunSessionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListTaskRunsRequest">ListTaskRunsRequest</h3>
         <p></p>
 
@@ -23432,6 +23472,169 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
 
         
       
+        <h3 id="bytebase.v1.TaskRunSession">TaskRunSession</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session </p></td>
+                </tr>
+              
+                <tr>
+                  <td>postgres</td>
+                  <td><a href="#bytebase.v1.TaskRunSession.Postgres">TaskRunSession.Postgres</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunSession.Postgres">TaskRunSession.Postgres</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sessions</td>
+                  <td><a href="#bytebase.v1.TaskRunSession.Postgres.Session">TaskRunSession.Postgres.Session</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunSession.Postgres.Session">TaskRunSession.Postgres.Session</h3>
+        <p>Read from `pg_stat_activity`</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>pid</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>wait_event_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>wait_event</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>datname</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>usename</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>application_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_addr</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_port</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>backend_start</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>xact_start</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query_start</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
         <h3 id="bytebase.v1.Task.Status">Task.Status</h3>
@@ -23834,6 +24037,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
               </tr>
             
               <tr>
+                <td>GetTaskRunSession</td>
+                <td><a href="#bytebase.v1.GetTaskRunSessionRequest">GetTaskRunSessionRequest</a></td>
+                <td><a href="#bytebase.v1.TaskRunSession">TaskRunSession</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>BatchRunTasks</td>
                 <td><a href="#bytebase.v1.BatchRunTasksRequest">BatchRunTasksRequest</a></td>
                 <td><a href="#bytebase.v1.BatchRunTasksResponse">BatchRunTasksResponse</a></td>
@@ -23918,6 +24128,16 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                 <td>GetTaskRunLog</td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetTaskRunSession</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session</td>
                 <td></td>
               </tr>
               
