@@ -17,7 +17,7 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedUser } from "@/types";
 import { UserGroup, UserGroupMember_Role } from "@/types/proto/v1/user_group";
 import GroupMemberNameCell from "./cells/GroupMemberNameCell.vue";
 import GroupNameCell from "./cells/GroupNameCell.vue";
@@ -33,7 +33,7 @@ interface GroupRowData {
 interface UserRowData {
   type: "user";
   name: string;
-  user: User;
+  user: ComposedUser;
   role: UserGroupMember_Role;
 }
 

@@ -26,3 +26,4 @@ export * from "./issueComment";
 export * from "./auditLog";
 export * from "./userGroup";
 export * from "./permission";
+export * from "./workspace";

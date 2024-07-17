@@ -5,17 +5,17 @@ import { computed } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import type { SignupInfo, ActivateInfo } from "@/types";
 import { unknownUser } from "@/types";
+import type { ComposedUser } from "@/types";
 import type {
   LoginRequest,
   LoginResponse,
-  User,
 } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
 import { useUserStore } from ".";
 
 interface AuthState {
-  currentUser: User;
+  currentUser: ComposedUser;
 }
 
 export const useAuthStore = defineStore("auth_v1", {

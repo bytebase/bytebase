@@ -52,6 +52,7 @@ import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { t } from "./plugins/i18n";
 import { AUTH_SIGNIN_MODULE } from "./router/auth";
 import {
+  useWorkspaceV1Store,
   useActuatorV1Store,
   useAuthStore,
   useNotificationStore,
@@ -84,7 +85,8 @@ onMounted(async () => {
     await useSubscriptionV1Store().fetchFeatureMatrix();
   };
   const restoreUser = async () => {
-    await useAuthStore().restoreUser();
+    await useWorkspaceV1Store().fetchIamPolicy();
+    await authStore.restoreUser();
   };
   const initBasicModules = async () => {
     await Promise.all([

@@ -39,15 +39,15 @@ import {
   unknownUser,
   PresetRoleType,
   isValidProjectName,
+  type ComposedUser,
 } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { extractUserUID, memberListInProjectV1 } from "@/utils";
+import { extractUserUID, memberListInIAM } from "@/utils";
 
 export interface UserSelectOption extends SelectOption {
   value: string;
-  user: User;
+  user: ComposedUser;
 }
 
 const props = withDefaults(
@@ -65,8 +65,10 @@ const props = withDefaults(
     allowedWorkspaceRoleList?: string[];
     allowedProjectMemberRoleList?: string[];
     autoReset?: boolean;
-    filter?: (user: User, index: number) => boolean;
-    mapOptions?: (users: User[]) => (UserSelectOption | SelectGroupOption)[];
+    filter?: (user: ComposedUser, index: number) => boolean;
+    mapOptions?: (
+      users: ComposedUser[]
+    ) => (UserSelectOption | SelectGroupOption)[];
     fallbackOption?: SelectProps["fallbackOption"];
     size?: "tiny" | "small" | "medium" | "large";
   }>(),
@@ -127,7 +129,7 @@ watchEffect(prepare);
 
 const getUserListFromProject = (projectName: string) => {
   const project = projectV1Store.getProjectByName(projectName);
-  const memberList = memberListInProjectV1(project.iamPolicy);
+  const memberList = memberListInIAM(project.iamPolicy);
   const filteredUserList = memberList
     .filter((member) => {
       if (props.allowedProjectMemberRoleList.length === 0) {
@@ -239,7 +241,7 @@ const handleValueUpdated = (value: string | string[]) => {
   }
 };
 
-const renderAvatar = (user: User) => {
+const renderAvatar = (user: ComposedUser) => {
   if (user.name === UNKNOWN_USER_NAME) {
     return (
       <div class="bb-user-select--avatar w-6 h-6 rounded-full border-2 border-current flex justify-center items-center select-none bg-white">

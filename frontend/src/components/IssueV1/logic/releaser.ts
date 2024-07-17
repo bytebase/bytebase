@@ -1,19 +1,19 @@
 import { uniqBy } from "lodash-es";
 import { useUserStore } from "@/store";
-import type { ComposedIssue } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
-import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
+import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
+import type { ComposedIssue, ComposedUser } from "@/types";
+import { extractUserResourceName, memberListInIAM } from "@/utils";
 
 export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
-  const users: User[] = [];
+  const users: ComposedUser[] = [];
 
   const project = issue.projectEntity;
-  const projectMembers = memberListInProjectV1(project.iamPolicy);
+  const projectMembers = memberListInIAM(project.iamPolicy);
   const workspaceMembers = useUserStore().userList;
 
   for (let i = 0; i < issue.releasers.length; i++) {
     const releaserRole = issue.releasers[i];
-    if (releaserRole.startsWith("roles/")) {
+    if (releaserRole.startsWith(roleNamePrefix)) {
       users.push(
         ...workspaceMembers.filter((user) => user.roles.includes(releaserRole))
       );
@@ -23,7 +23,7 @@ export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
           .map((membership) => membership.user)
       );
     }
-    if (releaserRole.startsWith("users/")) {
+    if (releaserRole.startsWith(userNamePrefix)) {
       const email = extractUserResourceName(releaserRole);
       const user = workspaceMembers.find((u) => u.email === email);
       if (user) {

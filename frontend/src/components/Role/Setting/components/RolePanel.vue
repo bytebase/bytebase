@@ -110,6 +110,7 @@ import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
+import { roleNamePrefix } from "@/store/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
 import { PROJECT_PERMISSIONS, WORKSPACE_PERMISSIONS } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
@@ -151,7 +152,7 @@ const resourceId = computed({
     return extractRoleResourceName(state.role.name);
   },
   set(value) {
-    state.role.name = `roles/${value}`;
+    state.role.name = `${roleNamePrefix}${value}`;
   },
 });
 
@@ -207,7 +208,7 @@ const handleSave = async () => {
 const validateResourceId = async (
   name: string
 ): Promise<ValidatedMessage[]> => {
-  if (roleStore.roleList.find((r) => r.name === `roles/${name}`)) {
+  if (roleStore.roleList.find((r) => r.name === `${roleNamePrefix}${name}`)) {
     return [
       {
         type: "error",

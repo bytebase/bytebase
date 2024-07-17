@@ -24,16 +24,15 @@
 
 <script lang="ts" setup>
 import { useCurrentUserV1 } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import { SYSTEM_BOT_USER_NAME, type ComposedUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 
 defineProps<{
-  user: User;
+  user: ComposedUser;
 }>();
 
 defineEmits<{
-  (event: "reset-service-key", user: User): void;
+  (event: "reset-service-key", user: ComposedUser): void;
 }>();
 
 const currentUserV1 = useCurrentUserV1();

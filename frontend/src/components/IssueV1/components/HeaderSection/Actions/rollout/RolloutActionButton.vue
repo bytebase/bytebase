@@ -33,6 +33,7 @@ import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { ContextMenuButton } from "@/components/v2";
 import { useCurrentUserV1, useUserStore } from "@/store";
+import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
 import { displayRoleTitle, extractUserResourceName } from "@/utils";
 import type { RolloutAction, RolloutButtonAction } from "./common";
 
@@ -64,13 +65,13 @@ const errors = asyncComputed(async () => {
     const { releasers } = issue.value;
     for (let i = 0; i < releasers.length; i++) {
       const roleOrUser = releasers[i];
-      if (roleOrUser.startsWith("roles/")) {
+      if (roleOrUser.startsWith(roleNamePrefix)) {
         errors.push({
           error: displayRoleTitle(roleOrUser),
           indent: 1,
         });
       }
-      if (roleOrUser.startsWith("users/")) {
+      if (roleOrUser.startsWith(userNamePrefix)) {
         const email = extractUserResourceName(roleOrUser);
         const user = useUserStore().getUserByEmail(email);
         if (user) {
