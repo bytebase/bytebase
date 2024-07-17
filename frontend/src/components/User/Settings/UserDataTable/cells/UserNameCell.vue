@@ -63,17 +63,16 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useCurrentUserV1 } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import { SYSTEM_BOT_USER_NAME, type ComposedUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { hasWorkspacePermissionV2, toClipboard } from "@/utils";
 
 defineProps<{
-  user: User;
+  user: ComposedUser;
 }>();
 
 defineEmits<{
-  (event: "reset-service-key", user: User): void;
+  (event: "reset-service-key", user: ComposedUser): void;
 }>();
 
 const { t } = useI18n();

@@ -2,6 +2,7 @@ import type { ResourceId, Project, SheetId } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 
 export const userNamePrefix = "users/";
+export const roleNamePrefix = "roles/";
 export const environmentNamePrefix = "environments/";
 export const projectNamePrefix = "projects/";
 export const instanceNamePrefix = "instances/";

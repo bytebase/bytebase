@@ -223,12 +223,6 @@ export interface User {
    * Could be empty.
    */
   phone: string;
-  /**
-   * The roles of the user.
-   * This filed is to supersede the `user_role` field.
-   * TODO(ed): deprecate roles field.
-   */
-  roles: string[];
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -1236,7 +1230,6 @@ function createBaseUser(): User {
     mfaSecret: "",
     recoveryCodes: [],
     phone: "",
-    roles: [],
   };
 }
 
@@ -1274,9 +1267,6 @@ export const User = {
     }
     if (message.phone !== "") {
       writer.uint32(98).string(message.phone);
-    }
-    for (const v of message.roles) {
-      writer.uint32(106).string(v!);
     }
     return writer;
   },
@@ -1365,13 +1355,6 @@ export const User = {
 
           message.phone = reader.string();
           continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.roles.push(reader.string());
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1396,7 +1379,6 @@ export const User = {
         ? object.recoveryCodes.map((e: any) => globalThis.String(e))
         : [],
       phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
-      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -1435,9 +1417,6 @@ export const User = {
     if (message.phone !== "") {
       obj.phone = message.phone;
     }
-    if (message.roles?.length) {
-      obj.roles = message.roles;
-    }
     return obj;
   },
 
@@ -1457,7 +1436,6 @@ export const User = {
     message.mfaSecret = object.mfaSecret ?? "";
     message.recoveryCodes = object.recoveryCodes?.map((e) => e) || [];
     message.phone = object.phone ?? "";
-    message.roles = object.roles?.map((e) => e) || [];
     return message;
   },
 };

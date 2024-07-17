@@ -39,11 +39,9 @@ type UpdateUserMessage struct {
 	Email        *string
 	Name         *string
 	PasswordHash *string
-	// TODO(ed): remove roles in user patch.
-	Roles     *[]string
-	Delete    *bool
-	MFAConfig *storepb.MFAConfig
-	Phone     *string
+	Delete       *bool
+	MFAConfig    *storepb.MFAConfig
+	Phone        *string
 }
 
 // UserMessage is the message for an user.
@@ -352,17 +350,6 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
-	}
-
-	// TODO(ed): remove in patch
-	if v := patch.Roles; v != nil {
-		if _, err := s.PatchWorkspaceIamPolicy(ctx, &PatchIamPolicyMessage{
-			Member:     common.FormatUserUID(currentUser.ID),
-			Roles:      *v,
-			UpdaterUID: updaterID,
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to update user roles")
-		}
 	}
 
 	s.userEmailCache.Remove(currentUser.Email)

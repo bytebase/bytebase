@@ -10,20 +10,34 @@ import {
   allUsersUser,
   SYSTEM_BOT_USER_NAME,
 } from "@/types";
+import type { ComposedUser } from "@/types";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { roleListInIAM } from "@/utils";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
+import { useWorkspaceV1Store } from "./v1/workspace";
 
 export const useUserStore = defineStore("user", () => {
-  const userMapByName = ref<Map<string, User>>(new Map());
+  const userMapByName = ref<Map<string, ComposedUser>>(new Map());
+  const workspaceStore = useWorkspaceV1Store();
+
+  const iamPolicy = computed(() => {
+    return workspaceStore.workspaceIamPolicy;
+  });
 
   const setUser = (user: User) => {
-    userMapByName.value.set(user.name, user);
+    const roles = roleListInIAM(iamPolicy.value, user.email);
+    const composedUser: ComposedUser = {
+      ...user,
+      roles,
+    };
+    userMapByName.value.set(user.name, composedUser);
 
     // invalid permission cache
-    usePermissionStore().invalidCacheByUser(user);
+    usePermissionStore().invalidCacheByUser(composedUser);
+    return composedUser;
   };
 
   const userList = computed(() => {
@@ -66,10 +80,11 @@ export const useUserStore = defineStore("user", () => {
     const { users } = await authServiceClient.listUsers({
       showDeleted: true,
     });
+    const response: ComposedUser[] = [];
     for (const user of users) {
-      setUser(user);
+      response.push(setUser(user));
     }
-    return users;
+    return response;
   };
   const fetchUser = async (name: string, silent = false) => {
     const user = await authServiceClient.getUser(
@@ -80,15 +95,18 @@ export const useUserStore = defineStore("user", () => {
         silent,
       }
     );
-    setUser(user);
-    return user;
+    return setUser(user);
   };
-  const createUser = async (user: User) => {
+  const createUser = async (user: ComposedUser) => {
     const createdUser = await authServiceClient.createUser({
       user,
     });
-    setUser(createdUser);
-    return createdUser;
+    await workspaceStore.patchIamPolicy({
+      member: `user:${createdUser.email}`,
+      roles: user.roles,
+    });
+
+    return setUser(createdUser);
   };
   const updateUser = async (updateUserRequest: UpdateUserRequest) => {
     const name = updateUserRequest.user?.name || "";
@@ -97,8 +115,14 @@ export const useUserStore = defineStore("user", () => {
       throw new Error(`user with name ${name} not found`);
     }
     const user = await authServiceClient.updateUser(updateUserRequest);
-    setUser(user);
-    return user;
+    return setUser(user);
+  };
+  const updateUserRoles = async (user: ComposedUser) => {
+    await workspaceStore.patchIamPolicy({
+      member: `user:${user.email}`,
+      roles: user.roles,
+    });
+    return setUser(user);
   };
   const getOrFetchUserByName = async (name: string, silent = false) => {
     const cachedData = userMapByName.value.get(name);
@@ -106,8 +130,7 @@ export const useUserStore = defineStore("user", () => {
       return cachedData;
     }
     const user = await fetchUser(name, silent);
-    setUser(user);
-    return user;
+    return setUser(user);
   };
   const getUserByName = (name: string) => {
     return userMapByName.value.get(name);
@@ -140,8 +163,7 @@ export const useUserStore = defineStore("user", () => {
     const restoredUser = await authServiceClient.undeleteUser({
       name: user.name,
     });
-    setUser(restoredUser);
-    return restoredUser;
+    return setUser(restoredUser);
   };
 
   return {
@@ -154,6 +176,7 @@ export const useUserStore = defineStore("user", () => {
     fetchUser,
     createUser,
     updateUser,
+    updateUserRoles,
     getOrFetchUserByName,
     getUserByName,
     getOrFetchUserById,
@@ -187,9 +210,6 @@ export const getUpdateMaskFromUsers = (
   }
   if (!isUndefined(update.password) && update.password !== "") {
     updateMask.push("password");
-  }
-  if (!isUndefined(update.roles) && !isEqual(origin.roles, update.roles)) {
-    updateMask.push("roles");
   }
   if (!isUndefined(update.phone) && !isEqual(origin.phone, update.phone)) {
     updateMask.push("phone");

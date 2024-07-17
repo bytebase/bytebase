@@ -34,6 +34,7 @@ import {
   SQL_EDITOR_PROJECT_MODULE,
 } from "@/router/sqlEditor";
 import {
+  usePolicyV1Store,
   useInstanceV1Store,
   useProjectV1Store,
   useCurrentUserV1,
@@ -54,6 +55,7 @@ import {
   isValidInstanceName,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import {
   emptySQLEditorConnection,
   extractProjectResourceName,
@@ -88,6 +90,7 @@ const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
 const groupStore = useUserGroupStore();
+const policyStore = usePolicyV1Store();
 const { isFetching: isFetchingWorksheet } = useSheetContext();
 const { filter } = useFilterStore();
 const {
@@ -599,7 +602,13 @@ const restoreLastVisitedSidebarTab = () => {
 
 onMounted(async () => {
   editorStore.projectContextReady = false;
-  await Promise.all([initializeProjects(), groupStore.fetchGroupList()]);
+  await Promise.all([
+    policyStore.fetchPolicies({
+      resourceType: PolicyResourceType.WORKSPACE,
+    }),
+    initializeProjects(),
+    groupStore.fetchGroupList(),
+  ]);
   await prepareInstancesAndDatabases();
   tabStore.maybeInitProject(editorStore.project);
   editorStore.projectContextReady = true;

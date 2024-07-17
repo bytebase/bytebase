@@ -17,3 +17,4 @@ export * from "./changeHistory";
 export * from "./changelist";
 export * from "./cel";
 export * from "./advanced-search";
+export * from "./iam";

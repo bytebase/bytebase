@@ -1,25 +1,21 @@
-import { User } from "@/types/proto/v1/auth_service";
+import { unknownUser, emptyUser, type ComposedUser } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 
 export type ResourceType = "USER" | "ENVIRONMENT";
 
 interface ResourceMaker {
-  (type: "USER"): User;
+  (type: "USER"): ComposedUser;
   (type: "ENVIRONMENT"): Environment;
 }
 
 const makeUnknown = (type: ResourceType) => {
-  const UNKNOWN_USER: User = User.fromPartial({
-    title: "<<Unknown user>>",
-  });
-
   const UNKNOWN_ENVIRONMENT: Environment = Environment.fromPartial({
     title: "<<Unknown environment>>",
   });
 
   switch (type) {
     case "USER":
-      return UNKNOWN_USER;
+      return unknownUser();
     case "ENVIRONMENT":
       return UNKNOWN_ENVIRONMENT;
   }
@@ -28,13 +24,11 @@ const makeUnknown = (type: ResourceType) => {
 export const unknown = makeUnknown as ResourceMaker;
 
 const makeEmpty = (type: ResourceType) => {
-  const EMPTY_USER: User = User.fromPartial({});
-
   const EMPTY_ENVIRONMENT: Environment = Environment.fromPartial({});
 
   switch (type) {
     case "USER":
-      return EMPTY_USER;
+      return emptyUser();
     case "ENVIRONMENT":
       return EMPTY_ENVIRONMENT;
   }

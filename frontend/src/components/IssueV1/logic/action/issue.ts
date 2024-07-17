@@ -1,7 +1,6 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import type { ComposedIssue } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue, ComposedUser } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
@@ -96,7 +95,7 @@ export const issueStatusActionButtonProps = (
 
 export const allowUserToApplyIssueStatusAction = (
   issue: ComposedIssue,
-  user: User,
+  user: ComposedUser,
   action: IssueStatusAction
 ): [boolean /** ok */, string /** reason */] => {
   // User does not have permission to update the issue and is not the creator of the issue.
