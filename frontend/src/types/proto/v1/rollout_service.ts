@@ -954,6 +954,10 @@ export interface TaskRunSession {
 }
 
 export interface TaskRunSession_Postgres {
+  /**
+   * The first session is the session of the task run executing commands.
+   * The remaining sessions are the sessions that block the first session.
+   */
   sessions: TaskRunSession_Postgres_Session[];
 }
 

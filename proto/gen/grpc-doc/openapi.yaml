@@ -13784,6 +13784,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Postgres_Session'
+                    description: |-
+                        The first session is the session of the task run executing commands.
+                         The remaining sessions are the sessions that block the first session.
         TaskRun_ExecutionDetail:
             type: object
             properties:
