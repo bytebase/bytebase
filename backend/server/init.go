@@ -188,19 +188,19 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	}
 
 	// Init workspace IAM policy
-	if _, err := s.store.UpdateWorkspaceIamPolicy(ctx, &store.UpdateIamPolicyMessage{
+	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 		Member: common.FormatUserUID(api.SystemBotID),
-		Roles: []api.Role{
-			api.WorkspaceAdmin,
+		Roles: []string{
+			common.FormatRole(api.WorkspaceAdmin.String()),
 		},
 		UpdaterUID: api.SystemBotID,
 	}); err != nil {
 		return "", 0, err
 	}
-	if _, err := s.store.UpdateWorkspaceIamPolicy(ctx, &store.UpdateIamPolicyMessage{
+	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 		Member: api.AllUsers,
-		Roles: []api.Role{
-			api.WorkspaceMember,
+		Roles: []string{
+			common.FormatRole(api.WorkspaceMember.String()),
 		},
 		UpdaterUID: api.SystemBotID,
 	}); err != nil {

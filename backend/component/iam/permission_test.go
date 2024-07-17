@@ -10,7 +10,7 @@ import (
 func TestPermissionExists(t *testing.T) {
 	a := require.New(t)
 
-	m, err := NewManager(nil)
+	m, err := NewManager(nil, nil)
 	a.NoError(err)
 
 	for _, permissions := range m.predefinedRoles {
@@ -24,7 +24,7 @@ func TestPermissionExists(t *testing.T) {
 func TestGetPermissionLevels(t *testing.T) {
 	a := require.New(t)
 
-	m, err := NewManager(nil)
+	m, err := NewManager(nil, nil)
 	a.NoError(err)
 
 	for _, permissions := range m.predefinedRoles {

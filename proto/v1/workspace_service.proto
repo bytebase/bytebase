@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
@@ -18,4 +19,25 @@ service WorkspaceService {
       body: "*"
     };
   }
+
+  rpc PatchIamPolicy(PatchIamPolicyRequest) returns (IamPolicy) {
+    option (google.api.http) = {
+      patch: "/v1/{resource=workspaces/*}:patchIamPolicy"
+      body: "*"
+    };
+  }
+}
+
+message PatchIamPolicyRequest {
+  // The name of the resource to get the IAM policy.
+  // Format: workspaces/{workspace}
+  string resource = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Specifies the principals requesting access for a Bytebase resource.
+  // Format: user:{email}
+  string member = 2;
+
+  // The roles that is assigned to the member.
+  // Format: roles/{role}
+  repeated string roles = 3;
 }
