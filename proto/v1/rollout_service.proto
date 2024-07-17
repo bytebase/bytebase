@@ -463,6 +463,8 @@ message TaskRunSession {
   }
 
   message Postgres {
+    // The first session is the session of the task run executing commands.
+    // The remaining sessions are the sessions that block the first session.
     repeated Session sessions = 1;
 
     // Read from `pg_stat_activity`
