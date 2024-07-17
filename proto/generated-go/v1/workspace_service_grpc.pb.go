@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	WorkspaceService_GetIamPolicy_FullMethodName = "/bytebase.v1.WorkspaceService/GetIamPolicy"
-	WorkspaceService_SetIamPolicy_FullMethodName = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	WorkspaceService_GetIamPolicy_FullMethodName   = "/bytebase.v1.WorkspaceService/GetIamPolicy"
+	WorkspaceService_SetIamPolicy_FullMethodName   = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	WorkspaceService_PatchIamPolicy_FullMethodName = "/bytebase.v1.WorkspaceService/PatchIamPolicy"
 )
 
 // WorkspaceServiceClient is the client API for WorkspaceService service.
@@ -29,6 +30,7 @@ const (
 type WorkspaceServiceClient interface {
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	PatchIamPolicy(ctx context.Context, in *PatchIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 }
 
 type workspaceServiceClient struct {
@@ -59,12 +61,23 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPol
 	return out, nil
 }
 
+func (c *workspaceServiceClient) PatchIamPolicy(ctx context.Context, in *PatchIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IamPolicy)
+	err := c.cc.Invoke(ctx, WorkspaceService_PatchIamPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkspaceServiceServer is the server API for WorkspaceService service.
 // All implementations must embed UnimplementedWorkspaceServiceServer
 // for forward compatibility
 type WorkspaceServiceServer interface {
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
+	PatchIamPolicy(context.Context, *PatchIamPolicyRequest) (*IamPolicy, error)
 	mustEmbedUnimplementedWorkspaceServiceServer()
 }
 
@@ -77,6 +90,9 @@ func (UnimplementedWorkspaceServiceServer) GetIamPolicy(context.Context, *GetIam
 }
 func (UnimplementedWorkspaceServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
+}
+func (UnimplementedWorkspaceServiceServer) PatchIamPolicy(context.Context, *PatchIamPolicyRequest) (*IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PatchIamPolicy not implemented")
 }
 func (UnimplementedWorkspaceServiceServer) mustEmbedUnimplementedWorkspaceServiceServer() {}
 
@@ -127,6 +143,24 @@ func _WorkspaceService_SetIamPolicy_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkspaceService_PatchIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchIamPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).PatchIamPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_PatchIamPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).PatchIamPolicy(ctx, req.(*PatchIamPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkspaceService_ServiceDesc is the grpc.ServiceDesc for WorkspaceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -141,6 +175,10 @@ var WorkspaceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetIamPolicy",
 			Handler:    _WorkspaceService_SetIamPolicy_Handler,
+		},
+		{
+			MethodName: "PatchIamPolicy",
+			Handler:    _WorkspaceService_PatchIamPolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

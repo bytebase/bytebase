@@ -48,7 +48,7 @@ func configureGrpcRouters(
 	errorRecordRing *api.ErrorRecordRing,
 	tokenDuration time.Duration) (*apiv1.PlanService, *apiv1.RolloutService, *apiv1.IssueService, error) {
 	// Register services.
-	authService, err := apiv1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, postCreateUser)
+	authService, err := apiv1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -74,7 +74,7 @@ func configureGrpcRouters(
 	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
-	v1pb.RegisterWorkspaceServiceServer(grpcServer, apiv1.NewWorkspaceService(stores))
+	v1pb.RegisterWorkspaceServiceServer(grpcServer, apiv1.NewWorkspaceService(stores, iamManager))
 	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
 	v1pb.RegisterSettingServiceServer(grpcServer, apiv1.NewSettingService(stores, profile, licenseService, stateCfg))
 	v1pb.RegisterAnomalyServiceServer(grpcServer, apiv1.NewAnomalyService(stores))
@@ -89,7 +89,7 @@ func configureGrpcRouters(
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
 	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, iamManager, licenseService))
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile))
-	v1pb.RegisterWorksheetServiceServer(grpcServer, apiv1.NewWorksheetService(stores))
+	v1pb.RegisterWorksheetServiceServer(grpcServer, apiv1.NewWorksheetService(stores, iamManager))
 	v1pb.RegisterBranchServiceServer(grpcServer, apiv1.NewBranchService(stores, licenseService, profile, iamManager))
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
