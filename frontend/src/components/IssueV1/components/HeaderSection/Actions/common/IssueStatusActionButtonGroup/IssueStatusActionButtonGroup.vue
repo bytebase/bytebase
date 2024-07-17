@@ -38,8 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import type { DropdownOption } from "naive-ui";
-import { NButton, NDropdown } from "naive-ui";
+import { NButton, NDropdown, type DropdownOption } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h } from "vue";
 import { DropdownItemWithErrorList } from "@/components/IssueV1/components/common";
@@ -57,6 +56,10 @@ import type { Task } from "@/types/proto/v1/rollout_service";
 import type { ExtraActionOption } from "../types";
 import IssueStatusActionButton from "./IssueStatusActionButton.vue";
 
+type IssueActionDropdownOption = ExtraActionOption & {
+  description?: string;
+};
+
 const props = defineProps<{
   displayMode: "BUTTON" | "DROPDOWN";
   issueStatusActionList: IssueStatusAction[];
@@ -67,20 +70,24 @@ const { issue, events } = useIssueContext();
 const currentUser = useCurrentUserV1();
 
 const issueStatusActionDropdownOptions = computed(() => {
-  return props.issueStatusActionList.map<ExtraActionOption>((action) => {
-    return {
-      key: action,
-      label: issueStatusActionDisplayName(action),
-      type: "ISSUE",
-      action: action,
-      target: issue.value,
-      disabled: !allowUserToApplyIssueStatusAction(
+  return props.issueStatusActionList.map<IssueActionDropdownOption>(
+    (action) => {
+      const [ok, reason] = allowUserToApplyIssueStatusAction(
         issue.value,
         currentUser.value,
         action
-      ),
-    };
-  });
+      );
+      return {
+        key: action,
+        label: issueStatusActionDisplayName(action),
+        type: "ISSUE",
+        action: action,
+        target: issue.value,
+        disabled: !ok,
+        description: reason,
+      };
+    }
+  );
 });
 
 const mergedDropdownActionList = computed(() => {
@@ -94,8 +101,9 @@ const renderDropdownOption = ({
   node: VNode;
   option: DropdownOption;
 }) => {
-  const errors = option.disabled
-    ? ["You are not allowed to perform this action"]
+  const { disabled, description } = option as IssueActionDropdownOption;
+  const errors = disabled
+    ? [description || "You are not allowed to perform this action"]
     : [];
   return h(
     DropdownItemWithErrorList,
