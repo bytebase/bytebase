@@ -883,6 +883,7 @@ type User struct {
 	Phone string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
 	// The roles of the user.
 	// This filed is to supersede the `user_role` field.
+	// TODO(ed): deprecate roles field.
 	Roles []string `protobuf:"bytes,13,rep,name=roles,proto3" json:"roles,omitempty"`
 }
 

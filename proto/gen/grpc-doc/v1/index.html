@@ -2824,6 +2824,10 @@
             <a href="#v1%2fworkspace_service.proto">v1/workspace_service.proto</a>
             <ul>
               
+                <li>
+                  <a href="#bytebase.v1.PatchIamPolicyRequest"><span class="badge">M</span>PatchIamPolicyRequest</a>
+                </li>
+              
               
               
               
@@ -4950,7 +4954,8 @@ Could be empty. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The roles of the user.
-This filed is to supersede the `user_role` field. </p></td>
+This filed is to supersede the `user_role` field.
+TODO(ed): deprecate roles field. </p></td>
                 </tr>
               
             </tbody>
@@ -30347,6 +30352,47 @@ Format: worksheets/{worksheet} </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.PatchIamPolicyRequest">PatchIamPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the resource to get the IAM policy.
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>member</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Specifies the principals requesting access for a Bytebase resource.
+Format: user:{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>roles</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The roles that is assigned to the member.
+Format: roles/{role} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
 
@@ -30371,6 +30417,13 @@ Format: worksheets/{worksheet} </p></td>
               <tr>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PatchIamPolicy</td>
+                <td><a href="#bytebase.v1.PatchIamPolicyRequest">PatchIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
                 <td><p></p></td>
               </tr>
@@ -30409,6 +30462,16 @@ Format: worksheets/{worksheet} </p></td>
                 <td>SetIamPolicy</td>
                 <td>POST</td>
                 <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>PatchIamPolicy</td>
+                <td>PATCH</td>
+                <td>/v1/{resource=workspaces/*}:patchIamPolicy</td>
                 <td>*</td>
               </tr>
               

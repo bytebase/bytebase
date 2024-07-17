@@ -1331,7 +1331,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	projectUID, isNumber := isNumber(projectID)
+	projectUID, isNumber := utils.IsNumber(projectID)
 	find := &store.FindProjectMessage{
 		ShowDeleted: true,
 	}
@@ -1419,24 +1419,11 @@ func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy
 	for _, binding := range iamPolicy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
-			if strings.HasPrefix(member, "user:") {
-				email := strings.TrimPrefix(member, "user:")
-				user, err := stores.GetUserByEmail(ctx, email)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, err.Error())
-				}
-				if user == nil {
-					return nil, status.Errorf(codes.NotFound, "user %q not found", member)
-				}
-				members = append(members, common.FormatUserUID(user.ID))
-			} else if strings.HasPrefix(member, "group:") {
-				email := strings.TrimPrefix(member, "group:")
-				members = append(members, common.FormatGroupEmail(email))
-			} else if member == api.AllUsers {
-				members = append(members, member)
-			} else {
-				return nil, status.Errorf(codes.InvalidArgument, "unsupport member %s", member)
+			storeMember, err := convertToStoreIamPolicyMember(ctx, stores, member)
+			if err != nil {
+				return nil, err
 			}
+			members = append(members, storeMember)
 		}
 
 		storeBinding := &storepb.Binding{
@@ -1453,6 +1440,26 @@ func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy
 	return &storepb.IamPolicy{
 		Bindings: bindings,
 	}, nil
+}
+
+func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, member string) (string, error) {
+	if strings.HasPrefix(member, "user:") {
+		email := strings.TrimPrefix(member, "user:")
+		user, err := stores.GetUserByEmail(ctx, email)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, err.Error())
+		}
+		if user == nil {
+			return "", status.Errorf(codes.NotFound, "user %q not found", member)
+		}
+		return common.FormatUserUID(user.ID), nil
+	} else if strings.HasPrefix(member, "group:") {
+		email := strings.TrimPrefix(member, "group:")
+		return common.FormatGroupEmail(email), nil
+	} else if member == api.AllUsers {
+		return member, nil
+	}
+	return "", status.Errorf(codes.InvalidArgument, "unsupport member %s", member)
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {

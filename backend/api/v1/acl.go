@@ -12,29 +12,24 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
 type ACLInterceptor struct {
-	store          *store.Store
-	secret         string
-	licenseService enterprise.LicenseService
-	iamManager     *iam.Manager
-	profile        *config.Profile
+	store      *store.Store
+	secret     string
+	iamManager *iam.Manager
+	profile    *config.Profile
 }
 
 // NewACLInterceptor returns a new v1 API ACL interceptor.
-func NewACLInterceptor(store *store.Store, secret string, licenseService enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *ACLInterceptor {
+func NewACLInterceptor(store *store.Store, secret string, iamManager *iam.Manager, profile *config.Profile) *ACLInterceptor {
 	return &ACLInterceptor{
-		store:          store,
-		secret:         secret,
-		licenseService: licenseService,
-		iamManager:     iamManager,
-		profile:        profile,
+		store:      store,
+		secret:     secret,
+		iamManager: iamManager,
+		profile:    profile,
 	}
 }
 
@@ -46,7 +41,11 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	}
 	if user != nil {
 		// Store workspace role into context.
-		ctx = context.WithValue(ctx, common.RoleContextKey, utils.BackfillRoleFromRoles(user.Roles))
+		role, err := in.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to backfill workspace role for user with error: %v", err.Error())
+		}
+		ctx = context.WithValue(ctx, common.RoleContextKey, role)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 	}
 
@@ -74,7 +73,11 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	}
 	if user != nil {
 		// Store workspace role into context.
-		ctx = context.WithValue(ctx, common.RoleContextKey, utils.BackfillRoleFromRoles(user.Roles))
+		role, err := in.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to backfill workspace role for user with error: %v", err.Error())
+		}
+		ctx = context.WithValue(ctx, common.RoleContextKey, role)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		ss = overrideStream{ServerStream: ss, childCtx: ctx}
 	}
@@ -126,10 +129,6 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 		return nil, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
 	}
 
-	// If RBAC feature is not enabled, all users are treated as OWNER.
-	if in.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
-		user.Roles = uniq(append(user.Roles, api.WorkspaceAdmin))
-	}
 	return user, nil
 }
 

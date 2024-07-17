@@ -704,7 +704,7 @@ func CheckDatabaseGroupMatch(ctx context.Context, databaseGroup *store.DatabaseG
 	return false, nil
 }
 
-func uniq[T comparable](array []T) []T {
+func Uniq[T comparable](array []T) []T {
 	res := make([]T, 0, len(array))
 	seen := make(map[T]struct{}, len(array))
 
@@ -717,6 +717,14 @@ func uniq[T comparable](array []T) []T {
 	}
 
 	return res
+}
+
+func IsNumber(v string) (int, bool) {
+	n, err := strconv.Atoi(v)
+	if err == nil {
+		return int(n), true
+	}
+	return 0, false
 }
 
 // ConvertBytesToUTF8String tries to decode a byte slice into a UTF-8 string using common encodings.

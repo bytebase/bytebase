@@ -234,18 +234,3 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 	}
 	return len(databases) > 0, nil
 }
-
-func uniq[T comparable](array []T) []T {
-	res := make([]T, 0, len(array))
-	seen := make(map[T]struct{}, len(array))
-
-	for _, e := range array {
-		if _, ok := seen[e]; ok {
-			continue
-		}
-		seen[e] = struct{}{}
-		res = append(res, e)
-	}
-
-	return res
-}

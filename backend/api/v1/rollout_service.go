@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"sort"
 	"time"
 
@@ -339,7 +338,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "role not found")
 	}
 
-	ok, err = canUserRunStageTasks(ctx, s.store, user, issue, stageToRun.EnvironmentID)
+	ok, err = s.canUserRunStageTasks(ctx, user, issue, stageToRun.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -479,7 +478,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		if !ok {
 			return nil, status.Errorf(codes.Internal, "stage ID %v not found in stages of rollout %v", stageID, rolloutID)
 		}
-		ok, err = canUserSkipStageTasks(ctx, s.store, user, issue, stage.EnvironmentID)
+		ok, err = s.canUserSkipStageTasks(ctx, user, issue, stage.EnvironmentID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 		}
@@ -584,7 +583,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
 	}
 
-	ok, err = canUserCancelStageTaskRun(ctx, s.store, user, issue, stage.EnvironmentID)
+	ok, err = s.canUserCancelStageTaskRun(ctx, user, issue, stage.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -980,31 +979,32 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
-func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
 	// For data export issues, only the creator can run tasks.
 	if issue.Type == api.IssueDatabaseDataExport {
 		return issue.Creator.ID == user.ID, nil
 	}
 
 	// The workspace owner and DBA roles can always run tasks.
-	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
+	containsRole, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin, api.WorkspaceDBA)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check workspace role")
+	}
+	if containsRole {
 		return true, nil
 	}
 
-	p, err := s.GetRolloutPolicy(ctx, stageEnvironmentID)
+	p, err := s.store.GetRolloutPolicy(ctx, stageEnvironmentID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get rollout policy for stageEnvironmentID %d", stageEnvironmentID)
 	}
 
-	policy, err := s.GetProjectIamPolicy(ctx, issue.Project.UID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
 	}
 
-	roles, err := utils.GetUserFormattedRolesMap(ctx, s, user, policy)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get roles")
-	}
+	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
 
 	if p.Automatic {
 		return true, nil
@@ -1041,12 +1041,12 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 }
 
 // canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
-func canUserCancelStageTaskRun(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	return canUserRunStageTasks(ctx, s, user, issue, stageEnvironmentID)
+func (s *RolloutService) canUserCancelStageTaskRun(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+	return s.canUserRunStageTasks(ctx, user, issue, stageEnvironmentID)
 }
 
-func canUserSkipStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	return canUserRunStageTasks(ctx, s, user, issue, stageEnvironmentID)
+func (s *RolloutService) canUserSkipStageTasks(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+	return s.canUserRunStageTasks(ctx, user, issue, stageEnvironmentID)
 }
 
 func getLastApproverUID(approval *storepb.IssuePayloadApproval) *int {
