@@ -130,6 +130,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RolloutService_PreviewRollout_FullMethodName:                    iam.PermissionRolloutsPreview,
 	v1pb.RolloutService_ListTaskRuns_FullMethodName:                      iam.PermissionTaskRunsList,
 	v1pb.RolloutService_GetTaskRunLog_FullMethodName:                     iam.PermissionTaskRunsList,
+	v1pb.RolloutService_GetTaskRunSession_FullMethodName:                 iam.PermissionTaskRunsList,
 	v1pb.PlanService_ListPlans_FullMethodName:                            iam.PermissionPlansList,
 	v1pb.PlanService_SearchPlans_FullMethodName:                          iam.PermissionPlansGet,
 	v1pb.PlanService_GetPlan_FullMethodName:                              iam.PermissionPlansGet,
