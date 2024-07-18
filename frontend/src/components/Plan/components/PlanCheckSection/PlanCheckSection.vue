@@ -1,9 +1,11 @@
 <template>
-  <PlanCheckBar
+  <PlanCheckRunBar
     v-if="show"
-    :allow-run-checks="allowRunChecks"
-    :plan-check-run-list="planCheckRunList"
     class="px-4 py-2"
+    :allow-run-checks="allowRunChecks"
+    :database="database"
+    :plan-name="plan.name"
+    :plan-check-run-list="planCheckRunList"
   />
 </template>
 
@@ -14,24 +16,26 @@ import {
   planCheckRunListForSpec,
   planSpecHasPlanChecks,
   usePlanContext,
+  databaseForSpec,
 } from "@/components/Plan/logic";
+import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { useCurrentUserV1 } from "@/store";
 import { EMPTY_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
-import PlanCheckBar from "./PlanCheckBar";
 
 const currentUser = useCurrentUserV1();
-const { isCreating, plan, selectedSpec } = usePlanContext();
+const { plan, selectedSpec } = usePlanContext();
 
 const show = computed(() => {
-  if (isCreating.value) {
-    return false;
-  }
   if (selectedSpec.value.id === String(EMPTY_ID)) {
     return false;
   }
   return planSpecHasPlanChecks(selectedSpec.value);
 });
+
+const database = computed(() =>
+  databaseForSpec(plan.value, selectedSpec.value)
+);
 
 const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks

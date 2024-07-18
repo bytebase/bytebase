@@ -71,11 +71,11 @@ func TestCompletion(t *testing.T) {
 	}
 }
 
-func listDatabaseNamesForTest(_ context.Context) ([]string, error) {
+func listDatabaseNamesForTest(_ context.Context, _ string) ([]string, error) {
 	return []string{"SCHEMA1", "SCHEMA2", "SCHEMA3"}, nil
 }
 
-func getMetadataForTest(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+func getMetadataForTest(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 	switch databaseName {
 	case "SCHEMA1":
 		return "SCHEMA1", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{

@@ -163,7 +163,7 @@ func (m CompletionMap) insertMetadataDatabases(c *Completer, linkedServer string
 		}
 	}
 
-	allDatabase, err := c.databaseNamesLister(c.ctx)
+	allDatabase, err := c.databaseNamesLister(c.ctx, c.instanceID)
 	if err != nil {
 		return
 	}
@@ -191,7 +191,7 @@ func (m CompletionMap) insertMetadataSchemas(c *Completer, linkedServer string, 
 		return
 	}
 
-	allDBNames, err := c.databaseNamesLister(c.ctx)
+	allDBNames, err := c.databaseNamesLister(c.ctx, c.instanceID)
 	if err != nil {
 		return
 	}
@@ -202,7 +202,7 @@ func (m CompletionMap) insertMetadataSchemas(c *Completer, linkedServer string, 
 		}
 	}
 
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, anchor)
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, anchor)
 	if err != nil {
 		return
 	}
@@ -233,7 +233,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, d
 		return
 	}
 
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, databaseName)
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, databaseName)
 	if err != nil {
 		return
 	}
@@ -278,7 +278,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 	if databaseName == "" || schemaName == "" {
 		return
 	}
-	databaseNames, err := c.databaseNamesLister(c.ctx)
+	databaseNames, err := c.databaseNamesLister(c.ctx, c.instanceID)
 	if err != nil {
 		return
 	}
@@ -288,7 +288,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 			break
 		}
 	}
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, databaseName)
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, databaseName)
 	if err != nil {
 		return
 	}
@@ -361,7 +361,7 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 		return
 	}
 
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, databaseName)
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, databaseName)
 	if err != nil {
 		return
 	}
@@ -423,6 +423,7 @@ type Completer struct {
 	lexer   *tsqlparser.TSqlLexer
 	scanner *base.Scanner
 
+	instanceID          string
 	defaultDatabase     string
 	defaultSchema       string
 	metadataGetter      base.GetDatabaseMetadataFunc
@@ -477,6 +478,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
 		metadataGetter:      cCtx.Metadata,
@@ -506,6 +508,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
 		metadataGetter:      cCtx.Metadata,
@@ -1385,6 +1388,7 @@ func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
+				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.metadataGetter,
 				ListDatabaseNamesFunc:   l.context.databaseNamesLister,
 			},
@@ -1530,6 +1534,7 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 		if span, err := base.GetQuerySpan(
 			c.completer.ctx,
 			base.GetQuerySpanContext{
+				InstanceID:              c.completer.instanceID,
 				GetDatabaseMetadataFunc: c.completer.metadataGetter,
 				ListDatabaseNamesFunc:   c.completer.databaseNamesLister,
 			},

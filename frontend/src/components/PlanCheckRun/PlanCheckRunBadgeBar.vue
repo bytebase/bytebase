@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center flex-wrap gap-2 flex-1">
-    <PlanCheckBadge
+    <PlanCheckRunBadge
       v-for="group in planCheckRunsGroupByType"
       :key="group.type"
       :type="group.type"
@@ -9,8 +9,6 @@
       :plan-check-run-list="group.list"
       @click="$emit('select-type', group.type)"
     />
-    <!-- Default slot for other actions -->
-    <slot></slot>
   </div>
 </template>
 
@@ -20,7 +18,7 @@ import { computed } from "vue";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { PlanCheckRun_Type } from "@/types/proto/v1/plan_service";
 import { groupBy } from "@/utils/collections";
-import PlanCheckBadge from "./PlanCheckBadge.vue";
+import PlanCheckRunBadge from "./PlanCheckRunBadge.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

@@ -17,12 +17,14 @@
           </div>
         </div>
 
-        <PlanCheckBar
+        <PlanCheckRunBar
           v-if="issue.planCheckRunList.length > 0"
           class="shrink-0 flex-col gap-y-1"
           label-class="!text-base"
           :allow-run-checks="false"
+          :plan-name="issue.plan"
           :plan-check-run-list="issue.planCheckRunList"
+          :database="database"
         />
 
         <div v-if="planCheckErrors.length > 0" class="flex flex-col">
@@ -97,11 +99,12 @@ import {
   issueReviewActionButtonProps,
   issueReviewActionDisplayName,
   planCheckRunSummaryForIssue,
+  databaseForTask,
 } from "@/components/IssueV1/logic";
+import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClient } from "@/grpcweb";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { PlanCheckBar } from "../PlanCheckSection";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 
@@ -120,7 +123,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
-const { events, issue } = useIssueContext();
+const { events, issue, activeTask } = useIssueContext();
 const comment = ref("");
 const performActionAnyway = ref(false);
 
@@ -135,6 +138,10 @@ const title = computed(() => {
   }
   return ""; // Make linter happy
 });
+
+const database = computed(() =>
+  databaseForTask(issue.value, activeTask.value)
+);
 
 const planCheckErrors = computed(() => {
   const errors: string[] = [];

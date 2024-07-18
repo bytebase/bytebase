@@ -54,9 +54,9 @@ import { computed } from "vue";
 import {
   isValidSpec,
   planCheckRunListForSpec,
-  planCheckRunSummaryForCheckRunList,
   usePlanContext,
 } from "@/components/Plan/logic";
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { Plan_Step } from "@/types/proto/v1/plan_service";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 

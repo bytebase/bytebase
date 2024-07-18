@@ -179,7 +179,7 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 }
 
 func buildMockDatabaseMetadataGetterLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadatas {
 				m[metadata.Name] = model.NewDatabaseMetadata(metadata)
@@ -190,7 +190,7 @@ func buildMockDatabaseMetadataGetterLister() (base.GetDatabaseMetadataFunc, base
 			}
 
 			return "", nil, errors.Errorf("database %q not found", databaseName)
-		}, func(context.Context) ([]string, error) {
+		}, func(context.Context, string) ([]string, error) {
 			var names []string
 			for _, metadata := range databaseMetadatas {
 				names = append(names, metadata.Name)
