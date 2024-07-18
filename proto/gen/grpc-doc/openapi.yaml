@@ -11818,6 +11818,10 @@ components:
             properties:
                 pid:
                     type: string
+                blockedByPids:
+                    type: array
+                    items:
+                        type: string
                 query:
                     type: string
                 state:
@@ -13730,13 +13734,20 @@ components:
         TaskRunSession_Postgres:
             type: object
             properties:
-                sessions:
+                session:
+                    allOf:
+                        - $ref: '#/components/schemas/Postgres_Session'
+                    description: '`session` is the session of the task run executing commands.'
+                blockingSessions:
                     type: array
                     items:
                         $ref: '#/components/schemas/Postgres_Session'
-                    description: |-
-                        The first session is the session of the task run executing commands.
-                         The remaining sessions are the sessions that block the first session.
+                    description: '`blocking_sessions` block `session`.'
+                blockedSessions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Postgres_Session'
+                    description: '`blocked_sessions` are blocked by `session`.'
         TaskRun_ExecutionDetail:
             type: object
             properties:
