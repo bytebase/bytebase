@@ -542,7 +542,7 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
 func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
-	policy, err := stores.GetProjectIamPolicy(ctx, issue.Project.UID)
+	policyMessage, err := stores.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get project policy for project %q", issue.Project.UID)
 	}
@@ -564,7 +564,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	if newUser == nil {
 		return status.Errorf(codes.Internal, "user %v not found", userID)
 	}
-	for _, binding := range policy.Bindings {
+	for _, binding := range policyMessage.Policy.Bindings {
 		if binding.Role != grantRequest.Role {
 			continue
 		}
@@ -586,14 +586,14 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 			condition = &expr.Expr{}
 		}
 		condition.Description = fmt.Sprintf("#%d", issue.UID)
-		policy.Bindings = append(policy.Bindings, &storepb.Binding{
+		policyMessage.Policy.Bindings = append(policyMessage.Policy.Bindings, &storepb.Binding{
 			Role:      grantRequest.Role,
 			Members:   []string{common.FormatUserUID(newUser.ID)},
 			Condition: condition,
 		})
 	}
 
-	policyPayload, err := protojson.Marshal(policy)
+	policyPayload, err := protojson.Marshal(policyMessage.Policy)
 	if err != nil {
 		return err
 	}

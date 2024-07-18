@@ -18,7 +18,17 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*storepb.IamPolicy, error) {
+type IamPolicyMessage struct {
+	Policy *storepb.IamPolicy
+	Etag   string
+}
+
+// generateEtag generates etag for the given body.
+func generateEtag(t time.Time) string {
+	return fmt.Sprintf("%d", t.UnixMilli())
+}
+
+func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
 	resourceType := api.PolicyResourceTypeWorkspace
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -32,7 +42,7 @@ type PatchIamPolicyMessage struct {
 }
 
 // PatchWorkspaceIamPolicy will set or remove the member for the workspace role.
-func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPolicyMessage) (*storepb.IamPolicy, error) {
+func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPolicyMessage) (*IamPolicyMessage, error) {
 	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, err
@@ -43,7 +53,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		roleMap[role] = true
 	}
 
-	for _, binding := range workspaceIamPolicy.Bindings {
+	for _, binding := range workspaceIamPolicy.Policy.Bindings {
 		index := slices.Index(binding.Members, patch.Member)
 		if !roleMap[binding.Role] {
 			if index >= 0 {
@@ -59,7 +69,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	}
 
 	for role := range roleMap {
-		workspaceIamPolicy.Bindings = append(workspaceIamPolicy.Bindings, &storepb.Binding{
+		workspaceIamPolicy.Policy.Bindings = append(workspaceIamPolicy.Policy.Bindings, &storepb.Binding{
 			Role: role,
 			Members: []string{
 				patch.Member,
@@ -67,7 +77,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		})
 	}
 
-	policyPayload, err := protojson.Marshal(workspaceIamPolicy)
+	policyPayload, err := protojson.Marshal(workspaceIamPolicy.Policy)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +108,7 @@ func findBindingByRole(policy *storepb.IamPolicy, role api.Role) *storepb.Bindin
 	}
 }
 
-func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*storepb.IamPolicy, error) {
+func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*IamPolicyMessage, error) {
 	resourceType := api.PolicyResourceTypeProject
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -106,7 +116,7 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*store
 	})
 }
 
-func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*storepb.IamPolicy, error) {
+func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
 	pType := api.PolicyTypeIAM
 	find.Type = &pType
 	policy, err := s.GetPolicyV2(ctx, find)
@@ -114,7 +124,9 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*sto
 		return nil, err
 	}
 	if policy == nil {
-		return &storepb.IamPolicy{}, nil
+		return &IamPolicyMessage{
+			Policy: &storepb.IamPolicy{},
+		}, nil
 	}
 
 	p := &storepb.IamPolicy{}
@@ -122,7 +134,10 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*sto
 		return nil, errors.Wrapf(err, "failed to unmarshal iam policy")
 	}
 
-	return p, nil
+	return &IamPolicyMessage{
+		Policy: p,
+		Etag:   generateEtag(policy.UpdatedTime),
+	}, nil
 }
 
 func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*storepb.RolloutPolicy, error) {
@@ -328,7 +343,8 @@ type PolicyMessage struct {
 	Enforce           bool
 
 	// Output only.
-	UID int
+	UID         int
+	UpdatedTime time.Time
 }
 
 // FindPolicyMessage is the message for finding policies.
@@ -467,6 +483,8 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		Type:         patch.Type,
 	}
 	var rowStatus string
+	var updatedTs int64
+
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE policy
 			SET `+strings.Join(set, ", ")+`
@@ -474,13 +492,15 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 			RETURNING
 				payload,
 				inherit_from_parent,
-				row_status
+				row_status,
+				updated_ts
 		`, len(args)-2, len(args)-1, len(args)),
 		args...,
 	).Scan(
 		&policy.Payload,
 		&policy.InheritFromParent,
 		&rowStatus,
+		&updatedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -490,6 +510,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	if rowStatus == string(api.Normal) {
 		policy.Enforce = true
 	}
+	policy.UpdatedTime = time.Unix(updatedTs, 0)
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -527,6 +548,8 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 
 func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
 	var uid int
+	var updatedTs int64
+
 	rowStatus := api.Normal
 	if !create.Enforce {
 		rowStatus = api.Archived
@@ -549,7 +572,9 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 				updated_ts = extract(epoch from now()),
 				row_status = EXCLUDED.row_status,
 				updater_id = EXCLUDED.updater_id
-			RETURNING id
+			RETURNING
+				id,
+				updated_ts
 		`,
 		creatorID,
 		creatorID,
@@ -561,10 +586,12 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 		rowStatus,
 	).Scan(
 		&uid,
+		&updatedTs,
 	); err != nil {
 		return nil, err
 	}
 	create.UID = uid
+	create.UpdatedTime = time.Unix(updatedTs, 0)
 	return create, nil
 }
 
@@ -586,6 +613,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			updated_ts,
 			resource_type,
 			resource_id,
 			inherit_from_parent,
@@ -605,8 +633,11 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	for rows.Next() {
 		var policyMessage PolicyMessage
 		var rowStatus api.RowStatus
+		var updatedTs int64
+
 		if err := rows.Scan(
 			&policyMessage.UID,
+			&updatedTs,
 			&policyMessage.ResourceType,
 			&policyMessage.ResourceUID,
 			&policyMessage.InheritFromParent,
@@ -619,6 +650,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		if rowStatus == api.Normal {
 			policyMessage.Enforce = true
 		}
+		policyMessage.UpdatedTime = time.Unix(updatedTs, 0)
 		policyList = append(policyList, &policyMessage)
 	}
 	if err := rows.Err(); err != nil {

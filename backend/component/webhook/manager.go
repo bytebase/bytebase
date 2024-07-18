@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
@@ -24,7 +25,8 @@ import (
 
 // Manager is the webhook manager.
 type Manager struct {
-	store *store.Store
+	store      *store.Store
+	iamManager *iam.Manager
 }
 
 // Metadata is the activity metadata.
@@ -33,9 +35,10 @@ type Metadata struct {
 }
 
 // NewManager creates an activity manager.
-func NewManager(store *store.Store) *Manager {
+func NewManager(store *store.Store, iamManager *iam.Manager) *Manager {
 	return &Manager{
-		store: store,
+		store:      store,
+		iamManager: iamManager,
 	}
 }
 
@@ -195,7 +198,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		} else {
 			for _, workspaceRole := range u.RolloutPolicy.GetWorkspaceRoles() {
 				role := api.Role(strings.TrimPrefix(workspaceRole, "roles/"))
-				usersGetters = append(usersGetters, getUsersFromWorkspaceRole(m.store, role))
+				usersGetters = append(usersGetters, m.getUsersFromWorkspaceRole(role))
 			}
 			for _, projectRole := range u.RolloutPolicy.GetProjectRoles() {
 				role := api.Role(strings.TrimPrefix(projectRole, "roles/"))
@@ -259,9 +262,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
 				return nil, errors.Errorf("invalid group value")
 			case storepb.ApprovalNode_WORKSPACE_OWNER:
-				usersGetter = getUsersFromWorkspaceRole(m.store, api.WorkspaceAdmin)
+				usersGetter = m.getUsersFromWorkspaceRole(api.WorkspaceAdmin)
 			case storepb.ApprovalNode_WORKSPACE_DBA:
-				usersGetter = getUsersFromWorkspaceRole(m.store, api.WorkspaceDBA)
+				usersGetter = m.getUsersFromWorkspaceRole(api.WorkspaceDBA)
 			case storepb.ApprovalNode_PROJECT_OWNER:
 				usersGetter = getUsersFromProjectRole(m.store, api.ProjectOwner, e.Project.UID)
 			case storepb.ApprovalNode_PROJECT_MEMBER:
@@ -375,22 +378,20 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 	}
 }
 
-func getUsersFromWorkspaceRole(s *store.Store, role api.Role) func(context.Context) ([]*store.UserMessage, error) {
+func (m *Manager) getUsersFromWorkspaceRole(role api.Role) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
-		return s.ListUsers(ctx, &store.FindUserMessage{
-			Role: &role,
-		})
+		return m.iamManager.GetWorkspaceUsersByRole(ctx, role)
 	}
 }
 
 func getUsersFromProjectRole(s *store.Store, role api.Role, projectUID int) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
-		iamPolicy, err := s.GetProjectIamPolicy(ctx, projectUID)
+		policyMessage, err := s.GetProjectIamPolicy(ctx, projectUID)
 		if err != nil {
 			return nil, err
 		}
 
-		return utils.GetUsersByRoleInIAMPolicy(ctx, s, role, iamPolicy), nil
+		return utils.GetUsersByRoleInIAMPolicy(ctx, s, role, policyMessage.Policy), nil
 	}
 }
 

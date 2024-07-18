@@ -300,6 +300,18 @@ const passwordMismatch = computed(() => {
   );
 });
 
+const rolesChanged = computed(() => {
+  if (isCreating.value) {
+    return true;
+  }
+
+  return (
+    !isUndefined(state.user.roles) &&
+    state.user.roles.length > 0 &&
+    !isEqual(props.user?.roles, state.user.roles)
+  );
+});
+
 const allowConfirm = computed(() => {
   if (!state.user.email) {
     return false;
@@ -307,7 +319,8 @@ const allowConfirm = computed(() => {
   if (
     !isCreating.value &&
     (passwordMismatch.value ||
-      getUpdateMaskFromUsers(props.user!, state.user).length == 0)
+      (getUpdateMaskFromUsers(props.user!, state.user).length == 0 &&
+        !rolesChanged.value))
   ) {
     return false;
   }
@@ -396,10 +409,7 @@ const tryCreateOrUpdateUser = async () => {
         updateMask: getUpdateMaskFromUsers(props.user!, state.user),
       })
     );
-    if (
-      !isUndefined(state.user.roles) &&
-      !isEqual(props.user?.roles, state.user.roles)
-    ) {
+    if (rolesChanged.value) {
       await userStore.updateUserRoles(state.user);
     }
     pushNotification({

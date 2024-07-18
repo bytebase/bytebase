@@ -96,6 +96,14 @@ func (m *Manager) CheckUserContainsWorkspaceRoles(ctx context.Context, user *sto
 	return false, nil
 }
 
+func (m *Manager) GetWorkspaceUsersByRole(ctx context.Context, role api.Role) ([]*store.UserMessage, error) {
+	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return utils.GetUsersByRoleInIAMPolicy(ctx, m.store, role, policyMessage.Policy), nil
+}
+
 // See backfillRoleFromRoles.
 func (m *Manager) BackfillWorkspaceRoleForUser(ctx context.Context, user *store.UserMessage) (api.Role, error) {
 	workspaceRoles, err := m.GetWorkspaceRoles(ctx, user)
@@ -106,8 +114,8 @@ func (m *Manager) BackfillWorkspaceRoleForUser(ctx context.Context, user *store.
 	return backfillRoleFromRoles(workspaceRoles), nil
 }
 
-func (m *Manager) RemoveCache(userUID int) {
-	m.userRoleCache.Remove(userUID)
+func (m *Manager) ClearCache() {
+	m.userRoleCache.Purge()
 }
 
 func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
@@ -201,11 +209,11 @@ func (m *Manager) GetWorkspaceRoles(ctx context.Context, user *store.UserMessage
 	if v, ok := m.userRoleCache.Get(user.ID); ok {
 		return m.getWorkspaceRolesByRBAC(v), nil
 	}
-	workspaceIamPolicy, err := m.store.GetWorkspaceIamPolicy(ctx)
+	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, err
 	}
-	roles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, workspaceIamPolicy)
+	roles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, policyMessage.Policy)
 	m.userRoleCache.Add(user.ID, roles)
 
 	return m.getWorkspaceRolesByRBAC(roles), nil
@@ -236,12 +244,12 @@ func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, 
 			projectUID = project.UID
 		}
 
-		iamPolicy, err := m.store.GetProjectIamPolicy(ctx, projectUID)
+		policyMessage, err := m.store.GetProjectIamPolicy(ctx, projectUID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
 		}
 
-		projectRoles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, iamPolicy)
+		projectRoles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, policyMessage.Policy)
 		roles = append(roles, projectRoles)
 	}
 	return roles, nil

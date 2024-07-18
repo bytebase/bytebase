@@ -883,7 +883,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 	if err != nil {
 		return err
 	}
-	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
+	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy)
 
 	for _, rule := range project.Setting.ProtectionRules {
 		if rule.Target != storepb.ProtectionRule_BRANCH {
