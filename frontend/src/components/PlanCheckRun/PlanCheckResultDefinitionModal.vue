@@ -1,5 +1,5 @@
 <template>
-  <BBModal :title="$t('sql-review.view-definition')" @close="emit('cancel')">
+  <BBModal :title="$t('sql-review.view-definition')" @close="emit('close')">
     <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
       <div class="space-y-1">
         <div class="flex flex-col gap-x-2 whitespace-pre-wrap">
@@ -7,8 +7,8 @@
         </div>
       </div>
       <div class="mt-4 pt-2 border-t flex justify-end">
-        <NButton @click.prevent="emit('cancel')">
-          {{ $t("common.cancel") }}
+        <NButton @click.prevent="emit('close')">
+          {{ $t("common.close") }}
         </NButton>
       </div>
     </div>
@@ -16,14 +16,9 @@
 </template>
 
 <script lang="ts" setup>
-defineProps({
-  definition: {
-    required: true,
-    type: String,
-  },
-});
+defineProps<{ definition: string }>();
 
 const emit = defineEmits<{
-  (event: "cancel"): void;
+  (event: "close"): void;
 }>();
 </script>

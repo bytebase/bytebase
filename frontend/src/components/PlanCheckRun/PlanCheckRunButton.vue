@@ -3,12 +3,12 @@
     v-if="actionList.length > 0"
     :action-list="actionList"
     :disabled="hasRunningPlanCheck"
-    preference-key="plan.task.run-checks"
+    preference-key="issue.task.run-checks"
     default-action-key="RUN-CHECKS"
-    @click="$emit('run-checks')"
+    @click="handleRunChecks"
   >
     <template #icon>
-      <BBSpin v-if="hasRunningPlanCheck" :size="20" />
+      <BBSpin v-if="hasRunningPlanCheck" :size="16" />
       <heroicons-outline:play v-else class="w-4 h-4" />
     </template>
     <template #default="{ action }">
@@ -25,29 +25,24 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { planCheckRunListForSpec } from "@/components/Plan/logic";
-import { usePlanContext } from "@/components/Plan/logic";
 import type { ContextMenuButtonAction } from "@/components/v2";
 import { ContextMenuButton } from "@/components/v2";
-import { PlanCheckRun_Status } from "@/types/proto/v1/plan_service";
+import {
+  PlanCheckRun,
+  PlanCheckRun_Status,
+} from "@/types/proto/v1/plan_service";
 
-defineEmits<{
+const props = defineProps<{
+  planCheckRunList: PlanCheckRun[];
+}>();
+
+const emit = defineEmits<{
   (event: "run-checks"): void;
 }>();
 
 const { t } = useI18n();
-const { isCreating, plan, selectedSpec } = usePlanContext();
-
-const allowRunCheckForPlan = computed(() => {
-  if (isCreating.value) {
-    return false;
-  }
-  return true;
-});
 
 const actionList = computed(() => {
-  if (!allowRunCheckForPlan.value) return [];
-
   const actionList: ContextMenuButtonAction[] = [];
   actionList.push({
     key: "RUN-CHECKS",
@@ -58,14 +53,13 @@ const actionList = computed(() => {
 });
 
 const hasRunningPlanCheck = computed((): boolean => {
-  if (isCreating.value) return false;
-
-  const planCheckRunList = planCheckRunListForSpec(
-    plan.value,
-    selectedSpec.value
-  );
-  return planCheckRunList.some(
+  return props.planCheckRunList.some(
     (checkRun) => checkRun.status === PlanCheckRun_Status.RUNNING
   );
 });
+
+const handleRunChecks = () => {
+  if (hasRunningPlanCheck.value) return;
+  emit("run-checks");
+};
 </script>

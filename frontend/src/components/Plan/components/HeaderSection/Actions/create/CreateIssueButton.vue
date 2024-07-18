@@ -37,9 +37,9 @@ import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/Plan/components/common";
 import {
   planCheckRunListForSpec,
-  planCheckRunSummaryForCheckRunList,
   usePlanContext,
 } from "@/components/Plan/logic";
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";

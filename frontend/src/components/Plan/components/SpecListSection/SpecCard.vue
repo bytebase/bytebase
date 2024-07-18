@@ -60,6 +60,7 @@ import { isEqual } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed, onMounted } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { useDBGroupStore } from "@/store";
 import {
   PlanCheckRun_Result_Status,
@@ -72,7 +73,6 @@ import {
   usePlanContext,
   isGroupingChangeSpec,
   planCheckRunListForSpec,
-  planCheckRunSummaryForCheckRunList,
 } from "../../logic";
 
 const props = defineProps<{

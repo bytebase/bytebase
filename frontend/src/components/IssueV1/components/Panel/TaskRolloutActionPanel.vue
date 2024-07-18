@@ -55,7 +55,7 @@
           </div>
         </div>
 
-        <PlanCheckBar
+        <PlanCheckRunBar
           v-if="
             (action === 'ROLLOUT' || action === 'RETRY') &&
             planCheckRunList.length > 0
@@ -63,7 +63,9 @@
           class="shrink-0 flex-col gap-y-1"
           label-class="!text-base"
           :allow-run-checks="false"
+          :plan-name="issue.plan"
           :plan-check-run-list="planCheckRunList"
+          :database="database"
         />
 
         <div v-if="planCheckErrors.length > 0" class="flex flex-col">
@@ -131,11 +133,10 @@ import { head, uniqBy } from "lodash-es";
 import { NButton, NCheckbox, NInput, NScrollbar, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
+  databaseForTask,
   planCheckRunListForTask,
-  planCheckRunSummaryForCheckRunList,
   semanticTaskType,
   stageForTask,
   taskRolloutActionButtonProps,
@@ -144,6 +145,8 @@ import {
   taskRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
@@ -181,6 +184,8 @@ const title = computed(() => {
   }
   return action;
 });
+
+const database = computed(() => databaseForTask(issue.value, activeTask.value));
 
 const stage = computed(() => {
   const firstTask = head(props.taskList);
