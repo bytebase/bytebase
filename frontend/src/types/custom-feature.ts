@@ -9,6 +9,7 @@ export type CustomFeatureMatrix = {
   "bb.custom-feature.hide-help": boolean;
   "bb.custom-feature.hide-quick-start": boolean;
   "bb.custom-feature.hide-release-remind": boolean;
+  "bb.custom-feature.hide-issue-review-actions": boolean;
 };
 
 export type CustomFeature = keyof CustomFeatureMatrix;
@@ -24,4 +25,5 @@ export const defaultCustomFeatureMatrix = (): CustomFeatureMatrix => ({
   "bb.custom-feature.hide-help": false,
   "bb.custom-feature.hide-quick-start": false,
   "bb.custom-feature.hide-release-remind": false,
+  "bb.custom-feature.hide-issue-review-actions": false,
 });

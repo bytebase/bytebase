@@ -181,6 +181,13 @@ const overrideCustomFeatureMatrix = () => {
         "--color-accent-hover": "#00554f",
       },
     });
+    if (
+      actuatorStore.customFeatureMatrix["bb.custom-feature.embedded-in-iframe"]
+    ) {
+      actuatorStore.overrideCustomFeatureMatrix({
+        "bb.custom-feature.hide-issue-review-actions": true,
+      });
+    }
   }
 
   useCustomTheme(
