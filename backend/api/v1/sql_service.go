@@ -981,7 +981,7 @@ func (s *SQLService) accessCheck(
 				return status.Errorf(codes.Internal, err.Error())
 			}
 
-			ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy, attributes, isExport)
+			ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy.Policy, attributes, isExport)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
 			}

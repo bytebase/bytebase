@@ -7,13 +7,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -47,9 +45,21 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 		return nil, err
 	}
 
+	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace iam policy with error: %v", err.Error())
+	}
+	if request.Etag != policyMessage.Etag {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the workspace iam policy, please refresh and try again.")
+	}
+
 	iamPolicy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert iam policy with error: %v", err.Error())
+	}
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceAdmin, iamPolicy)
+	if !containsActiveEndUser(users) {
+		return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
 	}
 
 	payloadBytes, err := protojson.Marshal(iamPolicy)
@@ -65,43 +75,27 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 		Payload:      &payloadStr,
 	}
 
-	updatedPolicy, err := s.store.UpdatePolicyV2(ctx, patch)
-	if err != nil {
+	if _, err := s.store.UpdatePolicyV2(ctx, patch); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	p := &storepb.IamPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(updatedPolicy.Payload), p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal iam policy payload")
-	}
-	return convertToV1IamPolicy(ctx, s.store, p)
-}
+	s.iamManager.ClearCache()
 
-func (s *WorkspaceService) PatchIamPolicy(ctx context.Context, request *v1pb.PatchIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	userUID, err := s.checkUserIsAdmin(ctx)
+	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to find iam policy with error: %v", err.Error())
 	}
-
-	// TODO(ed): Check if the user is the only workspace admin.
-	storeMember, err := convertToStoreIamPolicyMember(ctx, s.store, request.Member)
-	if err != nil {
-		return nil, err
-	}
-
-	policy, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Member: storeMember,
-		// TODO(ed): check roles.
-		Roles:      request.Roles,
-		UpdaterUID: userUID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to patch iam policy with error: %v", err.Error())
-	}
-
-	s.iamManager.RemoveCache(userUID)
 
 	return convertToV1IamPolicy(ctx, s.store, policy)
+}
+
+func containsActiveEndUser(users []*store.UserMessage) bool {
+	for _, user := range users {
+		if user.Type == api.EndUser && !user.MemberDeleted {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *WorkspaceService) checkUserIsAdmin(ctx context.Context) (int, error) {

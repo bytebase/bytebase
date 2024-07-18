@@ -838,7 +838,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}
 
-	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy)
+	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if principal can approve step, error: %v", err)
 	}
@@ -1052,7 +1052,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}
 
-	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy)
+	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if principal can reject step, error: %v", err)
 	}

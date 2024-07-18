@@ -22,12 +22,20 @@ message SetIamPolicyRequest {
   string resource = 1 [(google.api.field_behavior) = REQUIRED];
 
   IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The current etag of the policy.
+  string etag = 3;
 }
 
 message IamPolicy {
   // Collection of binding.
   // A binding binds one or more project members to a single project role.
   repeated Binding bindings = 1;
+
+  // The current etag of the policy.
+  // If an etag is provided and does not match the current etag of the poliy,
+  // the call will be blocked and an ABORTED error will be returned.
+  string etag = 2;
 }
 
 message Binding {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"strings"
 	"time"
 
@@ -28,7 +27,6 @@ var systemBotUser = &UserMessage{
 type FindUserMessage struct {
 	ID          *int
 	Email       *string
-	Role        *api.Role
 	ShowDeleted bool
 	Type        *api.PrincipalType
 	Limit       *int
@@ -115,7 +113,7 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 	}
 	defer tx.Rollback()
 
-	users, err := s.listUserImpl(ctx, tx, find)
+	users, err := listUserImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +137,7 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) ([]*UserMessage, error
 	}
 	defer tx.Rollback()
 
-	users, err := s.listUserImpl(ctx, tx, &FindUserMessage{ShowDeleted: true})
+	users, err := listUserImpl(ctx, tx, &FindUserMessage{ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -155,18 +153,7 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) ([]*UserMessage, error
 	return users, nil
 }
 
-func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
-	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO(ed): deprecate this.
-	var binding *storepb.Binding
-	if v := find.Role; v != nil {
-		binding = findBindingByRole(workspaceIamPolicy, *v)
-	}
-
+func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
@@ -223,12 +210,6 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 			&userMessage.Phone,
 		); err != nil {
 			return nil, err
-		}
-
-		if b := binding; b != nil {
-			if !slices.Contains(b.Members, common.FormatUserUID(userMessage.ID)) && !slices.Contains(b.Members, api.AllUsers) {
-				continue
-			}
 		}
 
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)

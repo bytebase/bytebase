@@ -231,7 +231,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = secret
-	s.webhookManager = webhook.NewManager(storeInstance)
+	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
 	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
@@ -250,7 +250,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		s.mailSender = mail.NewSender(s.store, s.stateCfg)
+		s.mailSender = mail.NewSender(s.store, s.stateCfg, s.iamManager)
 		s.relayRunner = relay.NewRunner(storeInstance, s.webhookManager, s.stateCfg)
 		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.relayRunner, s.licenseService)
 
