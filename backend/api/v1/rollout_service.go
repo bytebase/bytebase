@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -299,6 +301,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 		query := `
 			SELECT
 				pid,
+				pg_blocking_pids(pid) AS blocked_by_pids,
 				query,
 				state,
 				wait_event_type,
@@ -311,46 +314,12 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 				backend_start,
 				xact_start,
 				query_start
-			FROM (
-				SELECT
-					1 AS lvl,
-					pid,
-					query,
-					state,
-					wait_event_type,
-					wait_event,
-					datname,
-					usename,
-					application_name,
-					client_addr,
-					client_port,
-					backend_start,
-					xact_start,
-					query_start
-				FROM
-					pg_catalog.pg_stat_activity
-				WHERE pid = $1
-				UNION
-				SELECT
-					2 AS lvl,
-					pid,
-					query,
-					state,
-					wait_event_type,
-					wait_event,
-					datname,
-					usename,
-					application_name,
-					client_addr,
-					client_port,
-					backend_start,
-					xact_start,
-					query_start
-				FROM
-					pg_catalog.pg_stat_activity
-				WHERE pid = ANY(pg_blocking_pids($1))
-				ORDER BY lvl, pid
-			) t
+			FROM
+				pg_catalog.pg_stat_activity
+			WHERE pid = $1
+			OR pid = ANY(pg_blocking_pids($1))
+			OR $1 = ANY(pg_blocking_pids(pid))
+			ORDER BY pid
 		`
 		rows, err := db.QueryContext(ctx, query, connID)
 		if err != nil {
@@ -362,9 +331,12 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 		for rows.Next() {
 			var s v1pb.TaskRunSession_Postgres_Session
 
+			var blockedByPids pgtype.TextArray
+
 			var bs, xs, qs time.Time
 			if err := rows.Scan(
 				&s.Pid,
+				&blockedByPids,
 				&s.Query,
 				&s.State,
 				&s.WaitEventType,
@@ -381,11 +353,21 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 				return nil, errors.Wrapf(err, "failed to scan")
 			}
 
+			if err := blockedByPids.AssignTo(&s.BlockedByPids); err != nil {
+				return nil, errors.Wrapf(err, "failed to assign blocking pids")
+			}
+
 			s.BackendStart = timestamppb.New(bs)
 			s.XactStart = timestamppb.New(xs)
 			s.QueryStart = timestamppb.New(qs)
 
-			ss.Sessions = append(ss.Sessions, &s)
+			if s.Pid == connID {
+				ss.Session = &s
+			} else if slices.Contains(s.BlockedByPids, connID) {
+				ss.BlockedSessions = append(ss.BlockedSessions, &s)
+			} else {
+				ss.BlockingSessions = append(ss.BlockingSessions, &s)
+			}
 		}
 
 		if err := rows.Err(); err != nil {
