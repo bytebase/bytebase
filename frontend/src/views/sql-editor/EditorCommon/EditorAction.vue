@@ -115,10 +115,10 @@ import {
   useUIStateStore,
   featureToRef,
   usePageMode,
-  useActuatorV1Store,
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
   useWorkSheetStore,
+  useCustomFeature,
 } from "@/store";
 import type { FeatureType, SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
@@ -138,7 +138,6 @@ const emit = defineEmits<{
   (e: "clear-screen"): void;
 }>();
 
-const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
@@ -147,6 +146,9 @@ const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 const pageMode = usePageMode();
+const hasCustomQueryDatasourceFeature = useCustomFeature(
+  "bb.custom-feature.custom-query-datasource"
+);
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
@@ -243,7 +245,7 @@ const showQueryContextSettingPopover = computed(() => {
   return (
     Boolean(instance.value) &&
     tab.mode !== "ADMIN" &&
-    actuatorStore.customTheme === "lixiang"
+    hasCustomQueryDatasourceFeature.value
   );
 });
 

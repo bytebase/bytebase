@@ -33,7 +33,6 @@ export type PageMode =
 
 interface ActuatorState {
   pageMode: PageMode;
-  customTheme?: string;
   serverInfo?: ActuatorInfo;
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
