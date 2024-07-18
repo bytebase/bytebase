@@ -5,7 +5,12 @@ import { defineStore, storeToRefs } from "pinia";
 import { watchEffect } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
-import type { Release, ReleaseInfo } from "@/types";
+import {
+  defaultCustomFeatureMatrix,
+  type CustomFeatureMatrix,
+  type Release,
+  type ReleaseInfo,
+} from "@/types";
 import type {
   ActuatorInfo,
   ResourcePackage,
@@ -32,6 +37,7 @@ interface ActuatorState {
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
   debugLogList: DebugLog[];
+  customFeatureMatrix: CustomFeatureMatrix;
 }
 
 export const useActuatorV1Store = defineStore("actuator_v1", {
@@ -44,6 +50,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       nextCheckTs: 0,
     }),
     debugLogList: [],
+    customFeatureMatrix: defaultCustomFeatureMatrix(),
   }),
   getters: {
     info: (state) => {
@@ -132,8 +139,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         return false;
       }
       if (!this.releaseInfo.latest) {
-        const relase = await this.fetchLatestRelease();
-        this.releaseInfo.latest = relase;
+        const release = await this.fetchLatestRelease();
+        this.releaseInfo.latest = release;
       }
       if (!this.releaseInfo.latest) {
         return false;
@@ -141,8 +148,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
 
       // It's time to fetch the release
       if (new Date().getTime() >= this.releaseInfo.nextCheckTs) {
-        const relase = await this.fetchLatestRelease();
-        if (!relase) {
+        const release = await this.fetchLatestRelease();
+        if (!release) {
           return false;
         }
 
@@ -150,11 +157,11 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         this.releaseInfo.nextCheckTs =
           new Date().getTime() + 24 * 60 * 60 * 1000;
 
-        if (semverCompare(relase.tag_name, this.releaseInfo.latest.tag_name)) {
+        if (semverCompare(release.tag_name, this.releaseInfo.latest.tag_name)) {
           this.releaseInfo.ignoreRemindModalTillNextRelease = false;
         }
 
-        this.releaseInfo.latest = relase;
+        this.releaseInfo.latest = release;
       }
 
       if (this.releaseInfo.ignoreRemindModalTillNextRelease) {
@@ -173,6 +180,9 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         // It's okay to ignore the failure and just return undefined.
         return;
       }
+    },
+    overrideCustomFeatureMatrix(overrides: Partial<CustomFeatureMatrix>) {
+      Object.assign(this.customFeatureMatrix, overrides);
     },
   },
 });

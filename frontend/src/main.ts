@@ -2,7 +2,7 @@ import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import Long from "long";
 import protobufjs from "protobufjs";
-import { createApp } from "vue";
+import { computed, createApp } from "vue";
 import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
@@ -35,7 +35,7 @@ import {
   sizeToFit,
   urlfy,
 } from "./utils";
-import { applyCustomTheme } from "./utils/customTheme";
+import { useCustomTheme } from "./utils/customTheme";
 
 protobufjs.util.Long = Long;
 protobufjs.configure();
@@ -153,22 +153,57 @@ app
   .directive("data-source-type", dataSourceType)
   .use(pinia);
 
-const initSearchParams = () => {
+const overrideCustomFeatureMatrix = () => {
+  const query = new URLSearchParams(window.location.search);
   const actuatorStore = useActuatorV1Store();
-  const searchParams = new URLSearchParams(window.location.search);
-  const mode = searchParams.get("mode") as PageMode;
-  if (mode === "BUNDLED" || mode === "STANDALONE") {
-    actuatorStore.pageMode = mode;
+  const mode = query.get("mode") as PageMode;
+  if (mode === "STANDALONE") {
+    // mode=STANDALONE is not easy to read, but for legacy support we keep it as
+    // some customers are using it.
+    actuatorStore.overrideCustomFeatureMatrix({
+      "bb.custom-feature.embedded-in-iframe": true,
+      "bb.custom-feature.hide-help": true,
+      "bb.custom-feature.hide-quick-start": true,
+      "bb.custom-feature.hide-release-remind": true,
+      "bb.custom-feature.disallow-share-worksheet": true,
+      "bb.custom-feature.disallow-navigate-to-sql-editor": true,
+      "bb.custom-feature.disallow-navigate-to-console": true,
+    });
   }
-  const customTheme = searchParams.get("customTheme");
-  if (customTheme) {
-    actuatorStore.customTheme = customTheme;
-    applyCustomTheme(customTheme);
+  const customTheme = query.get("customTheme");
+  if (customTheme === "lixiang") {
+    actuatorStore.overrideCustomFeatureMatrix({
+      "bb.custom-feature.custom-query-datasource": true,
+      "bb.custom-feature.disallow-export-query-data": true,
+      "bb.custom-feature.custom-color-scheme": {
+        "--color-accent": "#00665f",
+        "--color-accent-disabled": "#b8c3c3",
+        "--color-accent-hover": "#00554f",
+      },
+    });
   }
-  const lang = searchParams.get("lang");
+
+  useCustomTheme(
+    computed(
+      () =>
+        actuatorStore.customFeatureMatrix[
+          "bb.custom-feature.custom-color-scheme"
+        ]
+    )
+  );
+};
+
+const overrideLang = () => {
+  const query = new URLSearchParams(window.location.search);
+  const lang = query.get("lang");
   if (lang) {
     i18n.global.locale.value = lang;
   }
+};
+
+const initSearchParams = () => {
+  overrideCustomFeatureMatrix();
+  overrideLang();
 };
 
 initSearchParams();
