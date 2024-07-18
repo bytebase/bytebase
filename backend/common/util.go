@@ -29,7 +29,8 @@ const (
 	// 100 MB.
 	MaximumSQLResultSize = 100 * 1024 * 1024
 	// MaximumCommands is the maximum number of commands that can be executed in a single transaction.
-	MaximumCommands    = 200
+	MaximumCommands = 200
+	// MaximumAdviceCount is the maximum number of advice that can be returned per status level.
 	MaximumAdviceCount = 50
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
