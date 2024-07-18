@@ -693,6 +693,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	spans, err := base.GetQuerySpan(
 		ctx,
 		base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
 			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(s.store),
 			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(s.store),
 			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(s.store, instance.Engine),

@@ -1388,6 +1388,7 @@ func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
+				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.metadataGetter,
 				ListDatabaseNamesFunc:   l.context.databaseNamesLister,
 			},
@@ -1533,6 +1534,7 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 		if span, err := base.GetQuerySpan(
 			c.completer.ctx,
 			base.GetQuerySpanContext{
+				InstanceID:              c.completer.instanceID,
 				GetDatabaseMetadataFunc: c.completer.metadataGetter,
 				ListDatabaseNamesFunc:   c.completer.databaseNamesLister,
 			},

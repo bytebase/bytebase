@@ -660,6 +660,7 @@ func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpr
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
+				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.getMetadata,
 				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 			},
@@ -1130,6 +1131,7 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 			if span, err := base.GetQuerySpan(
 				l.context.ctx,
 				base.GetQuerySpanContext{
+					InstanceID:              l.context.instanceID,
 					GetDatabaseMetadataFunc: l.context.getMetadata,
 					ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 				},

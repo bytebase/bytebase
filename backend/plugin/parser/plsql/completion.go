@@ -867,6 +867,7 @@ func (l *TableRefListener) ExitDml_table_expression_clause(ctx *plsql.Dml_table_
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
+				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.getMetadata,
 				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 			},
