@@ -570,7 +570,9 @@ func SQLReviewCheck(
 		}
 	}
 
-	advices := append(errorAdvices, warningAdvices...)
+	var advices []*storepb.Advice
+	advices = append(advices, errorAdvices...)
+	advices = append(advices, warningAdvices...)
 	return advices, nil
 }
 
