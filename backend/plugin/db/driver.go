@@ -449,3 +449,7 @@ type ErrorWithPosition struct {
 func (e *ErrorWithPosition) Error() string {
 	return e.Err.Error()
 }
+
+func (e *ErrorWithPosition) Unwrap() error {
+	return e.Err
+}
