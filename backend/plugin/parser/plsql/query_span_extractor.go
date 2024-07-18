@@ -19,8 +19,6 @@ type querySpanExtractor struct {
 	ctx               context.Context
 	gCtx              base.GetQuerySpanContext
 	connectedDatabase string
-	metaCache         map[string]*model.DatabaseMetadata
-	linkedMetaCache   map[string]*model.DatabaseMetadata
 
 	ctes []*base.PseudoTable
 
@@ -31,22 +29,16 @@ type querySpanExtractor struct {
 func newQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDatabase: connectionDatabase,
-		metaCache:         make(map[string]*model.DatabaseMetadata),
-		linkedMetaCache:   make(map[string]*model.DatabaseMetadata),
 		gCtx:              gCtx,
 	}
 }
 
-func (q *querySpanExtractor) getLinkedDatabaseMetadata(linkName string, schema string) (string, *model.DatabaseMetadata, error) {
-	if meta, ok := q.linkedMetaCache[linkName]; ok {
-		return linkName, meta, nil
-	}
-	databaseName, meta, err := q.gCtx.GetLinkedDatabaseMetadataFunc(q.ctx, linkName, schema)
+func (q *querySpanExtractor) getLinkedDatabaseMetadata(linkName string, schema string) (string, string, *model.DatabaseMetadata, error) {
+	linkedInstanceID, databaseName, meta, err := q.gCtx.GetLinkedDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, linkName, schema)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to get linked database metadata for schema: %s", schema)
+		return "", "", nil, errors.Wrapf(err, "failed to get linked database metadata for schema: %s", schema)
 	}
-	q.metaCache[databaseName] = meta
-	return databaseName, meta, nil
+	return linkedInstanceID, databaseName, meta, nil
 }
 
 func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.DatabaseMetadata, error) {
@@ -54,14 +46,10 @@ func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.
 	// We deal with two models in f, so we use schema name here.
 	// The f will return the real database name and the metadata.
 	// We just return them to the caller.
-	if meta, ok := q.metaCache[schema]; ok {
-		return schema, meta, nil
-	}
-	databaseName, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, schema)
+	databaseName, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, schema)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
 	}
-	q.metaCache[databaseName] = meta
 	return databaseName, meta, nil
 }
 
@@ -454,7 +442,6 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
-			metaCache:         q.metaCache,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -478,7 +465,6 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
-			metaCache:         q.metaCache,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -659,7 +645,6 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
 			connectedDatabase: q.connectedDatabase,
-			metaCache:         q.metaCache,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -1244,7 +1229,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 	}
 	if len(dbLink) > 0 {
 		linkName := strings.Join(dbLink, ".")
-		_, linkedMeta, err := q.getLinkedDatabaseMetadata(linkName, schemaName)
+		linkedInstanceID, _, linkedMeta, err := q.getLinkedDatabaseMetadata(linkName, schemaName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get linked database metadata for: %s", dbLink)
 		}
@@ -1253,7 +1238,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 				DatabaseLink: &linkName,
 			}
 		}
-		return q.findTableSchemaInMetadata(linkedMeta, linkedMeta.GetName(), schemaName, tableName)
+		return q.findTableSchemaInMetadata(linkedInstanceID, linkedMeta, linkedMeta.GetName(), schemaName, tableName, true /* forLinkedDB */)
 	}
 
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
@@ -1284,10 +1269,10 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	return q.findTableSchemaInMetadata(dbSchema, databaseName, schemaName, tableName)
+	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, databaseName, schemaName, tableName, false /* forLinkedDB */)
 }
 
-func (q *querySpanExtractor) findTableSchemaInMetadata(dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string) (base.TableSource, error) {
+func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string, forLinkedDB bool) (base.TableSource, error) {
 	schema := dbSchema.GetSchema(schemaName)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
@@ -1336,7 +1321,11 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(dbSchema *model.DatabaseM
 	}
 
 	if view != nil && view.Definition != "" {
-		columns, err := q.getColumnsForView(view.Definition)
+		connectedDatabase := q.connectedDatabase
+		if forLinkedDB {
+			connectedDatabase = databaseName
+		}
+		columns, err := q.getColumnsForView(instanceID, connectedDatabase, view.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1347,7 +1336,11 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(dbSchema *model.DatabaseM
 	}
 
 	if materializedView != nil && materializedView.Definition != "" {
-		columns, err := q.getColumnsForMaterializedView(materializedView.Definition)
+		connectedDatabase := q.connectedDatabase
+		if forLinkedDB {
+			connectedDatabase = databaseName
+		}
+		columns, err := q.getColumnsForMaterializedView(instanceID, connectedDatabase, materializedView.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1359,8 +1352,14 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(dbSchema *model.DatabaseM
 	return nil, nil
 }
 
-func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, q.gCtx)
+func (q *querySpanExtractor) getColumnsForView(instanceID, connectedDatabase, definition string) ([]base.QuerySpanResult, error) {
+	newContext := base.GetQuerySpanContext{
+		InstanceID:                    instanceID,
+		GetDatabaseMetadataFunc:       q.gCtx.GetDatabaseMetadataFunc,
+		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
+		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
+	}
+	newQ := newQuerySpanExtractor(connectedDatabase, newContext)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
@@ -1368,8 +1367,14 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, q.gCtx)
+func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, connectedDatabase, definition string) ([]base.QuerySpanResult, error) {
+	newContext := base.GetQuerySpanContext{
+		InstanceID:                    instanceID,
+		GetDatabaseMetadataFunc:       q.gCtx.GetDatabaseMetadataFunc,
+		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
+		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
+	}
+	newQ := newQuerySpanExtractor(connectedDatabase, newContext)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)

@@ -14,7 +14,7 @@ func init() {
 }
 
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-	extractor := newQuerySpanExtractor(database, gCtx.GetDatabaseMetadataFunc)
+	extractor := newQuerySpanExtractor(database, gCtx)
 
 	querySpan, err := extractor.getQuerySpan(ctx, statement)
 	if err != nil {

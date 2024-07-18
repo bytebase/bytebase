@@ -72,6 +72,7 @@ const (
 
 type CompletionContext struct {
 	Scene             SceneType
+	InstanceID        string
 	DefaultDatabase   string
 	Metadata          GetDatabaseMetadataFunc
 	ListDatabaseNames ListDatabaseNamesFunc

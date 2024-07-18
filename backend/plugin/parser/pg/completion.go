@@ -151,6 +151,7 @@ type Completer struct {
 	parser              *pg.PostgreSQLParser
 	lexer               *pg.PostgreSQLLexer
 	scanner             *base.Scanner
+	instanceID          string
 	defaultDatabase     string
 	getMetadata         base.GetDatabaseMetadataFunc
 	listDatabaseNames   base.ListDatabaseNamesFunc
@@ -188,6 +189,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		getMetadata:         cCtx.Metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
@@ -217,6 +219,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		getMetadata:         cCtx.Metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
@@ -331,7 +334,7 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 
 func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return
 		}
@@ -661,6 +664,7 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
+				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.getMetadata,
 				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 			},
@@ -1027,6 +1031,7 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 					if span, err := base.GetQuerySpan(
 						l.context.ctx,
 						base.GetQuerySpanContext{
+							InstanceID:              l.context.instanceID,
 							GetDatabaseMetadataFunc: l.context.getMetadata,
 							ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 						},
@@ -1190,7 +1195,7 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 
 func (c *Completer) listAllSchemas() []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1202,7 +1207,7 @@ func (c *Completer) listAllSchemas() []string {
 
 func (c *Completer) listTables(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1218,7 +1223,7 @@ func (c *Completer) listTables(schema string) []string {
 
 func (c *Completer) listForeignTables(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1234,7 +1239,7 @@ func (c *Completer) listForeignTables(schema string) []string {
 
 func (c *Completer) listMaterializedViews(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1250,7 +1255,7 @@ func (c *Completer) listMaterializedViews(schema string) []string {
 
 func (c *Completer) listViews(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}

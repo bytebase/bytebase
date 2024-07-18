@@ -18,7 +18,7 @@ type querySpanExtractor struct {
 	ctx               context.Context
 	connectedDB       string
 	metaCache         map[string]*model.DatabaseMetadata
-	f                 base.GetDatabaseMetadataFunc
+	gCtx              base.GetQuerySpanContext
 	lowerTableViewMap map[string]map[string]bool
 
 	ctes              []*base.PseudoTable
@@ -26,12 +26,12 @@ type querySpanExtractor struct {
 	tableSourcesFrom  []base.TableSource
 }
 
-func newQuerySpanExtractor(connectedDB string, f base.GetDatabaseMetadataFunc) *querySpanExtractor {
+func newQuerySpanExtractor(connectedDB string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDB:       connectedDB,
 		metaCache:         make(map[string]*model.DatabaseMetadata),
 		lowerTableViewMap: make(map[string]map[string]bool),
-		f:                 f,
+		gCtx:              gCtx,
 	}
 }
 
@@ -462,7 +462,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 			ctx:               q.ctx,
 			connectedDB:       q.connectedDB,
 			metaCache:         q.metaCache,
-			f:                 q.f,
+			gCtx:              q.gCtx,
 			ctes:              q.ctes,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
@@ -796,7 +796,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
@@ -808,7 +808,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(databaseName string) (*model.Da
 	if meta, ok := q.metaCache[databaseName]; ok {
 		return meta, nil
 	}
-	_, meta, err := q.f(q.ctx, databaseName)
+	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, databaseName)
 	if err != nil {
 		return nil, err
 	}
