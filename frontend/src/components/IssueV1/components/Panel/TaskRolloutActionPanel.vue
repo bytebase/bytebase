@@ -137,7 +137,6 @@ import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
   databaseForTask,
   planCheckRunListForTask,
-  planCheckRunSummaryForCheckRunList,
   semanticTaskType,
   stageForTask,
   taskRolloutActionButtonProps,
@@ -147,6 +146,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
