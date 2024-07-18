@@ -96,18 +96,6 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	return s.GetWorkspaceIamPolicy(ctx)
 }
 
-func findBindingByRole(policy *storepb.IamPolicy, role api.Role) *storepb.Binding {
-	r := common.FormatRole(role.String())
-	for _, binding := range policy.Bindings {
-		if binding.Role == r {
-			return binding
-		}
-	}
-	return &storepb.Binding{
-		Role: r,
-	}
-}
-
 func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*IamPolicyMessage, error) {
 	resourceType := api.PolicyResourceTypeProject
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
