@@ -1,6 +1,5 @@
 - statement: CREATE TABLE book(id int AUTO_INCREMENT)
   changeType: 0
-  want: []
 - statement: CREATE TABLE book(a int AUTO_INCREMENT)
   changeType: 0
   want:

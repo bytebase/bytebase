@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(name varchar(20));
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(name varchar(3000));
   changeType: 0
   want:
@@ -15,7 +14,6 @@
       endposition: null
 - statement: CREATE TABLE t(name varchar(225));
   changeType: 0
-  want: []
 - statement: ALTER TABLE public.tech_book ADD name_2 varchar(22225)
   changeType: 0
   want:

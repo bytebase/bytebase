@@ -2,10 +2,8 @@
     CREATE TABLE dt_relation_temp(objto int);
     ALTER TABLE dt_relation_temp ADD COLUMN infos json null comment'关系信息点'AFTER`objto`;
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a varchar(20));
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t1(a varchar(20) CHARSET ascii);
     CREATE TABLE t2(a varchar(20) CHARSET ascii);

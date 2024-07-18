@@ -1,9 +1,7 @@
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(id INT)
   changeType: 0
   want:
@@ -20,12 +18,10 @@
     CREATE TABLE t(id INT);
                 DROP TABLE t
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id)
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
                 ALTER TABLE t DROP PRIMARY KEY
@@ -58,28 +54,22 @@
     CREATE TABLE t(id INT);
                 ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book CHANGE COLUMN id uid INT
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book MODIFY COLUMN id INT
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), PRIMARY KEY(id, name));
                 ALTER TABLE t DROP COLUMN id
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), comment varchar(255), PRIMARY KEY(id, name));
                 ALTER TABLE t DROP COLUMN id, DROP COLUMN name
@@ -108,7 +98,6 @@
       endposition: null
 - statement: ALTER TABLE tech_book DROP COLUMN name
   changeType: 0
-  want: []
 - statement: |-
     ALTER TABLE tech_book CHANGE COLUMN id uid int;
                 ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name

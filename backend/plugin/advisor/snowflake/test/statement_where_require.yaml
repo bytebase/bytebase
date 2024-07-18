@@ -24,7 +24,6 @@
       endposition: null
 - statement: UPDATE t SET a = 1 WHERE b = 2;
   changeType: 0
-  want: []
 - statement: DELETE FROM t;
   changeType: 0
   want:
@@ -39,7 +38,6 @@
       endposition: null
 - statement: DELETE FROM t WHERE a = 1;
   changeType: 0
-  want: []
 - statement: SELECT * FROM t;
   changeType: 0
   want:
@@ -54,7 +52,6 @@
       endposition: null
 - statement: SELECT * FROM t WHERE b = 2;
   changeType: 0
-  want: []
 - statement: |-
     with
        album_info_1976 as (select m.album_ID, m.album_name, b.band_name
@@ -104,4 +101,3 @@
       endposition: null
 - statement: SELECT 1;
   changeType: 0
-  want: []

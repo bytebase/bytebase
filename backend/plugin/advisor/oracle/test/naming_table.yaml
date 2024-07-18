@@ -12,7 +12,6 @@
       endposition: null
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
   changeType: 0
-  want: []
 - statement: CREATE TABLE tech_Book(id int, name varchar(255))
   changeType: 0
   want:

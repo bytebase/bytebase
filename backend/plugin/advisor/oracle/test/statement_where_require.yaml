@@ -1,6 +1,5 @@
 - statement: INSERT INTO t VALUES(1)
   changeType: 0
-  want: []
 - statement: DELETE FROM t1
   changeType: 0
   want:
@@ -27,10 +26,8 @@
       endposition: null
 - statement: DELETE FROM t1 WHERE a > 0
   changeType: 0
-  want: []
 - statement: UPDATE t1 SET a = 1 WHERE a > 10
   changeType: 0
-  want: []
 - statement: SELECT a FROM t
   changeType: 0
   want:
@@ -45,7 +42,6 @@
       endposition: null
 - statement: SELECT a FROM t WHERE a > 0
   changeType: 0
-  want: []
 - statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
   changeType: 0
   want:
@@ -60,4 +56,3 @@
       endposition: null
 - statement: SELECT 1 FROM dual
   changeType: 0
-  want: []

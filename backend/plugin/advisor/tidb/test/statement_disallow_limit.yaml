@@ -1,6 +1,5 @@
 - statement: ""
   changeType: 0
-  want: []
 - statement: INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1
   changeType: 0
   want:

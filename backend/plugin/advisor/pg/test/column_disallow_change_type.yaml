@@ -12,4 +12,3 @@
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN c1 int
   changeType: 0
-  want: []

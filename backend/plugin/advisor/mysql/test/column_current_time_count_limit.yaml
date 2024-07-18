@@ -35,10 +35,8 @@
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a timestamp, b timestamp)
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(
       a timestamp default now(),

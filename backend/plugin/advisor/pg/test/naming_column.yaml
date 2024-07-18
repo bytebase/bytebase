@@ -12,13 +12,10 @@
       endposition: null
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
   changeType: 0
-  want: []
 - statement: CREATE TABLE book(id int, creator_Id int)
   changeType: 0
-  want: []
 - statement: CREATE TABLE book(id int, creator_id int)
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creatorId" int
@@ -37,7 +34,6 @@
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creator" int
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creatorId"
@@ -56,4 +52,3 @@
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creator"
   changeType: 0
-  want: []

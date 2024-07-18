@@ -2,7 +2,6 @@
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int FIRST;

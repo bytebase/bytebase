@@ -8,7 +8,6 @@
       f geometry
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(
       a geometry,
@@ -21,7 +20,6 @@
       h geometrycollection
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t1(
       a int primary key
@@ -30,7 +28,6 @@
       a int auto_increment primary key
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(
       a int,
@@ -104,4 +101,3 @@
       PRIMARY KEY (id)
     )
   changeType: 0
-  want: []

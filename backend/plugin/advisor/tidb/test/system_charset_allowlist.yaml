@@ -1,9 +1,7 @@
 - statement: CREATE TABLE t(a int) CHARSET utf8mb4
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a varchar(255))
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a int) CHARSET ascii
   changeType: 0
   want:
@@ -98,4 +96,3 @@
       endposition: null
 - statement: /* this is a comment */
   changeType: 0
-  want: []

@@ -12,4 +12,3 @@
       endposition: null
 - statement: alter table tech_book add constraint check_id check(id > 0) NOT VALID;
   changeType: 0
-  want: []

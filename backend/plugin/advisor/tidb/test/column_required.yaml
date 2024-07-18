@@ -18,7 +18,6 @@
                   updater_id int,
                   updated_ts timestamp)
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -47,7 +46,6 @@
                   updated_ts timestamp);
                 ALTER TABLE book RENAME COLUMN creator TO creator_id;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -76,7 +74,6 @@
                   updated_ts timestamp);
                 ALTER TABLE book CHANGE COLUMN creator creator_id int;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -106,7 +103,6 @@
                   content varchar(255));
                 ALTER TABLE book DROP COLUMN content;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -134,7 +130,6 @@
                   updated_ts timestamp);
                 ALTER TABLE book ADD COLUMN creator_id int;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -174,4 +169,3 @@
                   updated_ts timestamp);
                 DROP TABLE book;
   changeType: 0
-  want: []

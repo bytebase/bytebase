@@ -1,9 +1,7 @@
 - statement: CREATE TABLE UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES(ID INT);
   changeType: 0
-  want: []
 - statement: CREATE TABLE "UPPER_CASE_TABLE_NAME_WITH_DOUBLE_QUOTES"(ID INT);
   changeType: 0
-  want: []
 - statement: CREATE TABLE lower_case_table_name_without_double_quotes(ID INT);
   changeType: 0
   want:
@@ -42,7 +40,6 @@
       endposition: null
 - statement: ALTER TABLE "lower_case_table_with_double_quotes" RENAME TO UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES;
   changeType: 0
-  want: []
 - statement: ALTER TABLE UPPER_CASE_TABLE_NAME RENAME TO "lower_case_table_with_double_quotes";
   changeType: 0
   want:

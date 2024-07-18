@@ -102,7 +102,6 @@
       endposition: null
 - statement: CREATE TABLE t(id INT, PRIMARY KEY(id))
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id)
@@ -185,7 +184,6 @@
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id)
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
             CREATE INDEX idx_b ON t(b(5));
@@ -225,4 +223,3 @@
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
             CREATE INDEX idx_id ON t(id);
   changeType: 0
-  want: []

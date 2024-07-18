@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(a int);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE b(a INT);
     CREATE TABLE t(a int) PARTITION BY RANGE (a) (

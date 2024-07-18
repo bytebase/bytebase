@@ -12,4 +12,3 @@
       endposition: null
 - statement: create index concurrently on tech_book(id);
   changeType: 0
-  want: []

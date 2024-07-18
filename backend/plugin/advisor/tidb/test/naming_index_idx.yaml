@@ -1,6 +1,5 @@
 - statement: CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)
   changeType: 0
-  want: []
 - statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
   changeType: 0
   want:
@@ -36,7 +35,6 @@
       endposition: null
 - statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book_id_name
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book
   changeType: 0
   want:
@@ -51,7 +49,6 @@
       endposition: null
 - statement: ALTER TABLE tech_book ADD INDEX idx_tech_book_id_name (id, name)
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book ADD INDEX tech_book_id_name (id, name)
   changeType: 0
   want:
@@ -66,7 +63,5 @@
       endposition: null
 - statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX idx_tech_book_copy_name (name))
   changeType: 0
-  want: []
 - statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name))
   changeType: 0
-  want: []

@@ -1,6 +1,5 @@
 - statement: ALTER TABLE tech_book ADD COLUMN c int;
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book ADD COLUMN c int DEFAULT 0;
   changeType: 0
   want:

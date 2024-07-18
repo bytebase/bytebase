@@ -12,7 +12,6 @@
       endposition: null
 - statement: CREATE INDEX test_index ON dbo.pokes (c100, c200);
   changeType: 0
-  want: []
 - statement: CREATE INDEX test_index ON [dbo].[pokes] (c1, c2);
   changeType: 0
   want:

@@ -24,4 +24,3 @@
       endposition: null
 - statement: CREATE TABLE Person(id INT);
   changeType: 0
-  want: []

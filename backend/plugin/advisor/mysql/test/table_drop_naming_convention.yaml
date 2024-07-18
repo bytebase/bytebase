@@ -3,7 +3,6 @@
     RENAME TABLE foo to foo_delete;
     DROP TABLE IF EXISTS foo_delete;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE foo(a INT);
     DROP TABLE IF EXISTS foo;

@@ -1,9 +1,7 @@
 - statement: CREATE DATABASE test WITH ENCODING 'UTF8'
   changeType: 0
-  want: []
 - statement: CREATE DATABASE test
   changeType: 0
-  want: []
 - statement: CREATE DATABASE test WITH ENCODING 'LATIN1'
   changeType: 0
   want:
@@ -18,4 +16,3 @@
       endposition: null
 - statement: /* this is a comment */
   changeType: 0
-  want: []

@@ -48,7 +48,6 @@
       endposition: null
 - statement: DROP TRIGGER test_trigger ON public.pokes;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE public.pokesv1 (foo int, bar varchar);
     ALTER TABLE pokesv1 RENAME TO pokesv2;
@@ -109,4 +108,3 @@
       endposition: null
 - statement: "CREATE TABLE public.pokes (foo int);\nWITH foo1 AS (SELECT * FROM public.tech_book) \nSELECT * FROM foo1;"
   changeType: 0
-  want: []

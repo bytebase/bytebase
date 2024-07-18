@@ -1,9 +1,7 @@
 - statement: DELETE FROM tech_book WHERE a > 1;
   changeType: 0
-  want: []
 - statement: UPDATE tech_book SET id = 1;
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book ADD COLUMN author TEXT; UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
   changeType: 0
   want:

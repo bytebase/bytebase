@@ -24,7 +24,6 @@
       endposition: null
 - statement: CREATE TABLE book(id int, creator_id int);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
     ALTER TABLE book RENAME COLUMN creator_id TO creatorId;
@@ -86,10 +85,8 @@
     CREATE TABLE book (id INT);
     ALTER TABLE book CHANGE COLUMN id creator_id int;
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book DROP COLUMN id;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
       id int,

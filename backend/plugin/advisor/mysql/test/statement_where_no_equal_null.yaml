@@ -1,11 +1,9 @@
 - statement: |
     SELECT * FROM employee WHERE name = 'Jack' AND id IS NULL;
   changeType: 0
-  want: []
 - statement: |
     UPDATE employee SET name = NULL;
   changeType: 0
-  want: []
 - statement: |
     SELECT * FROM t WHERE name = 'test' AND id = NULL;
   changeType: 0

@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(a INT UNSIGNED AUTO_INCREMENT);
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a INT AUTO_INCREMENT);
   changeType: 0
   want:
@@ -27,7 +26,6 @@
       endposition: null
 - statement: CREATE TABLE t(a INT ZEROFILL AUTO_INCREMENT);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a INT AUTO_INCREMENT, ADD COLUMN c INT ZEROFILL AUTO_INCREMENT, ADD COLUMN d INT UNSIGNED AUTO_INCREMENT;

@@ -1,6 +1,5 @@
 - statement: CREATE TABLE test(id INT PRIMARY KEY COMMENT 'comment',name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',INDEX idx_test_name(name),UNIQUE KEY uk_test_id_name(id, name)) ENGINE = INNODB COMMENT 'comment'
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE userTable(
       id INT NOT NULL,
@@ -50,7 +49,6 @@
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci;
   changeType: 0
   want:
@@ -65,7 +63,6 @@
       endposition: null
 - statement: CREATE TABLE t(a varchar(255));
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a int) COLLATE latin1_bin;
   changeType: 0
   want:

@@ -1,6 +1,5 @@
 - statement: SELECT * FROM t;
   changeType: 0
-  want: []
 - statement: select name from hello join world on hello.id = world.id join baby on world.id = baby.id;
   changeType: 0
   want:

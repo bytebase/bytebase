@@ -7,7 +7,6 @@
       updater_id INT
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t (
       name TEXT,

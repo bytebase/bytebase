@@ -47,13 +47,10 @@
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
   changeType: 0
-  want: []
 - statement: CREATE TABLE book(id int) ENGINE = INNODB;
   changeType: 0
-  want: []
 - statement: CREATE TABLE book(id int);
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(
       id INT,
@@ -97,7 +94,6 @@
       endposition: null
 - statement: ALTER TABLE tech_book ENGINE = INNODB;
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE teck_book(a INT);
     CREATE TABLE book(a INT);
@@ -115,7 +111,6 @@
       endposition: null
 - statement: SET default_storage_engine=INNODB;
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(a INT);
     SET default_storage_engine=CSV;
@@ -133,4 +128,3 @@
 - statement: |
     SET foreign_key_checks=0;
   changeType: 0
-  want: []

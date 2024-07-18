@@ -48,14 +48,12 @@
       endposition: null
 - statement: SELECT bar FROM pokes WHERE bar > 1;
   changeType: 0
-  want: []
 - statement: |-
     SELECT Department, AVG(Salary) AS AvgSalary
     FROM Employees
     GROUP BY Department
     HAVING AVG(Salary) * 3 + 1 > 50000;
   changeType: 0
-  want: []
 - statement: select * from (select * from t where t.a > 1) t1 where a > AVG(a);
   changeType: 0
   want:

@@ -2,7 +2,6 @@
     CREATE TABLE book(id INT);
     INSERT INTO book(id) values (1);
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(id INT);
     DELETE FROM book;
@@ -35,12 +34,10 @@
     CREATE TABLE book(id INT);
     DELETE FROM book WHERE id > 0;
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(id INT);
     UPDATE book SET id = 1 WHERE id > 10;
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id FROM book;
@@ -59,7 +56,6 @@
     CREATE TABLE book(id INT);
     SELECT id FROM book WHERE id > 0;
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id
@@ -88,4 +84,3 @@
 - statement: |
     SELECT CURDATE();
   changeType: 0
-  want: []

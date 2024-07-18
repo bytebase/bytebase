@@ -1,6 +1,5 @@
 - statement: CREATE TABLE ALL_UPPERCASE(ID INT);
   changeType: 0
-  want: []
 - statement: CREATE TABLE [\\](ID INT);
   changeType: 0
   want:
@@ -27,10 +26,8 @@
       endposition: null
 - statement: CREATE TABLE PascalCase(ID INT);
   changeType: 0
-  want: []
 - statement: execute sp_rename 'Sales.SalesTerritory', 'SALESTERR';
   changeType: 0
-  want: []
 - statement: execute sp_rename 'Sales.SalesTerritory', 'salesTerr';
   changeType: 0
   want:

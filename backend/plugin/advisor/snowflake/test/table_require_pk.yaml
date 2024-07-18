@@ -6,7 +6,6 @@
         POSITION      VARCHAR(100)
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -16,7 +15,6 @@
         CONSTRAINT    PK_CUSTOMER PRIMARY KEY (ID)
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -63,7 +61,6 @@
     );
     ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -73,7 +70,6 @@
     );
     ALTER TABLE "PUBLIC"."CUSTOMER" ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (

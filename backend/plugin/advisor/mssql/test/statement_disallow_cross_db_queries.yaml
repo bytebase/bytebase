@@ -1,6 +1,5 @@
 - statement: SELECT * FROM MASTER.dbo.pokes;
   changeType: 0
-  want: []
 - statement: |-
     WITH foo1 AS (SELECT * FROM master2.dbo.tech_book)
     SELECT * FROM master.dbo.pokes;

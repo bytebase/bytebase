@@ -2,10 +2,8 @@
     -- The rule should be friendly with engine behavior(i.e. stored and resolved as uppercase characters if not quoted)
     CREATE TABLE t(id INT);
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(ID INT);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(
       name  VARCHAR,
@@ -47,7 +45,6 @@
       address VARCHAR
     ) AS SELECT a + 1, b + 2 FROM mytable;
   changeType: 0
-  want: []
 - statement: ALTER TABLE mytable RENAME COLUMN name TO "address";
   changeType: 0
   want:
@@ -62,4 +59,3 @@
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO address;
   changeType: 0
-  want: []

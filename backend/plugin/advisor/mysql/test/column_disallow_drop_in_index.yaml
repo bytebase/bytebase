@@ -12,7 +12,6 @@
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE user(
       id INT PRIMARY KEY COMMENT 'comment',
@@ -26,12 +25,10 @@
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(a int, b int, INDEX idx_a(a));
     ALTER TABLE t DROP COLUMN b;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(a int, b int, INDEX idx_b(b));
     ALTER TABLE t DROP COLUMN b;
@@ -65,7 +62,6 @@
     CREATE TABLE y(a int, b int);
     ALTER TABLE y DROP COLUMN a;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(a int,b int, c int, INDEX idx_ac(a,c));
     ALTER TABLE t DROP COLUMN a;

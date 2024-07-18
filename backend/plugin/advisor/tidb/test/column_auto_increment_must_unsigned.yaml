@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(a INT UNSIGNED AUTO_INCREMENT)
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a INT AUTO_INCREMENT)
   changeType: 0
   want:

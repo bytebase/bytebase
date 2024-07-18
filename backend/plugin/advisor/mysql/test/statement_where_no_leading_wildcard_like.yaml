@@ -15,7 +15,6 @@
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE 'abc%';
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE '%abc';

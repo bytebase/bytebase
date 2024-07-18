@@ -1,6 +1,5 @@
 - statement: CREATE TABLE MyTable(a VARCHAR(20));
   changeType: 0
-  want: []
 - statement: ALTER TABLE MyTable ADD b VARCHAR(3000);
   changeType: 0
   want:

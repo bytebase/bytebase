@@ -12,7 +12,6 @@
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id);
   changeType: 0
   want:
@@ -53,7 +52,6 @@
       FOREIGN KEY  fk_book_author_id_author_id (author_id) REFERENCES author (id)
     );
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(
       id INT,
@@ -61,7 +59,6 @@
       FOREIGN KEY (author_id) REFERENCES author (id)
     );
   changeType: 0
-  want: []
 - statement: |
     CREATE TABLE book(
       id INT,

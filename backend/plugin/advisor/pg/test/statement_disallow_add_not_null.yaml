@@ -14,4 +14,3 @@
     alter table tech_book add constraint check_name_not_null check(name IS NOT NULL) NOT VALID;
     alter table tech_book validate constraint check_name_not_null;
   changeType: 0
-  want: []

@@ -36,4 +36,3 @@
     );
     ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id) NOT VALID;
   changeType: 0
-  want: []

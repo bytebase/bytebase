@@ -1,6 +1,5 @@
 - statement: comment on column public.name is 'is a column name'
   changeType: 0
-  want: []
 - statement: comment on column public.name is 'is a  to long column name'
   changeType: 0
   want:
@@ -15,7 +14,6 @@
       endposition: null
 - statement: comment on table public is 'is a table name'
   changeType: 0
-  want: []
 - statement: comment on table public is 'is a  to long table name long long long long long long long'
   changeType: 0
   want:

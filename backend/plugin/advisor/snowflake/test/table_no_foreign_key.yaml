@@ -82,7 +82,6 @@
     );
     ALTER TABLE CUSTOMER DROP FOREIGN KEY (ID);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (

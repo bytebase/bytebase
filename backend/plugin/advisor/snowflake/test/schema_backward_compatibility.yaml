@@ -64,4 +64,3 @@
     CREATE TABLE T(ID INT);
     DROP TABLE T;
   changeType: 0
-  want: []

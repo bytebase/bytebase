@@ -68,4 +68,3 @@
         Position      VARCHAR(100)
     );
   changeType: 0
-  want: []

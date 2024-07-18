@@ -1,6 +1,5 @@
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id_name PRIMARY KEY (id, name)
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book ADD CONSTRAINT tech_book_id_name PRIMARY KEY (id, name)
   changeType: 0
   want:
@@ -27,7 +26,6 @@
       endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), CONSTRAINT pk_book_name PRIMARY KEY (name))
   changeType: 0
-  want: []
 - statement: |-
     -- this is the first line.
             CREATE TABLE book(
@@ -48,13 +46,10 @@
       endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), PRIMARY KEY (name))
   changeType: 0
-  want: []
 - statement: CREATE TABLE book(id INT, name VARCHAR(20) PRIMARY KEY)
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id_name PRIMARY KEY USING INDEX old_index
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book PRIMARY KEY USING INDEX old_index
   changeType: 0
   want:
@@ -69,7 +64,6 @@
       endposition: null
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book_id_name
   changeType: 0
-  want: []
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book
   changeType: 0
   want:
@@ -84,7 +78,6 @@
       endposition: null
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book_id_name
   changeType: 0
-  want: []
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book
   changeType: 0
   want:

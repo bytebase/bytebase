@@ -36,7 +36,6 @@
       age   INT
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE mytable_copy (
       name      INT,
@@ -59,7 +58,6 @@
       age  INT
     ) AS SELECT a + 1, b + 2 FROM mytable;
   changeType: 0
-  want: []
 - statement: ALTER TABLE mytable RENAME COLUMN name TO "connect";
   changeType: 0
   want:
@@ -74,4 +72,3 @@
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO age;
   changeType: 0
-  want: []

@@ -61,7 +61,6 @@
       updated_ts timestamp
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -92,7 +91,6 @@
     );
     ALTER TABLE book RENAME COLUMN creator TO creator_id;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -123,7 +121,6 @@
     );
     ALTER TABLE book CHANGE COLUMN creator creator_id int;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -155,7 +152,6 @@
     );
     ALTER TABLE book DROP COLUMN content;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -185,7 +181,6 @@
     );
     ALTER TABLE book ADD COLUMN creator_id int;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -228,7 +223,6 @@
     );
     DROP TABLE book;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(
       id int
@@ -240,4 +234,3 @@
       updated_ts timestamp
     );
   changeType: 0
-  want: []

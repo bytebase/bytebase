@@ -1,6 +1,5 @@
 - statement: CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)
   changeType: 0
-  want: []
 - statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
   changeType: 0
   want:
@@ -27,7 +26,6 @@
       endposition: null
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book_id_name
   changeType: 0
-  want: []
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book
   changeType: 0
   want:

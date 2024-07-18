@@ -1,6 +1,5 @@
 - statement: ALTER TABLE tech_book ADD COLUMN a int;
   changeType: 0
-  want: []
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a int;
     ALTER TABLE tech_book CHANGE COLUMN a c int;

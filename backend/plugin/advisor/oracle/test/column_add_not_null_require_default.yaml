@@ -12,4 +12,3 @@
       endposition: null
 - statement: ALTER TABLE tech_book ADD reader int DEFAULT 0 NOT NULL
   changeType: 0
-  want: []

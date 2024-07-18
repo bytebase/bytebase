@@ -48,7 +48,6 @@
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN (id int, name varchar(255) NOT NULL);
@@ -67,7 +66,6 @@
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255);
@@ -86,4 +84,3 @@
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL;
   changeType: 0
-  want: []

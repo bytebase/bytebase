@@ -12,4 +12,3 @@
       endposition: null
 - statement: CREATE TABLE public.t(id int);
   changeType: 0
-  want: []

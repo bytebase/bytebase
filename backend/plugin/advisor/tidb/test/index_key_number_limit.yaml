@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(a int, b int, primary key (a, b))
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(
             a int,

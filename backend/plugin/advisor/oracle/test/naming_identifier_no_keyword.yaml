@@ -45,9 +45,7 @@
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO analyze
   changeType: 0
-  want: []
 - statement: |-
     create table techBook(id int);
     ALTER TABLE techBook RENAME TO tech_book_tmp;
   changeType: 0
-  want: []

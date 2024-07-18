@@ -1,6 +1,5 @@
 - statement: DROP TABLE IF EXISTS foo_delete
   changeType: 0
-  want: []
 - statement: DROP TABLE IF EXISTS foo
   changeType: 0
   want:

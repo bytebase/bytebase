@@ -1,9 +1,7 @@
 - statement: CREATE TABLE t(a SERIAL PRIMARY KEY);
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a BIGSERIAL, PRIMARY KEY(a));
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(
       a varchar(20) PRIMARY KEY

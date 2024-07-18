@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(a int);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE account (acct_num INT, amount DECIMAL(10,2));
     CREATE TRIGGER ins_sum BEFORE INSERT ON account

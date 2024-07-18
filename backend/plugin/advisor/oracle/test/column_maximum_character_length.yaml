@@ -1,9 +1,7 @@
 - statement: CREATE TABLE t(name char(20));
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(name varchar(225));
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(name char(225));
   changeType: 0
   want:

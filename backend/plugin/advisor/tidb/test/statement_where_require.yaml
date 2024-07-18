@@ -1,6 +1,5 @@
 - statement: INSERT INTO tech_book(id) values (1)
   changeType: 0
-  want: []
 - statement: DELETE FROM tech_book
   changeType: 0
   want:
@@ -27,10 +26,8 @@
       endposition: null
 - statement: DELETE FROM tech_book WHERE id > 0
   changeType: 0
-  want: []
 - statement: UPDATE tech_book SET id = 1 WHERE id > 10
   changeType: 0
-  want: []
 - statement: SELECT id FROM tech_book
   changeType: 0
   want:
@@ -45,7 +42,6 @@
       endposition: null
 - statement: SELECT id FROM tech_book WHERE id > 0
   changeType: 0
-  want: []
 - statement: SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)
   changeType: 0
   want:
@@ -60,4 +56,3 @@
       endposition: null
 - statement: SELECT CURDATE()
   changeType: 0
-  want: []

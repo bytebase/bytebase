@@ -1,6 +1,5 @@
 - statement: TRUNCATE TABLE issues CASCADE;
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE users (
         tenant_id integer REFERENCES tenants ON DELETE CASCADE,
@@ -26,7 +25,6 @@
     );
     COMMENT ON TABLE users IS 'CASCADE COMMENT';
   changeType: 0
-  want: []
 - statement: |-
     TRUNCATE TABLE tech_book CASCADE;
     DROP TABLE tech_book CASCADE;

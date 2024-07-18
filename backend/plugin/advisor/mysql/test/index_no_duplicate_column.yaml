@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t (a int, PRIMARY KEY (a));
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t (
       a int,
@@ -120,7 +119,6 @@
     CREATE TABLE t(a int);
     ALTER TABLE t ADD PRIMARY KEY pk_a (a);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD UNIQUE KEY uk (a);

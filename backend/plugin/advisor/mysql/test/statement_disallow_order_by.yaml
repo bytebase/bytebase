@@ -1,6 +1,5 @@
 - statement: INSERT INTO tech_book values(1, 'a');
   changeType: 0
-  want: []
 - statement: |-
     UPDATE tech_book SET name = 'my name';
     UPDATE tech_book SET name = 'my name' ORDER BY id;

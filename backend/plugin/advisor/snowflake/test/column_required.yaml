@@ -7,7 +7,6 @@
       "updater_id" INT
     );
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t (
       "name" TEXT,
@@ -92,7 +91,5 @@
       endposition: null
 - statement: ALTER TABLE t DROP COLUMN creator_id;
   changeType: 0
-  want: []
 - statement: ALTER TABLE TARGET_TABLE ALTER COLUMN description DROP DEFAULT, COLUMN description DROP NOT NULL;
   changeType: 0
-  want: []

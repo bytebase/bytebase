@@ -20,7 +20,6 @@
       endposition: null
 - statement: CREATE TABLE "DB_NAME"."SCHEMA_NAME"."TABLE_NAME"(ID INT);
   changeType: 0
-  want: []
 - statement: ALTER TABLE "DB_NAME"."SCHEMA_NAME"."TABLE_NAME" RENAME TO "CONNECT";
   changeType: 0
   want:

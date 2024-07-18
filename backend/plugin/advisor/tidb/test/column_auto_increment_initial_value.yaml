@@ -1,9 +1,7 @@
 - statement: CREATE TABLE t(a int)
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a int auto_increment) auto_increment = 20
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a int auto_increment) auto_increment = 2
   changeType: 0
   want:

@@ -1,9 +1,7 @@
 - statement: CREATE TABLE t(a int, b int, c int, unique key(a, b, c))
   changeType: 0
-  want: []
 - statement: CREATE INDEX idx_id_name on tech_book(id, name)
   changeType: 0
-  want: []
 - statement: |-
     CREATE INDEX idx_id_name_1 on tech_book(id, name);
     CREATE INDEX idx_id_name_2 on tech_book(id, name);

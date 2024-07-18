@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(a int);
   changeType: 0
-  want: []
 - statement: |-
     CREATE PROCEDURE simpleProcedure()
     BEGIN

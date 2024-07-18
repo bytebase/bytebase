@@ -1,6 +1,5 @@
 - statement: CREATE TABLE t(a char(5));
   changeType: 0
-  want: []
 - statement: CREATE TABLE t(a int, b JSON);
   changeType: 0
   want:

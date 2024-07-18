@@ -1,6 +1,5 @@
 - statement: SELECT * FROM t WHERE a LIKE 'abc%'
   changeType: 0
-  want: []
 - statement: SELECT * FROM t WHERE a LIKE '%abc'
   changeType: 0
   want:

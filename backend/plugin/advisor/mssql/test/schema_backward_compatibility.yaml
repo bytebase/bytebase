@@ -26,7 +26,6 @@
     CREATE TABLE MyTable(Id INT PRIMARY KEY);
     DROP TABLE MyTable;
   changeType: 0
-  want: []
 - statement: DROP SCHEMA MySchema;
   changeType: 0
   want:
@@ -43,7 +42,6 @@
     CREATE SCHEMA AUTHORIZATION dbo;
     DROP SCHEMA dbo;
   changeType: 0
-  want: []
 - statement: DROP DATABASE MyDB;
   changeType: 0
   want:
@@ -60,7 +58,6 @@
     CREATE DATABASE MyDB;
     DROP DATABASE MyDB;
   changeType: 0
-  want: []
 - statement: |-
     ALTER TABLE MyTable DROP COLUMN MyColumnOne, MyColumnTwo;
     ALTER TABLE MyTable ALTER COLUMN MyColumnOne INT NOT NULL;

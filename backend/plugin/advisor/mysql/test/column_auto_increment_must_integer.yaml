@@ -10,7 +10,6 @@
     CREATE TABLE t9(a bigint AUTO_INCREMENT);
     CREATE TABLE t10(a BIGINT AUTO_INCREMENT);
   changeType: 0
-  want: []
 - statement: |-
     CREATE TABLE t1(a INT AUTO_INCREMENT);
     CREATE TABLE t2(a varchar(255) AUTO_INCREMENT);
