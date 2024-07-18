@@ -97,12 +97,7 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 	// Advise to enable online migration for the issue, or return OK if it's already enabled.
 	if len(adviceList) == 1 && len(stmtList) == 1 {
 		if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
-			return []*storepb.Advice{{
-				Status:  storepb.Advice_SUCCESS,
-				Code:    advisor.Ok.Int32(),
-				Title:   "OK",
-				Content: "",
-			}}, nil
+			return nil, nil
 		}
 
 		adviceList[0].Code = advisor.AdviseOnlineMigration.Int32()
@@ -120,21 +115,11 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 				Content: "Advise to disable online migration because found no statements that need online migration",
 			}}, nil
 		}
-		return []*storepb.Advice{{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		}}, nil
+		return nil, nil
 	}
 
-	// should never reach
-	return []*storepb.Advice{{
-		Status:  storepb.Advice_SUCCESS,
-		Code:    advisor.Ok.Int32(),
-		Title:   "OK",
-		Content: "",
-	}}, nil
+	// Should never reach this.
+	return nil, nil
 }
 
 type useGhostChecker struct {

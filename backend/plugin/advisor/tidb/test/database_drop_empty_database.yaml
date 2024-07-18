@@ -1,4 +1,5 @@
 - statement: DROP DATABASE IF EXISTS test
+  changeType: 0
   want:
     - status: 2
       code: 701
@@ -8,3 +9,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

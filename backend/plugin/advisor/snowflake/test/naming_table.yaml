@@ -1,20 +1,9 @@
 - statement: CREATE TABLE UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES(ID INT);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE "UPPER_CASE_TABLE_NAME_WITH_DOUBLE_QUOTES"(ID INT);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE lower_case_table_name_without_double_quotes(ID INT);
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -24,7 +13,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE "lower_case_table_name_with_double_quotes"(ID INT);
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -34,7 +25,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: "CREATE TABLE \"\U0001F608EMOJI\U0001F604\"(ID INT);"
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -44,15 +37,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE "lower_case_table_with_double_quotes" RENAME TO UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE UPPER_CASE_TABLE_NAME RENAME TO "lower_case_table_with_double_quotes";
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -62,9 +51,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES(ID INT);
                 ALTER TABLE UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES RENAME TO "lower_case_table_with_double_quotes";
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -74,9 +65,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE "lower_case_table_name_with_double_quotes"(ID INT);
                 ALTER TABLE "lower_case_table_name_with_double_quotes" RENAME TO UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES;
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -86,9 +79,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE "lowercase"(ID INT);
                 ALTER TABLE another_schema."lower_case" RENAME TO another_schema.UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES;
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -98,3 +93,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

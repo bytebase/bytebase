@@ -11,6 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  changeType: 0
   want:
     - status: 2
       code: 501
@@ -32,6 +33,7 @@
       startposition:
         line: 12
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE user(
       id INT PRIMARY KEY COMMENT 'comment',
@@ -44,34 +46,17 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE book(id int) ENGINE = INNODB;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE book(id int);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE book(
       id INT,
       price INT
     ) ENGINE = CSV;
+  changeType: 0
   want:
     - status: 2
       code: 501
@@ -85,12 +70,14 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE teck_book(a INT);
     CREATE TABLE book(
       id INT,
       price INT
     ) ENGINE = CSV;
+  changeType: 0
   want:
     - status: 2
       code: 501
@@ -104,18 +91,14 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ENGINE = INNODB;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE teck_book(a INT);
     CREATE TABLE book(a INT);
     ALTER TABLE tech_book ENGINE = CSV;
+  changeType: 0
   want:
     - status: 2
       code: 501
@@ -125,17 +108,13 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: SET default_storage_engine=INNODB;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE book(a INT);
     SET default_storage_engine=CSV;
+  changeType: 0
   want:
     - status: 2
       code: 501
@@ -145,12 +124,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |
     SET foreign_key_checks=0;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

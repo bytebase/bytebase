@@ -1,12 +1,7 @@
 - statement: CREATE TABLE CUSTOMER(NAME VARCHAR(20));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE CUSTOMER(NAME VARCHAR(3000));
+  changeType: 0
   want:
     - status: 2
       code: 422
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE CUSTOMER(NAME VARCHAR);
+  changeType: 0
   want:
     - status: 2
       code: 422
@@ -26,7 +23,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE PUBLIC.CUSTOMER ADD NAME_2 VARCHAR(22225);
+  changeType: 0
   want:
     - status: 2
       code: 422
@@ -36,7 +35,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE PUBLIC.CUSTOMER MODIFY COLUMN NAME VARCHAR(22225);
+  changeType: 0
   want:
     - status: 2
       code: 422
@@ -46,15 +47,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE PUBLIC.CUSTOMER MODIFY COLUMN NAME VARCHAR(20);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE PUBLIC.CUSTOMER MODIFY COLUMN NAME SET DATA TYPE VARCHAR(22225);
+  changeType: 0
   want:
     - status: 2
       code: 422
@@ -64,3 +61,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

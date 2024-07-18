@@ -57,10 +57,5 @@ func (*StatementCheckSetRoleVariable) Check(ctx advisor.Context, _ string) ([]*s
 		}}, nil
 	}
 
-	return []*storepb.Advice{{
-		Status:  storepb.Advice_SUCCESS,
-		Code:    advisor.Ok.Int32(),
-		Title:   "OK",
-		Content: "",
-	}}, nil
+	return nil, nil
 }

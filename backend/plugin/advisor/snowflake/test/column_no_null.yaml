@@ -5,6 +5,7 @@
       age INT,
       address VARCHAR
     );
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -14,6 +15,7 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
     - status: 2
       code: 402
       title: column.no-null
@@ -22,6 +24,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t (
       id INT,
@@ -30,6 +33,7 @@
       address VARCHAR,
       PRIMARY KEY (id, age)
     )
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -39,6 +43,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t (
       id INT NOT NULL,
@@ -46,14 +51,9 @@
       age INT NOT NULL,
       address VARCHAR NOT NULL
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE a ADD COLUMN age INT;
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -63,15 +63,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE a ADD COLUMN age INT NOT NULL;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE a ALTER COLUMN age DROP NOT NULL;
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -81,3 +77,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

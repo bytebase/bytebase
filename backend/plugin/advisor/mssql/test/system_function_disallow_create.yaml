@@ -13,6 +13,7 @@
             SET @ret = 0;
         RETURN @ret;
     END;
+  changeType: 0
   want:
     - status: 2
       code: 1701
@@ -22,3 +23,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

@@ -44,14 +44,6 @@ func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Ad
 		(stmtNode).Accept(c)
 	}
 
-	if len(c.adviceList) == 0 {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return c.adviceList, nil
 }
 

@@ -5,6 +5,7 @@
         FullName      VARCHAR(10),
         POSITION      VARCHAR(100)
     );
+  changeType: 0
   want:
     - status: 2
       code: 602
@@ -14,6 +15,7 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE Customer
     (
@@ -22,6 +24,7 @@
         Position      VARCHAR(100),
         FOREIGN KEY (Id) REFERENCES PERSON(Id)
     );
+  changeType: 0
   want:
     - status: 2
       code: 602
@@ -31,6 +34,7 @@
       startposition:
         line: 6
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE Customer
     (
@@ -39,6 +43,7 @@
         Position      VARCHAR(100)
     );
     ALTER TABLE Customer ADD FOREIGN KEY (Id) REFERENCES Person(Id);
+  changeType: 0
   want:
     - status: 2
       code: 602
@@ -48,6 +53,7 @@
       startposition:
         line: 7
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE Customer
     (
@@ -61,10 +67,4 @@
         FullName      VARCHAR(10),
         Position      VARCHAR(100)
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

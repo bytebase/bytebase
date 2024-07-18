@@ -1,4 +1,5 @@
 - statement: create index on tech_book(id);
+  changeType: 0
   want:
     - status: 2
       code: 814
@@ -8,11 +9,6 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: create index concurrently on tech_book(id);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

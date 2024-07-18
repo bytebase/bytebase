@@ -561,14 +561,6 @@ func SQLReviewCheck(
 		// Error is 2, warning is 1. So the error (value 2) should come first.
 		return result[i].Status.Number() > result[j].Status.Number()
 	})
-	if len(result) == 0 {
-		result = append(result, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return result, nil
 }
 

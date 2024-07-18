@@ -1,12 +1,7 @@
 - statement: CREATE TABLE t(a text COLLATE utf8mb4_0900_ai_ci)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a text COLLATE "unknown")
+  changeType: 0
   want:
     - status: 2
       code: 1201
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown"
+  changeType: 0
   want:
     - status: 2
       code: 1201
@@ -26,7 +23,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown"
+  changeType: 0
   want:
     - status: 2
       code: 1201
@@ -36,3 +35,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

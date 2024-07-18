@@ -1,12 +1,7 @@
 - statement: INSERT INTO tech_book(id, name) VALUES (1, '1')
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: INSERT INTO tech_book VALUES (1, '1')
+  changeType: 0
   want:
     - status: 2
       code: 1107
@@ -16,3 +11,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

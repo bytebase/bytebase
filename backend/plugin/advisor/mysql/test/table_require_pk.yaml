@@ -11,6 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -20,6 +21,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE user(
       id INT PRIMARY KEY COMMENT 'comment',
@@ -32,17 +34,12 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE t1(id INT PRIMARY KEY);
     CREATE TABLE t2(id INT);
     ALTER TABLE t2 ADD UNIQUE INDEX uk (id);
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -52,10 +49,12 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t1(id INT, PRIMARY KEY (id));
     CREATE TABLE t2(id INT);
     ALTER TABLE t2 ADD COLUMN uid INT UNIQUE KEY;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -65,20 +64,16 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t1(id INT PRIMARY KEY);
     CREATE TABLE t2(id INT, PRIMARY KEY (id));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t1(id INT PRIMARY KEY);
     CREATE TABLE t2(id INT);
     DROP TABLE t1;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -88,31 +83,21 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t1(id INT PRIMARY KEY);
     CREATE TABLE t2(id INT);
     DROP TABLE t1;
     DROP TABLE t2;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT);
     ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
     ALTER TABLE t DROP PRIMARY KEY;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -122,9 +107,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
     ALTER TABLE t DROP INDEX `PRIMARY`;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -134,66 +121,32 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(id INT);
     ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT);
     ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book CHANGE COLUMN id uid INT;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT);
     ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book MODIFY COLUMN id INT;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), PRIMARY KEY(id, name));
     ALTER TABLE t DROP COLUMN id;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), comment varchar(255), PRIMARY KEY(id, name));
     ALTER TABLE t ADD COLUMN age INT;
     ALTER TABLE t DROP COLUMN id, DROP COLUMN name;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -203,9 +156,11 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN c INT;
     ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -215,17 +170,13 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book DROP COLUMN name;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN c INT;
     ALTER TABLE tech_book DROP COLUMN name, DROP COLUMN id;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -235,9 +186,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book CHANGE COLUMN id uid int;
     ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name;
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -247,3 +200,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

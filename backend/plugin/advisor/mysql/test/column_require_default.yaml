@@ -7,13 +7,7 @@
       e json,
       f geometry
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(
       a geometry,
@@ -25,13 +19,7 @@
       g multipolygon,
       h geometrycollection
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t1(
       a int primary key
@@ -39,18 +27,13 @@
     CREATE TABLE t2(
       a int auto_increment primary key
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(
       a int,
       b int default 1
     )
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -60,10 +43,12 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a BLOB;
     ALTER TABLE tech_book ADD COLUMN b timestamp;
     ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -73,6 +58,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 420
       title: column.require-default
@@ -81,7 +67,9 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN (a BLOB, b timestamp);
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -91,10 +79,12 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a VARCHAR(255) DEFAULT 'default value';
     ALTER TABLE tech_book MODIFY COLUMN a char(25) DEFAULT 'default';
     ALTER TABLE tech_book CHANGE COLUMN a b int;
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -104,15 +94,10 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(
       id int,
       PRIMARY KEY (id)
     )
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

@@ -1,12 +1,7 @@
 - statement: comment on column public.name is 'is a column name'
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: comment on column public.name is 'is a  to long column name'
+  changeType: 0
   want:
     - status: 2
       code: 1301
@@ -16,15 +11,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: comment on table public is 'is a table name'
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: comment on table public is 'is a  to long table name long long long long long long long'
+  changeType: 0
   want:
     - status: 2
       code: 1301
@@ -34,3 +25,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

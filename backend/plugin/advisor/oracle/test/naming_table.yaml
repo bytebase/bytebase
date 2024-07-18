@@ -1,4 +1,5 @@
 - statement: CREATE TABLE "techBook"(id int, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -8,15 +9,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE tech_Book(id int, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -26,7 +23,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE techBook(id int, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -36,7 +35,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -46,7 +47,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book RENAME TO "TechBook"
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -56,9 +59,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     create table techBook(id int);
     ALTER TABLE techBook RENAME TO tech_book_tmp;
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -68,6 +73,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 301
       title: naming.table
@@ -76,9 +82,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE tech_Book(id int, name varchar(255));
                 ALTER TABLE tech_book RENAME TO "tech_book";
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -88,3 +96,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

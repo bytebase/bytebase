@@ -1,5 +1,6 @@
 - statement: |
     DELETE FROM tech_book WHERE name like "%abc";
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -9,19 +10,15 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE 'abc%';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE '%abc';
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -31,9 +28,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc';
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -43,12 +42,14 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE t (id INT, a VARCHAR(255));
     SELECT *
     FROM t
     WHERE a LIKE '%acc'
       OR a LIKE '%abc';
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -62,6 +63,7 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
     - status: 2
       code: 204
       title: statement.where.no-leading-wildcard-like
@@ -74,6 +76,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE t (id INT, a VARCHAR(255));
     SELECT * FROM
@@ -82,6 +85,7 @@
       WHERE a LIKE '%acc'
         OR a LIKE '%abc'
       ) t1;
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -97,6 +101,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
     - status: 2
       code: 204
       title: statement.where.no-leading-wildcard-like
@@ -111,3 +116,4 @@
       startposition:
         line: 6
         column: 0
+      endposition: null
