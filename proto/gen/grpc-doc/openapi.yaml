@@ -11871,7 +11871,7 @@ components:
             properties:
                 pid:
                     type: string
-                blockingPids:
+                blockedByPids:
                     type: array
                     items:
                         type: string

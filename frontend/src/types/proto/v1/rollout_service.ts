@@ -967,7 +967,7 @@ export interface TaskRunSession_Postgres {
 /** Read from `pg_stat_activity` */
 export interface TaskRunSession_Postgres_Session {
   pid: string;
-  blockingPids: string[];
+  blockedByPids: string[];
   query: string;
   state?: string | undefined;
   waitEventType?: string | undefined;
@@ -4401,7 +4401,7 @@ export const TaskRunSession_Postgres = {
 function createBaseTaskRunSession_Postgres_Session(): TaskRunSession_Postgres_Session {
   return {
     pid: "",
-    blockingPids: [],
+    blockedByPids: [],
     query: "",
     state: undefined,
     waitEventType: undefined,
@@ -4422,7 +4422,7 @@ export const TaskRunSession_Postgres_Session = {
     if (message.pid !== "") {
       writer.uint32(10).string(message.pid);
     }
-    for (const v of message.blockingPids) {
+    for (const v of message.blockedByPids) {
       writer.uint32(18).string(v!);
     }
     if (message.query !== "") {
@@ -4483,7 +4483,7 @@ export const TaskRunSession_Postgres_Session = {
             break;
           }
 
-          message.blockingPids.push(reader.string());
+          message.blockedByPids.push(reader.string());
           continue;
         case 3:
           if (tag !== 26) {
@@ -4581,8 +4581,8 @@ export const TaskRunSession_Postgres_Session = {
   fromJSON(object: any): TaskRunSession_Postgres_Session {
     return {
       pid: isSet(object.pid) ? globalThis.String(object.pid) : "",
-      blockingPids: globalThis.Array.isArray(object?.blockingPids)
-        ? object.blockingPids.map((e: any) => globalThis.String(e))
+      blockedByPids: globalThis.Array.isArray(object?.blockedByPids)
+        ? object.blockedByPids.map((e: any) => globalThis.String(e))
         : [],
       query: isSet(object.query) ? globalThis.String(object.query) : "",
       state: isSet(object.state) ? globalThis.String(object.state) : undefined,
@@ -4604,8 +4604,8 @@ export const TaskRunSession_Postgres_Session = {
     if (message.pid !== "") {
       obj.pid = message.pid;
     }
-    if (message.blockingPids?.length) {
-      obj.blockingPids = message.blockingPids;
+    if (message.blockedByPids?.length) {
+      obj.blockedByPids = message.blockedByPids;
     }
     if (message.query !== "") {
       obj.query = message.query;
@@ -4652,7 +4652,7 @@ export const TaskRunSession_Postgres_Session = {
   fromPartial(object: DeepPartial<TaskRunSession_Postgres_Session>): TaskRunSession_Postgres_Session {
     const message = createBaseTaskRunSession_Postgres_Session();
     message.pid = object.pid ?? "";
-    message.blockingPids = object.blockingPids?.map((e) => e) || [];
+    message.blockedByPids = object.blockedByPids?.map((e) => e) || [];
     message.query = object.query ?? "";
     message.state = object.state ?? undefined;
     message.waitEventType = object.waitEventType ?? undefined;
