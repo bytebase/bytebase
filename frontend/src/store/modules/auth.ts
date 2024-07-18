@@ -13,6 +13,7 @@ import type {
 import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
 import { useUserStore } from ".";
+import { useWorkspaceV1Store } from "./v1/workspace";
 
 interface AuthState {
   currentUser: ComposedUser;
@@ -36,6 +37,7 @@ export const useAuthStore = defineStore("auth_v1", {
 
       const userId = getIntCookie("user");
       if (userId) {
+        await useWorkspaceV1Store().fetchIamPolicy();
         const loggedInUser = await useUserStore().getOrFetchUserById(
           String(userId)
         );
@@ -74,6 +76,7 @@ export const useAuthStore = defineStore("auth_v1", {
       ).data.data;
 
       // Refresh the corresponding user.
+      await useWorkspaceV1Store().fetchIamPolicy();
       const user = await useUserStore().getOrFetchUserById(
         String(activatedUser.id)
       );
@@ -83,6 +86,7 @@ export const useAuthStore = defineStore("auth_v1", {
     async restoreUser() {
       const userId = getIntCookie("user");
       if (userId) {
+        await useWorkspaceV1Store().fetchIamPolicy();
         const loggedInUser = await useUserStore().getOrFetchUserById(
           String(userId),
           true // silent
