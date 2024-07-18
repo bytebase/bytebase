@@ -96,7 +96,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 }
 
 func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) {
-	_, ok := s.executors[planCheckRun.Type]
+	executor, ok := s.executors[planCheckRun.Type]
 	if !ok {
 		slog.Error("Skip running plan check for unknown type", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.String("type", string(planCheckRun.Type)))
 		return
@@ -126,20 +126,20 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 			s.stateCfg.InstanceOutstandingConnections.Decrement(instanceUID)
 		}()
 
-		_, cancel := context.WithCancel(ctx)
+		ctxWithCancel, cancel := context.WithCancel(ctx)
 		defer cancel()
 		s.stateCfg.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
 
-		// results, err := runExecutorOnce(ctxWithCancel, executor, planCheckRun.Config)
-		// if err != nil {
-		// 	if errors.Is(err, context.Canceled) {
-		// 		s.markPlanCheckRunCanceled(ctx, planCheckRun, err.Error())
-		// 	} else {
-		// 		s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
-		// 	}
-		// } else {
-		// 	s.markPlanCheckRunDone(ctx, planCheckRun, results)
-		// }
+		results, err := runExecutorOnce(ctxWithCancel, executor, planCheckRun.Config)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				s.markPlanCheckRunCanceled(ctx, planCheckRun, err.Error())
+			} else {
+				s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
+			}
+		} else {
+			s.markPlanCheckRunDone(ctx, planCheckRun, results)
+		}
 	}()
 }
 
