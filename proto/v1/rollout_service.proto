@@ -473,7 +473,7 @@ message TaskRunSession {
     // Read from `pg_stat_activity`
     message Session {
       string pid = 1;
-      repeated string blocking_pids = 2;
+      repeated string blocked_by_pids = 2;
       string query = 3;
       optional string state = 4;
       optional string wait_event_type = 5;
