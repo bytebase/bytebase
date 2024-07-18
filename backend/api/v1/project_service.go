@@ -398,6 +398,14 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project iam policy with error: %v", err.Error())
+	}
+	if request.Etag != policyMessage.Etag {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
+	}
+
 	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1352,10 +1360,10 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *storepb.IamPolicy) (*v1pb.IamPolicy, error) {
+func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *store.IamPolicyMessage) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
-	for _, binding := range iamPolicy.Bindings {
+	for _, binding := range iamPolicy.Policy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
 			if strings.HasPrefix(member, common.UserNamePrefix) {
@@ -1410,6 +1418,7 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 
 	return &v1pb.IamPolicy{
 		Bindings: bindings,
+		Etag:     iamPolicy.Etag,
 	}, nil
 }
 

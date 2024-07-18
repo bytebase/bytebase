@@ -692,8 +692,6 @@
     - [WorksheetService](#bytebase-v1-WorksheetService)
   
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
-    - [PatchIamPolicyRequest](#bytebase-v1-PatchIamPolicyRequest)
-  
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
 - [Scalar Value Types](#scalar-value-types)
@@ -4323,6 +4321,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
+| etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the poliy, the call will be blocked and an ABORTED error will be returned. |
 
 
 
@@ -4339,6 +4338,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | ----- | ---- | ----- | ----------- |
 | resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
 | policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
+| etag | [string](#string) |  | The current etag of the policy. |
 
 
 
@@ -11062,23 +11062,6 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 ## v1/workspace_service.proto
 
 
-
-<a name="bytebase-v1-PatchIamPolicyRequest"></a>
-
-### PatchIamPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: workspaces/{workspace} |
-| member | [string](#string) |  | Specifies the principals requesting access for a Bytebase resource. Format: user:{email} |
-| roles | [string](#string) | repeated | The roles that is assigned to the member. Format: roles/{role} |
-
-
-
-
-
  
 
  
@@ -11095,7 +11078,6 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | ----------- | ------------ | ------------- | ------------|
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
-| PatchIamPolicy | [PatchIamPolicyRequest](#bytebase-v1-PatchIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 
  
 

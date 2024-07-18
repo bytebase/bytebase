@@ -70,6 +70,7 @@ export const useProjectIamPolicyStore = defineStore(
       const updated = await projectServiceClient.setIamPolicy({
         resource: project,
         policy,
+        etag: policy.etag,
       });
       policyMap.value.set(project, updated);
 

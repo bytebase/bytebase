@@ -448,15 +448,11 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		return nil, errors.Wrapf(err, "failed to check admin role")
 	}
 	if isAdmin {
-		workspaceAdmin, userType := api.WorkspaceAdmin, api.EndUser
-		adminUser, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-			Role: &workspaceAdmin,
-			Type: &userType,
-		})
+		adminUsers, err := s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceAdmin)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to find workspace admin, error: %v", err)
 		}
-		if len(adminUser) == 1 && adminUser[0].ID == userID {
+		if len(adminUsers) == 1 && adminUsers[0].ID == userID {
 			return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
 		}
 	}

@@ -1,7 +1,8 @@
+import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref, watchEffect } from "vue";
+import { ref } from "vue";
 import { workspaceServiceClient } from "@/grpcweb";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const workspaceIamPolicy = ref<IamPolicy>(IamPolicy.fromPartial({}));
@@ -20,10 +21,37 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     member: string;
     roles: string[];
   }) => {
-    const policy = await workspaceServiceClient.patchIamPolicy({
+    const newRolesSet = new Set(roles);
+    const workspacePolicy = cloneDeep(workspaceIamPolicy.value);
+
+    for (const binding of workspacePolicy.bindings) {
+      const index = binding.members.findIndex((m) => m === member);
+      if (!newRolesSet.has(binding.role)) {
+        if (index >= 0) {
+          binding.members = binding.members.splice(index, 1);
+        }
+      } else {
+        if (index < 0) {
+          binding.members.push(member);
+        }
+      }
+
+      newRolesSet.delete(binding.role);
+    }
+
+    for (const role of newRolesSet) {
+      workspacePolicy.bindings.push(
+        Binding.fromPartial({
+          role,
+          members: [member],
+        })
+      );
+    }
+
+    const policy = await workspaceServiceClient.setIamPolicy({
       resource: "workspaces/-",
-      member,
-      roles,
+      policy: workspacePolicy,
+      etag: workspacePolicy.etag,
     });
     workspaceIamPolicy.value = policy;
   };
@@ -34,13 +62,3 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     patchIamPolicy,
   };
 });
-
-export const useWorkspaceIamPolicy = () => {
-  const store = useWorkspaceV1Store();
-
-  watchEffect(() => {
-    store.fetchIamPolicy();
-  });
-
-  return computed(() => store.workspaceIamPolicy);
-};
