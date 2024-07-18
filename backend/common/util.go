@@ -30,6 +30,8 @@ const (
 	MaximumSQLResultSize = 100 * 1024 * 1024
 	// MaximumCommands is the maximum number of commands that can be executed in a single transaction.
 	MaximumCommands = 200
+	// MaximumAdvicePerStatus is the maximum number of advice that can be returned per status.
+	MaximumAdvicePerStatus = 50
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
