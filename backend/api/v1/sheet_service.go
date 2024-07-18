@@ -313,7 +313,7 @@ func findProjectRoles(ctx context.Context, stores *store.Store, projectUID int, 
 	if err != nil {
 		return nil, err
 	}
-	return utils.GetUserFormattedRolesMap(ctx, stores, user, policy), nil
+	return utils.GetUserFormattedRolesMap(ctx, stores, user, policy.Policy), nil
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {

@@ -22,7 +22,11 @@ export interface SetIamPolicyRequest {
    * Format: workspaces/{workspace}
    */
   resource: string;
-  policy: IamPolicy | undefined;
+  policy:
+    | IamPolicy
+    | undefined;
+  /** The current etag of the policy. */
+  etag: string;
 }
 
 export interface IamPolicy {
@@ -31,6 +35,12 @@ export interface IamPolicy {
    * A binding binds one or more project members to a single project role.
    */
   bindings: Binding[];
+  /**
+   * The current etag of the policy.
+   * If an etag is provided and does not match the current etag of the poliy,
+   * the call will be blocked and an ABORTED error will be returned.
+   */
+  etag: string;
 }
 
 export interface Binding {
@@ -115,7 +125,7 @@ export const GetIamPolicyRequest = {
 };
 
 function createBaseSetIamPolicyRequest(): SetIamPolicyRequest {
-  return { resource: "", policy: undefined };
+  return { resource: "", policy: undefined, etag: "" };
 }
 
 export const SetIamPolicyRequest = {
@@ -125,6 +135,9 @@ export const SetIamPolicyRequest = {
     }
     if (message.policy !== undefined) {
       IamPolicy.encode(message.policy, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.etag !== "") {
+      writer.uint32(26).string(message.etag);
     }
     return writer;
   },
@@ -150,6 +163,13 @@ export const SetIamPolicyRequest = {
 
           message.policy = IamPolicy.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.etag = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -163,6 +183,7 @@ export const SetIamPolicyRequest = {
     return {
       resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
       policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
+      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
     };
   },
 
@@ -173,6 +194,9 @@ export const SetIamPolicyRequest = {
     }
     if (message.policy !== undefined) {
       obj.policy = IamPolicy.toJSON(message.policy);
+    }
+    if (message.etag !== "") {
+      obj.etag = message.etag;
     }
     return obj;
   },
@@ -186,18 +210,22 @@ export const SetIamPolicyRequest = {
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? IamPolicy.fromPartial(object.policy)
       : undefined;
+    message.etag = object.etag ?? "";
     return message;
   },
 };
 
 function createBaseIamPolicy(): IamPolicy {
-  return { bindings: [] };
+  return { bindings: [], etag: "" };
 }
 
 export const IamPolicy = {
   encode(message: IamPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.bindings) {
       Binding.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.etag !== "") {
+      writer.uint32(18).string(message.etag);
     }
     return writer;
   },
@@ -216,6 +244,13 @@ export const IamPolicy = {
 
           message.bindings.push(Binding.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.etag = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -228,6 +263,7 @@ export const IamPolicy = {
   fromJSON(object: any): IamPolicy {
     return {
       bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
+      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
     };
   },
 
@@ -235,6 +271,9 @@ export const IamPolicy = {
     const obj: any = {};
     if (message.bindings?.length) {
       obj.bindings = message.bindings.map((e) => Binding.toJSON(e));
+    }
+    if (message.etag !== "") {
+      obj.etag = message.etag;
     }
     return obj;
   },
@@ -245,6 +284,7 @@ export const IamPolicy = {
   fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
+    message.etag = object.etag ?? "";
     return message;
   },
 };

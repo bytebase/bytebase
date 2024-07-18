@@ -149,9 +149,8 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.OrgPolicyService_DeletePolicy_FullMethodName: iam.PermissionPoliciesDelete,
 
 	// TODO(p0ny): ensure the permission.
-	v1pb.WorkspaceService_GetIamPolicy_FullMethodName:   iam.PermissionPoliciesGet,
-	v1pb.WorkspaceService_SetIamPolicy_FullMethodName:   iam.PermissionPoliciesUpdate,
-	v1pb.WorkspaceService_PatchIamPolicy_FullMethodName: iam.PermissionPoliciesUpdate,
+	v1pb.WorkspaceService_GetIamPolicy_FullMethodName: iam.PermissionPoliciesGet,
+	v1pb.WorkspaceService_SetIamPolicy_FullMethodName: iam.PermissionPoliciesUpdate,
 
 	v1pb.BranchService_GetBranch_FullMethodName:    iam.PermissionBranchesGet,
 	v1pb.BranchService_ListBranches_FullMethodName: iam.PermissionBranchesList,

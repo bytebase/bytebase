@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
@@ -46,17 +47,19 @@ var (
 )
 
 // NewSender creates a new slow query weekly mail sender.
-func NewSender(store *store.Store, stateCfg *state.State) *SlowQueryWeeklyMailSender {
+func NewSender(store *store.Store, stateCfg *state.State, iamManager *iam.Manager) *SlowQueryWeeklyMailSender {
 	return &SlowQueryWeeklyMailSender{
-		store:    store,
-		stateCfg: stateCfg,
+		store:      store,
+		stateCfg:   stateCfg,
+		iamManager: iamManager,
 	}
 }
 
 // SlowQueryWeeklyMailSender is the slow query weekly mail sender.
 type SlowQueryWeeklyMailSender struct {
-	store    *store.Store
-	stateCfg *state.State
+	store      *store.Store
+	stateCfg   *state.State
+	iamManager *iam.Manager
 }
 
 // Run will run the slow query weekly mail sender.
@@ -142,8 +145,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	if len(activePolicies) == 0 {
-		dbaRole := api.WorkspaceDBA
-		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &dbaRole})
+		users, err := s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceDBA)
 		if err != nil {
 			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
@@ -155,8 +157,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			}
 		}
 
-		ownerRole := api.WorkspaceAdmin
-		users, err = s.store.ListUsers(ctx, &store.FindUserMessage{Role: &ownerRole})
+		users, err = s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceAdmin)
 		if err != nil {
 			slog.Error("Failed to list owner users", log.BBError(err))
 		} else {
@@ -171,8 +172,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	if body, err := s.generateWeeklyEmailForDBA(ctx, activePolicies, now, consoleRedirectURL); err == nil {
-		dbaRole := api.WorkspaceDBA
-		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &dbaRole})
+		users, err := s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceDBA)
 		if err != nil {
 			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
@@ -203,13 +203,13 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			continue
 		}
 
-		projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+		policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 		if err != nil {
 			slog.Error("Failed to get project policy", log.BBError(err))
 			continue
 		}
 
-		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, projectPolicy)
+		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, policyMessage.Policy)
 		for _, user := range users {
 			if user.ID == api.SystemBotID {
 				continue
