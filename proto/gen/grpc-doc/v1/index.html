@@ -23522,11 +23522,24 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
             <tbody>
               
                 <tr>
-                  <td>sessions</td>
+                  <td>session</td>
+                  <td><a href="#bytebase.v1.TaskRunSession.Postgres.Session">TaskRunSession.Postgres.Session</a></td>
+                  <td></td>
+                  <td><p>`session` is the session of the task run executing commands. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>blocking_sessions</td>
                   <td><a href="#bytebase.v1.TaskRunSession.Postgres.Session">TaskRunSession.Postgres.Session</a></td>
                   <td>repeated</td>
-                  <td><p>The first session is the session of the task run executing commands.
-The remaining sessions are the sessions that block the first session. </p></td>
+                  <td><p>`blocking_sessions` block `session`. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>blocked_sessions</td>
+                  <td><a href="#bytebase.v1.TaskRunSession.Postgres.Session">TaskRunSession.Postgres.Session</a></td>
+                  <td>repeated</td>
+                  <td><p>`blocked_sessions` are blocked by `session`. </p></td>
                 </tr>
               
             </tbody>
@@ -23550,6 +23563,13 @@ The remaining sessions are the sessions that block the first session. </p></td>
                   <td>pid</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>blocked_by_pids</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
