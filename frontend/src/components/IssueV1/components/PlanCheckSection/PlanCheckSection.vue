@@ -24,12 +24,9 @@ import { EMPTY_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, selectedTask } = useIssueContext();
+const { issue, selectedTask } = useIssueContext();
 
 const show = computed(() => {
-  if (isCreating.value) {
-    return false;
-  }
   const spec = specForTask(issue.value.planEntity, selectedTask.value);
   if (!spec) {
     return false;

@@ -24,12 +24,9 @@ import { EMPTY_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
-const { isCreating, plan, selectedSpec } = usePlanContext();
+const { plan, selectedSpec } = usePlanContext();
 
 const show = computed(() => {
-  if (isCreating.value) {
-    return false;
-  }
   if (selectedSpec.value.id === String(EMPTY_ID)) {
     return false;
   }
