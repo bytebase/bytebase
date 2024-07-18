@@ -1,16 +1,15 @@
-import type { ComposedDatabase, ComposedProject } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedDatabase, ComposedProject, ComposedUser } from "@/types";
 import { hasProjectPermissionV2 } from "./permission";
 
 export const hasPermissionToCreateRequestGrantIssueInProject = (
   project: ComposedProject,
-  user: User
+  user: ComposedUser
 ) => {
   return hasProjectPermissionV2(project, user, "bb.issues.create");
 };
 export const hasPermissionToCreateRequestGrantIssue = (
   database: ComposedDatabase,
-  user: User
+  user: ComposedUser
 ) => {
   return hasPermissionToCreateRequestGrantIssueInProject(
     database.projectEntity,
@@ -20,7 +19,7 @@ export const hasPermissionToCreateRequestGrantIssue = (
 
 export const hasPermissionToCreateChangeDatabaseIssueInProject = (
   project: ComposedProject,
-  user: User
+  user: ComposedUser
 ) => {
   return (
     hasProjectPermissionV2(project, user, "bb.issues.create") &&
@@ -30,7 +29,7 @@ export const hasPermissionToCreateChangeDatabaseIssueInProject = (
 };
 export const hasPermissionToCreateChangeDatabaseIssue = (
   database: ComposedDatabase,
-  user: User
+  user: ComposedUser
 ) => {
   return hasPermissionToCreateChangeDatabaseIssueInProject(
     database.projectEntity,
@@ -40,7 +39,7 @@ export const hasPermissionToCreateChangeDatabaseIssue = (
 
 export const hasPermissionToCreateDataExportIssueInProject = (
   project: ComposedProject,
-  user: User
+  user: ComposedUser
 ) => {
   return (
     hasProjectPermissionV2(project, user, "bb.issues.create") &&
@@ -50,7 +49,7 @@ export const hasPermissionToCreateDataExportIssueInProject = (
 };
 export const hasPermissionToCreateDataExportIssue = (
   database: ComposedDatabase,
-  user: User
+  user: ComposedUser
 ) => {
   return hasPermissionToCreateDataExportIssueInProject(
     database.projectEntity,
@@ -60,13 +59,13 @@ export const hasPermissionToCreateDataExportIssue = (
 
 export const hasPermissionToCreatePlanInProject = (
   project: ComposedProject,
-  user: User
+  user: ComposedUser
 ) => {
   return hasProjectPermissionV2(project, user, "bb.plans.create");
 };
 export const hasPermissionToCreateReviewIssueIssue = (
   database: ComposedDatabase,
-  user: User
+  user: ComposedUser
 ) => {
   return hasPermissionToCreatePlanInProject(database.projectEntity, user);
 };

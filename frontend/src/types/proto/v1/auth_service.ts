@@ -1283,10 +1283,10 @@ export const User = {
       writer.uint32(98).string(message.phone);
     }
     for (const v of message.roles) {
-      writer.uint32(106).string(v!);
+      writer.uint32(114).string(v!);
     }
     for (const v of message.diffs) {
-      Diff.encode(v!, writer.uint32(114).fork()).ldelim();
+      Diff.encode(v!, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -1375,15 +1375,15 @@ export const User = {
 
           message.phone = reader.string();
           continue;
-        case 13:
-          if (tag !== 106) {
+        case 14:
+          if (tag !== 114) {
             break;
           }
 
           message.roles.push(reader.string());
           continue;
-        case 14:
-          if (tag !== 114) {
+        case 15:
+          if (tag !== 122) {
             break;
           }
 

@@ -3,9 +3,9 @@ import type {
   ComposedIssue,
   IssueStatusTransitionType,
   IssueStatusTransition,
+  ComposedUser,
 } from "@/types";
 import { ISSUE_STATUS_TRANSITION_LIST } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
@@ -102,7 +102,7 @@ export function isApplicableTransition<
 
 const allowUserToApplyIssueStatusTransition = (
   issue: ComposedIssue,
-  user: User
+  user: ComposedUser
 ) => {
   // Allowed if the user has issues.update permission in the project
   if (hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")) {

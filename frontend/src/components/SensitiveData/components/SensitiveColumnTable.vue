@@ -1,100 +1,22 @@
 <template>
-  <BBGrid
-    :column-list="gridColumnList"
-    :data-source="columnList"
-    :row-clickable="rowClickable"
-    :custom-header="true"
-    class="border compact"
-    @click-row="clickTableRow"
-  >
-    <template #header>
-      <div role="table-row" class="bb-grid-row bb-grid-header-row group">
-        <div
-          v-for="(column, index) in gridColumnList"
-          :key="index"
-          role="table-cell"
-          class="bb-grid-header-cell capitalize"
-          :class="[column.class]"
-        >
-          <template v-if="index === 0 && rowSelectable">
-            <NCheckbox
-              v-if="columnList.length > 0"
-              v-bind="allSelectionState"
-              @update:checked="toggleSelectAll"
-            />
-          </template>
-          <template v-else>{{ column.title }}</template>
-        </div>
-      </div>
-    </template>
-    <template #item="{ item, row }: SensitiveColumnRow">
-      <div v-if="rowSelectable" class="bb-grid-cell" @click.stop.prevent>
-        <NCheckbox
-          :checked="checkedColumnIndex.has(row)"
-          @update:checked="toggleColumnChecked(row, $event)"
-        />
-      </div>
-      <div class="bb-grid-cell">
-        {{ getMaskingLevelText(item.maskData.maskingLevel) }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ item.maskData.column }}
-      </div>
-      <div class="bb-grid-cell">
-        {{
-          item.maskData.schema
-            ? `${item.maskData.schema}.${item.maskData.table}`
-            : item.maskData.table
-        }}
-      </div>
-      <div class="bb-grid-cell">
-        <DatabaseV1Name :database="item.database" :link="false" />
-      </div>
-      <div class="bb-grid-cell">
-        <InstanceV1Name
-          :instance="item.database.instanceResource"
-          :link="false"
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <EnvironmentV1Name
-          :environment="item.database.effectiveEnvironmentEntity"
-          :link="false"
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <ProjectV1Name :project="item.database.projectEntity" :link="false" />
-      </div>
-      <div v-if="showOperation" class="bb-grid-cell" @click.stop.prevent>
-        <MiniActionButton
-          @click.stop.prevent="$emit('click', item, row, 'EDIT')"
-        >
-          <PencilIcon class="w-4 h-4" />
-        </MiniActionButton>
-        <NPopconfirm @positive-click="$emit('click', item, row, 'DELETE')">
-          <template #trigger>
-            <MiniActionButton tag="div" @click.stop.prevent>
-              <TrashIcon class="w-4 h-4" />
-            </MiniActionButton>
-          </template>
-
-          <div class="whitespace-nowrap">
-            {{ $t("settings.sensitive-data.remove-sensitive-column-tips") }}
-          </div>
-        </NPopconfirm>
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    :columns="dataTableColumns"
+    :data="columnList"
+    :row-props="rowProps"
+    :row-key="itemKey"
+    :checked-row-keys="checkedItemKeys"
+    size="small"
+    @update:checked-row-keys="handleUpdateCheckedRowKeys($event as string[])"
+  />
 </template>
 
 <script lang="ts" setup>
 import { PencilIcon } from "lucide-vue-next";
 import { TrashIcon } from "lucide-vue-next";
-import { NCheckbox, NPopconfirm } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
+import { computed, h, ref, watch } from "vue";
+import { withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid } from "@/bbkit";
-import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import {
   DatabaseV1Name,
   EnvironmentV1Name,
@@ -105,8 +27,6 @@ import {
 import type { MaskingLevel } from "@/types/proto/v1/common";
 import { maskingLevelToJSON } from "@/types/proto/v1/common";
 import type { SensitiveColumn } from "../types";
-
-type SensitiveColumnRow = BBGridRow<SensitiveColumn>;
 
 const props = defineProps<{
   showOperation: boolean;
@@ -142,92 +62,179 @@ watch(
   { deep: true }
 );
 
+const itemKey = (item: SensitiveColumn) => {
+  const parts = [item.database.name];
+  const { schema, table, column } = item.maskData;
+  if (schema) {
+    parts.push(schema);
+  }
+  parts.push(table, column);
+  return parts.join("::");
+};
+
 const getMaskingLevelText = (maskingLevel: MaskingLevel) => {
   const level = maskingLevelToJSON(maskingLevel);
   return t(`settings.sensitive-data.masking-level.${level.toLowerCase()}`);
 };
 
-const toggleColumnChecked = (index: number, on: boolean) => {
-  if (on) {
-    checkedColumnIndex.value.add(index);
-  } else {
-    checkedColumnIndex.value.delete(index);
-  }
+const checkedItemKeys = computed(() => {
+  const keys: string[] = [];
+  props.checkedColumnIndexList.forEach((index) => {
+    const item = props.columnList[index];
+    if (item) {
+      keys.push(itemKey(item));
+    }
+  });
+  return keys;
+});
 
-  emit("checked:update", [...checkedColumnIndex.value]);
-};
-
-const gridColumnList = computed(() => {
-  const columns: BBGridColumn[] = [
+const dataTableColumns = computed(() => {
+  const columns: DataTableColumn<SensitiveColumn>[] = [
     {
+      key: "masking-level",
       title: t("settings.sensitive-data.masking-level.self"),
-      width: "minmax(min-content, auto)",
+      render(item) {
+        return getMaskingLevelText(item.maskData.maskingLevel);
+      },
     },
     {
+      key: "column",
       title: t("database.column"),
-      width: "minmax(min-content, auto)",
+      render(item) {
+        return item.maskData.column;
+      },
     },
     {
+      key: "table",
       title: t("common.table"),
-      width: "minmax(min-content, auto)",
+      render(item) {
+        return item.maskData.schema
+          ? `${item.maskData.schema}.${item.maskData.table}`
+          : item.maskData.table;
+      },
     },
     {
+      key: "database",
       title: t("common.database"),
-      width: "minmax(min-content, auto)",
+      render(item) {
+        return h(DatabaseV1Name, { database: item.database, link: false });
+      },
     },
     {
+      key: "instance",
       title: t("common.instance"),
-      width: "minmax(min-content, auto)",
+      render(item) {
+        return h(InstanceV1Name, {
+          instance: item.database.instanceResource,
+          link: false,
+        });
+      },
     },
     {
+      key: "environment",
       title: t("common.environment"),
-      width: "minmax(min-content, auto)",
+      render(item) {
+        return h(EnvironmentV1Name, {
+          environment: item.database.effectiveEnvironmentEntity,
+          link: false,
+        });
+      },
     },
     {
+      key: "project",
       title: t("common.project"),
-      width: "minmax(min-content, auto)",
+      render(item) {
+        return h(ProjectV1Name, {
+          project: item.database.projectEntity,
+          link: false,
+        });
+      },
     },
   ];
   if (props.showOperation) {
     columns.push({
+      key: "operation",
       title: t("common.operation"),
-      width: "minmax(min-content, auto)",
+      render(item, index) {
+        const editButton = h(
+          MiniActionButton,
+          {
+            onClick: withModifiers(() => {
+              emit("click", item, index, "EDIT");
+            }, ["prevent", "stop"]),
+          },
+          {
+            default: () => h(PencilIcon, { class: "w-4 h-4" }),
+          }
+        );
+        const deleteButton = h(
+          NPopconfirm,
+          {
+            onPositiveClick: () => {
+              emit("click", item, index, "DELETE");
+            },
+          },
+          {
+            trigger: () => {
+              return h(
+                MiniActionButton,
+                {
+                  tag: "div",
+                  onClick: withModifiers(() => {
+                    // noop
+                  }, ["stop", "prevent"]),
+                },
+                {
+                  default: () => h(TrashIcon, { class: "w-4 h-4" }),
+                }
+              );
+            },
+            default: () =>
+              h(
+                "div",
+                { class: "whitespace-nowrap" },
+                t("settings.sensitive-data.remove-sensitive-column-tips")
+              ),
+          }
+        );
+        return [editButton, deleteButton];
+      },
     });
   }
   if (props.rowSelectable) {
     columns.unshift({
-      title: "",
-      width: "minmax(auto, 3rem)",
+      type: "selection",
+      multiple: true,
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
     });
   }
-
   return columns;
 });
 
-const allSelectionState = computed(() => {
-  const checked =
-    checkedColumnIndex.value.size > 0 &&
-    checkedColumnIndex.value.size === props.columnList.length;
-  const indeterminate =
-    !checked &&
-    props.columnList.some((_, i) => checkedColumnIndex.value.has(i));
-
-  return {
-    checked,
-    indeterminate,
-  };
-});
-
-const toggleSelectAll = (check: boolean): void => {
-  if (!check) {
-    checkedColumnIndex.value = new Set([]);
-  } else {
-    checkedColumnIndex.value = new Set(props.columnList.map((_, i) => i));
-  }
-  emit("checked:update", [...checkedColumnIndex.value]);
+const handleUpdateCheckedRowKeys = (keys: string[]) => {
+  const keysSet = new Set(keys);
+  const checkedIndexList: number[] = [];
+  props.columnList.forEach((item, index) => {
+    const key = itemKey(item);
+    if (keysSet.has(key)) {
+      checkedIndexList.push(index);
+    }
+  });
+  emit("checked:update", checkedIndexList);
 };
 
-const clickTableRow = function (item: SensitiveColumn, _: number, row: number) {
-  emit("click", item, row, "VIEW");
+const rowProps = (item: SensitiveColumn, index: number) => {
+  return {
+    style: props.rowClickable ? "cursor: pointer;" : "",
+    onClick: () => {
+      emit("click", item, index, "VIEW");
+    },
+  };
 };
 </script>

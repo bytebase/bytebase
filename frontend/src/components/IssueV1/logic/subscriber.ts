@@ -2,7 +2,7 @@ import { pull } from "lodash-es";
 import { issueServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedUser } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
 
 export const updateIssueSubscribers = async (
@@ -28,7 +28,10 @@ export const updateIssueSubscribers = async (
   }
 };
 
-export const toggleSubscribeIssue = async (issue: Issue, user: User) => {
+export const toggleSubscribeIssue = async (
+  issue: Issue,
+  user: ComposedUser
+) => {
   const subscribers = [...issue.subscribers];
   const userTag = `users/${user.email}`;
   const isSubscribed = subscribers.includes(userTag);
@@ -40,7 +43,7 @@ export const toggleSubscribeIssue = async (issue: Issue, user: User) => {
   return await updateIssueSubscribers(issue, subscribers);
 };
 
-export const doSubscribeIssue = async (issue: Issue, user: User) => {
+export const doSubscribeIssue = async (issue: Issue, user: ComposedUser) => {
   const subscribers = [...issue.subscribers];
   const userTag = `users/${user.email}`;
   const isSubscribed = subscribers.includes(userTag);

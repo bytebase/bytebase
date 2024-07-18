@@ -183,7 +183,7 @@ message LoginResponse {
 message LogoutRequest {}
 
 message User {
-  reserved 6;
+  reserved 6, 13;
 
   // The name of the user.
   // Format: users/{user}. {user} is a system-generated unique ID.
@@ -216,9 +216,9 @@ message User {
 
   // The roles of the user.
   // This filed is to supersede the `user_role` field.
-  repeated string roles = 13;
+  repeated string roles = 14;
 
-  repeated Diff diffs = 14;
+  repeated Diff diffs = 15;
 }
 
 message Diff {

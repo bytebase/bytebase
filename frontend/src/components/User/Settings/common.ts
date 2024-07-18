@@ -1,9 +1,9 @@
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { ComposedUser } from "@/types";
 import { toClipboard } from "@/utils";
 
-export const copyServiceKeyToClipboardIfNeeded = (user: User) => {
+export const copyServiceKeyToClipboardIfNeeded = (user: ComposedUser) => {
   if (!user.serviceKey) return;
 
   toClipboard(user.serviceKey);

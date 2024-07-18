@@ -1,13 +1,15 @@
+import { roleNamePrefix } from "@/store/modules/v1/common";
+
 export const PresetRoleType = {
-  WORKSPACE_ADMIN: "roles/workspaceAdmin",
-  WORKSPACE_DBA: "roles/workspaceDBA",
-  WORKSPACE_MEMBER: "roles/workspaceMember",
-  PROJECT_OWNER: "roles/projectOwner",
-  PROJECT_DEVELOPER: "roles/projectDeveloper",
-  PROJECT_QUERIER: "roles/projectQuerier",
-  PROJECT_EXPORTER: "roles/projectExporter",
-  PROJECT_RELEASER: "roles/projectReleaser",
-  PROJECT_VIEWER: "roles/projectViewer",
+  WORKSPACE_ADMIN: `${roleNamePrefix}workspaceAdmin`,
+  WORKSPACE_DBA: `${roleNamePrefix}workspaceDBA`,
+  WORKSPACE_MEMBER: `${roleNamePrefix}workspaceMember`,
+  PROJECT_OWNER: `${roleNamePrefix}projectOwner`,
+  PROJECT_DEVELOPER: `${roleNamePrefix}projectDeveloper`,
+  PROJECT_QUERIER: `${roleNamePrefix}projectQuerier`,
+  PROJECT_EXPORTER: `${roleNamePrefix}projectExporter`,
+  PROJECT_RELEASER: `${roleNamePrefix}projectReleaser`,
+  PROJECT_VIEWER: `${roleNamePrefix}projectViewer`,
 };
 
 export const PRESET_ROLES = Object.values(PresetRoleType);

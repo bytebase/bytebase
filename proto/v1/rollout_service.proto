@@ -43,6 +43,11 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
   }
 
+  rpc GetTaskRunSession(GetTaskRunSessionRequest) returns (TaskRunSession) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session"};
+    option (google.api.method_signature) = "parent";
+  }
+
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun"
@@ -441,5 +446,42 @@ message TaskRunLogEntry {
     }
     Type type = 1;
     string error = 2;
+  }
+}
+
+message GetTaskRunSessionRequest {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string parent = 1;
+}
+
+message TaskRunSession {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
+  string name = 1;
+
+  oneof session {
+    Postgres postgres = 2;
+  }
+
+  message Postgres {
+    // The first session is the session of the task run executing commands.
+    // The remaining sessions are the sessions that block the first session.
+    repeated Session sessions = 1;
+
+    // Read from `pg_stat_activity`
+    message Session {
+      string pid = 1;
+      string query = 2;
+      optional string state = 3;
+      optional string wait_event_type = 4;
+      optional string wait_event = 5;
+      optional string datname = 6;
+      optional string usename = 7;
+      string application_name = 8;
+      optional string client_addr = 9;
+      optional string client_port = 10;
+      google.protobuf.Timestamp backend_start = 11;
+      optional google.protobuf.Timestamp xact_start = 12;
+      optional google.protobuf.Timestamp query_start = 13;
+    }
   }
 }

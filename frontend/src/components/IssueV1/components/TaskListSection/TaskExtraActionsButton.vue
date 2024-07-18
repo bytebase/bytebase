@@ -99,7 +99,7 @@ const renderOption = ({
   option: DropdownOption;
 }) => {
   const errors = option.disabled
-    ? ["You are not allowed to perform this action"]
+    ? [t("issue.error.you-are-not-allowed-to-perform-this-action")]
     : [];
   return h(
     DropdownItemWithErrorList,

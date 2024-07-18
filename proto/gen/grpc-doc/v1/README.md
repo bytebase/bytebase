@@ -488,6 +488,7 @@
     - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
     - [GetRolloutRequest](#bytebase-v1-GetRolloutRequest)
     - [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest)
+    - [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest)
     - [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest)
     - [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse)
     - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
@@ -511,6 +512,9 @@
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
     - [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate)
     - [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl)
+    - [TaskRunSession](#bytebase-v1-TaskRunSession)
+    - [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres)
+    - [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session)
   
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
@@ -689,6 +693,8 @@
     - [WorksheetService](#bytebase-v1-WorksheetService)
   
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
+    - [PatchIamPolicyRequest](#bytebase-v1-PatchIamPolicyRequest)
+  
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
 - [Scalar Value Types](#scalar-value-types)
@@ -8037,6 +8043,21 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-GetTaskRunSessionRequest"></a>
+
+### GetTaskRunSessionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
 <a name="bytebase-v1-ListTaskRunsRequest"></a>
 
 ### ListTaskRunsRequest
@@ -8455,6 +8476,64 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+
+<a name="bytebase-v1-TaskRunSession"></a>
+
+### TaskRunSession
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session |
+| postgres | [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunSession-Postgres"></a>
+
+### TaskRunSession.Postgres
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sessions | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) | repeated | The first session is the session of the task run executing commands. The remaining sessions are the sessions that block the first session. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunSession-Postgres-Session"></a>
+
+### TaskRunSession.Postgres.Session
+Read from `pg_stat_activity`
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pid | [string](#string) |  |  |
+| query | [string](#string) |  |  |
+| state | [string](#string) | optional |  |
+| wait_event_type | [string](#string) | optional |  |
+| wait_event | [string](#string) | optional |  |
+| datname | [string](#string) | optional |  |
+| usename | [string](#string) | optional |  |
+| application_name | [string](#string) |  |  |
+| client_addr | [string](#string) | optional |  |
+| client_port | [string](#string) | optional |  |
+| backend_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| xact_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| query_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+
+
+
+
+
  
 
 
@@ -8598,6 +8677,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |
 | GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) |  |
+| GetTaskRunSession | [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest) | [TaskRunSession](#bytebase-v1-TaskRunSession) |  |
 | BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) |  |
 | BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) |  |
 | BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) |  |
@@ -11003,6 +11083,23 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 ## v1/workspace_service.proto
 
 
+
+<a name="bytebase-v1-PatchIamPolicyRequest"></a>
+
+### PatchIamPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: workspaces/{workspace} |
+| member | [string](#string) |  | Specifies the principals requesting access for a Bytebase resource. Format: user:{email} |
+| roles | [string](#string) | repeated | The roles that is assigned to the member. Format: roles/{role} |
+
+
+
+
+
  
 
  
@@ -11019,6 +11116,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | ----------- | ------------ | ------------- | ------------|
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
+| PatchIamPolicy | [PatchIamPolicyRequest](#bytebase-v1-PatchIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 
  
 

@@ -92,7 +92,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}, sometimes the name will convert to int id incorrectly.
 		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
 		// We need to remove legacy code after the migration.
-		dbUID, isNumber := isNumber(databaseName)
+		dbUID, isNumber := utils.IsNumber(databaseName)
 		if instanceResourceID == "-" && isNumber {
 			find.UID = &dbUID
 		} else {
@@ -305,15 +305,15 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 	if len(projectRoles) == 0 {
 		return false, nil
 	}
-	return projectRoles[api.ProjectOwner], nil
+	return projectRoles[common.FormatRole(api.ProjectOwner.String())], nil
 }
 
-func findProjectRoles(ctx context.Context, stores *store.Store, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
+func findProjectRoles(ctx context.Context, stores *store.Store, projectUID int, user *store.UserMessage) (map[string]bool, error) {
 	policy, err := stores.GetProjectIamPolicy(ctx, projectUID)
 	if err != nil {
 		return nil, err
 	}
-	return utils.GetUserRolesMap(ctx, stores, user, policy)
+	return utils.GetUserFormattedRolesMap(ctx, stores, user, policy), nil
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {

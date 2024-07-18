@@ -128,7 +128,7 @@
     v-if="selectTargetDatabasesContext.show"
     :project-name="project.name"
     :engine="dirtyBranch.engine"
-    :selected-database-id-list="[]"
+    :selected-database-name-list="[]"
     :loading="!!state.applyingToDatabaseStatus"
     @close="selectTargetDatabasesContext.show = false"
     @update="handleApplyToDatabase"

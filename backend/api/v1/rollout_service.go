@@ -2,9 +2,9 @@ package v1
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
-	"slices"
 	"sort"
 	"time"
 
@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -24,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -252,6 +254,154 @@ func (s *RolloutService) GetTaskRunLog(ctx context.Context, request *v1pb.GetTas
 	return convertToTaskRunLog(request.Parent, logs), nil
 }
 
+func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.GetTaskRunSessionRequest) (*v1pb.TaskRunSession, error) {
+	_, _, _, taskUID, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
+	}
+	connIDAny, ok := s.stateCfg.TaskRunConnectionID.Load(taskRunUID)
+	if !ok {
+		return nil, status.Errorf(codes.FailedPrecondition, "connection id not found for task run %d", taskRunUID)
+	}
+	connID, ok := connIDAny.(string)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "expect connection id to be of type string but found %T", connIDAny)
+	}
+
+	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get task, error: %v", err)
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+	}
+
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil, db.ConnectionContext{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get driver, error: %v", err)
+	}
+
+	session, err := getSession(ctx, instance.Engine, driver.GetDB(), connID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get session, error: %v", err)
+	}
+
+	session.Name = request.Parent + "/session"
+
+	return session, nil
+}
+
+func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID string) (*v1pb.TaskRunSession, error) {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		query := `
+			SELECT
+				pid,
+				query,
+				state,
+				wait_event_type,
+				wait_event,
+				datname,
+				usename,
+				application_name,
+				client_addr,
+				client_port,
+				backend_start,
+				xact_start,
+				query_start
+			FROM (
+				SELECT
+					1 AS lvl,
+					pid,
+					query,
+					state,
+					wait_event_type,
+					wait_event,
+					datname,
+					usename,
+					application_name,
+					client_addr,
+					client_port,
+					backend_start,
+					xact_start,
+					query_start
+				FROM
+					pg_catalog.pg_stat_activity
+				WHERE pid = $1
+				UNION
+				SELECT
+					2 AS lvl,
+					pid,
+					query,
+					state,
+					wait_event_type,
+					wait_event,
+					datname,
+					usename,
+					application_name,
+					client_addr,
+					client_port,
+					backend_start,
+					xact_start,
+					query_start
+				FROM
+					pg_catalog.pg_stat_activity
+				WHERE pid = ANY(pg_blocking_pids($1))
+				ORDER BY lvl, pid
+			) t
+		`
+		rows, err := db.QueryContext(ctx, query, connID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to query rows")
+		}
+		defer rows.Close()
+
+		ss := &v1pb.TaskRunSession_Postgres{}
+		for rows.Next() {
+			var s v1pb.TaskRunSession_Postgres_Session
+
+			var bs, xs, qs time.Time
+			if err := rows.Scan(
+				&s.Pid,
+				&s.Query,
+				&s.State,
+				&s.WaitEventType,
+				&s.WaitEvent,
+				&s.Datname,
+				&s.Usename,
+				&s.ApplicationName,
+				&s.ClientAddr,
+				&s.ClientPort,
+				&bs,
+				&xs,
+				&qs,
+			); err != nil {
+				return nil, errors.Wrapf(err, "failed to scan")
+			}
+
+			s.BackendStart = timestamppb.New(bs)
+			s.XactStart = timestamppb.New(xs)
+			s.QueryStart = timestamppb.New(qs)
+
+			ss.Sessions = append(ss.Sessions, &s)
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan rows")
+		}
+
+		return &v1pb.TaskRunSession{
+			Session: &v1pb.TaskRunSession_Postgres_{
+				Postgres: ss,
+			},
+		}, nil
+	default:
+		return nil, errors.Errorf("unsupported engine type %v", engine.String())
+	}
+}
+
 // BatchRunTasks runs tasks in batch.
 func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
 	if len(request.Tasks) == 0 {
@@ -339,7 +489,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "role not found")
 	}
 
-	ok, err = canUserRunStageTasks(ctx, s.store, user, issue, stageToRun.EnvironmentID)
+	ok, err = s.canUserRunStageTasks(ctx, user, issue, stageToRun.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -479,7 +629,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		if !ok {
 			return nil, status.Errorf(codes.Internal, "stage ID %v not found in stages of rollout %v", stageID, rolloutID)
 		}
-		ok, err = canUserSkipStageTasks(ctx, s.store, user, issue, stage.EnvironmentID)
+		ok, err = s.canUserSkipStageTasks(ctx, user, issue, stage.EnvironmentID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 		}
@@ -584,7 +734,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
 	}
 
-	ok, err = canUserCancelStageTaskRun(ctx, s.store, user, issue, stage.EnvironmentID)
+	ok, err = s.canUserCancelStageTaskRun(ctx, user, issue, stage.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -980,31 +1130,32 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
-func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
 	// For data export issues, only the creator can run tasks.
 	if issue.Type == api.IssueDatabaseDataExport {
 		return issue.Creator.ID == user.ID, nil
 	}
 
 	// The workspace owner and DBA roles can always run tasks.
-	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
+	containsRole, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin, api.WorkspaceDBA)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check workspace role")
+	}
+	if containsRole {
 		return true, nil
 	}
 
-	p, err := s.GetRolloutPolicy(ctx, stageEnvironmentID)
+	p, err := s.store.GetRolloutPolicy(ctx, stageEnvironmentID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get rollout policy for stageEnvironmentID %d", stageEnvironmentID)
 	}
 
-	policy, err := s.GetProjectIamPolicy(ctx, issue.Project.UID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.UID)
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
 	}
 
-	roles, err := utils.GetUserFormattedRolesMap(ctx, s, user, policy)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get roles")
-	}
+	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy)
 
 	if p.Automatic {
 		return true, nil
@@ -1041,12 +1192,12 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 }
 
 // canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
-func canUserCancelStageTaskRun(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	return canUserRunStageTasks(ctx, s, user, issue, stageEnvironmentID)
+func (s *RolloutService) canUserCancelStageTaskRun(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+	return s.canUserRunStageTasks(ctx, user, issue, stageEnvironmentID)
 }
 
-func canUserSkipStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	return canUserRunStageTasks(ctx, s, user, issue, stageEnvironmentID)
+func (s *RolloutService) canUserSkipStageTasks(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
+	return s.canUserRunStageTasks(ctx, user, issue, stageEnvironmentID)
 }
 
 func getLastApproverUID(approval *storepb.IssuePayloadApproval) *int {

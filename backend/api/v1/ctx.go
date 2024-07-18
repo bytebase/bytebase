@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -239,7 +240,7 @@ func (*ContextProvider) getProjectIDsForVCSConnectorService(_ context.Context, r
 		projectIDs = append(projectIDs, projectID)
 	}
 
-	return uniq(projectIDs), nil
+	return utils.Uniq(projectIDs), nil
 }
 
 func (*ContextProvider) getProjectIDsForChangelistService(_ context.Context, req any) ([]string, error) {
@@ -267,7 +268,7 @@ func (*ContextProvider) getProjectIDsForChangelistService(_ context.Context, req
 		projectIDs = append(projectIDs, projectID)
 	}
 
-	return uniq(projectIDs), nil
+	return utils.Uniq(projectIDs), nil
 }
 
 func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req any) ([]string, error) {
@@ -330,7 +331,7 @@ func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req an
 		projectIDs = append(projectIDs, projectID)
 	}
 
-	return uniq(projectIDs), nil
+	return utils.Uniq(projectIDs), nil
 }
 
 func (*ContextProvider) getProjectIDsForPlanService(_ context.Context, req any) ([]string, error) {
@@ -362,7 +363,7 @@ func (*ContextProvider) getProjectIDsForPlanService(_ context.Context, req any) 
 		projectIDs = append(projectIDs, projectID)
 	}
 
-	return uniq(projectIDs), nil
+	return utils.Uniq(projectIDs), nil
 }
 
 func (*ContextProvider) getProjectIDsForBranchService(_ context.Context, req any) ([]string, error) {
@@ -391,7 +392,7 @@ func (*ContextProvider) getProjectIDsForBranchService(_ context.Context, req any
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
-	return uniq(projectIDs), nil
+	return utils.Uniq(projectIDs), nil
 }
 
 func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
@@ -471,7 +472,7 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
-	return uniq(projectIDs), nil
+	return utils.Uniq(projectIDs), nil
 }
 
 func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any) ([]string, error) {
@@ -592,7 +593,7 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 		projectIDs = append(projectIDs, database.ProjectID)
 	}
 
-	return uniq(projectIDs), nil
+	return utils.Uniq(projectIDs), nil
 }
 
 func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
@@ -603,7 +604,7 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 	find := &store.FindDatabaseMessage{
 		ShowDeleted: true,
 	}
-	databaseUID, isNumber := isNumber(databaseName)
+	databaseUID, isNumber := utils.IsNumber(databaseName)
 	if instanceID == "-" && isNumber {
 		// Expected format: "instances/-/database/{uid}"
 		find.UID = &databaseUID

@@ -22,7 +22,6 @@ var systemBotUser = &UserMessage{
 	Name:  "Bytebase",
 	Email: api.SystemBotEmail,
 	Type:  api.SystemBot,
-	Roles: []api.Role{api.WorkspaceAdmin},
 }
 
 // FindUserMessage is the message for finding users.
@@ -40,7 +39,6 @@ type UpdateUserMessage struct {
 	Email        *string
 	Name         *string
 	PasswordHash *string
-	Roles        *[]api.Role
 	Delete       *bool
 	MFAConfig    *storepb.MFAConfig
 	Phone        *string
@@ -54,7 +52,6 @@ type UserMessage struct {
 	Name          string
 	Type          api.PrincipalType
 	PasswordHash  string
-	Roles         []api.Role
 	MemberDeleted bool
 	MFAConfig     *storepb.MFAConfig
 	// Phone conforms E.164 format.
@@ -164,6 +161,7 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 		return nil, err
 	}
 
+	// TODO(ed): deprecate this.
 	var binding *storepb.Binding
 	if v := find.Role; v != nil {
 		binding = findBindingByRole(workspaceIamPolicy, *v)
@@ -228,15 +226,9 @@ func (s *Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage)
 		}
 
 		if b := binding; b != nil {
-			if !slices.Contains(b.Members, common.FormatUserUID(userMessage.ID)) {
+			if !slices.Contains(b.Members, common.FormatUserUID(userMessage.ID)) && !slices.Contains(b.Members, api.AllUsers) {
 				continue
 			}
-		}
-
-		if userMessage.ID == api.SystemBotID {
-			userMessage.Roles = append(userMessage.Roles, api.WorkspaceAdmin)
-		} else {
-			userMessage.Roles = findRolesByUserID(workspaceIamPolicy, userMessage.ID)
 		}
 
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
@@ -292,17 +284,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		return nil, err
 	}
 
-	roles := uniq(create.Roles)
-	if len(roles) > 0 {
-		if _, err := s.UpdateWorkspaceIamPolicy(ctx, &UpdateIamPolicyMessage{
-			Member:     common.FormatUserUID(userID),
-			Roles:      roles,
-			UpdaterUID: creatorID,
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to update user roles")
-		}
-	}
-
 	user := &UserMessage{
 		ID:           userID,
 		Email:        create.Email,
@@ -310,7 +291,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Type:         create.Type,
 		PasswordHash: create.PasswordHash,
 		Phone:        create.Phone,
-		Roles:        roles,
 	}
 	s.userIDCache.Add(user.ID, user)
 	s.userEmailCache.Add(user.Email, user)
@@ -372,17 +352,6 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 		return nil, err
 	}
 
-	// patch.Roles overrides patch.Role
-	if v := patch.Roles; v != nil {
-		if _, err := s.UpdateWorkspaceIamPolicy(ctx, &UpdateIamPolicyMessage{
-			Member:     common.FormatUserUID(currentUser.ID),
-			Roles:      *v,
-			UpdaterUID: updaterID,
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to update user roles")
-		}
-	}
-
 	s.userEmailCache.Remove(currentUser.Email)
 	s.userIDCache.Remove(currentUser.ID)
 	user, err := s.GetUserByID(ctx, currentUser.ID)
@@ -393,19 +362,4 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	s.userIDCache.Add(currentUser.ID, user)
 	s.userEmailCache.Add(user.Email, user)
 	return user, nil
-}
-
-func uniq[T comparable](array []T) []T {
-	res := make([]T, 0, len(array))
-	seen := make(map[T]struct{}, len(array))
-
-	for _, e := range array {
-		if _, ok := seen[e]; ok {
-			continue
-		}
-		seen[e] = struct{}{}
-		res = append(res, e)
-	}
-
-	return res
 }

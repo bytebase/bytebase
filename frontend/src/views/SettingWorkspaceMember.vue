@@ -182,8 +182,8 @@ import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
   filterUserListByKeyword,
+  type ComposedUser,
 } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
@@ -203,7 +203,7 @@ type LocalState = {
   showInactiveUserList: boolean;
   showCreateUserDrawer: boolean;
   showCreateGroupDrawer: boolean;
-  editingUser?: User;
+  editingUser?: ComposedUser;
   editingGroup?: UserGroup;
 };
 
@@ -383,7 +383,7 @@ const handleCreateUser = () => {
   state.showCreateUserDrawer = true;
 };
 
-const handleUpdateUser = (user: User) => {
+const handleUpdateUser = (user: ComposedUser) => {
   state.editingUser = user;
   state.showCreateUserDrawer = true;
 };

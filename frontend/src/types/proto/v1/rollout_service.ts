@@ -942,6 +942,42 @@ export function taskRunLogEntry_TransactionControl_TypeToNumber(
   }
 }
 
+export interface GetTaskRunSessionRequest {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
+  parent: string;
+}
+
+export interface TaskRunSession {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session */
+  name: string;
+  postgres?: TaskRunSession_Postgres | undefined;
+}
+
+export interface TaskRunSession_Postgres {
+  /**
+   * The first session is the session of the task run executing commands.
+   * The remaining sessions are the sessions that block the first session.
+   */
+  sessions: TaskRunSession_Postgres_Session[];
+}
+
+/** Read from `pg_stat_activity` */
+export interface TaskRunSession_Postgres_Session {
+  pid: string;
+  query: string;
+  state?: string | undefined;
+  waitEventType?: string | undefined;
+  waitEvent?: string | undefined;
+  datname?: string | undefined;
+  usename?: string | undefined;
+  applicationName: string;
+  clientAddr?: string | undefined;
+  clientPort?: string | undefined;
+  backendStart: Date | undefined;
+  xactStart?: Date | undefined;
+  queryStart?: Date | undefined;
+}
+
 function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
   return { parent: "", tasks: [], reason: "" };
 }
@@ -4129,6 +4165,453 @@ export const TaskRunLogEntry_TransactionControl = {
   },
 };
 
+function createBaseGetTaskRunSessionRequest(): GetTaskRunSessionRequest {
+  return { parent: "" };
+}
+
+export const GetTaskRunSessionRequest = {
+  encode(message: GetTaskRunSessionRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetTaskRunSessionRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTaskRunSessionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTaskRunSessionRequest {
+    return { parent: isSet(object.parent) ? globalThis.String(object.parent) : "" };
+  },
+
+  toJSON(message: GetTaskRunSessionRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetTaskRunSessionRequest>): GetTaskRunSessionRequest {
+    return GetTaskRunSessionRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetTaskRunSessionRequest>): GetTaskRunSessionRequest {
+    const message = createBaseGetTaskRunSessionRequest();
+    message.parent = object.parent ?? "";
+    return message;
+  },
+};
+
+function createBaseTaskRunSession(): TaskRunSession {
+  return { name: "", postgres: undefined };
+}
+
+export const TaskRunSession = {
+  encode(message: TaskRunSession, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.postgres !== undefined) {
+      TaskRunSession_Postgres.encode(message.postgres, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunSession {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunSession();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.postgres = TaskRunSession_Postgres.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunSession {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      postgres: isSet(object.postgres) ? TaskRunSession_Postgres.fromJSON(object.postgres) : undefined,
+    };
+  },
+
+  toJSON(message: TaskRunSession): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.postgres !== undefined) {
+      obj.postgres = TaskRunSession_Postgres.toJSON(message.postgres);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunSession>): TaskRunSession {
+    return TaskRunSession.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunSession>): TaskRunSession {
+    const message = createBaseTaskRunSession();
+    message.name = object.name ?? "";
+    message.postgres = (object.postgres !== undefined && object.postgres !== null)
+      ? TaskRunSession_Postgres.fromPartial(object.postgres)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRunSession_Postgres(): TaskRunSession_Postgres {
+  return { sessions: [] };
+}
+
+export const TaskRunSession_Postgres = {
+  encode(message: TaskRunSession_Postgres, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.sessions) {
+      TaskRunSession_Postgres_Session.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunSession_Postgres {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunSession_Postgres();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sessions.push(TaskRunSession_Postgres_Session.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunSession_Postgres {
+    return {
+      sessions: globalThis.Array.isArray(object?.sessions)
+        ? object.sessions.map((e: any) => TaskRunSession_Postgres_Session.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TaskRunSession_Postgres): unknown {
+    const obj: any = {};
+    if (message.sessions?.length) {
+      obj.sessions = message.sessions.map((e) => TaskRunSession_Postgres_Session.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunSession_Postgres>): TaskRunSession_Postgres {
+    return TaskRunSession_Postgres.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunSession_Postgres>): TaskRunSession_Postgres {
+    const message = createBaseTaskRunSession_Postgres();
+    message.sessions = object.sessions?.map((e) => TaskRunSession_Postgres_Session.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTaskRunSession_Postgres_Session(): TaskRunSession_Postgres_Session {
+  return {
+    pid: "",
+    query: "",
+    state: undefined,
+    waitEventType: undefined,
+    waitEvent: undefined,
+    datname: undefined,
+    usename: undefined,
+    applicationName: "",
+    clientAddr: undefined,
+    clientPort: undefined,
+    backendStart: undefined,
+    xactStart: undefined,
+    queryStart: undefined,
+  };
+}
+
+export const TaskRunSession_Postgres_Session = {
+  encode(message: TaskRunSession_Postgres_Session, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.pid !== "") {
+      writer.uint32(10).string(message.pid);
+    }
+    if (message.query !== "") {
+      writer.uint32(18).string(message.query);
+    }
+    if (message.state !== undefined) {
+      writer.uint32(26).string(message.state);
+    }
+    if (message.waitEventType !== undefined) {
+      writer.uint32(34).string(message.waitEventType);
+    }
+    if (message.waitEvent !== undefined) {
+      writer.uint32(42).string(message.waitEvent);
+    }
+    if (message.datname !== undefined) {
+      writer.uint32(50).string(message.datname);
+    }
+    if (message.usename !== undefined) {
+      writer.uint32(58).string(message.usename);
+    }
+    if (message.applicationName !== "") {
+      writer.uint32(66).string(message.applicationName);
+    }
+    if (message.clientAddr !== undefined) {
+      writer.uint32(74).string(message.clientAddr);
+    }
+    if (message.clientPort !== undefined) {
+      writer.uint32(82).string(message.clientPort);
+    }
+    if (message.backendStart !== undefined) {
+      Timestamp.encode(toTimestamp(message.backendStart), writer.uint32(90).fork()).ldelim();
+    }
+    if (message.xactStart !== undefined) {
+      Timestamp.encode(toTimestamp(message.xactStart), writer.uint32(98).fork()).ldelim();
+    }
+    if (message.queryStart !== undefined) {
+      Timestamp.encode(toTimestamp(message.queryStart), writer.uint32(106).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunSession_Postgres_Session {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunSession_Postgres_Session();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.pid = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.query = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.state = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.waitEventType = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.waitEvent = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.datname = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.usename = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.applicationName = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.clientAddr = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.clientPort = reader.string();
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.backendStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.xactStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.queryStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunSession_Postgres_Session {
+    return {
+      pid: isSet(object.pid) ? globalThis.String(object.pid) : "",
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
+      state: isSet(object.state) ? globalThis.String(object.state) : undefined,
+      waitEventType: isSet(object.waitEventType) ? globalThis.String(object.waitEventType) : undefined,
+      waitEvent: isSet(object.waitEvent) ? globalThis.String(object.waitEvent) : undefined,
+      datname: isSet(object.datname) ? globalThis.String(object.datname) : undefined,
+      usename: isSet(object.usename) ? globalThis.String(object.usename) : undefined,
+      applicationName: isSet(object.applicationName) ? globalThis.String(object.applicationName) : "",
+      clientAddr: isSet(object.clientAddr) ? globalThis.String(object.clientAddr) : undefined,
+      clientPort: isSet(object.clientPort) ? globalThis.String(object.clientPort) : undefined,
+      backendStart: isSet(object.backendStart) ? fromJsonTimestamp(object.backendStart) : undefined,
+      xactStart: isSet(object.xactStart) ? fromJsonTimestamp(object.xactStart) : undefined,
+      queryStart: isSet(object.queryStart) ? fromJsonTimestamp(object.queryStart) : undefined,
+    };
+  },
+
+  toJSON(message: TaskRunSession_Postgres_Session): unknown {
+    const obj: any = {};
+    if (message.pid !== "") {
+      obj.pid = message.pid;
+    }
+    if (message.query !== "") {
+      obj.query = message.query;
+    }
+    if (message.state !== undefined) {
+      obj.state = message.state;
+    }
+    if (message.waitEventType !== undefined) {
+      obj.waitEventType = message.waitEventType;
+    }
+    if (message.waitEvent !== undefined) {
+      obj.waitEvent = message.waitEvent;
+    }
+    if (message.datname !== undefined) {
+      obj.datname = message.datname;
+    }
+    if (message.usename !== undefined) {
+      obj.usename = message.usename;
+    }
+    if (message.applicationName !== "") {
+      obj.applicationName = message.applicationName;
+    }
+    if (message.clientAddr !== undefined) {
+      obj.clientAddr = message.clientAddr;
+    }
+    if (message.clientPort !== undefined) {
+      obj.clientPort = message.clientPort;
+    }
+    if (message.backendStart !== undefined) {
+      obj.backendStart = message.backendStart.toISOString();
+    }
+    if (message.xactStart !== undefined) {
+      obj.xactStart = message.xactStart.toISOString();
+    }
+    if (message.queryStart !== undefined) {
+      obj.queryStart = message.queryStart.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunSession_Postgres_Session>): TaskRunSession_Postgres_Session {
+    return TaskRunSession_Postgres_Session.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunSession_Postgres_Session>): TaskRunSession_Postgres_Session {
+    const message = createBaseTaskRunSession_Postgres_Session();
+    message.pid = object.pid ?? "";
+    message.query = object.query ?? "";
+    message.state = object.state ?? undefined;
+    message.waitEventType = object.waitEventType ?? undefined;
+    message.waitEvent = object.waitEvent ?? undefined;
+    message.datname = object.datname ?? undefined;
+    message.usename = object.usename ?? undefined;
+    message.applicationName = object.applicationName ?? "";
+    message.clientAddr = object.clientAddr ?? undefined;
+    message.clientPort = object.clientPort ?? undefined;
+    message.backendStart = object.backendStart ?? undefined;
+    message.xactStart = object.xactStart ?? undefined;
+    message.queryStart = object.queryStart ?? undefined;
+    return message;
+  },
+};
+
 export type RolloutServiceDefinition = typeof RolloutServiceDefinition;
 export const RolloutServiceDefinition = {
   name: "RolloutService",
@@ -4465,6 +4948,95 @@ export const RolloutServiceDefinition = {
               108,
               111,
               103,
+            ]),
+          ],
+        },
+      },
+    },
+    getTaskRunSession: {
+      name: "GetTaskRunSession",
+      requestType: GetTaskRunSessionRequest,
+      requestStream: false,
+      responseType: TaskRunSession,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              72,
+              18,
+              70,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
+              47,
+              42,
+              47,
+              115,
+              116,
+              97,
+              103,
+              101,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              82,
+              117,
+              110,
+              115,
+              47,
+              42,
+              125,
+              47,
+              115,
+              101,
+              115,
+              115,
+              105,
+              111,
+              110,
             ]),
           ],
         },

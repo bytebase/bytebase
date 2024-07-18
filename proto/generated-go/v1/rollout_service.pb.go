@@ -1824,6 +1824,130 @@ func (x *TaskRunLogEntry) GetTransactionControl() *TaskRunLogEntry_TransactionCo
 	return nil
 }
 
+type GetTaskRunSessionRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+}
+
+func (x *GetTaskRunSessionRequest) Reset() {
+	*x = GetTaskRunSessionRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetTaskRunSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskRunSessionRequest) ProtoMessage() {}
+
+func (x *GetTaskRunSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskRunSessionRequest.ProtoReflect.Descriptor instead.
+func (*GetTaskRunSessionRequest) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetTaskRunSessionRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
+type TaskRunSession struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Types that are assignable to Session:
+	//
+	//	*TaskRunSession_Postgres_
+	Session isTaskRunSession_Session `protobuf_oneof:"session"`
+}
+
+func (x *TaskRunSession) Reset() {
+	*x = TaskRunSession{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[19]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunSession) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunSession) ProtoMessage() {}
+
+func (x *TaskRunSession) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[19]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunSession.ProtoReflect.Descriptor instead.
+func (*TaskRunSession) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *TaskRunSession) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (m *TaskRunSession) GetSession() isTaskRunSession_Session {
+	if m != nil {
+		return m.Session
+	}
+	return nil
+}
+
+func (x *TaskRunSession) GetPostgres() *TaskRunSession_Postgres {
+	if x, ok := x.GetSession().(*TaskRunSession_Postgres_); ok {
+		return x.Postgres
+	}
+	return nil
+}
+
+type isTaskRunSession_Session interface {
+	isTaskRunSession_Session()
+}
+
+type TaskRunSession_Postgres_ struct {
+	Postgres *TaskRunSession_Postgres `protobuf:"bytes,2,opt,name=postgres,proto3,oneof"`
+}
+
+func (*TaskRunSession_Postgres_) isTaskRunSession_Session() {}
+
 type Task_DatabaseCreate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1847,7 +1971,7 @@ type Task_DatabaseCreate struct {
 func (x *Task_DatabaseCreate) Reset() {
 	*x = Task_DatabaseCreate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[18]
+		mi := &file_v1_rollout_service_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1860,7 +1984,7 @@ func (x *Task_DatabaseCreate) String() string {
 func (*Task_DatabaseCreate) ProtoMessage() {}
 
 func (x *Task_DatabaseCreate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[18]
+	mi := &file_v1_rollout_service_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1943,7 +2067,7 @@ type Task_DatabaseSchemaBaseline struct {
 func (x *Task_DatabaseSchemaBaseline) Reset() {
 	*x = Task_DatabaseSchemaBaseline{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[19]
+		mi := &file_v1_rollout_service_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1956,7 +2080,7 @@ func (x *Task_DatabaseSchemaBaseline) String() string {
 func (*Task_DatabaseSchemaBaseline) ProtoMessage() {}
 
 func (x *Task_DatabaseSchemaBaseline) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[19]
+	mi := &file_v1_rollout_service_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1992,7 +2116,7 @@ type Task_DatabaseSchemaUpdate struct {
 func (x *Task_DatabaseSchemaUpdate) Reset() {
 	*x = Task_DatabaseSchemaUpdate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[20]
+		mi := &file_v1_rollout_service_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2005,7 +2129,7 @@ func (x *Task_DatabaseSchemaUpdate) String() string {
 func (*Task_DatabaseSchemaUpdate) ProtoMessage() {}
 
 func (x *Task_DatabaseSchemaUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[20]
+	mi := &file_v1_rollout_service_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2048,7 +2172,7 @@ type Task_DatabaseDataUpdate struct {
 func (x *Task_DatabaseDataUpdate) Reset() {
 	*x = Task_DatabaseDataUpdate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[21]
+		mi := &file_v1_rollout_service_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2061,7 +2185,7 @@ func (x *Task_DatabaseDataUpdate) String() string {
 func (*Task_DatabaseDataUpdate) ProtoMessage() {}
 
 func (x *Task_DatabaseDataUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[21]
+	mi := &file_v1_rollout_service_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2112,7 +2236,7 @@ type Task_DatabaseDataExport struct {
 func (x *Task_DatabaseDataExport) Reset() {
 	*x = Task_DatabaseDataExport{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[22]
+		mi := &file_v1_rollout_service_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2125,7 +2249,7 @@ func (x *Task_DatabaseDataExport) String() string {
 func (*Task_DatabaseDataExport) ProtoMessage() {}
 
 func (x *Task_DatabaseDataExport) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[22]
+	mi := &file_v1_rollout_service_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2184,7 +2308,7 @@ type TaskRun_ExecutionDetail struct {
 func (x *TaskRun_ExecutionDetail) Reset() {
 	*x = TaskRun_ExecutionDetail{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[24]
+		mi := &file_v1_rollout_service_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2197,7 +2321,7 @@ func (x *TaskRun_ExecutionDetail) String() string {
 func (*TaskRun_ExecutionDetail) ProtoMessage() {}
 
 func (x *TaskRun_ExecutionDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[24]
+	mi := &file_v1_rollout_service_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2255,7 +2379,7 @@ type TaskRun_ExecutionDetail_Position struct {
 func (x *TaskRun_ExecutionDetail_Position) Reset() {
 	*x = TaskRun_ExecutionDetail_Position{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[25]
+		mi := &file_v1_rollout_service_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2268,7 +2392,7 @@ func (x *TaskRun_ExecutionDetail_Position) String() string {
 func (*TaskRun_ExecutionDetail_Position) ProtoMessage() {}
 
 func (x *TaskRun_ExecutionDetail_Position) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[25]
+	mi := &file_v1_rollout_service_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2311,7 +2435,7 @@ type TaskRunLogEntry_SchemaDump struct {
 func (x *TaskRunLogEntry_SchemaDump) Reset() {
 	*x = TaskRunLogEntry_SchemaDump{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[26]
+		mi := &file_v1_rollout_service_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2324,7 +2448,7 @@ func (x *TaskRunLogEntry_SchemaDump) String() string {
 func (*TaskRunLogEntry_SchemaDump) ProtoMessage() {}
 
 func (x *TaskRunLogEntry_SchemaDump) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[26]
+	mi := &file_v1_rollout_service_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2375,7 +2499,7 @@ type TaskRunLogEntry_CommandExecute struct {
 func (x *TaskRunLogEntry_CommandExecute) Reset() {
 	*x = TaskRunLogEntry_CommandExecute{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[27]
+		mi := &file_v1_rollout_service_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2388,7 +2512,7 @@ func (x *TaskRunLogEntry_CommandExecute) String() string {
 func (*TaskRunLogEntry_CommandExecute) ProtoMessage() {}
 
 func (x *TaskRunLogEntry_CommandExecute) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[27]
+	mi := &file_v1_rollout_service_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2438,7 +2562,7 @@ type TaskRunLogEntry_DatabaseSync struct {
 func (x *TaskRunLogEntry_DatabaseSync) Reset() {
 	*x = TaskRunLogEntry_DatabaseSync{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[28]
+		mi := &file_v1_rollout_service_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2451,7 +2575,7 @@ func (x *TaskRunLogEntry_DatabaseSync) String() string {
 func (*TaskRunLogEntry_DatabaseSync) ProtoMessage() {}
 
 func (x *TaskRunLogEntry_DatabaseSync) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[28]
+	mi := &file_v1_rollout_service_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2499,7 +2623,7 @@ type TaskRunLogEntry_TaskRunStatusUpdate struct {
 func (x *TaskRunLogEntry_TaskRunStatusUpdate) Reset() {
 	*x = TaskRunLogEntry_TaskRunStatusUpdate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[29]
+		mi := &file_v1_rollout_service_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2512,7 +2636,7 @@ func (x *TaskRunLogEntry_TaskRunStatusUpdate) String() string {
 func (*TaskRunLogEntry_TaskRunStatusUpdate) ProtoMessage() {}
 
 func (x *TaskRunLogEntry_TaskRunStatusUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[29]
+	mi := &file_v1_rollout_service_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2547,7 +2671,7 @@ type TaskRunLogEntry_TransactionControl struct {
 func (x *TaskRunLogEntry_TransactionControl) Reset() {
 	*x = TaskRunLogEntry_TransactionControl{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[30]
+		mi := &file_v1_rollout_service_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2560,7 +2684,7 @@ func (x *TaskRunLogEntry_TransactionControl) String() string {
 func (*TaskRunLogEntry_TransactionControl) ProtoMessage() {}
 
 func (x *TaskRunLogEntry_TransactionControl) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[30]
+	mi := &file_v1_rollout_service_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2606,7 +2730,7 @@ type TaskRunLogEntry_CommandExecute_CommandResponse struct {
 func (x *TaskRunLogEntry_CommandExecute_CommandResponse) Reset() {
 	*x = TaskRunLogEntry_CommandExecute_CommandResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[31]
+		mi := &file_v1_rollout_service_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2619,7 +2743,7 @@ func (x *TaskRunLogEntry_CommandExecute_CommandResponse) String() string {
 func (*TaskRunLogEntry_CommandExecute_CommandResponse) ProtoMessage() {}
 
 func (x *TaskRunLogEntry_CommandExecute_CommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[31]
+	mi := &file_v1_rollout_service_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2659,6 +2783,199 @@ func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAffectedRows() int32
 func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAllAffectedRows() []int32 {
 	if x != nil {
 		return x.AllAffectedRows
+	}
+	return nil
+}
+
+type TaskRunSession_Postgres struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The first session is the session of the task run executing commands.
+	// The remaining sessions are the sessions that block the first session.
+	Sessions []*TaskRunSession_Postgres_Session `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+}
+
+func (x *TaskRunSession_Postgres) Reset() {
+	*x = TaskRunSession_Postgres{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[34]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunSession_Postgres) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunSession_Postgres) ProtoMessage() {}
+
+func (x *TaskRunSession_Postgres) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[34]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunSession_Postgres.ProtoReflect.Descriptor instead.
+func (*TaskRunSession_Postgres) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{19, 0}
+}
+
+func (x *TaskRunSession_Postgres) GetSessions() []*TaskRunSession_Postgres_Session {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+// Read from `pg_stat_activity`
+type TaskRunSession_Postgres_Session struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Pid             string                 `protobuf:"bytes,1,opt,name=pid,proto3" json:"pid,omitempty"`
+	Query           string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	State           *string                `protobuf:"bytes,3,opt,name=state,proto3,oneof" json:"state,omitempty"`
+	WaitEventType   *string                `protobuf:"bytes,4,opt,name=wait_event_type,json=waitEventType,proto3,oneof" json:"wait_event_type,omitempty"`
+	WaitEvent       *string                `protobuf:"bytes,5,opt,name=wait_event,json=waitEvent,proto3,oneof" json:"wait_event,omitempty"`
+	Datname         *string                `protobuf:"bytes,6,opt,name=datname,proto3,oneof" json:"datname,omitempty"`
+	Usename         *string                `protobuf:"bytes,7,opt,name=usename,proto3,oneof" json:"usename,omitempty"`
+	ApplicationName string                 `protobuf:"bytes,8,opt,name=application_name,json=applicationName,proto3" json:"application_name,omitempty"`
+	ClientAddr      *string                `protobuf:"bytes,9,opt,name=client_addr,json=clientAddr,proto3,oneof" json:"client_addr,omitempty"`
+	ClientPort      *string                `protobuf:"bytes,10,opt,name=client_port,json=clientPort,proto3,oneof" json:"client_port,omitempty"`
+	BackendStart    *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=backend_start,json=backendStart,proto3" json:"backend_start,omitempty"`
+	XactStart       *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=xact_start,json=xactStart,proto3,oneof" json:"xact_start,omitempty"`
+	QueryStart      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=query_start,json=queryStart,proto3,oneof" json:"query_start,omitempty"`
+}
+
+func (x *TaskRunSession_Postgres_Session) Reset() {
+	*x = TaskRunSession_Postgres_Session{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[35]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunSession_Postgres_Session) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunSession_Postgres_Session) ProtoMessage() {}
+
+func (x *TaskRunSession_Postgres_Session) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[35]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunSession_Postgres_Session.ProtoReflect.Descriptor instead.
+func (*TaskRunSession_Postgres_Session) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{19, 0, 0}
+}
+
+func (x *TaskRunSession_Postgres_Session) GetPid() string {
+	if x != nil {
+		return x.Pid
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetState() string {
+	if x != nil && x.State != nil {
+		return *x.State
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetWaitEventType() string {
+	if x != nil && x.WaitEventType != nil {
+		return *x.WaitEventType
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetWaitEvent() string {
+	if x != nil && x.WaitEvent != nil {
+		return *x.WaitEvent
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetDatname() string {
+	if x != nil && x.Datname != nil {
+		return *x.Datname
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetUsename() string {
+	if x != nil && x.Usename != nil {
+		return *x.Usename
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetApplicationName() string {
+	if x != nil {
+		return x.ApplicationName
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetClientAddr() string {
+	if x != nil && x.ClientAddr != nil {
+		return *x.ClientAddr
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetClientPort() string {
+	if x != nil && x.ClientPort != nil {
+		return *x.ClientPort
+	}
+	return ""
+}
+
+func (x *TaskRunSession_Postgres_Session) GetBackendStart() *timestamppb.Timestamp {
+	if x != nil {
+		return x.BackendStart
+	}
+	return nil
+}
+
+func (x *TaskRunSession_Postgres_Session) GetXactStart() *timestamppb.Timestamp {
+	if x != nil {
+		return x.XactStart
+	}
+	return nil
+}
+
+func (x *TaskRunSession_Postgres_Session) GetQueryStart() *timestamppb.Timestamp {
+	if x != nil {
+		return x.QueryStart
 	}
 	return nil
 }
@@ -3074,54 +3391,123 @@ var file_v1_rollout_service_proto_rawDesc = []byte{
 	0x53, 0x59, 0x4e, 0x43, 0x10, 0x03, 0x12, 0x1a, 0x0a, 0x16, 0x54, 0x41, 0x53, 0x4b, 0x5f, 0x52,
 	0x55, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x50, 0x44, 0x41, 0x54, 0x45,
 	0x10, 0x04, 0x12, 0x17, 0x0a, 0x13, 0x54, 0x52, 0x41, 0x4e, 0x53, 0x41, 0x43, 0x54, 0x49, 0x4f,
-	0x4e, 0x5f, 0x43, 0x4f, 0x4e, 0x54, 0x52, 0x4f, 0x4c, 0x10, 0x05, 0x32, 0x83, 0x0a, 0x0a, 0x0e,
-	0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x73,
-	0x0a, 0x0a, 0x47, 0x65, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x1e, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x6f,
-	0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c, 0x6c, 0x6f,
-	0x75, 0x74, 0x22, 0x2f, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x22, 0x12, 0x20, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f,
-	0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73,
-	0x2f, 0x2a, 0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x6f,
-	0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75,
-	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x42,
-	0xda, 0x41, 0x0e, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x2c, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75,
-	0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x3a, 0x07, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74,
-	0x22, 0x20, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75,
-	0x74, 0x73, 0x12, 0x85, 0x01, 0x0a, 0x0e, 0x50, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x6f,
-	0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f,
+	0x4e, 0x5f, 0x43, 0x4f, 0x4e, 0x54, 0x52, 0x4f, 0x4c, 0x10, 0x05, 0x22, 0x32, 0x0a, 0x18, 0x47,
+	0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e,
+	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x22,
+	0xe6, 0x06, 0x0a, 0x0e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x53, 0x65, 0x73, 0x73, 0x69,
+	0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x42, 0x0a, 0x08, 0x70, 0x6f, 0x73, 0x74, 0x67, 0x72,
+	0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x53, 0x65,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x48, 0x00,
+	0x52, 0x08, 0x70, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x1a, 0xf0, 0x05, 0x0a, 0x08, 0x50,
+	0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x12, 0x48, 0x0a, 0x08, 0x73, 0x65, 0x73, 0x73, 0x69,
+	0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2c, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x53,
+	0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x2e,
+	0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x08, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
+	0x73, 0x1a, 0x99, 0x05, 0x0a, 0x07, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x10, 0x0a,
+	0x03, 0x70, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x70, 0x69, 0x64, 0x12,
+	0x14, 0x0a, 0x05, 0x71, 0x75, 0x65, 0x72, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x71, 0x75, 0x65, 0x72, 0x79, 0x12, 0x19, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x88, 0x01, 0x01,
+	0x12, 0x2b, 0x0a, 0x0f, 0x77, 0x61, 0x69, 0x74, 0x5f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x5f, 0x74,
+	0x79, 0x70, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x48, 0x01, 0x52, 0x0d, 0x77, 0x61, 0x69,
+	0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x54, 0x79, 0x70, 0x65, 0x88, 0x01, 0x01, 0x12, 0x22, 0x0a,
+	0x0a, 0x77, 0x61, 0x69, 0x74, 0x5f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x09, 0x48, 0x02, 0x52, 0x09, 0x77, 0x61, 0x69, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x88, 0x01,
+	0x01, 0x12, 0x1d, 0x0a, 0x07, 0x64, 0x61, 0x74, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x06, 0x20, 0x01,
+	0x28, 0x09, 0x48, 0x03, 0x52, 0x07, 0x64, 0x61, 0x74, 0x6e, 0x61, 0x6d, 0x65, 0x88, 0x01, 0x01,
+	0x12, 0x1d, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28,
+	0x09, 0x48, 0x04, 0x52, 0x07, 0x75, 0x73, 0x65, 0x6e, 0x61, 0x6d, 0x65, 0x88, 0x01, 0x01, 0x12,
+	0x29, 0x0a, 0x10, 0x61, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x61, 0x70, 0x70, 0x6c, 0x69,
+	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x24, 0x0a, 0x0b, 0x63, 0x6c,
+	0x69, 0x65, 0x6e, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x18, 0x09, 0x20, 0x01, 0x28, 0x09, 0x48,
+	0x05, 0x52, 0x0a, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x41, 0x64, 0x64, 0x72, 0x88, 0x01, 0x01,
+	0x12, 0x24, 0x0a, 0x0b, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x70, 0x6f, 0x72, 0x74, 0x18,
+	0x0a, 0x20, 0x01, 0x28, 0x09, 0x48, 0x06, 0x52, 0x0a, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x50,
+	0x6f, 0x72, 0x74, 0x88, 0x01, 0x01, 0x12, 0x3f, 0x0a, 0x0d, 0x62, 0x61, 0x63, 0x6b, 0x65, 0x6e,
+	0x64, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
+	0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x0c, 0x62, 0x61, 0x63, 0x6b, 0x65,
+	0x6e, 0x64, 0x53, 0x74, 0x61, 0x72, 0x74, 0x12, 0x3e, 0x0a, 0x0a, 0x78, 0x61, 0x63, 0x74, 0x5f,
+	0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x0c, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69,
+	0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x48, 0x07, 0x52, 0x09, 0x78, 0x61, 0x63, 0x74, 0x53,
+	0x74, 0x61, 0x72, 0x74, 0x88, 0x01, 0x01, 0x12, 0x40, 0x0a, 0x0b, 0x71, 0x75, 0x65, 0x72, 0x79,
+	0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x0d, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54,
+	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x48, 0x08, 0x52, 0x0a, 0x71, 0x75, 0x65, 0x72,
+	0x79, 0x53, 0x74, 0x61, 0x72, 0x74, 0x88, 0x01, 0x01, 0x42, 0x08, 0x0a, 0x06, 0x5f, 0x73, 0x74,
+	0x61, 0x74, 0x65, 0x42, 0x12, 0x0a, 0x10, 0x5f, 0x77, 0x61, 0x69, 0x74, 0x5f, 0x65, 0x76, 0x65,
+	0x6e, 0x74, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x77, 0x61, 0x69, 0x74,
+	0x5f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x64, 0x61, 0x74, 0x6e, 0x61,
+	0x6d, 0x65, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x75, 0x73, 0x65, 0x6e, 0x61, 0x6d, 0x65, 0x42, 0x0e,
+	0x0a, 0x0c, 0x5f, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x42, 0x0e,
+	0x0a, 0x0c, 0x5f, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x70, 0x6f, 0x72, 0x74, 0x42, 0x0d,
+	0x0a, 0x0b, 0x5f, 0x78, 0x61, 0x63, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x0e, 0x0a,
+	0x0c, 0x5f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x09, 0x0a,
+	0x07, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x32, 0xb6, 0x0b, 0x0a, 0x0e, 0x52, 0x6f, 0x6c,
+	0x6c, 0x6f, 0x75, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x73, 0x0a, 0x0a, 0x47,
+	0x65, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x6f,
 	0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65,
 	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22,
-	0x39, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2c, 0x3a, 0x01,
-	0x2a, 0x22, 0x27, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x3d,
-	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x70, 0x72, 0x65, 0x76,
-	0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0xa2, 0x01, 0x0a, 0x0c, 0x4c,
-	0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0x20, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61,
-	0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74,
-	0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x4d, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x3e, 0x12, 0x3c, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70,
-	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75,
-	0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x74, 0x61,
-	0x73, 0x6b, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12,
-	0xa0, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f,
-	0x67, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x47, 0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
-	0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x22, 0x53, 0xda,
-	0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x44, 0x12, 0x42,
+	0x2f, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x22, 0x12, 0x20,
+	0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
+	0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x7d,
+	0x12, 0x8c, 0x01, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6c, 0x6c, 0x6f,
+	0x75, 0x74, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x42, 0xda, 0x41, 0x0e,
+	0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x2c, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x2b, 0x3a, 0x07, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x20, 0x2f,
+	0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65,
+	0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x12,
+	0x85, 0x01, 0x0a, 0x0e, 0x50, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f,
+	0x75, 0x74, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x50, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x39, 0xda, 0x41,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2c, 0x3a, 0x01, 0x2a, 0x22, 0x27,
+	0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x3d, 0x70, 0x72, 0x6f,
+	0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x70, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77,
+	0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0xa2, 0x01, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74,
+	0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52,
+	0x75, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x73,
+	0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4d, 0xda,
+	0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3e, 0x12, 0x3c,
 	0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a,
 	0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f,
 	0x2a, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73,
-	0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x6c,
-	0x6f, 0x67, 0x12, 0xa6, 0x01, 0x0a, 0x0d, 0x42, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e, 0x54,
+	0x2f, 0x2a, 0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0xa0, 0x01, 0x0a,
+	0x0d, 0x47, 0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x12, 0x21,
+	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74,
+	0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x17, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x22, 0x53, 0xda, 0x41, 0x06, 0x70,
+	0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x44, 0x12, 0x42, 0x2f, 0x76, 0x31,
+	0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
+	0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73,
+	0x74, 0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x2a, 0x2f,
+	0x74, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x6c, 0x6f, 0x67, 0x12,
+	0xb0, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x53, 0x65,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x25, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x53, 0x65,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52,
+	0x75, 0x6e, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x57, 0xda, 0x41, 0x06, 0x70, 0x61,
+	0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x48, 0x12, 0x46, 0x2f, 0x76, 0x31, 0x2f,
+	0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73,
+	0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74,
+	0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x2a, 0x2f, 0x74,
+	0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x73, 0x65, 0x73, 0x73, 0x69,
+	0x6f, 0x6e, 0x12, 0xa6, 0x01, 0x0a, 0x0d, 0x42, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e, 0x54,
 	0x61, 0x73, 0x6b, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
 	0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e, 0x54, 0x61, 0x73, 0x6b, 0x73,
 	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
@@ -3172,7 +3558,7 @@ func file_v1_rollout_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_rollout_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_v1_rollout_service_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_v1_rollout_service_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_v1_rollout_service_proto_goTypes = []any{
 	(Task_Status)(0),                                       // 0: bytebase.v1.Task.Status
 	(Task_Type)(0),                                         // 1: bytebase.v1.Task.Type
@@ -3200,86 +3586,97 @@ var file_v1_rollout_service_proto_goTypes = []any{
 	(*TaskRun)(nil),                                        // 23: bytebase.v1.TaskRun
 	(*TaskRunLog)(nil),                                     // 24: bytebase.v1.TaskRunLog
 	(*TaskRunLogEntry)(nil),                                // 25: bytebase.v1.TaskRunLogEntry
-	(*Task_DatabaseCreate)(nil),                            // 26: bytebase.v1.Task.DatabaseCreate
-	(*Task_DatabaseSchemaBaseline)(nil),                    // 27: bytebase.v1.Task.DatabaseSchemaBaseline
-	(*Task_DatabaseSchemaUpdate)(nil),                      // 28: bytebase.v1.Task.DatabaseSchemaUpdate
-	(*Task_DatabaseDataUpdate)(nil),                        // 29: bytebase.v1.Task.DatabaseDataUpdate
-	(*Task_DatabaseDataExport)(nil),                        // 30: bytebase.v1.Task.DatabaseDataExport
-	nil,                                                    // 31: bytebase.v1.Task.DatabaseCreate.LabelsEntry
-	(*TaskRun_ExecutionDetail)(nil),                        // 32: bytebase.v1.TaskRun.ExecutionDetail
-	(*TaskRun_ExecutionDetail_Position)(nil),               // 33: bytebase.v1.TaskRun.ExecutionDetail.Position
-	(*TaskRunLogEntry_SchemaDump)(nil),                     // 34: bytebase.v1.TaskRunLogEntry.SchemaDump
-	(*TaskRunLogEntry_CommandExecute)(nil),                 // 35: bytebase.v1.TaskRunLogEntry.CommandExecute
-	(*TaskRunLogEntry_DatabaseSync)(nil),                   // 36: bytebase.v1.TaskRunLogEntry.DatabaseSync
-	(*TaskRunLogEntry_TaskRunStatusUpdate)(nil),            // 37: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate
-	(*TaskRunLogEntry_TransactionControl)(nil),             // 38: bytebase.v1.TaskRunLogEntry.TransactionControl
-	(*TaskRunLogEntry_CommandExecute_CommandResponse)(nil), // 39: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
-	(*Plan)(nil),                                           // 40: bytebase.v1.Plan
-	(*timestamppb.Timestamp)(nil),                          // 41: google.protobuf.Timestamp
-	(ExportFormat)(0),                                      // 42: bytebase.v1.ExportFormat
+	(*GetTaskRunSessionRequest)(nil),                       // 26: bytebase.v1.GetTaskRunSessionRequest
+	(*TaskRunSession)(nil),                                 // 27: bytebase.v1.TaskRunSession
+	(*Task_DatabaseCreate)(nil),                            // 28: bytebase.v1.Task.DatabaseCreate
+	(*Task_DatabaseSchemaBaseline)(nil),                    // 29: bytebase.v1.Task.DatabaseSchemaBaseline
+	(*Task_DatabaseSchemaUpdate)(nil),                      // 30: bytebase.v1.Task.DatabaseSchemaUpdate
+	(*Task_DatabaseDataUpdate)(nil),                        // 31: bytebase.v1.Task.DatabaseDataUpdate
+	(*Task_DatabaseDataExport)(nil),                        // 32: bytebase.v1.Task.DatabaseDataExport
+	nil,                                                    // 33: bytebase.v1.Task.DatabaseCreate.LabelsEntry
+	(*TaskRun_ExecutionDetail)(nil),                        // 34: bytebase.v1.TaskRun.ExecutionDetail
+	(*TaskRun_ExecutionDetail_Position)(nil),               // 35: bytebase.v1.TaskRun.ExecutionDetail.Position
+	(*TaskRunLogEntry_SchemaDump)(nil),                     // 36: bytebase.v1.TaskRunLogEntry.SchemaDump
+	(*TaskRunLogEntry_CommandExecute)(nil),                 // 37: bytebase.v1.TaskRunLogEntry.CommandExecute
+	(*TaskRunLogEntry_DatabaseSync)(nil),                   // 38: bytebase.v1.TaskRunLogEntry.DatabaseSync
+	(*TaskRunLogEntry_TaskRunStatusUpdate)(nil),            // 39: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate
+	(*TaskRunLogEntry_TransactionControl)(nil),             // 40: bytebase.v1.TaskRunLogEntry.TransactionControl
+	(*TaskRunLogEntry_CommandExecute_CommandResponse)(nil), // 41: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
+	(*TaskRunSession_Postgres)(nil),                        // 42: bytebase.v1.TaskRunSession.Postgres
+	(*TaskRunSession_Postgres_Session)(nil),                // 43: bytebase.v1.TaskRunSession.Postgres.Session
+	(*Plan)(nil),                                           // 44: bytebase.v1.Plan
+	(*timestamppb.Timestamp)(nil),                          // 45: google.protobuf.Timestamp
+	(ExportFormat)(0),                                      // 46: bytebase.v1.ExportFormat
 }
 var file_v1_rollout_service_proto_depIdxs = []int32{
 	20, // 0: bytebase.v1.CreateRolloutRequest.rollout:type_name -> bytebase.v1.Rollout
-	40, // 1: bytebase.v1.PreviewRolloutRequest.plan:type_name -> bytebase.v1.Plan
+	44, // 1: bytebase.v1.PreviewRolloutRequest.plan:type_name -> bytebase.v1.Plan
 	23, // 2: bytebase.v1.ListTaskRunsResponse.task_runs:type_name -> bytebase.v1.TaskRun
 	21, // 3: bytebase.v1.Rollout.stages:type_name -> bytebase.v1.Stage
 	22, // 4: bytebase.v1.Stage.tasks:type_name -> bytebase.v1.Task
 	0,  // 5: bytebase.v1.Task.status:type_name -> bytebase.v1.Task.Status
 	1,  // 6: bytebase.v1.Task.type:type_name -> bytebase.v1.Task.Type
-	26, // 7: bytebase.v1.Task.database_create:type_name -> bytebase.v1.Task.DatabaseCreate
-	27, // 8: bytebase.v1.Task.database_schema_baseline:type_name -> bytebase.v1.Task.DatabaseSchemaBaseline
-	28, // 9: bytebase.v1.Task.database_schema_update:type_name -> bytebase.v1.Task.DatabaseSchemaUpdate
-	29, // 10: bytebase.v1.Task.database_data_update:type_name -> bytebase.v1.Task.DatabaseDataUpdate
-	30, // 11: bytebase.v1.Task.database_data_export:type_name -> bytebase.v1.Task.DatabaseDataExport
-	41, // 12: bytebase.v1.TaskRun.create_time:type_name -> google.protobuf.Timestamp
-	41, // 13: bytebase.v1.TaskRun.update_time:type_name -> google.protobuf.Timestamp
+	28, // 7: bytebase.v1.Task.database_create:type_name -> bytebase.v1.Task.DatabaseCreate
+	29, // 8: bytebase.v1.Task.database_schema_baseline:type_name -> bytebase.v1.Task.DatabaseSchemaBaseline
+	30, // 9: bytebase.v1.Task.database_schema_update:type_name -> bytebase.v1.Task.DatabaseSchemaUpdate
+	31, // 10: bytebase.v1.Task.database_data_update:type_name -> bytebase.v1.Task.DatabaseDataUpdate
+	32, // 11: bytebase.v1.Task.database_data_export:type_name -> bytebase.v1.Task.DatabaseDataExport
+	45, // 12: bytebase.v1.TaskRun.create_time:type_name -> google.protobuf.Timestamp
+	45, // 13: bytebase.v1.TaskRun.update_time:type_name -> google.protobuf.Timestamp
 	2,  // 14: bytebase.v1.TaskRun.status:type_name -> bytebase.v1.TaskRun.Status
 	3,  // 15: bytebase.v1.TaskRun.execution_status:type_name -> bytebase.v1.TaskRun.ExecutionStatus
-	32, // 16: bytebase.v1.TaskRun.execution_detail:type_name -> bytebase.v1.TaskRun.ExecutionDetail
-	41, // 17: bytebase.v1.TaskRun.start_time:type_name -> google.protobuf.Timestamp
+	34, // 16: bytebase.v1.TaskRun.execution_detail:type_name -> bytebase.v1.TaskRun.ExecutionDetail
+	45, // 17: bytebase.v1.TaskRun.start_time:type_name -> google.protobuf.Timestamp
 	4,  // 18: bytebase.v1.TaskRun.export_archive_status:type_name -> bytebase.v1.TaskRun.ExportArchiveStatus
 	25, // 19: bytebase.v1.TaskRunLog.entries:type_name -> bytebase.v1.TaskRunLogEntry
 	5,  // 20: bytebase.v1.TaskRunLogEntry.type:type_name -> bytebase.v1.TaskRunLogEntry.Type
-	41, // 21: bytebase.v1.TaskRunLogEntry.log_time:type_name -> google.protobuf.Timestamp
-	34, // 22: bytebase.v1.TaskRunLogEntry.schema_dump:type_name -> bytebase.v1.TaskRunLogEntry.SchemaDump
-	35, // 23: bytebase.v1.TaskRunLogEntry.command_execute:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute
-	36, // 24: bytebase.v1.TaskRunLogEntry.database_sync:type_name -> bytebase.v1.TaskRunLogEntry.DatabaseSync
-	37, // 25: bytebase.v1.TaskRunLogEntry.task_run_status_update:type_name -> bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate
-	38, // 26: bytebase.v1.TaskRunLogEntry.transaction_control:type_name -> bytebase.v1.TaskRunLogEntry.TransactionControl
-	31, // 27: bytebase.v1.Task.DatabaseCreate.labels:type_name -> bytebase.v1.Task.DatabaseCreate.LabelsEntry
-	42, // 28: bytebase.v1.Task.DatabaseDataExport.format:type_name -> bytebase.v1.ExportFormat
-	33, // 29: bytebase.v1.TaskRun.ExecutionDetail.command_start_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
-	33, // 30: bytebase.v1.TaskRun.ExecutionDetail.command_end_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
-	41, // 31: bytebase.v1.TaskRunLogEntry.SchemaDump.start_time:type_name -> google.protobuf.Timestamp
-	41, // 32: bytebase.v1.TaskRunLogEntry.SchemaDump.end_time:type_name -> google.protobuf.Timestamp
-	41, // 33: bytebase.v1.TaskRunLogEntry.CommandExecute.log_time:type_name -> google.protobuf.Timestamp
-	39, // 34: bytebase.v1.TaskRunLogEntry.CommandExecute.response:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
-	41, // 35: bytebase.v1.TaskRunLogEntry.DatabaseSync.start_time:type_name -> google.protobuf.Timestamp
-	41, // 36: bytebase.v1.TaskRunLogEntry.DatabaseSync.end_time:type_name -> google.protobuf.Timestamp
-	6,  // 37: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.status:type_name -> bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status
-	7,  // 38: bytebase.v1.TaskRunLogEntry.TransactionControl.type:type_name -> bytebase.v1.TaskRunLogEntry.TransactionControl.Type
-	41, // 39: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.log_time:type_name -> google.protobuf.Timestamp
-	14, // 40: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
-	15, // 41: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
-	16, // 42: bytebase.v1.RolloutService.PreviewRollout:input_type -> bytebase.v1.PreviewRolloutRequest
-	17, // 43: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
-	19, // 44: bytebase.v1.RolloutService.GetTaskRunLog:input_type -> bytebase.v1.GetTaskRunLogRequest
-	8,  // 45: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
-	10, // 46: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
-	12, // 47: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
-	20, // 48: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
-	20, // 49: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
-	20, // 50: bytebase.v1.RolloutService.PreviewRollout:output_type -> bytebase.v1.Rollout
-	18, // 51: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
-	24, // 52: bytebase.v1.RolloutService.GetTaskRunLog:output_type -> bytebase.v1.TaskRunLog
-	9,  // 53: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
-	11, // 54: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
-	13, // 55: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
-	48, // [48:56] is the sub-list for method output_type
-	40, // [40:48] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	45, // 21: bytebase.v1.TaskRunLogEntry.log_time:type_name -> google.protobuf.Timestamp
+	36, // 22: bytebase.v1.TaskRunLogEntry.schema_dump:type_name -> bytebase.v1.TaskRunLogEntry.SchemaDump
+	37, // 23: bytebase.v1.TaskRunLogEntry.command_execute:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute
+	38, // 24: bytebase.v1.TaskRunLogEntry.database_sync:type_name -> bytebase.v1.TaskRunLogEntry.DatabaseSync
+	39, // 25: bytebase.v1.TaskRunLogEntry.task_run_status_update:type_name -> bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate
+	40, // 26: bytebase.v1.TaskRunLogEntry.transaction_control:type_name -> bytebase.v1.TaskRunLogEntry.TransactionControl
+	42, // 27: bytebase.v1.TaskRunSession.postgres:type_name -> bytebase.v1.TaskRunSession.Postgres
+	33, // 28: bytebase.v1.Task.DatabaseCreate.labels:type_name -> bytebase.v1.Task.DatabaseCreate.LabelsEntry
+	46, // 29: bytebase.v1.Task.DatabaseDataExport.format:type_name -> bytebase.v1.ExportFormat
+	35, // 30: bytebase.v1.TaskRun.ExecutionDetail.command_start_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
+	35, // 31: bytebase.v1.TaskRun.ExecutionDetail.command_end_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
+	45, // 32: bytebase.v1.TaskRunLogEntry.SchemaDump.start_time:type_name -> google.protobuf.Timestamp
+	45, // 33: bytebase.v1.TaskRunLogEntry.SchemaDump.end_time:type_name -> google.protobuf.Timestamp
+	45, // 34: bytebase.v1.TaskRunLogEntry.CommandExecute.log_time:type_name -> google.protobuf.Timestamp
+	41, // 35: bytebase.v1.TaskRunLogEntry.CommandExecute.response:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
+	45, // 36: bytebase.v1.TaskRunLogEntry.DatabaseSync.start_time:type_name -> google.protobuf.Timestamp
+	45, // 37: bytebase.v1.TaskRunLogEntry.DatabaseSync.end_time:type_name -> google.protobuf.Timestamp
+	6,  // 38: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.status:type_name -> bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status
+	7,  // 39: bytebase.v1.TaskRunLogEntry.TransactionControl.type:type_name -> bytebase.v1.TaskRunLogEntry.TransactionControl.Type
+	45, // 40: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.log_time:type_name -> google.protobuf.Timestamp
+	43, // 41: bytebase.v1.TaskRunSession.Postgres.sessions:type_name -> bytebase.v1.TaskRunSession.Postgres.Session
+	45, // 42: bytebase.v1.TaskRunSession.Postgres.Session.backend_start:type_name -> google.protobuf.Timestamp
+	45, // 43: bytebase.v1.TaskRunSession.Postgres.Session.xact_start:type_name -> google.protobuf.Timestamp
+	45, // 44: bytebase.v1.TaskRunSession.Postgres.Session.query_start:type_name -> google.protobuf.Timestamp
+	14, // 45: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
+	15, // 46: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
+	16, // 47: bytebase.v1.RolloutService.PreviewRollout:input_type -> bytebase.v1.PreviewRolloutRequest
+	17, // 48: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
+	19, // 49: bytebase.v1.RolloutService.GetTaskRunLog:input_type -> bytebase.v1.GetTaskRunLogRequest
+	26, // 50: bytebase.v1.RolloutService.GetTaskRunSession:input_type -> bytebase.v1.GetTaskRunSessionRequest
+	8,  // 51: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
+	10, // 52: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
+	12, // 53: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
+	20, // 54: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
+	20, // 55: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
+	20, // 56: bytebase.v1.RolloutService.PreviewRollout:output_type -> bytebase.v1.Rollout
+	18, // 57: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
+	24, // 58: bytebase.v1.RolloutService.GetTaskRunLog:output_type -> bytebase.v1.TaskRunLog
+	27, // 59: bytebase.v1.RolloutService.GetTaskRunSession:output_type -> bytebase.v1.TaskRunSession
+	9,  // 60: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
+	11, // 61: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
+	13, // 62: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
+	54, // [54:63] is the sub-list for method output_type
+	45, // [45:54] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_v1_rollout_service_proto_init() }
@@ -3507,7 +3904,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[18].Exporter = func(v any, i int) any {
-			switch v := v.(*Task_DatabaseCreate); i {
+			switch v := v.(*GetTaskRunSessionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3519,7 +3916,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[19].Exporter = func(v any, i int) any {
-			switch v := v.(*Task_DatabaseSchemaBaseline); i {
+			switch v := v.(*TaskRunSession); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3531,7 +3928,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[20].Exporter = func(v any, i int) any {
-			switch v := v.(*Task_DatabaseSchemaUpdate); i {
+			switch v := v.(*Task_DatabaseCreate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3543,7 +3940,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[21].Exporter = func(v any, i int) any {
-			switch v := v.(*Task_DatabaseDataUpdate); i {
+			switch v := v.(*Task_DatabaseSchemaBaseline); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3555,7 +3952,19 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[22].Exporter = func(v any, i int) any {
-			switch v := v.(*Task_DatabaseDataExport); i {
+			switch v := v.(*Task_DatabaseSchemaUpdate); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[23].Exporter = func(v any, i int) any {
+			switch v := v.(*Task_DatabaseDataUpdate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3567,19 +3976,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[24].Exporter = func(v any, i int) any {
-			switch v := v.(*TaskRun_ExecutionDetail); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_v1_rollout_service_proto_msgTypes[25].Exporter = func(v any, i int) any {
-			switch v := v.(*TaskRun_ExecutionDetail_Position); i {
+			switch v := v.(*Task_DatabaseDataExport); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3591,7 +3988,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[26].Exporter = func(v any, i int) any {
-			switch v := v.(*TaskRunLogEntry_SchemaDump); i {
+			switch v := v.(*TaskRun_ExecutionDetail); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3603,7 +4000,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[27].Exporter = func(v any, i int) any {
-			switch v := v.(*TaskRunLogEntry_CommandExecute); i {
+			switch v := v.(*TaskRun_ExecutionDetail_Position); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3615,7 +4012,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[28].Exporter = func(v any, i int) any {
-			switch v := v.(*TaskRunLogEntry_DatabaseSync); i {
+			switch v := v.(*TaskRunLogEntry_SchemaDump); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3627,7 +4024,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[29].Exporter = func(v any, i int) any {
-			switch v := v.(*TaskRunLogEntry_TaskRunStatusUpdate); i {
+			switch v := v.(*TaskRunLogEntry_CommandExecute); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3639,7 +4036,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[30].Exporter = func(v any, i int) any {
-			switch v := v.(*TaskRunLogEntry_TransactionControl); i {
+			switch v := v.(*TaskRunLogEntry_DatabaseSync); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3651,7 +4048,55 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[31].Exporter = func(v any, i int) any {
+			switch v := v.(*TaskRunLogEntry_TaskRunStatusUpdate); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[32].Exporter = func(v any, i int) any {
+			switch v := v.(*TaskRunLogEntry_TransactionControl); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[33].Exporter = func(v any, i int) any {
 			switch v := v.(*TaskRunLogEntry_CommandExecute_CommandResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[34].Exporter = func(v any, i int) any {
+			switch v := v.(*TaskRunSession_Postgres); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[35].Exporter = func(v any, i int) any {
+			switch v := v.(*TaskRunSession_Postgres_Session); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3670,14 +4115,18 @@ func file_v1_rollout_service_proto_init() {
 		(*Task_DatabaseDataUpdate_)(nil),
 		(*Task_DatabaseDataExport_)(nil),
 	}
-	file_v1_rollout_service_proto_msgTypes[22].OneofWrappers = []any{}
+	file_v1_rollout_service_proto_msgTypes[19].OneofWrappers = []any{
+		(*TaskRunSession_Postgres_)(nil),
+	}
+	file_v1_rollout_service_proto_msgTypes[24].OneofWrappers = []any{}
+	file_v1_rollout_service_proto_msgTypes[35].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_rollout_service_proto_rawDesc,
 			NumEnums:      8,
-			NumMessages:   32,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

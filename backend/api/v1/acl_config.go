@@ -130,6 +130,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RolloutService_PreviewRollout_FullMethodName:                    iam.PermissionRolloutsPreview,
 	v1pb.RolloutService_ListTaskRuns_FullMethodName:                      iam.PermissionTaskRunsList,
 	v1pb.RolloutService_GetTaskRunLog_FullMethodName:                     iam.PermissionTaskRunsList,
+	v1pb.RolloutService_GetTaskRunSession_FullMethodName:                 iam.PermissionTaskRunsList,
 	v1pb.PlanService_ListPlans_FullMethodName:                            iam.PermissionPlansList,
 	v1pb.PlanService_SearchPlans_FullMethodName:                          iam.PermissionPlansGet,
 	v1pb.PlanService_GetPlan_FullMethodName:                              iam.PermissionPlansGet,
@@ -148,8 +149,9 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.OrgPolicyService_DeletePolicy_FullMethodName: iam.PermissionPoliciesDelete,
 
 	// TODO(p0ny): ensure the permission.
-	v1pb.WorkspaceService_GetIamPolicy_FullMethodName: iam.PermissionPoliciesGet,
-	v1pb.WorkspaceService_SetIamPolicy_FullMethodName: iam.PermissionPoliciesUpdate,
+	v1pb.WorkspaceService_GetIamPolicy_FullMethodName:   iam.PermissionPoliciesGet,
+	v1pb.WorkspaceService_SetIamPolicy_FullMethodName:   iam.PermissionPoliciesUpdate,
+	v1pb.WorkspaceService_PatchIamPolicy_FullMethodName: iam.PermissionPoliciesUpdate,
 
 	v1pb.BranchService_GetBranch_FullMethodName:    iam.PermissionBranchesGet,
 	v1pb.BranchService_ListBranches_FullMethodName: iam.PermissionBranchesList,

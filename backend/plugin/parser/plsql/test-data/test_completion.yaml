@@ -1,0 +1,110 @@
+- input: SELECT MAX(cc1.|) FROM t2 cc1
+  want:
+    - text: C1
+      type: COLUMN
+      definition: T2 | int, NOT NULL
+      comment: ""
+    - text: C2
+      type: COLUMN
+      definition: T2 | int, NOT NULL
+      comment: ""
+- input: SELECT cc1.| FROM t2 cc1
+  want:
+    - text: C1
+      type: COLUMN
+      definition: T2 | int, NOT NULL
+      comment: ""
+    - text: C2
+      type: COLUMN
+      definition: T2 | int, NOT NULL
+      comment: ""
+- input: SELECT * FROM |
+  want:
+    - text: SCHEMA1
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA2
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA3
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: T1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: T2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: V1
+      type: VIEW
+      definition: ""
+      comment: ""
+- input: SELECT | FROM t1 x
+  want:
+    - text: SCHEMA1
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA2
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA3
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: T1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: T2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: X
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: C1
+      type: COLUMN
+      definition: T1 | int, NOT NULL
+      comment: ""
+    - text: V1
+      type: VIEW
+      definition: ""
+      comment: ""
+- input: SELECT | FROM schema1.t1
+  want:
+    - text: SCHEMA1
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA2
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA3
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: T1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: T2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: C1
+      type: COLUMN
+      definition: T1 | int, NOT NULL
+      comment: ""
+    - text: V1
+      type: VIEW
+      definition: ""
+      comment: ""
