@@ -1,12 +1,7 @@
 - statement: CREATE TABLE t(a int);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a JSON, b BLOB, c TEXT);
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -16,9 +11,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(d int);
     ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT);
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -28,9 +25,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(d int);
     ALTER TABLE t ADD COLUMN (a JSON, b JSON);
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -40,6 +39,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 411
       title: column.type-disallow-list
@@ -48,9 +48,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(c int, b int);
     ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB;
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -60,9 +62,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(c int, b int);
     ALTER TABLE t MODIFY COLUMN c JSON;
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -72,3 +76,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

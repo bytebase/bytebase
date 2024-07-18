@@ -1,12 +1,7 @@
 - statement: CREATE TABLE t(a char(5));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a int, b JSON);
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -16,9 +11,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(d char(5));
     ALTER TABLE t add COLUMN a JSON;
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -28,3 +25,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

@@ -1,4 +1,5 @@
 - statement: CREATE TABLE t(id VARCHAR(5) PRIMARY KEY)
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -8,15 +9,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(id VARCHAR(5), PRIMARY KEY(id))
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -26,7 +23,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3))
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -36,6 +35,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 803
       title: index.primary-key-type-allowlist
@@ -44,25 +44,15 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(id INT, PRIMARY KEY(id))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN id VARCHAR(5) PRIMARY KEY
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -72,19 +62,15 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN id INT PRIMARY KEY
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD PRIMARY KEY (id)
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -94,9 +80,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3)
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -106,6 +94,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 803
       title: index.primary-key-type-allowlist
@@ -114,29 +103,19 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 BIGINT, ADD PRIMARY KEY (id, id2)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN id BIGINT, ADD PRIMARY KEY (id)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id VARCHAR(5));
             ALTER TABLE t ADD PRIMARY KEY(id);
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -146,9 +125,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
             ALTER TABLE t ADD PRIMARY KEY(id, id2, id3);
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -158,6 +139,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 803
       title: index.primary-key-type-allowlist
@@ -166,29 +148,19 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(id INT, id2 BIGINT);
             ALTER TABLE t ADD PRIMARY KEY(id, id2);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id BIGINT);
           ALTER TABLE t ADD PRIMARY KEY(id);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id int);
     ALTER TABLE t MODIFY COLUMN id VARCHAR(5) PRIMARY KEY;
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -198,19 +170,15 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(id int);
     ALTER TABLE t MODIFY COLUMN id INT(5) PRIMARY KEY;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id int);
     ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY
+  changeType: 0
   want:
     - status: 2
       code: 803
@@ -220,13 +188,8 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(id int);
     ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

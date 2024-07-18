@@ -1,12 +1,7 @@
 - statement: CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE INDEX CONCURRENTLY tech_book_id_name ON tech_book(id, name)
+  changeType: 0
   want:
     - status: 2
       code: 230
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: VACUUM FULL tech_book
+  changeType: 0
   want:
     - status: 2
       code: 230
@@ -26,3 +23,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

@@ -1,12 +1,7 @@
 - statement: INSERT INTO tech_book(id) values (1)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: DELETE FROM tech_book
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: UPDATE tech_book SET id = 1
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -26,23 +23,13 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: DELETE FROM tech_book WHERE id > 0
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: UPDATE tech_book SET id = 1 WHERE id > 10
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: SELECT id FROM tech_book
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -52,15 +39,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT id FROM tech_book WHERE id > 0
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -70,11 +53,6 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT CURDATE()
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

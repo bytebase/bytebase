@@ -1,4 +1,5 @@
 - statement: CREATE TABLE book(id int, creatorId int);
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -8,7 +9,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int);
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -18,18 +21,14 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int, creator_id int);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
     ALTER TABLE book RENAME COLUMN creator_id TO creatorId;
     ALTER TABLE book CHANGE COLUMN creatorId gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int;
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -39,6 +38,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 302
       title: naming.column
@@ -47,9 +47,11 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |
     ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
     ALTER TABLE tech_book RENAME COLUMN creator_id TO gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx;
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -59,6 +61,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -67,6 +70,7 @@
       updater_id int,
       updated_ts timestamp);
     ALTER TABLE book CHANGE COLUMN creator_id creatorId int;
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -76,24 +80,13 @@
       startposition:
         line: 7
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book (id INT);
     ALTER TABLE book CHANGE COLUMN id creator_id int;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book DROP COLUMN id;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -101,6 +94,7 @@
       created_ts timestamp,
       updated_ts timestamp);
     ALTER TABLE book ADD COLUMN contentString varchar(255);
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -110,6 +104,7 @@
       startposition:
         line: 6
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -117,6 +112,7 @@
       created_ts timestamp,
       updated_ts timestamp);
     ALTER TABLE book ADD COLUMN (personAge INT, contentString varchar(255));
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -126,6 +122,7 @@
       startposition:
         line: 6
         column: 0
+      endposition: null
     - status: 2
       code: 302
       title: naming.column
@@ -134,6 +131,7 @@
       startposition:
         line: 6
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -144,6 +142,7 @@
       id int,
       createdTs timestamp,
       updatedTs timestamp);
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -153,6 +152,7 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
     - status: 2
       code: 302
       title: naming.column
@@ -161,6 +161,7 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
     - status: 2
       code: 302
       title: naming.column
@@ -169,6 +170,7 @@
       startposition:
         line: 8
         column: 0
+      endposition: null
     - status: 2
       code: 302
       title: naming.column
@@ -177,3 +179,4 @@
       startposition:
         line: 9
         column: 0
+      endposition: null

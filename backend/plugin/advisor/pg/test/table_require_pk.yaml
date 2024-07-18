@@ -1,20 +1,9 @@
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(id INT)
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -24,7 +13,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -34,23 +25,13 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_index"
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT constraint_not_in_catalog
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE "tech_book" DROP COLUMN id
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -60,13 +41,8 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN column_not_in_pk int;
     ALTER TABLE "tech_book" DROP COLUMN column_not_in_pk;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

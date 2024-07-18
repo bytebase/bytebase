@@ -1,4 +1,5 @@
 - statement: alter table tech_book alter column name set not null;
+  changeType: 0
   want:
     - status: 2
       code: 212
@@ -8,13 +9,8 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     alter table tech_book add constraint check_name_not_null check(name IS NOT NULL) NOT VALID;
     alter table tech_book validate constraint check_name_not_null;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

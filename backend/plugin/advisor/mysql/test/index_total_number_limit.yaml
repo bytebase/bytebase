@@ -1,25 +1,14 @@
 - statement: CREATE TABLE t(a int, b int, c int, unique key(a, b, c));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE INDEX idx_id_name on tech_book(id, name);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE INDEX idx_id_name_1 on tech_book(id, name);
     CREATE INDEX idx_id_name_2 on tech_book(id, name);
     CREATE INDEX idx_id_name_3 on tech_book(id, name);
     CREATE INDEX idx_id_name_4 on tech_book(id, name);
     CREATE INDEX idx_id_name_5 on tech_book(id, name);
+  changeType: 0
   want:
     - status: 2
       code: 813
@@ -29,6 +18,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int PRIMARY KEY, b int, c int);
     CREATE INDEX idx_a_b_1 on t(a, b);
@@ -36,6 +26,7 @@
     CREATE INDEX idx_a_b_3 on t(a, b);
     CREATE INDEX idx_a_b_4 on t(a, b);
     CREATE INDEX idx_a_b_5 on t(a, b);
+  changeType: 0
   want:
     - status: 2
       code: 813
@@ -45,6 +36,7 @@
       startposition:
         line: 6
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY,
@@ -55,6 +47,7 @@
       INDEX idx_a_b_3 (a, b),
       INDEX idx_a_b_4 (a, b),
       INDEX idx_a_b_5 (a, b));
+  changeType: 0
   want:
     - status: 2
       code: 813
@@ -64,6 +57,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t (
       a int PRIMARY KEY,
@@ -75,6 +69,7 @@
     ALTER TABLE t ADD INDEX idx_a_b_3 (a, b);
     ALTER TABLE t ADD INDEX idx_a_b_4 (a, b);
     ALTER TABLE t ADD INDEX idx_a_b_5 (a, b);
+  changeType: 0
   want:
     - status: 2
       code: 813
@@ -84,3 +79,4 @@
       startposition:
         line: 10
         column: 0
+      endposition: null

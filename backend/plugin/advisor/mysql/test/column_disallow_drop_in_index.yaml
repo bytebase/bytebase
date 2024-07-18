@@ -11,13 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE user(
       id INT PRIMARY KEY COMMENT 'comment',
@@ -30,26 +24,15 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(a int, b int, INDEX idx_a(a));
     ALTER TABLE t DROP COLUMN b;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(a int, b int, INDEX idx_b(b));
     ALTER TABLE t DROP COLUMN b;
+  changeType: 0
   want:
     - status: 2
       code: 424
@@ -59,9 +42,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int, c int, INDEX idx_ac(a,c));
     ALTER TABLE t DROP COLUMN c;
+  changeType: 0
   want:
     - status: 2
       code: 424
@@ -71,21 +56,17 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int, b int, INDEX idx_a(a));
     CREATE TABLE y(a int, b int);
     ALTER TABLE y DROP COLUMN a;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(a int,b int, c int, INDEX idx_ac(a,c));
     ALTER TABLE t DROP COLUMN a;
     ALTER TABLE t DROP COLUMN c;
+  changeType: 0
   want:
     - status: 2
       code: 424
@@ -95,6 +76,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 424
       title: column.disallow-drop-in-index
@@ -103,3 +85,4 @@
       startposition:
         line: 3
         column: 0
+      endposition: null

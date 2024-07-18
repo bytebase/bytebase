@@ -1,4 +1,5 @@
 - statement: SELECT * FROM t
+  changeType: 0
   want:
     - status: 2
       code: 203
@@ -8,15 +9,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT a, b FROM t
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: SELECT a, b FROM (SELECT * from t1 JOIN t2) t
+  changeType: 0
   want:
     - status: 2
       code: 203
@@ -26,3 +23,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

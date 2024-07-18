@@ -68,14 +68,6 @@ type indexKeyNumberLimitListener struct {
 }
 
 func (l *indexKeyNumberLimitListener) generateAdvice() ([]*storepb.Advice, error) {
-	if len(l.adviceList) == 0 {
-		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return l.adviceList, nil
 }
 

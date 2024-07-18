@@ -1,4 +1,5 @@
 - statement: CREATE TABLE book(id int, "creatorId" int)
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -8,33 +9,17 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE book(id int, creator_Id int)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE book(id int, creator_id int)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creatorId" int
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -44,19 +29,15 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creator" int
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creatorId"
+  changeType: 0
   want:
     - status: 2
       code: 302
@@ -66,13 +47,8 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creator"
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

@@ -1,14 +1,9 @@
 - statement: INSERT INTO tech_book values(1, 'a');
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     INSERT INTO tech_book values(1, 'a');
     INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f');
+  changeType: 0
   want:
     - status: 2
       code: 1101
@@ -18,11 +13,6 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: INSERT INTO tech_book SELECT * FROM tech_book;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

@@ -1,12 +1,7 @@
 - statement: CREATE TABLE ALL_UPPERCASE(ID INT);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE [\\](ID INT);
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE all_lowercase(ID INT);
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -26,23 +23,13 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE PascalCase(ID INT);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: execute sp_rename 'Sales.SalesTerritory', 'SALESTERR';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: execute sp_rename 'Sales.SalesTerritory', 'salesTerr';
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -52,3 +39,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

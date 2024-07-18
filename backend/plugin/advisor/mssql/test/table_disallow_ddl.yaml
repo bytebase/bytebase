@@ -7,6 +7,7 @@
       Id INT NOT NULL,
       Name VARCHAR(50) NOT NULL
     );
+  changeType: 0
   want:
     - status: 2
       code: 613
@@ -16,3 +17,4 @@
       startposition:
         line: 5
         column: 0
+      endposition: null

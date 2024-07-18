@@ -1,12 +1,7 @@
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)
+  changeType: 0
   want:
     - status: 2
       code: 305
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk FOREIGN KEY (author_id) REFERENCES author (id)
+  changeType: 0
   want:
     - status: 2
       code: 305
@@ -26,6 +23,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 305
       title: naming.index.fk
@@ -34,23 +32,13 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY (author_id) REFERENCES author (id))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))
+  changeType: 0
   want:
     - status: 2
       code: 305
@@ -60,3 +48,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

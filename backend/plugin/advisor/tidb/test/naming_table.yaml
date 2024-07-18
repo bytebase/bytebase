@@ -1,4 +1,5 @@
 - statement: CREATE TABLE techBook(id int, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -8,15 +9,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE tech_book_copy(id int, name varchar(255))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde(id int, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -26,7 +23,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book RENAME TO TechBook
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -36,15 +35,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book RENAME TO tech_book_copy
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: RENAME TABLE tech_book TO tech_book_copy, tech_book_copy TO LiteraryBook
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -54,7 +49,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO TechBook, literary_book TO LiteraryBook
+  changeType: 0
   want:
     - status: 2
       code: 301
@@ -64,6 +61,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 301
       title: naming.table
@@ -72,11 +70,6 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

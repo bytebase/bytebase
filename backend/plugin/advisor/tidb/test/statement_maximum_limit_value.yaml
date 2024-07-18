@@ -1,5 +1,6 @@
 - statement: |
     SELECT * FROM employee LIMIT 1000000;
+  changeType: 0
   want:
     - status: 2
       code: 222
@@ -9,3 +10,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

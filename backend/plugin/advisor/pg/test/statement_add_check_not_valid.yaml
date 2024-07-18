@@ -1,4 +1,5 @@
 - statement: alter table tech_book add constraint check_id check(id > 0);
+  changeType: 0
   want:
     - status: 2
       code: 211
@@ -8,11 +9,6 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: alter table tech_book add constraint check_id check(id > 0) NOT VALID;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

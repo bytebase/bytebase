@@ -28,14 +28,7 @@ type StatementDisallowOnDelCascadeAdvisor struct {
 func (*StatementDisallowOnDelCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmt := ctx.Statements
 	if stmt == "" {
-		return []*storepb.Advice{
-			{
-				Status:  storepb.Advice_SUCCESS,
-				Code:    advisor.Ok.Int32(),
-				Title:   "OK",
-				Content: "",
-			},
-		}, nil
+		return nil, nil
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -69,14 +62,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(ctx advisor.Context, _ string
 			},
 		})
 	}
-	if len(adviceList) == 0 {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
+
 	return adviceList, nil
 }
 

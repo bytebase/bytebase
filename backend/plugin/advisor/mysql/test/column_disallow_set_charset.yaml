@@ -1,24 +1,13 @@
 - statement: |-
     CREATE TABLE dt_relation_temp(objto int);
     ALTER TABLE dt_relation_temp ADD COLUMN infos json null comment'关系信息点'AFTER`objto`;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a varchar(20));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t1(a varchar(20) CHARSET ascii);
     CREATE TABLE t2(a varchar(20) CHARSET ascii);
+  changeType: 0
   want:
     - status: 2
       code: 414
@@ -28,6 +17,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 414
       title: column.disallow-set-charset
@@ -36,9 +26,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a varchar(20);
     ALTER TABLE tech_book ADD COLUMN b varchar(20) CHARSET ascii;
+  changeType: 0
   want:
     - status: 2
       code: 414
@@ -48,10 +40,12 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a varchar(20), ADD COLUMN b varchar(20);
     ALTER TABLE tech_book ADD COLUMN (c varchar(20) CHARSET ascii, d varchar(20) CHARSET ascii);
     ALTER TABLE tech_book ADD COLUMN e varchar(20) CHARSET ascii;
+  changeType: 0
   want:
     - status: 2
       code: 414
@@ -61,6 +55,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 414
       title: column.disallow-set-charset
@@ -69,6 +64,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 414
       title: column.disallow-set-charset
@@ -77,9 +73,11 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book MODIFY COLUMN id int;
     ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii;
+  changeType: 0
   want:
     - status: 2
       code: 414
@@ -89,9 +87,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book CHANGE COLUMN name name int;
     ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii;
+  changeType: 0
   want:
     - status: 2
       code: 414
@@ -101,3 +101,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

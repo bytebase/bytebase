@@ -87,16 +87,6 @@ func (l *tableNoForeignKeyChecker) generateAdvice() ([]*storepb.Advice, error) {
 			})
 		}
 	}
-	if len(l.adviceList) == 0 {
-		return []*storepb.Advice{
-			{
-				Status:  storepb.Advice_SUCCESS,
-				Code:    advisor.Ok.Int32(),
-				Title:   "OK",
-				Content: "",
-			},
-		}, nil
-	}
 	return l.adviceList, nil
 }
 
