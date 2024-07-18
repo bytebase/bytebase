@@ -1,16 +1,11 @@
 - statement: CREATE TABLE t(a int primary key, b int default 1)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(
       a int,
       b int default 1
     )
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -20,10 +15,12 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a BLOB;
     ALTER TABLE tech_book ADD COLUMN b timestamp;
     ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -33,6 +30,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 420
       title: column.require-default
@@ -41,3 +39,4 @@
       startposition:
         line: 3
         column: 0
+      endposition: null

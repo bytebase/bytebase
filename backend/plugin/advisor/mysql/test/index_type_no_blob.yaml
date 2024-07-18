@@ -11,6 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -20,6 +21,7 @@
       startposition:
         line: 12
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE user(
       id INT PRIMARY KEY COMMENT 'comment',
@@ -32,14 +34,9 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(b BLOB, PRIMARY KEY(b(10)));
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -49,7 +46,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id INT, PRIMARY KEY(b(1), mb(2), lb(3), id));
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -59,6 +58,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -67,6 +67,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -75,7 +76,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id INT, UNIQUE INDEX(b(1), mb(2), lb(3), id))
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -85,6 +88,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -93,6 +97,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -101,7 +106,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id iNT, INDEX(b(1), mb(2), lb(3), id))
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -111,6 +118,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -119,6 +127,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -127,17 +136,13 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(id INT, PRIMARY KEY(id))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id);
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -147,9 +152,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD UNIQUE INDEX(b(1), mb(2), lb(3), id)
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -159,6 +166,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -167,6 +175,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -175,9 +184,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(b(1), mb(2), lb(3), id)
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -187,6 +198,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -195,6 +207,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -203,22 +216,18 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
     CREATE INDEX idx_b ON t(b(5));
     CREATE INDEX idx_mb ON t(mb(5));
     CREATE INDEX idx_lb ON t(lb(5));
     CREATE INDEX idx_id ON t(id);
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -228,6 +237,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -236,6 +246,7 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
     - status: 2
       code: 804
       title: index.type-no-blob
@@ -244,20 +255,16 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
     CREATE INDEX idx_id ON t(id);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(b int, mb mediumblob, lb longblob, id int);
     ALTER TABLE t MODIFY COLUMN b blob;
     ALTER TABLE t ADD PRIMARY KEY(b);
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -267,10 +274,12 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(b int, mb mediumblob, lb longblob, id int);
     ALTER TABLE t CHANGE COLUMN b d blob;
     ALTER TABLE t ADD PRIMARY KEY(d);
+  changeType: 0
   want:
     - status: 2
       code: 804
@@ -280,3 +289,4 @@
       startposition:
         line: 3
         column: 0
+      endposition: null

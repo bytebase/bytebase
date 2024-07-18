@@ -1,15 +1,10 @@
 - statement: SELECT * FROM MASTER.dbo.pokes;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     WITH foo1 AS (SELECT * FROM master2.dbo.tech_book)
     SELECT * FROM master.dbo.pokes;
     CREATE TABLE pokes (foo int);
+  changeType: 0
   want:
     - status: 2
       code: 233
@@ -19,9 +14,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     USE master2;
     SELECT * FROM master.dbo.pokes;
+  changeType: 0
   want:
     - status: 2
       code: 233
@@ -31,3 +28,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

@@ -1,12 +1,7 @@
 - statement: CREATE TABLE t(name varchar(225));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t1(name varchar(3000));
+  changeType: 0
   want:
     - status: 2
       code: 422
@@ -16,9 +11,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN name_1 char(20);
     ALTER TABLE tech_book ADD COLUMN name_2 varchar(3000);
+  changeType: 0
   want:
     - status: 2
       code: 422
@@ -28,3 +25,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

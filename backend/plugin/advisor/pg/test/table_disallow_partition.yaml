@@ -1,12 +1,7 @@
 - statement: CREATE TABLE t(a int)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a int) PARTITION BY RANGE (a);
+  changeType: 0
   want:
     - status: 2
       code: 608
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT;
+  changeType: 0
   want:
     - status: 2
       code: 608
@@ -26,3 +23,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

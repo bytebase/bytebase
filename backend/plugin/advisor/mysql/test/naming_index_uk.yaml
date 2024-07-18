@@ -1,14 +1,9 @@
 - statement: CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
     CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name);
+  changeType: 0
   want:
     - status: 2
       code: 304
@@ -18,9 +13,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |
     CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
     CREATE UNIQUE INDEX qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy ON tech_book(id, name)
+  changeType: 0
   want:
     - status: 2
       code: 304
@@ -30,6 +27,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 304
       title: naming.index.uk
@@ -38,17 +36,13 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE t1(a INT);
     ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name);
+  changeType: 0
   want:
     - status: 2
       code: 304
@@ -58,17 +52,13 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book_id_name;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE t1(a INT);
     ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book;
+  changeType: 0
   want:
     - status: 2
       code: 304
@@ -78,37 +68,20 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_book_name (name));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE book(
       id INT PRIMARY KEY,
       name VARCHAR(20),
       UNIQUE KEY (name)
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     CREATE TABLE book(
       id INT PRIMARY KEY,
       name VARCHAR(20),
       UNIQUE INDEX (name)
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

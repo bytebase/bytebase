@@ -1,16 +1,11 @@
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a int
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a int
+  changeType: 0
   want:
     - status: 2
       code: 406
@@ -20,3 +15,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

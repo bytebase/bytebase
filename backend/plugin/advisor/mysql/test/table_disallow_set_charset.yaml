@@ -3,6 +3,7 @@
       id INT PRIMARY KEY,
       name VARCHAR(50)
     ) CHARSET=utf8;
+  changeType: 0
   want:
     - status: 2
       code: 612
@@ -16,12 +17,14 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE employee (
       id INT PRIMARY KEY,
       name VARCHAR(50)
     );
     ALTER TABLE employee CONVERT TO CHARACTER SET utf8;
+  changeType: 0
   want:
     - status: 2
       code: 612
@@ -31,3 +34,4 @@
       startposition:
         line: 5
         column: 0
+      endposition: null

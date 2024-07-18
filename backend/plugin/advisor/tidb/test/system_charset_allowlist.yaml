@@ -1,20 +1,9 @@
 - statement: CREATE TABLE t(a int) CHARSET utf8mb4
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a varchar(255))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a int) CHARSET ascii
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -24,9 +13,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t CHARSET ascii
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -36,7 +27,9 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: ALTER DATABASE test CHARSET ascii
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -46,7 +39,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(a varchar(255) CHARSET ascii)
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -56,9 +51,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -68,9 +65,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -80,9 +79,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -92,11 +93,6 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: /* this is a comment */
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

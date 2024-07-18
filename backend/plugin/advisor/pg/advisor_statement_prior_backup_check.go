@@ -27,16 +27,10 @@ type StatementPriorBackupCheckAdvisor struct {
 
 // Check checks for disallow mix DDL and DML.
 func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
-	var adviceList []*storepb.Advice
 	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-		return adviceList, nil
+		return nil, nil
 	}
+	var adviceList []*storepb.Advice
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -76,15 +70,6 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			StartPosition: &storepb.Position{
 				Line: 0,
 			},
-		})
-	}
-
-	if len(adviceList) == 0 {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
 		})
 	}
 

@@ -150,7 +150,7 @@ var (
 type TestCase struct {
 	Statement  string                                        `yaml:"statement"`
 	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType `yaml:"changeType"`
-	Want       []*storepb.Advice                             `yaml:"want"`
+	Want       []*storepb.Advice                             `yaml:"want,omitempty"`
 }
 
 type testCatalog struct {

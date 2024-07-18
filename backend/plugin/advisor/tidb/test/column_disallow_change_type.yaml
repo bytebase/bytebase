@@ -1,4 +1,5 @@
 - statement: ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED
+  changeType: 0
   want:
     - status: 2
       code: 403
@@ -8,15 +9,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book MODIFY id int
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book MODIFY id bigint
+  changeType: 0
   want:
     - status: 2
       code: 403
@@ -26,7 +23,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book CHANGE name uname varchar(20)
+  changeType: 0
   want:
     - status: 2
       code: 403
@@ -36,3 +35,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

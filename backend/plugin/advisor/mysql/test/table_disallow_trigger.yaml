@@ -1,15 +1,10 @@
 - statement: CREATE TABLE t(a int);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE account (acct_num INT, amount DECIMAL(10,2));
     CREATE TRIGGER ins_sum BEFORE INSERT ON account
        FOR EACH ROW SET @sum = @sum + NEW.amount;
+  changeType: 0
   want:
     - status: 2
       code: 610
@@ -21,3 +16,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

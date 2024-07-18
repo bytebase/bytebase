@@ -1,4 +1,5 @@
 - statement: DROP DATABASE DB;
+  changeType: 0
   want:
     - status: 2
       code: 101
@@ -8,7 +9,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: DROP SCHEMA SCHEMA1;
+  changeType: 0
   want:
     - status: 2
       code: 112
@@ -18,7 +21,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: DROP TABLE T;
+  changeType: 0
   want:
     - status: 2
       code: 103
@@ -28,7 +33,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE T DROP COLUMN COL1;
+  changeType: 0
   want:
     - status: 2
       code: 105
@@ -38,9 +45,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE IF NOT EXISTS T(ID INT);
     DROP TABLE T;
+  changeType: 0
   want:
     - status: 2
       code: 103
@@ -50,13 +59,8 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE T(ID INT);
     DROP TABLE T;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

@@ -141,14 +141,6 @@ func (v *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 		}
 	}
 
-	if len(v.adviceList) == 0 {
-		v.adviceList = append(v.adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return v.adviceList
 }
 

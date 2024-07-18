@@ -1,4 +1,5 @@
 - statement: CREATE TABLE [fillfactor] (id INT);
+  changeType: 0
   want:
     - status: 2
       code: 308
@@ -8,7 +9,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE MyDB.MySchema.[fillfactor] (id INT);
+  changeType: 0
   want:
     - status: 2
       code: 308
@@ -18,11 +21,6 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE Person(id INT);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

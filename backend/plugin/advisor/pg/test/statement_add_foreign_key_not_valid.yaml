@@ -11,6 +11,7 @@
         result  JSONB NOT NULL DEFAULT '{}'
     );
     ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id);
+  changeType: 0
   want:
     - status: 2
       code: 229
@@ -20,6 +21,7 @@
       startposition:
         line: 12
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE task (
         id SERIAL PRIMARY KEY,
@@ -33,10 +35,4 @@
         result  JSONB NOT NULL DEFAULT '{}'
     );
     ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id) NOT VALID;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

@@ -50,14 +50,6 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(ctx advisor.Context, _ string) 
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
-	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return checker.adviceList, nil
 }
 

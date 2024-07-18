@@ -1,4 +1,5 @@
 - statement: CREATE TABLE book(id int)
+  changeType: 0
   want:
     - status: 2
       code: 401
@@ -8,6 +9,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -15,13 +17,7 @@
                   created_ts timestamp,
                   updater_id int,
                   updated_ts timestamp)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -30,6 +26,7 @@
                   updater_id int,
                   updated_ts timestamp);
                 ALTER TABLE book RENAME COLUMN creator_id TO creator;
+  changeType: 0
   want:
     - status: 2
       code: 401
@@ -39,6 +36,7 @@
       startposition:
         line: 7
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -47,13 +45,7 @@
                   updater_id int,
                   updated_ts timestamp);
                 ALTER TABLE book RENAME COLUMN creator TO creator_id;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -62,6 +54,7 @@
                   updater_id int,
                   updated_ts timestamp);
                 ALTER TABLE book CHANGE COLUMN creator_id creator int;
+  changeType: 0
   want:
     - status: 2
       code: 401
@@ -71,6 +64,7 @@
       startposition:
         line: 7
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -79,13 +73,7 @@
                   updater_id int,
                   updated_ts timestamp);
                 ALTER TABLE book CHANGE COLUMN creator creator_id int;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -94,6 +82,7 @@
                   updater_id int,
                   updated_ts timestamp);
                 ALTER TABLE book DROP COLUMN creator_id;
+  changeType: 0
   want:
     - status: 2
       code: 401
@@ -103,6 +92,7 @@
       startposition:
         line: 7
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -112,13 +102,7 @@
                   updated_ts timestamp,
                   content varchar(255));
                 ALTER TABLE book DROP COLUMN content;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -126,6 +110,7 @@
                   created_ts timestamp,
                   updated_ts timestamp);
                 ALTER TABLE book ADD COLUMN content varchar(255);
+  changeType: 0
   want:
     - status: 2
       code: 401
@@ -135,6 +120,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -143,13 +129,7 @@
                   updater_id int,
                   updated_ts timestamp);
                 ALTER TABLE book ADD COLUMN creator_id int;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -160,6 +140,7 @@
                   id int,
                   created_ts timestamp,
                   updated_ts timestamp)
+  changeType: 0
   want:
     - status: 2
       code: 401
@@ -169,6 +150,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
     - status: 2
       code: 401
       title: column.required
@@ -177,6 +159,7 @@
       startposition:
         line: 9
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -185,10 +168,4 @@
                   updater_id int,
                   updated_ts timestamp);
                 DROP TABLE book;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

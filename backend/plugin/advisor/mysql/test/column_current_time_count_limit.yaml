@@ -11,6 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  changeType: 0
   want:
     - status: 2
       code: 419
@@ -20,6 +21,7 @@
       startposition:
         line: 6
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE user(
       id INT PRIMARY KEY COMMENT 'comment',
@@ -32,27 +34,16 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(a timestamp, b timestamp)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(
       a timestamp default now(),
       b timestamp default current_timestamp(),
       c timestamp default localtime
     );
+  changeType: 0
   want:
     - status: 2
       code: 418
@@ -62,11 +53,13 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(
       a timestamp default now() on update localtime,
       b timestamp default current_timestamp() on update localtimestamp()
     );
+  changeType: 0
   want:
     - status: 2
       code: 419
@@ -76,9 +69,11 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
     ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
+  changeType: 0
   want:
     - status: 2
       code: 419
@@ -88,3 +83,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
