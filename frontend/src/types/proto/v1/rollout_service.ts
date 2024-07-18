@@ -954,11 +954,14 @@ export interface TaskRunSession {
 }
 
 export interface TaskRunSession_Postgres {
-  /**
-   * The first session is the session of the task run executing commands.
-   * The remaining sessions are the sessions that block the first session.
-   */
-  sessions: TaskRunSession_Postgres_Session[];
+  /** `session` is the session of the task run executing commands. */
+  session:
+    | TaskRunSession_Postgres_Session
+    | undefined;
+  /** `blocking_sessions` block `session`. */
+  blockingSessions: TaskRunSession_Postgres_Session[];
+  /** `blocked_sessions` are blocked by `session`. */
+  blockedSessions: TaskRunSession_Postgres_Session[];
 }
 
 /** Read from `pg_stat_activity` */
@@ -4299,13 +4302,19 @@ export const TaskRunSession = {
 };
 
 function createBaseTaskRunSession_Postgres(): TaskRunSession_Postgres {
-  return { sessions: [] };
+  return { session: undefined, blockingSessions: [], blockedSessions: [] };
 }
 
 export const TaskRunSession_Postgres = {
   encode(message: TaskRunSession_Postgres, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.sessions) {
-      TaskRunSession_Postgres_Session.encode(v!, writer.uint32(10).fork()).ldelim();
+    if (message.session !== undefined) {
+      TaskRunSession_Postgres_Session.encode(message.session, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.blockingSessions) {
+      TaskRunSession_Postgres_Session.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    for (const v of message.blockedSessions) {
+      TaskRunSession_Postgres_Session.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -4322,7 +4331,21 @@ export const TaskRunSession_Postgres = {
             break;
           }
 
-          message.sessions.push(TaskRunSession_Postgres_Session.decode(reader, reader.uint32()));
+          message.session = TaskRunSession_Postgres_Session.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.blockingSessions.push(TaskRunSession_Postgres_Session.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.blockedSessions.push(TaskRunSession_Postgres_Session.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4335,16 +4358,26 @@ export const TaskRunSession_Postgres = {
 
   fromJSON(object: any): TaskRunSession_Postgres {
     return {
-      sessions: globalThis.Array.isArray(object?.sessions)
-        ? object.sessions.map((e: any) => TaskRunSession_Postgres_Session.fromJSON(e))
+      session: isSet(object.session) ? TaskRunSession_Postgres_Session.fromJSON(object.session) : undefined,
+      blockingSessions: globalThis.Array.isArray(object?.blockingSessions)
+        ? object.blockingSessions.map((e: any) => TaskRunSession_Postgres_Session.fromJSON(e))
+        : [],
+      blockedSessions: globalThis.Array.isArray(object?.blockedSessions)
+        ? object.blockedSessions.map((e: any) => TaskRunSession_Postgres_Session.fromJSON(e))
         : [],
     };
   },
 
   toJSON(message: TaskRunSession_Postgres): unknown {
     const obj: any = {};
-    if (message.sessions?.length) {
-      obj.sessions = message.sessions.map((e) => TaskRunSession_Postgres_Session.toJSON(e));
+    if (message.session !== undefined) {
+      obj.session = TaskRunSession_Postgres_Session.toJSON(message.session);
+    }
+    if (message.blockingSessions?.length) {
+      obj.blockingSessions = message.blockingSessions.map((e) => TaskRunSession_Postgres_Session.toJSON(e));
+    }
+    if (message.blockedSessions?.length) {
+      obj.blockedSessions = message.blockedSessions.map((e) => TaskRunSession_Postgres_Session.toJSON(e));
     }
     return obj;
   },
@@ -4354,7 +4387,12 @@ export const TaskRunSession_Postgres = {
   },
   fromPartial(object: DeepPartial<TaskRunSession_Postgres>): TaskRunSession_Postgres {
     const message = createBaseTaskRunSession_Postgres();
-    message.sessions = object.sessions?.map((e) => TaskRunSession_Postgres_Session.fromPartial(e)) || [];
+    message.session = (object.session !== undefined && object.session !== null)
+      ? TaskRunSession_Postgres_Session.fromPartial(object.session)
+      : undefined;
+    message.blockingSessions = object.blockingSessions?.map((e) => TaskRunSession_Postgres_Session.fromPartial(e)) ||
+      [];
+    message.blockedSessions = object.blockedSessions?.map((e) => TaskRunSession_Postgres_Session.fromPartial(e)) || [];
     return message;
   },
 };
