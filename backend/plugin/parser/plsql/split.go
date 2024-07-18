@@ -3,6 +3,7 @@ package plsql
 import (
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -69,25 +70,29 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	return result, nil
 }
 
-func SplitSQLWithoutModify(statement string) ([]base.SingleSQL, error) {
+func SplitSQLForCompletion(statement string) ([]base.SingleSQL, error) {
 	tree, tokens, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	byteOffsetStart := 0
-	prevStopTokenIndex := -1
 	var result []base.SingleSQL
 	for _, item := range tree.GetChildren() {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
-			text := ""
+			if isCallStatement(item) && len(result) > 0 {
+				lastResult := result[len(result)-1]
+				stopIndex := stmt.GetStop().GetTokenIndex()
+				lastToken := tokens.Get(stopIndex)
+				result[len(result)-1] = base.SingleSQL{
+					Text:       lastResult.Text + tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
+					LastLine:   lastToken.GetLine(),
+					LastColumn: lastToken.GetColumn(),
+					Empty:      false,
+				}
+				continue
+			}
 			lastLine := 0
 			lastColumn := 0
-			// tokens looks like
-			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
-				byteOffsetStart += len(tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1)))
-			}
-			byteOffsetEnd := byteOffsetStart + len(tokens.GetTextFromTokens(stmt.GetStart(), stmt.GetStop()))
 
 			stopIndex := stmt.GetStop().GetTokenIndex()
 			lastToken := tokens.Get(stopIndex)
@@ -95,18 +100,22 @@ func SplitSQLWithoutModify(statement string) ([]base.SingleSQL, error) {
 			lastColumn = lastToken.GetColumn()
 
 			result = append(result, base.SingleSQL{
-				Text:            text,
-				LastLine:        lastLine,
-				LastColumn:      lastColumn,
-				Empty:           base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
-				ByteOffsetStart: byteOffsetStart,
-				ByteOffsetEnd:   byteOffsetEnd,
+				Text:       tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
+				LastLine:   lastLine,
+				LastColumn: lastColumn,
+				Empty:      base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
 			})
-			byteOffsetStart = byteOffsetEnd
-			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
 		}
 	}
 	return result, nil
+}
+
+func isCallStatement(item antlr.Tree) bool {
+	unitStmt, ok := item.(parser.IUnit_statementContext)
+	if !ok {
+		return false
+	}
+	return unitStmt.Call_statement() != nil
 }
 
 // needSemicolon returns true if the given statement needs a semicolon.
