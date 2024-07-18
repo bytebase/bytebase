@@ -493,9 +493,9 @@ func SQLReviewCheck(
 	ruleList []*storepb.SQLReviewRule,
 	checkContext SQLReviewCheckContext,
 ) ([]*storepb.Advice, error) {
-	ast, result := sm.GetAST(checkContext.DbType, statements)
+	ast, parseResult := sm.GetAST(checkContext.DbType, statements)
 	if ast == nil || len(ruleList) == 0 {
-		return result, nil
+		return parseResult, nil
 	}
 
 	finder := checkContext.Catalog.GetFinder()
@@ -554,24 +554,24 @@ func SQLReviewCheck(
 		for _, advice := range adviceList {
 			switch advice.Status {
 			case storepb.Advice_ERROR:
-				if len(errorAdvices) < common.MaximumAdviceCount {
+				if len(errorAdvices) < common.MaximumAdvicePerStatus {
 					errorAdvices = append(errorAdvices, advice)
 				}
 			case storepb.Advice_WARNING:
-				if len(warningAdvices) < common.MaximumAdviceCount {
+				if len(warningAdvices) < common.MaximumAdvicePerStatus {
 					warningAdvices = append(warningAdvices, advice)
 				}
 			default:
 			}
 		}
 		// Skip remaining rules if we have enough error and warning advices.
-		if len(errorAdvices) >= common.MaximumAdviceCount && len(warningAdvices) >= common.MaximumAdviceCount {
+		if len(errorAdvices) >= common.MaximumAdvicePerStatus && len(warningAdvices) >= common.MaximumAdvicePerStatus {
 			break
 		}
 	}
 
-	result = append(errorAdvices, warningAdvices...)
-	return result, nil
+	advices := append(errorAdvices, warningAdvices...)
+	return advices, nil
 }
 
 func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err error) ([]*storepb.Advice, error) {
