@@ -2,11 +2,12 @@ import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import { defineStore, storeToRefs } from "pinia";
-import { watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
   defaultCustomFeatureMatrix,
+  type CustomFeature,
   type CustomFeatureMatrix,
   type Release,
   type ReleaseInfo,
@@ -198,4 +199,8 @@ export const usePageMode = () => {
   const actuatorStore = useActuatorV1Store();
   const { pageMode } = storeToRefs(actuatorStore);
   return pageMode;
+};
+
+export const useCustomFeature = <T extends CustomFeature>(feature: T) => {
+  return computed(() => useActuatorV1Store().customFeatureMatrix[feature]);
 };
