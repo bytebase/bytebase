@@ -24,7 +24,7 @@ func GetQuerySpan(
 	// listDatabaseFunc base.ListDatabaseNamesFunc,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
-	q := newQuerySpanExtractor(database, gCtx.GetDatabaseMetadataFunc, gCtx.ListDatabaseNamesFunc, ignoreCaseSensitive)
+	q := newQuerySpanExtractor(database, gCtx, ignoreCaseSensitive)
 	querySpan, err := q.getQuerySpan(ctx, statement)
 	if err != nil {
 		return nil, err

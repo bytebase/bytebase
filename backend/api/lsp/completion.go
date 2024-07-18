@@ -63,6 +63,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	}
 	candidates, err := base.Completion(ctx, engine, base.CompletionContext{
 		Scene:             h.getScene(),
+		InstanceID:        h.getInstanceID(),
 		DefaultDatabase:   defaultDatabase,
 		Metadata:          h.GetDatabaseMetadataFunc,
 		ListDatabaseNames: h.ListDatabaseNamesFunc,
@@ -161,9 +162,8 @@ func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind 
 	}
 }
 
-func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 	// TODO: do ACL check here.
-	instanceID := h.getInstanceID()
 	if instanceID == "" {
 		return "", nil, errors.Errorf("instance is not specified")
 	}
@@ -188,8 +188,7 @@ func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName stri
 	return databaseName, metadata.GetDatabaseMetadata(), nil
 }
 
-func (h *Handler) ListDatabaseNamesFunc(ctx context.Context) ([]string, error) {
-	instanceID := h.getInstanceID()
+func (h *Handler) ListDatabaseNamesFunc(ctx context.Context, instanceID string) ([]string, error) {
 	if instanceID == "" {
 		return nil, errors.Errorf("instance is not specified")
 	}

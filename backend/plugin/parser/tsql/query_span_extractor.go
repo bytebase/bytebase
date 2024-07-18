@@ -24,9 +24,7 @@ type querySpanExtractor struct {
 	connectedSchema     string
 	ignoreCaseSensitive bool
 
-	f base.GetDatabaseMetadataFunc
-	l base.ListDatabaseNamesFunc
-
+	gCtx base.GetQuerySpanContext
 	// Private fields.
 	// ctes is used to record the common table expressions (CTEs) in the query.
 	// It should be shrunk to the privious length while exiting the query scope.
@@ -40,12 +38,11 @@ type querySpanExtractor struct {
 	tableSourcesFrom []base.TableSource
 }
 
-func newQuerySpanExtractor(connectedDB string, connectedSchema string, f base.GetDatabaseMetadataFunc, l base.ListDatabaseNamesFunc, ignoreCaseSensitive bool) *querySpanExtractor {
+func newQuerySpanExtractor(connectedDB string, connectedSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDB:         connectedDB,
 		connectedSchema:     connectedSchema,
-		f:                   f,
-		l:                   l,
+		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
 	}
 }
@@ -604,7 +601,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
-	allDatabases, err := q.l(q.ctx)
+	allDatabases, err := q.gCtx.ListDatabaseNamesFunc(q.ctx, q.gCtx.InstanceID)
 	if err != nil {
 		return nil, errors.Errorf("failed to list databases: %v", err)
 	}
@@ -613,7 +610,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 		if normalizedDatabaseName != "" && !q.isIdentifierEqual(normalizedDatabaseName, databaseName) {
 			continue
 		}
-		_, database, err := q.f(q.ctx, databaseName)
+		_, database, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, databaseName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database %s metadata", databaseName)
 		}
@@ -675,7 +672,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.connectedSchema, q.f, q.l, q.ignoreCaseSensitive)
+	newQ := newQuerySpanExtractor(q.connectedDB, q.connectedSchema, q.gCtx, q.ignoreCaseSensitive)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition")
@@ -1068,8 +1065,7 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 		cloneExtractor := &querySpanExtractor{
 			connectedDB:     q.connectedDB,
 			connectedSchema: q.connectedSchema,
-			f:               q.f,
-			l:               q.l,
+			gCtx:            q.gCtx,
 			// outerTableSources: extractor.outerTableSources,
 			ctes:                q.ctes,
 			ignoreCaseSensitive: q.ignoreCaseSensitive,

@@ -2360,7 +2360,10 @@ func (t *mysqlTransformer) ExitCreateView(_ *mysql.CreateViewContext) {
 	view := t.db.schemas[""].views[t.currView]
 
 	getter, lister := t.buildDBSchemaMetadataGetterAndLister()
-	querySpanExtractor := newQuerySpanExtractor(t.db.name, getter, lister, t.ignoreCaseSensitive)
+	querySpanExtractor := newQuerySpanExtractor(t.db.name, base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	}, t.ignoreCaseSensitive)
 	viewDef := view.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(view.ctx.ViewTail().ViewSelect())
 	fields, err := querySpanExtractor.getColumnsForView(viewDef)
 	if err != nil {
@@ -2422,7 +2425,7 @@ func (t *mysqlTransformer) buildDBSchemaMetadataGetterAndLister() (base.GetDatab
 
 	databaseSchema.Schemas = append(databaseSchema.Schemas, schemaSchema)
 
-	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			m[databaseSchema.Name] = model.NewDatabaseMetadata(databaseSchema)
 
@@ -2431,7 +2434,7 @@ func (t *mysqlTransformer) buildDBSchemaMetadataGetterAndLister() (base.GetDatab
 			}
 
 			return "", nil, errors.Errorf("database %q not found", databaseName)
-		}, func(_ context.Context) ([]string, error) {
+		}, func(_ context.Context, _ string) ([]string, error) {
 			return []string{databaseSchema.Name}, nil
 		}
 }

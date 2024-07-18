@@ -46,7 +46,8 @@ type querySpanExtractor struct {
 	// The metaCache serves as a lazy-load cache for the database metadata and should not be accessed directly.
 	// Instead, use querySpanExtractor.getDatabaseMetadata to access it.
 	metaCache map[string]*model.DatabaseMetadata
-	f         base.GetDatabaseMetadataFunc
+
+	gCtx base.GetQuerySpanContext
 
 	// Private fields.
 
@@ -65,11 +66,11 @@ type querySpanExtractor struct {
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
-func newQuerySpanExtractor(connectedDB string, getDatabaseMetadata base.GetDatabaseMetadataFunc) *querySpanExtractor {
+func newQuerySpanExtractor(connectedDB string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDB:             connectedDB,
 		metaCache:               make(map[string]*model.DatabaseMetadata),
-		f:                       getDatabaseMetadata,
+		gCtx:                    gCtx,
 		sourceColumnsInFunction: make(base.SourceColumnSet),
 	}
 }
@@ -79,7 +80,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 	if meta, ok := q.metaCache[database]; ok {
 		return meta, nil
 	}
-	_, meta, err := q.f(q.ctx, database)
+	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
 	}
@@ -509,7 +510,7 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 	}
 
 	for _, sql := range sqlList {
-		newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+		newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
 		span, err := newQ.getQuerySpan(q.ctx, sql)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
@@ -578,7 +579,7 @@ func extractSQL(data any) string {
 }
 
 func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name string, asBody string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, asBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
@@ -1175,7 +1176,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 			ctx:               q.ctx,
 			connectedDB:       q.connectedDB,
 			metaCache:         q.metaCache,
-			f:                 q.f,
+			gCtx:              q.gCtx,
 			ctes:              q.ctes,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
@@ -1812,7 +1813,7 @@ func isSystemResource(resource base.ColumnResource) string {
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
@@ -1821,7 +1822,7 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 }
 
 func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
