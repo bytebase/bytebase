@@ -5,13 +5,8 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -20,13 +15,8 @@
         POSITION      VARCHAR(100),
         CONSTRAINT    PK_CUSTOMER PRIMARY KEY (ID)
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -34,6 +24,7 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -43,6 +34,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -51,6 +43,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -60,6 +53,7 @@
       startposition:
         line: 7
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -68,13 +62,8 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -83,13 +72,8 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE "PUBLIC"."CUSTOMER" ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -105,6 +89,7 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -114,6 +99,7 @@
       startposition:
         line: 9
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -140,6 +126,7 @@
     );
     ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
     ALTER TABLE ORDERING DROP PRIMARY KEY(ORDER_ID);
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -149,6 +136,7 @@
       startposition:
         line: 24
         column: 0
+      endposition: null
     - status: 2
       code: 601
       title: table.require-pk
@@ -157,3 +145,4 @@
       startposition:
         line: 25
         column: 0
+      endposition: null

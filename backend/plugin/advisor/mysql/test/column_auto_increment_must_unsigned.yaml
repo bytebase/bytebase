@@ -1,12 +1,8 @@
 - statement: CREATE TABLE t(a INT UNSIGNED AUTO_INCREMENT);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: CREATE TABLE t(a INT AUTO_INCREMENT);
+  changeType: 0
   want:
     - status: 2
       code: 417
@@ -16,7 +12,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(a INT SIGNED AUTO_INCREMENT);
+  changeType: 0
   want:
     - status: 2
       code: 417
@@ -26,17 +24,14 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(a INT ZEROFILL AUTO_INCREMENT);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a INT AUTO_INCREMENT, ADD COLUMN c INT ZEROFILL AUTO_INCREMENT, ADD COLUMN d INT UNSIGNED AUTO_INCREMENT;
+  changeType: 0
   want:
     - status: 2
       code: 417
@@ -46,10 +41,12 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int, b int);
     ALTER TABLE t MODIFY COLUMN a INT AUTO_INCREMENT;
     ALTER TABLE t MODIFY COLUMN a INT UNSIGNED AUTO_INCREMENT;
+  changeType: 0
   want:
     - status: 2
       code: 417
@@ -59,10 +56,12 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a INT AUTO_INCREMENT;
     ALTER TABLE t CHANGE COLUMN a c INT UNSIGNED AUTO_INCREMENT;
+  changeType: 0
   want:
     - status: 2
       code: 417
@@ -72,3 +71,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

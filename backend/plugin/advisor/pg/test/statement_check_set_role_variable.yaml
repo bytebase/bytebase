@@ -1,11 +1,6 @@
 - statement: SET SESSION ROLE joe; SELECT * FROM t
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: INSERT INTO t (id) VALUES (1);
   changeType: 2
   want:
@@ -17,3 +12,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

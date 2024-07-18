@@ -1,4 +1,5 @@
 - statement: CREATE TABLE t(a int primary key, b int default 1)
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -8,11 +9,13 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(
       a int,
       b int default 1
     )
+  changeType: 0
   want:
     - status: 2
       code: 420
@@ -22,3 +25,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

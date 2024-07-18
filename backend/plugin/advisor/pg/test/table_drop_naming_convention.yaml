@@ -1,12 +1,8 @@
 - statement: DROP TABLE IF EXISTS foo_delete
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: DROP TABLE IF EXISTS foo
+  changeType: 0
   want:
     - status: 2
       code: 603
@@ -16,7 +12,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: DROP TABLE IF EXISTS foo_delete, bar
+  changeType: 0
   want:
     - status: 2
       code: 603
@@ -26,3 +24,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

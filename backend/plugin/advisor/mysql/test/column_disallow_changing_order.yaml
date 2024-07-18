@@ -1,16 +1,12 @@
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int FIRST;
+  changeType: 0
   want:
     - status: 2
       code: 407
@@ -20,9 +16,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(b int, a1 int);
     ALTER TABLE t CHANGE COLUMN a1 a int FIRST;
+  changeType: 0
   want:
     - status: 2
       code: 407
@@ -32,9 +30,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int, b int);
     ALTER TABLE t MODIFY COLUMN a int AFTER b;
+  changeType: 0
   want:
     - status: 2
       code: 407
@@ -44,9 +44,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a1 int, b int);
     ALTER TABLE t CHANGE COLUMN a1 a int AFTER b;
+  changeType: 0
   want:
     - status: 2
       code: 407
@@ -56,3 +58,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

@@ -27,17 +27,11 @@ type StatementPriorBackupCheckAdvisor struct {
 }
 
 func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
-	var adviceList []*storepb.Advice
 	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-		return adviceList, nil
+		return nil, nil
 	}
 
+	var adviceList []*storepb.Advice
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
@@ -107,14 +101,6 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 				Content: content,
 			})
 		}
-	}
-	if len(adviceList) == 0 {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
 	}
 
 	return adviceList, nil

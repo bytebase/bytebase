@@ -79,14 +79,6 @@ func (l *tableNoForeignKeyListener) generateAdvice() ([]*storepb.Advice, error) 
 		}
 	}
 
-	if len(advice) == 0 {
-		advice = append(advice, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return advice, nil
 }
 

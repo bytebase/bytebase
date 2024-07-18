@@ -1,4 +1,5 @@
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)
+  changeType: 0
   want:
     - status: 2
       code: 602
@@ -8,7 +9,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))
+  changeType: 0
   want:
     - status: 2
       code: 602
@@ -18,3 +21,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

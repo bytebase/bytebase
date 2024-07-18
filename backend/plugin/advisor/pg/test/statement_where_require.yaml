@@ -1,12 +1,8 @@
 - statement: INSERT INTO t VALUES(1)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: DELETE FROM t1
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -16,7 +12,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: UPDATE t1 SET a = 1
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -26,23 +24,15 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: DELETE FROM t1 WHERE a > 0
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: UPDATE t1 SET a = 1 WHERE a > 10
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: SELECT a FROM t
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -52,15 +42,12 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT a FROM t WHERE a > 0
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -70,11 +57,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT 1
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []

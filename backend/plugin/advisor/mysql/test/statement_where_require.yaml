@@ -1,16 +1,12 @@
 - statement: |
     CREATE TABLE book(id INT);
     INSERT INTO book(id) values (1);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |
     CREATE TABLE book(id INT);
     DELETE FROM book;
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -20,9 +16,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE book(id INT);
     UPDATE book SET id = 1;
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -32,29 +30,21 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE book(id INT);
     DELETE FROM book WHERE id > 0;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |
     CREATE TABLE book(id INT);
     UPDATE book SET id = 1 WHERE id > 10;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id FROM book;
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -64,16 +54,12 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id FROM book WHERE id > 0;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id
@@ -82,6 +68,7 @@
       SELECT max(id)
       FROM book
       );
+  changeType: 0
   want:
     - status: 2
       code: 202
@@ -97,12 +84,8 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: |
     SELECT CURDATE();
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []

@@ -1,4 +1,5 @@
 - statement: TRUNCATE TABLE issues CASCADE;
+  changeType: 0
   want:
     - status: 2
       code: 213
@@ -8,19 +9,15 @@
       startposition:
         line: 1
         column: 1
+      endposition: null
 - statement: |-
     CREATE TABLE users (
         tenant_id integer REFERENCES tenants ON DELETE CASCADE,
         user_id integer NOT NULL,
         PRIMARY KEY (tenant_id, user_id)
     );
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE TABLE users (
       tenant_id integer,
@@ -28,13 +25,8 @@
       PRIMARY KEY (tenant_id, user_id)
     );
     COMMENT ON TABLE users IS 'CASCADE COMMENT';
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     TRUNCATE TABLE tech_book CASCADE;
     DROP TABLE tech_book CASCADE;
@@ -43,6 +35,7 @@
       user_id integer NOT NULL,
       PRIMARY KEY (tenant_id, user_id)
     );
+  changeType: 0
   want:
     - status: 2
       code: 213
@@ -52,6 +45,7 @@
       startposition:
         line: 1
         column: 1
+      endposition: null
     - status: 2
       code: 213
       title: statement.disallow-rm-tbl-cascade
@@ -60,3 +54,4 @@
       startposition:
         line: 2
         column: 1
+      endposition: null

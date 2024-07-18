@@ -1,12 +1,8 @@
 - statement: SELECT * FROM t WHERE a LIKE 'abc%'
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: SELECT * FROM t WHERE a LIKE '%abc'
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -16,7 +12,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -26,7 +24,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -36,6 +36,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 204
       title: statement.where.no-leading-wildcard-like
@@ -44,7 +45,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1
+  changeType: 0
   want:
     - status: 2
       code: 204
@@ -54,6 +57,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 204
       title: statement.where.no-leading-wildcard-like
@@ -62,3 +66,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

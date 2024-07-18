@@ -4,6 +4,7 @@
       age INT,
       payload JSON
     );
+  changeType: 0
   want:
     - status: 2
       code: 411
@@ -13,3 +14,4 @@
       startposition:
         line: 4
         column: 0
+      endposition: null

@@ -1,20 +1,11 @@
 - statement: CREATE TABLE t(name char(20));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: CREATE TABLE t(name varchar(225));
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: CREATE TABLE t(name char(225));
+  changeType: 0
   want:
     - status: 2
       code: 415
@@ -24,7 +15,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN name_2 char(225)
+  changeType: 0
   want:
     - status: 2
       code: 415
@@ -34,7 +27,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book CHANGE COLUMN name name char(225)
+  changeType: 0
   want:
     - status: 2
       code: 415
@@ -44,7 +39,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book MODIFY COLUMN name char(225)
+  changeType: 0
   want:
     - status: 2
       code: 415
@@ -54,3 +51,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

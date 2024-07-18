@@ -1,11 +1,6 @@
 - statement: CREATE TABLE t(a int);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
+  want: []
 - statement: |-
     CREATE FUNCTION add_two_numbers(a INT, b INT)
     RETURNS INT
@@ -14,6 +9,7 @@
       SET result = a + b;
       RETURN result;
     END;
+  changeType: 0
   want:
     - status: 2
       code: 1701
@@ -30,3 +26,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
