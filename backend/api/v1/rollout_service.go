@@ -301,7 +301,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 		query := `
 			SELECT
 				pid,
-				pg_blocking_pids(pid) AS blocking_pids,
+				pg_blocking_pids(pid) AS blocked_by_pids,
 				query,
 				state,
 				wait_event_type,
@@ -331,12 +331,12 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 		for rows.Next() {
 			var s v1pb.TaskRunSession_Postgres_Session
 
-			var blockingPids pgtype.TextArray
+			var blockedByPids pgtype.TextArray
 
 			var bs, xs, qs time.Time
 			if err := rows.Scan(
 				&s.Pid,
-				&blockingPids,
+				&blockedByPids,
 				&s.Query,
 				&s.State,
 				&s.WaitEventType,
@@ -353,7 +353,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 				return nil, errors.Wrapf(err, "failed to scan")
 			}
 
-			if err := blockingPids.AssignTo(&s.BlockingPids); err != nil {
+			if err := blockedByPids.AssignTo(&s.BlockedByPids); err != nil {
 				return nil, errors.Wrapf(err, "failed to assign blocking pids")
 			}
 
@@ -363,7 +363,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 
 			if s.Pid == connID {
 				ss.Session = &s
-			} else if slices.Contains(s.BlockingPids, connID) {
+			} else if slices.Contains(s.BlockedByPids, connID) {
 				ss.BlockedSessions = append(ss.BlockedSessions, &s)
 			} else {
 				ss.BlockingSessions = append(ss.BlockingSessions, &s)
