@@ -39,14 +39,14 @@
 import { maxBy } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { planCheckRunResultStatus } from "@/components/Plan/logic";
+import { TaskSpinner } from "@/components/IssueV1/components/common";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/plan_service";
-import { TaskSpinner } from "../../common";
+import { planCheckRunResultStatus } from "./common";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
@@ -81,7 +81,7 @@ const buttonClasses = computed(() => {
     case PlanCheckRun_Status.RUNNING:
       bgColor = "bg-blue-100";
       textColor = "text-blue-800";
-      borderColor = "bg-blue-800";
+      borderColor = "border-blue-800";
       break;
     case PlanCheckRun_Status.FAILED:
       bgColor = "bg-red-100";

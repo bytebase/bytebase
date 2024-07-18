@@ -8,16 +8,15 @@
     container-class="!pt-0 -mt-px"
     @close="$emit('close')"
   >
-    <PlanCheckDetail
+    <PlanCheckRunDetail
       :plan-check-run="planCheckRun"
       :database="database"
       :show-code-location="showCodeLocation"
-      @close="$emit('close')"
     >
       <template #row-title-extra="{ row }">
         <slot name="row-title-extra" :row="row" />
       </template>
-    </PlanCheckDetail>
+    </PlanCheckRunDetail>
 
     <div
       v-if="confirm"
@@ -40,6 +39,7 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed, watchEffect, ref } from "vue";
+import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { usePolicyV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -53,7 +53,6 @@ import {
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";
-import PlanCheckDetail from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;

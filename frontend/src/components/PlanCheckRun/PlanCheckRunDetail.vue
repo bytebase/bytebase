@@ -1,9 +1,138 @@
 <template>
-  <div class="space-y-3 divide-y pb-4 px-2">
+  <div class="flex flex-col gap-y-0.5">
+    <div v-if="showCancelButton">
+      <NButton secondary size="small" @click="cancelPlanCheckRun">
+        <template #icon>
+          <XIcon class="w-4 h-auto" />
+        </template>
+        {{ $t("common.cancel") }}
+      </NButton>
+    </div>
+
     <div
-      v-for="(row, i) in tableRows"
+      v-for="(row, i) in highlightTableRows"
       :key="i"
-      class="pt-3 first:pt-2 space-y-2"
+      :class="[
+        'py-2 px-2 space-y-2',
+        row.checkResult.status === PlanCheckRun_Result_Status.ERROR &&
+          'border-error border rounded',
+        row.checkResult.status === PlanCheckRun_Result_Status.WARNING &&
+          'border-warning border rounded',
+      ]"
+    >
+      <div class="flex items-center space-x-3">
+        <div
+          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          :class="statusIconClass(row.checkResult.status)"
+        >
+          <template
+            v-if="row.checkResult.status === PlanCheckRun_Result_Status.SUCCESS"
+          >
+            <heroicons-solid:check class="w-4 h-4" />
+          </template>
+          <template
+            v-if="row.checkResult.status === PlanCheckRun_Result_Status.WARNING"
+          >
+            <heroicons-outline:exclamation class="h-4 w-4" />
+          </template>
+          <template
+            v-else-if="
+              row.checkResult.status === PlanCheckRun_Result_Status.ERROR
+            "
+          >
+            <span class="text-white font-medium text-base" aria-hidden="true">
+              !
+            </span>
+          </template>
+        </div>
+        <div v-if="showCategoryColumn" class="shrink-0">
+          {{ row.category }}
+        </div>
+        <div class="font-semibold">{{ row.title }}</div>
+
+        <slot name="row-title-extra" :row="row" />
+      </div>
+
+      <div class="textinfolabel flex flex-col gap-y-0.5">
+        <div>{{ row.checkResult.content }}</div>
+
+        <OnlineMigrationDetail
+          v-if="row.checkResult.title === 'advice.online-migration'"
+          :row="row"
+        />
+
+        <div
+          class="flex items-center justify-start space-x-2 divide-x divide-block-border"
+        >
+          <div
+            v-if="row.checkResult.sqlReviewReport?.detail"
+            class="pl-2 first:pl-0"
+          >
+            <span
+              class="normal-link"
+              @click="
+                state.activeResultDefinition =
+                  row.checkResult.sqlReviewReport!.detail
+              "
+              >{{ $t("sql-review.view-definition") }}</span
+            >
+          </div>
+          <div
+            v-if="
+              row.checkResult.sqlReviewReport &&
+              getActiveRule(row.checkResult.title)
+            "
+            class="pl-2 first:pl-0"
+          >
+            <span
+              class="normal-link"
+              @click="setActiveRule(row.checkResult.title)"
+              >{{ $t("sql-review.rule-detail") }}</span
+            >
+          </div>
+          <div v-if="row.checkResult.sqlSummaryReport" class="pl-2 first:pl-0">
+            <span>
+              {{ row.checkResult.sqlSummaryReport.affectedRows }}
+            </span>
+          </div>
+
+          <HideInStandaloneMode>
+            <div class="pl-2 first:pl-0">
+              <a
+                v-if="row.link"
+                class="normal-link"
+                :href="row.link.url"
+                :target="row.link.target"
+              >
+                {{ row.link.title }}
+              </a>
+            </div>
+          </HideInStandaloneMode>
+
+          <!-- Only show the error line for latest plan check run -->
+          <div
+            v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line"
+            class="pl-2 first:pl-0"
+          >
+            <span
+              class="normal-link"
+              @click="
+                handleClickPlanCheckDetailLine(
+                  row.checkResult.sqlReviewReport!.line
+                )
+              "
+            >
+              Line {{ row.checkResult.sqlReviewReport.line }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-for="(row, i) in standardTableRows"
+      :key="i"
+      class="py-3 px-2 first:pt-2 space-y-2"
     >
       <div class="flex items-center space-x-3">
         <div
@@ -77,7 +206,9 @@
         </HideInStandaloneMode>
 
         <!-- Only show the error line for latest plan check run -->
-        <template v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line">
+        <template
+          v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line"
+        >
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
@@ -101,35 +232,46 @@
     @cancel="state.activeRule = undefined"
   />
 
-  <ResultDefinitionModal
+  <PlanCheckResultDefinitionModal
     v-if="state.activeResultDefinition"
     :definition="state.activeResultDefinition"
-    @cancel="state.activeResultDefinition = undefined"
+    @close="state.activeResultDefinition = undefined"
   />
 </template>
 
 <script setup lang="ts">
+import { XIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
+import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
+import { planServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
+import {
+  getProjectNamePlanIdPlanCheckRunId,
+  planNamePrefix,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import type { RuleTemplateV2, ComposedDatabase } from "@/types";
 import {
   GeneralErrorCode,
   SQLReviewPolicyErrorCode,
   getRuleLocalization,
   ruleTemplateMapV2,
+  convertPolicyRuleToRuleTemplate,
 } from "@/types";
-import { convertPolicyRuleToRuleTemplate } from "@/types";
-import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import {
+  PlanCheckRun,
   PlanCheckRun_Result,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
 } from "@/types/proto/v1/plan_service";
-import ResultDefinitionModal from "./ResultDefinitionModal.vue";
+import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
+import { usePlanCheckRunContext } from "./context";
+import { OnlineMigrationDetail } from "./detail";
 
 interface ErrorCodeLink {
   title: string;
@@ -151,20 +293,17 @@ type LocalState = {
 
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
-  database?: ComposedDatabase;
   showCodeLocation?: boolean;
+  database?: ComposedDatabase;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
+const { events } = usePlanCheckRunContext();
 const state = reactive<LocalState>({
   activeRule: undefined,
   activeResultDefinition: undefined,
 });
-
-const emit = defineEmits<{
-  (event: "close"): void;
-}>();
 
 const statusIconClass = (status: PlanCheckRun_Result_Status) => {
   switch (status) {
@@ -200,6 +339,11 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
 
   return [];
 });
+
+const showCancelButton = computed(
+  // Only allow canceling plan check run when it's running.
+  () => props.planCheckRun.status === PlanCheckRun_Status.RUNNING
+);
 
 const getRuleTemplateByType = (type: string) => {
   if (props.database) {
@@ -299,6 +443,18 @@ const tableRows = computed(() => {
   });
 });
 
+const highlightRowFilter = (row: PlanCheckDetailTableRow) => {
+  return row.checkResult.title === "advice.online-migration";
+};
+
+const highlightTableRows = computed(() => {
+  return tableRows.value.filter(highlightRowFilter);
+});
+
+const standardTableRows = computed(() => {
+  return tableRows.value.filter((row) => !highlightRowFilter(row));
+});
+
 const showCategoryColumn = computed((): boolean =>
   tableRows.value.some((row) => row.category !== "")
 );
@@ -322,12 +478,23 @@ const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
 
   return convertPolicyRuleToRuleTemplate(rule, ruleTemplate);
 };
+
 const setActiveRule = (type: string) => {
   state.activeRule = getActiveRule(type);
 };
 
 const handleClickPlanCheckDetailLine = (line: number) => {
   window.location.hash = `L${line}`;
-  emit("close");
+};
+
+const cancelPlanCheckRun = async () => {
+  const planCheckRunName = props.planCheckRun.name;
+  const [projectName, planId] =
+    getProjectNamePlanIdPlanCheckRunId(planCheckRunName);
+  await planServiceClient.batchCancelPlanCheckRuns({
+    parent: `${projectNamePrefix}${projectName}/${planNamePrefix}${planId}`,
+    planCheckRuns: [planCheckRunName],
+  });
+  events.emit("status-changed");
 };
 </script>

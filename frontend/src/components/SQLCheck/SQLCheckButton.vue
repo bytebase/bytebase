@@ -86,6 +86,7 @@ import type { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer, hasWorkspacePermissionV2 } from "@/utils";
+import { providePlanCheckRunContext } from "../PlanCheckRun/context";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
 import SQLCheckSummary from "./SQLCheckSummary.vue";
@@ -165,6 +166,8 @@ const policyErrors = computed(() => {
   if (noReviewPolicyTips.value) return [noReviewPolicyTips.value];
   return [];
 });
+
+providePlanCheckRunContext({});
 
 const runCheckInternal = async (
   statement: string,
