@@ -71,11 +71,11 @@ func TestCompletion(t *testing.T) {
 	}
 }
 
-func listDatbaseNamesForTest(_ context.Context) ([]string, error) {
+func listDatbaseNamesForTest(_ context.Context, _ string) ([]string, error) {
 	return []string{"db"}, nil
 }
 
-func getMetadataForTest(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+func getMetadataForTest(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 	if databaseName != "db" {
 		return "", nil, nil
 	}

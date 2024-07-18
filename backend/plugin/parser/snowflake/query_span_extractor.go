@@ -21,9 +21,7 @@ type querySpanExtractor struct {
 	// https://docs.com/en/sql-reference/identifiers-syntax
 	ignoreCaseSensitive bool
 
-	f base.GetDatabaseMetadataFunc
-	l base.ListDatabaseNamesFunc
-
+	gCtx base.GetQuerySpanContext
 	// Private fields.
 	// ctes is used to record the common table expressions (CTEs) in the query.
 	// It should be shrunk to 0 after each query span extraction.
@@ -33,13 +31,12 @@ type querySpanExtractor struct {
 	tableSourcesFrom []base.TableSource
 }
 
-func newQuerySpanExtractor(connectedDB, connectedSchema string, f base.GetDatabaseMetadataFunc, l base.ListDatabaseNamesFunc, ignoreCaseSensitive bool) *querySpanExtractor {
+func newQuerySpanExtractor(connectedDB, connectedSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDB:         connectedDB,
 		connectedSchema:     connectedSchema,
 		ignoreCaseSensitive: ignoreCaseSensitive,
-		f:                   f,
-		l:                   l,
+		gCtx:                gCtx,
 	}
 }
 
@@ -1067,7 +1064,7 @@ func (q *querySpanExtractor) findTableSchema(objectName parser.IObject_nameConte
 		}
 	}
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(objectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
-	allDatabases, err := q.l(q.ctx)
+	allDatabases, err := q.gCtx.ListDatabaseNamesFunc(q.ctx, q.gCtx.InstanceID)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to get all databases")
 	}
@@ -1076,7 +1073,7 @@ func (q *querySpanExtractor) findTableSchema(objectName parser.IObject_nameConte
 		if normalizedDatabaseName != "" && normalizedDatabaseName != databaseName {
 			continue
 		}
-		_, database, err := q.f(q.ctx, normalizedDatabaseName)
+		_, database, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, normalizedDatabaseName)
 		if err != nil {
 			return "", nil, errors.Wrapf(err, "failed to get database %s", normalizedDatabaseName)
 		}
