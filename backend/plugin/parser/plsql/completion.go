@@ -101,7 +101,6 @@ func newPreferredRules() map[int]bool {
 		plsql.PlSqlParserRULE_rollback_segment_name:    true,
 		plsql.PlSqlParserRULE_table_var_name:           true,
 		plsql.PlSqlParserRULE_schema_name:              true,
-		plsql.PlSqlParserRULE_routine_name:             true,
 		plsql.PlSqlParserRULE_package_name:             true,
 		plsql.PlSqlParserRULE_implementation_type_name: true,
 		plsql.PlSqlParserRULE_parameter_name:           true,
@@ -127,7 +126,6 @@ func newPreferredRules() map[int]bool {
 		plsql.PlSqlParserRULE_char_set_name:            true,
 		plsql.PlSqlParserRULE_synonym_name:             true,
 		plsql.PlSqlParserRULE_dir_object_name:          true,
-		plsql.PlSqlParserRULE_user_object_name:         true,
 	}
 }
 
@@ -944,7 +942,7 @@ func notEmptySQLCount(list []base.SingleSQL) int {
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
 	newCaretLine, newCaretOffset := caretLine, caretOffset
-	list, err := SplitSQLWithoutModify(statement)
+	list, err := SplitSQLForCompletion(statement)
 	if err != nil || notEmptySQLCount(list) <= 1 {
 		return statement, caretLine, caretOffset
 	}
