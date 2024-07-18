@@ -967,6 +967,7 @@ export interface TaskRunSession_Postgres {
 /** Read from `pg_stat_activity` */
 export interface TaskRunSession_Postgres_Session {
   pid: string;
+  blockingPids: string[];
   query: string;
   state?: string | undefined;
   waitEventType?: string | undefined;
@@ -4400,6 +4401,7 @@ export const TaskRunSession_Postgres = {
 function createBaseTaskRunSession_Postgres_Session(): TaskRunSession_Postgres_Session {
   return {
     pid: "",
+    blockingPids: [],
     query: "",
     state: undefined,
     waitEventType: undefined,
@@ -4420,41 +4422,44 @@ export const TaskRunSession_Postgres_Session = {
     if (message.pid !== "") {
       writer.uint32(10).string(message.pid);
     }
+    for (const v of message.blockingPids) {
+      writer.uint32(18).string(v!);
+    }
     if (message.query !== "") {
-      writer.uint32(18).string(message.query);
+      writer.uint32(26).string(message.query);
     }
     if (message.state !== undefined) {
-      writer.uint32(26).string(message.state);
+      writer.uint32(34).string(message.state);
     }
     if (message.waitEventType !== undefined) {
-      writer.uint32(34).string(message.waitEventType);
+      writer.uint32(42).string(message.waitEventType);
     }
     if (message.waitEvent !== undefined) {
-      writer.uint32(42).string(message.waitEvent);
+      writer.uint32(50).string(message.waitEvent);
     }
     if (message.datname !== undefined) {
-      writer.uint32(50).string(message.datname);
+      writer.uint32(58).string(message.datname);
     }
     if (message.usename !== undefined) {
-      writer.uint32(58).string(message.usename);
+      writer.uint32(66).string(message.usename);
     }
     if (message.applicationName !== "") {
-      writer.uint32(66).string(message.applicationName);
+      writer.uint32(74).string(message.applicationName);
     }
     if (message.clientAddr !== undefined) {
-      writer.uint32(74).string(message.clientAddr);
+      writer.uint32(82).string(message.clientAddr);
     }
     if (message.clientPort !== undefined) {
-      writer.uint32(82).string(message.clientPort);
+      writer.uint32(90).string(message.clientPort);
     }
     if (message.backendStart !== undefined) {
-      Timestamp.encode(toTimestamp(message.backendStart), writer.uint32(90).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.backendStart), writer.uint32(98).fork()).ldelim();
     }
     if (message.xactStart !== undefined) {
-      Timestamp.encode(toTimestamp(message.xactStart), writer.uint32(98).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.xactStart), writer.uint32(106).fork()).ldelim();
     }
     if (message.queryStart !== undefined) {
-      Timestamp.encode(toTimestamp(message.queryStart), writer.uint32(106).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.queryStart), writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -4478,80 +4483,87 @@ export const TaskRunSession_Postgres_Session = {
             break;
           }
 
-          message.query = reader.string();
+          message.blockingPids.push(reader.string());
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.state = reader.string();
+          message.query = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.waitEventType = reader.string();
+          message.state = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.waitEvent = reader.string();
+          message.waitEventType = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.datname = reader.string();
+          message.waitEvent = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.usename = reader.string();
+          message.datname = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.applicationName = reader.string();
+          message.usename = reader.string();
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.clientAddr = reader.string();
+          message.applicationName = reader.string();
           continue;
         case 10:
           if (tag !== 82) {
             break;
           }
 
-          message.clientPort = reader.string();
+          message.clientAddr = reader.string();
           continue;
         case 11:
           if (tag !== 90) {
             break;
           }
 
-          message.backendStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.clientPort = reader.string();
           continue;
         case 12:
           if (tag !== 98) {
             break;
           }
 
-          message.xactStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.backendStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 13:
           if (tag !== 106) {
+            break;
+          }
+
+          message.xactStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 14:
+          if (tag !== 114) {
             break;
           }
 
@@ -4569,6 +4581,9 @@ export const TaskRunSession_Postgres_Session = {
   fromJSON(object: any): TaskRunSession_Postgres_Session {
     return {
       pid: isSet(object.pid) ? globalThis.String(object.pid) : "",
+      blockingPids: globalThis.Array.isArray(object?.blockingPids)
+        ? object.blockingPids.map((e: any) => globalThis.String(e))
+        : [],
       query: isSet(object.query) ? globalThis.String(object.query) : "",
       state: isSet(object.state) ? globalThis.String(object.state) : undefined,
       waitEventType: isSet(object.waitEventType) ? globalThis.String(object.waitEventType) : undefined,
@@ -4588,6 +4603,9 @@ export const TaskRunSession_Postgres_Session = {
     const obj: any = {};
     if (message.pid !== "") {
       obj.pid = message.pid;
+    }
+    if (message.blockingPids?.length) {
+      obj.blockingPids = message.blockingPids;
     }
     if (message.query !== "") {
       obj.query = message.query;
@@ -4634,6 +4652,7 @@ export const TaskRunSession_Postgres_Session = {
   fromPartial(object: DeepPartial<TaskRunSession_Postgres_Session>): TaskRunSession_Postgres_Session {
     const message = createBaseTaskRunSession_Postgres_Session();
     message.pid = object.pid ?? "";
+    message.blockingPids = object.blockingPids?.map((e) => e) || [];
     message.query = object.query ?? "";
     message.state = object.state ?? undefined;
     message.waitEventType = object.waitEventType ?? undefined;

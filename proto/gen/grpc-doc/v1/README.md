@@ -8498,6 +8498,7 @@ Read from `pg_stat_activity`
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | pid | [string](#string) |  |  |
+| blocking_pids | [string](#string) | repeated |  |
 | query | [string](#string) |  |  |
 | state | [string](#string) | optional |  |
 | wait_event_type | [string](#string) | optional |  |

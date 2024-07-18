@@ -11871,6 +11871,10 @@ components:
             properties:
                 pid:
                     type: string
+                blockingPids:
+                    type: array
+                    items:
+                        type: string
                 query:
                     type: string
                 state:
