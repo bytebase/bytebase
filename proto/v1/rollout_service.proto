@@ -463,25 +463,29 @@ message TaskRunSession {
   }
 
   message Postgres {
-    // The first session is the session of the task run executing commands.
-    // The remaining sessions are the sessions that block the first session.
-    repeated Session sessions = 1;
+    // `session` is the session of the task run executing commands.
+    Session session = 1;
+    // `blocking_sessions` block `session`.
+    repeated Session blocking_sessions = 2;
+    // `blocked_sessions` are blocked by `session`.
+    repeated Session blocked_sessions = 3;
 
     // Read from `pg_stat_activity`
     message Session {
       string pid = 1;
-      string query = 2;
-      optional string state = 3;
-      optional string wait_event_type = 4;
-      optional string wait_event = 5;
-      optional string datname = 6;
-      optional string usename = 7;
-      string application_name = 8;
-      optional string client_addr = 9;
-      optional string client_port = 10;
-      google.protobuf.Timestamp backend_start = 11;
-      optional google.protobuf.Timestamp xact_start = 12;
-      optional google.protobuf.Timestamp query_start = 13;
+      repeated string blocked_by_pids = 2;
+      string query = 3;
+      optional string state = 4;
+      optional string wait_event_type = 5;
+      optional string wait_event = 6;
+      optional string datname = 7;
+      optional string usename = 8;
+      string application_name = 9;
+      optional string client_addr = 10;
+      optional string client_port = 11;
+      google.protobuf.Timestamp backend_start = 12;
+      optional google.protobuf.Timestamp xact_start = 13;
+      optional google.protobuf.Timestamp query_start = 14;
     }
   }
 }
