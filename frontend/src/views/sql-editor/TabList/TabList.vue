@@ -43,7 +43,7 @@
     </div>
 
     <div class="hidden lg:block -mt-0.5">
-      <ProfileDropdown v-if="showProfileDropdown" />
+      <ProfileDropdown v-if="!hideProfileDropdown" />
     </div>
 
     <ContextMenu ref="contextMenuRef" />
@@ -53,7 +53,6 @@
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
 import { useDialog } from "naive-ui";
-import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -61,7 +60,7 @@ import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useActuatorV1Store,
+  useCustomFeature,
   useFilterStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -91,7 +90,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const { pageMode } = storeToRefs(useActuatorV1Store());
+const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();
@@ -102,8 +101,8 @@ const scrollState = reactive({
   moreRight: false,
 });
 
-const showProfileDropdown = computed(() => {
-  return pageMode.value === "BUNDLED";
+const hideProfileDropdown = computed(() => {
+  return inIframe.value;
 });
 
 const filteredTabIdList = computed(() => {

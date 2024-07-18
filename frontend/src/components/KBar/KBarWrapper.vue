@@ -26,11 +26,10 @@ import {
   KBarAnimator,
   KBarSearch,
 } from "@bytebase/vue-kbar";
-import { storeToRefs } from "pinia";
 import { defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useOverlayStackContext } from "@/components/misc/OverlayStackManager.vue";
-import { useActuatorV1Store, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useCustomFeature } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
 import KBarFooter from "./KBarFooter.vue";
 import KBarHelper from "./KBarHelper.vue";
@@ -52,12 +51,12 @@ export default defineComponent({
   setup() {
     const { t } = useI18n();
     const { stack: overlayStack } = useOverlayStackContext();
-    const { pageMode } = storeToRefs(useActuatorV1Store());
+    const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 
     const placeholder = computed(() => t("kbar.options.placeholder"));
 
     const disabled = computed(() => {
-      if (pageMode.value === "STANDALONE") {
+      if (inIframe.value) {
         return true;
       }
 

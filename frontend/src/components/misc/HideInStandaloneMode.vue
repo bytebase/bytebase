@@ -1,10 +1,9 @@
 <template>
-  <slot v-if="pageMode !== 'STANDALONE'" name="default" />
+  <slot v-if="!inIframe" name="default" />
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
-import { useActuatorV1Store } from "@/store";
+import { useCustomFeature } from "@/store";
 
-const { pageMode } = storeToRefs(useActuatorV1Store());
+const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 </script>

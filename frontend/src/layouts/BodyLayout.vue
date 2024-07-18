@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <div class="flex-1 flex overflow-hidden">
-      <HideInStandaloneMode>
+      <HideInIframe>
         <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
         <div
           v-show="state.showMobileOverlay"
@@ -170,14 +170,14 @@
         >
           <router-view name="leftSidebar" />
         </teleport>
-      </HideInStandaloneMode>
+      </HideInIframe>
 
       <div
         class="flex flex-col min-w-0 flex-1"
-        :class="pageMode !== 'STANDALONE' && 'border-x border-block-border'"
+        :class="!inIframe && 'border-x border-block-border'"
         data-label="bb-main-body-wrapper"
       >
-        <HideInStandaloneMode>
+        <HideInIframe>
           <nav
             class="bg-white border-b border-block-border"
             data-label="bb-dashboard-header"
@@ -205,7 +205,7 @@
               </div>
             </div>
           </aside>
-        </HideInStandaloneMode>
+        </HideInIframe>
 
         <!-- This area may scroll -->
         <div
@@ -214,7 +214,7 @@
           class="md:min-w-0 flex-1 overflow-y-auto py-4"
           :class="mainContainerClasses"
         >
-          <HideInStandaloneMode>
+          <HideInIframe>
             <div class="w-full mx-auto md:flex">
               <div class="md:min-w-0 md:flex-1">
                 <div
@@ -227,7 +227,7 @@
                 </div>
               </div>
             </div>
-          </HideInStandaloneMode>
+          </HideInIframe>
           <!-- Start main area-->
           <router-view name="content" />
           <!-- End main area -->
@@ -235,21 +235,21 @@
       </div>
     </div>
 
-    <HideInStandaloneMode>
+    <HideInIframe>
       <Quickstart />
-    </HideInStandaloneMode>
+    </HideInIframe>
   </div>
 
   <TrialModal
     v-if="state.showTrialModal"
     @cancel="state.showTrialModal = false"
   />
-  <HideInStandaloneMode>
+  <HideInIframe>
     <ReleaseRemindModal
       v-if="state.showReleaseModal"
       @cancel="state.showReleaseModal = false"
     />
-  </HideInStandaloneMode>
+  </HideInIframe>
 </template>
 
 <script lang="ts" setup>
@@ -257,11 +257,12 @@ import { useMounted, useWindowSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
+import HideInIframe from "@/components/misc/HideInStandaloneMode.vue";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
+  useCustomFeature,
   useSubscriptionV1Store,
 } from "@/store";
 import type { QuickActionType } from "@/types";
@@ -302,7 +303,8 @@ const hasPermission = computed(() =>
   hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set")
 );
 
-const { pageMode, isDemo } = storeToRefs(actuatorStore);
+const { isDemo } = storeToRefs(actuatorStore);
+const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   state.showReleaseModal = openRemindModal;
