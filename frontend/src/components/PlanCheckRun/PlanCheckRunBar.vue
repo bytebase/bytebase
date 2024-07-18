@@ -8,20 +8,25 @@
     </div>
 
     <div class="flex-1">
-      <PlanCheckBadgeBar
+      <PlanCheckRunBadgeBar
         :plan-check-run-list="planCheckRunList"
         @select-type="selectedType = $event"
       />
     </div>
 
     <div class="flex justify-end items-center shrink-0">
-      <PlanCheckRunButton v-if="allowRunChecks" @run-checks="runChecks" />
+      <PlanCheckRunButton
+        v-if="allowRunChecks"
+        :plan-check-run-list="planCheckRunList"
+        @run-checks="runChecks"
+      />
     </div>
 
-    <PlanCheckModal
+    <PlanCheckRunModal
       v-if="planCheckRunList.length > 0 && selectedType"
       :selected-type="selectedType"
       :plan-check-run-list="planCheckRunList"
+      :database="database"
       @close="selectedType = undefined"
     />
   </div>
@@ -29,25 +34,25 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import {
-  notifyNotEditableLegacyIssue,
-  useIssueContext,
-} from "@/components/IssueV1/logic";
 import { planServiceClient } from "@/grpcweb";
+import type { ComposedDatabase } from "@/types";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/plan_service";
 import type { VueClass } from "@/utils";
-import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
-import PlanCheckModal from "./PlanCheckModal.vue";
+import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";
+import PlanCheckRunModal from "./PlanCheckRunModal.vue";
+import { usePlanCheckRunContext } from "./context";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
-    allowRunChecks?: boolean;
-    labelClass?: VueClass;
-    planCheckRunList?: PlanCheckRun[];
+    allowRunChecks: boolean;
+    labelClass: VueClass;
+    planName: string;
+    planCheckRunList: PlanCheckRun[];
+    database: ComposedDatabase;
   }>(),
   {
     allowRunChecks: true,
@@ -56,19 +61,14 @@ withDefaults(
   }
 );
 
-const { issue, events } = useIssueContext();
+const { events } = usePlanCheckRunContext();
+
 const selectedType = ref<PlanCheckRun_Type>();
 
-const runChecks = () => {
-  const { plan } = issue.value;
-  if (!plan) {
-    notifyNotEditableLegacyIssue();
-    return;
-  }
-
-  planServiceClient.runPlanChecks({
-    name: plan,
+const runChecks = async () => {
+  await planServiceClient.runPlanChecks({
+    name: props.planName,
   });
-  events.emit("status-changed", { eager: true });
+  events.emit("status-changed");
 };
 </script>

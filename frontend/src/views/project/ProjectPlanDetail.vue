@@ -16,6 +16,7 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
+import Emittery from "emittery";
 import { NSpin } from "naive-ui";
 import { computed, reactive, toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -25,6 +26,10 @@ import {
   useInitializePlan,
 } from "@/components/Plan";
 import PlanDetailPage from "@/components/Plan/PlanDetailPage.vue";
+import {
+  providePlanCheckRunContext,
+  type PlanCheckRunEvents,
+} from "@/components/PlanCheckRun/context";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { UNKNOWN_ID } from "@/types";
 
@@ -54,6 +59,11 @@ const { isCreating, plan, isInitializing, reInitialize } = useInitializePlan(
 const ready = computed(() => {
   return !isInitializing.value && !!plan.value;
 });
+const planBaseContext = useBasePlanContext({
+  isCreating,
+  ready,
+  plan,
+});
 
 providePlanContext(
   {
@@ -61,11 +71,21 @@ providePlanContext(
     plan,
     ready,
     reInitialize,
-    ...useBasePlanContext({
-      isCreating,
-      ready,
-      plan,
-    }),
+    ...planBaseContext,
+  },
+  true /* root */
+);
+
+providePlanCheckRunContext(
+  {
+    events: (() => {
+      const emittery: PlanCheckRunEvents = new Emittery();
+      emittery.on("status-changed", () => {
+        // If the status of plan checks changes, trigger a refresh.
+        planBaseContext.events?.emit("status-changed", { eager: true });
+      });
+      return emittery;
+    })(),
   },
   true /* root */
 );

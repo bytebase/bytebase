@@ -72,9 +72,9 @@ import {
   isTaskFinished,
   isValidStage,
   planCheckRunListForTask,
-  planCheckRunSummaryForCheckRunList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { EMPTY_TASK_NAME } from "@/types";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";

@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { PlanCheckDetailTableRow } from "../PlanCheckDetail.vue";
+import type { PlanCheckDetailTableRow } from "../PlanCheckRunDetail.vue";
 
 const props = defineProps<{
   row: PlanCheckDetailTableRow;

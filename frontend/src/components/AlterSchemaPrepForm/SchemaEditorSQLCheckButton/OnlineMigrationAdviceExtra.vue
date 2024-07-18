@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { PlanCheckDetailTableRow } from "@/components/IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
+import type { PlanCheckDetailTableRow } from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 
 const props = defineProps<{
   row: PlanCheckDetailTableRow;

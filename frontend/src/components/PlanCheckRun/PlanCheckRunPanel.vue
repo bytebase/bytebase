@@ -6,47 +6,41 @@
       :items="tabItemList"
     />
 
-    <PlanCheckBadgeBar
+    <PlanCheckRunBadgeBar
       :plan-check-run-list="planCheckRunList"
       :selected-type="selectedTypeRef"
-      @select-type="(type) => (selectedTypeRef = type)"
+      @select-type="handlePlanCheckRunTypeChange"
     />
 
-    <PlanCheckDetail
+    <PlanCheckRunDetail
       v-if="selectedPlanCheckRun"
       :plan-check-run="selectedPlanCheckRun"
       :database="database"
       :show-code-location="isLatestPlanCheckRun"
-      @close="$emit('close')"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { first, orderBy } from "lodash-es";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { databaseForSpec } from "@/components/Plan/logic";
-import { usePlanContext } from "@/components/Plan/logic";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import { EMPTY_ID } from "@/types";
+import { type ComposedDatabase } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
 import { humanizeDate } from "@/utils";
-import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
-import PlanCheckDetail from "./PlanCheckDetail.vue";
+import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
+import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
+  database: ComposedDatabase;
   selectedType?: PlanCheckRun_Type;
-}>();
-
-defineEmits<{
-  (event: "close"): void;
 }>();
 
 const getInitialSelectedType = () => {
@@ -70,7 +64,6 @@ const getInitialSelectedType = () => {
 };
 
 const { t } = useI18n();
-const { plan, selectedSpec } = usePlanContext();
 const selectedTypeRef = ref<PlanCheckRun_Type>(getInitialSelectedType());
 
 const selectedPlanCheckRunList = computed(() => {
@@ -101,30 +94,23 @@ const isLatestPlanCheckRun = computed(() => {
 
 const tabItemList = computed(() => {
   return selectedPlanCheckRunList.value.map<TabFilterItem<string>>(
-    (checkRun, i) => {
+    (planCheckRun, i) => {
       const label =
         i === 0
           ? t("common.latest")
-          : checkRun.createTime
-            ? humanizeDate(checkRun.createTime)
-            : `UID(${checkRun.uid})`;
+          : planCheckRun.createTime
+            ? humanizeDate(planCheckRun.createTime)
+            : `UID(${planCheckRun.uid})`;
       return {
         label,
-        value: checkRun.uid,
+        value: planCheckRun.uid,
       };
     }
   );
 });
 
-watch(selectedPlanCheckRunList, (list) => {
-  selectedPlanCheckRunUID.value = first(list)?.uid;
-});
-
-const database = computed(() => {
-  const spec = selectedSpec.value;
-  if (!spec || spec.id === String(EMPTY_ID)) {
-    return;
-  }
-  return databaseForSpec(plan.value, spec);
-});
+const handlePlanCheckRunTypeChange = (type: PlanCheckRun_Type) => {
+  selectedTypeRef.value = type;
+  selectedPlanCheckRunUID.value = first(selectedPlanCheckRunList.value)?.uid;
+};
 </script>
