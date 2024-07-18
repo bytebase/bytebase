@@ -333,7 +333,8 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 
 			var blockedByPids pgtype.TextArray
 
-			var bs, xs, qs time.Time
+			var bs time.Time
+			var xs, qs *time.Time
 			if err := rows.Scan(
 				&s.Pid,
 				&blockedByPids,
@@ -358,8 +359,12 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 			}
 
 			s.BackendStart = timestamppb.New(bs)
-			s.XactStart = timestamppb.New(xs)
-			s.QueryStart = timestamppb.New(qs)
+			if xs != nil {
+				s.XactStart = timestamppb.New(*xs)
+			}
+			if qs != nil {
+				s.QueryStart = timestamppb.New(*qs)
+			}
 
 			if s.Pid == connID {
 				ss.Session = &s
