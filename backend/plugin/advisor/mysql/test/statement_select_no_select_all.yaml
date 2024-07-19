@@ -1,4 +1,5 @@
 - statement: SELECT * FROM t;
+  changeType: 0
   want:
     - status: 2
       code: 203
@@ -8,18 +9,14 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: SELECT a, b FROM t;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |
     SELECT a, b FROM t;
     SELECT * FROM t;
     SELECT a, b FROM (SELECT * from t1 JOIN t2) t;
+  changeType: 0
   want:
     - status: 2
       code: 203
@@ -29,6 +26,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 203
       title: statement.select.no-select-all
@@ -37,11 +35,13 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     SELECT a, b FROM t;
     SELECT * FROM t1
     UNION
     SELECT * FROM t2;
+  changeType: 0
   want:
     - status: 2
       code: 203
@@ -54,6 +54,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 203
       title: statement.select.no-select-all
@@ -65,11 +66,13 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
 - statement: |-
     SELECT a, b FROM t;
     WITH cte AS (
       SELECT * FROM a
     ) SELECT * FROM cte;
+  changeType: 0
   want:
     - status: 2
       code: 203
@@ -82,6 +85,7 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
     - status: 2
       code: 203
       title: statement.select.no-select-all
@@ -93,11 +97,13 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
 - statement: |-
     SELECT a, b FROM t;
     SELECT *
     FROM a
     INNER JOIN b USING(id);
+  changeType: 0
   want:
     - status: 2
       code: 203
@@ -110,3 +116,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

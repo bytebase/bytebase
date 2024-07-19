@@ -1,12 +1,7 @@
 - statement: ALTER TABLE tech_book ADD COLUMN c int;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ADD COLUMN c int DEFAULT 0;
+  changeType: 0
   want:
     - status: 2
       code: 210
@@ -16,3 +11,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

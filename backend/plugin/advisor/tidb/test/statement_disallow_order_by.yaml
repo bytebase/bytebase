@@ -1,12 +1,7 @@
 - statement: INSERT INTO tech_book values(1, 'a')
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: UPDATE tech_book SET name = 'my name' ORDER BY id
+  changeType: 0
   want:
     - status: 2
       code: 1104
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: DELETE FROM tech_book ORDER BY id
+  changeType: 0
   want:
     - status: 2
       code: 1105
@@ -26,3 +23,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

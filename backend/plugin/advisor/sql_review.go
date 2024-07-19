@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -493,9 +493,9 @@ func SQLReviewCheck(
 	ruleList []*storepb.SQLReviewRule,
 	checkContext SQLReviewCheckContext,
 ) ([]*storepb.Advice, error) {
-	ast, result := sm.GetAST(checkContext.DbType, statements)
+	ast, parseResult := sm.GetAST(checkContext.DbType, statements)
 	if ast == nil || len(ruleList) == 0 {
-		return result, nil
+		return parseResult, nil
 	}
 
 	finder := checkContext.Catalog.GetFinder()
@@ -506,6 +506,7 @@ func SQLReviewCheck(
 		}
 	}
 
+	var errorAdvices, warningAdvices []*storepb.Advice
 	for _, rule := range ruleList {
 		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DbType {
 			continue
@@ -550,26 +551,29 @@ func SQLReviewCheck(
 			return nil, errors.Wrap(err, "failed to check statement")
 		}
 
-		result = append(result, adviceList...)
+		for _, advice := range adviceList {
+			switch advice.Status {
+			case storepb.Advice_ERROR:
+				if len(errorAdvices) < common.MaximumAdvicePerStatus {
+					errorAdvices = append(errorAdvices, advice)
+				}
+			case storepb.Advice_WARNING:
+				if len(warningAdvices) < common.MaximumAdvicePerStatus {
+					warningAdvices = append(warningAdvices, advice)
+				}
+			default:
+			}
+		}
+		// Skip remaining rules if we have enough error and warning advices.
+		if len(errorAdvices) >= common.MaximumAdvicePerStatus && len(warningAdvices) >= common.MaximumAdvicePerStatus {
+			break
+		}
 	}
 
-	// There may be multiple syntax errors, return one only.
-	if len(result) > 0 && result[0].Title == SyntaxErrorTitle {
-		return result[:1], nil
-	}
-	sort.SliceStable(result, func(i, j int) bool {
-		// Error is 2, warning is 1. So the error (value 2) should come first.
-		return result[i].Status.Number() > result[j].Status.Number()
-	})
-	if len(result) == 0 {
-		result = append(result, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
-	return result, nil
+	var advices []*storepb.Advice
+	advices = append(advices, errorAdvices...)
+	advices = append(advices, warningAdvices...)
+	return advices, nil
 }
 
 func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err error) ([]*storepb.Advice, error) {

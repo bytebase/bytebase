@@ -2,6 +2,7 @@
     START TRANSACTION;
     CREATE TABLE techBook(id int, name varchar(255));
     COMMIT;
+  changeType: 0
   want:
     - status: 2
       code: 206
@@ -11,6 +12,7 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     START TRANSACTION;
     CREATE TABLE techBook(id int, name varchar(255));
@@ -19,6 +21,7 @@
     START TRANSACTION;
     INSERT INTO techBook(id, name) VALUES(1, "book");
     COMMIT;
+  changeType: 0
   want:
     - status: 2
       code: 206
@@ -28,6 +31,7 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
     - status: 2
       code: 206
       title: statement.disallow-commit
@@ -36,3 +40,4 @@
       startposition:
         line: 7
         column: 0
+      endposition: null

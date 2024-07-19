@@ -1,16 +1,11 @@
 - statement: CREATE TABLE t(a int COMMENT 'comments')
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(
             a int COMMENT 'some comments',
             b int,
             c int)
+  changeType: 0
   want:
     - status: 2
       code: 409
@@ -20,6 +15,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 408
       title: column.comment
@@ -28,6 +24,7 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
     - status: 2
       code: 408
       title: column.comment
@@ -36,9 +33,11 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int COMMENT 'comment');
     ALTER TABLE t ADD COLUMN b int
+  changeType: 0
   want:
     - status: 2
       code: 408
@@ -48,9 +47,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
     ALTER TABLE t CHANGE COLUMN a b int
+  changeType: 0
   want:
     - status: 2
       code: 409
@@ -60,6 +61,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 408
       title: column.comment
@@ -68,9 +70,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is comment');
     ALTER TABLE t MODIFY COLUMN b int
+  changeType: 0
   want:
     - status: 2
       code: 409
@@ -80,6 +84,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 408
       title: column.comment
@@ -88,9 +93,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is COMMENT');
     ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf'
+  changeType: 0
   want:
     - status: 2
       code: 409
@@ -100,6 +107,7 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
     - status: 2
       code: 409
       title: column.comment
@@ -108,3 +116,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

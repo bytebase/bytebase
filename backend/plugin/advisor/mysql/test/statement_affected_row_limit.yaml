@@ -1,16 +1,4 @@
 - statement: DELETE FROM tech_book WHERE a > 1;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: UPDATE tech_book SET id = 1;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

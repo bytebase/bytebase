@@ -1,12 +1,7 @@
 - statement: CREATE TABLE t(a int);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: SELECT RAND();
+  changeType: 0
   want:
     - status: 2
       code: 1702
@@ -16,12 +11,14 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE employee (
       id VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
       name VARCHAR(255),
       age INT
     );
+  changeType: 0
   want:
     - status: 2
       code: 1702
@@ -36,7 +33,9 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: SELECT SLEEP(5);
+  changeType: 0
   want:
     - status: 2
       code: 1702
@@ -46,3 +45,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

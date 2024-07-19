@@ -1,20 +1,9 @@
 - statement: CREATE DATABASE test WITH ENCODING 'UTF8'
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE DATABASE test
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE DATABASE test WITH ENCODING 'LATIN1'
+  changeType: 0
   want:
     - status: 2
       code: 1001
@@ -24,11 +13,6 @@
       startposition:
         line: 0
         column: 0
+      endposition: null
 - statement: /* this is a comment */
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

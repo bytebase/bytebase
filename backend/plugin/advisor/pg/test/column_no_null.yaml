@@ -3,6 +3,7 @@
       id int,
       name varchar(255)
     )
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -12,6 +13,7 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
     - status: 2
       code: 402
       title: column.no-null
@@ -20,7 +22,9 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int, name varchar(255), PRIMARY KEY (id))
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -30,7 +34,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -40,7 +46,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -50,15 +58,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ADD COLUMN reader int
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -68,26 +72,16 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE tech_book DROP COLUMN id;
     ALTER TABLE tech_book DROP COLUMN name;
     ALTER TABLE tech_book ADD COLUMN id int PRIMARY KEY, ADD COLUMN name varchar(255) NOT NULL;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ALTER COLUMN name DROP NOT NULL
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -97,11 +91,6 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: /* this is a comment */
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

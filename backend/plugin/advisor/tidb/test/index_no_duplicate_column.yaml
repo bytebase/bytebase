@@ -1,15 +1,10 @@
 - statement: CREATE TABLE t (a int, PRIMARY KEY (a))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t (
             a int,
             INDEX idx_a (a, a))
+  changeType: 0
   want:
     - status: 2
       code: 812
@@ -19,9 +14,11 @@
       startposition:
         line: 3
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     CREATE INDEX idx_a on t(a, a)
+  changeType: 0
   want:
     - status: 2
       code: 812
@@ -31,9 +28,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD INDEX idx_a (a, a)
+  changeType: 0
   want:
     - status: 2
       code: 812
@@ -43,9 +42,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD PRIMARY KEY pk_a (a, a)
+  changeType: 0
   want:
     - status: 2
       code: 812
@@ -55,9 +56,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD UNIQUE KEY uk_a (a, a)
+  changeType: 0
   want:
     - status: 2
       code: 812
@@ -67,9 +70,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD FOREIGN KEY fk_a (a, a) REFERENCES t1(a, b)
+  changeType: 0
   want:
     - status: 2
       code: 812
@@ -79,3 +84,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

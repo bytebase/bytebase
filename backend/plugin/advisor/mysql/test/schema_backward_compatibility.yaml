@@ -1,4 +1,5 @@
 - statement: ALTER TABLE tech_book CHANGE name f2 TEXT;
+  changeType: 0
   want:
     - status: 2
       code: 111
@@ -8,7 +9,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT;
+  changeType: 0
   want:
     - status: 2
       code: 111
@@ -18,7 +21,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT NULL;
+  changeType: 0
   want:
     - status: 2
       code: 111
@@ -28,7 +33,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT NOT NULL;
+  changeType: 0
   want:
     - status: 2
       code: 111
@@ -38,7 +45,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book MODIFY name TEXT COMMENT 'bla';
+  changeType: 0
   want:
     - status: 2
       code: 111
@@ -48,3 +57,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

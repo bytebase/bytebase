@@ -2,16 +2,11 @@
     CREATE TABLE foo(a INT);
     RENAME TABLE foo to foo_delete;
     DROP TABLE IF EXISTS foo_delete;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE foo(a INT);
     DROP TABLE IF EXISTS foo;
+  changeType: 0
   want:
     - status: 2
       code: 603
@@ -21,11 +16,13 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE foo(a INT);
     RENAME TABLE foo to foo_delete;
     CREATE TABLE bar(a INT);
     DROP TABLE IF EXISTS foo_delete, bar;
+  changeType: 0
   want:
     - status: 2
       code: 603
@@ -35,3 +32,4 @@
       startposition:
         line: 4
         column: 0
+      endposition: null

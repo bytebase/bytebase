@@ -1,4 +1,5 @@
 - statement: CREATE TABLE t(a int) COMMENT 'some comments'
+  changeType: 0
   want:
     - status: 2
       code: 606
@@ -8,7 +9,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(a int)
+  changeType: 0
   want:
     - status: 2
       code: 605
@@ -18,7 +21,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue'
+  changeType: 0
   want:
     - status: 2
       code: 606
@@ -28,3 +33,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

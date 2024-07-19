@@ -1,20 +1,9 @@
 - statement: CREATE TABLE abc.t(id INT PRIMARY KEY);
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE "TEST_DB".t(id INT)
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -24,29 +13,19 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(id INT);
                 DROP TABLE t
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT);
     ALTER TABLE t ADD CONSTRAINT tpk PRIMARY KEY (id)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
     ALTER TABLE t DROP PRIMARY KEY
+  changeType: 0
   want:
     - status: 2
       code: 601
@@ -56,3 +35,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

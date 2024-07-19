@@ -1,12 +1,7 @@
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id_name PRIMARY KEY (id, name)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ADD CONSTRAINT tech_book_id_name PRIMARY KEY (id, name)
+  changeType: 0
   want:
     - status: 2
       code: 306
@@ -16,7 +11,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT udmhjtnsaablcmjhqcznfiwtnevcehcvw PRIMARY KEY (id, name)
+  changeType: 0
   want:
     - status: 2
       code: 306
@@ -26,14 +23,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), CONSTRAINT pk_book_name PRIMARY KEY (name))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     -- this is the first line.
             CREATE TABLE book(
@@ -41,6 +33,7 @@
               name VARCHAR(20),
               CONSTRAINT tech_book_name PRIMARY KEY (name)
             )
+  changeType: 0
   want:
     - status: 2
       code: 306
@@ -50,31 +43,15 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), PRIMARY KEY (name))
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: CREATE TABLE book(id INT, name VARCHAR(20) PRIMARY KEY)
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id_name PRIMARY KEY USING INDEX old_index
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book PRIMARY KEY USING INDEX old_index
+  changeType: 0
   want:
     - status: 2
       code: 306
@@ -84,15 +61,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book_id_name
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book
+  changeType: 0
   want:
     - status: 2
       code: 306
@@ -102,15 +75,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book_id_name
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book
+  changeType: 0
   want:
     - status: 2
       code: 306
@@ -120,3 +89,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

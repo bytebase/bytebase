@@ -17,6 +17,7 @@
           WHERE FirstName = @FirstName AND LastName = @LastName;
     END
     GO
+  changeType: 0
   want:
     - status: 2
       code: 1701
@@ -26,3 +27,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null

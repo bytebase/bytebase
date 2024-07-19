@@ -93,14 +93,5 @@ func (*StatementDisallowMixDdlDmlAdvisor) Check(ctx advisor.Context, _ string) (
 		})
 	}
 
-	if len(adviceList) == 0 {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  storepb.Advice_SUCCESS,
-			Code:    advisor.Ok.Int32(),
-			Title:   "OK",
-			Content: "",
-		})
-	}
-
 	return adviceList, nil
 }

@@ -5,6 +5,7 @@
       Age INT,
       Address VARCHAR(200)
     );
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -14,6 +15,7 @@
       startposition:
         line: 4
         column: 0
+      endposition: null
     - status: 2
       code: 402
       title: column.no-null
@@ -22,6 +24,7 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE MyTable (
       Id INT,
@@ -30,6 +33,7 @@
       Address VARCHAR(200),
       PRIMARY KEY (Id, Age)
     );
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -39,7 +43,9 @@
       startposition:
         line: 5
         column: 0
+      endposition: null
 - statement: ALTER TABLE MyTable ALTER COLUMN Name VARCHAR(100) NULL;
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -49,15 +55,11 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE MyTable ALTER COLUMN Name VARCHAR(100) NOT NULL;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: ALTER TABLE MyTable ADD Age INT;
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -67,7 +69,9 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE MyTable ADD Age INT NULL;
+  changeType: 0
   want:
     - status: 2
       code: 402
@@ -77,11 +81,6 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
 - statement: ALTER TABLE MyTable ADD Age INT NOT NULL;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0

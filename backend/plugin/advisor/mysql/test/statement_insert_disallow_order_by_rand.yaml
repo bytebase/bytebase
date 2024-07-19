@@ -1,14 +1,9 @@
 - statement: INSERT INTO tech_book VALUES(1, "a");
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: |-
     INSERT INTO tech_book VALUES(1, "a");
     INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand();
+  changeType: 0
   want:
     - status: 2
       code: 1108
@@ -18,9 +13,11 @@
       startposition:
         line: 2
         column: 0
+      endposition: null
 - statement: |-
     INSERT INTO tech_book VALUES(1, "a");
     INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND() LIMIT 1;
+  changeType: 0
   want:
     - status: 2
       code: 1108
@@ -30,3 +27,4 @@
       startposition:
         line: 2
         column: 0
+      endposition: null

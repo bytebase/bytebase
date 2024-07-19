@@ -1,12 +1,7 @@
 - statement: SELECT * FROM t;
-  want:
-    - status: 1
-      code: 0
-      title: OK
-      content: ""
-      detail: ""
-      startposition: null
+  changeType: 0
 - statement: select name from hello join world on hello.id = world.id join baby on world.id = baby.id;
+  changeType: 0
   want:
     - status: 2
       code: 223
@@ -16,3 +11,4 @@
       startposition:
         line: 1
         column: 0
+      endposition: null
