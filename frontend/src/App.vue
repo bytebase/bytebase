@@ -56,6 +56,7 @@ import {
   useAuthStore,
   useNotificationStore,
   useSubscriptionV1Store,
+  useWorkspaceV1Store,
 } from "./store";
 import { isDev } from "./utils";
 
@@ -99,6 +100,9 @@ onMounted(async () => {
   await initBasicModules();
   initialized.value = true;
   prevLoggedIn.value = authStore.isLoggedIn();
+  if (prevLoggedIn.value) {
+    await useWorkspaceV1Store().fetchIamPolicy();
+  }
 
   setInterval(() => {
     if (!initialized.value) {
