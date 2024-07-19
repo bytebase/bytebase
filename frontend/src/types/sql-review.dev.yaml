@@ -472,7 +472,7 @@ ruleList:
     level: WARNING
     engine: ORACLE
   - type: statement.disallow-mix-ddl-dml
-    category: STATEMENT
+    level: WARNING
     engine: MSSQL
   - type: statement.prior-backup-check
     level: ERROR
