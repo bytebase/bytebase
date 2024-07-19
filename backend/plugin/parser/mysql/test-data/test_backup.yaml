@@ -1,78 +1,92 @@
+- input: |-
+    UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2;
+    UPDATE db2.t2 SET c1 = 1 WHERE c1 = 2;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_t1` LIKE `db1`.`t1`;
+        INSERT INTO `backupDB`.`_rollback_0_t1` SELECT `t1`.* FROM db1.t1 WHERE c1 = 2;
+      tablename: _rollback_0_t1
+      originalline: 1
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_1_t2` LIKE `db2`.`t2`;
+        INSERT INTO `backupDB`.`_rollback_1_t2` SELECT `t2`.* FROM db2.t2 WHERE c1 = 2;
+      tablename: _rollback_1_t2
+      originalline: 2
 - input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test, test2 as t2 where test.id = t2.id;
       tablename: _rollback_0_test
       originalline: 1
 - input: DELETE t1, t2 FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       tablename: _rollback_0_test
       originalline: 1
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `test2`;
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
         INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       tablename: _rollback_0_test2
       originalline: 1
 - input: DELETE FROM t1, t2 USING test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       tablename: _rollback_0_test
       originalline: 1
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `test2`;
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
         INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       tablename: _rollback_0_test2
       originalline: 1
 - input: DELETE FROM test as t1 WHERE t1.c1 = 1;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test as t1 WHERE t1.c1 = 1;
       tablename: _rollback_0_test
       originalline: 1
 - input: DELETE FROM test WHERE c1 = 1;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test WHERE c1 = 1;
       tablename: _rollback_0_test
       originalline: 1
 - input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `x`.* FROM test x WHERE x.c1 = 1;
       tablename: _rollback_0_test
       originalline: 1
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test WHERE c1=2;
       tablename: _rollback_0_test
       originalline: 1
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1 WHERE t1.c1 = t2.c1;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
       tablename: _rollback_0_test
       originalline: 1
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1, t2.c2 = 2 WHERE t1.c1 = t2.c1;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
       tablename: _rollback_0_test
       originalline: 1
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `test2`;
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
         INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
       tablename: _rollback_0_test2
       originalline: 1
@@ -81,12 +95,12 @@
     UPDATE test t2 SET t2.c1 = 3 WHERE t2.c1 = 5 ;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1 WHERE t1.c1 = 1;
       tablename: _rollback_0_test
       originalline: 1
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_1_test` LIKE `test`;
+        CREATE TABLE `backupDB`.`_rollback_1_test` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_1_test` SELECT `t2`.* FROM test t2 WHERE t2.c1 = 5;
       tablename: _rollback_1_test
       originalline: 2
