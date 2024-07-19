@@ -719,14 +719,6 @@ func Uniq[T comparable](array []T) []T {
 	return res
 }
 
-func IsNumber(v string) (int, bool) {
-	n, err := strconv.Atoi(v)
-	if err == nil {
-		return int(n), true
-	}
-	return 0, false
-}
-
 // ConvertBytesToUTF8String tries to decode a byte slice into a UTF-8 string using common encodings.
 func ConvertBytesToUTF8String(data []byte) (string, error) {
 	encodings := []encoding.Encoding{
