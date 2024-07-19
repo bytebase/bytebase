@@ -60,8 +60,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const logout = async () => {
     try {
       await axios.post("/v1/auth/logout");
-    } finally {
-    }
+    } catch {}
   };
 
   const activate = async (activateInfo: ActivateInfo) => {
