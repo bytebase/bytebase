@@ -838,7 +838,12 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}
 
-	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy.Policy)
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace policy, error: %v", err)
+	}
+
+	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy.Policy, workspacePolicy.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if principal can approve step, error: %v", err)
 	}
@@ -1052,7 +1057,12 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}
 
-	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy.Policy)
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get workspace policy, error: %v", err)
+	}
+
+	canApprove, err := isUserReviewer(ctx, s.store, step, user, policy.Policy, workspacePolicy.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if principal can reject step, error: %v", err)
 	}
@@ -1714,7 +1724,7 @@ func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) b
 	return issueCreator.ID == user.ID
 }
 
-func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.ApprovalStep, user *store.UserMessage, policy *storepb.IamPolicy) (bool, error) {
+func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.ApprovalStep, user *store.UserMessage, policies ...*storepb.IamPolicy) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
@@ -1726,7 +1736,7 @@ func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.Appr
 		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
 	}
 
-	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, policy)
+	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, policies...)
 
 	switch val := node.Payload.(type) {
 	case *storepb.ApprovalNode_GroupValue_:
