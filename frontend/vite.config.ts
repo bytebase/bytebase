@@ -5,8 +5,8 @@ import vueJsx from "@vitejs/plugin-vue-jsx";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
 import { fileURLToPath, URL } from "node:url";
 import { resolve } from "path";
-import IconsResolver from "unplugin-icons/resolver";
 import Icons from "unplugin-icons/vite";
+import IconsResolver from "unplugin-icons/resolver";
 import Components from "unplugin-vue-components/vite";
 import { defineConfig } from "vite";
 
@@ -35,7 +35,7 @@ export default defineConfig({
       strictMessage: false,
     }),
     Components({
-      dirs: [resolve("src/components"), resolve("src/bbkit")],
+      // dirs: [resolve("src/components"), resolve("src/bbkit")],
       // auto import icons
       resolvers: [
         IconsResolver({
