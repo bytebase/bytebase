@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -80,21 +79,11 @@ func (s *WorksheetService) CreateWorksheet(ctx context.Context, request *v1pb.Cr
 		}
 
 		find := &store.FindDatabaseMessage{
-			ProjectID:  &projectResourceID,
-			InstanceID: &instanceResourceID,
+			ProjectID:           &projectResourceID,
+			InstanceID:          &instanceResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		}
-		// It's chaos. We return /instance/{resource id}/databases/{uid} database in find worksheet request,
-		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}, sometimes the name will convert to int id incorrectly.
-		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
-		// We need to remove legacy code after the migration.
-		dbUID, isNumber := utils.IsNumber(databaseName)
-		if instanceResourceID == "-" && isNumber {
-			find.UID = &dbUID
-		} else {
-			find.DatabaseName = &databaseName
-			find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
-		}
-
 		database, err := s.store.GetDatabaseV2(ctx, find)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database with name %q, err: %s", databaseName, err.Error()))
