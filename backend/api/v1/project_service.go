@@ -1352,6 +1352,101 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
+func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.IamPolicy) []*v1pb.BindingDeltas {
+	// iamPolicyMessage *storepb.IamPolicy
+	deltas := []*v1pb.BindingDeltas{}
+	// for _, oriBinding := range oriIamPolicy.Bindings {
+	// 	containBinding := false
+	// 	for _, newBinding := range newIamPolicy.Bindings {
+
+	// 	}
+	// }
+	// A - B.
+	for _, ba := range oriIamPolicy.Bindings {
+		for _, bb := range newIamPolicy.Bindings {
+			if ba.Role == bb.Role && ba.Condition == bb.Condition {
+				// compare diffs.
+			} else {
+				// add.
+				for _, mem := range ba.Members {
+					deltas = append(deltas, &v1pb.BindingDeltas{
+						Action:    "REMOVE",
+						Member:    mem,
+						Role:      ba.Role,
+						Condition: ba.Condition,
+					})
+				}
+			}
+		}
+	}
+
+	// B - A.
+	for _, bb := range newIamPolicy.Bindings {
+		for _, ba := range oriIamPolicy.Bindings {
+			if ba.Role != bb.Role || ba.Condition != bb.Condition {
+				for _, mem := range ba.Members {
+					deltas = append(deltas, &v1pb.BindingDeltas{
+						Action:    "ADD",
+						Member:    mem,
+						Role:      ba.Role,
+						Condition: ba.Condition,
+					})
+				}
+			}
+		}
+
+		// if ba.Role == bb.Role && ba.Condition == bb.Condition {
+
+		// } else {
+			// add.
+			for _, mem := range ba.Members {
+				deltas = append(deltas, &v1pb.BindingDeltas{
+					Action:    "ADD",
+					Member:    mem,
+					Role:      ba.Role,
+					Condition: ba.Condition,
+				})
+			}
+		}
+	}
+
+	return nil
+}
+
+func isBindingEqual(a, b *v1pb.Binding) bool {
+	return a.Role == b.Role && a.Condition == b.Condition
+}
+
+// func bindingsSubstruct(a, b []*v1pb.Binding) {
+
+// }
+
+func sliceSubstruct(a, b []string) []string {
+	ret := []string{}
+	for _, sa := range a {
+		contains := false
+		for _, sb := range b {
+			if sb == sa {
+				contains = true
+				continue
+			}
+		}
+		if !contains {
+			ret = append(ret, sa)
+		}
+	}
+	return ret
+}
+
+func hasSliceContained(target string, slice []string) bool {
+	for _, str := range slice {
+		if target == str {
+			return true
+		}
+	}
+	return false
+}
+
 func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *storepb.IamPolicy) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 

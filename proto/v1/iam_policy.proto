@@ -28,6 +28,8 @@ message IamPolicy {
   // Collection of binding.
   // A binding binds one or more project members to a single project role.
   repeated Binding bindings = 1;
+  
+  repeated BindingDeltas bindingDeltas = 2;
 }
 
 message Binding {
@@ -47,4 +49,11 @@ message Binding {
 
   // The parsed expression of the condition.
   google.api.expr.v1alpha1.ParsedExpr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message BindingDeltas {
+  string action = 1;
+  string member = 2;
+  string role = 3;
+  google.type.Expr condition = 4;
 }

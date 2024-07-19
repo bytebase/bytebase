@@ -241,6 +241,7 @@
   
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
+    - [BindingDeltas](#bytebase-v1-BindingDeltas)
     - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [IamPolicy](#bytebase-v1-IamPolicy)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
@@ -4299,6 +4300,24 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
+<a name="bytebase-v1-BindingDeltas"></a>
+
+### BindingDeltas
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [string](#string) |  |  |
+| member | [string](#string) |  |  |
+| role | [string](#string) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetIamPolicyRequest"></a>
 
 ### GetIamPolicyRequest
@@ -4323,6 +4342,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
+| bindingDeltas | [BindingDeltas](#bytebase-v1-BindingDeltas) | repeated |  |
 
 
 
