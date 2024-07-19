@@ -166,8 +166,8 @@ const overrideCustomFeatureMatrix = () => {
       "bb.custom-feature.hide-quick-start": true,
       "bb.custom-feature.hide-release-remind": true,
       "bb.custom-feature.disallow-share-worksheet": true,
-      "bb.custom-feature.disallow-navigate-to-sql-editor": true,
       "bb.custom-feature.disallow-navigate-to-console": true,
+      "bb.custom-feature.disallow-navigate-away-sql-editor": true,
     });
   }
   const customTheme = query.get("customTheme");
@@ -177,8 +177,8 @@ const overrideCustomFeatureMatrix = () => {
       "bb.custom-feature.disallow-export-query-data": true,
       "bb.custom-feature.custom-color-scheme": {
         "--color-accent": "#00665f",
-        "--color-accent-disabled": "#b8c3c3",
         "--color-accent-hover": "#00554f",
+        "--color-accent-disabled": "#b8c3c3",
       },
     });
     if (
