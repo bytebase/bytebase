@@ -1314,16 +1314,10 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	projectUID, isNumber := utils.IsNumber(projectID)
 	find := &store.FindProjectMessage{
+		ResourceID:  &projectID,
 		ShowDeleted: true,
 	}
-	if isNumber {
-		find.UID = &projectUID
-	} else {
-		find.ResourceID = &projectID
-	}
-
 	project, err := s.store.GetProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
