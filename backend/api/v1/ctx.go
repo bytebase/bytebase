@@ -248,6 +248,8 @@ func (*ContextProvider) getProjectIDsForChangelistService(_ context.Context, req
 	switch r := req.(type) {
 	case *v1pb.CreateChangelistRequest:
 		projects = append(projects, r.GetParent())
+	case *v1pb.ListChangelistsRequest:
+		projects = append(projects, r.GetParent())
 	case *v1pb.GetChangelistRequest:
 		changelists = append(changelists, r.GetName())
 	}
