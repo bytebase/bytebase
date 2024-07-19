@@ -76,7 +76,7 @@ const columnList = computed(() => [
     title: t("debug-log.table.request-path"),
   },
   {
-    title: t("debug-log.table.user"),
+    title: t("common.user"),
   },
   {
     title: t("debug-log.table.error"),
