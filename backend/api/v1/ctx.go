@@ -423,6 +423,8 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		projectWebhooks = append(projectWebhooks, r.GetWebhook().GetName())
 	case *v1pb.TestWebhookRequest:
 		projects = append(projects, r.GetProject())
+	case *v1pb.ListDatabaseGroupsRequest:
+		projects = append(projects, r.GetParent())
 	case *v1pb.GetDatabaseGroupRequest:
 		databaseGroups = append(databaseGroups, r.GetName())
 	case *v1pb.CreateDatabaseGroupRequest:

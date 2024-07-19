@@ -160,7 +160,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.DatabaseService_SearchDatabases_FullMethodName,
 		v1pb.IssueService_ListIssues_FullMethodName,
 		v1pb.IssueService_SearchIssues_FullMethodName,
-		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
+
 		v1pb.ProjectService_SearchProjects_FullMethodName,
 		v1pb.PlanService_ListPlans_FullMethodName,
 		v1pb.PlanService_SearchPlans_FullMethodName,
