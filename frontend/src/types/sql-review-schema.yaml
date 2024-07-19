@@ -597,6 +597,9 @@
 - type: statement.disallow-mix-ddl-dml
   category: STATEMENT
   engine: ORACLE
+- type: statement.disallow-mix-ddl-dml
+  category: STATEMENT
+  engine: MSSQL
 - type: statement.prior-backup-check
   category: STATEMENT
   engine: MYSQL
