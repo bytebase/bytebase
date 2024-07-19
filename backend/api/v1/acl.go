@@ -56,7 +56,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.aclInterceptorDo(ctx, serverInfo.FullMethod, request, user); err != nil {
+	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.aclInterceptorDo(ctx, serverInfo.FullMethod, request, user); err != nil {
+	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user); err != nil {
 		return err
 	}
 
@@ -103,10 +103,6 @@ type overrideStream struct {
 
 func (s overrideStream) Context() context.Context {
 	return s.childCtx
-}
-
-func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod string, request any, user *store.UserMessage) error {
-	return in.checkIAMPermission(ctx, fullMethod, request, user)
 }
 
 func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, error) {
