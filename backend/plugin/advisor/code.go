@@ -779,4 +779,7 @@ const (
 	MSSQLStatementWhereDisallowFunctionsAndCalculations Type = "bb.plugin.advisor.mssql.statement.disallow-functions-and-calculations"
 
 	MSSQLIndexNotRedundant Type = "bb.plugin.advisor.mssql.index.not-redundant"
+
+	// MSSQLStatementDisallowMixDDLDML is an advisor type for MSSQL disallow mix DDL and DML.
+	MSSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mssql.statement.disallow-mix-ddl-dml"
 )
