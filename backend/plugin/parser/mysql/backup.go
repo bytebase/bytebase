@@ -41,6 +41,7 @@ const (
 )
 
 type TableReference struct {
+	Database      string
 	Table         string
 	Alias         string
 	StatementType StatementType
@@ -100,7 +101,7 @@ func generateSQL(statementInfoList []statementInfo, databaseName string, tablePr
 		// If enforce_gtid_consistency = true on MySQL 5.6+, we cannot run CREATE TABLE .. AS SELECT.
 		// So we need to create the table first and then run INSERT INTO .. SELECT.
 		var buf strings.Builder
-		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`;\n", databaseName, targetTable, table.Table)); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
 		tableNameOrAlias := table.Table
@@ -264,11 +265,16 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 			alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
 		}
 
+		if len(database) == 0 {
+			database = l.databaseName
+		}
+
 		l.tables = append(l.tables, statementInfo{
 			offset:    l.offset,
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table: &TableReference{
+				Database:      database,
 				Table:         table,
 				Alias:         alias,
 				StatementType: StatementTypeDelete,
@@ -375,8 +381,12 @@ func (l *singleTableListener) EnterSingleTable(ctx *parser.SingleTableContext) {
 	if len(database) > 0 && database != l.databaseName {
 		l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
 	}
+	if len(database) == 0 {
+		database = l.databaseName
+	}
 	table := &TableReference{
-		Table: tableName,
+		Database: database,
+		Table:    tableName,
 	}
 
 	if ctx.TableAlias() != nil {
