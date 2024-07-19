@@ -749,7 +749,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | ----- | ---- | ----- | ----------- |
 | record_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | request_path | [string](#string) |  |  |
-| role | [string](#string) |  |  |
+| user | [string](#string) |  |  |
 | error | [string](#string) |  |  |
 | stack_trace | [string](#string) |  |  |
 

@@ -2895,7 +2895,6 @@
       "record-ts": "Hora",
       "method": "Método",
       "request-path": "Ruta de solicitud",
-      "role": "Rol",
       "error": "Error",
       "stack-trace": "Rastreo de pila",
       "empty": "<Vacío>",
