@@ -30,6 +30,7 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementDisallowCrossDBQueries,
 		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
 		advisor.SchemaRuleIndexNotRedundant,
+		advisor.SchemaRuleStatementDisallowMixDDLDML,
 	}
 
 	for _, rule := range mssqlRules {
