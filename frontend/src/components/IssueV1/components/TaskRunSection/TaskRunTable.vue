@@ -38,9 +38,9 @@
   <Drawer v-model:show="taskRunDetailContext.show">
     <DrawerContent
       :title="$t('common.detail')"
-      style="width: calc(100vw - 8rem)"
+      style="width: calc(100vw - 14rem)"
     >
-      <TaskRunLogTable
+      <TaskRunDetail
         v-if="taskRunDetailContext.taskRun"
         :key="taskRunDetailContext.taskRun.name"
         :task-run="taskRunDetailContext.taskRun"
@@ -61,7 +61,7 @@ import { Duration } from "@/types/proto/google/protobuf/duration";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import TaskRunComment from "./TaskRunComment.vue";
-import TaskRunLogTable from "./TaskRunLogTable";
+import TaskRunDetail from "./TaskRunDetail.vue";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
 defineOptions({
@@ -119,9 +119,7 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   if (startTime.getTime() === 0) {
     return undefined;
   }
-  if (
-    taskRun.status === TaskRun_Status.RUNNING
-  ) {
+  if (taskRun.status === TaskRun_Status.RUNNING) {
     const elapsedMS = Date.now() - startTime.getTime();
     return Duration.fromPartial({
       seconds: Math.floor(elapsedMS / 1000),
