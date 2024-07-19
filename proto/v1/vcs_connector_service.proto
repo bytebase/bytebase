@@ -69,7 +69,6 @@ message GetVCSConnectorRequest {
 message ListVCSConnectorsRequest {
   // The parent, which owns this collection of vcsConnectors.
   // Format: projects/{project}
-  // Use "projects/-" to list all vcsConnectors.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of databases to return. The service may return fewer than

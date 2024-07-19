@@ -151,7 +151,6 @@ type ListVCSConnectorsRequest struct {
 
 	// The parent, which owns this collection of vcsConnectors.
 	// Format: projects/{project}
-	// Use "projects/-" to list all vcsConnectors.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of databases to return. The service may return fewer than
 	// this value.
