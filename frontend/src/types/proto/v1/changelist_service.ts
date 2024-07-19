@@ -39,7 +39,6 @@ export interface ListChangelistsRequest {
   /**
    * The parent, which owns this collection of changelists.
    * Format: projects/{project}
-   * Use "projects/-" to list all changelists.
    */
   parent: string;
   /**
