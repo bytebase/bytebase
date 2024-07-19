@@ -136,7 +136,7 @@ const logKeyMap = {
   recordTime: t("debug-log.table.record-ts"),
   method: t("debug-log.table.method"),
   requestPath: t("debug-log.table.request-path"),
-  role: t("debug-log.table.role"),
+  user: t("common.user"),
   error: t("debug-log.table.error"),
   stackTrace: t("debug-log.table.stack-trace"),
 };

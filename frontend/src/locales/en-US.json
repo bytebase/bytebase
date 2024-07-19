@@ -2895,7 +2895,6 @@
       "record-ts": "Time",
       "method": "Method",
       "request-path": "Request path",
-      "role": "Role",
       "error": "Error",
       "stack-trace": "Stack trace",
       "empty": "<Empty>",

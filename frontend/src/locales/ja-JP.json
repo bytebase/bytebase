@@ -2895,7 +2895,6 @@
       "record-ts": "時間",
       "method": "方法",
       "request-path": "リクエストパス",
-      "role": "役割",
       "error": "間違った情報",
       "stack-trace": "コールスタック",
       "empty": "<なし>",
