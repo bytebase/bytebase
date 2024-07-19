@@ -223,14 +223,9 @@ func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteReques
 		}
 	}
 
-	find := &store.FindInstanceMessage{}
-	instanceUID, isNumber := utils.IsNumber(instanceID)
-	if isNumber {
-		find.UID = &instanceUID
-	} else {
-		find.ResourceID = &instanceID
+	find := &store.FindInstanceMessage{
+		ResourceID: &instanceID,
 	}
-
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
@@ -1029,14 +1024,9 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 		databaseName = requestDatabaseName
 	}
 
-	find := &store.FindInstanceMessage{}
-	instanceUID, isNumber := utils.IsNumber(instanceID)
-	if isNumber {
-		find.UID = &instanceUID
-	} else {
-		find.ResourceID = &instanceID
+	find := &store.FindInstanceMessage{
+		ResourceID: &instanceID,
 	}
-
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())

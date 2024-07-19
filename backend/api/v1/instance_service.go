@@ -27,7 +27,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -996,19 +995,10 @@ func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var project *store.ProjectMessage
-	projectUID, isNumber := utils.IsNumber(projectID)
-	if isNumber {
-		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID:         &projectUID,
-			ShowDeleted: true,
-		})
-	} else {
-		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID:  &projectID,
-			ShowDeleted: true,
-		})
-	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -1025,14 +1015,9 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	find := &store.FindInstanceMessage{}
-	instanceUID, isNumber := utils.IsNumber(instanceID)
-	if isNumber {
-		find.UID = &instanceUID
-	} else {
-		find.ResourceID = &instanceID
+	find := &store.FindInstanceMessage{
+		ResourceID: &instanceID,
 	}
-
 	instance, err := stores.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
