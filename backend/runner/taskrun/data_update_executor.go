@@ -183,35 +183,35 @@ func (exec *DataUpdateExecutor) backupData(
 
 	for _, statement := range statements {
 		if _, err := driver.Execute(driverCtx, statement.Statement, db.ExecuteOptions{}); err != nil {
-			return err
+			return errors.Wrapf(err, "failed to execute backup statement %q", statement.Statement)
 		}
 		var originalLine *int32
 		switch instance.Engine {
 		case storepb.Engine_TIDB:
 			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
-				return err
+				return errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_MYSQL:
 			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
-				return err
+				return errors.Wrap(err, "failed to set table comment")
 			}
 			num := int32(statement.OriginalLine)
 			originalLine = &num
 		case storepb.Engine_MSSQL:
 			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, statement.TableName), db.ExecuteOptions{}); err != nil {
-				return err
+				return errors.Wrap(err, "failed to set table comment")
 			}
 			num := int32(statement.OriginalLine)
 			originalLine = &num
 		case storepb.Engine_POSTGRES:
 			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
-				return err
+				return errors.Wrap(err, "failed to set table comment")
 			}
 			num := int32(statement.OriginalLine)
 			originalLine = &num
 		case storepb.Engine_ORACLE:
 			if _, err := driver.Execute(driverCtx, fmt.Sprintf("COMMENT ON TABLE %s.%s IS 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
-				return err
+				return errors.Wrap(err, "failed to set table comment")
 			}
 			num := int32(statement.OriginalLine)
 			originalLine = &num
