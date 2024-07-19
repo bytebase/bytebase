@@ -669,6 +669,9 @@ const (
 	// OracleStatementDMLDryRun is an advisor type for Oracle DML dry run.
 	OracleStatementDMLDryRun Type = "bb.plugin.advisor.oracle.statement.dml-dry-run"
 
+	// OracleStatementDisallowMixDDLDML is an advisor type for Oracle disallow mix DDL and DML.
+	OracleStatementDisallowMixDDLDML Type = "bb.plugin.advisor.oracle.statement.disallow-mix-ddl-dml"
+
 	// Snowflake Advisor.
 
 	// SnowflakeSyntax is an advisor type for Snowflake syntax.
