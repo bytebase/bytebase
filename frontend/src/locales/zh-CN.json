@@ -2895,7 +2895,6 @@
       "record-ts": "时间",
       "method": "方法",
       "request-path": "请求路径",
-      "role": "角色",
       "error": "错误消息",
       "stack-trace": "调用栈",
       "empty": "<无>",
