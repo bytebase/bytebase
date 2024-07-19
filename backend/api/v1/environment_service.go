@@ -12,7 +12,6 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -211,16 +210,10 @@ func (s *EnvironmentService) getEnvironmentMessage(ctx context.Context, name str
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environmentUID, isNumber := utils.IsNumber(environmentID)
 	find := &store.FindEnvironmentMessage{
+		ResourceID:  &environmentID,
 		ShowDeleted: true,
 	}
-	if isNumber {
-		find.UID = &environmentUID
-	} else {
-		find.ResourceID = &environmentID
-	}
-
 	environment, err := s.store.GetEnvironmentV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
