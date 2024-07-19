@@ -60,7 +60,7 @@ export interface ListDebugLogResponse {
 export interface DebugLog {
   recordTime: Date | undefined;
   requestPath: string;
-  role: string;
+  user: string;
   error: string;
   stackTrace: string;
 }
@@ -482,7 +482,7 @@ export const ListDebugLogResponse = {
 };
 
 function createBaseDebugLog(): DebugLog {
-  return { recordTime: undefined, requestPath: "", role: "", error: "", stackTrace: "" };
+  return { recordTime: undefined, requestPath: "", user: "", error: "", stackTrace: "" };
 }
 
 export const DebugLog = {
@@ -493,8 +493,8 @@ export const DebugLog = {
     if (message.requestPath !== "") {
       writer.uint32(18).string(message.requestPath);
     }
-    if (message.role !== "") {
-      writer.uint32(26).string(message.role);
+    if (message.user !== "") {
+      writer.uint32(26).string(message.user);
     }
     if (message.error !== "") {
       writer.uint32(34).string(message.error);
@@ -531,7 +531,7 @@ export const DebugLog = {
             break;
           }
 
-          message.role = reader.string();
+          message.user = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -560,7 +560,7 @@ export const DebugLog = {
     return {
       recordTime: isSet(object.recordTime) ? fromJsonTimestamp(object.recordTime) : undefined,
       requestPath: isSet(object.requestPath) ? globalThis.String(object.requestPath) : "",
-      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      user: isSet(object.user) ? globalThis.String(object.user) : "",
       error: isSet(object.error) ? globalThis.String(object.error) : "",
       stackTrace: isSet(object.stackTrace) ? globalThis.String(object.stackTrace) : "",
     };
@@ -574,8 +574,8 @@ export const DebugLog = {
     if (message.requestPath !== "") {
       obj.requestPath = message.requestPath;
     }
-    if (message.role !== "") {
-      obj.role = message.role;
+    if (message.user !== "") {
+      obj.user = message.user;
     }
     if (message.error !== "") {
       obj.error = message.error;
@@ -593,7 +593,7 @@ export const DebugLog = {
     const message = createBaseDebugLog();
     message.recordTime = object.recordTime ?? undefined;
     message.requestPath = object.requestPath ?? "";
-    message.role = object.role ?? "";
+    message.user = object.user ?? "";
     message.error = object.error ?? "";
     message.stackTrace = object.stackTrace ?? "";
     return message;

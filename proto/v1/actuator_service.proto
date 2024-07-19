@@ -88,7 +88,7 @@ message DebugLog {
 
   string request_path = 2;
 
-  string role = 3;
+  string user = 3;
 
   string error = 4;
 
