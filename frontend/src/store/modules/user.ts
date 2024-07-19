@@ -23,12 +23,8 @@ export const useUserStore = defineStore("user", () => {
   const userMapByName = ref<Map<string, ComposedUser>>(new Map());
   const workspaceStore = useWorkspaceV1Store();
 
-  const iamPolicy = computed(() => {
-    return workspaceStore.workspaceIamPolicy;
-  });
-
   const setUser = (user: User) => {
-    const roles = roleListInIAM(iamPolicy.value, user.email);
+    const roles = roleListInIAM(workspaceStore.workspaceIamPolicy, user.email);
     const composedUser: ComposedUser = {
       ...user,
       roles,
