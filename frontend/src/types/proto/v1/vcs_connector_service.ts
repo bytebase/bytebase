@@ -39,7 +39,6 @@ export interface ListVCSConnectorsRequest {
   /**
    * The parent, which owns this collection of vcsConnectors.
    * Format: projects/{project}
-   * Use "projects/-" to list all vcsConnectors.
    */
   parent: string;
   /**
