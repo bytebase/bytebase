@@ -69,7 +69,6 @@ message GetChangelistRequest {
 message ListChangelistsRequest {
   // The parent, which owns this collection of changelists.
   // Format: projects/{project}
-  // Use "projects/-" to list all changelists.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of databases to return. The service may return fewer than

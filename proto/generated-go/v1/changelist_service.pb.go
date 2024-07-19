@@ -151,7 +151,6 @@ type ListChangelistsRequest struct {
 
 	// The parent, which owns this collection of changelists.
 	// Format: projects/{project}
-	// Use "projects/-" to list all changelists.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of databases to return. The service may return fewer than
 	// this value.
