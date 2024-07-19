@@ -121,36 +121,22 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
-	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionChangelistsList)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	find := &store.FindChangelistMessage{
-		ProjectIDs: projectIDs,
-	}
-	if projectResourceID != "-" {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectResourceID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
-		}
-		if project.Deleted {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
-		}
-		find.ProjectID = &projectResourceID
-	}
-	changelists, err := s.store.ListChangelists(ctx, find)
+	changelists, err := s.store.ListChangelists(ctx, &store.FindChangelistMessage{
+		ProjectID: &projectResourceID,
+	})
 	if err != nil {
 		return nil, err
 	}
