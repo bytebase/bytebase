@@ -1,3 +1,45 @@
+- input: SELECT c1 as eid, c2 as xid FROM t2 GROUP BY |
+  want:
+    - text: SCHEMA1
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA2
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA3
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: T1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: T2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: C1
+      type: COLUMN
+      definition: T2 | int, NOT NULL
+      comment: ""
+    - text: C2
+      type: COLUMN
+      definition: T2 | int, NOT NULL
+      comment: ""
+    - text: EID
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: XID
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: V1
+      type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT c1 as eid, c2 as xid FROM t2 ORDER BY |
   want:
     - text: SCHEMA1
@@ -28,6 +70,14 @@
       type: COLUMN
       definition: T2 | int, NOT NULL
       comment: ""
+    - text: EID
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: XID
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: V1
       type: VIEW
       definition: ""
@@ -57,6 +107,10 @@
     - text: C1
       type: COLUMN
       definition: T1 | int, NOT NULL
+      comment: ""
+    - text: EID
+      type: COLUMN
+      definition: ""
       comment: ""
     - text: V1
       type: VIEW

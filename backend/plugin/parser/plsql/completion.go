@@ -190,9 +190,9 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		newIgnoredTokens(),
 		newPreferredRules(),
 		&globalFollowSetsByState,
-		0, // todo
-		0, // todo
-		0, // todo
+		plsql.PlSqlParserRULE_query_block,
+		plsql.PlSqlParserRULE_select_statement,
+		plsql.PlSqlParserRULE_column_alias,
 		0, // todo
 	)
 	return &Completer{
@@ -219,9 +219,9 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		newIgnoredTokens(),
 		newPreferredRules(),
 		&globalFollowSetsByState,
-		0, // todo
-		0, // todo
-		0, // todo
+		plsql.PlSqlParserRULE_query_block,
+		plsql.PlSqlParserRULE_select_statement,
+		plsql.PlSqlParserRULE_column_alias,
 		0, // todo
 	)
 	return &Completer{
@@ -619,9 +619,65 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	return result, nil
 }
 
-func (*Completer) fetchSelectItemAliases(_ []*base.RuleContext) []string {
-	// todo
+func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
+	canUseAliases := false
+	for i := len(ruleStack) - 1; i >= 0; i-- {
+		switch ruleStack[i].ID {
+		case plsql.PlSqlParserRULE_group_by_clause, plsql.PlSqlParserRULE_order_by_clause:
+			canUseAliases = true
+		case plsql.PlSqlParserRULE_query_block, plsql.PlSqlParserRULE_select_statement:
+			if !canUseAliases {
+				return nil
+			}
+			aliasMap := make(map[string]bool)
+			for pos := range ruleStack[i].SelectItemAliases {
+				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+					aliasMap[aliasText] = true
+				}
+			}
+
+			var result []string
+			for alias := range aliasMap {
+				result = append(result, alias)
+			}
+			sort.Slice(result, func(i, j int) bool {
+				return result[i] < result[j]
+			})
+			return result
+		}
+	}
 	return nil
+}
+
+func (c *Completer) extractAliasText(pos int) string {
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return ""
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := plsql.NewPlSqlLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := plsql.NewPlSqlParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	tree := parser.Column_alias()
+
+	listener := &AliasListener{}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	return listener.result
+}
+
+type AliasListener struct {
+	*plsql.BasePlSqlParserListener
+
+	result string
+}
+
+func (l *AliasListener) EnterColumn_alias(ctx *plsql.Column_aliasContext) {
+	l.result = normalizeColumnAlias(ctx)
 }
 
 type ObjectFlags int
