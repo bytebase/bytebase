@@ -29,10 +29,19 @@ const isLoading = ref(false);
 
 const taskRunSession = computedAsync(
   async () => {
+    if (!showSessionTables.value) {
+      return undefined;
+    }
+
     try {
-      const session = await rolloutServiceClient.getTaskRunSession({
-        parent: props.taskRun.name,
-      });
+      const session = await rolloutServiceClient.getTaskRunSession(
+        {
+          parent: props.taskRun.name,
+        },
+        {
+          silent: true,
+        }
+      );
       return session;
     } catch (error) {
       return undefined;
