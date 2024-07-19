@@ -12,7 +12,7 @@
       </BBAttention>
     </HideInStandaloneMode>
     <QuickActionPanel
-      v-if="showQuickActionPanel"
+      v-if="!hideQuickActionPanel"
       :quick-action-list="quickActionList"
       class="mb-4"
     />
@@ -37,13 +37,10 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
-import { useProjectV1Store, useCurrentUserV1, usePageMode } from "@/store";
+import { useProjectV1Store, useCurrentUserV1, useCustomFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { QuickActionType } from "@/types";
-import {
-  DEFAULT_PROJECT_NAME,
-  QuickActionProjectPermissionMap,
-} from "@/types";
+import { DEFAULT_PROJECT_NAME, QuickActionProjectPermissionMap } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -55,8 +52,8 @@ const route = useRoute();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-const pageMode = usePageMode();
 const recentProjects = useRecentProjects();
+const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
@@ -152,7 +149,7 @@ const quickActionList = computed(() => {
   return [];
 });
 
-const showQuickActionPanel = computed(() => {
-  return pageMode.value === "BUNDLED" && quickActionList.value.length > 0;
+const hideQuickActionPanel = computed(() => {
+  return inIframe.value || quickActionList.value.length === 0;
 });
 </script>

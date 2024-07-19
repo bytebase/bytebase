@@ -105,7 +105,7 @@ import {
   useGracefulRequest,
   useDBSchemaV1Store,
   pushNotification,
-  usePageMode,
+  useCustomFeature,
 } from "@/store";
 import type { ComposedDatabase, ProjectPermission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
@@ -168,9 +168,7 @@ const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
-const pageMode = usePageMode();
-
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
+const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
@@ -295,7 +293,7 @@ const generateMultiDb = async (
     props.databases.length === 1 &&
     type === "bb.issue.database.schema.update" &&
     allowUsingSchemaEditor(props.databases) &&
-    !isStandaloneMode.value
+    !inIframe.value
   ) {
     schemaEditorContext.value.databaseIdList = [
       ...selectedDatabaseUidList.value,
@@ -397,7 +395,7 @@ const isInDefaultProject = computed(
 
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
-  if (!isStandaloneMode.value) {
+  if (!inIframe.value) {
     resp.push(
       {
         icon: h(DownloadIcon),

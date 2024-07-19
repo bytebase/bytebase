@@ -39,8 +39,8 @@ import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
+  useCustomFeature,
   useDatabaseV1Store,
-  usePageMode,
   useProjectV1List,
   useUIStateStore,
 } from "@/store";
@@ -68,7 +68,7 @@ interface LocalState {
 
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
-const pageMode = usePageMode();
+const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 const route = useRoute();
 const router = useRouter();
 
@@ -116,8 +116,6 @@ const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
   [...CommonFilterScopeIdList, "project", "project-assigned"]
 );
-
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const selectedInstance = computed(() => {
   return (
@@ -197,10 +195,8 @@ const filteredDatabaseList = computed(() => {
       return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
     });
   }
-  if (isStandaloneMode.value) {
-    list = list.filter(
-      (db) => db.projectEntity.name !== DEFAULT_PROJECT_NAME
-    );
+  if (inIframe.value) {
+    list = list.filter((db) => db.projectEntity.name !== DEFAULT_PROJECT_NAME);
   }
   const keyword = state.params.query.trim().toLowerCase();
   if (keyword) {

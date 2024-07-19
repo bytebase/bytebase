@@ -72,7 +72,7 @@
           </span>
         </NButton>
         <NPopover
-          v-if="!isStandaloneMode"
+          v-if="!disallowShareWorksheet"
           trigger="click"
           placement="bottom-end"
           :show-arrow="false"
@@ -114,7 +114,6 @@ import { computed, reactive, ref } from "vue";
 import {
   useUIStateStore,
   featureToRef,
-  usePageMode,
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
   useWorkSheetStore,
@@ -145,12 +144,13 @@ const { standardModeEnabled, events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
-const pageMode = usePageMode();
+const disallowShareWorksheet = useCustomFeature(
+  "bb.custom-feature.disallow-share-worksheet"
+);
 const hasCustomQueryDatasourceFeature = useCustomFeature(
   "bb.custom-feature.custom-query-datasource"
 );
 
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
 const isEmptyStatement = computed(() => {

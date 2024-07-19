@@ -22,7 +22,7 @@
       <OpenAIButton :size="size" />
 
       <SettingButton
-        v-if="showSettingButton"
+        v-if="!hideSettingButton"
         :style="buttonStyle"
         v-bind="buttonProps"
       />
@@ -36,7 +36,7 @@ import { computed, toRef, watch } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
-  usePageMode,
+  useCustomFeature,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -62,7 +62,7 @@ const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { strictProject } = storeToRefs(useSQLEditorStore());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
-const pageMode = usePageMode();
+const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
 
 const { props: buttonProps, style: buttonStyle } = useButton({
   size: toRef(props, "size"),
@@ -100,12 +100,12 @@ const showSchemaPane = computed(() => {
   );
 });
 
-const showSettingButton = computed(() => {
-  if (pageMode.value === "STANDALONE") {
-    return false;
+const hideSettingButton = computed(() => {
+  if (inIframe.value) {
+    return true;
   }
   if (strictProject.value) {
-    return false;
+    return true;
   }
 
   return true;

@@ -3,7 +3,7 @@ export type CustomFeatureMatrix = {
   "bb.custom-feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.custom-feature.custom-query-datasource": boolean;
   "bb.custom-feature.disallow-navigate-to-console": boolean;
-  "bb.custom-feature.disallow-navigate-to-sql-editor": boolean;
+  "bb.custom-feature.disallow-navigate-away-sql-editor": boolean;
   "bb.custom-feature.disallow-share-worksheet": boolean;
   "bb.custom-feature.disallow-export-query-data": boolean;
   "bb.custom-feature.hide-help": boolean;
@@ -19,7 +19,7 @@ export const defaultCustomFeatureMatrix = (): CustomFeatureMatrix => ({
   "bb.custom-feature.custom-color-scheme": undefined,
   "bb.custom-feature.custom-query-datasource": false,
   "bb.custom-feature.disallow-navigate-to-console": false,
-  "bb.custom-feature.disallow-navigate-to-sql-editor": false,
+  "bb.custom-feature.disallow-navigate-away-sql-editor": false,
   "bb.custom-feature.disallow-share-worksheet": false,
   "bb.custom-feature.disallow-export-query-data": false,
   "bb.custom-feature.hide-help": false,

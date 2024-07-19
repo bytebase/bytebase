@@ -1,6 +1,6 @@
 <template>
   <Drawer
-    :show="active && shouldShowHelpDrawer"
+    :show="active"
     class="!w-96 max-w-full"
     @update:show="(show: boolean) => !show && onClose()"
   >
@@ -55,7 +55,7 @@ import { storeToRefs } from "pinia";
 import { ref, reactive, watch, computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useLanguage } from "@/composables/useLanguage";
-import { useUIStateStore, useHelpStore, usePageMode } from "@/store";
+import { useUIStateStore, useHelpStore } from "@/store";
 
 const [
   { default: Markdoc },
@@ -79,11 +79,7 @@ const { locale } = useLanguage();
 const uiStateStore = useUIStateStore();
 const helpStore = useHelpStore();
 const helpStoreState = storeToRefs(helpStore);
-const pageMode = usePageMode();
 
-const shouldShowHelpDrawer = computed(() => {
-  return pageMode.value === "BUNDLED";
-});
 const helpId = computed(() => helpStoreState.currHelpId.value);
 const isGuide = computed(() => helpStoreState.openByDefault.value);
 
