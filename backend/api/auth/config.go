@@ -3,30 +3,15 @@ package auth
 import (
 	"strings"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/common"
 )
 
-var authenticationAllowlistMethods = map[string]bool{
-	v1pb.ActuatorService_GetActuatorInfo_FullMethodName:               true,
-	v1pb.ActuatorService_GetResourcePackage_FullMethodName:            true,
-	v1pb.ActuatorService_DeleteCache_FullMethodName:                   true,
-	v1pb.SubscriptionService_GetSubscription_FullMethodName:           true,
-	v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName:          true,
-	v1pb.AuthService_Login_FullMethodName:                             true,
-	v1pb.AuthService_Logout_FullMethodName:                            true,
-	v1pb.AuthService_CreateUser_FullMethodName:                        true,
-	v1pb.IdentityProviderService_ListIdentityProviders_FullMethodName: true,
-	v1pb.SQLService_ParseMyBatisMapper_FullMethodName:                 true,
-	v1pb.BranchService_DiffMetadata_FullMethodName:                    true,
-}
-
 // IsAuthenticationAllowed returns whether the method is exempted from authentication.
-func IsAuthenticationAllowed(fullMethodName string) bool {
-	// TODO(d): skips OpenAPI SQL endpoint.
+func IsAuthenticationAllowed(fullMethodName string, authContext *common.AuthContext) bool {
 	// "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo" is used
-	//  for reflection, but we'd rather to allow the whole reflection endpoint.
+	//  for reflection.
 	if strings.HasPrefix(fullMethodName, "/grpc.reflection") {
 		return true
 	}
-	return authenticationAllowlistMethods[fullMethodName]
+	return authContext.AllowWithoutCredential
 }

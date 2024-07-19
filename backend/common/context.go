@@ -15,6 +15,7 @@ const (
 	// UserContextKey is the key name used to store user message in the context.
 	UserContextKey
 	ProjectIDsContextKey
+	AuthContextKey
 )
 
 func WithProjectIDs(ctx context.Context, projectIDs []string) context.Context {
@@ -24,4 +25,8 @@ func WithProjectIDs(ctx context.Context, projectIDs []string) context.Context {
 func GetProjectIDsFromContext(ctx context.Context) ([]string, bool) {
 	v, ok := ctx.Value(ProjectIDsContextKey).([]string)
 	return v, ok
+}
+
+type AuthContext struct {
+	AllowWithoutCredential bool
 }

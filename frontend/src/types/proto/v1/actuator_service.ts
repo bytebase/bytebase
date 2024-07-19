@@ -1008,6 +1008,7 @@ export const ActuatorServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([19, 18, 17, 47, 118, 49, 47, 97, 99, 116, 117, 97, 116, 111, 114, 47, 105, 110, 102, 111]),
           ],
@@ -1092,6 +1093,7 @@ export const ActuatorServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               20,
@@ -1166,6 +1168,7 @@ export const ActuatorServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               24,

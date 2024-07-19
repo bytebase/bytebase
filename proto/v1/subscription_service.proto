@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
 
@@ -13,10 +14,12 @@ service SubscriptionService {
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.allow_without_credential) = true;
   }
   rpc GetFeatureMatrix(GetFeatureMatrixRequest) returns (FeatureMatrix) {
     option (google.api.http) = {get: "/v1/feature"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.allow_without_credential) = true;
   }
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {

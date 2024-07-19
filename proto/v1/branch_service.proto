@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 
@@ -71,6 +72,7 @@ service BranchService {
       post: "/v1/schemaDesign:diffMetadata"
       body: "*"
     };
+    option (bytebase.v1.allow_without_credential) = true;
   }
 }
 
