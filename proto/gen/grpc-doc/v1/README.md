@@ -3,6 +3,9 @@
 
 ## Table of Contents
 
+- [v1/annotation.proto](#v1_annotation-proto)
+    - [File-level Extensions](#v1_annotation-proto-extensions)
+  
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [DebugLog](#bytebase-v1-DebugLog)
@@ -695,6 +698,30 @@
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="v1_annotation-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/annotation.proto
+
+
+ 
+
+ 
+
+
+<a name="v1_annotation-proto-extensions"></a>
+
+### File-level Extensions
+| Extension | Type | Base | Number | Description |
+| --------- | ---- | ---- | ------ | ----------- |
+| allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 |  |
+
+ 
+
+ 
 
 
 

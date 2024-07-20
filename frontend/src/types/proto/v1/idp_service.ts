@@ -1929,6 +1929,7 @@ export const IdentityProviderServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800000: [new Uint8Array([1])],
           578365826: [new Uint8Array([10, 18, 8, 47, 118, 49, 47, 105, 100, 112, 115])],
         },
       },
