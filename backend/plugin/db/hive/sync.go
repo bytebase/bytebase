@@ -221,7 +221,6 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 	return tableMetadatas, extTableMetadatas, viewMetadatas, mtViewMetadatas, nil
 }
 
-// getRoles fetches role names and grant info from instance and returns structed role data.
 func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
 	var roleMetadata []*storepb.InstanceRoleMetadata
 	roleMessages, err := d.ListRole(ctx)
