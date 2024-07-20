@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -15,11 +16,13 @@ service EnvironmentService {
   rpc GetEnvironment(GetEnvironmentRequest) returns (Environment) {
     option (google.api.http) = {get: "/v1/{name=environments/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.environments.get";
   }
 
   rpc ListEnvironments(ListEnvironmentsRequest) returns (ListEnvironmentsResponse) {
     option (google.api.http) = {get: "/v1/environments"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.environments.list";
   }
 
   rpc CreateEnvironment(CreateEnvironmentRequest) returns (Environment) {
@@ -28,6 +31,7 @@ service EnvironmentService {
       body: "environment"
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.environments.create";
   }
 
   rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (Environment) {
@@ -36,11 +40,13 @@ service EnvironmentService {
       body: "environment"
     };
     option (google.api.method_signature) = "environment,update_mask";
+    option (bytebase.v1.permission) = "bb.environments.update";
   }
 
   rpc DeleteEnvironment(DeleteEnvironmentRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=environments/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.environments.delete";
   }
 
   rpc UndeleteEnvironment(UndeleteEnvironmentRequest) returns (Environment) {
@@ -48,6 +54,7 @@ service EnvironmentService {
       post: "/v1/{name=environments/*}:undelete"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.environments.undelete";
   }
 }
 
