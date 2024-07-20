@@ -17,7 +17,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (err error) {
+func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			perr, ok := r.(error)
@@ -29,12 +29,12 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
 		}
 	}()
-	ok, extra, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user, authContext)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err)
 	}
 	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", fullMethod, methodPermissionMap[fullMethod], extra)
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra)
 	}
 
 	return nil
@@ -168,21 +168,12 @@ func isSkippedMethod(fullMethod string, authContext *common.AuthContext) bool {
 	return false
 }
 
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (bool, []string, error) {
-	authContextAny := ctx.Value(common.AuthContextKey)
-	authContext, ok := authContextAny.(*common.AuthContext)
-	if !ok {
-		return false, nil, status.Errorf(codes.Internal, "auth context not found1")
-	}
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
 	if isSkippedMethod(fullMethod, authContext) {
 		return true, nil, nil
 	}
 
-	p, ok := methodPermissionMap[fullMethod]
-	if !ok {
-		return false, nil, errors.Errorf("method %q not found in method-permission map", fullMethod)
-	}
-
+	p := authContext.Permission
 	switch fullMethod {
 	// special cases for bb.instance.get permission check.
 	// we permit users to get instances (and all the related info) if they can get any database in the instance, even if they don't have bb.instance.get permission.

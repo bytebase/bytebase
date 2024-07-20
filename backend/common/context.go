@@ -29,4 +29,5 @@ func GetProjectIDsFromContext(ctx context.Context) ([]string, bool) {
 
 type AuthContext struct {
 	AllowWithoutCredential bool
+	Permission             string
 }
