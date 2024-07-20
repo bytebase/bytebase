@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -23,6 +24,7 @@ service OrgPolicyService {
       additional_bindings: {get: "/v1/{name=instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.policies.get";
   }
 
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
@@ -35,6 +37,7 @@ service OrgPolicyService {
       additional_bindings: {get: "/v1/{parent=instances/*/databases/*}/policies"}
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.policies.list";
   }
 
   rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
@@ -60,6 +63,7 @@ service OrgPolicyService {
       }
     };
     option (google.api.method_signature) = "parent,policy";
+    option (bytebase.v1.permission) = "bb.policies.create";
   }
 
   rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
@@ -85,6 +89,7 @@ service OrgPolicyService {
       }
     };
     option (google.api.method_signature) = "policy,update_mask";
+    option (bytebase.v1.permission) = "bb.policies.update";
   }
 
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
@@ -97,6 +102,7 @@ service OrgPolicyService {
       additional_bindings: {delete: "/v1/{name=instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.policies.delete";
   }
 }
 

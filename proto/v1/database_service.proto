@@ -9,6 +9,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/instance_service.proto";
 
@@ -18,6 +19,7 @@ service DatabaseService {
   rpc GetDatabase(GetDatabaseRequest) returns (Database) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.databases.get";
   }
 
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
@@ -26,12 +28,14 @@ service DatabaseService {
       additional_bindings: {get: "/v1/{parent=projects/*}/databases"}
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.databases.list";
   }
 
   // Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
   rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
     option (google.api.http) = {get: "/v1/databases:search"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.databases.get";
   }
 
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
@@ -40,6 +44,7 @@ service DatabaseService {
       body: "database"
     };
     option (google.api.method_signature) = "database,update_mask";
+    option (bytebase.v1.permission) = "bb.databases.update";
   }
 
   rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
@@ -47,6 +52,7 @@ service DatabaseService {
       post: "/v1/{parent=instances/*}/databases:batchUpdate"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.databases.update";
   }
 
   rpc SyncDatabase(SyncDatabaseRequest) returns (SyncDatabaseResponse) {
@@ -54,10 +60,12 @@ service DatabaseService {
       post: "/v1/{name=instances/*/databases/*}:sync"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.databases.sync";
   }
 
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
+    option (bytebase.v1.permission) = "bb.databases.getSchema";
   }
 
   rpc UpdateDatabaseMetadata(UpdateDatabaseMetadataRequest) returns (DatabaseMetadata) {
@@ -65,10 +73,12 @@ service DatabaseService {
       patch: "/v1/{database_metadata.name=instances/*/databases/*/metadata}"
       body: "database_metadata"
     };
+    option (bytebase.v1.permission) = "bb.databases.update";
   }
 
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
+    option (bytebase.v1.permission) = "bb.databases.getSchema";
   }
 
   rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
@@ -81,16 +91,20 @@ service DatabaseService {
         body: "*"
       }
     };
+    // TODO(d): secure it.
+    option (bytebase.v1.permission) = "bb.changeHistories.get";
   }
 
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/slowQueries"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.slowQueries.list";
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.databaseSecrets.list";
   }
 
   rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
@@ -98,24 +112,29 @@ service DatabaseService {
       patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}"
       body: "secret"
     };
+    option (bytebase.v1.permission) = "bb.databaseSecrets.update";
   }
 
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
+    option (bytebase.v1.permission) = "bb.databaseSecrets.delete";
   }
 
   rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
     option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.databases.adviseIndex";
   }
 
   rpc ListChangeHistories(ListChangeHistoriesRequest) returns (ListChangeHistoriesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changeHistories"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.changeHistories.list";
   }
   rpc GetChangeHistory(GetChangeHistoryRequest) returns (ChangeHistory) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changeHistories/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.changeHistories.get";
   }
 }
 

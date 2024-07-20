@@ -62,7 +62,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user); err != nil {
+	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
 		return nil, err
 	}
 
@@ -101,7 +101,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user); err != nil {
+	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
 		return err
 	}
 

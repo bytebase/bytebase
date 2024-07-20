@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
 
@@ -18,16 +19,19 @@ service VCSConnectorService {
       body: "vcs_connector"
     };
     option (google.api.method_signature) = "parent,vcsConnector";
+    option (bytebase.v1.permission) = "bb.vcsConnectors.create";
   }
 
   rpc GetVCSConnector(GetVCSConnectorRequest) returns (VCSConnector) {
     option (google.api.http) = {get: "/v1/{name=projects/*/vcsConnectors/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.vcsConnectors.get";
   }
 
   rpc ListVCSConnectors(ListVCSConnectorsRequest) returns (ListVCSConnectorsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/vcsConnectors"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.vcsConnectors.list";
   }
 
   rpc UpdateVCSConnector(UpdateVCSConnectorRequest) returns (VCSConnector) {
@@ -36,11 +40,13 @@ service VCSConnectorService {
       body: "vcs_connector"
     };
     option (google.api.method_signature) = "vcs_connector,update_mask";
+    option (bytebase.v1.permission) = "bb.vcsConnectors.update";
   }
 
   rpc DeleteVCSConnector(DeleteVCSConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/vcsConnectors/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.vcsConnectors.delete";
   }
 }
 
