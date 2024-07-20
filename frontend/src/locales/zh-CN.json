@@ -277,7 +277,8 @@
     "resource": "资源",
     "closed": "已关闭",
     "options": "配置项",
-    "reset": "重置"
+    "reset": "重置",
+    "refresh": "刷新"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1240,6 +1241,8 @@
       "self": "修改指定发布时间"
     },
     "task-run": {
+      "logs": "日志",
+      "session": "会话",
       "task-run-log": {
         "batch": "批次",
         "affected-rows": "影响行数",
@@ -1255,6 +1258,17 @@
           "waiting": "准备就绪，等待执行",
           "running": "开始执行"
         }
+      },
+      "task-run-session": {
+        "blocking-sessions": {
+          "self": "阻塞会话",
+          "description": "当前会话被以下会话阻塞"
+        },
+        "blocked-sessions": {
+          "self": "被阻塞会话",
+          "description": "当前会话阻塞了以下会话"
+        },
+        "no-session-found": "未找到会话。"
       }
     },
     "sql-review": {
@@ -2881,7 +2895,6 @@
       "record-ts": "时间",
       "method": "方法",
       "request-path": "请求路径",
-      "role": "角色",
       "error": "错误消息",
       "stack-trace": "调用栈",
       "empty": "<无>",

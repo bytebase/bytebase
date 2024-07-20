@@ -16,10 +16,10 @@
         <div>{{ debugLog.requestPath }}</div>
       </BBTableCell>
       <BBTableCell class="table-cell w-20">
-        <span v-if="!debugLog.role" class="italic text-gray-500">{{
+        <span v-if="!debugLog.user" class="italic text-gray-500">{{
           $t("debug-log.table.empty")
         }}</span>
-        <div v-else>{{ debugLog.role }}</div>
+        <div v-else>{{ debugLog.user }}</div>
       </BBTableCell>
       <BBTableCell class="table-cell pt-3">
         <EllipsisText class="max-w-full" :line-clamp="2">{{
@@ -76,7 +76,7 @@ const columnList = computed(() => [
     title: t("debug-log.table.request-path"),
   },
   {
-    title: t("debug-log.table.role"),
+    title: t("common.user"),
   },
   {
     title: t("debug-log.table.error"),

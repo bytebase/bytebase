@@ -1780,6 +1780,7 @@ export const BranchServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([15, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 103, 101, 116])],
           578365826: [
             new Uint8Array([
               34,
@@ -1831,6 +1832,7 @@ export const BranchServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800010: [new Uint8Array([16, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 108, 105, 115, 116])],
           578365826: [
             new Uint8Array([
               34,
@@ -1882,6 +1884,9 @@ export const BranchServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([13, 112, 97, 114, 101, 110, 116, 44, 98, 114, 97, 110, 99, 104])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 99, 114, 101, 97, 116, 101]),
+          ],
           578365826: [
             new Uint8Array([
               40,
@@ -1940,6 +1945,9 @@ export const BranchServiceDefinition = {
         _unknownFields: {
           8410: [
             new Uint8Array([18, 98, 114, 97, 110, 99, 104, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107]),
+          ],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
           578365826: [
             new Uint8Array([
@@ -2007,6 +2015,9 @@ export const BranchServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
+          ],
           578365826: [
             new Uint8Array([
               40,
@@ -2064,6 +2075,9 @@ export const BranchServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
+          ],
           578365826: [
             new Uint8Array([
               41,
@@ -2122,6 +2136,9 @@ export const BranchServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 100, 101, 108, 101, 116, 101]),
+          ],
           578365826: [
             new Uint8Array([
               34,
@@ -2181,6 +2198,9 @@ export const BranchServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
+          ],
           578365826: [
             new Uint8Array([
               47,
@@ -2244,6 +2264,7 @@ export const BranchServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               34,

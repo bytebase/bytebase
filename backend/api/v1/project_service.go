@@ -892,55 +892,30 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 
 // ListDatabaseGroups lists database groups.
 func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	find := &store.FindDatabaseGroupMessage{}
-	if projectResourceID != "-" {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectResourceID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
-		}
-		find.ProjectUID = &project.UID
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	databaseGroups, err := s.store.ListDatabaseGroups(ctx, find)
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+	}
+
+	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list database groups, err: %v", err)
 	}
 
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
 	for _, databaseGroup := range databaseGroups {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID: &databaseGroup.ProjectUID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.DataLoss, "project %d not found", databaseGroup.ProjectUID)
-		}
-		if project.Deleted {
-			continue
-		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-		}
-		if !ok {
-			continue
-		}
 		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
 	}
 	return &v1pb.ListDatabaseGroupsResponse{
@@ -1339,16 +1314,10 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	projectUID, isNumber := utils.IsNumber(projectID)
 	find := &store.FindProjectMessage{
+		ResourceID:  &projectID,
 		ShowDeleted: true,
 	}
-	if isNumber {
-		find.UID = &projectUID
-	} else {
-		find.ResourceID = &projectID
-	}
-
 	project, err := s.store.GetProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

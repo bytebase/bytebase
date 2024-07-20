@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/metric"
 	metricplugin "github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -83,20 +84,19 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod s
 	}
 	slog.Log(ctx, logLevel, logMsg, "method", fullMethod, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	if st.Code() == codes.Internal && slog.Default().Enabled(ctx, slog.LevelDebug) {
-		var role api.Role
-		if r, ok := ctx.Value(common.RoleContextKey).(api.Role); ok {
-			role = r
-		}
-
-		in.errorRecordRing.RWMutex.Lock()
-		defer in.errorRecordRing.RWMutex.Unlock()
-		in.errorRecordRing.Ring.Value = &v1pb.DebugLog{
+		l := &v1pb.DebugLog{
 			RecordTime:  timestamppb.New(time.Now()),
 			RequestPath: fullMethod,
-			Role:        string(role),
 			Error:       err.Error(),
 			StackTrace:  string(debug.Stack()),
 		}
+		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+		if ok && user != nil {
+			l.User = common.FormatUserEmail(user.Email)
+		}
+		in.errorRecordRing.RWMutex.Lock()
+		defer in.errorRecordRing.RWMutex.Unlock()
+		in.errorRecordRing.Ring.Value = l
 		in.errorRecordRing.Ring = in.errorRecordRing.Ring.Next()
 	}
 	in.metricReporter.Report(ctx, &metricplugin.Metric{

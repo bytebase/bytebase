@@ -3,6 +3,10 @@
 
 ## Table of Contents
 
+- [v1/annotation.proto](#v1_annotation-proto)
+    - [File-level Extensions](#v1_annotation-proto-extensions)
+    - [File-level Extensions](#v1_annotation-proto-extensions)
+  
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [DebugLog](#bytebase-v1-DebugLog)
@@ -698,6 +702,31 @@
 
 
 
+<a name="v1_annotation-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/annotation.proto
+
+
+ 
+
+ 
+
+
+<a name="v1_annotation-proto-extensions"></a>
+
+### File-level Extensions
+| Extension | Type | Base | Number | Description |
+| --------- | ---- | ---- | ------ | ----------- |
+| allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 |  |
+| permission | string | .google.protobuf.MethodOptions | 100001 |  |
+
+ 
+
+ 
+
+
+
 <a name="v1_actuator_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -749,7 +778,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | ----- | ---- | ----- | ----------- |
 | record_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | request_path | [string](#string) |  |  |
-| role | [string](#string) |  |  |
+| user | [string](#string) |  |  |
 | error | [string](#string) |  |  |
 | stack_trace | [string](#string) |  |  |
 
@@ -4024,7 +4053,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} Use &#34;projects/-&#34; to list all changelists. |
+| parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
@@ -6949,7 +6978,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} Using &#34;projects/-&#34; will list database groups across all projects. |
+| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListDatabaseGroups` call. Provide this to retrieve the subsequent page.
 
@@ -10537,7 +10566,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of vcsConnectors. Format: projects/{project} Use &#34;projects/-&#34; to list all vcsConnectors. |
+| parent | [string](#string) |  | The parent, which owns this collection of vcsConnectors. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 

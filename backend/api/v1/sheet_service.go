@@ -85,21 +85,11 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		}
 
 		find := &store.FindDatabaseMessage{
-			ProjectID:  &projectResourceID,
-			InstanceID: &instanceResourceID,
+			ProjectID:           &projectResourceID,
+			InstanceID:          &instanceResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		}
-		// It's chaos. We return /instance/{resource id}/databases/{uid} database in find sheet request,
-		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}, sometimes the name will convert to int id incorrectly.
-		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
-		// We need to remove legacy code after the migration.
-		dbUID, isNumber := utils.IsNumber(databaseName)
-		if instanceResourceID == "-" && isNumber {
-			find.UID = &dbUID
-		} else {
-			find.DatabaseName = &databaseName
-			find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
-		}
-
 		database, err := s.store.GetDatabaseV2(ctx, find)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database with name %q, err: %s", databaseName, err.Error()))
@@ -134,30 +124,24 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %d, must be positive integer", sheetUID))
 	}
 
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+	}
+
 	find := &store.FindSheetMessage{
-		UID:      &sheetUID,
-		LoadFull: request.Raw,
+		ProjectUID: &project.UID,
+		UID:        &sheetUID,
+		LoadFull:   request.Raw,
 	}
-
-	// this allows get the sheet only by the id: /projects/-/sheets/{sheet uid}.
-	// so that we can easily get the sheet from the issue.
-	// we can remove this after migrate the issue to v1 API.
-	if projectResourceID != "-" {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectResourceID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
-		}
-		if project.Deleted {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
-		}
-		find.ProjectUID = &project.UID
-	}
-
 	sheet, err := s.findSheet(ctx, find)
 	if err != nil {
 		return nil, err
@@ -167,15 +151,6 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		UID: &sheet.ProjectUID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project %q", sheet.ProjectUID)
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", sheet.ProjectUID)
 	}
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, project.ResourceID)
 	if err != nil {

@@ -277,7 +277,8 @@
     "resource": "リソース",
     "closed": "閉まっている",
     "options": "オプション",
-    "reset": "リセット"
+    "reset": "リセット",
+    "refresh": "リフレッシュ"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -1240,6 +1241,8 @@
       "self": "更新のロールアウト時間"
     },
     "task-run": {
+      "logs": "ログ",
+      "session": "セッション",
       "task-run-log": {
         "batch": "バッチ",
         "affected-rows": "影響を受ける行",
@@ -1255,6 +1258,17 @@
           "waiting": "実行の準備完了",
           "running": "処刑される"
         }
+      },
+      "task-run-session": {
+        "blocking-sessions": {
+          "self": "セッションのブロック",
+          "description": "現在のセッションをブロックしているセッション"
+        },
+        "blocked-sessions": {
+          "self": "ブロックされたセッション",
+          "description": "現在のセッションによってブロックされているセッション"
+        },
+        "no-session-found": "セッションが見つかりません。"
       }
     },
     "sql-review": {
@@ -2881,7 +2895,6 @@
       "record-ts": "時間",
       "method": "方法",
       "request-path": "リクエストパス",
-      "role": "役割",
       "error": "間違った情報",
       "stack-trace": "コールスタック",
       "empty": "<なし>",

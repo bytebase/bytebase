@@ -9646,7 +9646,7 @@ components:
                     format: date-time
                 requestPath:
                     type: string
-                role:
+                user:
                     type: string
                 error:
                     type: string

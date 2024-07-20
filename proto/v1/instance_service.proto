@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -16,6 +17,7 @@ service InstanceService {
   rpc GetInstance(GetInstanceRequest) returns (Instance) {
     option (google.api.http) = {get: "/v1/{name=instances/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.instances.get";
   }
 
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
@@ -24,6 +26,7 @@ service InstanceService {
       additional_bindings: {get: "/v1/{parent=projects/*}/instances"}
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.instances.list";
   }
 
   rpc SearchInstances(SearchInstancesRequest) returns (SearchInstancesResponse) {
@@ -40,6 +43,7 @@ service InstanceService {
       body: "instance"
     };
     option (google.api.method_signature) = "instance";
+    option (bytebase.v1.permission) = "bb.instances.create";
   }
 
   rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
@@ -48,11 +52,13 @@ service InstanceService {
       body: "instance"
     };
     option (google.api.method_signature) = "instance,update_mask";
+    option (bytebase.v1.permission) = "bb.instances.update";
   }
 
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.instances.delete";
   }
 
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
@@ -60,6 +66,7 @@ service InstanceService {
       post: "/v1/{name=instances/*}:undelete"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.instances.undelete";
   }
 
   rpc SyncInstance(SyncInstanceRequest) returns (SyncInstanceResponse) {
@@ -67,6 +74,7 @@ service InstanceService {
       post: "/v1/{name=instances/*}:sync"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.instances.sync";
   }
 
   rpc BatchSyncInstance(BatchSyncInstanceRequest) returns (BatchSyncInstanceResponse) {
@@ -74,6 +82,7 @@ service InstanceService {
       post: "/v1/instances:batchSync"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.instances.sync";
   }
 
   rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
@@ -81,6 +90,7 @@ service InstanceService {
       post: "/v1/{instance=instances/*}:addDataSource"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.instances.update";
   }
 
   rpc RemoveDataSource(RemoveDataSourceRequest) returns (Instance) {
@@ -88,6 +98,7 @@ service InstanceService {
       post: "/v1/{instance=instances/*}:removeDataSource"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.instances.update";
   }
 
   rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
@@ -95,6 +106,7 @@ service InstanceService {
       patch: "/v1/{instance=instances/*}:updateDataSource"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.instances.update";
   }
 
   rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
@@ -107,6 +119,7 @@ service InstanceService {
         body: "*"
       }
     };
+    option (bytebase.v1.permission) = "bb.instances.sync";
   }
 }
 

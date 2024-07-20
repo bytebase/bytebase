@@ -7,6 +7,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 
@@ -39,6 +40,7 @@ service SQLService {
 
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
+    option (bytebase.v1.permission) = "bb.instances.adminExecute";
   }
 
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
@@ -80,6 +82,7 @@ service SQLService {
       post: "/v1/sql/parseMyBatisMapper"
       body: "*"
     };
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {

@@ -9,6 +9,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 import "v1/issue_service.proto";
@@ -20,11 +21,13 @@ service SettingService {
   rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
     option (google.api.http) = {get: "/v1/settings"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.settings.list";
   }
 
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.settings.get";
   }
 
   rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
@@ -32,6 +35,7 @@ service SettingService {
       patch: "/v1/{setting.name=settings/*}"
       body: "setting"
     };
+    option (bytebase.v1.permission) = "bb.settings.set";
   }
 }
 

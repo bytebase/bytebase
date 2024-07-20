@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -15,11 +16,14 @@ service IdentityProviderService {
   rpc GetIdentityProvider(GetIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {get: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.identityProviders.get";
   }
 
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
     option (google.api.http) = {get: "/v1/idps"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.allow_without_credential) = true;
+    // The method requires no authentication thus no authorization.
   }
 
   rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (IdentityProvider) {
@@ -28,6 +32,7 @@ service IdentityProviderService {
       body: "identity_provider"
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.identityProviders.create";
   }
 
   rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (IdentityProvider) {
@@ -36,11 +41,13 @@ service IdentityProviderService {
       body: "identity_provider"
     };
     option (google.api.method_signature) = "identity_provider,update_mask";
+    option (bytebase.v1.permission) = "bb.identityProviders.update";
   }
 
   rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.identityProviders.delete";
   }
 
   rpc UndeleteIdentityProvider(UndeleteIdentityProviderRequest) returns (IdentityProvider) {
@@ -48,6 +55,7 @@ service IdentityProviderService {
       post: "/v1/{name=idps/*}:undelete"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.identityProviders.undelete";
   }
 
   rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
@@ -55,6 +63,7 @@ service IdentityProviderService {
       post: "/v1/idps/*:test"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.identityProviders.update";
   }
 }
 

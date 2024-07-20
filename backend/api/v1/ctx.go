@@ -248,6 +248,8 @@ func (*ContextProvider) getProjectIDsForChangelistService(_ context.Context, req
 	switch r := req.(type) {
 	case *v1pb.CreateChangelistRequest:
 		projects = append(projects, r.GetParent())
+	case *v1pb.ListChangelistsRequest:
+		projects = append(projects, r.GetParent())
 	case *v1pb.GetChangelistRequest:
 		changelists = append(changelists, r.GetName())
 	}
@@ -421,6 +423,8 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 		projectWebhooks = append(projectWebhooks, r.GetWebhook().GetName())
 	case *v1pb.TestWebhookRequest:
 		projects = append(projects, r.GetProject())
+	case *v1pb.ListDatabaseGroupsRequest:
+		projects = append(projects, r.GetParent())
 	case *v1pb.GetDatabaseGroupRequest:
 		databaseGroups = append(databaseGroups, r.GetName())
 	case *v1pb.CreateDatabaseGroupRequest:
@@ -601,25 +605,20 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse %q", databaseResourceName)
 	}
-	find := &store.FindDatabaseMessage{
-		ShowDeleted: true,
+
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
-	databaseUID, isNumber := utils.IsNumber(databaseName)
-	if instanceID == "-" && isNumber {
-		// Expected format: "instances/-/database/{uid}"
-		find.UID = &databaseUID
-	} else {
-		// Expected format: "instances/{instance}/database/{database}"
-		find.InstanceID = &instanceID
-		find.DatabaseName = &databaseName
-		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance not found")
-		}
-		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
+	if instance == nil {
+		return nil, errors.Errorf("instance not found")
+	}
+
+	find := &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		ShowDeleted:         true,
 	}
 	database, err := s.GetDatabaseV2(ctx, find)
 	if err != nil {
