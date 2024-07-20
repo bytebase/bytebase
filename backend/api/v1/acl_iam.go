@@ -40,8 +40,8 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	return nil
 }
 
-func isSkippedMethod(fullMethod string) bool {
-	if auth.IsAuthenticationAllowed(fullMethod) {
+func isSkippedMethod(fullMethod string, authContext *common.AuthContext) bool {
+	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true
 	}
 
@@ -169,7 +169,12 @@ func isSkippedMethod(fullMethod string) bool {
 }
 
 func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (bool, []string, error) {
-	if isSkippedMethod(fullMethod) {
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return false, nil, status.Errorf(codes.Internal, "auth context not found1")
+	}
+	if isSkippedMethod(fullMethod, authContext) {
 		return true, nil, nil
 	}
 

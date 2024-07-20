@@ -49,7 +49,13 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 	}
 
-	if auth.IsAuthenticationAllowed(serverInfo.FullMethod) {
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "auth context not found2")
+	}
+
+	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
 		return handler(ctx, request)
 	}
 	if user == nil {
@@ -82,7 +88,13 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		ss = overrideStream{ServerStream: ss, childCtx: ctx}
 	}
 
-	if auth.IsAuthenticationAllowed(serverInfo.FullMethod) {
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return status.Errorf(codes.Internal, "auth context not found3")
+	}
+
+	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
 		return handler(request, ss)
 	}
 	if user == nil {
