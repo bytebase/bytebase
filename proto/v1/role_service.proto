@@ -7,18 +7,21 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
 
 service RoleService {
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
+    option (bytebase.v1.permission) = "bb.roles.list";
   }
   rpc CreateRole(CreateRoleRequest) returns (Role) {
     option (google.api.http) = {
       post: "/v1/roles"
       body: "role"
     };
+    option (bytebase.v1.permission) = "bb.roles.create";
   }
   rpc UpdateRole(UpdateRoleRequest) returns (Role) {
     option (google.api.http) = {
@@ -26,10 +29,12 @@ service RoleService {
       body: "role"
     };
     option (google.api.method_signature) = "role,update_mask";
+    option (bytebase.v1.permission) = "bb.roles.update";
   }
   rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=roles/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.roles.delete";
   }
 }
 

@@ -341,12 +341,18 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid full method name %q", fullMethod)
 	}
-	v := proto.GetExtension(md, v1pb.E_AllowWithoutCredential)
-	allowWithoutCredential, ok := v.(bool)
+	allowWithoutCredentialAny := proto.GetExtension(md, v1pb.E_AllowWithoutCredential)
+	allowWithoutCredential, ok := allowWithoutCredentialAny.(bool)
+	if !ok {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	permissionAny := proto.GetExtension(md, v1pb.E_Permission)
+	permission, ok := permissionAny.(string)
 	if !ok {
 		return nil, errs.Errorf("invalid full method name %q", fullMethod)
 	}
 	return &common.AuthContext{
 		AllowWithoutCredential: allowWithoutCredential,
+		Permission:             permission,
 	}, nil
 }

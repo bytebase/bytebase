@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/iam_policy.proto";
 
@@ -17,16 +18,19 @@ service ProjectService {
   rpc GetProject(GetProjectRequest) returns (Project) {
     option (google.api.http) = {get: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.projects.get";
   }
 
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.projects.list";
   }
 
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects:search"};
     option (google.api.method_signature) = "";
+    // TODO(d): secure it.
   }
 
   rpc CreateProject(CreateProjectRequest) returns (Project) {
@@ -35,6 +39,7 @@ service ProjectService {
       body: "project"
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.projects.create";
   }
 
   rpc UpdateProject(UpdateProjectRequest) returns (Project) {
@@ -43,11 +48,13 @@ service ProjectService {
       body: "project"
     };
     option (google.api.method_signature) = "project,update_mask";
+    option (bytebase.v1.permission) = "bb.projects.update";
   }
 
   rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.projects.delete";
   }
 
   rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
@@ -55,14 +62,17 @@ service ProjectService {
       post: "/v1/{name=projects/*}:undelete"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.projects.undelete";
   }
 
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
+    option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
   }
 
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
     option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
+    option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
   }
 
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -70,10 +80,12 @@ service ProjectService {
       post: "/v1/{resource=projects/*}:setIamPolicy"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.projects.setIamPolicy";
   }
 
   rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {get: "/v1/{name=projects/*/deploymentConfigs/*}"};
+    option (bytebase.v1.permission) = "bb.projects.get";
   }
 
   rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
@@ -81,6 +93,7 @@ service ProjectService {
       patch: "/v1/{config.name=projects/*/deploymentConfigs/*}"
       body: "config"
     };
+    option (bytebase.v1.permission) = "bb.projects.update";
   }
 
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
@@ -88,6 +101,7 @@ service ProjectService {
       post: "/v1/{project=projects/*}:addWebhook"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.projects.update";
   }
 
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
@@ -96,6 +110,7 @@ service ProjectService {
       body: "*"
     };
     option (google.api.method_signature) = "webhook,update_mask";
+    option (bytebase.v1.permission) = "bb.projects.update";
   }
 
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
@@ -103,6 +118,7 @@ service ProjectService {
       post: "/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.projects.update";
   }
 
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
@@ -110,16 +126,21 @@ service ProjectService {
       post: "/v1/{project=projects/*}:testWebhook"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.projects.update";
   }
 
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.projects.get";
+    // TODO(d): move around.
   }
 
   rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.projects.get";
+    // TODO(d): move around.
   }
 
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
@@ -128,6 +149,8 @@ service ProjectService {
       body: "database_group"
     };
     option (google.api.method_signature) = "parent,databaseGroup";
+    option (bytebase.v1.permission) = "bb.projects.update";
+    // TODO(d): move around.
   }
 
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
@@ -136,15 +159,20 @@ service ProjectService {
       body: "database_group"
     };
     option (google.api.method_signature) = "database_group,update_mask";
+    option (bytebase.v1.permission) = "bb.projects.update";
+    // TODO(d): move around.
   }
 
   rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.projects.update";
+    // TODO(d): move around.
   }
 
   rpc GetProjectProtectionRules(GetProjectProtectionRulesRequest) returns (ProtectionRules) {
     option (google.api.http) = {get: "/v1/{name=projects/*/protectionRules}"};
+    option (bytebase.v1.permission) = "bb.projects.get";
   }
 
   rpc UpdateProjectProtectionRules(UpdateProjectProtectionRulesRequest) returns (ProtectionRules) {
@@ -152,6 +180,7 @@ service ProjectService {
       patch: "/v1/{protection_rules.name=projects/*/protectionRules}"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.projects.update";
   }
 }
 
