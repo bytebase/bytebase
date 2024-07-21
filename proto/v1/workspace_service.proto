@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "v1/annotation.proto";
 import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
@@ -10,6 +11,7 @@ option go_package = "generated-go/v1";
 service WorkspaceService {
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
+    option (bytebase.v1.permission) = "bb.policies.get";
   }
 
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -17,5 +19,6 @@ service WorkspaceService {
       post: "/v1/{resource=workspaces/*}:setIamPolicy"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.policies.update";
   }
 }
