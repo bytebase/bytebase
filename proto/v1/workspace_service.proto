@@ -3,8 +3,8 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
-import "v1/iam_policy.proto";
 import "v1/annotation.proto";
+import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
 

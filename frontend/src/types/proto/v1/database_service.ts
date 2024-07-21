@@ -147,7 +147,6 @@ export interface ListDatabasesRequest {
   /**
    * The parent, which owns this collection of databases.
    * - instances/{instance}: list all databases for an instance. Use "instances/-" to list all databases.
-   * - projects/{project}: list all databases in a project.
    */
   parent: string;
   /**
