@@ -40,7 +40,7 @@ import {
 import { NSpin } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import { onErrorCaptured, onMounted, ref } from "vue";
+import { onErrorCaptured, onMounted, ref, watchEffect } from "vue";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
@@ -100,9 +100,6 @@ onMounted(async () => {
   await initBasicModules();
   initialized.value = true;
   prevLoggedIn.value = authStore.isLoggedIn();
-  if (prevLoggedIn.value) {
-    await useWorkspaceV1Store().fetchIamPolicy();
-  }
 
   setInterval(() => {
     if (!initialized.value) {
@@ -119,6 +116,12 @@ onMounted(async () => {
       }
     }
   }, CHECK_LOGGEDIN_STATE_DURATION);
+});
+
+watchEffect(async () => {
+  if (authStore.currentUserId) {
+    await useWorkspaceV1Store().fetchIamPolicy();
+  }
 });
 
 onErrorCaptured((error: any /* , _, info */) => {

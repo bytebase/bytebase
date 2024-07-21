@@ -1,6 +1,6 @@
 import axios from "axios";
 import { defineStore } from "pinia";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import type { SignupInfo, ActivateInfo } from "@/types";
 import { unknownUser } from "@/types";
@@ -14,11 +14,11 @@ import { useUserStore } from ".";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
+  const currentUserId = ref<number | undefined>();
 
   const currentUser = computed(() => {
-    const userId = getIntCookie("user");
-    if (userId) {
-      return userStore.getUserById(`${userId}`) ?? unknownUser();
+    if (currentUserId.value) {
+      return userStore.getUserById(`${currentUserId.value}`) ?? unknownUser();
     }
     return unknownUser();
   });
@@ -35,9 +35,9 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return mfaTempToken;
     }
 
-    const userId = getIntCookie("user");
-    if (userId) {
-      await useUserStore().getOrFetchUserById(String(userId));
+    currentUserId.value = getIntCookie("user");
+    if (currentUserId.value) {
+      await useUserStore().getOrFetchUserById(String(currentUserId.value));
     }
   };
 
@@ -60,6 +60,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const logout = async () => {
     try {
       await axios.post("/v1/auth/logout");
+      currentUserId.value = undefined;
     } catch {
       // nothing
     }
@@ -72,6 +73,8 @@ export const useAuthStore = defineStore("auth_v1", () => {
       })
     ).data.data;
 
+    currentUserId.value = activatedUser.id;
+
     // Refresh the corresponding user.
     const user = await useUserStore().getOrFetchUserById(
       String(activatedUser.id)
@@ -80,10 +83,10 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 
   const restoreUser = async () => {
-    const userId = getIntCookie("user");
-    if (userId) {
+    currentUserId.value = getIntCookie("user");
+    if (currentUserId.value) {
       await useUserStore().getOrFetchUserById(
-        String(userId),
+        String(currentUserId.value),
         true // silent
       );
     }
@@ -100,6 +103,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
   return {
     currentUser,
+    currentUserId,
     isLoggedIn,
     login,
     signup,
