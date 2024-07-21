@@ -618,6 +618,7 @@ type ListDatabasesRequest struct {
 
 	// The parent, which owns this collection of databases.
 	// - instances/{instance}: list all databases for an instance. Use "instances/-" to list all databases.
+	// - projects/{project}: list all databases in a project.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of databases to return. The service may return fewer than
 	// this value.
