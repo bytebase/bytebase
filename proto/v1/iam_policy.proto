@@ -37,7 +37,7 @@ message IamPolicy {
   // the call will be blocked and an ABORTED error will be returned.
   string etag = 2;
 
-  repeated BindingDeltas bindingDeltas = 3;
+  repeated BindingDeltas binding_deltas = 3;
 }
 
 message Binding {

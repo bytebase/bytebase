@@ -4370,7 +4370,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
 | etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the poliy, the call will be blocked and an ABORTED error will be returned. |
-| bindingDeltas | [BindingDeltas](#bytebase-v1-BindingDeltas) | repeated |  |
+| binding_deltas | [BindingDeltas](#bytebase-v1-BindingDeltas) | repeated |  |
 
 
 
