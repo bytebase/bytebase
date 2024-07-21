@@ -530,7 +530,7 @@ func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.
 
 	// find removed items.
 	for bindMapKey, condMap := range oriBindMap {
-		for cond, _ := range condMap {
+		for cond := range condMap {
 			deltas = append(deltas, &v1pb.BindingDeltas{
 				Action:    "REMOVE",
 				Member:    bindMapKey.User,
