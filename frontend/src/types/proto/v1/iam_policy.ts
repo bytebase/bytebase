@@ -41,6 +41,7 @@ export interface IamPolicy {
    * the call will be blocked and an ABORTED error will be returned.
    */
   etag: string;
+  bindingDeltas: BindingDeltas[];
 }
 
 export interface Binding {
@@ -65,6 +66,13 @@ export interface Binding {
     | undefined;
   /** The parsed expression of the condition. */
   parsedExpr: ParsedExpr | undefined;
+}
+
+export interface BindingDeltas {
+  action: string;
+  member: string;
+  role: string;
+  condition: Expr | undefined;
 }
 
 function createBaseGetIamPolicyRequest(): GetIamPolicyRequest {
@@ -216,7 +224,7 @@ export const SetIamPolicyRequest = {
 };
 
 function createBaseIamPolicy(): IamPolicy {
-  return { bindings: [], etag: "" };
+  return { bindings: [], etag: "", bindingDeltas: [] };
 }
 
 export const IamPolicy = {
@@ -226,6 +234,9 @@ export const IamPolicy = {
     }
     if (message.etag !== "") {
       writer.uint32(18).string(message.etag);
+    }
+    for (const v of message.bindingDeltas) {
+      BindingDeltas.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -251,6 +262,13 @@ export const IamPolicy = {
 
           message.etag = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.bindingDeltas.push(BindingDeltas.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -264,6 +282,9 @@ export const IamPolicy = {
     return {
       bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
+      bindingDeltas: globalThis.Array.isArray(object?.bindingDeltas)
+        ? object.bindingDeltas.map((e: any) => BindingDeltas.fromJSON(e))
+        : [],
     };
   },
 
@@ -275,6 +296,9 @@ export const IamPolicy = {
     if (message.etag !== "") {
       obj.etag = message.etag;
     }
+    if (message.bindingDeltas?.length) {
+      obj.bindingDeltas = message.bindingDeltas.map((e) => BindingDeltas.toJSON(e));
+    }
     return obj;
   },
 
@@ -285,6 +309,7 @@ export const IamPolicy = {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
     message.etag = object.etag ?? "";
+    message.bindingDeltas = object.bindingDeltas?.map((e) => BindingDeltas.fromPartial(e)) || [];
     return message;
   },
 };
@@ -392,6 +417,112 @@ export const Binding = {
       : undefined;
     message.parsedExpr = (object.parsedExpr !== undefined && object.parsedExpr !== null)
       ? ParsedExpr.fromPartial(object.parsedExpr)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseBindingDeltas(): BindingDeltas {
+  return { action: "", member: "", role: "", condition: undefined };
+}
+
+export const BindingDeltas = {
+  encode(message: BindingDeltas, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.action !== "") {
+      writer.uint32(10).string(message.action);
+    }
+    if (message.member !== "") {
+      writer.uint32(18).string(message.member);
+    }
+    if (message.role !== "") {
+      writer.uint32(26).string(message.role);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BindingDeltas {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBindingDeltas();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.action = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.member = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.role = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BindingDeltas {
+    return {
+      action: isSet(object.action) ? globalThis.String(object.action) : "",
+      member: isSet(object.member) ? globalThis.String(object.member) : "",
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+    };
+  },
+
+  toJSON(message: BindingDeltas): unknown {
+    const obj: any = {};
+    if (message.action !== "") {
+      obj.action = message.action;
+    }
+    if (message.member !== "") {
+      obj.member = message.member;
+    }
+    if (message.role !== "") {
+      obj.role = message.role;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BindingDeltas>): BindingDeltas {
+    return BindingDeltas.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BindingDeltas>): BindingDeltas {
+    const message = createBaseBindingDeltas();
+    message.action = object.action ?? "";
+    message.member = object.member ?? "";
+    message.role = object.role ?? "";
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
       : undefined;
     return message;
   },

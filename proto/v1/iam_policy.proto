@@ -36,6 +36,8 @@ message IamPolicy {
   // If an etag is provided and does not match the current etag of the poliy,
   // the call will be blocked and an ABORTED error will be returned.
   string etag = 2;
+
+  repeated BindingDeltas bindingDeltas = 3;
 }
 
 message Binding {
@@ -55,4 +57,11 @@ message Binding {
 
   // The parsed expression of the condition.
   google.api.expr.v1alpha1.ParsedExpr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message BindingDeltas {
+  string action = 1;
+  string member = 2;
+  string role = 3;
+  google.type.Expr condition = 4;
 }

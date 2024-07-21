@@ -361,6 +361,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	var oriIamPolicy *storepb.IamPolicy
 	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -405,6 +406,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if request.Etag != policyMessage.Etag {
 		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
 	}
+	oriIamPolicy = policyMessage.Policy
 
 	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
@@ -426,7 +428,119 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
+
+	v1IamPolicy, err := convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
+	if err != nil {
+		return nil, err
+	}
+	v1IamPolicy.BindingDeltas = findIamPolicyDeltas(oriIamPolicy, iamPolicyMessage.Policy)
+	return v1IamPolicy, nil
+}
+
+type bindMapKey struct {
+	User string
+	Role string
+}
+
+type condMap map[exportedExpr]bool
+
+// only contains exported fields in expr.Expr.
+type exportedExpr struct {
+	Expression  string
+	Title       string
+	Description string
+	Location    string
+}
+
+func convertToExportedExpr(e *expr.Expr) *exportedExpr {
+	if e == nil {
+		return nil
+	}
+	return &exportedExpr{
+		Expression:  e.Expression,
+		Title:       e.Title,
+		Description: e.Description,
+		Location:    e.Location,
+	}
+}
+
+func convertToOriExpr(e *exportedExpr) *expr.Expr {
+	if e == nil {
+		return nil
+	}
+	return &expr.Expr{
+		Expression:  e.Expression,
+		Title:       e.Title,
+		Description: e.Description,
+		Location:    e.Location,
+	}
+}
+
+func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.IamPolicy) []*v1pb.BindingDeltas {
+	deltas := []*v1pb.BindingDeltas{}
+
+	oriBindMap := make(map[bindMapKey]condMap)
+
+	// build map.
+	for _, binding := range oriIamPolicy.Bindings {
+		if binding.Condition == nil {
+			continue
+		}
+		for _, mem := range binding.Members {
+			key := bindMapKey{
+				User: mem,
+				Role: binding.Role,
+			}
+			expr := convertToExportedExpr(binding.Condition)
+			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
+				if _, ok := condMap[*expr]; ok {
+					continue
+				}
+				oriBindMap[key][*expr] = true
+				continue
+			}
+			condMap := make(condMap)
+			condMap[*expr] = true
+			oriBindMap[key] = condMap
+		}
+	}
+
+	// find added items.
+	for _, binding := range newIamPolicy.Bindings {
+		for _, mem := range binding.Members {
+			key := bindMapKey{
+				User: mem,
+				Role: binding.Role,
+			}
+			expr := convertToExportedExpr(binding.Condition)
+			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
+				if _, ok := condMap[*expr]; ok {
+					delete(oriBindMap[key], *expr)
+					continue
+				}
+			}
+			deltas = append(deltas, &v1pb.BindingDeltas{
+				Action:    "ADD",
+				Member:    mem,
+				Role:      binding.Role,
+				Condition: binding.Condition,
+			})
+		}
+	}
+
+	// find removed items.
+	for bindMapKey, condMap := range oriBindMap {
+		for cond, _ := range condMap {
+			deltas = append(deltas, &v1pb.BindingDeltas{
+				Action:    "REMOVE",
+				Member:    bindMapKey.User,
+				Role:      bindMapKey.Role,
+				Condition: convertToOriExpr(&cond),
+			})
+		}
+	}
+
+	return deltas
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
