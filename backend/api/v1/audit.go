@@ -215,7 +215,7 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.BatchUpdateDatabasesRequest:
 			return r
 		case *v1pb.SetIamPolicyRequest:
-			return r
+			return redactSetIamPolicyRequest(r)
 		case *v1pb.CreateUserRequest:
 			return redactCreateUserRequest(r)
 		case *v1pb.UpdateUserRequest:
@@ -287,6 +287,24 @@ func getResponseString(response any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func redactSetIamPolicyRequest(r *v1pb.SetIamPolicyRequest) *v1pb.SetIamPolicyRequest {
+	if r == nil {
+		return nil
+	}
+	var policy *v1pb.IamPolicy
+	if r.Policy != nil {
+		policy = &v1pb.IamPolicy{
+			Bindings: r.Policy.Bindings,
+			Etag:     r.Policy.Etag,
+		}
+	}
+	return &v1pb.SetIamPolicyRequest{
+		Resource: r.Resource,
+		Etag:     r.Etag,
+		Policy:   policy,
+	}
 }
 
 func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
