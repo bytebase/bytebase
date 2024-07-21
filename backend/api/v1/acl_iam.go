@@ -17,7 +17,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (err error) {
+func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			perr, ok := r.(error)
@@ -29,19 +29,19 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
 		}
 	}()
-	ok, extra, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user, authContext)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err)
 	}
 	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", fullMethod, methodPermissionMap[fullMethod], extra)
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra)
 	}
 
 	return nil
 }
 
-func isSkippedMethod(fullMethod string) bool {
-	if auth.IsAuthenticationAllowed(fullMethod) {
+func isSkippedMethod(fullMethod string, authContext *common.AuthContext) bool {
+	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true
 	}
 
@@ -112,9 +112,6 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.BranchService_MergeBranch_FullMethodName,
 		v1pb.BranchService_RebaseBranch_FullMethodName:
 		return true
-	// no need to check.
-	case v1pb.BranchService_DiffMetadata_FullMethodName:
-		return true
 	// handled in the method because we need to consider changelist.Creator.
 	case
 		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
@@ -160,9 +157,8 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.DatabaseService_SearchDatabases_FullMethodName,
 		v1pb.IssueService_ListIssues_FullMethodName,
 		v1pb.IssueService_SearchIssues_FullMethodName,
-		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
+
 		v1pb.ProjectService_SearchProjects_FullMethodName,
-		v1pb.ChangelistService_ListChangelists_FullMethodName,
 		v1pb.PlanService_ListPlans_FullMethodName,
 		v1pb.PlanService_SearchPlans_FullMethodName,
 		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
@@ -172,16 +168,12 @@ func isSkippedMethod(fullMethod string) bool {
 	return false
 }
 
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (bool, []string, error) {
-	if isSkippedMethod(fullMethod) {
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
+	if isSkippedMethod(fullMethod, authContext) {
 		return true, nil, nil
 	}
 
-	p, ok := methodPermissionMap[fullMethod]
-	if !ok {
-		return false, nil, errors.Errorf("method %q not found in method-permission map", fullMethod)
-	}
-
+	p := authContext.Permission
 	switch fullMethod {
 	// special cases for bb.instance.get permission check.
 	// we permit users to get instances (and all the related info) if they can get any database in the instance, even if they don't have bb.instance.get permission.

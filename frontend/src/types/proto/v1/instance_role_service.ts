@@ -776,6 +776,7 @@ export const InstanceRoleServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
           578365826: [
             new Uint8Array([
               32,
@@ -825,6 +826,7 @@ export const InstanceRoleServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
           578365826: [
             new Uint8Array([
               32,
@@ -874,6 +876,30 @@ export const InstanceRoleServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([11, 112, 97, 114, 101, 110, 116, 44, 114, 111, 108, 101])],
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              46,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+            ]),
+          ],
           578365826: [
             new Uint8Array([
               38,
@@ -929,6 +955,30 @@ export const InstanceRoleServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([16, 114, 111, 108, 101, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              46,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+            ]),
+          ],
           578365826: [
             new Uint8Array([
               43,
@@ -989,6 +1039,30 @@ export const InstanceRoleServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              46,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+            ]),
+          ],
           578365826: [
             new Uint8Array([
               32,
@@ -1037,6 +1111,30 @@ export const InstanceRoleServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              46,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+            ]),
+          ],
           578365826: [
             new Uint8Array([
               44,

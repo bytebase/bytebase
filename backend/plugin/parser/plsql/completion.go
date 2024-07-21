@@ -190,10 +190,10 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		newIgnoredTokens(),
 		newPreferredRules(),
 		&globalFollowSetsByState,
-		0, // todo
-		0, // todo
-		0, // todo
-		0, // todo
+		plsql.PlSqlParserRULE_select_statement,
+		plsql.PlSqlParserRULE_query_block,
+		plsql.PlSqlParserRULE_column_alias,
+		plsql.PlSqlParserRULE_subquery_factoring_clause,
 	)
 	return &Completer{
 		ctx:                 ctx,
@@ -219,10 +219,10 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		newIgnoredTokens(),
 		newPreferredRules(),
 		&globalFollowSetsByState,
-		0, // todo
-		0, // todo
-		0, // todo
-		0, // todo
+		plsql.PlSqlParserRULE_select_statement,
+		plsql.PlSqlParserRULE_query_block,
+		plsql.PlSqlParserRULE_column_alias,
+		plsql.PlSqlParserRULE_subquery_factoring_clause,
 	)
 	return &Completer{
 		ctx:                 ctx,
@@ -467,7 +467,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
-		// todo: fetchCommonTableExpression
+		c.fetchCommonTableExpression(candidates.Rules[candidate])
 
 		switch candidate {
 		case plsql.PlSqlParserRULE_tableview_name:
@@ -619,9 +619,141 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	return result, nil
 }
 
-func (*Completer) fetchSelectItemAliases(_ []*base.RuleContext) []string {
-	// todo
+func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
+	c.cteTables = nil
+	for _, rule := range ruleStack {
+		if rule.ID == plsql.PlSqlParserRULE_query_block {
+			for _, pos := range rule.CTEList {
+				c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
+			}
+		}
+	}
+}
+
+func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
+	if metadata, exists := c.cteCache[pos]; exists {
+		return metadata
+	}
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return nil
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := plsql.NewPlSqlLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := plsql.NewPlSqlParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.Subquery_factoring_clause()
+
+	listener := &CTETableListener{context: c}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
+	c.cteCache[pos] = listener.result
+	return listener.result
+}
+
+type CTETableListener struct {
+	*plsql.BasePlSqlParserListener
+
+	context *Completer
+	result  []*base.VirtualTableReference
+}
+
+func (l *CTETableListener) EnterFactoring_element(ctx *plsql.Factoring_elementContext) {
+	table := &base.VirtualTableReference{
+		Table: NormalizeIdentifierContext(ctx.Query_name().Identifier()),
+	}
+	if ctx.Paren_column_list() != nil {
+		for _, column := range ctx.Paren_column_list().Column_list().AllColumn_name() {
+			_, _, columnName := NormalizeColumnName(column)
+			table.Columns = append(table.Columns, columnName)
+		}
+	} else {
+		// User didn't specify the column list, so we need to fetch the column list from the query.
+		if span, err := base.GetQuerySpan(
+			l.context.ctx,
+			base.GetQuerySpanContext{
+				InstanceID:              l.context.instanceID,
+				GetDatabaseMetadataFunc: l.context.getMetadata,
+				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+			},
+			store.Engine_ORACLE,
+			fmt.Sprintf("SELECT * FROM (%s)", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
+			l.context.defaultDatabase,
+			"",
+			false,
+		); err == nil && len(span) == 1 {
+			for _, column := range span[0].Results {
+				table.Columns = append(table.Columns, column.Name)
+			}
+		}
+	}
+
+	l.result = append(l.result, table)
+}
+
+func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
+	canUseAliases := false
+	for i := len(ruleStack) - 1; i >= 0; i-- {
+		switch ruleStack[i].ID {
+		case plsql.PlSqlParserRULE_group_by_clause, plsql.PlSqlParserRULE_order_by_clause:
+			canUseAliases = true
+		case plsql.PlSqlParserRULE_query_block, plsql.PlSqlParserRULE_select_statement:
+			if !canUseAliases {
+				return nil
+			}
+			aliasMap := make(map[string]bool)
+			for pos := range ruleStack[i].SelectItemAliases {
+				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+					aliasMap[aliasText] = true
+				}
+			}
+
+			var result []string
+			for alias := range aliasMap {
+				result = append(result, alias)
+			}
+			sort.Slice(result, func(i, j int) bool {
+				return result[i] < result[j]
+			})
+			return result
+		}
+	}
 	return nil
+}
+
+func (c *Completer) extractAliasText(pos int) string {
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return ""
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := plsql.NewPlSqlLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := plsql.NewPlSqlParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	tree := parser.Column_alias()
+
+	listener := &AliasListener{}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	return listener.result
+}
+
+type AliasListener struct {
+	*plsql.BasePlSqlParserListener
+
+	result string
+}
+
+func (l *AliasListener) EnterColumn_alias(ctx *plsql.Column_aliasContext) {
+	l.result = normalizeColumnAlias(ctx)
 }
 
 type ObjectFlags int
@@ -727,13 +859,13 @@ func (c *Completer) determineGeneralElementPartCandidates() (schema, table strin
 
 func unquote(s string) string {
 	if len(s) < 2 {
-		return s
+		return strings.ToUpper(s)
 	}
 
 	if (s[0] == '`' || s[0] == '\'' || s[0] == '"') && s[0] == s[len(s)-1] {
 		return s[1 : len(s)-1]
 	}
-	return s
+	return strings.ToUpper(s)
 }
 
 func (c *Completer) collectRemainingTableReferences() {

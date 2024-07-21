@@ -229,22 +229,17 @@ func (m *Manager) getWorkspaceRolesByRBAC(roles []string) []string {
 func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
 	var roles [][]string
 	for _, projectID := range projectIDs {
-		projectUID, isNumber := utils.IsNumber(projectID)
-
-		if !isNumber {
-			project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
-				ResourceID: &projectID,
-			})
-			if err != nil {
-				return nil, err
-			}
-			if project == nil {
-				return nil, errors.Errorf("cannot found project %s", projectID)
-			}
-			projectUID = project.UID
+		project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if project == nil {
+			return nil, errors.Errorf("cannot found project %s", projectID)
 		}
 
-		policyMessage, err := m.store.GetProjectIamPolicy(ctx, projectUID)
+		policyMessage, err := m.store.GetProjectIamPolicy(ctx, project.UID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
 		}

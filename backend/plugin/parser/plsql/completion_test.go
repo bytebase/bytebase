@@ -39,13 +39,13 @@ func TestCompletion(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		text, caretOffset := catchCaret(t.Input)
+		text, caretLine, caretOffset := catchCaret(t.Input)
 		result, err := base.Completion(context.Background(), storepb.Engine_ORACLE, base.CompletionContext{
 			Scene:             base.SceneTypeAll,
 			DefaultDatabase:   "SCHEMA1",
 			Metadata:          getMetadataForTest,
 			ListDatabaseNames: listDatabaseNamesForTest,
-		}, text, 1, caretOffset)
+		}, text, caretLine, caretOffset)
 		a.NoError(err)
 		var filteredResult []base.Candidate
 		for _, r := range result {
@@ -208,11 +208,19 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 	}
 }
 
-func catchCaret(s string) (string, int) {
+func catchCaret(s string) (string, int, int) {
+	line := 1
+	column := 0
 	for i, c := range s {
-		if c == '|' {
-			return s[:i] + s[i+1:], i
+		switch c {
+		case '|':
+			return s[:i] + s[i+1:], line, column
+		case '\n':
+			line++
+			column = 0
+		default:
+			column++
 		}
 	}
-	return s, -1
+	return s, -1, -1
 }

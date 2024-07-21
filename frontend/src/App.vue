@@ -100,6 +100,9 @@ onMounted(async () => {
   await initBasicModules();
   initialized.value = true;
   prevLoggedIn.value = authStore.isLoggedIn();
+  if (prevLoggedIn.value) {
+    await useWorkspaceV1Store().fetchIamPolicy();
+  }
 
   setInterval(() => {
     if (!initialized.value) {
