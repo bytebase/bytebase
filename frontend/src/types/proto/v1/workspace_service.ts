@@ -16,6 +16,7 @@ export const WorkspaceServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800010: [new Uint8Array([15, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 103, 101, 116])],
           578365826: [
             new Uint8Array([
               42,
@@ -74,6 +75,9 @@ export const WorkspaceServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
+          ],
           578365826: [
             new Uint8Array([
               45,
