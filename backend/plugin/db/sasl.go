@@ -11,6 +11,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// There are two places where the KRB5_CONFIG is needed:
+//  1. The 'kinit' command in the subprocess.
+//  2. gohive.Connect() in the same process.
 func init() {
 	if err := os.Setenv("KRB5_CONFIG", DftKrbConfPath); err != nil {
 		panic(fmt.Sprintf("failed to set env %s: %s", "KRB5_CONFIG", DftKrbConfPath))
