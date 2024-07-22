@@ -7,6 +7,7 @@ import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
+import { overrideAppProfile } from "./customAppProfile";
 import dataSourceType from "./directives/data-source-type";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
@@ -15,14 +16,7 @@ import NaiveUI from "./plugins/naive-ui";
 import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
 import { AUTH_SIGNIN_MODULE } from "./router/auth";
-import type { PageMode } from "./store";
-import {
-  pinia,
-  pushNotification,
-  useActuatorV1Store,
-  useAppFeature,
-  useAuthStore,
-} from "./store";
+import { pinia, pushNotification, useAuthStore } from "./store";
 import {
   environmentName,
   humanizeTs,
@@ -36,7 +30,6 @@ import {
   sizeToFit,
   urlfy,
 } from "./utils";
-import { useCustomTheme } from "./utils/customTheme";
 
 protobufjs.util.Long = Long;
 protobufjs.configure();
@@ -154,45 +147,6 @@ app
   .directive("data-source-type", dataSourceType)
   .use(pinia);
 
-const overrideAppFeatures = () => {
-  const query = new URLSearchParams(window.location.search);
-  const actuatorStore = useActuatorV1Store();
-  const mode = query.get("mode") as PageMode;
-  if (mode === "STANDALONE") {
-    actuatorStore.appProfile.embedded = true;
-
-    // mode=STANDALONE is not easy to read, but for legacy support we keep it as
-    // some customers are using it.
-    actuatorStore.overrideAppFeatures({
-      "bb.feature.embedded-in-iframe": true,
-      "bb.feature.hide-help": true,
-      "bb.feature.hide-quick-start": true,
-      "bb.feature.hide-release-remind": true,
-      "bb.feature.disallow-share-worksheet": true,
-      "bb.feature.disallow-navigate-to-console": true,
-    });
-  }
-  const customTheme = query.get("customTheme");
-  if (customTheme === "lixiang") {
-    actuatorStore.overrideAppFeatures({
-      "bb.feature.custom-query-datasource": true,
-      "bb.feature.disallow-export-query-data": true,
-      "bb.feature.custom-color-scheme": {
-        "--color-accent": "#00665f",
-        "--color-accent-hover": "#00554f",
-        "--color-accent-disabled": "#b8c3c3",
-      },
-    });
-    if (actuatorStore.appProfile.embedded) {
-      actuatorStore.overrideAppFeatures({
-        "bb.feature.hide-issue-review-actions": true,
-      });
-    }
-  }
-
-  useCustomTheme(useAppFeature("bb.feature.custom-color-scheme"));
-};
-
 const overrideLang = () => {
   const query = new URLSearchParams(window.location.search);
   const lang = query.get("lang");
@@ -202,7 +156,7 @@ const overrideLang = () => {
 };
 
 const initSearchParams = () => {
-  overrideAppFeatures();
+  overrideAppProfile();
   overrideLang();
 };
 
