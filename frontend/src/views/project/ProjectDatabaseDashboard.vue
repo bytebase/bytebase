@@ -20,7 +20,9 @@ const props = defineProps<{
 
 const currentUser = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const hideInalterableDatabases = useAppFeature(
+  "bb.feature.databases.hide-inalterable"
+);
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
@@ -32,7 +34,7 @@ const databaseV1List = computed(() => {
   let list = useDatabaseV1Store().databaseListByProject(project.value.name);
   list = sortDatabaseV1List(list);
   // If embedded in iframe, only show alterable databases.
-  if (inIframe.value) {
+  if (hideInalterableDatabases.value) {
     list = list.filter((db) => isDatabaseV1Alterable(db, currentUser.value));
   }
   return list;

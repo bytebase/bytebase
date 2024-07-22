@@ -145,10 +145,10 @@ const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 const disallowShareWorksheet = useAppFeature(
-  "bb.feature.disallow-share-worksheet"
+  "bb.feature.sql-editor.disallow-share-worksheet"
 );
 const hasCustomQueryDatasourceFeature = useAppFeature(
-  "bb.feature.custom-query-datasource"
+  "bb.feature.sql-editor.custom-query-datasource"
 );
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
