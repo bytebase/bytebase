@@ -134,8 +134,8 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 
 	var activePolicies []*store.PolicyMessage
 	for _, policy := range policies {
-		payload, err := api.UnmarshalSlowQueryPolicy(policy.Payload)
-		if err != nil {
+		payload := &storepb.SlowQueryPolicy{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), payload); err != nil {
 			slog.Error("Failed to unmarshal slow query policy payload", log.BBError(err))
 			return
 		}

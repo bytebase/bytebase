@@ -521,9 +521,9 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 	if err != nil {
 		return errors.Wrapf(err, "failed to create external approval")
 	}
-	payload, err := json.Marshal(&api.ExternalApprovalPayloadRelay{
-		ExternalApprovalNodeID: node.Id,
-		ID:                     id,
+	payload, err := protojson.Marshal(&storepb.ExternalApprovalPayload{
+		ExternalApprovalNodeId: node.Id,
+		Id:                     id,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal external approval payload")

@@ -18,6 +18,10 @@
   
     - [Advice.Status](#bytebase-store-Advice-Status)
   
+- [store/anomaly.proto](#store_anomaly-proto)
+    - [AnomalyConnectionPayload](#bytebase-store-AnomalyConnectionPayload)
+    - [AnomalyDatabaseSchemaDriftPayload](#bytebase-store-AnomalyDatabaseSchemaDriftPayload)
+  
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
@@ -173,6 +177,8 @@
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
+    - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
+    - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
@@ -180,11 +186,14 @@
     - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [SlowQueryPolicy](#bytebase-store-SlowQueryPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
+    - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
@@ -220,6 +229,7 @@
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
     - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-store-DataClassificationSetting-DataClassificationConfig-DataClassification)
     - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level)
+    - [ExternalApprovalPayload](#bytebase-store-ExternalApprovalPayload)
     - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [MaskingAlgorithmSetting](#bytebase-store-MaskingAlgorithmSetting)
@@ -481,6 +491,54 @@ Used internally for obfuscating the page token.
 | WARNING | 2 |  |
 | ERROR | 3 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_anomaly-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/anomaly.proto
+
+
+
+<a name="bytebase-store-AnomalyConnectionPayload"></a>
+
+### AnomalyConnectionPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| detail | [string](#string) |  | Connection failure detail |
+
+
+
+
+
+
+<a name="bytebase-store-AnomalyDatabaseSchemaDriftPayload"></a>
+
+### AnomalyDatabaseSchemaDriftPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The schema version corresponds to the expected schema |
+| expect | [string](#string) |  | The expected latest schema stored in the migration history table |
+| actual | [string](#string) |  | The actual schema dumped from the database |
+
+
+
+
+
+ 
 
  
 
@@ -2781,6 +2839,36 @@ Type is the database change type.
 
 
 
+<a name="bytebase-store-DisableCopyDataPolicy"></a>
+
+### DisableCopyDataPolicy
+DisableCopyDataPolicy is the policy configuration for disabling copying data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-EnvironmentTierPolicy"></a>
+
+### EnvironmentTierPolicy
+EnvironmentTierPolicy is the tier of an environment.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| environment_tier | [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-IamPolicy"></a>
 
 ### IamPolicy
@@ -2898,6 +2986,21 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
+<a name="bytebase-store-RestrictIssueCreationForSQLReviewPolicy"></a>
+
+### RestrictIssueCreationForSQLReviewPolicy
+RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disallow | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-RolloutPolicy"></a>
 
 ### RolloutPolicy
@@ -2935,6 +3038,21 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
+<a name="bytebase-store-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+SlowQueryPolicy is the policy configuration for slow query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-TagPolicy"></a>
 
 ### TagPolicy
@@ -2966,6 +3084,19 @@ Format: users/{userUID} or groups/{group email} |
 
 
  
+
+
+<a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>
+
+### EnvironmentTierPolicy.EnvironmentTier
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
+| PROTECTED | 1 |  |
+| UNPROTECTED | 2 |  |
+
 
 
 <a name="bytebase-store-MaskingExceptionPolicy-MaskingException-Action"></a>
@@ -3410,6 +3541,22 @@ The type of target.
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ExternalApprovalPayload"></a>
+
+### ExternalApprovalPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_approval_node_id | [string](#string) |  |  |
+| id | [string](#string) |  |  |
 
 
 

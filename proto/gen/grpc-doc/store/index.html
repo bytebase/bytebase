@@ -233,6 +233,25 @@
         
           
           <li>
+            <a href="#store%2fanomaly.proto">store/anomaly.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.AnomalyConnectionPayload"><span class="badge">M</span>AnomalyConnectionPayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.AnomalyDatabaseSchemaDriftPayload"><span class="badge">M</span>AnomalyDatabaseSchemaDriftPayload</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fapproval.proto">store/approval.proto</a>
             <ul>
               
@@ -866,6 +885,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DisableCopyDataPolicy"><span class="badge">M</span>DisableCopyDataPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EnvironmentTierPolicy"><span class="badge">M</span>EnvironmentTierPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.IamPolicy"><span class="badge">M</span>IamPolicy</a>
                 </li>
               
@@ -894,11 +921,19 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.RestrictIssueCreationForSQLReviewPolicy"><span class="badge">M</span>RestrictIssueCreationForSQLReviewPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.RolloutPolicy"><span class="badge">M</span>RolloutPolicy</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SlowQueryPolicy"><span class="badge">M</span>SlowQueryPolicy</a>
                 </li>
               
                 <li>
@@ -909,6 +944,10 @@
                   <a href="#bytebase.store.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.EnvironmentTierPolicy.EnvironmentTier"><span class="badge">E</span>EnvironmentTierPolicy.EnvironmentTier</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.MaskingExceptionPolicy.MaskingException.Action"><span class="badge">E</span>MaskingExceptionPolicy.MaskingException.Action</a>
@@ -1061,6 +1100,10 @@
               
                 <li>
                   <a href="#bytebase.store.DataClassificationSetting.DataClassificationConfig.Level"><span class="badge">M</span>DataClassificationSetting.DataClassificationConfig.Level</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ExternalApprovalPayload"><span class="badge">M</span>ExternalApprovalPayload</a>
                 </li>
               
                 <li>
@@ -1864,6 +1907,82 @@
             
           </tbody>
         </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/anomaly.proto">store/anomaly.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.AnomalyConnectionPayload">AnomalyConnectionPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>detail</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Connection failure detail </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AnomalyDatabaseSchemaDriftPayload">AnomalyDatabaseSchemaDriftPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema version corresponds to the expected schema </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expect</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expected latest schema stored in the migration history table </p></td>
+                </tr>
+              
+                <tr>
+                  <td>actual</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The actual schema dumped from the database </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
       
 
       
@@ -7349,6 +7468,54 @@ If the condition evaluates to false, then this binding does not apply to the cur
 
         
       
+        <h3 id="bytebase.store.DisableCopyDataPolicy">DisableCopyDataPolicy</h3>
+        <p>DisableCopyDataPolicy is the policy configuration for disabling copying data.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>active</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EnvironmentTierPolicy">EnvironmentTierPolicy</h3>
+        <p>EnvironmentTierPolicy is the tier of an environment.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>environment_tier</td>
+                  <td><a href="#bytebase.store.EnvironmentTierPolicy.EnvironmentTier">EnvironmentTierPolicy.EnvironmentTier</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.IamPolicy">IamPolicy</h3>
         <p></p>
 
@@ -7590,6 +7757,30 @@ Format: users/{userUID} or groups/{group email} </p></td>
 
         
       
+        <h3 id="bytebase.store.RestrictIssueCreationForSQLReviewPolicy">RestrictIssueCreationForSQLReviewPolicy</h3>
+        <p>RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>disallow</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.RolloutPolicy">RolloutPolicy</h3>
         <p></p>
 
@@ -7688,6 +7879,30 @@ roles/CREATOR </p></td>
 
         
       
+        <h3 id="bytebase.store.SlowQueryPolicy">SlowQueryPolicy</h3>
+        <p>SlowQueryPolicy is the policy configuration for slow query.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>active</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.TagPolicy">TagPolicy</h3>
         <p></p>
 
@@ -7745,6 +7960,35 @@ for example, the environment resource can have the sql review config tag, like &
         
       
 
+      
+        <h3 id="bytebase.store.EnvironmentTierPolicy.EnvironmentTier">EnvironmentTierPolicy.EnvironmentTier</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ENVIRONMENT_TIER_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROTECTED</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UNPROTECTED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</h3>
         <p></p>
@@ -8596,6 +8840,37 @@ and write back to the schema metadata. </p></td>
               
                 <tr>
                   <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ExternalApprovalPayload">ExternalApprovalPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>external_approval_node_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
