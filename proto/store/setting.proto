@@ -102,6 +102,11 @@ message ExternalApprovalSetting {
   repeated Node nodes = 1;
 }
 
+message ExternalApprovalPayload {
+  string external_approval_node_id = 1;
+  string id = 2;
+}
+
 message SMTPMailDeliverySetting {
   // The SMTP server address.
   string server = 1;

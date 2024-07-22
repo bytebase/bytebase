@@ -4,7 +4,6 @@ package schemasync
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -466,12 +465,12 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		latestSchema := string(rawDump)
 		if len(list) > 0 {
 			if list[0].Schema != latestSchema {
-				anomalyPayload := api.AnomalyDatabaseSchemaDriftPayload{
+				anomalyPayload := &storepb.AnomalyDatabaseSchemaDriftPayload{
 					Version: list[0].Version.Version,
 					Expect:  list[0].Schema,
 					Actual:  latestSchema,
 				}
-				payload, err := json.Marshal(anomalyPayload)
+				payload, err := protojson.Marshal(anomalyPayload)
 				if err != nil {
 					slog.Error("Failed to marshal anomaly payload",
 						slog.String("instance", instance.ResourceID),
@@ -512,10 +511,10 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 func (s *Syncer) upsertInstanceConnectionAnomaly(ctx context.Context, instance *store.InstanceMessage, connErr error) {
 	if connErr != nil {
-		anomalyPayload := api.AnomalyInstanceConnectionPayload{
+		anomalyPayload := &storepb.AnomalyConnectionPayload{
 			Detail: connErr.Error(),
 		}
-		payload, err := json.Marshal(anomalyPayload)
+		payload, err := protojson.Marshal(anomalyPayload)
 		if err != nil {
 			slog.Error("Failed to marshal anomaly payload",
 				slog.String("instance", instance.ResourceID),
@@ -550,10 +549,10 @@ func (s *Syncer) upsertInstanceConnectionAnomaly(ctx context.Context, instance *
 
 func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, connErr error) {
 	if connErr != nil {
-		anomalyPayload := api.AnomalyDatabaseConnectionPayload{
+		anomalyPayload := &storepb.AnomalyConnectionPayload{
 			Detail: connErr.Error(),
 		}
-		payload, err := json.Marshal(anomalyPayload)
+		payload, err := protojson.Marshal(anomalyPayload)
 		if err != nil {
 			slog.Error("Failed to marshal anomaly payload",
 				slog.String("instance", instance.ResourceID),
