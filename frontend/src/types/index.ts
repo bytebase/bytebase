@@ -15,7 +15,6 @@ export * from "./issue";
 export * from "./member";
 export * from "./notification";
 export * from "./oauth";
-export * from "./pipeline";
 export * from "./plan";
 export * from "./principal";
 export * from "./project";

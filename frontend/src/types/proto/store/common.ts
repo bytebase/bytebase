@@ -447,6 +447,11 @@ export interface Position {
   column: number;
 }
 
+export interface DatabaseLabel {
+  key: string;
+  value: string;
+}
+
 function createBasePageToken(): PageToken {
   return { limit: 0, offset: 0 };
 }
@@ -591,6 +596,80 @@ export const Position = {
     const message = createBasePosition();
     message.line = object.line ?? 0;
     message.column = object.column ?? 0;
+    return message;
+  },
+};
+
+function createBaseDatabaseLabel(): DatabaseLabel {
+  return { key: "", value: "" };
+}
+
+export const DatabaseLabel = {
+  encode(message: DatabaseLabel, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseLabel {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseLabel();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseLabel {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: DatabaseLabel): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseLabel>): DatabaseLabel {
+    return DatabaseLabel.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DatabaseLabel>): DatabaseLabel {
+    const message = createBaseDatabaseLabel();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };

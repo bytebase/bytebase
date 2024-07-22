@@ -3,7 +3,6 @@ package approval
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math"
@@ -455,13 +454,13 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 			environmentID := instance.EnvironmentID
 			var databaseName string
 			if task.Type == api.TaskDatabaseCreate {
-				payload := &api.TaskDatabaseCreatePayload{}
-				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				payload := &storepb.TaskDatabaseCreatePayload{}
+				if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				databaseName = payload.DatabaseName
-				if payload.EnvironmentID != "" {
-					environmentID = payload.EnvironmentID
+				if payload.EnvironmentId != "" {
+					environmentID = payload.EnvironmentId
 				}
 			} else {
 				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -603,8 +602,8 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, sheetMa
 				continue
 			}
 
-			payload := &api.TaskDatabaseDataExportPayload{}
-			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+			payload := &storepb.TaskDatabaseDataExportPayload{}
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 				return 0, store.RiskSourceUnknown, false, err
 			}
 

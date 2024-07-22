@@ -259,9 +259,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		return planCheckRuns, nil
 	}
 
-	preUpdateBackupDetail := (*storepb.PlanCheckRunConfig_PreUpdateBackupDetail)(nil)
+	preUpdateBackupDetail := (*storepb.PreUpdateBackupDetail)(nil)
 	if config.PreUpdateBackupDetail != nil {
-		preUpdateBackupDetail = &storepb.PlanCheckRunConfig_PreUpdateBackupDetail{
+		preUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
 			Database: config.PreUpdateBackupDetail.Database,
 		}
 	}
