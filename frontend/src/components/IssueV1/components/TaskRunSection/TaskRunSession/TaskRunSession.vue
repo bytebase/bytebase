@@ -17,6 +17,7 @@
 <script setup lang="tsx">
 import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
+import { BBSpin } from "@/bbkit";
 import { rolloutServiceClient } from "@/grpcweb";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
 import PostgresSessionTable from "./PostgresSessionTable.vue";
