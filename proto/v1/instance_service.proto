@@ -29,6 +29,7 @@ service InstanceService {
     option (bytebase.v1.permission) = "bb.instances.list";
   }
 
+  // Deprecated.
   rpc SearchInstances(SearchInstancesRequest) returns (SearchInstancesResponse) {
     option (google.api.http) = {
       get: "/v1/instances:search"

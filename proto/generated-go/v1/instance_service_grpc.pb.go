@@ -41,6 +41,7 @@ const (
 type InstanceServiceClient interface {
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
+	// Deprecated.
 	SearchInstances(ctx context.Context, in *SearchInstancesRequest, opts ...grpc.CallOption) (*SearchInstancesResponse, error)
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
@@ -198,6 +199,7 @@ func (c *instanceServiceClient) SyncSlowQueries(ctx context.Context, in *SyncSlo
 type InstanceServiceServer interface {
 	GetInstance(context.Context, *GetInstanceRequest) (*Instance, error)
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
+	// Deprecated.
 	SearchInstances(context.Context, *SearchInstancesRequest) (*SearchInstancesResponse, error)
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
