@@ -9,6 +9,7 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -282,18 +283,18 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, errors.Wrap(err, "failed to create database creation sheet")
 		}
 
-		payload := api.TaskDatabaseCreatePayload{
-			SpecID:        spec.Id,
-			ProjectID:     project.UID,
+		payload := &storepb.TaskDatabaseCreatePayload{
+			SpecId:        spec.Id,
+			ProjectId:     int32(project.UID),
 			CharacterSet:  c.CharacterSet,
 			TableName:     c.Table,
 			Collation:     c.Collation,
-			EnvironmentID: dbEnvironmentID,
+			EnvironmentId: dbEnvironmentID,
 			Labels:        labelsJSON,
 			DatabaseName:  databaseName,
-			SheetID:       sheet.UID,
+			SheetId:       int32(sheet.UID),
 		}
-		bytes, err := json.Marshal(payload)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
 		}
@@ -366,15 +367,15 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 	}
-	payload := api.TaskDatabaseDataExportPayload{
-		SpecID:  spec.Id,
-		SheetID: sheetUID,
+	payload := &storepb.TaskDatabaseDataExportPayload{
+		SpecId:  spec.Id,
+		SheetId: int32(sheetUID),
 		Format:  c.Format,
 	}
 	if c.Password != nil {
 		payload.Password = *c.Password
 	}
-	bytes, err := json.Marshal(payload)
+	bytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to marshal task database data export payload")
 	}
@@ -423,11 +424,11 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 
 	switch c.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
-		payload := api.TaskDatabaseSchemaBaselinePayload{
-			SpecID:        spec.Id,
+		payload := &storepb.TaskDatabaseUpdatePayload{
+			SpecId:        spec.Id,
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
-		bytes, err := json.Marshal(payload)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to marshal task database schema baseline payload")
 		}
@@ -447,12 +448,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		payload := api.TaskDatabaseSchemaUpdatePayload{
-			SpecID:        spec.Id,
-			SheetID:       sheetUID,
+		payload := &storepb.TaskDatabaseUpdatePayload{
+			SpecId:        spec.Id,
+			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
-		bytes, err := json.Marshal(payload)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
 		}
@@ -472,12 +473,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
-			SpecID:        spec.Id,
-			SheetID:       sheetUID,
+		payload := &storepb.TaskDatabaseUpdatePayload{
+			SpecId:        spec.Id,
+			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
-		bytes, err := json.Marshal(payload)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update SDL payload")
 		}
@@ -502,9 +503,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		var taskCreateList []*store.TaskMessage
 		// task "sync"
-		payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
-			SpecID:        spec.Id,
-			SheetID:       sheetUID,
+		payloadSync := &storepb.TaskDatabaseUpdatePayload{
+			SpecId:        spec.Id,
+			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			Flags:         c.GhostFlags,
 		}
@@ -522,10 +523,10 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		})
 
 		// task "cutover"
-		payloadCutover := api.TaskDatabaseSchemaUpdateGhostCutoverPayload{
-			SpecID: spec.Id,
+		payloadCutover := &storepb.TaskDatabaseUpdatePayload{
+			SpecId: spec.Id,
 		}
-		bytesCutover, err := json.Marshal(payloadCutover)
+		bytesCutover, err := protojson.Marshal(payloadCutover)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost cutover payload")
 		}
@@ -550,17 +551,17 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		preUpdateBackupDetail := api.PreUpdateBackupDetail{}
+		preUpdateBackupDetail := &storepb.PreUpdateBackupDetail{}
 		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
 			preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
 		}
-		payload := api.TaskDatabaseDataUpdatePayload{
-			SpecID:                spec.Id,
-			SheetID:               sheetUID,
+		payload := &storepb.TaskDatabaseUpdatePayload{
+			SpecId:                spec.Id,
+			SheetId:               int32(sheetUID),
 			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		}
-		bytes, err := json.Marshal(payload)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Failed to marshal database data update payload")
 		}

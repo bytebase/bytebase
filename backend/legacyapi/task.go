@@ -56,110 +56,6 @@ const (
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 
-// TaskDatabaseCreatePayload is the task payload for creating databases.
-type TaskDatabaseCreatePayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-
-	// The project owning the database.
-	ProjectID     int    `json:"projectId,omitempty"`
-	DatabaseName  string `json:"databaseName,omitempty"`
-	TableName     string `json:"tableName,omitempty"`
-	SheetID       int    `json:"sheetId,omitempty"`
-	CharacterSet  string `json:"character,omitempty"`
-	Collation     string `json:"collation,omitempty"`
-	EnvironmentID string `json:"environmentId,omitempty"`
-	Labels        string `json:"labels,omitempty"`
-}
-
-// TaskDatabaseSchemaBaselinePayload is the task payload for database schema baseline.
-type TaskDatabaseSchemaBaselinePayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-
-	SchemaVersion string `json:"schemaVersion,omitempty"`
-}
-
-// TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
-type TaskDatabaseSchemaUpdatePayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-
-	SheetID       int    `json:"sheetId,omitempty"`
-	SchemaVersion string `json:"schemaVersion,omitempty"`
-}
-
-// TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
-type TaskDatabaseSchemaUpdateSDLPayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-
-	SheetID       int    `json:"sheetId,omitempty"`
-	SchemaVersion string `json:"schemaVersion,omitempty"`
-}
-
-// TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
-type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-
-	SheetID       int    `json:"sheetId,omitempty"`
-	SchemaVersion string `json:"schemaVersion,omitempty"`
-
-	Flags map[string]string `json:"flags,omitempty"`
-	// SocketFileName is the socket file that gh-ost listens on.
-	// The name follows this template,
-	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.sock`
-	// SocketFileName will be composed when needed. We don't store it explicitly.
-}
-
-// TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
-type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-}
-
-// TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
-type TaskDatabaseDataUpdatePayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-
-	SheetID       int    `json:"sheetId,omitempty"`
-	SchemaVersion string `json:"schemaVersion,omitempty"`
-
-	PreUpdateBackupDetail PreUpdateBackupDetail `json:"preUpdateBackupDetail,omitempty"`
-}
-
-type PreUpdateBackupDetail struct {
-	// The database for keeping the backup data.
-	// Format: instances/{instance}/databases/{database}
-	Database string `json:"database,omitempty"`
-}
-
-// TaskDatabaseDataExportPayload is the task payload for database data export.
-type TaskDatabaseDataExportPayload struct {
-	// Common fields
-	SpecID string `json:"specId,omitempty"`
-
-	SheetID  int                  `json:"sheetId,omitempty"`
-	Format   storepb.ExportFormat `json:"format,omitempty"`
-	Password string               `json:"password,omitempty"`
-}
-
 // Progress is a generalized struct which can track the progress of a task.
 type Progress struct {
 	// TotalUnit is the total unit count of the task
@@ -223,7 +119,7 @@ type TaskPatch struct {
 	SchemaVersion         *string
 	ExportFormat          *storepb.ExportFormat
 	ExportPassword        *string
-	PreUpdateBackupDetail *PreUpdateBackupDetail
+	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
 
 	// Flags for gh-ost.
 	Flags *map[string]string
