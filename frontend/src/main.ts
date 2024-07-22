@@ -153,14 +153,14 @@ app
   .directive("data-source-type", dataSourceType)
   .use(pinia);
 
-const overrideCustomFeatureMatrix = () => {
+const overrideAppProfile = () => {
   const query = new URLSearchParams(window.location.search);
   const actuatorStore = useActuatorV1Store();
   const mode = query.get("mode") as PageMode;
   if (mode === "STANDALONE") {
     // mode=STANDALONE is not easy to read, but for legacy support we keep it as
     // some customers are using it.
-    actuatorStore.overrideCustomFeatureMatrix({
+    actuatorStore.overrideAppProfile({
       "bb.custom-feature.embedded-in-iframe": true,
       "bb.custom-feature.hide-help": true,
       "bb.custom-feature.hide-quick-start": true,
@@ -172,7 +172,7 @@ const overrideCustomFeatureMatrix = () => {
   }
   const customTheme = query.get("customTheme");
   if (customTheme === "lixiang") {
-    actuatorStore.overrideCustomFeatureMatrix({
+    actuatorStore.overrideAppProfile({
       "bb.custom-feature.custom-query-datasource": true,
       "bb.custom-feature.disallow-export-query-data": true,
       "bb.custom-feature.custom-color-scheme": {
@@ -181,10 +181,8 @@ const overrideCustomFeatureMatrix = () => {
         "--color-accent-disabled": "#b8c3c3",
       },
     });
-    if (
-      actuatorStore.customFeatureMatrix["bb.custom-feature.embedded-in-iframe"]
-    ) {
-      actuatorStore.overrideCustomFeatureMatrix({
+    if (actuatorStore.appProfile["bb.custom-feature.embedded-in-iframe"]) {
+      actuatorStore.overrideAppProfile({
         "bb.custom-feature.hide-issue-review-actions": true,
       });
     }
@@ -192,10 +190,7 @@ const overrideCustomFeatureMatrix = () => {
 
   useCustomTheme(
     computed(
-      () =>
-        actuatorStore.customFeatureMatrix[
-          "bb.custom-feature.custom-color-scheme"
-        ]
+      () => actuatorStore.appProfile["bb.custom-feature.custom-color-scheme"]
     )
   );
 };
@@ -209,7 +204,7 @@ const overrideLang = () => {
 };
 
 const initSearchParams = () => {
-  overrideCustomFeatureMatrix();
+  overrideAppProfile();
   overrideLang();
 };
 

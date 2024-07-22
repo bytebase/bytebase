@@ -6,9 +6,8 @@ import { computed, watchEffect } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
-  defaultCustomFeatureMatrix,
-  type CustomFeature,
-  type CustomFeatureMatrix,
+  defaultAppProfile,
+  type AppProfile,
   type Release,
   type ReleaseInfo,
 } from "@/types";
@@ -37,7 +36,7 @@ interface ActuatorState {
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
   debugLogList: DebugLog[];
-  customFeatureMatrix: CustomFeatureMatrix;
+  appProfile: AppProfile;
 }
 
 export const useActuatorV1Store = defineStore("actuator_v1", {
@@ -50,7 +49,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       nextCheckTs: 0,
     }),
     debugLogList: [],
-    customFeatureMatrix: defaultCustomFeatureMatrix(),
+    appProfile: defaultAppProfile(),
   }),
   getters: {
     info: (state) => {
@@ -181,8 +180,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         return;
       }
     },
-    overrideCustomFeatureMatrix(overrides: Partial<CustomFeatureMatrix>) {
-      Object.assign(this.customFeatureMatrix, overrides);
+    overrideAppProfile(overrides: Partial<AppProfile>) {
+      Object.assign(this.appProfile, overrides);
     },
   },
 });
@@ -200,6 +199,6 @@ export const usePageMode = () => {
   return pageMode;
 };
 
-export const useCustomFeature = <T extends CustomFeature>(feature: T) => {
-  return computed(() => useActuatorV1Store().customFeatureMatrix[feature]);
+export const useCustomFeature = <T extends keyof AppProfile>(feature: T) => {
+  return computed(() => useActuatorV1Store().appProfile[feature]);
 };

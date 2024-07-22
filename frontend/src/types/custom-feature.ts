@@ -1,4 +1,4 @@
-export type CustomFeatureMatrix = {
+export type AppProfile = {
   "bb.custom-feature.embedded-in-iframe": boolean;
   "bb.custom-feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.custom-feature.custom-query-datasource": boolean;
@@ -12,9 +12,7 @@ export type CustomFeatureMatrix = {
   "bb.custom-feature.hide-issue-review-actions": boolean;
 };
 
-export type CustomFeature = keyof CustomFeatureMatrix;
-
-export const defaultCustomFeatureMatrix = (): CustomFeatureMatrix => ({
+export const defaultAppProfile = (): AppProfile => ({
   "bb.custom-feature.embedded-in-iframe": false,
   "bb.custom-feature.custom-color-scheme": undefined,
   "bb.custom-feature.custom-query-datasource": false,
