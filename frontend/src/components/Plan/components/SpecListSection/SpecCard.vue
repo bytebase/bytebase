@@ -66,7 +66,7 @@ import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
 } from "@/types/proto/v1/plan_service";
-import { DatabaseGroupView } from "@/types/proto/v1/project_service";
+import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
   databaseForSpec,
   isDatabaseChangeSpec,

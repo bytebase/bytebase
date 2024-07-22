@@ -193,7 +193,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		case *tsqlbatch.GoCommand:
 			stmt := batch.String()
 			// Try send the batch to server.
-
 			indexes := []int32{int32(idx)}
 			idx++
 			for i := uint(0); i < v.Count; i++ {
