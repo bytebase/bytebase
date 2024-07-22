@@ -182,18 +182,8 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			if dbType == storepb.Engine_MSSQL {
-				switch v {
-				case "UNIQUEIDENTIFIER":
-					scanArgs[i] = new(mssqldb.UniqueIdentifier)
-					continue
-				case "NULLUNIQUEIDENTIFIER":
-					scanArgs[i] = new(mssqldb.NullUniqueIdentifier)
-					continue
-				case "GEOMETRY":
-					scanArgs[i] = new(sql.NullString)
-					wantBytesValue[i] = true
-					continue
-				}
+				scanArgs[i], wantBytesValue[i] = mssqlMakeScanDestByTypeName(v)
+				continue
 			}
 			switch v {
 			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
@@ -266,4 +256,75 @@ func ConvertYesNo(s string) (bool, error) {
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
+}
+
+// TODO(zp): This function should be moved back to the driver-specific package, put it here
+// now to avoid cyclic dependency problem.
+func mssqlMakeScanDestByTypeName(tn string) (dest any, wantByte bool) {
+	switch strings.ToUpper(tn) {
+	case "TINYINT":
+		return new(sql.NullInt64), false
+	case "SMALLINT":
+		return new(sql.NullInt64), false
+	case "INT":
+		return new(sql.NullInt64), false
+	case "BIGINT":
+		return new(sql.NullInt64), false
+	case "REAL":
+		return new(sql.NullFloat64), false
+	case "FLOAT":
+		return new(sql.NullFloat64), false
+	case "VARBINARY":
+		// TODO(zp): Null bytes?
+		return new(sql.NullString), true
+	case "VARCHAR":
+		return new(sql.NullString), false
+	case "NVARCHAR":
+		return new(sql.NullString), false
+	case "BIT":
+		return new(sql.NullBool), false
+	case "DECIMAL":
+		return new(sql.NullString), false
+	case "SMALLMONEY":
+		return new(sql.NullString), false
+	case "MONEY":
+		return new(sql.NullString), false
+
+	// TODO(zp): Scan to string now, switch to use time.Time while masking support it.
+	// // Source values of type [time.Time] may be scanned into values of type
+	// *time.Time, *interface{}, *string, or *[]byte. When converting to
+	// the latter two, [time.RFC3339Nano] is used.
+	case "SMALLDATETIME":
+		return new(sql.NullString), false
+	case "DATETIME":
+		return new(sql.NullString), false
+	case "DATETIME2":
+		return new(sql.NullString), false
+	case "DATE":
+		return new(sql.NullString), false
+	case "TIME":
+		return new(sql.NullString), false
+	case "DATETIMEOFFSET":
+		return new(sql.NullString), false
+
+	case "CHAR":
+		return new(sql.NullString), false
+	case "NCHAR":
+		return new(sql.NullString), false
+	case "UNIQUEIDENTIFIER":
+		return new(mssqldb.NullUniqueIdentifier), false
+	case "XML":
+		return new(sql.NullString), false
+	case "TEXT":
+		return new(sql.NullString), false
+	case "NTEXT":
+		return new(sql.NullString), false
+	case "IMAGE":
+		return new(sql.NullString), true
+	case "BINARY":
+		return new(sql.NullString), true
+	case "SQL_VARIANT":
+		return new(sql.NullString), true
+	}
+	return new(sql.NullString), true
 }
