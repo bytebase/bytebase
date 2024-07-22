@@ -212,6 +212,11 @@ export interface ExternalApprovalSetting_Node {
   endpoint: string;
 }
 
+export interface ExternalApprovalPayload {
+  externalApprovalNodeId: string;
+  id: string;
+}
+
 export interface SMTPMailDeliverySetting {
   /** The SMTP server address. */
   server: string;
@@ -1312,6 +1317,82 @@ export const ExternalApprovalSetting_Node = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.endpoint = object.endpoint ?? "";
+    return message;
+  },
+};
+
+function createBaseExternalApprovalPayload(): ExternalApprovalPayload {
+  return { externalApprovalNodeId: "", id: "" };
+}
+
+export const ExternalApprovalPayload = {
+  encode(message: ExternalApprovalPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.externalApprovalNodeId !== "") {
+      writer.uint32(10).string(message.externalApprovalNodeId);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExternalApprovalPayload {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExternalApprovalPayload();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.externalApprovalNodeId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExternalApprovalPayload {
+    return {
+      externalApprovalNodeId: isSet(object.externalApprovalNodeId)
+        ? globalThis.String(object.externalApprovalNodeId)
+        : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+    };
+  },
+
+  toJSON(message: ExternalApprovalPayload): unknown {
+    const obj: any = {};
+    if (message.externalApprovalNodeId !== "") {
+      obj.externalApprovalNodeId = message.externalApprovalNodeId;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExternalApprovalPayload>): ExternalApprovalPayload {
+    return ExternalApprovalPayload.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExternalApprovalPayload>): ExternalApprovalPayload {
+    const message = createBaseExternalApprovalPayload();
+    message.externalApprovalNodeId = object.externalApprovalNodeId ?? "";
+    message.id = object.id ?? "";
     return message;
   },
 };

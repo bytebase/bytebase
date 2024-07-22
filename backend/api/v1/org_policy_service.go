@@ -578,7 +578,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		return payload.String()
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal masking policy")
+		}
+		return string(payloadBytes), nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
@@ -587,7 +591,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		return payload.String()
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal masking policy")
+		}
+		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING_RULE:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
@@ -622,7 +630,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		return payload.String()
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal masking exception policy")
+		}
+		return string(payloadBytes), nil
 	}
 
 	return "", status.Errorf(codes.InvalidArgument, "invalid policy %v", policy.Type)
@@ -901,9 +913,9 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 }
 
 func convertToV1PBSlowQueryPolicy(payloadStr string) (*v1pb.Policy_SlowQueryPolicy, error) {
-	payload, err := api.UnmarshalSlowQueryPolicy(payloadStr)
-	if err != nil {
-		return nil, err
+	payload := &storepb.SlowQueryPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal slow query policy payload")
 	}
 	return &v1pb.Policy_SlowQueryPolicy{
 		SlowQueryPolicy: &v1pb.SlowQueryPolicy{
@@ -912,16 +924,16 @@ func convertToV1PBSlowQueryPolicy(payloadStr string) (*v1pb.Policy_SlowQueryPoli
 	}, nil
 }
 
-func convertToSlowQueryPolicyPayload(policy *v1pb.SlowQueryPolicy) (*api.SlowQueryPolicy, error) {
-	return &api.SlowQueryPolicy{
+func convertToSlowQueryPolicyPayload(policy *v1pb.SlowQueryPolicy) (*storepb.SlowQueryPolicy, error) {
+	return &storepb.SlowQueryPolicy{
 		Active: policy.Active,
 	}, nil
 }
 
 func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_DisableCopyDataPolicy, error) {
-	payload, err := api.UnmarshalSlowQueryPolicy(payloadStr)
-	if err != nil {
-		return nil, err
+	payload := &storepb.DisableCopyDataPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal disable copy policy payload")
 	}
 	return &v1pb.Policy_DisableCopyDataPolicy{
 		DisableCopyDataPolicy: &v1pb.DisableCopyDataPolicy{
@@ -930,8 +942,8 @@ func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_Disable
 	}, nil
 }
 
-func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) (*api.DisableCopyDataPolicy, error) {
-	return &api.DisableCopyDataPolicy{
+func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) (*storepb.DisableCopyDataPolicy, error) {
+	return &storepb.DisableCopyDataPolicy{
 		Active: policy.Active,
 	}, nil
 }
@@ -1054,8 +1066,8 @@ func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx contex
 }
 
 func convertToV1PBRestrictIssueCreationForSQLReviewPolicy(payloadStr string) (*v1pb.Policy_RestrictIssueCreationForSqlReviewPolicy, error) {
-	payload, err := api.UnmarshalRestrictIssueCreationForSQLReviewPolicy(payloadStr)
-	if err != nil {
+	payload := &storepb.RestrictIssueCreationForSQLReviewPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
 		return nil, err
 	}
 	return &v1pb.Policy_RestrictIssueCreationForSqlReviewPolicy{
@@ -1065,8 +1077,8 @@ func convertToV1PBRestrictIssueCreationForSQLReviewPolicy(payloadStr string) (*v
 	}, nil
 }
 
-func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssueCreationForSQLReviewPolicy) (*api.RestrictIssueCreationForSQLReviewPolicy, error) {
-	return &api.RestrictIssueCreationForSQLReviewPolicy{
+func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssueCreationForSQLReviewPolicy) (*storepb.RestrictIssueCreationForSQLReviewPolicy, error) {
+	return &storepb.RestrictIssueCreationForSQLReviewPolicy{
 		Disallow: policy.Disallow,
 	}, nil
 }

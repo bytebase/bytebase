@@ -239,6 +239,79 @@ export interface IamPolicy {
   bindings: Binding[];
 }
 
+/** EnvironmentTierPolicy is the tier of an environment. */
+export interface EnvironmentTierPolicy {
+  environmentTier: EnvironmentTierPolicy_EnvironmentTier;
+}
+
+export enum EnvironmentTierPolicy_EnvironmentTier {
+  ENVIRONMENT_TIER_UNSPECIFIED = "ENVIRONMENT_TIER_UNSPECIFIED",
+  PROTECTED = "PROTECTED",
+  UNPROTECTED = "UNPROTECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function environmentTierPolicy_EnvironmentTierFromJSON(object: any): EnvironmentTierPolicy_EnvironmentTier {
+  switch (object) {
+    case 0:
+    case "ENVIRONMENT_TIER_UNSPECIFIED":
+      return EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
+    case 1:
+    case "PROTECTED":
+      return EnvironmentTierPolicy_EnvironmentTier.PROTECTED;
+    case 2:
+    case "UNPROTECTED":
+      return EnvironmentTierPolicy_EnvironmentTier.UNPROTECTED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return EnvironmentTierPolicy_EnvironmentTier.UNRECOGNIZED;
+  }
+}
+
+export function environmentTierPolicy_EnvironmentTierToJSON(object: EnvironmentTierPolicy_EnvironmentTier): string {
+  switch (object) {
+    case EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED:
+      return "ENVIRONMENT_TIER_UNSPECIFIED";
+    case EnvironmentTierPolicy_EnvironmentTier.PROTECTED:
+      return "PROTECTED";
+    case EnvironmentTierPolicy_EnvironmentTier.UNPROTECTED:
+      return "UNPROTECTED";
+    case EnvironmentTierPolicy_EnvironmentTier.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function environmentTierPolicy_EnvironmentTierToNumber(object: EnvironmentTierPolicy_EnvironmentTier): number {
+  switch (object) {
+    case EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED:
+      return 0;
+    case EnvironmentTierPolicy_EnvironmentTier.PROTECTED:
+      return 1;
+    case EnvironmentTierPolicy_EnvironmentTier.UNPROTECTED:
+      return 2;
+    case EnvironmentTierPolicy_EnvironmentTier.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+/** SlowQueryPolicy is the policy configuration for slow query. */
+export interface SlowQueryPolicy {
+  active: boolean;
+}
+
+/** DisableCopyDataPolicy is the policy configuration for disabling copying data. */
+export interface DisableCopyDataPolicy {
+  active: boolean;
+}
+
+/** RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review. */
+export interface RestrictIssueCreationForSQLReviewPolicy {
+  disallow: boolean;
+}
+
 function createBaseRolloutPolicy(): RolloutPolicy {
   return { automatic: false, workspaceRoles: [], projectRoles: [], issueRoles: [] };
 }
@@ -1309,6 +1382,239 @@ export const IamPolicy = {
   fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseEnvironmentTierPolicy(): EnvironmentTierPolicy {
+  return { environmentTier: EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED };
+}
+
+export const EnvironmentTierPolicy = {
+  encode(message: EnvironmentTierPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.environmentTier !== EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
+      writer.uint32(8).int32(environmentTierPolicy_EnvironmentTierToNumber(message.environmentTier));
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EnvironmentTierPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvironmentTierPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.environmentTier = environmentTierPolicy_EnvironmentTierFromJSON(reader.int32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvironmentTierPolicy {
+    return {
+      environmentTier: isSet(object.environmentTier)
+        ? environmentTierPolicy_EnvironmentTierFromJSON(object.environmentTier)
+        : EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED,
+    };
+  },
+
+  toJSON(message: EnvironmentTierPolicy): unknown {
+    const obj: any = {};
+    if (message.environmentTier !== EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
+      obj.environmentTier = environmentTierPolicy_EnvironmentTierToJSON(message.environmentTier);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnvironmentTierPolicy>): EnvironmentTierPolicy {
+    return EnvironmentTierPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EnvironmentTierPolicy>): EnvironmentTierPolicy {
+    const message = createBaseEnvironmentTierPolicy();
+    message.environmentTier = object.environmentTier ??
+      EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
+    return message;
+  },
+};
+
+function createBaseSlowQueryPolicy(): SlowQueryPolicy {
+  return { active: false };
+}
+
+export const SlowQueryPolicy = {
+  encode(message: SlowQueryPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.active === true) {
+      writer.uint32(8).bool(message.active);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSlowQueryPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.active = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SlowQueryPolicy {
+    return { active: isSet(object.active) ? globalThis.Boolean(object.active) : false };
+  },
+
+  toJSON(message: SlowQueryPolicy): unknown {
+    const obj: any = {};
+    if (message.active === true) {
+      obj.active = message.active;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
+    return SlowQueryPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
+    const message = createBaseSlowQueryPolicy();
+    message.active = object.active ?? false;
+    return message;
+  },
+};
+
+function createBaseDisableCopyDataPolicy(): DisableCopyDataPolicy {
+  return { active: false };
+}
+
+export const DisableCopyDataPolicy = {
+  encode(message: DisableCopyDataPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.active === true) {
+      writer.uint32(8).bool(message.active);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DisableCopyDataPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDisableCopyDataPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.active = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DisableCopyDataPolicy {
+    return { active: isSet(object.active) ? globalThis.Boolean(object.active) : false };
+  },
+
+  toJSON(message: DisableCopyDataPolicy): unknown {
+    const obj: any = {};
+    if (message.active === true) {
+      obj.active = message.active;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
+    return DisableCopyDataPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
+    const message = createBaseDisableCopyDataPolicy();
+    message.active = object.active ?? false;
+    return message;
+  },
+};
+
+function createBaseRestrictIssueCreationForSQLReviewPolicy(): RestrictIssueCreationForSQLReviewPolicy {
+  return { disallow: false };
+}
+
+export const RestrictIssueCreationForSQLReviewPolicy = {
+  encode(message: RestrictIssueCreationForSQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.disallow === true) {
+      writer.uint32(8).bool(message.disallow);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RestrictIssueCreationForSQLReviewPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRestrictIssueCreationForSQLReviewPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.disallow = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RestrictIssueCreationForSQLReviewPolicy {
+    return { disallow: isSet(object.disallow) ? globalThis.Boolean(object.disallow) : false };
+  },
+
+  toJSON(message: RestrictIssueCreationForSQLReviewPolicy): unknown {
+    const obj: any = {};
+    if (message.disallow === true) {
+      obj.disallow = message.disallow;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RestrictIssueCreationForSQLReviewPolicy>): RestrictIssueCreationForSQLReviewPolicy {
+    return RestrictIssueCreationForSQLReviewPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RestrictIssueCreationForSQLReviewPolicy>): RestrictIssueCreationForSQLReviewPolicy {
+    const message = createBaseRestrictIssueCreationForSQLReviewPolicy();
+    message.disallow = object.disallow ?? false;
     return message;
   },
 };
