@@ -80,6 +80,7 @@ import type {
 import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SensitiveColumnDrawer from "../SensitiveData/SensitiveColumnDrawer.vue";
+import { NTooltip } from "naive-ui";
 
 type LocalState = {
   showFeatureModal: boolean;

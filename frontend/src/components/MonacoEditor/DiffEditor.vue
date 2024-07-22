@@ -21,6 +21,7 @@ import {
   onBeforeUnmount,
   computed,
 } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { Language } from "@/types";
 import type { AutoHeightOptions } from "./composables";
 import { useAutoHeight, useOptionByKey, useOptions } from "./composables";

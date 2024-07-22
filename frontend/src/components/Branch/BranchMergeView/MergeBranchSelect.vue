@@ -35,6 +35,7 @@
 import { MoveLeftIcon } from "lucide-vue-next";
 import type { ComposedProject } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
+import BranchSelector from "../BranchSelector.vue";
 
 const props = defineProps<{
   project: ComposedProject;

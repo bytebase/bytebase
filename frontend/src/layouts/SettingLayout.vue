@@ -8,6 +8,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

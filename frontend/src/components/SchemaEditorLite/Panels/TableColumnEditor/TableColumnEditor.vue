@@ -63,6 +63,7 @@ import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
+import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";

@@ -21,7 +21,7 @@
   >
     <div style="width: calc(100vw - 12rem); height: calc(100vh - 12rem)">
       <MonacoEditor
-        :content="formatedJSONString"
+        :content="formattedJSONString"
         :readonly="true"
         language="json"
         class="border w-full h-full grow"
@@ -34,6 +34,7 @@
 import { Maximize2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
+import { BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 
 const props = defineProps<{
@@ -42,7 +43,7 @@ const props = defineProps<{
 
 const showModal = ref(false);
 
-const formatedJSONString = computed(() => {
+const formattedJSONString = computed(() => {
   return JSON.stringify(JSON.parse(props.jsonString), null, 2);
 });
 </script>

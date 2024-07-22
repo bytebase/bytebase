@@ -30,19 +30,14 @@
             {{ $t("settings.mail-delivery.field.smtp-server-port") }}
             <span class="text-red-600">*</span>
           </div>
-          <NInput
+          <NInputNumber
             id="port"
             v-model:value="state.mailDeliverySetting.port"
-            type="number"
-            name="port"
-            class="text-main w-full h-max mt-2 rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
+            :show-button="false"
             :placeholder="'587'"
             :required="true"
-            @wheel="
-              (event: MouseEvent) => {
-                (event.target as HTMLInputElement).blur();
-              }
-            "
+            name="port"
+            class="text-main w-full h-max mt-2 rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
           />
         </div>
       </div>
@@ -186,10 +181,11 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import type { SelectOption } from "naive-ui";
-import { NCheckbox } from "naive-ui";
+import { NButton, NCheckbox, NInput, NInputNumber, NSelect } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin, BBTextField } from "@/bbkit";
 import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import type { SMTPMailDeliverySettingValue } from "@/types/proto/v1/setting_service";
@@ -436,16 +432,3 @@ const handleToggleUseEmptyPassword = (on: boolean) => {
   }
 };
 </script>
-
-<style scoped>
-/*  Removed the ticker in the number field  */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-/* Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-</style>

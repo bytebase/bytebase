@@ -15,6 +15,7 @@
 
 <script lang="ts" setup>
 import { reactive } from "vue";
+import { BBModal } from "@/bbkit";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useDatabaseV1Store,
@@ -70,7 +71,9 @@ const doSaveSheet = async (
       mask ?? ["title", "content", "database"]
     );
     if (updatedSheet) {
-      const tab = tabStore.tabList.find((t) => t.worksheet === updatedSheet.name);
+      const tab = tabStore.tabList.find(
+        (t) => t.worksheet === updatedSheet.name
+      );
       if (tab) {
         tabStore.updateTab(tab.id, {
           title,

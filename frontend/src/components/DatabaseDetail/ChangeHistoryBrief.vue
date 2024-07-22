@@ -82,6 +82,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NPopover } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useUserStore } from "@/store";

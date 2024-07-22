@@ -37,6 +37,7 @@
 </template>
 
 <script lang="ts" setup>
+import { SearchBox } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { getRuleLocalization } from "@/types";
 import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";

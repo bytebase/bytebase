@@ -8,17 +8,18 @@
   </BBModal>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue";
+<script lang="ts" setup>
+import { BBModal } from "@/bbkit";
 
-export default defineComponent({
-  name: "WeChatQRModal",
-  props: {
-    title: {
-      type: String,
-      default: "",
-    },
-  },
-  emits: ["close"],
-});
+withDefaults(
+  defineProps<{
+    title?: string;
+  }>(),
+  {
+    title: "",
+  }
+);
+defineEmits<{
+  (event: "close"): void;
+}>();
 </script>

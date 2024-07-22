@@ -148,8 +148,9 @@ import type { PropType } from "vue";
 import { computed, reactive, ref, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import { DatabaseGroupDataTable } from "@/components/DatabaseGroup";
-import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -343,8 +344,7 @@ const rawDatabaseList = computed(() => {
     list = databaseV1Store.databaseListByUser(currentUserV1.value);
   }
   list = list.filter(
-    (db) =>
-      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
+    (db) => db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
   return list;
 });

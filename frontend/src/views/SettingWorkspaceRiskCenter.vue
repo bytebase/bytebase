@@ -39,12 +39,18 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, toRef } from "vue";
+import { BBSpin } from "@/bbkit";
 import {
   RiskCenter,
   RiskDialog,
   provideRiskCenterContext,
 } from "@/components/CustomApproval/Settings/components/RiskCenter";
 import { provideRiskFilter } from "@/components/CustomApproval/Settings/components/common";
+import {
+  FeatureAttention,
+  FeatureAttentionForInstanceLicense,
+  FeatureModal,
+} from "@/components/FeatureGuard";
 import { featureToRef, useCurrentUserV1, useRiskStore } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

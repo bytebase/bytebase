@@ -66,6 +66,7 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -164,8 +165,7 @@ const rawDatabaseList = computed(() => {
     list = databaseV1Store.databaseListByUser(currentUserV1.value);
   }
   list = list.filter(
-    (db) =>
-      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
+    (db) => db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
   return list;
 });

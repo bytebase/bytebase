@@ -45,7 +45,7 @@
 import { NButton, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
+import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";

@@ -1,6 +1,7 @@
 import BBAlert from "./BBAlert.vue";
 import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
+import BBBadge from "./BBBadge.vue";
 import BBBetaBadge from "./BBBetaBadge.vue";
 import BBButtonConfirm from "./BBButtonConfirm.vue";
 import BBDialog from "./BBDialog.vue";
@@ -25,5 +26,6 @@ export {
   BBTableHeaderCell,
   BBGrid,
   BBTextField,
+  BBBadge,
   BBBetaBadge,
 };

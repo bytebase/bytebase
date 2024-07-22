@@ -15,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import { BBModal } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
 import type {
   PlanCheckRun,

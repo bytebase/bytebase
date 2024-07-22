@@ -140,6 +140,7 @@ import { NButton, NTooltip } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import { BBModal } from "@/bbkit";
 import { IssueSearch } from "@/components/IssueV1/components";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";

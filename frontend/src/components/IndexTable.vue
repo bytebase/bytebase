@@ -52,6 +52,7 @@
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";

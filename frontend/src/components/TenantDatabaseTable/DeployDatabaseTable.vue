@@ -106,6 +106,7 @@
 import { groupBy } from "lodash-es";
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
+import { BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { DeploymentConfig } from "@/types/proto/v1/project_service";

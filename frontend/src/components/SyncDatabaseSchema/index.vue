@@ -81,6 +81,7 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { extractProjectResourceName } from "@/utils";
+import LearnMoreLink from "../LearnMoreLink.vue";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
 import RawSQLEditor from "./RawSQLEditor.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";

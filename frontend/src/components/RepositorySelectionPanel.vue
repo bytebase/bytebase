@@ -43,8 +43,10 @@
 
 <script setup lang="ts">
 import { RefreshCwIcon, ChevronRightIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { reactive, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBAttention } from "@/bbkit";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import {
   pushNotification,
@@ -55,6 +57,7 @@ import type { ProjectRepositoryConfig } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { SearchBox } from "./v2";
 
 interface LocalState {
   repositoryList: VCSRepository[];

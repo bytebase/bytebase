@@ -4,6 +4,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import ProjectIssuesPanel from "@/components/Project/ProjectIssuesPanel.vue";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 

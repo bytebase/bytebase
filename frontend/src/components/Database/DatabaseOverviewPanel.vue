@@ -150,7 +150,12 @@
           <DBExtensionDataTable :db-extension-list="dbExtensionList" />
         </template>
 
-        <template v-if="databaseEngine === Engine.POSTGRES || databaseEngine === Engine.MSSQL">
+        <template
+          v-if="
+            databaseEngine === Engine.POSTGRES ||
+            databaseEngine === Engine.MSSQL
+          "
+        >
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.functions") }}
           </div>
@@ -206,6 +211,7 @@ import type { ComposedDatabase, DataSource } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import { SearchBox } from "../v2";
 
 interface LocalState {
   selectedSchemaName: string;

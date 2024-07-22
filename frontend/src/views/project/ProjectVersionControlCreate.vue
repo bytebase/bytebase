@@ -10,6 +10,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import RepositorySetupWizard from "@/components/RepositorySetupWizard.vue";
 import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import {
   pushNotification,

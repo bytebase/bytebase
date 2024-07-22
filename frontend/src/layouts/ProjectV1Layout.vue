@@ -29,8 +29,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
+import QuickActionPanel from "@/components/QuickActionPanel.vue";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
@@ -40,10 +42,7 @@ import {
 import { useProjectV1Store, useCurrentUserV1, usePageMode } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { QuickActionType } from "@/types";
-import {
-  DEFAULT_PROJECT_NAME,
-  QuickActionProjectPermissionMap,
-} from "@/types";
+import { DEFAULT_PROJECT_NAME, QuickActionProjectPermissionMap } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
 

@@ -13,6 +13,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import CommonSidebar from "@/components/CommonSidebar.vue";
 import { getProjectName } from "@/store/modules/v1/common";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
 import { useCurrentProject } from "./useCurrentProject";

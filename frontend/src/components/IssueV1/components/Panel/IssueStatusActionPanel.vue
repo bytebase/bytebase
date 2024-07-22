@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { NCheckbox } from "naive-ui";
+import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { IssueStatusAction } from "@/components/IssueV1/logic";

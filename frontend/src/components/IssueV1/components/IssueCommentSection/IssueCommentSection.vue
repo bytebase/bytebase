@@ -15,6 +15,7 @@
 </template>
 
 <script lang="ts" setup>
+import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import IssueCommentList from "./IssueCommentList.vue";
 import Subscribers from "./Subscribers";
 </script>

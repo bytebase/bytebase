@@ -49,6 +49,7 @@
 <script lang="ts" setup>
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive } from "vue";
+import { BBModal } from "@/bbkit";
 import { useRoleStore } from "@/store";
 import { displayRoleTitle, displayRoleDescription } from "@/utils";
 import { displayPermissionTitle } from "@/utils/permission";

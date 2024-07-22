@@ -37,7 +37,7 @@ import { head } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBModal } from "@/bbkit";
+import { BBModal, BBSpin } from "@/bbkit";
 import { useConversationStore } from "../../store";
 import type { Conversation } from "../../types";
 

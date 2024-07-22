@@ -13,6 +13,7 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import { ExternalApprovalSetting_Node } from "@/types/proto/v1/setting_service";
 import { useCustomApprovalContext } from "../context";
 

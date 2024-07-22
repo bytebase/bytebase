@@ -91,6 +91,7 @@ import { computed } from "vue";
 import type { VueClass } from "@/utils";
 import type { BBGridColumn } from "../types";
 import { useResponsiveGridColumns } from "./useResponsiveGridColumns";
+import BBSpin from "../BBSpin.vue";
 
 type DataType = any; // vue does not support generic typed components yet
 

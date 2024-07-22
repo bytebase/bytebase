@@ -58,7 +58,7 @@
                 v-else-if="resultSet.error.includes('resource not found')"
                 :type="'primary'"
                 :text="true"
-                :database="database"
+                :database="database ?? connectedDb"
               />
             </HideInStandaloneMode>
           </template>
@@ -94,6 +94,9 @@ import type { PropType } from "vue";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
+import { BBSpin } from "@/bbkit";
+import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { Drawer } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,

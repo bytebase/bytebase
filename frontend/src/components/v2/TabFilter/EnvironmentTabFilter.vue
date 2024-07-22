@@ -24,6 +24,7 @@ import { useEnvironmentV1List } from "@/store";
 import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "../Model";
+import TabFilter from "./TabFilter.vue";
 import type { TabFilterItem } from "./types";
 
 interface EnvironmentTabFilterItem extends TabFilterItem<string> {

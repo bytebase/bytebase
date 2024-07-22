@@ -38,9 +38,11 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { Switch } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
@@ -49,6 +51,7 @@ import {
   useReviewPolicyByResource,
 } from "@/store";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import SQLReviewPolicySelectPanel from "./SQLReviewPolicySelectPanel.vue";
 
 const props = defineProps<{
   resource: string;

@@ -66,7 +66,7 @@
 
 <script setup lang="tsx">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import { NDropdown, useDialog, type TreeOption } from "naive-ui";
+import { NDropdown, NTree, useDialog, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";

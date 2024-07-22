@@ -323,7 +323,14 @@
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
-import { NInput, NInputNumber, NRadio } from "naive-ui";
+import {
+  NButton,
+  NInput,
+  NInputNumber,
+  NRadio,
+  NRadioGroup,
+  NTooltip,
+} from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RadioGridOption, RadioGridItem } from "@/components/v2";
@@ -657,5 +664,4 @@ const onSuffixChange = (val: number) => {
   }
   state.innerOuterMask.suffixLen = val;
 };
-
 </script>

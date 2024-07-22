@@ -61,6 +61,11 @@ import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleConfigComponent, RuleTemplateV2 } from "@/types/sqlReview";
 import { getRuleLocalizationKey } from "@/types/sqlReview";
+import BooleanComponent from "./BooleanComponent.vue";
+import NumberComponent from "./NumberComponent.vue";
+import StringArrayComponent from "./StringArrayComponent.vue";
+import StringComponent from "./StringComponent.vue";
+import TemplateComponent from "./TemplateComponent.vue";
 import type { PayloadValueType } from "./types";
 import { getRulePayload } from "./utils";
 

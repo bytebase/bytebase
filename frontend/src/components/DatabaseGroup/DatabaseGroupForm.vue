@@ -100,6 +100,7 @@ import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import { factorSupportDropdown, DatabaseGroupFactorOptionsMap } from "./utils";
 import { FactorList } from "./utils";
+import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 
 const props = defineProps<{
   project: ComposedProject;

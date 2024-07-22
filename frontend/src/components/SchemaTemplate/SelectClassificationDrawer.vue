@@ -22,6 +22,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import ClassificationTree from "@/components/SchemaTemplate/ClassificationTree.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";

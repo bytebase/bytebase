@@ -13,6 +13,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { computed } from "vue";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import type { Branch } from "@/types/proto/v1/branch_service";

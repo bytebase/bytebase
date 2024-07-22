@@ -26,7 +26,7 @@
 import { useDialog } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBModal } from "@/bbkit";
+import { BBModal, BBSpin } from "@/bbkit";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import { SYSTEM_BOT_USER_NAME } from "@/types";

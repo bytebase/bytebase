@@ -33,6 +33,7 @@
 import Emittery from "emittery";
 import { uniqueId } from "lodash-es";
 import { computed, nextTick, ref, toRef, watch } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
@@ -42,7 +43,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import Canvas from "./Canvas";
 import type { GraphNodeItem, GraphEdgeItem } from "./ER";
-import { TableNode, autoLayout } from "./ER";
+import { ForeignKeyLine, TableNode, autoLayout } from "./ER";
 import Navigator from "./Navigator";
 import { provideSchemaDiagramContext } from "./common";
 import type {

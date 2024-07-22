@@ -130,6 +130,7 @@ import {
   DrawerContent,
   EnvironmentV1Name,
   InstanceV1Name,
+  SearchBox,
 } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";

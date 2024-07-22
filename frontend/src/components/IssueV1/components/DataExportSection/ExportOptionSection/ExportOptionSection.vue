@@ -67,6 +67,7 @@ import {
   notifyNotEditableLegacyIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";

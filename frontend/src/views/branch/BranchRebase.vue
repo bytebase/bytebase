@@ -15,6 +15,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BranchRebaseView from "@/components/Branch/BranchRebaseView";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import {
   PROJECT_V1_ROUTE_BRANCH_REBASE,
   PROJECT_V1_ROUTE_BRANCH_DETAIL,

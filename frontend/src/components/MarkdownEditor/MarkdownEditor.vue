@@ -104,6 +104,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NTooltip } from "naive-ui";
 import { nextTick, ref, reactive, watch, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedIssue, ComposedProject } from "@/types";

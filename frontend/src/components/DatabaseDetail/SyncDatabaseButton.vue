@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";

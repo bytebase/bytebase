@@ -30,6 +30,8 @@
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
 import { ref, watch } from "vue";
+import { EngineIcon } from "@/components/Icon";
+import { RichEngineName } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 

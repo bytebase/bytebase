@@ -35,6 +35,11 @@
 </template>
 
 <script lang="ts" setup>
+import { NTag } from "naive-ui";
+import UserAvatar from "@/components/User/UserAvatar.vue";
+import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
+import SystemBotTag from "@/components/misc/SystemBotTag.vue";
+import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME, type ComposedUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";

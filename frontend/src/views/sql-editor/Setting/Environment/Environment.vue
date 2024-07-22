@@ -80,6 +80,7 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { EnvironmentV1Name } from "@/components/v2";
 import { SQL_EDITOR_SETTING_ENVIRONMENT_MODULE } from "@/router/sqlEditor";

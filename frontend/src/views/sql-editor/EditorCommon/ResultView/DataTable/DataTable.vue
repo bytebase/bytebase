@@ -114,6 +114,7 @@ import ColumnSortedIcon from "./ColumnSortedIcon.vue";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
+import { FeatureBadge, FeatureBadgeForInstanceLicense } from "@/components/FeatureGuard";
 
 export type DataTableColumn = {
   key: string;

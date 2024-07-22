@@ -9,6 +9,7 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { useRouter } from "vue-router";
 import { useIssueContext } from "@/components/IssueV1";
 import { WORKSPACE_ROUTE_EXPORT_CENTER } from "@/router/dashboard/workspaceRoutes";

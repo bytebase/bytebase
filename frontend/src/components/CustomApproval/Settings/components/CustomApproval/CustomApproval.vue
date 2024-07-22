@@ -27,6 +27,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NTabPane, NTabs } from "naive-ui";
 import { provideRiskFilter } from "../common/RiskFilter";
 import ExternalApprovalNodesPanel from "./ExternalApprovalNodesPanel";
 import FlowsPanel from "./FlowsPanel";

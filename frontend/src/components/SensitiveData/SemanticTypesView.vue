@@ -48,6 +48,7 @@ import {
 } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import type { SemanticItem } from "./components/SemanticTypesTable.vue";
 import SemanticTypesTable from "./components/SemanticTypesTable.vue";

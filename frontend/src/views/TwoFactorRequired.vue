@@ -14,6 +14,7 @@ import { useRouter } from "vue-router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 import TwoFactorSetup from "./TwoFactorSetup.vue";
+import { BBAttention } from "@/bbkit";
 
 const router = useRouter();
 const authStore = useAuthStore();

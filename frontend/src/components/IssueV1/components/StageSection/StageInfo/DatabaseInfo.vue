@@ -69,7 +69,11 @@
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import {
+  DatabaseV1Name,
+  EnvironmentV1Name,
+  InstanceV1Name,
+} from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";

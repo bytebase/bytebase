@@ -48,10 +48,7 @@
           <template #default>
             {{ $t("change-history.establish-baseline") }}
           </template>
-          <template
-            v-if="database.project === DEFAULT_PROJECT_NAME"
-            #tooltip
-          >
+          <template v-if="database.project === DEFAULT_PROJECT_NAME" #tooltip>
             <div class="whitespace-pre-line">
               {{
                 $t("issue.not-allowed-to-operate-unassigned-database", {
@@ -130,6 +127,7 @@ import JSZip from "jszip";
 import { computed, onBeforeMount, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAlert, BBSpin } from "@/bbkit";
 import {
   ChangeHistoryDataTable,
   ChangeHistoryDetail,

@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NInput } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { reactive } from "vue";
 
 type LocalState = {

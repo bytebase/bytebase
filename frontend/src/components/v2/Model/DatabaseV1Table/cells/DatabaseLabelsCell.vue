@@ -6,10 +6,7 @@
         class="flex items-center space-x-1"
       >
         <div
-          v-for="[key, label] in Object.entries(labels).slice(
-            0,
-            minimumShowCount
-          )"
+          v-for="[key, label] in displayLabels"
           :key="key"
           class="rounded-lg bg-gray-100 group-hover:bg-gray-200 py-0.5 px-2 text-sm"
         >
@@ -28,6 +25,9 @@
 </template>
 
 <script setup lang="ts">
+import { NTooltip } from "naive-ui";
+import { computed } from "vue";
+
 const props = withDefaults(
   defineProps<{
     labels: {
@@ -41,5 +41,11 @@ const props = withDefaults(
   }
 );
 
-const minimumShowCount = Math.max(1, props.showCount);
+const minimumShowCount = computed(() => {
+  return Math.max(1, props.showCount);
+});
+
+const displayLabels = computed(() => {
+  return Object.entries(props.labels).slice(0, minimumShowCount.value);
+});
 </script>

@@ -160,6 +160,7 @@ import SchemaEditorLite, {
 } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
+import { BBModal } from "@/bbkit";
 
 type TabType = "raw-sql" | "schema-editor";
 

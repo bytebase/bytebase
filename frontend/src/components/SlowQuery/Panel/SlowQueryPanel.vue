@@ -67,6 +67,8 @@ import dayjs from "dayjs";
 import { NButton } from "naive-ui";
 import { computed, shallowRef, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,

@@ -17,6 +17,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -30,6 +31,7 @@ import type { VCSConfig } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 
 withDefaults(
   defineProps<{

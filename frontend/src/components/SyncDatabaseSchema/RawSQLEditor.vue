@@ -42,7 +42,7 @@
     </div>
     <BBAttention
       v-if="isSheetOversized && !viewMode"
-      :class="'my-2'"
+      class="my-2"
       type="warning"
       :title="$t('issue.statement-from-sheet-warning')"
     >
@@ -67,6 +67,7 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NSelect } from "naive-ui";
 import { computed, onMounted, nextTick, reactive } from "vue";
+import { BBAttention } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";

@@ -30,7 +30,7 @@
 import { useElementSize } from "@vueuse/core";
 import { pull } from "lodash-es";
 import { ChevronDownIcon } from "lucide-vue-next";
-import type { DataTableColumn } from "naive-ui";
+import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";

@@ -40,6 +40,7 @@
 <script lang="ts" setup>
 import { NSelect, NButton, NSpin } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
+import { BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
 import { readFileAsArrayBuffer } from "@/utils";

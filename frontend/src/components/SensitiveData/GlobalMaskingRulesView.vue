@@ -106,7 +106,7 @@
 
 <script lang="ts" setup>
 import { PencilIcon, ChevronUpIcon, ChevronDownIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
+import { NButton, type SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -126,6 +126,8 @@ import {
   MaskingRulePolicy_MaskingRule,
 } from "@/types/proto/v1/org_policy_service";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
+import LearnMoreLink from "../LearnMoreLink.vue";
+import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
 import {

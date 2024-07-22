@@ -111,7 +111,7 @@
         </NButton>
       </div>
     </div>
-    <div v-if="webhookSupportDirectMessage && avtivitySupportDirectMessage">
+    <div v-if="webhookSupportDirectMessage && activitySupportDirectMessage">
       <div class="text-md leading-6 font-medium text-main">
         {{ $t("project.webhook.direct-messages") }}
       </div>
@@ -195,11 +195,19 @@
 <script lang="ts" setup>
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { InfoIcon } from "lucide-vue-next";
-import { NCheckbox, NRadio, NRadioGroup } from "naive-ui";
+import {
+  NButton,
+  NCheckbox,
+  NInput,
+  NRadio,
+  NRadioGroup,
+  NTooltip,
+} from "naive-ui";
 import type { PropType } from "vue";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAttention, BBButtonConfirm } from "@/bbkit";
 import {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
@@ -222,6 +230,7 @@ import {
   type Webhook,
 } from "@/types/proto/v1/project_service";
 import { projectWebhookV1Slug } from "../utils";
+import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";
 
 interface LocalState {
   webhook: Webhook;
@@ -318,7 +327,7 @@ const webhookSupportDirectMessage = computed(
   () => selectedWebhook.value?.supportDirectMessage
 );
 
-const avtivitySupportDirectMessage = computed(() => {
+const activitySupportDirectMessage = computed(() => {
   return state.webhook.notificationTypes.some(
     (event) =>
       webhookActivityItemList.value.find((item) => item.activity === event)

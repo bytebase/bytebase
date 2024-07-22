@@ -13,12 +13,7 @@
         </NButton>
       </div>
       <DebugLogTable
-        :debug-log-list="
-          debugLogList.sort(
-            (a, b) =>
-              (b.recordTime?.getTime() ?? 0) - (a.recordTime?.getTime() ?? 0)
-          )
-        "
+        :debug-log-list="sortedDebugLogList"
         @view-detail="
           (log: DebugLog) => {
             state.modalContent = log;
@@ -80,11 +75,14 @@
 import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
 import download from "downloadjs";
-import { NGrid, NGi } from "naive-ui";
+import { orderBy } from "lodash-es";
+import { NGrid, NGi, NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBDialog } from "@/bbkit";
+import DebugLogTable from "@/components/DebugLog/DebugLogTable.vue";
+import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import {
   useDebugLogList,
   useActuatorV1Store,
@@ -117,6 +115,14 @@ const debugLogList = useDebugLogList();
 const actuatorStore = useActuatorV1Store();
 
 const { isDebug } = storeToRefs(actuatorStore);
+
+const sortedDebugLogList = computed(() => {
+  return orderBy(
+    debugLogList.value,
+    [(item) => item.recordTime?.getTime()],
+    ["desc"]
+  );
+});
 
 const enableDebug = () => {
   actuatorStore

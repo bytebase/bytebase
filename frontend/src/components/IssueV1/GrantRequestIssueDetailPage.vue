@@ -70,6 +70,7 @@
 import { computed, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PresetRoleType } from "@/types";
+import { Drawer } from "../v2";
 import {
   BannerSection,
   HeaderSection,
@@ -79,6 +80,7 @@ import {
   IssueStatusActionPanel,
   GrantRequestExporterForm,
   GrantRequestQuerierForm,
+  Sidebar,
 } from "./components";
 import type { IssueReviewAction, IssueStatusAction } from "./logic";
 import {

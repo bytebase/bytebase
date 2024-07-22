@@ -17,7 +17,11 @@
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
-import type { Instance, InstanceResource } from "@/types/proto/v1/instance_service";
+import { EngineIcon } from "@/components/Icon";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 
 defineProps({
   instance: {

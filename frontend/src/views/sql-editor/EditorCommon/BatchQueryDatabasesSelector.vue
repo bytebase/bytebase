@@ -50,7 +50,8 @@
               <div class="flex flex-row justify-center items-center">
                 <InstanceV1EngineIcon
                   :instance="
-                    databaseStore.getDatabaseByName(databaseName).instanceResource
+                    databaseStore.getDatabaseByName(databaseName)
+                      .instanceResource
                   "
                 />
                 <span class="text-sm text-control-light mx-1">
@@ -106,7 +107,8 @@ import {
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import { InstanceV1EngineIcon, SearchBox } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import {
   hasFeature,

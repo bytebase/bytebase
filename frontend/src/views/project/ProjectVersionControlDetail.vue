@@ -14,6 +14,7 @@
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import RepositoryPanel from "@/components/RepositoryPanel.vue";
 import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import {
   useVCSConnectorStore,

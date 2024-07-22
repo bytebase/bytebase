@@ -35,6 +35,7 @@
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTable, BBTableCell } from "@/bbkit";
 import DefinitionView from "@/components/DefinitionView.vue";
 import type { ComposedDatabase } from "@/types";
 import type { StreamMetadata } from "@/types/proto/v1/database_service";

@@ -16,5 +16,7 @@
 </template>
 
 <script lang="ts" setup>
+import { BBAttention } from "@/bbkit";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
 </script>

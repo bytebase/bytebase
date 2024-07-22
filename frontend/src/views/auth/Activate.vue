@@ -9,7 +9,7 @@
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         <i18n-t keypath="auth.activate.title" tag="p">
           <template #type>
-            <span class="text-accent font-semnibold">{{
+            <span class="text-accent font-semibold">{{
               state.role.charAt(0).toUpperCase() +
               state.role.slice(1).toLowerCase()
             }}</span>
@@ -77,9 +77,11 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, reactive } from "vue";
+<script lang="ts" setup>
+import { NButton } from "naive-ui";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
+import { BBTextField } from "@/bbkit";
 import { useAuthStore } from "@/store";
 import type { ActivateInfo, RoleType } from "../../types";
 
@@ -90,38 +92,28 @@ interface LocalState {
   role: RoleType;
 }
 
-export default defineComponent({
-  name: "Activate",
-  setup() {
-    const router = useRouter();
-    const token = router.currentRoute.value.query.token as string;
+const router = useRouter();
+const token = router.currentRoute.value.query.token as string;
 
-    // TODO(tianzhou): Get info from activate token
-    const state = reactive<LocalState>({
-      email: "bob@example.com",
-      password: "",
-      name: "Bob Invited",
-      role: "DEVELOPER",
-    });
-
-    const tryActivate = () => {
-      const activateInfo: ActivateInfo = {
-        email: state.email,
-        password: state.password,
-        name: state.name,
-        token: token,
-      };
-      useAuthStore()
-        .activate(activateInfo)
-        .then(() => {
-          router.push("/");
-        });
-    };
-
-    return {
-      state,
-      tryActivate,
-    };
-  },
+// TODO(tianzhou): Get info from activate token
+const state = reactive<LocalState>({
+  email: "bob@example.com",
+  password: "",
+  name: "Bob Invited",
+  role: "DEVELOPER",
 });
+
+const tryActivate = () => {
+  const activateInfo: ActivateInfo = {
+    email: state.email,
+    password: state.password,
+    name: state.name,
+    token: token,
+  };
+  useAuthStore()
+    .activate(activateInfo)
+    .then(() => {
+      router.push("/");
+    });
+};
 </script>

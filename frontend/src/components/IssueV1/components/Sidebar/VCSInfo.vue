@@ -24,7 +24,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { watchEffect } from "vue";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { useIssueContext } from "@/components/IssueV1";
+import { VCSIcon } from "@/components/VCS";
 import {
   useCurrentUserV1,
   useVCSConnectorStore,

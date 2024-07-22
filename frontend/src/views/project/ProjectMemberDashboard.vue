@@ -4,6 +4,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vue";
 import { useProjectV1Store, useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_NAME } from "@/types";

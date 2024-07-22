@@ -215,6 +215,8 @@ import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, h, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import { BBAttention, BBModal } from "@/bbkit";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseForTask,

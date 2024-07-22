@@ -9,7 +9,7 @@
     :render-label="renderLabel"
     :render-tag="renderTag"
     :value="issueLabels"
-    @update:value="onLablesUpdate"
+    @update:value="onLabelsUpdate"
   >
     <template #empty>
       <div class="flex flex-col items-center justify-center">
@@ -55,8 +55,9 @@ import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
+import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 
-type IsseuLabelOption = SelectOption & {
+type IssueLabelOption = SelectOption & {
   value: string;
   color: string;
 };
@@ -93,19 +94,19 @@ const issueLabels = computed(() => {
 });
 
 const options = computed(() => {
-  return props.project.issueLabels.map<IsseuLabelOption>((label) => ({
+  return props.project.issueLabels.map<IssueLabelOption>((label) => ({
     label: label.value,
     value: label.value,
     color: label.color,
   }));
 });
 
-const onLablesUpdate = async (labels: string[]) => {
+const onLabelsUpdate = async (labels: string[]) => {
   emit("update:selected", labels);
 };
 
-const renderLabel = (option: IsseuLabelOption, selected: boolean) => {
-  const { color, value } = option as IsseuLabelOption;
+const renderLabel = (option: IssueLabelOption, selected: boolean) => {
+  const { color, value } = option as IssueLabelOption;
   return h("div", { class: "flex items-center gap-x-2" }, [
     h(NCheckbox, { checked: selected, size: "small" }),
     h("div", {
@@ -124,7 +125,7 @@ const renderTag = ({
   option: SelectBaseOption;
   handleClose: () => void;
 }) => {
-  const { color, value } = option as IsseuLabelOption;
+  const { color, value } = option as IssueLabelOption;
 
   return h(
     NTag,

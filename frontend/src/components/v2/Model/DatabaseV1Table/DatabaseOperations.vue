@@ -91,10 +91,15 @@ import {
   ArrowRightLeftIcon,
   DownloadIcon,
 } from "lucide-vue-next";
+import { NButton, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAlert } from "@/bbkit";
+import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
+import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
+import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {

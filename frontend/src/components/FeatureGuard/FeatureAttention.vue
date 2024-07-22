@@ -24,13 +24,19 @@ import type { PropType } from "vue";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import InstanceAssignment from "../InstanceAssignment.vue";
+import WeChatQRModal from "../WeChatQRModal.vue";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -53,7 +59,7 @@ const props = defineProps({
     type: String,
   },
   instance: {
-    type: Object as PropType<Instance>,
+    type: Object as PropType<Instance | InstanceResource>,
     default: undefined,
   },
 });

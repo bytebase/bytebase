@@ -46,6 +46,7 @@ import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { Engine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import TableTemplateTable from "./TableTemplateTable.vue";
 
 interface LocalState {

@@ -16,7 +16,10 @@ import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import type { FlattenLogEntry } from "../common";
 import AffectedRowsCell from "./AffectedRowsCell.vue";
+import DatabaseSyncCell from "./DatabaseSyncCell.vue";
 import ErrorCell from "./ErrorCell.vue";
+import StatusUpdateCell from "./StatusUpdateCell.vue";
+import TransactionControlCell from "./TransactionControlCell.vue";
 
 type View =
   | "N/A"

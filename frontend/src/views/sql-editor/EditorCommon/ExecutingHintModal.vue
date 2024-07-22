@@ -9,6 +9,7 @@
 </template>
 
 <script lang="ts" setup>
+import { BBModal } from "@/bbkit";
 import { useSQLEditorStore } from "@/store";
 import ExecuteHint from "./ExecuteHint.vue";
 

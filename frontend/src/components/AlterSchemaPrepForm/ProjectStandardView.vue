@@ -118,7 +118,7 @@
 <script lang="ts" setup>
 import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { reactive, computed, watch } from "vue";
-import { EnvironmentV1Name } from "@/components/v2";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";

@@ -43,6 +43,7 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { hasFeature, pushNotification } from "@/store";

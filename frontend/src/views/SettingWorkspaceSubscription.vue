@@ -150,9 +150,13 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import InstanceAssignment from "@/components/InstanceAssignment.vue";
+import TrialModal from "@/components/TrialModal.vue";
+import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,

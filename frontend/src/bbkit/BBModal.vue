@@ -26,8 +26,7 @@
           @click.prevent="tryClose()"
         >
           <span class="sr-only">Close</span>
-          <!-- Heroicons name: x -->
-          <X class="w-5 h-auto hover:opacity-80" />
+          <XIcon class="w-5 h-auto hover:opacity-80" />
         </NButton>
       </div>
 
@@ -39,8 +38,8 @@
 </template>
 
 <script lang="ts">
-import { X } from "lucide-vue-next";
-import { NModal } from "naive-ui";
+import { XIcon } from "lucide-vue-next";
+import { NButton, NModal } from "naive-ui";
 import type { PropType, RenderFunction } from "vue";
 import { defineComponent, h } from "vue";
 import { useOverlayStack } from "@/components/misc/OverlayStackManager.vue";
@@ -51,7 +50,8 @@ export default defineComponent({
   name: "BBModalV2",
   components: {
     NModal,
-    X,
+    NButton,
+    XIcon,
   },
   inheritAttrs: false,
   props: {

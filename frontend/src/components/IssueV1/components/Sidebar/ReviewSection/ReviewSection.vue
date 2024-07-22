@@ -75,8 +75,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NTooltip } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
+import { BBSpin } from "@/bbkit";
+import { FeatureBadgeForInstanceLicense } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import {
   databaseForTask,

@@ -41,6 +41,8 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1, useVCSProviderStore } from "@/store";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
+import { NButton } from "naive-ui";
+import { VCSIcon } from "./VCS";
 
 interface LocalState {
   selectedVCS?: VCSProvider;

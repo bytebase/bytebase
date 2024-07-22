@@ -21,6 +21,7 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
+import { BBBadge, BBTextField } from "@/bbkit";
 import type { RuleConfigComponent } from "@/types";
 
 const props = defineProps<{

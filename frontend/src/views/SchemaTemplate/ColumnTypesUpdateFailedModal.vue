@@ -40,7 +40,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed } from "vue";
+import { BBModal } from "@/bbkit";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 
 const props = defineProps<{

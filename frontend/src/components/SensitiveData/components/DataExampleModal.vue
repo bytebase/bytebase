@@ -27,6 +27,7 @@ import { useClipboard } from "@vueuse/core";
 import hljs from "highlight.js/lib/core";
 import { NCode, NConfigProvider } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { BBModal } from "@/bbkit";
 import { pushNotification } from "@/store";
 
 const props = defineProps<{

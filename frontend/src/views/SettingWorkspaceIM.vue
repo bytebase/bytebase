@@ -49,10 +49,12 @@
 
 <script lang="tsx" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTabPane, NButton } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBAttention } from "@/bbkit";
 import BBTextField from "@/bbkit/BBTextField.vue";
+import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 import { useSettingV1Store, pushNotification } from "@/store";
 import { Webhook_Type } from "@/types/proto/v1/project_service";
 import {
@@ -250,7 +252,11 @@ const canSave = computed(() => {
     case Webhook_Type.TYPE_DINGTALK:
       return !!state.setting.feishu?.appId && !!state.setting.feishu?.appSecret;
     case Webhook_Type.TYPE_WECOM:
-      return !!state.setting.wecom?.corpId && !!state.setting.wecom?.agentId && !!state.setting.wecom?.secret;
+      return (
+        !!state.setting.wecom?.corpId &&
+        !!state.setting.wecom?.agentId &&
+        !!state.setting.wecom?.secret
+      );
     default:
       return false;
   }

@@ -41,8 +41,9 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import { NButton, NCheckbox } from "naive-ui";
 import { computed } from "vue";
+import { BBModal } from "@/bbkit";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 
 const emit = defineEmits(["cancel"]);

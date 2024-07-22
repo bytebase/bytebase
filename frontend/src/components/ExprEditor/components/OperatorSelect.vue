@@ -12,7 +12,7 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import type { SelectOption } from "naive-ui";
+import { NSelect, type SelectOption } from "naive-ui";
 import { computed, watch } from "vue";
 import {
   type Operator,

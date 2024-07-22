@@ -28,6 +28,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import type { SemanticItem } from "./SemanticTypesTable.vue";
 import SemanticTypesTable from "./SemanticTypesTable.vue";
+import { NButton } from "naive-ui";
 
 const props = defineProps<{
   show: boolean;

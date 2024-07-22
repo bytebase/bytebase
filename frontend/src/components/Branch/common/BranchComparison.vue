@@ -58,10 +58,12 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
+import { NTab, NTabs } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { computed, ref, watch } from "vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useDatabaseV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";

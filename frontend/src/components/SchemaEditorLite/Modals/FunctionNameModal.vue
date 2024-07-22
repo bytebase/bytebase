@@ -33,6 +33,7 @@ import type { InputInst } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {

@@ -24,6 +24,7 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBAlert } from "@/bbkit";
 import { useUserStore } from "@/store";
 import { type ComposedUser } from "@/types";
 import type { UserGroup } from "@/types/proto/v1/user_group";
@@ -37,6 +38,10 @@ interface LocalState {
   showResetKeyAlert: boolean;
   targetServiceAccount?: ComposedUser;
 }
+
+defineOptions({
+  name: "UserDataTable",
+});
 
 defineProps<{
   userList: ComposedUser[];

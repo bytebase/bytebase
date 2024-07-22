@@ -55,6 +55,8 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
+import { BBSpin } from "@/bbkit";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useCurrentUserV1, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2 } from "@/utils";

@@ -70,6 +70,7 @@ import {
   MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
 } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import DataExampleModal from "./components/DataExampleModal.vue";
 import MaskingAlgorithmsCreateDrawer from "./components/MaskingAlgorithmsCreateDrawer.vue";
 import MaskingAlgorithmsTable from "./components/MaskingAlgorithmsTable.vue";
 

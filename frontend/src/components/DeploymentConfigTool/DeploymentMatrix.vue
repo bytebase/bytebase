@@ -52,7 +52,7 @@ import type { ComposedDatabase } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { filterDatabaseV1ByKeyword } from "@/utils";
-import { DeployDatabaseTable } from "../TenantDatabaseTable";
+import { DeployDatabaseTable, YAxisRadioGroup } from "../TenantDatabaseTable";
 import { SearchBox } from "../v2";
 
 const props = withDefaults(

@@ -34,6 +34,7 @@
 import { Maximize2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { ref } from "vue";
+import { BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 
 defineProps<{

@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { FileCodeIcon, HistoryIcon } from "lucide-vue-next";
-import { NTooltip } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseIcon from "@/components/Icon/DatabaseIcon.vue";

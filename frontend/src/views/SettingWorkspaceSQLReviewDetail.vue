@@ -145,6 +145,7 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
+import { NButton } from "naive-ui";
 import {
   computed,
   reactive,
@@ -155,7 +156,19 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
-import { BBTextField } from "@/bbkit";
+import {
+  BBAlert,
+  BBAttention,
+  BBBadge,
+  BBButtonConfirm,
+  BBTextField,
+} from "@/bbkit";
+import { FeatureAttention } from "@/components/FeatureGuard";
+import { SQLReviewCreation } from "@/components/SQLReview";
+import SQLReviewAttachResourcesPanel from "@/components/SQLReview/components/SQLReviewAttachResourcesPanel.vue";
+import SQLReviewAttachedResource from "@/components/SQLReview/components/SQLReviewAttachedResource.vue";
+import SQLReviewTabsByEngine from "@/components/SQLReview/components/SQLReviewTabsByEngine.vue";
+import SQLRuleTableWithFilter from "@/components/SQLReview/components/SQLRuleTableWithFilter.vue";
 import { rulesToTemplate } from "@/components/SQLReview/components/utils";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {

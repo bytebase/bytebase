@@ -66,7 +66,7 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
+import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
 import SystemLabel from "@/components/SystemLabel.vue";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";

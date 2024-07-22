@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import type CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 
 defineProps<{

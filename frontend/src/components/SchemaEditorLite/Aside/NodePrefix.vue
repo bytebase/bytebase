@@ -65,7 +65,7 @@ import {
   SchemaIcon,
   TableIcon,
 } from "@/components/Icon";
-import type { InstanceV1EngineIcon } from "@/components/v2";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import { unknownEnvironment } from "@/types";
 import { useSchemaEditorContext } from "../context";

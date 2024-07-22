@@ -29,6 +29,7 @@ import { useSessionStorage } from "@vueuse/core";
 import { stringify } from "qs";
 import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
+import { BBSpin } from "@/bbkit";
 import { databaseServiceClient } from "@/grpcweb";
 import { useIsLoggedIn } from "@/store";
 import type { ComposedDatabase, SearchChangeHistoriesParams } from "@/types";

@@ -192,6 +192,8 @@ import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useRoute } from "vue-router";
+import { BBModal } from "@/bbkit";
+import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
@@ -201,6 +203,8 @@ import {
   SQLEditorButtonV1,
   SchemaDiagramButton,
 } from "@/components/DatabaseDetail";
+import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import {
   EnvironmentV1Name,

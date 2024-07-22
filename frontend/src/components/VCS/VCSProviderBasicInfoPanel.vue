@@ -204,6 +204,7 @@ import { NRadio, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTextField } from "@/bbkit";
 import { useVCSProviderStore } from "@/store";
 import { vcsProviderPrefix } from "@/store/modules/v1/common";
 import type { VCSConfig } from "@/types";
@@ -212,6 +213,8 @@ import type { ResourceId, ValidatedMessage } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import { isUrl } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import { ResourceIdField } from "../v2";
+import VCSIcon from "./VCSIcon.vue";
 import { vcsListByUIType } from "./utils";
 
 interface LocalState {

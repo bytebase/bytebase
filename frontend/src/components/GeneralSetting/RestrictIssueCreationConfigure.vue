@@ -40,6 +40,8 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { FeatureBadge } from "../FeatureGuard";
+import { Switch } from "../v2";
 
 const props = defineProps<{
   resource: string;

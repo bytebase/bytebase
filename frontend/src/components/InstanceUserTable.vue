@@ -22,11 +22,15 @@
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTable, BBTableCell } from "@/bbkit";
 import type { InstanceUser } from "../types/InstanceUser";
 
 export default {
   name: "InstanceUserTable",
-  components: {},
+  components: {
+    BBTable,
+    BBTableCell,
+  },
   props: {
     instanceUserList: {
       required: true,

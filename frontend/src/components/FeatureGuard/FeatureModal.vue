@@ -115,10 +115,12 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBModal } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
@@ -130,6 +132,8 @@ import type {
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import InstanceAssignment from "../InstanceAssignment.vue";
+import WeChatQRModal from "../WeChatQRModal.vue";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;

@@ -42,6 +42,7 @@ import { PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store, pushNotification } from "@/store";

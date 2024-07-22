@@ -36,6 +36,7 @@
 
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
+import GitIcon from "@/components/GitIcon.vue";
 import { ProjectV1Name } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";

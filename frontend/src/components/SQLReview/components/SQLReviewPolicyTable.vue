@@ -69,12 +69,13 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBButtonConfirm } from "@/bbkit";
+import { BBBadge, BBButtonConfirm } from "@/bbkit";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useCurrentUserV1, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
+import SQLReviewPolicyDataTable from "./SQLReviewPolicyDataTable.vue";
 
 defineProps<{
   reviewList: SQLReviewPolicy[];

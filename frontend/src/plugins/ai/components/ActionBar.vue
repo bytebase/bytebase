@@ -35,6 +35,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { useCurrentSQLEditorTab } from "@/store";
 import { useAIContext } from "../logic";
 

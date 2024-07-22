@@ -121,7 +121,7 @@
 
 <script lang="ts" setup>
 import { uniq } from "lodash-es";
-import { NInputGroup } from "naive-ui";
+import { NButton, NInputGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -161,7 +161,10 @@ import {
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import { databaseV1Url, hasWorkspacePermissionV2 } from "@/utils";
+import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
+import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
+import { EnvironmentTabFilter } from "../v2";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
 import SensitiveColumnDrawer from "./SensitiveColumnDrawer.vue";
 import SensitiveColumnTable from "./components/SensitiveColumnTable.vue";

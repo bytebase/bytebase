@@ -128,7 +128,7 @@ import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/inde
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
-import { Drawer } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
@@ -149,6 +149,8 @@ import type {
   FeatureType,
 } from "@/types";
 import { DATABASE_CHANGE_TARGET_TYPE } from "./AlterSchemaPrepForm/type";
+import DatabaseGroupPanel from "./DatabaseGroup/DatabaseGroupPanel.vue";
+import { FeatureModal } from "./FeatureGuard";
 
 interface LocalState {
   feature?: FeatureType;

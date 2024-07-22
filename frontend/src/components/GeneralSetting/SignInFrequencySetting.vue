@@ -50,7 +50,7 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { NInputNumber, NRadioGroup, NRadio } from "naive-ui";
+import { NInputNumber, NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
@@ -58,6 +58,7 @@ import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { FeatureType } from "@/types";
 import { defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
+import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {

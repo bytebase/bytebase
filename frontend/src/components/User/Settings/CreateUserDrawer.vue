@@ -185,6 +185,7 @@ import {
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   getUpdateMaskFromUsers,
   pushNotification,

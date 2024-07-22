@@ -55,9 +55,12 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";

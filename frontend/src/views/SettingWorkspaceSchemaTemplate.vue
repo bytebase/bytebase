@@ -38,6 +38,7 @@ import { featureToRef } from "@/store";
 import ColumnTypes from "@/views/SchemaTemplate/ColumnTypes.vue";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
+import { FeatureAttention } from "@/components/FeatureGuard";
 
 interface LocalState {
   selectedTab: "FIELD_TEMPLATE" | "COLUMN_TYPE_RESTRICTION" | "TABLE_TEMPLATE";

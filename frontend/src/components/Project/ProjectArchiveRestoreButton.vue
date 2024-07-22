@@ -41,6 +41,7 @@
 import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
 import { restartAppRoot } from "@/AppRootContext";
+import { BBButtonConfirm } from "@/bbkit";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";

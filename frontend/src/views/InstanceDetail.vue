@@ -84,7 +84,9 @@ import {
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
 import { InstanceRoleTable, Drawer } from "@/components/v2";
-import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import DatabaseV1Table, {
+  DatabaseOperations,
+} from "@/components/v2/Model/DatabaseV1Table";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
   pushNotification,

@@ -254,9 +254,12 @@
 
 <script lang="ts" setup>
 import { useMounted, useWindowSize } from "@vueuse/core";
+import { NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
+import TrialModal from "@/components/TrialModal.vue";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {

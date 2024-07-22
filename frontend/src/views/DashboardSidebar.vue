@@ -27,6 +27,7 @@ import { useI18n } from "vue-i18n";
 import type { RouteRecordRaw } from "vue-router";
 import { useRouter, useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import CommonSidebar from "@/components/CommonSidebar.vue";
 import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
 import { useProjectActions } from "@/components/KBar/useProjectActions";
 import workspaceRoutes from "@/router/dashboard/workspace";

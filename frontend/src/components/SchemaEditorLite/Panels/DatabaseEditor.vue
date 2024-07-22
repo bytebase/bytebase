@@ -151,9 +151,10 @@
 <script lang="ts" setup>
 import { cloneDeep, head, sumBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton, NSelect, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
-import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";

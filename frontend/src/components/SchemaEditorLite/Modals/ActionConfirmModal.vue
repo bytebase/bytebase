@@ -23,6 +23,7 @@
 import type { ButtonProps } from "naive-ui";
 import { NButton } from "naive-ui";
 import type { PropType } from "vue";
+import { BBModal } from "@/bbkit";
 
 const props = defineProps({
   show: {

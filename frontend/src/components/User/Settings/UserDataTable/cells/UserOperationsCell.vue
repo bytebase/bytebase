@@ -37,6 +37,7 @@ import {
   type ComposedUser,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { BBButtonConfirm } from "@/bbkit";
 
 defineProps<{
   user: ComposedUser;

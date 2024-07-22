@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, toRef } from "vue";
 import { ref } from "vue";
 import type { Language } from "@/types";
-import type MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
+import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useMonacoTextModel } from "./text-model";
 import { extensionNameOfLanguage } from "./utils";
 
@@ -50,7 +50,7 @@ const filename = computed(() => {
 const model = useMonacoTextModel(filename, content, toRef(props, "language"));
 
 const handleChange = (value: string) => {
-  emit('update:content', value)
+  emit("update:content", value);
 };
 
 defineExpose({

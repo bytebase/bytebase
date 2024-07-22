@@ -13,6 +13,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { featureToRef } from "@/store";
 import type { Environment } from "@/types/proto/v1/environment_service";

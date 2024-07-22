@@ -24,7 +24,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { useCurrentUserV1, useInstanceV1Store } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";

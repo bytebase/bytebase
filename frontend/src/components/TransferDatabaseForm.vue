@@ -72,8 +72,10 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { toRef } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { TransferSource } from "@/components/TransferDatabaseForm";
 import {
   MultipleDatabaseSelector,
@@ -98,6 +100,8 @@ import {
   hasProjectPermissionV2,
   sortDatabaseV1List,
 } from "@/utils";
+import NoDataPlaceholder from "./misc/NoDataPlaceholder.vue";
+import { DrawerContent } from "./v2";
 
 interface LocalState {
   transferSource: TransferSource;

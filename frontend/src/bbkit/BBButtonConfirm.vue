@@ -55,6 +55,7 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import BBAlert from "./BBAlert.vue";
 import type { BBButtonConfirmStyle } from "./types";
 
 const props = withDefaults(

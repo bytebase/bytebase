@@ -19,6 +19,7 @@
 
 <script setup lang="ts">
 import { NPerformantEllipsis } from "naive-ui";
+import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import { useCurrentUserV1 } from "@/store";
 import type { WrappedReviewStep } from "@/types";
 import { SYSTEM_BOT_USER_NAME } from "@/types";

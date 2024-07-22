@@ -61,6 +61,7 @@ import { NTooltip } from "naive-ui";
 import { computed, onMounted } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
+import { InstanceV1Name } from "@/components/v2";
 import { useDBGroupStore } from "@/store";
 import {
   PlanCheckRun_Result_Status,
