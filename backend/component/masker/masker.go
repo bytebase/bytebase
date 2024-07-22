@@ -58,6 +58,12 @@ func (*NoneMasker) Mask(data *MaskData) *v1pb.RowValue {
 func noneMask(data *MaskData) *v1pb.RowValue {
 	if data.Data != nil {
 		switch raw := data.Data.(type) {
+		case *[]byte:
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BytesValue{
+					BytesValue: *raw,
+				},
+			}
 		case *mssqldb.NullUniqueIdentifier:
 			if raw.Valid {
 				return &v1pb.RowValue{
