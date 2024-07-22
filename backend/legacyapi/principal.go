@@ -32,15 +32,3 @@ const (
 	// ServiceAccountAccessKeyPrefix is the prefix for service account access key.
 	ServiceAccountAccessKeyPrefix = "bbs_"
 )
-
-// PrincipalAuthProvider is the type of an authentication provider.
-type PrincipalAuthProvider string
-
-const (
-	// PrincipalAuthProviderBytebase is the Bytebase's own authentication provider.
-	PrincipalAuthProviderBytebase PrincipalAuthProvider = "BYTEBASE"
-	// PrincipalAuthProviderGitlab is the GitLab (for both GitLab.com and self-hosted GitLab) authentication provider.
-	PrincipalAuthProviderGitlab PrincipalAuthProvider = "GITLAB"
-	// PrincipalAuthProviderGitHub is the GitHub (for both GitHub.com and GitHub Enterprise) authentication provider.
-	PrincipalAuthProviderGitHub PrincipalAuthProvider = "GITHUB"
-)
