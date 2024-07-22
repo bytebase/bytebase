@@ -117,27 +117,28 @@ CREATE TABLE book2 (
 )
 
 type controller struct {
-	server                    *server.Server
-	profile                   *component.Profile
-	client                    *http.Client
-	grpcConn                  *grpc.ClientConn
-	issueServiceClient        v1pb.IssueServiceClient
-	rolloutServiceClient      v1pb.RolloutServiceClient
-	planServiceClient         v1pb.PlanServiceClient
-	orgPolicyServiceClient    v1pb.OrgPolicyServiceClient
-	reviewConfigServiceClient v1pb.ReviewConfigServiceClient
-	projectServiceClient      v1pb.ProjectServiceClient
-	vcsConnectorServiceClient v1pb.VCSConnectorServiceClient
-	authServiceClient         v1pb.AuthServiceClient
-	settingServiceClient      v1pb.SettingServiceClient
-	environmentServiceClient  v1pb.EnvironmentServiceClient
-	instanceServiceClient     v1pb.InstanceServiceClient
-	databaseServiceClient     v1pb.DatabaseServiceClient
-	sheetServiceClient        v1pb.SheetServiceClient
-	evcsClient                v1pb.VCSProviderServiceClient
-	sqlServiceClient          v1pb.SQLServiceClient
-	subscriptionServiceClient v1pb.SubscriptionServiceClient
-	actuatorServiceClient     v1pb.ActuatorServiceClient
+	server                     *server.Server
+	profile                    *component.Profile
+	client                     *http.Client
+	grpcConn                   *grpc.ClientConn
+	issueServiceClient         v1pb.IssueServiceClient
+	rolloutServiceClient       v1pb.RolloutServiceClient
+	planServiceClient          v1pb.PlanServiceClient
+	orgPolicyServiceClient     v1pb.OrgPolicyServiceClient
+	reviewConfigServiceClient  v1pb.ReviewConfigServiceClient
+	projectServiceClient       v1pb.ProjectServiceClient
+	databaseGroupServiceClient v1pb.DatabaseGroupServiceClient
+	vcsConnectorServiceClient  v1pb.VCSConnectorServiceClient
+	authServiceClient          v1pb.AuthServiceClient
+	settingServiceClient       v1pb.SettingServiceClient
+	environmentServiceClient   v1pb.EnvironmentServiceClient
+	instanceServiceClient      v1pb.InstanceServiceClient
+	databaseServiceClient      v1pb.DatabaseServiceClient
+	sheetServiceClient         v1pb.SheetServiceClient
+	evcsClient                 v1pb.VCSProviderServiceClient
+	sqlServiceClient           v1pb.SQLServiceClient
+	subscriptionServiceClient  v1pb.SubscriptionServiceClient
+	actuatorServiceClient      v1pb.ActuatorServiceClient
 
 	cookie  string
 	project *v1pb.Project
@@ -393,6 +394,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.reviewConfigServiceClient = v1pb.NewReviewConfigServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
+	ctl.databaseGroupServiceClient = v1pb.NewDatabaseGroupServiceClient(ctl.grpcConn)
 	ctl.vcsConnectorServiceClient = v1pb.NewVCSConnectorServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
