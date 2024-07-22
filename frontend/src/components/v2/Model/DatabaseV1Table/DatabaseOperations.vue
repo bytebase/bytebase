@@ -168,7 +168,7 @@ const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const databaseOperations = useAppFeature("bb.feature.database-operations");
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
@@ -395,47 +395,51 @@ const isInDefaultProject = computed(
 
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
-  if (!inIframe.value) {
-    resp.push(
-      {
-        icon: h(DownloadIcon),
-        text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-        disabled: !allowExportData.value || props.databases.length !== 1,
-        click: () => generateMultiDb("bb.issue.database.data.export"),
-        tooltip: (action) => {
-          if (!allowExportData.value) {
-            return t("database.batch-action-permission-denied", {
-              action,
-            });
-          }
-          if (props.databases.length > 1) {
-            return t("database.data-export-action-disabled");
-          }
-          return "";
-        },
+  if (databaseOperations.value.has("EXPORT-DATA")) {
+    resp.push({
+      icon: h(DownloadIcon),
+      text: t("custom-approval.risk-rule.risk.namespace.data_export"),
+      disabled: !allowExportData.value || props.databases.length !== 1,
+      click: () => generateMultiDb("bb.issue.database.data.export"),
+      tooltip: (action) => {
+        if (!allowExportData.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        if (props.databases.length > 1) {
+          return t("database.data-export-action-disabled");
+        }
+        return "";
       },
-      {
-        icon: h(RefreshCcwIcon),
-        text: t("common.sync"),
-        disabled: !allowSyncDatabases.value || props.databases.length < 1,
-        click: syncSchema,
-        tooltip: (action) => getDisabledTooltip(action),
+    });
+  }
+  if (databaseOperations.value.has("SYNC-SCHEMA")) {
+    resp.push({
+      icon: h(RefreshCcwIcon),
+      text: t("common.sync"),
+      disabled: !allowSyncDatabases.value || props.databases.length < 1,
+      click: syncSchema,
+      tooltip: (action) => getDisabledTooltip(action),
+    });
+  }
+  if (databaseOperations.value.has("EDIT-LABELS")) {
+    resp.push({
+      icon: h(TagIcon),
+      text: t("database.edit-labels"),
+      disabled: !allowEditLabels.value || props.databases.length < 1,
+      click: () => (state.showLabelEditorDrawer = true),
+      tooltip: (action) => {
+        if (!allowEditLabels.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
       },
-      {
-        icon: h(TagIcon),
-        text: t("database.edit-labels"),
-        disabled: !allowEditLabels.value || props.databases.length < 1,
-        click: () => (state.showLabelEditorDrawer = true),
-        tooltip: (action) => {
-          if (!allowEditLabels.value) {
-            return t("database.batch-action-permission-denied", {
-              action,
-            });
-          }
-          return getDisabledTooltip(action);
-        },
-      }
-    );
+    });
+  }
+  if (databaseOperations.value.has("TRANSFER")) {
     if (!operationsInProjectDetail.value) {
       resp.push({
         icon: h(ArrowRightLeftIcon),
@@ -468,8 +472,28 @@ const actions = computed((): DatabaseAction[] => {
       });
     }
   }
-  resp.unshift(
-    {
+  if (databaseOperations.value.has("CHANGE-DATA")) {
+    resp.unshift({
+      icon: h(PencilIcon),
+      text: t("database.change-data"),
+      disabled:
+        !allowChangeData.value ||
+        !selectedProjectName.value ||
+        props.databases.length < 1 ||
+        selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+      click: () => generateMultiDb("bb.issue.database.data.update"),
+      tooltip: (action) => {
+        if (!allowChangeData.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    });
+  }
+  if (databaseOperations.value.has("EDIT-SCHEMA")) {
+    resp.unshift({
       icon: h(PenSquareIcon),
       text: t("database.edit-schema"),
       disabled:
@@ -490,26 +514,8 @@ const actions = computed((): DatabaseAction[] => {
         }
         return getDisabledTooltip(action);
       },
-    },
-    {
-      icon: h(PencilIcon),
-      text: t("database.change-data"),
-      disabled:
-        !allowChangeData.value ||
-        !selectedProjectName.value ||
-        props.databases.length < 1 ||
-        selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-      click: () => generateMultiDb("bb.issue.database.data.update"),
-      tooltip: (action) => {
-        if (!allowChangeData.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
-    }
-  );
+    });
+  }
 
   return resp;
 });
