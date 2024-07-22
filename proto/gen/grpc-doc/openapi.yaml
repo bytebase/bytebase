@@ -4289,6 +4289,7 @@ paths:
         get:
             tags:
                 - ProjectService
+            description: Deprecated.
             operationId: ProjectService_ListDatabaseGroups
             parameters:
                 - name: project
@@ -4333,6 +4334,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: Deprecated.
             operationId: ProjectService_CreateDatabaseGroup
             parameters:
                 - name: project
@@ -4379,6 +4381,7 @@ paths:
         get:
             tags:
                 - ProjectService
+            description: Deprecated.
             operationId: ProjectService_GetDatabaseGroup
             parameters:
                 - name: project
@@ -4419,6 +4422,7 @@ paths:
         delete:
             tags:
                 - ProjectService
+            description: Deprecated.
             operationId: ProjectService_DeleteDatabaseGroup
             parameters:
                 - name: project
@@ -4446,6 +4450,7 @@ paths:
         patch:
             tags:
                 - ProjectService
+            description: Deprecated.
             operationId: ProjectService_UpdateDatabaseGroup
             parameters:
                 - name: project
@@ -14540,6 +14545,7 @@ tags:
     - name: BranchService
     - name: CelService
     - name: ChangelistService
+    - name: DatabaseGroupService
     - name: DatabaseService
     - name: EnvironmentService
     - name: IdentityProviderService
