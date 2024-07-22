@@ -1433,6 +1433,15 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Deprecated.
+                     Filter is used to filter databases returned in the list.
+                     For example, `project == "projects/{project}"` can be used to list databases in a project.
+                     Note: the project filter will be moved to parent.
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK

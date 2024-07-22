@@ -188,6 +188,22 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 		Offset:     &offset,
 	}
 
+	// Deprecated. Remove this later.
+	if instanceID == "-" {
+		find.InstanceID = nil
+	}
+	if request.Filter != "" {
+		projectFilter, err := getProjectFilter(request.Filter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		projectID, err := common.GetProjectID(projectFilter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
+		}
+		find.ProjectID = &projectID
+	}
+
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

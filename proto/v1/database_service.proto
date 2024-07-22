@@ -170,6 +170,12 @@ message ListInstanceDatabasesRequest {
   // When paginating, all other parameters provided to `ListDatabases` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // Deprecated.
+  // Filter is used to filter databases returned in the list.
+  // For example, `project == "projects/{project}"` can be used to list databases in a project.
+  // Note: the project filter will be moved to parent.
+  string filter = 4;
 }
 
 message ListInstanceDatabasesResponse {

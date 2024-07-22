@@ -116,7 +116,7 @@ func TestTenant(t *testing.T) {
 	}
 
 	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
-		Parent: ctl.project.Name,
+		Parent: project.Name,
 	})
 	a.NoError(err)
 	databases := resp.Databases
