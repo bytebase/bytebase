@@ -167,7 +167,6 @@ const overrideAppProfile = () => {
       "bb.feature.hide-release-remind": true,
       "bb.feature.disallow-share-worksheet": true,
       "bb.feature.disallow-navigate-to-console": true,
-      "bb.feature.disallow-navigate-away-sql-editor": true,
     });
   }
   const customTheme = query.get("customTheme");
@@ -189,9 +188,7 @@ const overrideAppProfile = () => {
   }
 
   useCustomTheme(
-    computed(
-      () => actuatorStore.appProfile["bb.feature.custom-color-scheme"]
-    )
+    computed(() => actuatorStore.appProfile["bb.feature.custom-color-scheme"])
   );
 };
 

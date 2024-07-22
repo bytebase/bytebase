@@ -81,7 +81,7 @@ export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const disallowNavigateAwaySQLEditor = useCustomFeature(
-    "bb.feature.disallow-navigate-away-sql-editor"
+    "bb.feature.disallow-navigate-to-console"
   );
   const $d = useDialog();
 
