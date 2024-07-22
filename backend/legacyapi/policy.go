@@ -90,20 +90,3 @@ var (
 		PolicyTypeIAM:                               {PolicyResourceTypeWorkspace},
 	}
 )
-
-// SensitiveData is the value for sensitive data.
-type SensitiveData struct {
-	Schema string                `json:"schema"`
-	Table  string                `json:"table"`
-	Column string                `json:"column"`
-	Type   SensitiveDataMaskType `json:"maskType"`
-}
-
-// SensitiveDataMaskType is the mask type for sensitive data.
-type SensitiveDataMaskType string
-
-const (
-	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
-	// The default method is subject to change.
-	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
-)
