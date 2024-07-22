@@ -94,7 +94,7 @@ import type {
   ResourceId,
   ValidatedMessage,
 } from "@/types";
-import type { DatabaseGroup } from "@/types/proto/v1/project_service";
+import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { getErrorCode } from "@/utils/grpcweb";
 import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";

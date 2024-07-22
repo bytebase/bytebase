@@ -179,6 +179,14 @@
             <ul>
               
               
+                <li>
+                  <a href="#bytebase.v1.AuthMethod"><span class="badge">E</span>AuthMethod</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
+                </li>
               
                 <li>
                   <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
@@ -736,6 +744,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListInstanceDatabasesRequest"><span class="badge">M</span>ListInstanceDatabasesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListInstanceDatabasesResponse"><span class="badge">M</span>ListInstanceDatabasesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListSecretsRequest"><span class="badge">M</span>ListSecretsRequest</a>
                 </li>
               
@@ -1041,6 +1057,57 @@
               
                 <li>
                   <a href="#bytebase.v1.ChangelistService"><span class="badge">S</span>ChangelistService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2fdatabase_group_service.proto">v1/database_group_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateDatabaseGroupRequest"><span class="badge">M</span>CreateDatabaseGroupRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DatabaseGroup"><span class="badge">M</span>DatabaseGroup</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DatabaseGroup.Database"><span class="badge">M</span>DatabaseGroup.Database</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteDatabaseGroupRequest"><span class="badge">M</span>DeleteDatabaseGroupRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetDatabaseGroupRequest"><span class="badge">M</span>GetDatabaseGroupRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListDatabaseGroupsRequest"><span class="badge">M</span>ListDatabaseGroupsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListDatabaseGroupsResponse"><span class="badge">M</span>ListDatabaseGroupsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateDatabaseGroupRequest"><span class="badge">M</span>UpdateDatabaseGroupRequest</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.DatabaseGroupView"><span class="badge">E</span>DatabaseGroupView</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.DatabaseGroupService"><span class="badge">S</span>DatabaseGroupService</a>
                 </li>
               
             </ul>
@@ -1713,23 +1780,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.CreateDatabaseGroupRequest"><span class="badge">M</span>CreateDatabaseGroupRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.CreateProjectRequest"><span class="badge">M</span>CreateProjectRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DatabaseGroup"><span class="badge">M</span>DatabaseGroup</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DatabaseGroup.Database"><span class="badge">M</span>DatabaseGroup.Database</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteDatabaseGroupRequest"><span class="badge">M</span>DeleteDatabaseGroupRequest</a>
                 </li>
               
                 <li>
@@ -1742,10 +1793,6 @@
               
                 <li>
                   <a href="#bytebase.v1.DeploymentSpec"><span class="badge">M</span>DeploymentSpec</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetDatabaseGroupRequest"><span class="badge">M</span>GetDatabaseGroupRequest</a>
                 </li>
               
                 <li>
@@ -1770,14 +1817,6 @@
               
                 <li>
                   <a href="#bytebase.v1.LabelSelectorRequirement"><span class="badge">M</span>LabelSelectorRequirement</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListDatabaseGroupsRequest"><span class="badge">M</span>ListDatabaseGroupsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListDatabaseGroupsResponse"><span class="badge">M</span>ListDatabaseGroupsResponse</a>
                 </li>
               
                 <li>
@@ -1833,10 +1872,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateDatabaseGroupRequest"><span class="badge">M</span>UpdateDatabaseGroupRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UpdateDeploymentConfigRequest"><span class="badge">M</span>UpdateDeploymentConfigRequest</a>
                 </li>
               
@@ -1859,10 +1894,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Activity.Type"><span class="badge">E</span>Activity.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DatabaseGroupView"><span class="badge">E</span>DatabaseGroupView</a>
                 </li>
               
                 <li>
@@ -2867,6 +2898,35 @@
       
 
       
+        <h3 id="bytebase.v1.AuthMethod">AuthMethod</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTH_METHOD_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>IAM</td>
+                <td>1</td>
+                <td><p>IAM uses the standard IAM authorization check on the organizational resources.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CUSTOM</td>
+                <td>2</td>
+                <td><p>Custom authorization method.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
         <h3 id="v1/annotation.proto-extensions">File-level Extensions</h3>
@@ -2881,6 +2941,14 @@
                 <td><a href="#bool">bool</a></td>
                 <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
                 <td>100000</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>auth_method</td>
+                <td><a href="#bytebase.v1.AuthMethod">AuthMethod</a></td>
+                <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
+                <td>100002</td>
                 <td><p></p></td>
               </tr>
             
@@ -6655,7 +6723,7 @@ Format: instances/{instance} </p></td>
                 <td>SearchInstances</td>
                 <td><a href="#bytebase.v1.SearchInstancesRequest">SearchInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchInstancesResponse">SearchInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
@@ -8569,8 +8637,86 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent, which owns this collection of databases.
-- instances/{instance}: list all databases for an instance. Use &#34;instances/-&#34; to list all databases.
-- projects/{project}: list all databases in a project. </p></td>
+- projects/{project}: list all databases in a project.
+- workspaces/{workspace}: list all databases in a workspace. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of databases to return. The service may return fewer than
+this value.
+If unspecified, at most 50 databases will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListDatabases` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#bytebase.v1.Database">Database</a></td>
+                  <td>repeated</td>
+                  <td><p>The databases from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListInstanceDatabasesRequest">ListInstanceDatabasesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent, which owns this collection of databases.
+- instances/{instance}: list all databases for an instance. Use &#34;instances/-&#34; to list all databases. </p></td>
                 </tr>
               
                 <tr>
@@ -8598,7 +8744,8 @@ the call that provided the page token. </p></td>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Filter is used to filter databases returned in the list.
+                  <td><p>Deprecated.
+Filter is used to filter databases returned in the list.
 For example, `project == &#34;projects/{project}&#34;` can be used to list databases in a project.
 Note: the project filter will be moved to parent. </p></td>
                 </tr>
@@ -8610,7 +8757,7 @@ Note: the project filter will be moved to parent. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</h3>
+        <h3 id="bytebase.v1.ListInstanceDatabasesResponse">ListInstanceDatabasesResponse</h3>
         <p></p>
 
         
@@ -9047,7 +9194,7 @@ It is an empty string for databases without such concept such as MySQL. </p></td
         
       
         <h3 id="bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</h3>
-        <p></p>
+        <p>Deprecated.</p>
 
         
           <table class="field-table">
@@ -9101,7 +9248,7 @@ for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance 
         
       
         <h3 id="bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</h3>
-        <p></p>
+        <p>Deprecated.</p>
 
         
           <table class="field-table">
@@ -10409,6 +10556,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
+                <td>ListInstanceDatabases</td>
+                <td><a href="#bytebase.v1.ListInstanceDatabasesRequest">ListInstanceDatabasesRequest</a></td>
+                <td><a href="#bytebase.v1.ListInstanceDatabasesResponse">ListInstanceDatabasesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>ListDatabases</td>
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
@@ -10419,7 +10573,8 @@ The API will default to the BASIC view.</p></td>
                 <td>SearchDatabases</td>
                 <td><a href="#bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</a></td>
-                <td><p>Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.</p></td>
+                <td><p>Deprecated. This will be removed in the next release.
+Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.</p></td>
               </tr>
             
               <tr>
@@ -10551,16 +10706,26 @@ The API will default to the BASIC view.</p></td>
               
               
               <tr>
-                <td>ListDatabases</td>
+                <td>ListInstanceDatabases</td>
                 <td>GET</td>
                 <td>/v1/{parent=instances/*}/databases</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListDatabases</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/databases</td>
                 <td></td>
               </tr>
               
               <tr>
                 <td>ListDatabases</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*}/databases</td>
+                <td>/v1/{parent=workspaces/*}/databases</td>
                 <td></td>
               </tr>
               
@@ -12222,6 +12387,470 @@ Format: projects/{project}/changelists/{changelist} </p></td>
                 <td>DeleteChangelist</td>
                 <td>DELETE</td>
                 <td>/v1/{name=projects/*/changelists/*}</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/database_group_service.proto">v1/database_group_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource where this database group will be created.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_group</td>
+                  <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
+                  <td></td>
+                  <td><p>The database group to create. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_group_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The ID to use for the database group, which will become the final component of
+the database group&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters
+are /[a-z][0-9]-/. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validate_only</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set, validate the create request and preview the full database group response, but do not actually create it. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DatabaseGroup">DatabaseGroup</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database group.
+Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_placeholder</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The short name used in actual databases specified by users.
+For example, the placeholder for db1_2010, db1_2021, db1_2023 will be &#34;db1&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_expr</td>
+                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
+                  <td></td>
+                  <td><p>The condition that is associated with this database group. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>matched_databases</td>
+                  <td><a href="#bytebase.v1.DatabaseGroup.Database">DatabaseGroup.Database</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of databases that match the database group condition. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unmatched_databases</td>
+                  <td><a href="#bytebase.v1.DatabaseGroup.Database">DatabaseGroup.Database</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of databases that match the database group condition. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>multitenancy</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DatabaseGroup.Database">DatabaseGroup.Database</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the database.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database group to delete.
+Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database group to retrieve.
+Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>view</td>
+                  <td><a href="#bytebase.v1.DatabaseGroupView">DatabaseGroupView</a></td>
+                  <td></td>
+                  <td><p>The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource whose database groups are to be listed.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Not used. The maximum number of anomalies to return. The service may return fewer than
+this value.
+If unspecified, at most 50 anomalies will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Not used. A page token, received from a previous `ListDatabaseGroups` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabaseGroups` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database_groups</td>
+                  <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
+                  <td>repeated</td>
+                  <td><p>database_groups is the list of database groups. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Not used. A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database_group</td>
+                  <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
+                  <td></td>
+                  <td><p>The database group to update.
+
+The database group&#39;s `name` field is used to identify the database group to update.
+Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.DatabaseGroupView">DatabaseGroupView</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DATABASE_GROUP_VIEW_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>The default / unset value.
+The API will default to the BASIC view.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_GROUP_VIEW_BASIC</td>
+                <td>1</td>
+                <td><p>Include basic information about the database group, but exclude the list of matched databases and unmatched databases.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_GROUP_VIEW_FULL</td>
+                <td>2</td>
+                <td><p>Include everything.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.DatabaseGroupService">DatabaseGroupService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ListDatabaseGroups</td>
+                <td><a href="#bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</a></td>
+                <td><a href="#bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GetDatabaseGroup</td>
+                <td><a href="#bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</a></td>
+                <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CreateDatabaseGroup</td>
+                <td><a href="#bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</a></td>
+                <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateDatabaseGroup</td>
+                <td><a href="#bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</a></td>
+                <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteDatabaseGroup</td>
+                <td><a href="#bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>ListDatabaseGroups</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/databaseGroups</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetDatabaseGroup</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/databaseGroups/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateDatabaseGroup</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/databaseGroups</td>
+                <td>database_group</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateDatabaseGroup</td>
+                <td>PATCH</td>
+                <td>/v1/{database_group.name=projects/*/databaseGroups/*}</td>
+                <td>database_group</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteDatabaseGroup</td>
+                <td>DELETE</td>
+                <td>/v1/{name=projects/*/databaseGroups/*}</td>
                 <td></td>
               </tr>
               
@@ -19075,56 +19704,6 @@ Format: projects/{project} </p></td>
 
         
       
-        <h3 id="bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource where this database group will be created.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_group</td>
-                  <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                  <td></td>
-                  <td><p>The database group to create. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_group_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The ID to use for the database group, which will become the final component of
-the database group&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters
-are /[a-z][0-9]-/. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validate_only</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set, validate the create request and preview the full database group response, but do not actually create it. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.CreateProjectRequest">CreateProjectRequest</h3>
         <p></p>
 
@@ -19151,117 +19730,6 @@ the project&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters
 are /[a-z][0-9]-/. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DatabaseGroup">DatabaseGroup</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the database group.
-Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_placeholder</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The short name used in actual databases specified by users.
-For example, the placeholder for db1_2010, db1_2021, db1_2023 will be &#34;db1&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_expr</td>
-                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
-                  <td></td>
-                  <td><p>The condition that is associated with this database group. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>matched_databases</td>
-                  <td><a href="#bytebase.v1.DatabaseGroup.Database">DatabaseGroup.Database</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of databases that match the database group condition. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>unmatched_databases</td>
-                  <td><a href="#bytebase.v1.DatabaseGroup.Database">DatabaseGroup.Database</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of databases that match the database group condition. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>multitenancy</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DatabaseGroup.Database">DatabaseGroup.Database</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the database.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the database group to delete.
-Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
                 </tr>
               
             </tbody>
@@ -19357,38 +19825,6 @@ Format: projects/{project}/deploymentConfigs/default. </p></td>
                   <td><a href="#bytebase.v1.LabelSelector">LabelSelector</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the database group to retrieve.
-Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.DatabaseGroupView">DatabaseGroupView</a></td>
-                  <td></td>
-                  <td><p>The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. </p></td>
                 </tr>
               
             </tbody>
@@ -19564,84 +20000,6 @@ Format: projects/{project} </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource whose database groups are to be listed.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Not used. The maximum number of anomalies to return. The service may return fewer than
-this value.
-If unspecified, at most 50 anomalies will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used. A page token, received from a previous `ListDatabaseGroups` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListDatabaseGroups` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database_groups</td>
-                  <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                  <td>repeated</td>
-                  <td><p>database_groups is the list of database groups. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used. A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
             </tbody>
@@ -20123,40 +20481,6 @@ Format: projects/{project} </p></td>
 
         
       
-        <h3 id="bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database_group</td>
-                  <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                  <td></td>
-                  <td><p>The database group to update.
-
-The database group&#39;s `name` field is used to identify the database group to update.
-Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.UpdateDeploymentConfigRequest">UpdateDeploymentConfigRequest</h3>
         <p></p>
 
@@ -20494,36 +20818,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.DatabaseGroupView">DatabaseGroupView</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DATABASE_GROUP_VIEW_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The default / unset value.
-The API will default to the BASIC view.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_GROUP_VIEW_BASIC</td>
-                <td>1</td>
-                <td><p>Include basic information about the database group, but exclude the list of matched databases and unmatched databases.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_GROUP_VIEW_FULL</td>
-                <td>2</td>
-                <td><p>Include everything.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.OperatorType">OperatorType</h3>
         <p></p>
         <table class="enum-table">
@@ -20827,35 +21121,35 @@ The API will default to the BASIC view.</p></td>
                 <td>ListDatabaseGroups</td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
                 <td>GetDatabaseGroup</td>
                 <td><a href="#bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
                 <td>CreateDatabaseGroup</td>
                 <td><a href="#bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDatabaseGroup</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
                 <td>DeleteDatabaseGroup</td>
                 <td><a href="#bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
@@ -21047,56 +21341,6 @@ The API will default to the BASIC view.</p></td>
                 <td>POST</td>
                 <td>/v1/{project=projects/*}:testWebhook</td>
                 <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListDatabaseGroups</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/databaseGroups</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetDatabaseGroup</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/databaseGroups/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateDatabaseGroup</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/databaseGroups</td>
-                <td>database_group</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateDatabaseGroup</td>
-                <td>PATCH</td>
-                <td>/v1/{database_group.name=projects/*/databaseGroups/*}</td>
-                <td>database_group</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteDatabaseGroup</td>
-                <td>DELETE</td>
-                <td>/v1/{name=projects/*/databaseGroups/*}</td>
-                <td></td>
               </tr>
               
             
