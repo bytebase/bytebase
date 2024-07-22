@@ -53,7 +53,7 @@ const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const recentProjects = useRecentProjects();
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
@@ -150,6 +150,6 @@ const quickActionList = computed(() => {
 });
 
 const hideQuickActionPanel = computed(() => {
-  return inIframe.value || quickActionList.value.length === 0;
+  return hideQuickAction.value || quickActionList.value.length === 0;
 });
 </script>
