@@ -331,30 +331,30 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	}
 	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(methodTokens[1]))
 	if err != nil {
-		return nil, errs.Wrapf(err, "invalid full method name %q", fullMethod)
+		return nil, errs.Wrapf(err, "invalid registry service descriptor, full method name %q", fullMethod)
 	}
 	sd, ok := rd.(protoreflect.ServiceDescriptor)
 	if !ok {
-		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+		return nil, errs.Errorf("invalid service descriptor, full method name %q", fullMethod)
 	}
 	md, ok := sd.Methods().ByName(protoreflect.Name(methodTokens[2])).Options().(*descriptorpb.MethodOptions)
 	if !ok {
-		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+		return nil, errs.Errorf("invalid method options, full method name %q", fullMethod)
 	}
 	allowWithoutCredentialAny := proto.GetExtension(md, v1pb.E_AllowWithoutCredential)
 	allowWithoutCredential, ok := allowWithoutCredentialAny.(bool)
 	if !ok {
-		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+		return nil, errs.Errorf("invalid allow without credential extension, full method name %q", fullMethod)
 	}
 	permissionAny := proto.GetExtension(md, v1pb.E_Permission)
 	permission, ok := permissionAny.(string)
 	if !ok {
-		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+		return nil, errs.Errorf("invalid permission extension, full method name %q", fullMethod)
 	}
 	authMethodAny := proto.GetExtension(md, v1pb.E_AuthMethod)
 	am, ok := authMethodAny.(v1pb.AuthMethod)
 	if !ok {
-		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+		return nil, errs.Errorf("invalid auth method extension, full method name %q", fullMethod)
 	}
 	var authMethod common.AuthMethod
 	switch am {
