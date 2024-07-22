@@ -100,7 +100,7 @@ RUN mkdir -p /var/opt/bytebase
 RUN mkdir -p /var/opt/bytebase/pgdata-demo
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
-RUN apt-get update && apt-get install -y locales curl psmisc procps libncurses5
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y locales curl psmisc procps libncurses5 krb5-user
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
