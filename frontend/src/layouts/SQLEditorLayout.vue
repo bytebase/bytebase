@@ -5,7 +5,7 @@
       class="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
     ></ul>
 
-    <BannersWrapper v-if="!inIframe" />
+    <BannersWrapper />
     <template v-if="ready">
       <ProvideSQLEditorSettingContext v-if="isSettingPage" />
       <ProvideSQLEditorContext v-else />
@@ -22,7 +22,6 @@ import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import ProvideSQLEditorSettingContext from "@/components/ProvideSQLEditorSettingContext.vue";
 import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
 import {
-  useAppFeature,
   useEnvironmentV1Store,
   usePolicyV1Store,
   useRoleStore,
@@ -33,7 +32,6 @@ import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 
 const router = useRouter();
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
 // provide context for SQL Editor
 provideSQLEditorContext();

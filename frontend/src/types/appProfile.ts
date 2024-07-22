@@ -18,6 +18,7 @@ export type AppFeatures = {
   "bb.feature.disallow-navigate-to-console": boolean;
   "bb.feature.disallow-share-worksheet": boolean;
   "bb.feature.disallow-export-query-data": boolean;
+  "bb.feature.hide-banner": boolean;
   "bb.feature.hide-help": boolean;
   "bb.feature.hide-quick-start": boolean;
   "bb.feature.hide-release-remind": boolean;
@@ -53,6 +54,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.disallow-navigate-to-console": false,
     "bb.feature.disallow-share-worksheet": false,
     "bb.feature.disallow-export-query-data": false,
+    "bb.feature.hide-banner": false,
     "bb.feature.hide-help": false,
     "bb.feature.hide-quick-start": false,
     "bb.feature.hide-release-remind": false,
