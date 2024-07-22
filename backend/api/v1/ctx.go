@@ -158,6 +158,7 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 
 	case
 		v1pb.ChangelistService_CreateChangelist_FullMethodName,
+		v1pb.ChangelistService_ListChangelists_FullMethodName,
 		v1pb.ChangelistService_GetChangelist_FullMethodName:
 		return p.getProjectIDsForChangelistService(ctx, req)
 
@@ -199,6 +200,7 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.ProjectService_CreateDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_UpdateDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_DeleteDatabaseGroup_FullMethodName,
+		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
 
 		v1pb.ProjectService_GetProjectProtectionRules_FullMethodName,
 		v1pb.ProjectService_UpdateProjectProtectionRules_FullMethodName:
