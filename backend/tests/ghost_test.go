@@ -236,10 +236,8 @@ func TestGhostTenant(t *testing.T) {
 		a.NoError(err)
 	}
 
-	// Getting databases for each environment.
 	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
-		Parent: "instances/-",
-		Filter: fmt.Sprintf(`project == "%s"`, ctl.project.Name),
+		Parent: fmt.Sprintf("projects/%s", ctl.project.Name),
 	})
 	a.NoError(err)
 	databases := resp.Databases
