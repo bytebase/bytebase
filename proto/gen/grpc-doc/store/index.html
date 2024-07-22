@@ -179,6 +179,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.DatabaseLabel"><span class="badge">M</span>DatabaseLabel</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.PageToken"><span class="badge">M</span>PageToken</a>
                 </li>
               
@@ -819,10 +823,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail"><span class="badge">M</span>PlanCheckRunConfig.PreUpdateBackupDetail</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanCheckRunResult"><span class="badge">M</span>PlanCheckRunResult</a>
                 </li>
               
@@ -836,6 +836,10 @@
               
                 <li>
                   <a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRunResult.Result.SqlSummaryReport</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PreUpdateBackupDetail"><span class="badge">M</span>PreUpdateBackupDetail</a>
                 </li>
               
               
@@ -1205,6 +1209,33 @@
         
           
           <li>
+            <a href="#store%2ftask.proto">store/task.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.TaskDatabaseCreatePayload"><span class="badge">M</span>TaskDatabaseCreatePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskDatabaseDataExportPayload"><span class="badge">M</span>TaskDatabaseDataExportPayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskDatabaseUpdatePayload"><span class="badge">M</span>TaskDatabaseUpdatePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry"><span class="badge">M</span>TaskDatabaseUpdatePayload.FlagsEntry</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2ftask_run.proto">store/task_run.proto</a>
             <ul>
               
@@ -1345,6 +1376,37 @@
       </div>
       <p></p>
 
+      
+        <h3 id="bytebase.store.DatabaseLabel">DatabaseLabel</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
       
         <h3 id="bytebase.store.PageToken">PageToken</h3>
         <p>Used internally for obfuscating the page token.</p>
@@ -6891,7 +6953,7 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
               
                 <tr>
                   <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail">PlanCheckRunConfig.PreUpdateBackupDetail</a></td>
+                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
                   <td>optional</td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
                 </tr>
@@ -6925,31 +6987,6 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail">PlanCheckRunConfig.PreUpdateBackupDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database for keeping the backup data.
-Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>
@@ -7145,6 +7182,31 @@ To supersede `line` and `column` above. </p></td>
                   <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database for keeping the backup data.
+Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>
@@ -9809,6 +9871,256 @@ Default to this mode.</p></td>
                   <td><a href="#bytebase.store.SlowQueryDetails">SlowQueryDetails</a></td>
                   <td>repeated</td>
                   <td><p>samples are the details of the sample slow queries with the same fingerprint. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/task.proto">store/task.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.TaskDatabaseCreatePayload">TaskDatabaseCreatePayload</h3>
+        <p>TaskDatabaseCreatePayload is the task payload for creating databases.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>skipped</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>common fields </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skipped_reason</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>spec_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>project_id</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_id</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskDatabaseDataExportPayload">TaskDatabaseDataExportPayload</h3>
+        <p>TaskDatabaseDataExportPayload is the task payload for database data export.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>spec_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>common fields </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_id</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskDatabaseUpdatePayload">TaskDatabaseUpdatePayload</h3>
+        <p>TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>skipped</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>common fields </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skipped_reason</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>spec_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_id</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pre_update_backup_detail</td>
+                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>flags</td>
+                  <td><a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry">TaskDatabaseUpdatePayload.FlagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>flags is used for ghost sync </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry">TaskDatabaseUpdatePayload.FlagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

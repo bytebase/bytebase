@@ -8,25 +8,7 @@ export type ExecutionId = IdType;
 
 export type PrincipalId = IdType;
 
-export type MemberId = IdType;
-
-export type SettingId = IdType;
-
 export type ProjectId = IdType;
-
-export type ProjectWebhookId = IdType;
-
-export type IssueId = IdType;
-
-export type PipelineId = IdType;
-
-export type StageId = IdType;
-
-export type TaskId = IdType;
-
-export type TaskRunId = IdType;
-
-export type TaskCheckRunId = IdType;
 
 export type EnvironmentId = IdType;
 
@@ -48,8 +30,3 @@ export type CommandId = string;
 export type CommandRegisterId = string;
 
 export type SheetId = IdType;
-
-// This references to the object id, which can be used as a container.
-// Currently, only issue can be used a container.
-// The type is used by Activity and Message
-export type ContainerId = IssueId;

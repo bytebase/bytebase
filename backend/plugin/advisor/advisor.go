@@ -49,7 +49,7 @@ type Context struct {
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	SyntaxMode            SyntaxMode
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
-	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
+	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
 
 	// SQL review rule special fields.
 	AST     any

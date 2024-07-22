@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -58,8 +57,8 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 			UpdateTime:      time.Now(),
 		})
 
-	payload := &api.TaskDatabaseDataUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseUpdatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
@@ -72,7 +71,8 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		return true, nil, err
 	}
 
-	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	sheetID := int(payload.SheetId)
+	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
 	}
@@ -80,7 +80,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		return true, nil, err
 	}
 	version := model.Version{Version: payload.SchemaVersion}
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &payload.SheetID)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &sheetID)
 	// sync database schema anyways
 	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
 		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
@@ -113,7 +113,7 @@ func (exec *DataUpdateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
 	statement string,
-	payload *api.TaskDatabaseDataUpdatePayload,
+	payload *storepb.TaskDatabaseUpdatePayload,
 	task *store.TaskMessage,
 ) error {
 	if payload.PreUpdateBackupDetail.Database == "" {

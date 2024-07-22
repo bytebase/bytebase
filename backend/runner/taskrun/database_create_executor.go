@@ -61,20 +61,21 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 			UpdateTime:      time.Now(),
 		})
 
-	payload := &api.TaskDatabaseCreatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseCreatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
 	}
-	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	sheetID := int(payload.SheetId)
+	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get sheet statement of sheet: %d", payload.SheetID)
+		return true, nil, errors.Wrapf(err, "failed to get sheet statement of sheet: %d", sheetID)
 	}
-	sheet, err := exec.store.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID})
+	sheet, err := exec.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID})
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get sheet: %d", payload.SheetID)
+		return true, nil, errors.Wrapf(err, "failed to get sheet: %d", sheetID)
 	}
 	if sheet == nil {
-		return true, nil, errors.Errorf("sheet not found: %d", payload.SheetID)
+		return true, nil, errors.Errorf("sheet not found: %d", sheetID)
 	}
 
 	statement = strings.TrimSpace(statement)
@@ -91,12 +92,13 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("Creating database is not supported")
 	}
 
-	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &payload.ProjectID})
+	projectID := int(payload.ProjectId)
+	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 	if err != nil {
-		return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
+		return true, nil, errors.Errorf("failed to find project with ID %d", projectID)
 	}
 	if project == nil {
-		return true, nil, errors.Errorf("project not found with ID %d", payload.ProjectID)
+		return true, nil, errors.Errorf("project not found with ID %d", projectID)
 	}
 
 	// Create database.
@@ -110,7 +112,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	// The sync status is NOT_FOUND, which will be updated to OK if succeeds.
 	labels := make(map[string]string)
 	if payload.Labels != "" {
-		var databaseLabels []*api.DatabaseLabel
+		var databaseLabels []*storepb.DatabaseLabel
 		if err := json.Unmarshal([]byte(payload.Labels), &databaseLabels); err != nil {
 			return true, nil, err
 		}
@@ -122,7 +124,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		ProjectID:            project.ResourceID,
 		InstanceID:           instance.ResourceID,
 		DatabaseName:         payload.DatabaseName,
-		EnvironmentID:        payload.EnvironmentID,
+		EnvironmentID:        payload.EnvironmentId,
 		SyncState:            api.NotFound,
 		SuccessfulSyncTimeTs: time.Now().Unix(),
 		Metadata: &storepb.DatabaseMetadata{
@@ -168,8 +170,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		})
 
 	environmentID := instance.EnvironmentID
-	if payload.EnvironmentID != "" {
-		environmentID = payload.EnvironmentID
+	if payload.EnvironmentId != "" {
+		environmentID = payload.EnvironmentId
 	}
 	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {

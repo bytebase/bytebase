@@ -480,7 +480,7 @@ type SQLReviewCheckContext struct {
 	Catalog               catalogInterface
 	Driver                *sql.DB
 	Context               context.Context
-	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
+	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
 
 	// Snowflake specific fields
 	CurrentDatabase string
