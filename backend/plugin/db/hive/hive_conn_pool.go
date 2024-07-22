@@ -19,10 +19,9 @@ type ConnPool interface {
 }
 
 type FixedConnPool struct {
-	Host        string
-	Port        int
+	BasicConfig *db.ConnectionConfig
 	HiveConfig  *gohive.ConnectConfiguration
-	SASLConfig  db.SASLConfig
+	Port        int
 	RWMutex     sync.RWMutex
 	Connections chan *gohive.Connection
 	IsActivated bool
@@ -38,31 +37,38 @@ func CreateHiveConnPool(
 	*FixedConnPool, error,
 ) {
 	conns := make(chan *gohive.Connection, numMaxConn)
-
 	hiveConfig := gohive.NewConnectConfiguration()
 	hiveConfig.Database = config.Database
+
+	switch t := config.SASLConfig.(type) {
+	case *db.KerberosConfig:
+		hiveConfig.Hostname = t.Instance
+		hiveConfig.Service = t.Primary
+
+	case *db.PlainSASLConfig:
+		hiveConfig.Username = t.Username
+		hiveConfig.Password = t.Password
+
+	default:
+		return nil, errors.Errorf("invalid SASL config")
+	}
 
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
 	}
 
-	// SASL settings.
-	switch t := config.SASLConfig.(type) {
-	case *db.KerberosConfig:
-		// Kerberos.
-		hiveConfig.Hostname = t.Instance
-		hiveConfig.Service = t.Primary
-	case *db.PlainSASLConfig:
-		// Plain.
-		hiveConfig.Username = t.Username
-		hiveConfig.Password = t.Password
-	default:
-		return nil, errors.Errorf("invalid SASL config")
+	saslTypName := config.SASLConfig.GetTypeName()
+	if saslTypName == db.SASLTypeKerberos {
+		db.KrbEnvLock()
+		defer db.KrbEnvUnlock()
+		if err := config.SASLConfig.InitEnv(); err != nil {
+			return nil, errors.Wrapf(err, "failed to init SASL environment")
+		}
 	}
 
 	for i := 0; i < numMaxConn; i++ {
-		conn, err := gohive.Connect(config.Host, port, config.SASLConfig.GetTypeName(), hiveConfig)
+		conn, err := gohive.Connect(config.Host, port, string(saslTypName), hiveConfig)
 		// release resources if err.
 		if err != nil || conn == nil {
 			if err == nil {
@@ -86,14 +92,13 @@ func CreateHiveConnPool(
 	}
 
 	return &FixedConnPool{
-			Host:        config.Host,
-			Port:        port,
-			HiveConfig:  hiveConfig,
-			SASLConfig:  config.SASLConfig,
 			RWMutex:     sync.RWMutex{},
 			Connections: conns,
 			IsActivated: true,
 			NumMaxConns: numMaxConn,
+			BasicConfig: config,
+			HiveConfig:  hiveConfig,
+			Port:        port,
 		},
 		nil
 }
@@ -112,8 +117,16 @@ func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 	case conn = <-pool.Connections:
 
 	default:
+		saslTypName := pool.BasicConfig.SASLConfig.GetTypeName()
+		if saslTypName == db.SASLTypeKerberos {
+			db.KrbEnvLock()
+			defer db.KrbEnvUnlock()
+			if err := pool.BasicConfig.SASLConfig.InitEnv(); err != nil {
+				return nil, errors.Wrapf(err, "failed to init SASL environment")
+			}
+		}
 		var err error
-		conn, err = gohive.Connect(pool.Host, pool.Port, pool.SASLConfig.GetTypeName(), pool.HiveConfig)
+		conn, err = gohive.Connect(pool.BasicConfig.Host, pool.Port, string(saslTypName), pool.HiveConfig)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get Hive connection")
 		}
