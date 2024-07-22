@@ -133,7 +133,6 @@ service ProjectService {
 
   // Deprecated.
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.projects.get";
     // TODO(d): move around.
@@ -141,7 +140,6 @@ service ProjectService {
 
   // Deprecated.
   rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.get";
     // TODO(d): move around.
@@ -149,10 +147,6 @@ service ProjectService {
 
   // Deprecated.
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/databaseGroups"
-      body: "database_group"
-    };
     option (google.api.method_signature) = "parent,databaseGroup";
     option (bytebase.v1.permission) = "bb.projects.update";
     // TODO(d): move around.
@@ -160,10 +154,6 @@ service ProjectService {
 
   // Deprecated.
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.http) = {
-      patch: "/v1/{database_group.name=projects/*/databaseGroups/*}"
-      body: "database_group"
-    };
     option (google.api.method_signature) = "database_group,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
     // TODO(d): move around.
@@ -171,7 +161,6 @@ service ProjectService {
 
   // Deprecated.
   rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.update";
     // TODO(d): move around.
