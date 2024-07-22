@@ -179,6 +179,14 @@
             <ul>
               
               
+                <li>
+                  <a href="#bytebase.v1.AuthMethod"><span class="badge">E</span>AuthMethod</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
+                </li>
               
                 <li>
                   <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
@@ -2875,6 +2883,35 @@
       
 
       
+        <h3 id="bytebase.v1.AuthMethod">AuthMethod</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTH_METHOD_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>IAM</td>
+                <td>1</td>
+                <td><p>IAM uses the standard IAM authorization check on the organizational resources.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CUSTOM</td>
+                <td>2</td>
+                <td><p>Custom authorization method.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
         <h3 id="v1/annotation.proto-extensions">File-level Extensions</h3>
@@ -2889,6 +2926,14 @@
                 <td><a href="#bool">bool</a></td>
                 <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
                 <td>100000</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>auth_method</td>
+                <td><a href="#bytebase.v1.AuthMethod">AuthMethod</a></td>
+                <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
+                <td>100002</td>
                 <td><p></p></td>
               </tr>
             
