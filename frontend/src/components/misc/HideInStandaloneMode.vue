@@ -1,9 +1,10 @@
 <template>
-  <slot v-if="!inIframe" name="default" />
+  <slot v-if="!embedded" name="default" />
 </template>
 
 <script setup lang="ts">
-import { useAppFeature } from "@/store";
+import { computed } from "vue";
+import { useActuatorV1Store } from "@/store";
 
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const embedded = computed(() => useActuatorV1Store().appProfile.embedded);
 </script>
