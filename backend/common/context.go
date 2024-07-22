@@ -39,4 +39,5 @@ type AuthContext struct {
 	AllowWithoutCredential bool
 	Permission             string
 	AuthMethod             AuthMethod
+	Signature              []string
 }
