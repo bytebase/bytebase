@@ -168,7 +168,9 @@ const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
-const disableSchemaEditor = useAppFeature("bb.feature.disable-schema-editor");
+const disableSchemaEditor = useAppFeature(
+  "bb.feature.issue.disable-schema-editor"
+);
 const operations = useAppFeature("bb.feature.databases.operations");
 
 const selectedProjectNames = computed(() => {

@@ -279,7 +279,7 @@ const {
   allowListChangeHistories,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
-const disableSchemaEditor = useAppFeature("bb.feature.disable-schema-editor");
+const disableSchemaEditor = useAppFeature("bb.feature.issue.disable-schema-editor");
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({

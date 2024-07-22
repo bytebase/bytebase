@@ -14,7 +14,6 @@ export const overrideAppProfile = () => {
     actuatorStore.overrideAppFeatures({
       "bb.feature.embedded-in-iframe": true,
       "bb.feature.disable-kbar": true,
-      "bb.feature.disable-schema-editor": true,
       "bb.feature.databases.operations": new Set(["CHANGE-DATA", "EDIT-SCHEMA"]),
       "bb.feature.hide-banner": true,
       "bb.feature.hide-help": true,
@@ -24,6 +23,7 @@ export const overrideAppProfile = () => {
       "bb.feature.console.hide-sidebar": true,
       "bb.feature.console.hide-header": true,
       "bb.feature.console.hide-quick-action": true,
+      "bb.feature.issue.disable-schema-editor": true,
       "bb.feature.databases.hide-unassigned": true,
       "bb.feature.databases.hide-inalterable": true,
       "bb.feature.sql-editor.disallow-share-worksheet": true,

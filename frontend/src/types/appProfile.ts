@@ -5,7 +5,6 @@ export type AppFeatures = {
   "bb.feature.embedded-in-iframe": boolean;
   "bb.feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.feature.disable-kbar": boolean;
-  "bb.feature.disable-schema-editor": boolean;
   "bb.feature.disallow-navigate-to-console": boolean;
   "bb.feature.hide-banner": boolean;
   "bb.feature.hide-help": boolean;
@@ -15,6 +14,7 @@ export type AppFeatures = {
   "bb.feature.console.hide-sidebar": boolean;
   "bb.feature.console.hide-header": boolean;
   "bb.feature.console.hide-quick-action": boolean;
+  "bb.feature.issue.disable-schema-editor": boolean;
   "bb.feature.databases.operations": Set<
     | "EDIT-SCHEMA"
     | "CHANGE-DATA"
@@ -43,7 +43,6 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.embedded-in-iframe": false,
     "bb.feature.custom-color-scheme": undefined,
     "bb.feature.disable-kbar": false,
-    "bb.feature.disable-schema-editor": false,
     "bb.feature.disallow-navigate-to-console": false,
     "bb.feature.hide-banner": false,
     "bb.feature.hide-help": false,
@@ -53,6 +52,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.console.hide-sidebar": false,
     "bb.feature.console.hide-header": false,
     "bb.feature.console.hide-quick-action": false,
+    "bb.feature.issue.disable-schema-editor": false,
     "bb.feature.databases.operations": new Set([
       "EDIT-SCHEMA",
       "CHANGE-DATA",

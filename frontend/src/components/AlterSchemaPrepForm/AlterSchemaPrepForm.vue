@@ -228,7 +228,7 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
-const disableSchemaEditor = useAppFeature("bb.feature.disable-schema-editor");
+const disableSchemaEditor = useAppFeature("bb.feature.issue.disable-schema-editor");
 
 const featureModalContext = ref<{
   feature?: FeatureType;
