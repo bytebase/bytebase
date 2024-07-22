@@ -143,11 +143,10 @@ export interface GetDatabaseRequest {
   name: string;
 }
 
-export interface ListDatabasesRequest {
+export interface ListInstanceDatabasesRequest {
   /**
    * The parent, which owns this collection of databases.
    * - instances/{instance}: list all databases for an instance. Use "instances/-" to list all databases.
-   * - projects/{project}: list all databases in a project.
    */
   parent: string;
   /**
@@ -166,11 +165,46 @@ export interface ListDatabasesRequest {
    */
   pageToken: string;
   /**
+   * Deprecated.
    * Filter is used to filter databases returned in the list.
    * For example, `project == "projects/{project}"` can be used to list databases in a project.
    * Note: the project filter will be moved to parent.
    */
   filter: string;
+}
+
+export interface ListInstanceDatabasesResponse {
+  /** The databases from the specified request. */
+  databases: Database[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface ListDatabasesRequest {
+  /**
+   * The parent, which owns this collection of databases.
+   * - projects/{project}: list all databases in a project.
+   * - workspaces/{workspace}: list all databases in a workspace.
+   */
+  parent: string;
+  /**
+   * The maximum number of databases to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListDatabases` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListDatabases` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
 }
 
 export interface ListDatabasesResponse {
@@ -183,6 +217,7 @@ export interface ListDatabasesResponse {
   nextPageToken: string;
 }
 
+/** Deprecated. */
 export interface SearchDatabasesRequest {
   /**
    * The maximum number of databases to return. The service may return fewer than
@@ -214,6 +249,7 @@ export interface SearchDatabasesRequest {
   filter: string;
 }
 
+/** Deprecated. */
 export interface SearchDatabasesResponse {
   /** The databases from the specified request. */
   databases: Database[];
@@ -1745,12 +1781,12 @@ export const GetDatabaseRequest = {
   },
 };
 
-function createBaseListDatabasesRequest(): ListDatabasesRequest {
+function createBaseListInstanceDatabasesRequest(): ListInstanceDatabasesRequest {
   return { parent: "", pageSize: 0, pageToken: "", filter: "" };
 }
 
-export const ListDatabasesRequest = {
-  encode(message: ListDatabasesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListInstanceDatabasesRequest = {
+  encode(message: ListInstanceDatabasesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -1766,10 +1802,10 @@ export const ListDatabasesRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListDatabasesRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListInstanceDatabasesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListDatabasesRequest();
+    const message = createBaseListInstanceDatabasesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1810,7 +1846,7 @@ export const ListDatabasesRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListDatabasesRequest {
+  fromJSON(object: any): ListInstanceDatabasesRequest {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
@@ -1819,7 +1855,7 @@ export const ListDatabasesRequest = {
     };
   },
 
-  toJSON(message: ListDatabasesRequest): unknown {
+  toJSON(message: ListInstanceDatabasesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
       obj.parent = message.parent;
@@ -1836,6 +1872,172 @@ export const ListDatabasesRequest = {
     return obj;
   },
 
+  create(base?: DeepPartial<ListInstanceDatabasesRequest>): ListInstanceDatabasesRequest {
+    return ListInstanceDatabasesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListInstanceDatabasesRequest>): ListInstanceDatabasesRequest {
+    const message = createBaseListInstanceDatabasesRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
+    return message;
+  },
+};
+
+function createBaseListInstanceDatabasesResponse(): ListInstanceDatabasesResponse {
+  return { databases: [], nextPageToken: "" };
+}
+
+export const ListInstanceDatabasesResponse = {
+  encode(message: ListInstanceDatabasesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.databases) {
+      Database.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListInstanceDatabasesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListInstanceDatabasesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databases.push(Database.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListInstanceDatabasesResponse {
+    return {
+      databases: globalThis.Array.isArray(object?.databases)
+        ? object.databases.map((e: any) => Database.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListInstanceDatabasesResponse): unknown {
+    const obj: any = {};
+    if (message.databases?.length) {
+      obj.databases = message.databases.map((e) => Database.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListInstanceDatabasesResponse>): ListInstanceDatabasesResponse {
+    return ListInstanceDatabasesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListInstanceDatabasesResponse>): ListInstanceDatabasesResponse {
+    const message = createBaseListInstanceDatabasesResponse();
+    message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListDatabasesRequest(): ListDatabasesRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListDatabasesRequest = {
+  encode(message: ListDatabasesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListDatabasesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListDatabasesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListDatabasesRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListDatabasesRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    return obj;
+  },
+
   create(base?: DeepPartial<ListDatabasesRequest>): ListDatabasesRequest {
     return ListDatabasesRequest.fromPartial(base ?? {});
   },
@@ -1844,7 +2046,6 @@ export const ListDatabasesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
-    message.filter = object.filter ?? "";
     return message;
   },
 };
@@ -8918,56 +9119,19 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    listDatabases: {
-      name: "ListDatabases",
-      requestType: ListDatabasesRequest,
+    listInstanceDatabases: {
+      name: "ListInstanceDatabases",
+      requestType: ListInstanceDatabasesRequest,
       requestStream: false,
-      responseType: ListDatabasesResponse,
+      responseType: ListInstanceDatabasesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
-          800010: [new Uint8Array([17, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 108, 105, 115, 116])],
+          800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
           578365826: [
             new Uint8Array([
-              73,
-              90,
-              35,
-              18,
-              33,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              115,
+              36,
               18,
               34,
               47,
@@ -9009,7 +9173,102 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query. */
+    listDatabases: {
+      name: "ListDatabases",
+      requestType: ListDatabasesRequest,
+      requestStream: false,
+      responseType: ListDatabasesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          800010: [new Uint8Array([17, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 108, 105, 115, 116])],
+          578365826: [
+            new Uint8Array([
+              74,
+              90,
+              37,
+              18,
+              35,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              119,
+              111,
+              114,
+              107,
+              115,
+              112,
+              97,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              18,
+              33,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * Deprecated. This will be removed in the next release.
+     * Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
+     */
     searchDatabases: {
       name: "SearchDatabases",
       requestType: SearchDatabasesRequest,
