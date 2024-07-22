@@ -1,3 +1,63 @@
+- description: Test for Join
+  statement: SELECT T1.* FROM T1 JOIN T2;
+  connectedDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: PUBLIC
+              table: T1
+              column: B
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: PUBLIC
+          schema: PUBLIC
+          table: T2
+          column: ""
 - description: Test For Database Link With View
   statement: SELECT * FROM SCHEMA1.LV1@REMOTE;
   connectedDatabase: PUBLIC
