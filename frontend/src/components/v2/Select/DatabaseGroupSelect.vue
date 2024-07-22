@@ -14,7 +14,7 @@ import { head } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useDBGroupStore } from "@/store";
-import type { DatabaseGroup } from "@/types/proto/v1/project_service";
+import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 
 interface LocalState {
   selectedDatabaseGroup?: string;
