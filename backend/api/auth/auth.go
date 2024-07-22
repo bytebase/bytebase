@@ -22,6 +22,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	errs "github.com/pkg/errors"
 
+	annotationsProto "google.golang.org/genproto/googleapis/api/annotations"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -365,10 +367,16 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	case v1pb.AuthMethod_CUSTOM:
 		authMethod = common.AuthMethodCustom
 	}
+	signatureAny := proto.GetExtension(md, annotationsProto.E_MethodSignature)
+	signature, ok := signatureAny.(string)
+	if !ok {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
 
 	return &common.AuthContext{
 		AllowWithoutCredential: allowWithoutCredential,
 		Permission:             permission,
 		AuthMethod:             authMethod,
+		Signature:              signature,
 	}, nil
 }
