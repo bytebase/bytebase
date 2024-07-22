@@ -168,6 +168,7 @@ const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
+const disableSchemaEditor = useAppFeature("bb.feature.disable-schema-editor");
 const databaseOperations = useAppFeature("bb.feature.database-operations");
 
 const selectedProjectNames = computed(() => {
@@ -293,7 +294,7 @@ const generateMultiDb = async (
     props.databases.length === 1 &&
     type === "bb.issue.database.schema.update" &&
     allowUsingSchemaEditor(props.databases) &&
-    !inIframe.value
+    !disableSchemaEditor.value
   ) {
     schemaEditorContext.value.databaseIdList = [
       ...selectedDatabaseUidList.value,

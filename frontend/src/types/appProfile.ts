@@ -5,6 +5,7 @@ export type AppFeatures = {
   "bb.feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.feature.custom-query-datasource": boolean;
   "bb.feature.disable-kbar": boolean;
+  "bb.feature.disable-schema-editor": boolean;
   "bb.feature.database-operations": Set<
     | "EDIT-SCHEMA"
     | "CHANGE-DATA"
@@ -36,6 +37,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.custom-color-scheme": undefined,
     "bb.feature.custom-query-datasource": false,
     "bb.feature.disable-kbar": false,
+    "bb.feature.disable-schema-editor": false,
     "bb.feature.database-operations": new Set([
       "EDIT-SCHEMA",
       "CHANGE-DATA",
