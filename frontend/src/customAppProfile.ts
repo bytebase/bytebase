@@ -6,12 +6,14 @@ export const overrideAppProfile = () => {
   const actuatorStore = useActuatorV1Store();
   const mode = query.get("mode");
   if (mode === "STANDALONE") {
+    // The webapp is embedded within iframe
     actuatorStore.appProfile.embedded = true;
 
     // mode=STANDALONE is not easy to read, but for legacy support we keep it as
     // some customers are using it.
     actuatorStore.overrideAppFeatures({
       "bb.feature.embedded-in-iframe": true,
+      "bb.feature.disable-kbar": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-release-remind": true,

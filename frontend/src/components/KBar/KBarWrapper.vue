@@ -51,12 +51,12 @@ export default defineComponent({
   setup() {
     const { t } = useI18n();
     const { stack: overlayStack } = useOverlayStackContext();
-    const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+    const disableKBar = useAppFeature("bb.feature.disable-kbar");
 
     const placeholder = computed(() => t("kbar.options.placeholder"));
 
     const disabled = computed(() => {
-      if (inIframe.value) {
+      if (disableKBar.value) {
         return true;
       }
 
