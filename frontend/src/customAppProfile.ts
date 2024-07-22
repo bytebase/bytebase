@@ -15,7 +15,7 @@ export const overrideAppProfile = () => {
       "bb.feature.embedded-in-iframe": true,
       "bb.feature.disable-kbar": true,
       "bb.feature.disable-schema-editor": true,
-      "bb.feature.database-operations": new Set(["CHANGE-DATA", "EDIT-SCHEMA"]),
+      "bb.feature.databases.operations": new Set(["CHANGE-DATA", "EDIT-SCHEMA"]),
       "bb.feature.hide-banner": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-quick-start": true,

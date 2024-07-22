@@ -4,20 +4,9 @@ export type AppFeatures = {
   // Use simple and accurate phrases. Namespace if needed
   "bb.feature.embedded-in-iframe": boolean;
   "bb.feature.custom-color-scheme": Record<string, string> | undefined;
-  "bb.feature.custom-query-datasource": boolean;
   "bb.feature.disable-kbar": boolean;
   "bb.feature.disable-schema-editor": boolean;
-  "bb.feature.database-operations": Set<
-    | "EDIT-SCHEMA"
-    | "CHANGE-DATA"
-    | "EXPORT-DATA"
-    | "SYNC-SCHEMA"
-    | "EDIT-LABELS"
-    | "TRANSFER"
-  >;
   "bb.feature.disallow-navigate-to-console": boolean;
-  "bb.feature.disallow-share-worksheet": boolean;
-  "bb.feature.disallow-export-query-data": boolean;
   "bb.feature.hide-banner": boolean;
   "bb.feature.hide-help": boolean;
   "bb.feature.hide-quick-start": boolean;
@@ -26,8 +15,19 @@ export type AppFeatures = {
   "bb.feature.console.hide-sidebar": boolean;
   "bb.feature.console.hide-header": boolean;
   "bb.feature.console.hide-quick-action": boolean;
+  "bb.feature.databases.operations": Set<
+    | "EDIT-SCHEMA"
+    | "CHANGE-DATA"
+    | "EXPORT-DATA"
+    | "SYNC-SCHEMA"
+    | "EDIT-LABELS"
+    | "TRANSFER"
+  >;
   "bb.feature.databases.hide-unassigned": boolean;
   "bb.feature.databases.hide-inalterable": boolean;
+  "bb.feature.sql-editor.custom-query-datasource": boolean;
+  "bb.feature.sql-editor.disallow-share-worksheet": boolean;
+  "bb.feature.sql-editor.disallow-export-query-data": boolean;
 };
 
 export type AppProfile = {
@@ -42,20 +42,9 @@ export const defaultAppProfile = (): AppProfile => ({
   features: {
     "bb.feature.embedded-in-iframe": false,
     "bb.feature.custom-color-scheme": undefined,
-    "bb.feature.custom-query-datasource": false,
     "bb.feature.disable-kbar": false,
     "bb.feature.disable-schema-editor": false,
-    "bb.feature.database-operations": new Set([
-      "EDIT-SCHEMA",
-      "CHANGE-DATA",
-      "EXPORT-DATA",
-      "SYNC-SCHEMA",
-      "EDIT-LABELS",
-      "TRANSFER",
-    ]),
     "bb.feature.disallow-navigate-to-console": false,
-    "bb.feature.disallow-share-worksheet": false,
-    "bb.feature.disallow-export-query-data": false,
     "bb.feature.hide-banner": false,
     "bb.feature.hide-help": false,
     "bb.feature.hide-quick-start": false,
@@ -64,7 +53,18 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.console.hide-sidebar": false,
     "bb.feature.console.hide-header": false,
     "bb.feature.console.hide-quick-action": false,
+    "bb.feature.databases.operations": new Set([
+      "EDIT-SCHEMA",
+      "CHANGE-DATA",
+      "EXPORT-DATA",
+      "SYNC-SCHEMA",
+      "EDIT-LABELS",
+      "TRANSFER",
+    ]),
     "bb.feature.databases.hide-unassigned": false,
     "bb.feature.databases.hide-inalterable": false,
+    "bb.feature.sql-editor.custom-query-datasource": false,
+    "bb.feature.sql-editor.disallow-share-worksheet": false,
+    "bb.feature.sql-editor.disallow-export-query-data": false,
   },
 });

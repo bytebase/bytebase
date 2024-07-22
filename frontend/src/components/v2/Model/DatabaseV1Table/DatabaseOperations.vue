@@ -169,7 +169,7 @@ const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const disableSchemaEditor = useAppFeature("bb.feature.disable-schema-editor");
-const databaseOperations = useAppFeature("bb.feature.database-operations");
+const operations = useAppFeature("bb.feature.databases.operations");
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
@@ -396,7 +396,7 @@ const isInDefaultProject = computed(
 
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
-  if (databaseOperations.value.has("EXPORT-DATA")) {
+  if (operations.value.has("EXPORT-DATA")) {
     resp.push({
       icon: h(DownloadIcon),
       text: t("custom-approval.risk-rule.risk.namespace.data_export"),
@@ -415,7 +415,7 @@ const actions = computed((): DatabaseAction[] => {
       },
     });
   }
-  if (databaseOperations.value.has("SYNC-SCHEMA")) {
+  if (operations.value.has("SYNC-SCHEMA")) {
     resp.push({
       icon: h(RefreshCcwIcon),
       text: t("common.sync"),
@@ -424,7 +424,7 @@ const actions = computed((): DatabaseAction[] => {
       tooltip: (action) => getDisabledTooltip(action),
     });
   }
-  if (databaseOperations.value.has("EDIT-LABELS")) {
+  if (operations.value.has("EDIT-LABELS")) {
     resp.push({
       icon: h(TagIcon),
       text: t("database.edit-labels"),
@@ -440,7 +440,7 @@ const actions = computed((): DatabaseAction[] => {
       },
     });
   }
-  if (databaseOperations.value.has("TRANSFER")) {
+  if (operations.value.has("TRANSFER")) {
     if (!operationsInProjectDetail.value) {
       resp.push({
         icon: h(ArrowRightLeftIcon),
@@ -473,7 +473,7 @@ const actions = computed((): DatabaseAction[] => {
       });
     }
   }
-  if (databaseOperations.value.has("CHANGE-DATA")) {
+  if (operations.value.has("CHANGE-DATA")) {
     resp.unshift({
       icon: h(PencilIcon),
       text: t("database.change-data"),
@@ -493,7 +493,7 @@ const actions = computed((): DatabaseAction[] => {
       },
     });
   }
-  if (databaseOperations.value.has("EDIT-SCHEMA")) {
+  if (operations.value.has("EDIT-SCHEMA")) {
     resp.unshift({
       icon: h(PenSquareIcon),
       text: t("database.edit-schema"),
