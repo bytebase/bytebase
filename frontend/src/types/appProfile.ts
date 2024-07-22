@@ -1,6 +1,7 @@
 export type AppMode = "CONSOLE" | "SQL-EDITOR";
 
 export type AppFeatures = {
+  // Use simple and accurate phrases. Namespace if needed
   "bb.feature.embedded-in-iframe": boolean;
   "bb.feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.feature.custom-query-datasource": boolean;
@@ -21,6 +22,9 @@ export type AppFeatures = {
   "bb.feature.hide-quick-start": boolean;
   "bb.feature.hide-release-remind": boolean;
   "bb.feature.hide-issue-review-actions": boolean;
+  "bb.feature.console.hide-sidebar": boolean;
+  "bb.feature.console.hide-header": boolean;
+  "bb.feature.console.hide-quick-action": boolean;
 };
 
 export type AppProfile = {
@@ -53,5 +57,8 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.hide-quick-start": false,
     "bb.feature.hide-release-remind": false,
     "bb.feature.hide-issue-review-actions": false,
+    "bb.feature.console.hide-sidebar": false,
+    "bb.feature.console.hide-header": false,
+    "bb.feature.console.hide-quick-action": false,
   },
 });

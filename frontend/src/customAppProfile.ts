@@ -21,6 +21,9 @@ export const overrideAppProfile = () => {
       "bb.feature.hide-release-remind": true,
       "bb.feature.disallow-share-worksheet": true,
       "bb.feature.disallow-navigate-to-console": true,
+      "bb.feature.console.hide-sidebar": true,
+      "bb.feature.console.hide-header": true,
+      "bb.feature.console.hide-quick-action": true,
     });
   }
 

@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <div class="flex-1 flex overflow-hidden">
-      <HideInIframe>
+      <template v-if="!hideSidebar">
         <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
         <div
           v-show="state.showMobileOverlay"
@@ -170,42 +170,41 @@
         >
           <router-view name="leftSidebar" />
         </teleport>
-      </HideInIframe>
+      </template>
 
       <div
         class="flex flex-col min-w-0 flex-1"
-        :class="!inIframe && 'border-x border-block-border'"
+        :class="!hideHeader && 'border-x border-block-border'"
         data-label="bb-main-body-wrapper"
       >
-        <HideInIframe>
-          <nav
-            class="bg-white border-b border-block-border"
-            data-label="bb-dashboard-header"
-          >
-            <div class="max-w-full mx-auto">
-              <DashboardHeader />
-            </div>
-          </nav>
+        <nav
+          v-if="!hideHeader"
+          class="bg-white border-b border-block-border"
+          data-label="bb-dashboard-header"
+        >
+          <div class="max-w-full mx-auto">
+            <DashboardHeader />
+          </div>
+        </nav>
 
+        <aside v-if="!hideSidebar" class="md:hidden">
           <!-- Static sidebar for mobile -->
-          <aside class="md:hidden">
-            <div
-              class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4"
-            >
-              <div>
-                <button
-                  type="button"
-                  class="-mr-3 h-8 w-8 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
-                  @click.prevent="state.showMobileOverlay = true"
-                >
-                  <span class="sr-only">Open sidebar</span>
-                  <!-- Heroicon name: menu -->
-                  <heroicons-outline:menu class="h-4 w-4" />
-                </button>
-              </div>
+          <div
+            class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4"
+          >
+            <div>
+              <button
+                type="button"
+                class="-mr-3 h-8 w-8 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
+                @click.prevent="state.showMobileOverlay = true"
+              >
+                <span class="sr-only">Open sidebar</span>
+                <!-- Heroicon name: menu -->
+                <heroicons-outline:menu class="h-4 w-4" />
+              </button>
             </div>
-          </aside>
-        </HideInIframe>
+          </div>
+        </aside>
 
         <!-- This area may scroll -->
         <div
@@ -214,7 +213,7 @@
           class="md:min-w-0 flex-1 overflow-y-auto py-4"
           :class="mainContainerClasses"
         >
-          <HideInIframe>
+          <template v-if="!hideQuickAction">
             <div class="w-full mx-auto md:flex">
               <div class="md:min-w-0 md:flex-1">
                 <div
@@ -227,7 +226,7 @@
                 </div>
               </div>
             </div>
-          </HideInIframe>
+          </template>
           <!-- Start main area-->
           <router-view name="content" />
           <!-- End main area -->
@@ -235,21 +234,17 @@
       </div>
     </div>
 
-    <HideInIframe>
-      <Quickstart />
-    </HideInIframe>
+    <Quickstart v-if="!hideQuickStart" />
   </div>
 
   <TrialModal
     v-if="state.showTrialModal"
     @cancel="state.showTrialModal = false"
   />
-  <HideInIframe>
-    <ReleaseRemindModal
-      v-if="state.showReleaseModal"
-      @cancel="state.showReleaseModal = false"
-    />
-  </HideInIframe>
+  <ReleaseRemindModal
+    v-if="!hideReleaseRemind && state.showReleaseModal"
+    @cancel="state.showReleaseModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -257,7 +252,6 @@ import { useMounted, useWindowSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import HideInIframe from "@/components/misc/HideInStandaloneMode.vue";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
@@ -304,7 +298,11 @@ const hasPermission = computed(() =>
 );
 
 const { isDemo } = storeToRefs(actuatorStore);
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
+const hideSidebar = useAppFeature("bb.feature.console.hide-sidebar");
+const hideHeader = useAppFeature("bb.feature.console.hide-header");
+const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
+const hideReleaseRemind = useAppFeature("bb.feature.hide-release-remind");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   state.showReleaseModal = openRemindModal;
