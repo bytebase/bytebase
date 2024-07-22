@@ -736,6 +736,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListInstanceDatabasesRequest"><span class="badge">M</span>ListInstanceDatabasesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListInstanceDatabasesResponse"><span class="badge">M</span>ListInstanceDatabasesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListSecretsRequest"><span class="badge">M</span>ListSecretsRequest</a>
                 </li>
               
@@ -6655,7 +6663,7 @@ Format: instances/{instance} </p></td>
                 <td>SearchInstances</td>
                 <td><a href="#bytebase.v1.SearchInstancesRequest">SearchInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchInstancesResponse">SearchInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
@@ -8569,8 +8577,86 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent, which owns this collection of databases.
-- instances/{instance}: list all databases for an instance. Use &#34;instances/-&#34; to list all databases.
-- projects/{project}: list all databases in a project. </p></td>
+- projects/{project}: list all databases in a project.
+- workspaces/{workspace}: list all databases in a workspace. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of databases to return. The service may return fewer than
+this value.
+If unspecified, at most 50 databases will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListDatabases` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#bytebase.v1.Database">Database</a></td>
+                  <td>repeated</td>
+                  <td><p>The databases from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListInstanceDatabasesRequest">ListInstanceDatabasesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent, which owns this collection of databases.
+- instances/{instance}: list all databases for an instance. Use &#34;instances/-&#34; to list all databases. </p></td>
                 </tr>
               
                 <tr>
@@ -8598,7 +8684,8 @@ the call that provided the page token. </p></td>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Filter is used to filter databases returned in the list.
+                  <td><p>Deprecated.
+Filter is used to filter databases returned in the list.
 For example, `project == &#34;projects/{project}&#34;` can be used to list databases in a project.
 Note: the project filter will be moved to parent. </p></td>
                 </tr>
@@ -8610,7 +8697,7 @@ Note: the project filter will be moved to parent. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</h3>
+        <h3 id="bytebase.v1.ListInstanceDatabasesResponse">ListInstanceDatabasesResponse</h3>
         <p></p>
 
         
@@ -9047,7 +9134,7 @@ It is an empty string for databases without such concept such as MySQL. </p></td
         
       
         <h3 id="bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</h3>
-        <p></p>
+        <p>Deprecated.</p>
 
         
           <table class="field-table">
@@ -9101,7 +9188,7 @@ for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance 
         
       
         <h3 id="bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</h3>
-        <p></p>
+        <p>Deprecated.</p>
 
         
           <table class="field-table">
@@ -10409,6 +10496,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
+                <td>ListInstanceDatabases</td>
+                <td><a href="#bytebase.v1.ListInstanceDatabasesRequest">ListInstanceDatabasesRequest</a></td>
+                <td><a href="#bytebase.v1.ListInstanceDatabasesResponse">ListInstanceDatabasesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>ListDatabases</td>
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
@@ -10419,7 +10513,8 @@ The API will default to the BASIC view.</p></td>
                 <td>SearchDatabases</td>
                 <td><a href="#bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</a></td>
-                <td><p>Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.</p></td>
+                <td><p>Deprecated. This will be removed in the next release.
+Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.</p></td>
               </tr>
             
               <tr>
@@ -10551,16 +10646,26 @@ The API will default to the BASIC view.</p></td>
               
               
               <tr>
-                <td>ListDatabases</td>
+                <td>ListInstanceDatabases</td>
                 <td>GET</td>
                 <td>/v1/{parent=instances/*}/databases</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListDatabases</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/databases</td>
                 <td></td>
               </tr>
               
               <tr>
                 <td>ListDatabases</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*}/databases</td>
+                <td>/v1/{parent=workspaces/*}/databases</td>
                 <td></td>
               </tr>
               

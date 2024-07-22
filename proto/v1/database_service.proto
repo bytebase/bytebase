@@ -22,15 +22,24 @@ service DatabaseService {
     option (bytebase.v1.permission) = "bb.databases.get";
   }
 
+  rpc ListInstanceDatabases(ListInstanceDatabasesRequest) returns (ListInstanceDatabasesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*}/databases"};
+    option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.instances.get";
+  }
+
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
-      get: "/v1/{parent=instances/*}/databases"
-      additional_bindings: {get: "/v1/{parent=projects/*}/databases"}
+      get: "/v1/{parent=projects/*}/databases"
+
+      additional_bindings: {get: "/v1/{parent=workspaces/*}/databases"}
     };
+
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.databases.list";
   }
 
+  // Deprecated. This will be removed in the next release.
   // Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
   rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
     option (google.api.http) = {get: "/v1/databases:search"};
@@ -144,10 +153,9 @@ message GetDatabaseRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListDatabasesRequest {
+message ListInstanceDatabasesRequest {
   // The parent, which owns this collection of databases.
   // - instances/{instance}: list all databases for an instance. Use "instances/-" to list all databases.
-  // - projects/{project}: list all databases in a project.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of databases to return. The service may return fewer than
@@ -163,10 +171,40 @@ message ListDatabasesRequest {
   // the call that provided the page token.
   string page_token = 3;
 
+  // Deprecated.
   // Filter is used to filter databases returned in the list.
   // For example, `project == "projects/{project}"` can be used to list databases in a project.
   // Note: the project filter will be moved to parent.
   string filter = 4;
+}
+
+message ListInstanceDatabasesResponse {
+  // The databases from the specified request.
+  repeated Database databases = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message ListDatabasesRequest {
+  // The parent, which owns this collection of databases.
+  // - projects/{project}: list all databases in a project.
+  // - workspaces/{workspace}: list all databases in a workspace.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of databases to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListDatabases` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabases` must match
+  // the call that provided the page token.
+  string page_token = 3;
 }
 
 message ListDatabasesResponse {
@@ -178,6 +216,7 @@ message ListDatabasesResponse {
   string next_page_token = 2;
 }
 
+// Deprecated.
 message SearchDatabasesRequest {
   // The maximum number of databases to return. The service may return fewer than
   // this value.
@@ -205,6 +244,7 @@ message SearchDatabasesRequest {
   string filter = 3;
 }
 
+// Deprecated.
 message SearchDatabasesResponse {
   // The databases from the specified request.
   repeated Database databases = 1;
