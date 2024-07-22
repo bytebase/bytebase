@@ -19,6 +19,7 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {

@@ -4,6 +4,9 @@
 ## Table of Contents
 
 - [v1/annotation.proto](#v1_annotation-proto)
+    - [AuthMethod](#bytebase-v1-AuthMethod)
+  
+    - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
   
@@ -712,6 +715,19 @@
 
  
 
+
+<a name="bytebase-v1-AuthMethod"></a>
+
+### AuthMethod
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTH_METHOD_UNSPECIFIED | 0 |  |
+| IAM | 1 | IAM uses the standard IAM authorization check on the organizational resources. |
+| CUSTOM | 2 | Custom authorization method. |
+
+
  
 
 
@@ -721,6 +737,7 @@
 | Extension | Type | Base | Number | Description |
 | --------- | ---- | ---- | ------ | ----------- |
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 |  |
+| auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 |  |
 | permission | string | .google.protobuf.MethodOptions | 100001 |  |
 
  

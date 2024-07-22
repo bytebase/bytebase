@@ -351,8 +351,24 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid full method name %q", fullMethod)
 	}
+	authMethodAny := proto.GetExtension(md, v1pb.E_AuthMethod)
+	am, ok := authMethodAny.(v1pb.AuthMethod)
+	if !ok {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	var authMethod common.AuthMethod
+	switch am {
+	case v1pb.AuthMethod_AUTH_METHOD_UNSPECIFIED:
+		authMethod = common.AuthMethodUnspecified
+	case v1pb.AuthMethod_IAM:
+		authMethod = common.AuthMethodIAM
+	case v1pb.AuthMethod_CUSTOM:
+		authMethod = common.AuthMethodCustom
+	}
+
 	return &common.AuthContext{
 		AllowWithoutCredential: allowWithoutCredential,
 		Permission:             permission,
+		AuthMethod:             authMethod,
 	}, nil
 }
