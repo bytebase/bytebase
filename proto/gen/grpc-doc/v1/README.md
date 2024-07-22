@@ -245,7 +245,7 @@
   
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
-    - [BindingDeltas](#bytebase-v1-BindingDeltas)
+    - [BindingDelta](#bytebase-v1-BindingDelta)
     - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [IamPolicy](#bytebase-v1-IamPolicy)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
@@ -4327,9 +4327,9 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
-<a name="bytebase-v1-BindingDeltas"></a>
+<a name="bytebase-v1-BindingDelta"></a>
 
-### BindingDeltas
+### BindingDelta
 
 
 
@@ -4370,7 +4370,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
 | etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the poliy, the call will be blocked and an ABORTED error will be returned. |
-| binding_deltas | [BindingDeltas](#bytebase-v1-BindingDeltas) | repeated |  |
+| binding_deltas | [BindingDelta](#bytebase-v1-BindingDelta) | repeated |  |
 
 
 

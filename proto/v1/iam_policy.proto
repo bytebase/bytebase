@@ -37,7 +37,7 @@ message IamPolicy {
   // the call will be blocked and an ABORTED error will be returned.
   string etag = 2;
 
-  repeated BindingDeltas binding_deltas = 3;
+  repeated BindingDelta binding_deltas = 3;
 }
 
 message Binding {
@@ -59,7 +59,7 @@ message Binding {
   google.api.expr.v1alpha1.ParsedExpr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-message BindingDeltas {
+message BindingDelta {
   string action = 1;
   string member = 2;
   string role = 3;

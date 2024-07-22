@@ -442,44 +442,12 @@ type bindMapKey struct {
 	Role string
 }
 
-type condMap map[exportedExpr]bool
+type condMap map[string]bool
 
-// only contains exported fields in expr.Expr.
-type exportedExpr struct {
-	Expression  string
-	Title       string
-	Description string
-	Location    string
-}
-
-func convertToExportedExpr(e *expr.Expr) *exportedExpr {
-	if e == nil {
-		return nil
-	}
-	return &exportedExpr{
-		Expression:  e.Expression,
-		Title:       e.Title,
-		Description: e.Description,
-		Location:    e.Location,
-	}
-}
-
-func convertToOriExpr(e *exportedExpr) *expr.Expr {
-	if e == nil {
-		return nil
-	}
-	return &expr.Expr{
-		Expression:  e.Expression,
-		Title:       e.Title,
-		Description: e.Description,
-		Location:    e.Location,
-	}
-}
-
-func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.IamPolicy) []*v1pb.BindingDeltas {
-	deltas := []*v1pb.BindingDeltas{}
-
+func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.IamPolicy) []*v1pb.BindingDelta {
+	var deltas []*v1pb.BindingDelta
 	oriBindMap := make(map[bindMapKey]condMap)
+	newBindMap := make(map[bindMapKey]condMap)
 
 	// build map.
 	for _, binding := range oriIamPolicy.Bindings {
@@ -491,16 +459,21 @@ func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.
 				User: mem,
 				Role: binding.Role,
 			}
-			expr := convertToExportedExpr(binding.Condition)
+
+			exprBytes, err := protojson.Marshal(binding.Condition)
+			if err != nil {
+				return nil
+			}
+			expr := string(exprBytes)
 			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[*expr]; ok {
+				if _, ok := condMap[expr]; ok {
 					continue
 				}
-				oriBindMap[key][*expr] = true
+				oriBindMap[key][expr] = true
 				continue
 			}
 			condMap := make(condMap)
-			condMap[*expr] = true
+			condMap[expr] = true
 			oriBindMap[key] = condMap
 		}
 	}
@@ -512,14 +485,29 @@ func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.
 				User: mem,
 				Role: binding.Role,
 			}
-			expr := convertToExportedExpr(binding.Condition)
-			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[*expr]; ok {
-					delete(oriBindMap[key], *expr)
+			exprBytes, err := protojson.Marshal(binding.Condition)
+			if err != nil {
+				return nil
+			}
+			expr := string(exprBytes)
+
+			// ensure the array is unique.
+			if condMap, ok := newBindMap[key]; ok && condMap != nil {
+				if _, ok := condMap[expr]; ok {
 					continue
 				}
 			}
-			deltas = append(deltas, &v1pb.BindingDeltas{
+			tmpCondMap := make(condMap)
+			tmpCondMap[expr] = true
+			newBindMap[key] = tmpCondMap
+
+			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
+				if _, ok := condMap[expr]; ok {
+					delete(oriBindMap[key], expr)
+					continue
+				}
+			}
+			deltas = append(deltas, &v1pb.BindingDelta{
 				Action:    "ADD",
 				Member:    mem,
 				Role:      binding.Role,
@@ -531,11 +519,15 @@ func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.
 	// find removed items.
 	for bindMapKey, condMap := range oriBindMap {
 		for cond := range condMap {
-			deltas = append(deltas, &v1pb.BindingDeltas{
+			expr := &expr.Expr{}
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(cond), expr); err != nil {
+				return nil
+			}
+			deltas = append(deltas, &v1pb.BindingDelta{
 				Action:    "REMOVE",
 				Member:    bindMapKey.User,
 				Role:      bindMapKey.Role,
-				Condition: convertToOriExpr(&cond),
+				Condition: expr,
 			})
 		}
 	}

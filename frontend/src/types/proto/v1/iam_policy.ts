@@ -41,7 +41,7 @@ export interface IamPolicy {
    * the call will be blocked and an ABORTED error will be returned.
    */
   etag: string;
-  bindingDeltas: BindingDeltas[];
+  bindingDeltas: BindingDelta[];
 }
 
 export interface Binding {
@@ -68,7 +68,7 @@ export interface Binding {
   parsedExpr: ParsedExpr | undefined;
 }
 
-export interface BindingDeltas {
+export interface BindingDelta {
   action: string;
   member: string;
   role: string;
@@ -236,7 +236,7 @@ export const IamPolicy = {
       writer.uint32(18).string(message.etag);
     }
     for (const v of message.bindingDeltas) {
-      BindingDeltas.encode(v!, writer.uint32(26).fork()).ldelim();
+      BindingDelta.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -267,7 +267,7 @@ export const IamPolicy = {
             break;
           }
 
-          message.bindingDeltas.push(BindingDeltas.decode(reader, reader.uint32()));
+          message.bindingDeltas.push(BindingDelta.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -283,7 +283,7 @@ export const IamPolicy = {
       bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
       bindingDeltas: globalThis.Array.isArray(object?.bindingDeltas)
-        ? object.bindingDeltas.map((e: any) => BindingDeltas.fromJSON(e))
+        ? object.bindingDeltas.map((e: any) => BindingDelta.fromJSON(e))
         : [],
     };
   },
@@ -297,7 +297,7 @@ export const IamPolicy = {
       obj.etag = message.etag;
     }
     if (message.bindingDeltas?.length) {
-      obj.bindingDeltas = message.bindingDeltas.map((e) => BindingDeltas.toJSON(e));
+      obj.bindingDeltas = message.bindingDeltas.map((e) => BindingDelta.toJSON(e));
     }
     return obj;
   },
@@ -309,7 +309,7 @@ export const IamPolicy = {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
     message.etag = object.etag ?? "";
-    message.bindingDeltas = object.bindingDeltas?.map((e) => BindingDeltas.fromPartial(e)) || [];
+    message.bindingDeltas = object.bindingDeltas?.map((e) => BindingDelta.fromPartial(e)) || [];
     return message;
   },
 };
@@ -422,12 +422,12 @@ export const Binding = {
   },
 };
 
-function createBaseBindingDeltas(): BindingDeltas {
+function createBaseBindingDelta(): BindingDelta {
   return { action: "", member: "", role: "", condition: undefined };
 }
 
-export const BindingDeltas = {
-  encode(message: BindingDeltas, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BindingDelta = {
+  encode(message: BindingDelta, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.action !== "") {
       writer.uint32(10).string(message.action);
     }
@@ -443,10 +443,10 @@ export const BindingDeltas = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): BindingDeltas {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BindingDelta {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBindingDeltas();
+    const message = createBaseBindingDelta();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -487,7 +487,7 @@ export const BindingDeltas = {
     return message;
   },
 
-  fromJSON(object: any): BindingDeltas {
+  fromJSON(object: any): BindingDelta {
     return {
       action: isSet(object.action) ? globalThis.String(object.action) : "",
       member: isSet(object.member) ? globalThis.String(object.member) : "",
@@ -496,7 +496,7 @@ export const BindingDeltas = {
     };
   },
 
-  toJSON(message: BindingDeltas): unknown {
+  toJSON(message: BindingDelta): unknown {
     const obj: any = {};
     if (message.action !== "") {
       obj.action = message.action;
@@ -513,11 +513,11 @@ export const BindingDeltas = {
     return obj;
   },
 
-  create(base?: DeepPartial<BindingDeltas>): BindingDeltas {
-    return BindingDeltas.fromPartial(base ?? {});
+  create(base?: DeepPartial<BindingDelta>): BindingDelta {
+    return BindingDelta.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<BindingDeltas>): BindingDeltas {
-    const message = createBaseBindingDeltas();
+  fromPartial(object: DeepPartial<BindingDelta>): BindingDelta {
+    const message = createBaseBindingDelta();
     message.action = object.action ?? "";
     message.member = object.member ?? "";
     message.role = object.role ?? "";

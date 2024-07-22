@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -398,5 +400,118 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.wantCfg, cfg)
 		}
+	}
+}
+
+func TestFindIamPolicyDeltas(t *testing.T) {
+	tests := []struct {
+		oldPolicy    *storepb.IamPolicy
+		newIamPolicy *storepb.IamPolicy
+		want         []*v1pb.BindingDelta
+	}{
+		// simply test remove and add.
+		{
+			oldPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{},
+					},
+					{
+						Role: "roles/projectOwner",
+						Members: []string{
+							"usr101",
+							"usr102",
+						},
+						Condition: &expr.Expr{},
+					},
+				},
+			},
+			newIamPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{},
+					},
+					{
+						Role: "roles/projectDeveloper",
+						Members: []string{
+							"usr101",
+						},
+						Condition: &expr.Expr{},
+					},
+				},
+			},
+			want: []*v1pb.BindingDelta{
+				{
+					Action:    "",
+					Member:    "",
+					Role:      "",
+					Condition: &expr.Expr{},
+				},
+			},
+		},
+		// test with conditions.
+		{
+			oldPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{},
+					},
+					{
+						Role: "roles/projectOwner",
+						Members: []string{
+							"usr101",
+							"usr102",
+						},
+						Condition: &expr.Expr{},
+					},
+				},
+			},
+			newIamPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{},
+					},
+					{
+						Role: "roles/projectDeveloper",
+						Members: []string{
+							"usr101",
+						},
+						Condition: &expr.Expr{},
+					},
+				},
+			},
+			want: []*v1pb.BindingDelta{
+				{
+					Action:    "",
+					Member:    "",
+					Role:      "",
+					Condition: &expr.Expr{},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		fmt.Println(findIamPolicyDeltas(test.oldPolicy, test.newIamPolicy))
+
+		// if !cmp.Equal(test.want, findIamPolicyDeltas(test.oldPolicy, test.newIamPolicy)) {
+		// 	t.Fatalf("%v != %v", test.oldPolicy, test.newIamPolicy)
+		// }
 	}
 }
