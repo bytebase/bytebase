@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
 
@@ -15,11 +16,13 @@ service UserGroupService {
   rpc GetUserGroup(GetUserGroupRequest) returns (UserGroup) {
     option (google.api.http) = {get: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.userGroups.get";
   }
 
   rpc ListUserGroups(ListUserGroupsRequest) returns (ListUserGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.userGroups.list";
   }
 
   rpc CreateUserGroup(CreateUserGroupRequest) returns (UserGroup) {
@@ -28,6 +31,7 @@ service UserGroupService {
       body: "group"
     };
     option (google.api.method_signature) = "group";
+    option (bytebase.v1.permission) = "bb.userGroups.create";
   }
 
   rpc UpdateUserGroup(UpdateUserGroupRequest) returns (UserGroup) {
@@ -36,11 +40,13 @@ service UserGroupService {
       body: "group"
     };
     option (google.api.method_signature) = "group,update_mask";
+    option (bytebase.v1.permission) = "bb.userGroups.update";
   }
 
   rpc DeleteUserGroup(DeleteUserGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.userGroups.delete";
   }
 }
 

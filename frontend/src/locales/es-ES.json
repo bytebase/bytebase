@@ -277,7 +277,8 @@
     "resource": "Recurso",
     "closed": "Cerrado",
     "options": "Opciones",
-    "reset": "Reiniciar"
+    "reset": "Reiniciar",
+    "refresh": "Actualizar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1240,6 +1241,8 @@
       "self": "Hora de implementación de la actualización"
     },
     "task-run": {
+      "logs": "Registros",
+      "session": "Sesión",
       "task-run-log": {
         "batch": "Lote",
         "affected-rows": "Filas afectadas",
@@ -1255,6 +1258,17 @@
           "waiting": "Listo para ser ejecutado",
           "running": "Ser ejecutado"
         }
+      },
+      "task-run-session": {
+        "blocking-sessions": {
+          "self": "Sesiones de bloqueo",
+          "description": "Las sesiones que están bloqueando la sesión actual."
+        },
+        "blocked-sessions": {
+          "self": "Sesiones bloqueadas",
+          "description": "Las sesiones que están bloqueadas por la sesión actual."
+        },
+        "no-session-found": "No se encontró ninguna sesión."
       }
     },
     "sql-review": {
@@ -2881,7 +2895,6 @@
       "record-ts": "Hora",
       "method": "Método",
       "request-path": "Ruta de solicitud",
-      "role": "Rol",
       "error": "Error",
       "stack-trace": "Rastreo de pila",
       "empty": "<Vacío>",

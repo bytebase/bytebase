@@ -772,6 +772,9 @@ export const UserGroupServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([17, 98, 98, 46, 117, 115, 101, 114, 71, 114, 111, 117, 112, 115, 46, 103, 101, 116]),
+          ],
           578365826: [
             new Uint8Array([
               21,
@@ -810,6 +813,9 @@ export const UserGroupServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 117, 115, 101, 114, 71, 114, 111, 117, 112, 115, 46, 108, 105, 115, 116]),
+          ],
           578365826: [new Uint8Array([12, 18, 10, 47, 118, 49, 47, 103, 114, 111, 117, 112, 115])],
         },
       },
@@ -823,6 +829,31 @@ export const UserGroupServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([5, 103, 114, 111, 117, 112])],
+          800010: [
+            new Uint8Array([
+              20,
+              98,
+              98,
+              46,
+              117,
+              115,
+              101,
+              114,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+              46,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+            ]),
+          ],
           578365826: [
             new Uint8Array([19, 58, 5, 103, 114, 111, 117, 112, 34, 10, 47, 118, 49, 47, 103, 114, 111, 117, 112, 115]),
           ],
@@ -838,6 +869,31 @@ export const UserGroupServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([17, 103, 114, 111, 117, 112, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
+          800010: [
+            new Uint8Array([
+              20,
+              98,
+              98,
+              46,
+              117,
+              115,
+              101,
+              114,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+              46,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+            ]),
+          ],
           578365826: [
             new Uint8Array([
               34,
@@ -889,6 +945,31 @@ export const UserGroupServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([
+              20,
+              98,
+              98,
+              46,
+              117,
+              115,
+              101,
+              114,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+              46,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
           578365826: [
             new Uint8Array([
               21,

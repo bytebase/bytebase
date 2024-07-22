@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 
@@ -17,11 +18,13 @@ service BranchService {
   rpc GetBranch(GetBranchRequest) returns (Branch) {
     option (google.api.http) = {get: "/v1/{name=projects/*/branches/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.branches.get";
   }
 
   rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/branches"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.branches.list";
   }
 
   rpc CreateBranch(CreateBranchRequest) returns (Branch) {
@@ -30,6 +33,7 @@ service BranchService {
       body: "branch"
     };
     option (google.api.method_signature) = "parent,branch";
+    option (bytebase.v1.permission) = "bb.branches.create";
   }
 
   rpc UpdateBranch(UpdateBranchRequest) returns (Branch) {
@@ -38,21 +42,25 @@ service BranchService {
       body: "branch"
     };
     option (google.api.method_signature) = "branch,update_mask";
+    option (bytebase.v1.permission) = "bb.branches.update";
   }
 
   rpc MergeBranch(MergeBranchRequest) returns (Branch) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.branches.update";
   }
 
   rpc RebaseBranch(RebaseBranchRequest) returns (RebaseBranchResponse) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:rebase"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.branches.update";
   }
 
   rpc DeleteBranch(DeleteBranchRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/branches/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.branches.delete";
   }
 
   // DiffDatabase works similar to branch rebase.
@@ -64,6 +72,7 @@ service BranchService {
   rpc DiffDatabase(DiffDatabaseRequest) returns (DiffDatabaseResponse) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:diffDatabase"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.branches.update";
   }
 
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
@@ -71,6 +80,8 @@ service BranchService {
       post: "/v1/schemaDesign:diffMetadata"
       body: "*"
     };
+    option (bytebase.v1.allow_without_credential) = true;
+    // This is a util method requiring no authentication thus no authorization.
   }
 }
 
