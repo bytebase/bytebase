@@ -146,10 +146,22 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 		SELECT
 			SCHEMA_NAME(t.schema_id),
 			t.name,
-			SUM(ps.row_count)
+			SUM(ps.row_count),
+			lj.PropertyValue AS comment
 		FROM sys.tables t
-		INNER JOIN sys.dm_db_partition_stats ps ON ps.object_id = t.object_id WHERE index_id < 2
-		GROUP BY t.name, t.schema_id
+		INNER JOIN sys.dm_db_partition_stats ps ON ps.object_id = t.object_id
+		LEFT JOIN (
+			SELECT
+				EP.value AS PropertyValue,
+				S.name AS SchemaName,
+				O.name AS TableName
+			FROM
+				(SELECT major_id, name, value FROM sys.extended_properties WHERE name = 'MS_Description' AND minor_id = 0) AS EP
+				INNER JOIN sys.all_objects AS O ON EP.major_id = O.object_id
+				INNER JOIN sys.schemas AS S ON O.schema_id = S.schema_id
+		) lj ON lj.SchemaName = SCHEMA_NAME(t.schema_id) AND LJ.TableName = t.name
+        WHERE index_id < 2
+		GROUP BY t.name, t.schema_id, lj.PropertyValue
 		ORDER BY 1, 2 ASC
 		OPTION (RECOMPILE);`
 	rows, err := txn.Query(query)
@@ -161,12 +173,16 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
 		var schemaName string
-		if err := rows.Scan(&schemaName, &table.Name, &table.RowCount); err != nil {
+		var comment sql.NullString
+		if err := rows.Scan(&schemaName, &table.Name, &table.RowCount, &comment); err != nil {
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
+		if comment.Valid {
+			table.Comment = comment.String
+		}
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
@@ -183,17 +199,30 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 
 	query := `
 		SELECT
-			table_schema,
-			table_name,
-			column_name,
-			data_type,
-			character_maximum_length,
-			ordinal_position,
-			column_default,
-			is_nullable,
-			collation_name
-		FROM INFORMATION_SCHEMA.COLUMNS
-		ORDER BY table_schema, table_name, ordinal_position;`
+			IC.table_schema,
+			IC.table_name,
+			IC.column_name,
+			IC.data_type,
+			IC.character_maximum_length,
+			IC.ordinal_position,
+			IC.column_default,
+			IC.is_nullable,
+			IC.collation_name,
+			IJ.PropertyValue AS ColumnComment
+		FROM INFORMATION_SCHEMA.COLUMNS IC
+		LEFT JOIN (
+			SELECT
+				EP.value AS PropertyValue,
+				S.name AS SchemaName,
+				O.name AS TableName,
+				C.name AS ColumnName
+			FROM
+				(SELECT major_id, minor_id, name, value FROM sys.extended_properties WHERE name = 'MS_Description') AS EP
+				INNER JOIN sys.all_objects AS O ON EP.major_id = O.object_id
+				INNER JOIN sys.schemas AS S ON O.schema_id = S.schema_id
+				INNER JOIN sys.columns AS C ON EP.major_id = C.object_id AND EP.minor_id = C.column_id
+		) IJ ON IJ.SchemaName = IC.table_schema AND IJ.TableName = IC.table_name AND IJ.ColumnName = IC.column_name
+		ORDER BY IC.table_schema, IC.table_name, IC.ordinal_position;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -202,9 +231,9 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	for rows.Next() {
 		column := &storepb.ColumnMetadata{}
 		var schemaName, tableName, columnType, nullable string
-		var defaultStr, collation sql.NullString
+		var defaultStr, collation, comment sql.NullString
 		var characterLength sql.NullInt32
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &columnType, &characterLength, &column.Position, &defaultStr, &nullable, &collation); err != nil {
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &columnType, &characterLength, &column.Position, &defaultStr, &nullable, &collation, &comment); err != nil {
 			return nil, err
 		}
 		if characterLength.Valid {
@@ -222,7 +251,9 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 		}
 		column.Nullable = isNullBool
 		column.Collation = collation.String
-
+		if comment.Valid {
+			column.Comment = comment.String
+		}
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnsMap[key] = append(columnsMap[key], column)
 	}
