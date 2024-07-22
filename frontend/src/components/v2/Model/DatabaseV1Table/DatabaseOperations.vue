@@ -168,7 +168,7 @@ const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));

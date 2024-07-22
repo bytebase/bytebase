@@ -1,27 +1,27 @@
 export type AppProfile = {
-  "bb.custom-feature.embedded-in-iframe": boolean;
-  "bb.custom-feature.custom-color-scheme": Record<string, string> | undefined;
-  "bb.custom-feature.custom-query-datasource": boolean;
-  "bb.custom-feature.disallow-navigate-to-console": boolean;
-  "bb.custom-feature.disallow-navigate-away-sql-editor": boolean;
-  "bb.custom-feature.disallow-share-worksheet": boolean;
-  "bb.custom-feature.disallow-export-query-data": boolean;
-  "bb.custom-feature.hide-help": boolean;
-  "bb.custom-feature.hide-quick-start": boolean;
-  "bb.custom-feature.hide-release-remind": boolean;
-  "bb.custom-feature.hide-issue-review-actions": boolean;
+  "bb.feature.embedded-in-iframe": boolean;
+  "bb.feature.custom-color-scheme": Record<string, string> | undefined;
+  "bb.feature.custom-query-datasource": boolean;
+  "bb.feature.disallow-navigate-to-console": boolean;
+  "bb.feature.disallow-navigate-away-sql-editor": boolean;
+  "bb.feature.disallow-share-worksheet": boolean;
+  "bb.feature.disallow-export-query-data": boolean;
+  "bb.feature.hide-help": boolean;
+  "bb.feature.hide-quick-start": boolean;
+  "bb.feature.hide-release-remind": boolean;
+  "bb.feature.hide-issue-review-actions": boolean;
 };
 
 export const defaultAppProfile = (): AppProfile => ({
-  "bb.custom-feature.embedded-in-iframe": false,
-  "bb.custom-feature.custom-color-scheme": undefined,
-  "bb.custom-feature.custom-query-datasource": false,
-  "bb.custom-feature.disallow-navigate-to-console": false,
-  "bb.custom-feature.disallow-navigate-away-sql-editor": false,
-  "bb.custom-feature.disallow-share-worksheet": false,
-  "bb.custom-feature.disallow-export-query-data": false,
-  "bb.custom-feature.hide-help": false,
-  "bb.custom-feature.hide-quick-start": false,
-  "bb.custom-feature.hide-release-remind": false,
-  "bb.custom-feature.hide-issue-review-actions": false,
+  "bb.feature.embedded-in-iframe": false,
+  "bb.feature.custom-color-scheme": undefined,
+  "bb.feature.custom-query-datasource": false,
+  "bb.feature.disallow-navigate-to-console": false,
+  "bb.feature.disallow-navigate-away-sql-editor": false,
+  "bb.feature.disallow-share-worksheet": false,
+  "bb.feature.disallow-export-query-data": false,
+  "bb.feature.hide-help": false,
+  "bb.feature.hide-quick-start": false,
+  "bb.feature.hide-release-remind": false,
+  "bb.feature.hide-issue-review-actions": false,
 });

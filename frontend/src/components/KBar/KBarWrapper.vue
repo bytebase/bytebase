@@ -51,7 +51,7 @@ export default defineComponent({
   setup() {
     const { t } = useI18n();
     const { stack: overlayStack } = useOverlayStackContext();
-    const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+    const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
     const placeholder = computed(() => t("kbar.options.placeholder"));
 

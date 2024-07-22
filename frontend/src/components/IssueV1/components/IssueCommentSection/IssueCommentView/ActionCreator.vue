@@ -29,7 +29,7 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const disallowNavigateToConsole = useCustomFeature(
-  "bb.custom-feature.disallow-navigate-to-console"
+  "bb.feature.disallow-navigate-to-console"
 );
 
 const userEmail = computed(() => {

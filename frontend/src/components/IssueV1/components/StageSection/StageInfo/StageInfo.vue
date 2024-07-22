@@ -13,6 +13,6 @@ import DatabaseInfo from "./DatabaseInfo.vue";
 import StageSelect from "./StageSelect.vue";
 
 const disallowNavigateToConsole = useCustomFeature(
-  "bb.custom-feature.disallow-navigate-to-console"
+  "bb.feature.disallow-navigate-to-console"
 );
 </script>

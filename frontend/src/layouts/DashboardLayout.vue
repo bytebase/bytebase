@@ -34,7 +34,7 @@ const state = reactive<LocalState>({
   helpTimer: undefined,
   RouteMapList: null,
 });
-const hideHelp = useCustomFeature("bb.custom-feature.hide-help");
+const hideHelp = useCustomFeature("bb.feature.hide-help");
 
 // watch route change for help
 watch(

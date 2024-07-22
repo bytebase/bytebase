@@ -88,7 +88,7 @@ const me = useCurrentUserV1();
 const tabStore = useSQLEditorTabStore();
 const { standardModeEnabled } = useSQLEditorContext();
 const disallowNavigateToConsole = useCustomFeature(
-  "bb.custom-feature.disallow-navigate-to-console"
+  "bb.feature.disallow-navigate-to-console"
 );
 
 const statement = computed(() => {

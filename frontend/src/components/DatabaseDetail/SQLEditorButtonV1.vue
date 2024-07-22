@@ -79,7 +79,7 @@ const emit = defineEmits<{
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const disallowNavigateToConsole = useCustomFeature(
-  "bb.custom-feature.disallow-navigate-to-console"
+  "bb.feature.disallow-navigate-to-console"
 );
 const state = reactive<LocalState>({
   showRequestQueryPanel: false,

@@ -47,7 +47,7 @@ import ReviewActionButton from "./ReviewActionButton.vue";
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const hideIssueReviewActions = useCustomFeature(
-  "bb.custom-feature.hide-issue-review-actions"
+  "bb.feature.hide-issue-review-actions"
 );
 const { issue, phase, reviewContext, events, activeTask, activeStage } =
   useIssueContext();

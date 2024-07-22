@@ -22,7 +22,7 @@ export const useSidebarItems = () => {
   const route = useRoute();
   const { t } = useI18n();
   const me = useCurrentUserV1();
-  const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+  const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
   const getItemClass = (item: SidebarItem) => {
     if (route.name === item.name) {

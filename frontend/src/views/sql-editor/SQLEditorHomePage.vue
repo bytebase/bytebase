@@ -156,7 +156,7 @@ const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
-const hideQuickStart = useCustomFeature("bb.custom-feature.hide-quick-start");
+const hideQuickStart = useCustomFeature("bb.feature.hide-quick-start");
 const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();

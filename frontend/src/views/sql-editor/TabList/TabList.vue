@@ -90,7 +90,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();

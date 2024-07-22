@@ -59,7 +59,7 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const disallowNavigateAwaySQLEditor = useCustomFeature(
-    "bb.custom-feature.disallow-navigate-away-sql-editor"
+    "bb.feature.disallow-navigate-away-sql-editor"
   );
 
   // In standalone mode, we don't want to user get out of some standalone pages.

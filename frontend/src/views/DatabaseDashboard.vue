@@ -68,7 +68,7 @@ interface LocalState {
 
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 const route = useRoute();
 const router = useRouter();
 

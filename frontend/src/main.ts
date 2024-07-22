@@ -161,36 +161,36 @@ const overrideAppProfile = () => {
     // mode=STANDALONE is not easy to read, but for legacy support we keep it as
     // some customers are using it.
     actuatorStore.overrideAppProfile({
-      "bb.custom-feature.embedded-in-iframe": true,
-      "bb.custom-feature.hide-help": true,
-      "bb.custom-feature.hide-quick-start": true,
-      "bb.custom-feature.hide-release-remind": true,
-      "bb.custom-feature.disallow-share-worksheet": true,
-      "bb.custom-feature.disallow-navigate-to-console": true,
-      "bb.custom-feature.disallow-navigate-away-sql-editor": true,
+      "bb.feature.embedded-in-iframe": true,
+      "bb.feature.hide-help": true,
+      "bb.feature.hide-quick-start": true,
+      "bb.feature.hide-release-remind": true,
+      "bb.feature.disallow-share-worksheet": true,
+      "bb.feature.disallow-navigate-to-console": true,
+      "bb.feature.disallow-navigate-away-sql-editor": true,
     });
   }
   const customTheme = query.get("customTheme");
   if (customTheme === "lixiang") {
     actuatorStore.overrideAppProfile({
-      "bb.custom-feature.custom-query-datasource": true,
-      "bb.custom-feature.disallow-export-query-data": true,
-      "bb.custom-feature.custom-color-scheme": {
+      "bb.feature.custom-query-datasource": true,
+      "bb.feature.disallow-export-query-data": true,
+      "bb.feature.custom-color-scheme": {
         "--color-accent": "#00665f",
         "--color-accent-hover": "#00554f",
         "--color-accent-disabled": "#b8c3c3",
       },
     });
-    if (actuatorStore.appProfile["bb.custom-feature.embedded-in-iframe"]) {
+    if (actuatorStore.appProfile["bb.feature.embedded-in-iframe"]) {
       actuatorStore.overrideAppProfile({
-        "bb.custom-feature.hide-issue-review-actions": true,
+        "bb.feature.hide-issue-review-actions": true,
       });
     }
   }
 
   useCustomTheme(
     computed(
-      () => actuatorStore.appProfile["bb.custom-feature.custom-color-scheme"]
+      () => actuatorStore.appProfile["bb.feature.custom-color-scheme"]
     )
   );
 };

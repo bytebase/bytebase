@@ -20,7 +20,7 @@ const props = defineProps<{
 
 const currentUser = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(

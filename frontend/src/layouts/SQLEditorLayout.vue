@@ -33,7 +33,7 @@ import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 
 const router = useRouter();
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
 // provide context for SQL Editor
 provideSQLEditorContext();

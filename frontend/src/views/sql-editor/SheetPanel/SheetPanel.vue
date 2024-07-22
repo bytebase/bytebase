@@ -62,7 +62,7 @@ const editorContext = useSQLEditorContext();
 const worksheetContext = useSheetContext();
 const { view, isFetching, events } = worksheetContext;
 const disallowShareWorksheet = useCustomFeature(
-  "bb.custom-feature.disallow-share-worksheet"
+  "bb.feature.disallow-share-worksheet"
 );
 const keyword = ref("");
 

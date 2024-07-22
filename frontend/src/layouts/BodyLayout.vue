@@ -304,7 +304,7 @@ const hasPermission = computed(() =>
 );
 
 const { isDemo } = storeToRefs(actuatorStore);
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   state.showReleaseModal = openRemindModal;

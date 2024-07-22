@@ -39,7 +39,7 @@ export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
   const disallowNavigateAwaySQLEditor = useCustomFeature(
-    "bb.custom-feature.disallow-navigate-away-sql-editor"
+    "bb.feature.disallow-navigate-away-sql-editor"
   );
 
   const show = ref(false);

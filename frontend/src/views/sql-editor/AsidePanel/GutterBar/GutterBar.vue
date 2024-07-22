@@ -62,7 +62,7 @@ const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { strictProject } = storeToRefs(useSQLEditorStore());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
 const { props: buttonProps, style: buttonStyle } = useButton({
   size: toRef(props, "size"),

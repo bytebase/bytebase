@@ -228,7 +228,7 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
-const inIframe = useCustomFeature("bb.custom-feature.embedded-in-iframe");
+const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
 
 const featureModalContext = ref<{
   feature?: FeatureType;
