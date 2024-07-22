@@ -25,6 +25,8 @@ export const overrideAppProfile = () => {
       "bb.feature.console.hide-sidebar": true,
       "bb.feature.console.hide-header": true,
       "bb.feature.console.hide-quick-action": true,
+      "bb.feature.databases.hide-unassigned": true,
+      "bb.feature.databases.hide-inalterable": true,
     });
   }
 

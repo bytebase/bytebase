@@ -26,6 +26,8 @@ export type AppFeatures = {
   "bb.feature.console.hide-sidebar": boolean;
   "bb.feature.console.hide-header": boolean;
   "bb.feature.console.hide-quick-action": boolean;
+  "bb.feature.databases.hide-unassigned": boolean;
+  "bb.feature.databases.hide-inalterable": boolean;
 };
 
 export type AppProfile = {
@@ -62,5 +64,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.console.hide-sidebar": false,
     "bb.feature.console.hide-header": false,
     "bb.feature.console.hide-quick-action": false,
+    "bb.feature.databases.hide-unassigned": false,
+    "bb.feature.databases.hide-inalterable": false,
   },
 });

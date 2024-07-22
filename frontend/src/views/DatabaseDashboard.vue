@@ -68,7 +68,9 @@ interface LocalState {
 
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const hideUnassignedDatabases = useAppFeature(
+  "bb.feature.databases.hide-unassigned"
+);
 const route = useRoute();
 const router = useRouter();
 
@@ -195,7 +197,7 @@ const filteredDatabaseList = computed(() => {
       return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
     });
   }
-  if (inIframe.value) {
+  if (hideUnassignedDatabases.value) {
     list = list.filter((db) => db.projectEntity.name !== DEFAULT_PROJECT_NAME);
   }
   const keyword = state.params.query.trim().toLowerCase();
