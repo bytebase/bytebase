@@ -7,13 +7,6 @@ import "store/plan_check_run.proto";
 
 option go_package = "generated-go/store";
 
-message TaskPayload {
-  // common fields
-  bool skipped = 1;
-  string skipped_reason = 2;
-  string spec_id = 3;
-}
-
 // TaskDatabaseCreatePayload is the task payload for creating databases.
 message TaskDatabaseCreatePayload {
   // common fields
@@ -32,7 +25,7 @@ message TaskDatabaseCreatePayload {
 }
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
-message TaskDatabaseDataUpdatePayload {
+message TaskDatabaseUpdatePayload {
   // common fields
   bool skipped = 1;
   string skipped_reason = 2;
@@ -42,20 +35,9 @@ message TaskDatabaseDataUpdatePayload {
   int32 sheet_id = 5;
 
   PreUpdateBackupDetail pre_update_backup_detail = 6;
-}
 
-// TaskDatabaseSchemaPayload is the task payload for database schema baseline, update or ghost sync.
-message TaskDatabaseSchemaPayload {
-  // common fields
-  bool skipped = 1;
-  string skipped_reason = 2;
-  string spec_id = 3;
-
-  string schema_version = 4;
-  // sheet_id is required for schema update.
-  int32 sheet_id = 5;
   // flags is used for ghost sync
-  map<string, string> flags = 6;
+  map<string, string> flags = 7;
 }
 
 // TaskDatabaseDataExportPayload is the task payload for database data export.

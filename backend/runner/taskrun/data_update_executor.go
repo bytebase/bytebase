@@ -57,7 +57,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 			UpdateTime:      time.Now(),
 		})
 
-	payload := &storepb.TaskDatabaseDataUpdatePayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
@@ -113,7 +113,7 @@ func (exec *DataUpdateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
 	statement string,
-	payload *storepb.TaskDatabaseDataUpdatePayload,
+	payload *storepb.TaskDatabaseUpdatePayload,
 	task *store.TaskMessage,
 ) error {
 	if payload.PreUpdateBackupDetail.Database == "" {

@@ -406,7 +406,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 							return nil
 						}
-						payload := &storepb.TaskDatabaseSchemaPayload{}
+						payload := &storepb.TaskDatabaseUpdatePayload{}
 						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 						}
@@ -457,7 +457,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if task.Type != api.TaskDatabaseDataUpdate {
 							return nil
 						}
-						payload := &storepb.TaskDatabaseDataUpdatePayload{}
+						payload := &storepb.TaskDatabaseUpdatePayload{}
 						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 						}

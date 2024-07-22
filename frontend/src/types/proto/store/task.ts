@@ -6,13 +6,6 @@ import { PreUpdateBackupDetail } from "./plan_check_run";
 
 export const protobufPackage = "bytebase.store";
 
-export interface TaskPayload {
-  /** common fields */
-  skipped: boolean;
-  skippedReason: string;
-  specId: string;
-}
-
 /** TaskDatabaseCreatePayload is the task payload for creating databases. */
 export interface TaskDatabaseCreatePayload {
   /** common fields */
@@ -30,30 +23,21 @@ export interface TaskDatabaseCreatePayload {
 }
 
 /** TaskDatabaseDataUpdatePayload is the task payload for database data update (DML). */
-export interface TaskDatabaseDataUpdatePayload {
+export interface TaskDatabaseUpdatePayload {
   /** common fields */
   skipped: boolean;
   skippedReason: string;
   specId: string;
   schemaVersion: string;
   sheetId: number;
-  preUpdateBackupDetail: PreUpdateBackupDetail | undefined;
-}
-
-/** TaskDatabaseSchemaPayload is the task payload for database schema baseline, update or ghost sync. */
-export interface TaskDatabaseSchemaPayload {
-  /** common fields */
-  skipped: boolean;
-  skippedReason: string;
-  specId: string;
-  schemaVersion: string;
-  /** sheet_id is required for schema update. */
-  sheetId: number;
+  preUpdateBackupDetail:
+    | PreUpdateBackupDetail
+    | undefined;
   /** flags is used for ghost sync */
   flags: { [key: string]: string };
 }
 
-export interface TaskDatabaseSchemaPayload_FlagsEntry {
+export interface TaskDatabaseUpdatePayload_FlagsEntry {
   key: string;
   value: string;
 }
@@ -66,95 +50,6 @@ export interface TaskDatabaseDataExportPayload {
   password: string;
   format: ExportFormat;
 }
-
-function createBaseTaskPayload(): TaskPayload {
-  return { skipped: false, skippedReason: "", specId: "" };
-}
-
-export const TaskPayload = {
-  encode(message: TaskPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.skipped === true) {
-      writer.uint32(8).bool(message.skipped);
-    }
-    if (message.skippedReason !== "") {
-      writer.uint32(18).string(message.skippedReason);
-    }
-    if (message.specId !== "") {
-      writer.uint32(26).string(message.specId);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): TaskPayload {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskPayload();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.skipped = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.skippedReason = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.specId = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TaskPayload {
-    return {
-      skipped: isSet(object.skipped) ? globalThis.Boolean(object.skipped) : false,
-      skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
-      specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-    };
-  },
-
-  toJSON(message: TaskPayload): unknown {
-    const obj: any = {};
-    if (message.skipped === true) {
-      obj.skipped = message.skipped;
-    }
-    if (message.skippedReason !== "") {
-      obj.skippedReason = message.skippedReason;
-    }
-    if (message.specId !== "") {
-      obj.specId = message.specId;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TaskPayload>): TaskPayload {
-    return TaskPayload.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TaskPayload>): TaskPayload {
-    const message = createBaseTaskPayload();
-    message.skipped = object.skipped ?? false;
-    message.skippedReason = object.skippedReason ?? "";
-    message.specId = object.specId ?? "";
-    return message;
-  },
-};
 
 function createBaseTaskDatabaseCreatePayload(): TaskDatabaseCreatePayload {
   return {
@@ -377,7 +272,7 @@ export const TaskDatabaseCreatePayload = {
   },
 };
 
-function createBaseTaskDatabaseDataUpdatePayload(): TaskDatabaseDataUpdatePayload {
+function createBaseTaskDatabaseUpdatePayload(): TaskDatabaseUpdatePayload {
   return {
     skipped: false,
     skippedReason: "",
@@ -385,11 +280,12 @@ function createBaseTaskDatabaseDataUpdatePayload(): TaskDatabaseDataUpdatePayloa
     schemaVersion: "",
     sheetId: 0,
     preUpdateBackupDetail: undefined,
+    flags: {},
   };
 }
 
-export const TaskDatabaseDataUpdatePayload = {
-  encode(message: TaskDatabaseDataUpdatePayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const TaskDatabaseUpdatePayload = {
+  encode(message: TaskDatabaseUpdatePayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.skipped === true) {
       writer.uint32(8).bool(message.skipped);
     }
@@ -408,13 +304,16 @@ export const TaskDatabaseDataUpdatePayload = {
     if (message.preUpdateBackupDetail !== undefined) {
       PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(50).fork()).ldelim();
     }
+    Object.entries(message.flags).forEach(([key, value]) => {
+      TaskDatabaseUpdatePayload_FlagsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
+    });
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): TaskDatabaseDataUpdatePayload {
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskDatabaseUpdatePayload {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskDatabaseDataUpdatePayload();
+    const message = createBaseTaskDatabaseUpdatePayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -460,6 +359,16 @@ export const TaskDatabaseDataUpdatePayload = {
 
           message.preUpdateBackupDetail = PreUpdateBackupDetail.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          const entry7 = TaskDatabaseUpdatePayload_FlagsEntry.decode(reader, reader.uint32());
+          if (entry7.value !== undefined) {
+            message.flags[entry7.key] = entry7.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -469,7 +378,7 @@ export const TaskDatabaseDataUpdatePayload = {
     return message;
   },
 
-  fromJSON(object: any): TaskDatabaseDataUpdatePayload {
+  fromJSON(object: any): TaskDatabaseUpdatePayload {
     return {
       skipped: isSet(object.skipped) ? globalThis.Boolean(object.skipped) : false,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
@@ -479,10 +388,16 @@ export const TaskDatabaseDataUpdatePayload = {
       preUpdateBackupDetail: isSet(object.preUpdateBackupDetail)
         ? PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
         : undefined,
+      flags: isObject(object.flags)
+        ? Object.entries(object.flags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
-  toJSON(message: TaskDatabaseDataUpdatePayload): unknown {
+  toJSON(message: TaskDatabaseUpdatePayload): unknown {
     const obj: any = {};
     if (message.skipped === true) {
       obj.skipped = message.skipped;
@@ -502,148 +417,6 @@ export const TaskDatabaseDataUpdatePayload = {
     if (message.preUpdateBackupDetail !== undefined) {
       obj.preUpdateBackupDetail = PreUpdateBackupDetail.toJSON(message.preUpdateBackupDetail);
     }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TaskDatabaseDataUpdatePayload>): TaskDatabaseDataUpdatePayload {
-    return TaskDatabaseDataUpdatePayload.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TaskDatabaseDataUpdatePayload>): TaskDatabaseDataUpdatePayload {
-    const message = createBaseTaskDatabaseDataUpdatePayload();
-    message.skipped = object.skipped ?? false;
-    message.skippedReason = object.skippedReason ?? "";
-    message.specId = object.specId ?? "";
-    message.schemaVersion = object.schemaVersion ?? "";
-    message.sheetId = object.sheetId ?? 0;
-    message.preUpdateBackupDetail =
-      (object.preUpdateBackupDetail !== undefined && object.preUpdateBackupDetail !== null)
-        ? PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
-        : undefined;
-    return message;
-  },
-};
-
-function createBaseTaskDatabaseSchemaPayload(): TaskDatabaseSchemaPayload {
-  return { skipped: false, skippedReason: "", specId: "", schemaVersion: "", sheetId: 0, flags: {} };
-}
-
-export const TaskDatabaseSchemaPayload = {
-  encode(message: TaskDatabaseSchemaPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.skipped === true) {
-      writer.uint32(8).bool(message.skipped);
-    }
-    if (message.skippedReason !== "") {
-      writer.uint32(18).string(message.skippedReason);
-    }
-    if (message.specId !== "") {
-      writer.uint32(26).string(message.specId);
-    }
-    if (message.schemaVersion !== "") {
-      writer.uint32(34).string(message.schemaVersion);
-    }
-    if (message.sheetId !== 0) {
-      writer.uint32(40).int32(message.sheetId);
-    }
-    Object.entries(message.flags).forEach(([key, value]) => {
-      TaskDatabaseSchemaPayload_FlagsEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).ldelim();
-    });
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): TaskDatabaseSchemaPayload {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskDatabaseSchemaPayload();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.skipped = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.skippedReason = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.specId = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.schemaVersion = reader.string();
-          continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.sheetId = reader.int32();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          const entry6 = TaskDatabaseSchemaPayload_FlagsEntry.decode(reader, reader.uint32());
-          if (entry6.value !== undefined) {
-            message.flags[entry6.key] = entry6.value;
-          }
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TaskDatabaseSchemaPayload {
-    return {
-      skipped: isSet(object.skipped) ? globalThis.Boolean(object.skipped) : false,
-      skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
-      specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      sheetId: isSet(object.sheetId) ? globalThis.Number(object.sheetId) : 0,
-      flags: isObject(object.flags)
-        ? Object.entries(object.flags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-    };
-  },
-
-  toJSON(message: TaskDatabaseSchemaPayload): unknown {
-    const obj: any = {};
-    if (message.skipped === true) {
-      obj.skipped = message.skipped;
-    }
-    if (message.skippedReason !== "") {
-      obj.skippedReason = message.skippedReason;
-    }
-    if (message.specId !== "") {
-      obj.specId = message.specId;
-    }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    if (message.sheetId !== 0) {
-      obj.sheetId = Math.round(message.sheetId);
-    }
     if (message.flags) {
       const entries = Object.entries(message.flags);
       if (entries.length > 0) {
@@ -656,16 +429,20 @@ export const TaskDatabaseSchemaPayload = {
     return obj;
   },
 
-  create(base?: DeepPartial<TaskDatabaseSchemaPayload>): TaskDatabaseSchemaPayload {
-    return TaskDatabaseSchemaPayload.fromPartial(base ?? {});
+  create(base?: DeepPartial<TaskDatabaseUpdatePayload>): TaskDatabaseUpdatePayload {
+    return TaskDatabaseUpdatePayload.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<TaskDatabaseSchemaPayload>): TaskDatabaseSchemaPayload {
-    const message = createBaseTaskDatabaseSchemaPayload();
+  fromPartial(object: DeepPartial<TaskDatabaseUpdatePayload>): TaskDatabaseUpdatePayload {
+    const message = createBaseTaskDatabaseUpdatePayload();
     message.skipped = object.skipped ?? false;
     message.skippedReason = object.skippedReason ?? "";
     message.specId = object.specId ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.sheetId = object.sheetId ?? 0;
+    message.preUpdateBackupDetail =
+      (object.preUpdateBackupDetail !== undefined && object.preUpdateBackupDetail !== null)
+        ? PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
+        : undefined;
     message.flags = Object.entries(object.flags ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = globalThis.String(value);
@@ -676,12 +453,12 @@ export const TaskDatabaseSchemaPayload = {
   },
 };
 
-function createBaseTaskDatabaseSchemaPayload_FlagsEntry(): TaskDatabaseSchemaPayload_FlagsEntry {
+function createBaseTaskDatabaseUpdatePayload_FlagsEntry(): TaskDatabaseUpdatePayload_FlagsEntry {
   return { key: "", value: "" };
 }
 
-export const TaskDatabaseSchemaPayload_FlagsEntry = {
-  encode(message: TaskDatabaseSchemaPayload_FlagsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const TaskDatabaseUpdatePayload_FlagsEntry = {
+  encode(message: TaskDatabaseUpdatePayload_FlagsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -691,10 +468,10 @@ export const TaskDatabaseSchemaPayload_FlagsEntry = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): TaskDatabaseSchemaPayload_FlagsEntry {
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskDatabaseUpdatePayload_FlagsEntry {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskDatabaseSchemaPayload_FlagsEntry();
+    const message = createBaseTaskDatabaseUpdatePayload_FlagsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -721,14 +498,14 @@ export const TaskDatabaseSchemaPayload_FlagsEntry = {
     return message;
   },
 
-  fromJSON(object: any): TaskDatabaseSchemaPayload_FlagsEntry {
+  fromJSON(object: any): TaskDatabaseUpdatePayload_FlagsEntry {
     return {
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
     };
   },
 
-  toJSON(message: TaskDatabaseSchemaPayload_FlagsEntry): unknown {
+  toJSON(message: TaskDatabaseUpdatePayload_FlagsEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
       obj.key = message.key;
@@ -739,11 +516,11 @@ export const TaskDatabaseSchemaPayload_FlagsEntry = {
     return obj;
   },
 
-  create(base?: DeepPartial<TaskDatabaseSchemaPayload_FlagsEntry>): TaskDatabaseSchemaPayload_FlagsEntry {
-    return TaskDatabaseSchemaPayload_FlagsEntry.fromPartial(base ?? {});
+  create(base?: DeepPartial<TaskDatabaseUpdatePayload_FlagsEntry>): TaskDatabaseUpdatePayload_FlagsEntry {
+    return TaskDatabaseUpdatePayload_FlagsEntry.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<TaskDatabaseSchemaPayload_FlagsEntry>): TaskDatabaseSchemaPayload_FlagsEntry {
-    const message = createBaseTaskDatabaseSchemaPayload_FlagsEntry();
+  fromPartial(object: DeepPartial<TaskDatabaseUpdatePayload_FlagsEntry>): TaskDatabaseUpdatePayload_FlagsEntry {
+    const message = createBaseTaskDatabaseUpdatePayload_FlagsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
     return message;

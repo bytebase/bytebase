@@ -77,7 +77,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get schema update gh-ost sync task for cutover task")
 	}
-	payload := &storepb.TaskDatabaseSchemaPayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}

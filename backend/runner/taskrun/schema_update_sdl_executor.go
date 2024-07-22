@@ -53,7 +53,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, driverCtx cont
 			UpdateTime:      time.Now(),
 		})
 
-	payload := &storepb.TaskDatabaseSchemaPayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}

@@ -424,7 +424,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 
 	switch c.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
-		payload := &storepb.TaskDatabaseSchemaPayload{
+		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
@@ -448,7 +448,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		payload := &storepb.TaskDatabaseSchemaPayload{
+		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
@@ -473,7 +473,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		payload := &storepb.TaskDatabaseSchemaPayload{
+		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
@@ -503,7 +503,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		var taskCreateList []*store.TaskMessage
 		// task "sync"
-		payloadSync := &storepb.TaskDatabaseSchemaPayload{
+		payloadSync := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
@@ -523,7 +523,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		})
 
 		// task "cutover"
-		payloadCutover := &storepb.TaskPayload{
+		payloadCutover := &storepb.TaskDatabaseUpdatePayload{
 			SpecId: spec.Id,
 		}
 		bytesCutover, err := protojson.Marshal(payloadCutover)
@@ -555,7 +555,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
 			preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
 		}
-		payload := &storepb.TaskDatabaseDataUpdatePayload{
+		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:                spec.Id,
 			SheetId:               int32(sheetUID),
 			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),

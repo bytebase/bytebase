@@ -51,7 +51,7 @@ func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, driverCtx conte
 			UpdateTime:      time.Now(),
 		})
 
-	payload := &storepb.TaskDatabaseSchemaPayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")
 	}

@@ -642,7 +642,7 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &storepb.TaskDatabaseSchemaPayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
@@ -676,7 +676,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &storepb.TaskDatabaseSchemaPayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
@@ -712,7 +712,7 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &storepb.TaskPayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
@@ -742,7 +742,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &storepb.TaskDatabaseDataUpdatePayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}

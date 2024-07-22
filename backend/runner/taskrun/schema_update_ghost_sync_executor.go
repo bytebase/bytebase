@@ -47,7 +47,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, taskCont
 			UpdateTime:      time.Now(),
 		})
 
-	payload := &storepb.TaskDatabaseSchemaPayload{}
+	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}

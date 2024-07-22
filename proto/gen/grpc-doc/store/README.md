@@ -258,10 +258,8 @@
 - [store/task.proto](#store_task-proto)
     - [TaskDatabaseCreatePayload](#bytebase-store-TaskDatabaseCreatePayload)
     - [TaskDatabaseDataExportPayload](#bytebase-store-TaskDatabaseDataExportPayload)
-    - [TaskDatabaseDataUpdatePayload](#bytebase-store-TaskDatabaseDataUpdatePayload)
-    - [TaskDatabaseSchemaPayload](#bytebase-store-TaskDatabaseSchemaPayload)
-    - [TaskDatabaseSchemaPayload.FlagsEntry](#bytebase-store-TaskDatabaseSchemaPayload-FlagsEntry)
-    - [TaskPayload](#bytebase-store-TaskPayload)
+    - [TaskDatabaseUpdatePayload](#bytebase-store-TaskDatabaseUpdatePayload)
+    - [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry)
   
 - [store/task_run.proto](#store_task_run-proto)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
@@ -4010,9 +4008,9 @@ TaskDatabaseDataExportPayload is the task payload for database data export.
 
 
 
-<a name="bytebase-store-TaskDatabaseDataUpdatePayload"></a>
+<a name="bytebase-store-TaskDatabaseUpdatePayload"></a>
 
-### TaskDatabaseDataUpdatePayload
+### TaskDatabaseUpdatePayload
 TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 
 
@@ -4024,35 +4022,16 @@ TaskDatabaseDataUpdatePayload is the task payload for database data update (DML)
 | schema_version | [string](#string) |  |  |
 | sheet_id | [int32](#int32) |  |  |
 | pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
+| flags | [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry) | repeated | flags is used for ghost sync |
 
 
 
 
 
 
-<a name="bytebase-store-TaskDatabaseSchemaPayload"></a>
+<a name="bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry"></a>
 
-### TaskDatabaseSchemaPayload
-TaskDatabaseSchemaPayload is the task payload for database schema baseline, update or ghost sync.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| skipped | [bool](#bool) |  | common fields |
-| skipped_reason | [string](#string) |  |  |
-| spec_id | [string](#string) |  |  |
-| schema_version | [string](#string) |  |  |
-| sheet_id | [int32](#int32) |  | sheet_id is required for schema update. |
-| flags | [TaskDatabaseSchemaPayload.FlagsEntry](#bytebase-store-TaskDatabaseSchemaPayload-FlagsEntry) | repeated | flags is used for ghost sync |
-
-
-
-
-
-
-<a name="bytebase-store-TaskDatabaseSchemaPayload-FlagsEntry"></a>
-
-### TaskDatabaseSchemaPayload.FlagsEntry
+### TaskDatabaseUpdatePayload.FlagsEntry
 
 
 
@@ -4060,23 +4039,6 @@ TaskDatabaseSchemaPayload is the task payload for database schema baseline, upda
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskPayload"></a>
-
-### TaskPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| skipped | [bool](#bool) |  | common fields |
-| skipped_reason | [string](#string) |  |  |
-| spec_id | [string](#string) |  |  |
 
 
 
