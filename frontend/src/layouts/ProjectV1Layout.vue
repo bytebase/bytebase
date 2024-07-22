@@ -37,7 +37,7 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
-import { useProjectV1Store, useCurrentUserV1, useCustomFeature } from "@/store";
+import { useProjectV1Store, useCurrentUserV1, useAppFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { QuickActionType } from "@/types";
 import { DEFAULT_PROJECT_NAME, QuickActionProjectPermissionMap } from "@/types";
@@ -53,7 +53,7 @@ const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const recentProjects = useRecentProjects();
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(

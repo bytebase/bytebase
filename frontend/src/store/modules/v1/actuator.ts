@@ -7,6 +7,7 @@ import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
   defaultAppProfile,
+  type AppFeatures,
   type AppProfile,
   type Release,
   type ReleaseInfo,
@@ -180,8 +181,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         return;
       }
     },
-    overrideAppProfile(overrides: Partial<AppProfile>) {
-      Object.assign(this.appProfile, overrides);
+    overrideAppFeatures(overrides: Partial<AppFeatures>) {
+      Object.assign(this.appProfile.features, overrides);
     },
   },
 });
@@ -199,6 +200,6 @@ export const usePageMode = () => {
   return pageMode;
 };
 
-export const useCustomFeature = <T extends keyof AppProfile>(feature: T) => {
-  return computed(() => useActuatorV1Store().appProfile[feature]);
+export const useAppFeature = <T extends keyof AppFeatures>(feature: T) => {
+  return computed(() => useActuatorV1Store().appProfile.features[feature]);
 };

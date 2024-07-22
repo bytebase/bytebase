@@ -2,7 +2,7 @@ import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import Long from "long";
 import protobufjs from "protobufjs";
-import { computed, createApp } from "vue";
+import { createApp } from "vue";
 import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
@@ -20,6 +20,7 @@ import {
   pinia,
   pushNotification,
   useActuatorV1Store,
+  useAppFeature,
   useAuthStore,
 } from "./store";
 import {
@@ -153,14 +154,16 @@ app
   .directive("data-source-type", dataSourceType)
   .use(pinia);
 
-const overrideAppProfile = () => {
+const overrideAppFeatures = () => {
   const query = new URLSearchParams(window.location.search);
   const actuatorStore = useActuatorV1Store();
   const mode = query.get("mode") as PageMode;
   if (mode === "STANDALONE") {
+    actuatorStore.appProfile.embedded = true;
+
     // mode=STANDALONE is not easy to read, but for legacy support we keep it as
     // some customers are using it.
-    actuatorStore.overrideAppProfile({
+    actuatorStore.overrideAppFeatures({
       "bb.feature.embedded-in-iframe": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-quick-start": true,
@@ -171,7 +174,7 @@ const overrideAppProfile = () => {
   }
   const customTheme = query.get("customTheme");
   if (customTheme === "lixiang") {
-    actuatorStore.overrideAppProfile({
+    actuatorStore.overrideAppFeatures({
       "bb.feature.custom-query-datasource": true,
       "bb.feature.disallow-export-query-data": true,
       "bb.feature.custom-color-scheme": {
@@ -180,16 +183,14 @@ const overrideAppProfile = () => {
         "--color-accent-disabled": "#b8c3c3",
       },
     });
-    if (actuatorStore.appProfile["bb.feature.embedded-in-iframe"]) {
-      actuatorStore.overrideAppProfile({
+    if (actuatorStore.appProfile.embedded) {
+      actuatorStore.overrideAppFeatures({
         "bb.feature.hide-issue-review-actions": true,
       });
     }
   }
 
-  useCustomTheme(
-    computed(() => actuatorStore.appProfile["bb.feature.custom-color-scheme"])
-  );
+  useCustomTheme(useAppFeature("bb.feature.custom-color-scheme"));
 };
 
 const overrideLang = () => {
@@ -201,7 +202,7 @@ const overrideLang = () => {
 };
 
 const initSearchParams = () => {
-  overrideAppProfile();
+  overrideAppFeatures();
   overrideLang();
 };
 

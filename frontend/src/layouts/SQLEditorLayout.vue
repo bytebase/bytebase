@@ -22,7 +22,7 @@ import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import ProvideSQLEditorSettingContext from "@/components/ProvideSQLEditorSettingContext.vue";
 import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
 import {
-  useCustomFeature,
+  useAppFeature,
   useEnvironmentV1Store,
   usePolicyV1Store,
   useRoleStore,
@@ -33,7 +33,7 @@ import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 
 const router = useRouter();
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
 // provide context for SQL Editor
 provideSQLEditorContext();

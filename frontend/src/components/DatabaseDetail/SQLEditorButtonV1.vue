@@ -35,7 +35,7 @@ import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   useCurrentUserV1,
-  useCustomFeature,
+  useAppFeature,
   useSQLEditorTreeStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -78,7 +78,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
-const disallowNavigateToConsole = useCustomFeature(
+const disallowNavigateToConsole = useAppFeature(
   "bb.feature.disallow-navigate-to-console"
 );
 const state = reactive<LocalState>({

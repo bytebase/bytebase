@@ -15,7 +15,7 @@ import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
-  useCustomFeature,
+  useAppFeature,
   useSQLEditorTabStore,
 } from "@/store";
 import {
@@ -80,7 +80,7 @@ const confirmOverrideStatement = async (
 export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
-  const disallowNavigateAwaySQLEditor = useCustomFeature(
+  const disallowNavigateAwaySQLEditor = useAppFeature(
     "bb.feature.disallow-navigate-to-console"
   );
   const $d = useDialog();

@@ -56,7 +56,7 @@ import { SearchBox } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useCurrentUserV1,
-  useCustomFeature,
+  useAppFeature,
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
@@ -70,7 +70,7 @@ const { showPanel, events: sheetEvents } = useSheetContext();
 const tabStore = useSQLEditorTabStore();
 const sheetStore = useWorkSheetStore();
 const me = useCurrentUserV1();
-const disallowShareWorksheet = useCustomFeature(
+const disallowShareWorksheet = useAppFeature(
   "bb.feature.disallow-share-worksheet"
 );
 const keyword = ref("");

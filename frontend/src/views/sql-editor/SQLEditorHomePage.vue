@@ -115,7 +115,7 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useCustomFeature,
+  useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
@@ -156,7 +156,7 @@ const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
-const hideQuickStart = useCustomFeature("bb.feature.hide-quick-start");
+const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();

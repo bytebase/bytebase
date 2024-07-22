@@ -117,7 +117,7 @@ import {
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
   useWorkSheetStore,
-  useCustomFeature,
+  useAppFeature,
 } from "@/store";
 import type { FeatureType, SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
@@ -144,10 +144,10 @@ const { standardModeEnabled, events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
-const disallowShareWorksheet = useCustomFeature(
+const disallowShareWorksheet = useAppFeature(
   "bb.feature.disallow-share-worksheet"
 );
-const hasCustomQueryDatasourceFeature = useCustomFeature(
+const hasCustomQueryDatasourceFeature = useAppFeature(
   "bb.feature.custom-query-datasource"
 );
 

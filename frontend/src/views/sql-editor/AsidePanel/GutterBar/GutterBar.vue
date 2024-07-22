@@ -36,7 +36,7 @@ import { computed, toRef, watch } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
-  useCustomFeature,
+  useAppFeature,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -62,7 +62,7 @@ const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { strictProject } = storeToRefs(useSQLEditorStore());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
 const { props: buttonProps, style: buttonStyle } = useButton({
   size: toRef(props, "size"),

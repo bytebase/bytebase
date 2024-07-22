@@ -19,7 +19,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import { useCustomFeature, useUserStore } from "@/store";
+import { useAppFeature, useUserStore } from "@/store";
 import { extractUserResourceName } from "@/utils";
 
 const props = defineProps<{
@@ -28,7 +28,7 @@ const props = defineProps<{
 }>();
 
 const userStore = useUserStore();
-const disallowNavigateToConsole = useCustomFeature(
+const disallowNavigateToConsole = useAppFeature(
   "bb.feature.disallow-navigate-to-console"
 );
 

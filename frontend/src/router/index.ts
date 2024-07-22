@@ -11,7 +11,7 @@ import {
   useDatabaseV1Store,
   useInstanceV1Store,
   useSQLEditorTabStore,
-  useCustomFeature,
+  useAppFeature,
 } from "@/store";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
@@ -58,7 +58,7 @@ export const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
-  const disallowNavigateAwaySQLEditor = useCustomFeature(
+  const disallowNavigateAwaySQLEditor = useAppFeature(
     "bb.feature.disallow-navigate-to-console"
   );
 

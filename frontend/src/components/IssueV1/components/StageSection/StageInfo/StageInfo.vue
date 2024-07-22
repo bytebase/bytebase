@@ -8,11 +8,11 @@
 </template>
 
 <script setup lang="ts">
-import { useCustomFeature } from "@/store";
+import { useAppFeature } from "@/store";
 import DatabaseInfo from "./DatabaseInfo.vue";
 import StageSelect from "./StageSelect.vue";
 
-const disallowNavigateToConsole = useCustomFeature(
+const disallowNavigateToConsole = useAppFeature(
   "bb.feature.disallow-navigate-to-console"
 );
 </script>

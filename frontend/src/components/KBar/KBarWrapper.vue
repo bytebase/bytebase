@@ -29,7 +29,7 @@ import {
 import { defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useOverlayStackContext } from "@/components/misc/OverlayStackManager.vue";
-import { useCurrentUserV1, useCustomFeature } from "@/store";
+import { useCurrentUserV1, useAppFeature } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
 import KBarFooter from "./KBarFooter.vue";
 import KBarHelper from "./KBarHelper.vue";
@@ -51,7 +51,7 @@ export default defineComponent({
   setup() {
     const { t } = useI18n();
     const { stack: overlayStack } = useOverlayStackContext();
-    const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+    const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
     const placeholder = computed(() => t("kbar.options.placeholder"));
 

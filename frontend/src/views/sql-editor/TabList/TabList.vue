@@ -60,7 +60,7 @@ import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useCustomFeature,
+  useAppFeature,
   useFilterStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -90,7 +90,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();

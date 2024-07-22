@@ -39,7 +39,7 @@ import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
-  useCustomFeature,
+  useAppFeature,
   useDatabaseV1Store,
   useProjectV1List,
   useUIStateStore,
@@ -68,7 +68,7 @@ interface LocalState {
 
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 const route = useRoute();
 const router = useRouter();
 

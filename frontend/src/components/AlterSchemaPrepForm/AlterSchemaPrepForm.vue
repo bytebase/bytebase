@@ -162,7 +162,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
   useDBGroupStore,
-  useCustomFeature,
+  useAppFeature,
 } from "@/store";
 import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
@@ -228,7 +228,7 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
 const featureModalContext = ref<{
   feature?: FeatureType;

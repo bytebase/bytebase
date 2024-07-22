@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { useCustomFeature } from "@/store";
+import { useAppFeature } from "@/store";
 
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 </script>

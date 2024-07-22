@@ -67,7 +67,7 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useCurrentUserV1,
-  useCustomFeature,
+  useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
@@ -87,7 +87,7 @@ const { t } = useI18n();
 const me = useCurrentUserV1();
 const tabStore = useSQLEditorTabStore();
 const { standardModeEnabled } = useSQLEditorContext();
-const disallowNavigateToConsole = useCustomFeature(
+const disallowNavigateToConsole = useAppFeature(
   "bb.feature.disallow-navigate-to-console"
 );
 

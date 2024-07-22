@@ -32,7 +32,7 @@ import {
 } from "@/components/IssueV1";
 import {
   useCurrentUserV1,
-  useCustomFeature,
+  useAppFeature,
 } from "@/store";
 import { PresetRoleType } from "@/types";
 import {
@@ -46,7 +46,7 @@ import ReviewActionButton from "./ReviewActionButton.vue";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const hideIssueReviewActions = useCustomFeature(
+const hideIssueReviewActions = useAppFeature(
   "bb.feature.hide-issue-review-actions"
 );
 const { issue, phase, reviewContext, events, activeTask, activeStage } =

@@ -194,7 +194,7 @@ import {
   useCurrentUserV1,
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
-  useCustomFeature,
+  useAppFeature,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import type {
@@ -261,7 +261,7 @@ const currentUserV1 = useCurrentUserV1();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
-const disallowExportQueryData = useCustomFeature(
+const disallowExportQueryData = useAppFeature(
   "bb.feature.disallow-export-query-data"
 );
 

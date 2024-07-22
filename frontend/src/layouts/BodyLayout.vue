@@ -262,7 +262,7 @@ import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspa
 import {
   useActuatorV1Store,
   useCurrentUserV1,
-  useCustomFeature,
+  useAppFeature,
   useSubscriptionV1Store,
 } from "@/store";
 import type { QuickActionType } from "@/types";
@@ -304,7 +304,7 @@ const hasPermission = computed(() =>
 );
 
 const { isDemo } = storeToRefs(actuatorStore);
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   state.showReleaseModal = openRemindModal;

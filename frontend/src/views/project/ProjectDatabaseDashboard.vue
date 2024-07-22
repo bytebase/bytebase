@@ -9,7 +9,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
   useCurrentUserV1,
-  useCustomFeature,
+  useAppFeature,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { sortDatabaseV1List, isDatabaseV1Alterable } from "@/utils";
@@ -20,7 +20,7 @@ const props = defineProps<{
 
 const currentUser = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-const inIframe = useCustomFeature("bb.feature.embedded-in-iframe");
+const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
