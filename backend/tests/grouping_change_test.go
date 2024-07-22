@@ -162,7 +162,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 					a.NoError(err)
 				}
 			}
-			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
+			databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
 				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
@@ -173,7 +173,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-			databaseGroup, err = ctl.projectServiceClient.GetDatabaseGroup(ctx, &v1pb.GetDatabaseGroupRequest{
+			databaseGroup, err = ctl.databaseGroupServiceClient.GetDatabaseGroup(ctx, &v1pb.GetDatabaseGroupRequest{
 				Name: databaseGroup.Name,
 				View: v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL,
 			})
