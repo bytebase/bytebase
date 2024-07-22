@@ -1,9 +1,3 @@
-import type { IssueId } from "./id";
-import type { Pipeline } from "./pipeline";
-import type { Principal } from "./principal";
-import type { Project } from "./project";
-import type { IssuePayload as IssueProtoPayload } from "./proto/store/issue";
-
 type IssueTypeGeneral = "bb.issue.general";
 
 type IssueTypeDataSource = "bb.issue.data-source.request";
@@ -27,30 +21,6 @@ export type IssueType =
   | IssueTypeGrantRequest;
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
-
-export type IssuePayload = IssueProtoPayload | { [key: string]: any };
-
-export type Issue = {
-  id: IssueId;
-
-  // Related fields
-  project: Project;
-  pipeline?: Pipeline;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-
-  // Domain specific fields
-  name: string;
-  status: IssueStatus;
-  type: IssueType;
-  description: string;
-  subscriberList: Principal[];
-  payload: IssuePayload;
-};
 
 export type IssueStatusTransitionType = "RESOLVE" | "CANCEL" | "REOPEN";
 

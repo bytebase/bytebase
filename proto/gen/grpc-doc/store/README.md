@@ -4,6 +4,7 @@
 ## Table of Contents
 
 - [store/common.proto](#store_common-proto)
+    - [DatabaseLabel](#bytebase-store-DatabaseLabel)
     - [PageToken](#bytebase-store-PageToken)
     - [Position](#bytebase-store-Position)
   
@@ -161,11 +162,11 @@
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
     - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
-    - [PlanCheckRunConfig.PreUpdateBackupDetail](#bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
+    - [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail)
   
     - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
@@ -254,6 +255,12 @@
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
     - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
   
+- [store/task.proto](#store_task-proto)
+    - [TaskDatabaseCreatePayload](#bytebase-store-TaskDatabaseCreatePayload)
+    - [TaskDatabaseDataExportPayload](#bytebase-store-TaskDatabaseDataExportPayload)
+    - [TaskDatabaseUpdatePayload](#bytebase-store-TaskDatabaseUpdatePayload)
+    - [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry)
+  
 - [store/task_run.proto](#store_task_run-proto)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
     - [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position)
@@ -293,6 +300,22 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/common.proto
+
+
+
+<a name="bytebase-store-DatabaseLabel"></a>
+
+### DatabaseLabel
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
 
 
 
@@ -2584,7 +2607,7 @@ Type is the database change type.
 | database_name | [string](#string) |  |  |
 | database_group_uid | [int64](#int64) | optional | database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
-| pre_update_backup_detail | [PlanCheckRunConfig.PreUpdateBackupDetail](#bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
+| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
 
 
@@ -2601,21 +2624,6 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail"></a>
-
-### PlanCheckRunConfig.PreUpdateBackupDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -2690,6 +2698,21 @@ Type is the database change type.
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int32](#int32) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PreUpdateBackupDetail"></a>
+
+### PreUpdateBackupDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -3920,6 +3943,102 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | total_rows_examined | [int32](#int32) |  | The total rows examined of the slow query log. |
 | maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_task-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/task.proto
+
+
+
+<a name="bytebase-store-TaskDatabaseCreatePayload"></a>
+
+### TaskDatabaseCreatePayload
+TaskDatabaseCreatePayload is the task payload for creating databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| skipped | [bool](#bool) |  | common fields |
+| skipped_reason | [string](#string) |  |  |
+| spec_id | [string](#string) |  |  |
+| project_id | [int32](#int32) |  |  |
+| database_name | [string](#string) |  |  |
+| table_name | [string](#string) |  |  |
+| sheet_id | [int32](#int32) |  |  |
+| character_set | [string](#string) |  |  |
+| collation | [string](#string) |  |  |
+| environment_id | [string](#string) |  |  |
+| labels | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskDatabaseDataExportPayload"></a>
+
+### TaskDatabaseDataExportPayload
+TaskDatabaseDataExportPayload is the task payload for database data export.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| spec_id | [string](#string) |  | common fields |
+| sheet_id | [int32](#int32) |  |  |
+| password | [string](#string) |  |  |
+| format | [ExportFormat](#bytebase-store-ExportFormat) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskDatabaseUpdatePayload"></a>
+
+### TaskDatabaseUpdatePayload
+TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| skipped | [bool](#bool) |  | common fields |
+| skipped_reason | [string](#string) |  |  |
+| spec_id | [string](#string) |  |  |
+| schema_version | [string](#string) |  |  |
+| sheet_id | [int32](#int32) |  |  |
+| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
+| flags | [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry) | repeated | flags is used for ghost sync |
+
+
+
+
+
+
+<a name="bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry"></a>
+
+### TaskDatabaseUpdatePayload.FlagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 

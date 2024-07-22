@@ -2,18 +2,17 @@ package taskrun
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -52,8 +51,8 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, driverCtx context
 			UpdateTime:      time.Now(),
 		})
 
-	payload := &api.TaskDatabaseSchemaUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseUpdatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
@@ -66,13 +65,14 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, driverCtx context
 		return true, nil, err
 	}
 
-	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	sheetID := int(payload.SheetId)
+	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
 	}
 
 	version := model.Version{Version: payload.SchemaVersion}
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Migrate, statement, version, &payload.SheetID)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Migrate, statement, version, &sheetID)
 	// sync database schema anyways
 	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
 		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,

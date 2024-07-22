@@ -8,7 +8,7 @@ import {
   reviewConfigNamePrefix,
 } from "@/store/modules/v1/common";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
-import type { IssueId, SQLReviewPolicy } from "../types";
+import type { SQLReviewPolicy } from "../types";
 import type { IdType } from "../types/id";
 
 export const indexOrUIDFromSlug = (slug: string): number => {
@@ -46,11 +46,11 @@ export function indexFromSlug(slug: string): number {
   return parseInt(parts[parts.length - 1]) - 1;
 }
 
-export function issueSlug(issueName: string, issueId: IssueId): string {
+export function issueSlug(issueName: string, issueId: IdType): string {
   return [slug(issueName), issueId].join("-");
 }
 
-export function planSlug(planName: string, planId: IssueId): string {
+export function planSlug(planName: string, planId: IdType): string {
   return [slug(planName), planId].join("-");
 }
 
