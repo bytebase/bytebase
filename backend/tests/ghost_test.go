@@ -237,7 +237,7 @@ func TestGhostTenant(t *testing.T) {
 	}
 
 	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
-		Parent: fmt.Sprintf("projects/%s", ctl.project.Name),
+		Parent: ctl.project.Name,
 	})
 	a.NoError(err)
 	databases := resp.Databases

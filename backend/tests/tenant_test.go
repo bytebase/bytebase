@@ -115,9 +115,8 @@ func TestTenant(t *testing.T) {
 		a.NoError(err)
 	}
 
-	// Getting databases for each environment.
 	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
-		Parent: fmt.Sprintf("projects/%s", ctl.project.Name),
+		Parent: ctl.project.Name,
 	})
 	a.NoError(err)
 	databases := resp.Databases
