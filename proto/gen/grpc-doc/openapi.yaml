@@ -4288,8 +4288,8 @@ paths:
     /v1/projects/{project}/databaseGroups:
         get:
             tags:
-                - ProjectService
-            operationId: ProjectService_ListDatabaseGroups
+                - DatabaseGroupService
+            operationId: DatabaseGroupService_ListDatabaseGroups
             parameters:
                 - name: project
                   in: path
@@ -4332,8 +4332,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         post:
             tags:
-                - ProjectService
-            operationId: ProjectService_CreateDatabaseGroup
+                - DatabaseGroupService
+            operationId: DatabaseGroupService_CreateDatabaseGroup
             parameters:
                 - name: project
                   in: path
@@ -4378,8 +4378,8 @@ paths:
     /v1/projects/{project}/databaseGroups/{databaseGroup}:
         get:
             tags:
-                - ProjectService
-            operationId: ProjectService_GetDatabaseGroup
+                - DatabaseGroupService
+            operationId: DatabaseGroupService_GetDatabaseGroup
             parameters:
                 - name: project
                   in: path
@@ -4418,8 +4418,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - ProjectService
-            operationId: ProjectService_DeleteDatabaseGroup
+                - DatabaseGroupService
+            operationId: DatabaseGroupService_DeleteDatabaseGroup
             parameters:
                 - name: project
                   in: path
@@ -4445,8 +4445,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         patch:
             tags:
-                - ProjectService
-            operationId: ProjectService_UpdateDatabaseGroup
+                - DatabaseGroupService
+            operationId: DatabaseGroupService_UpdateDatabaseGroup
             parameters:
                 - name: project
                   in: path
@@ -14540,6 +14540,7 @@ tags:
     - name: BranchService
     - name: CelService
     - name: ChangelistService
+    - name: DatabaseGroupService
     - name: DatabaseService
     - name: EnvironmentService
     - name: IdentityProviderService
