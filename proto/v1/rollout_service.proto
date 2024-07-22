@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/plan_service.proto";
 
@@ -15,6 +16,7 @@ service RolloutService {
   rpc GetRollout(GetRolloutRequest) returns (Rollout) {
     option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.rollouts.get";
   }
 
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
@@ -23,6 +25,7 @@ service RolloutService {
       body: "rollout"
     };
     option (google.api.method_signature) = "parent,rollout";
+    option (bytebase.v1.permission) = "bb.rollouts.create";
   }
 
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
@@ -31,21 +34,25 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.rollouts.preview";
   }
 
   rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.taskRuns.list";
   }
 
   rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.taskRuns.list";
   }
 
   rpc GetTaskRunSession(GetTaskRunSessionRequest) returns (TaskRunSession) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.taskRuns.list";
   }
 
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
@@ -54,6 +61,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    // TODO(d): secure it.
   }
 
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
@@ -62,6 +70,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    // TODO(d): secure it.
   }
 
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
@@ -70,6 +79,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    // TODO(d): secure it.
   }
 }
 

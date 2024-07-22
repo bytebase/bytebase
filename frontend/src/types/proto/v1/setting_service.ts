@@ -4654,6 +4654,7 @@ export const SettingServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800010: [new Uint8Array([16, 98, 98, 46, 115, 101, 116, 116, 105, 110, 103, 115, 46, 108, 105, 115, 116])],
           578365826: [new Uint8Array([14, 18, 12, 47, 118, 49, 47, 115, 101, 116, 116, 105, 110, 103, 115])],
         },
       },
@@ -4667,6 +4668,7 @@ export const SettingServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([15, 98, 98, 46, 115, 101, 116, 116, 105, 110, 103, 115, 46, 103, 101, 116])],
           578365826: [
             new Uint8Array([
               23,
@@ -4706,6 +4708,7 @@ export const SettingServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800010: [new Uint8Array([15, 98, 98, 46, 115, 101, 116, 116, 105, 110, 103, 115, 46, 115, 101, 116])],
           578365826: [
             new Uint8Array([
               40,

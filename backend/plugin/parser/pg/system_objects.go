@@ -752,6 +752,16 @@ var (
 		"_timescaledb_internal":    true,
 		"_timescaledb_config":      true,
 		"squeeze":                  true,
+		// citus extension
+		"citus":          true,
+		"citus_internal": true,
+		// citus columnar extension
+		"columnar":         true,
+		"columar_internal": true,
+		// pg_cron extension
+		"cron": true,
+		// pg_partman extension
+		"partman": true,
 	}
 
 	// systemTables is the list of system tables that we will exclude from the schema sync.

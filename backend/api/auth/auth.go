@@ -14,6 +14,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/golang-jwt/jwt/v5"
 	errs "github.com/pkg/errors"
@@ -23,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -91,17 +96,22 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 		return nil, status.Errorf(codes.Unauthenticated, err.Error())
 	}
 
+	authContext, err := getAuthContext(serverInfo.FullMethod)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
+
 	principalID, err := in.getPrincipalID(ctx, accessTokenStr)
 	if err != nil {
-		if IsAuthenticationAllowed(serverInfo.FullMethod) {
+		if IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
 			return handler(ctx, request)
 		}
 		return nil, err
 	}
 
-	// Stores principalID into context.
-	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
-	return handler(childCtx, request)
+	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+	return handler(ctx, request)
 }
 
 // AuthenticationStreamInterceptor is the unary interceptor for gRPC API.
@@ -116,17 +126,22 @@ func (in *APIAuthInterceptor) AuthenticationStreamInterceptor(request any, ss gr
 		return status.Errorf(codes.Unauthenticated, err.Error())
 	}
 
+	authContext, err := getAuthContext(serverInfo.FullMethod)
+	if err != nil {
+		return err
+	}
+	ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
+
 	principalID, err := in.getPrincipalID(ctx, accessTokenStr)
 	if err != nil {
-		if IsAuthenticationAllowed(serverInfo.FullMethod) {
+		if IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
 			return handler(request, ss)
 		}
 		return err
 	}
 
-	// Stores principalID into context.
-	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
-	sss := overrideStream{ServerStream: ss, childCtx: childCtx}
+	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+	sss := overrideStream{ServerStream: ss, childCtx: ctx}
 	return handler(request, sss)
 }
 
@@ -307,4 +322,37 @@ func generateToken(userName string, userID int, aud string, expirationTime time.
 	}
 
 	return tokenString, nil
+}
+
+func getAuthContext(fullMethod string) (*common.AuthContext, error) {
+	methodTokens := strings.Split(fullMethod, "/")
+	if len(methodTokens) != 3 {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(methodTokens[1]))
+	if err != nil {
+		return nil, errs.Wrapf(err, "invalid full method name %q", fullMethod)
+	}
+	sd, ok := rd.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	md, ok := sd.Methods().ByName(protoreflect.Name(methodTokens[2])).Options().(*descriptorpb.MethodOptions)
+	if !ok {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	allowWithoutCredentialAny := proto.GetExtension(md, v1pb.E_AllowWithoutCredential)
+	allowWithoutCredential, ok := allowWithoutCredentialAny.(bool)
+	if !ok {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	permissionAny := proto.GetExtension(md, v1pb.E_Permission)
+	permission, ok := permissionAny.(string)
+	if !ok {
+		return nil, errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	return &common.AuthContext{
+		AllowWithoutCredential: allowWithoutCredential,
+		Permission:             permission,
+	}, nil
 }

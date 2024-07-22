@@ -283,7 +283,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		doMigrate = false
 	}
 	if doMigrate {
-		var renderedStatement = statement
+		renderedStatement := statement
 		// The m.DatabaseID is nil means the migration is a instance level migration
 		if m.DatabaseID != nil {
 			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -688,6 +688,7 @@ func CheckDatabaseGroupMatch(ctx context.Context, databaseGroup *store.DatabaseG
 			"database_name":    database.DatabaseName,
 			"environment_name": common.FormatEnvironment(database.EffectiveEnvironmentID),
 			"instance_id":      database.InstanceID,
+			"labels":           database.Metadata.Labels,
 		},
 	})
 	if err != nil {
@@ -717,14 +718,6 @@ func Uniq[T comparable](array []T) []T {
 	}
 
 	return res
-}
-
-func IsNumber(v string) (int, bool) {
-	n, err := strconv.Atoi(v)
-	if err == nil {
-		return int(n), true
-	}
-	return 0, false
 }
 
 // ConvertBytesToUTF8String tries to decode a byte slice into a UTF-8 string using common encodings.

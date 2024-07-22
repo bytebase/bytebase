@@ -49,14 +49,20 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 	}
 
-	if auth.IsAuthenticationAllowed(serverInfo.FullMethod) {
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "auth context not found2")
+	}
+
+	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
 		return handler(ctx, request)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.aclInterceptorDo(ctx, serverInfo.FullMethod, request, user); err != nil {
+	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
 		return nil, err
 	}
 
@@ -82,14 +88,20 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		ss = overrideStream{ServerStream: ss, childCtx: ctx}
 	}
 
-	if auth.IsAuthenticationAllowed(serverInfo.FullMethod) {
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return status.Errorf(codes.Internal, "auth context not found3")
+	}
+
+	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
 		return handler(request, ss)
 	}
 	if user == nil {
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.aclInterceptorDo(ctx, serverInfo.FullMethod, request, user); err != nil {
+	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
 		return err
 	}
 
@@ -103,10 +115,6 @@ type overrideStream struct {
 
 func (s overrideStream) Context() context.Context {
 	return s.childCtx
-}
-
-func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod string, request any, user *store.UserMessage) error {
-	return in.checkIAMPermission(ctx, fullMethod, request, user)
 }
 
 func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, error) {
