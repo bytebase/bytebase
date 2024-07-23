@@ -4,7 +4,6 @@ package bytebase.store;
 
 import "google/protobuf/any.proto";
 import "google/rpc/status.proto";
-import "store/policy.proto";
 
 option go_package = "generated-go/store";
 
@@ -50,8 +49,4 @@ message AuditLog {
     ALERT = 7;
     EMERGENCY = 8;
   }
-}
-
-message AuditData {
-  PolicyDelta policy_delta = 1;
 }

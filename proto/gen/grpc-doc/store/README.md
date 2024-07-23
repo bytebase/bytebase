@@ -36,33 +36,7 @@
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
     - [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel)
   
-- [store/policy.proto](#store_policy-proto)
-    - [Binding](#bytebase-store-Binding)
-    - [BindingDelta](#bytebase-store-BindingDelta)
-    - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
-    - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
-    - [IamPolicy](#bytebase-store-IamPolicy)
-    - [MaskData](#bytebase-store-MaskData)
-    - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
-    - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
-    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
-    - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
-    - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
-    - [PolicyDelta](#bytebase-store-PolicyDelta)
-    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
-    - [RolloutPolicy](#bytebase-store-RolloutPolicy)
-    - [SQLReviewRule](#bytebase-store-SQLReviewRule)
-    - [SlowQueryPolicy](#bytebase-store-SlowQueryPolicy)
-    - [TagPolicy](#bytebase-store-TagPolicy)
-    - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
-  
-    - [BindingDelta.Action](#bytebase-store-BindingDelta-Action)
-    - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
-    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
-    - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
-  
 - [store/audit_log.proto](#store_audit_log-proto)
-    - [AuditData](#bytebase-store-AuditData)
     - [AuditLog](#bytebase-store-AuditLog)
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
@@ -200,6 +174,31 @@
   
     - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
+  
+- [store/policy.proto](#store_policy-proto)
+    - [Binding](#bytebase-store-Binding)
+    - [BindingDelta](#bytebase-store-BindingDelta)
+    - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
+    - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
+    - [IamPolicy](#bytebase-store-IamPolicy)
+    - [MaskData](#bytebase-store-MaskData)
+    - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
+    - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
+    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
+    - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
+    - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+    - [PolicyDelta](#bytebase-store-PolicyDelta)
+    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
+    - [RolloutPolicy](#bytebase-store-RolloutPolicy)
+    - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [SlowQueryPolicy](#bytebase-store-SlowQueryPolicy)
+    - [TagPolicy](#bytebase-store-TagPolicy)
+    - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
+  
+    - [BindingDelta.Action](#bytebase-store-BindingDelta-Action)
+    - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
+    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
+    - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
     - [Label](#bytebase-store-Label)
@@ -748,390 +747,10 @@ ANY means approving any node will proceed.
 
 
 
-<a name="store_policy-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/policy.proto
-
-
-
-<a name="bytebase-store-Binding"></a>
-
-### Binding
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-
-
-
-
-
-
-<a name="bytebase-store-BindingDelta"></a>
-
-### BindingDelta
-One delta entry for Binding. Each individual change (only one member in each
-entry) to a binding will be a separate entry.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [BindingDelta.Action](#bytebase-store-BindingDelta-Action) |  | The action that was performed on a Binding. |
-| role | [string](#string) |  | Role that is assigned to `members`. For example, `roles/projectOwner`. |
-| member | [string](#string) |  | Follows the same format of Binding.members. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. |
-
-
-
-
-
-
-<a name="bytebase-store-DisableCopyDataPolicy"></a>
-
-### DisableCopyDataPolicy
-DisableCopyDataPolicy is the policy configuration for disabling copying data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-EnvironmentTierPolicy"></a>
-
-### EnvironmentTierPolicy
-EnvironmentTierPolicy is the tier of an environment.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environment_tier | [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-IamPolicy"></a>
-
-### IamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single role. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskData"></a>
-
-### MaskData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingExceptionPolicy"></a>
-
-### MaskingExceptionPolicy
-MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingExceptionPolicy-MaskingException"></a>
-
-### MaskingExceptionPolicy.MaskingException
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
-| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
-
-Format: users/{userUID} or groups/{group email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingPolicy"></a>
-
-### MaskingPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingRulePolicy"></a>
-
-### MaskingRulePolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rules | [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingRulePolicy-MaskingRule"></a>
-
-### MaskingRulePolicy.MaskingRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | A unique identifier for a node in UUID format. |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PolicyDelta"></a>
-
-### PolicyDelta
-The difference delta between two policies.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| binding_deltas | [BindingDelta](#bytebase-store-BindingDelta) | repeated | The delta for Bindings between two policies. |
-
-
-
-
-
-
-<a name="bytebase-store-RestrictIssueCreationForSQLReviewPolicy"></a>
-
-### RestrictIssueCreationForSQLReviewPolicy
-RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-RolloutPolicy"></a>
-
-### RolloutPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| automatic | [bool](#bool) |  |  |
-| workspace_roles | [string](#string) | repeated |  |
-| project_roles | [string](#string) | repeated |  |
-| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
-
-
-
-
-
-
-<a name="bytebase-store-SQLReviewRule"></a>
-
-### SQLReviewRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [string](#string) |  |  |
-| level | [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel) |  |  |
-| payload | [string](#string) |  |  |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SlowQueryPolicy"></a>
-
-### SlowQueryPolicy
-SlowQueryPolicy is the policy configuration for slow query.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TagPolicy"></a>
-
-### TagPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; |
-
-
-
-
-
-
-<a name="bytebase-store-TagPolicy-TagsEntry"></a>
-
-### TagPolicy.TagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-BindingDelta-Action"></a>
-
-### BindingDelta.Action
-The type of action performed on a Binding in a policy.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| ADD | 1 |  |
-| REMOVE | 2 |  |
-
-
-
-<a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>
-
-### EnvironmentTierPolicy.EnvironmentTier
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
-| PROTECTED | 1 |  |
-| UNPROTECTED | 2 |  |
-
-
-
-<a name="bytebase-store-MaskingExceptionPolicy-MaskingException-Action"></a>
-
-### MaskingExceptionPolicy.MaskingException.Action
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| QUERY | 1 |  |
-| EXPORT | 2 |  |
-
-
-
-<a name="bytebase-store-SQLReviewRuleLevel"></a>
-
-### SQLReviewRuleLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
-| DISABLED | 3 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="store_audit_log-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/audit_log.proto
-
-
-
-<a name="bytebase-store-AuditData"></a>
-
-### AuditData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy_delta | [PolicyDelta](#bytebase-store-PolicyDelta) |  |  |
-
-
-
 
 
 
@@ -3190,6 +2809,371 @@ Type is the database change type.
 | ERROR | 1 |  |
 | WARNING | 2 |  |
 | SUCCESS | 3 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_policy-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/policy.proto
+
+
+
+<a name="bytebase-store-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+
+
+
+
+
+
+<a name="bytebase-store-BindingDelta"></a>
+
+### BindingDelta
+One delta entry for Binding. Each individual change (only one member in each
+entry) to a binding will be a separate entry.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [BindingDelta.Action](#bytebase-store-BindingDelta-Action) |  | The action that was performed on a Binding. |
+| role | [string](#string) |  | Role that is assigned to `members`. For example, `roles/projectOwner`. |
+| member | [string](#string) |  | Follows the same format of Binding.members. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. |
+
+
+
+
+
+
+<a name="bytebase-store-DisableCopyDataPolicy"></a>
+
+### DisableCopyDataPolicy
+DisableCopyDataPolicy is the policy configuration for disabling copying data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-EnvironmentTierPolicy"></a>
+
+### EnvironmentTierPolicy
+EnvironmentTierPolicy is the tier of an environment.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| environment_tier | [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IamPolicy"></a>
+
+### IamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. A binding binds one or more members or groups to a single role. |
+
+
+
+
+
+
+<a name="bytebase-store-MaskData"></a>
+
+### MaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingExceptionPolicy"></a>
+
+### MaskingExceptionPolicy
+MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingExceptionPolicy-MaskingException"></a>
+
+### MaskingExceptionPolicy.MaskingException
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
+| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
+
+Format: users/{userUID} or groups/{group email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingPolicy"></a>
+
+### MaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingRulePolicy"></a>
+
+### MaskingRulePolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingRulePolicy-MaskingRule"></a>
+
+### MaskingRulePolicy.MaskingRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PolicyDelta"></a>
+
+### PolicyDelta
+The difference delta between two policies.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| binding_deltas | [BindingDelta](#bytebase-store-BindingDelta) | repeated | The delta for Bindings between two policies. |
+
+
+
+
+
+
+<a name="bytebase-store-RestrictIssueCreationForSQLReviewPolicy"></a>
+
+### RestrictIssueCreationForSQLReviewPolicy
+RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disallow | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-RolloutPolicy"></a>
+
+### RolloutPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| automatic | [bool](#bool) |  |  |
+| workspace_roles | [string](#string) | repeated |  |
+| project_roles | [string](#string) | repeated |  |
+| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
+
+
+
+
+
+
+<a name="bytebase-store-SQLReviewRule"></a>
+
+### SQLReviewRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  |  |
+| level | [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel) |  |  |
+| payload | [string](#string) |  |  |
+| engine | [Engine](#bytebase-store-Engine) |  |  |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+SlowQueryPolicy is the policy configuration for slow query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy"></a>
+
+### TagPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; |
+
+
+
+
+
+
+<a name="bytebase-store-TagPolicy-TagsEntry"></a>
+
+### TagPolicy.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-BindingDelta-Action"></a>
+
+### BindingDelta.Action
+The type of action performed on a Binding in a policy.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| ADD | 1 |  |
+| REMOVE | 2 |  |
+
+
+
+<a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>
+
+### EnvironmentTierPolicy.EnvironmentTier
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
+| PROTECTED | 1 |  |
+| UNPROTECTED | 2 |  |
+
+
+
+<a name="bytebase-store-MaskingExceptionPolicy-MaskingException-Action"></a>
+
+### MaskingExceptionPolicy.MaskingException.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
+
+
+
+<a name="bytebase-store-SQLReviewRuleLevel"></a>
+
+### SQLReviewRuleLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| DISABLED | 3 |  |
 
 
  

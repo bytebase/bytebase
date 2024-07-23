@@ -3,7 +3,6 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Any } from "../google/protobuf/any";
 import { Status } from "../google/rpc/status";
-import { PolicyDelta } from "./policy";
 
 export const protobufPackage = "bytebase.store";
 
@@ -138,10 +137,6 @@ export function auditLog_SeverityToNumber(object: AuditLog_Severity): number {
     default:
       return -1;
   }
-}
-
-export interface AuditData {
-  policyDelta: PolicyDelta | undefined;
 }
 
 function createBaseAuditLog(): AuditLog {
@@ -332,65 +327,6 @@ export const AuditLog = {
       : undefined;
     message.serviceData = (object.serviceData !== undefined && object.serviceData !== null)
       ? Any.fromPartial(object.serviceData)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseAuditData(): AuditData {
-  return { policyDelta: undefined };
-}
-
-export const AuditData = {
-  encode(message: AuditData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.policyDelta !== undefined) {
-      PolicyDelta.encode(message.policyDelta, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): AuditData {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAuditData();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.policyDelta = PolicyDelta.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AuditData {
-    return { policyDelta: isSet(object.policyDelta) ? PolicyDelta.fromJSON(object.policyDelta) : undefined };
-  },
-
-  toJSON(message: AuditData): unknown {
-    const obj: any = {};
-    if (message.policyDelta !== undefined) {
-      obj.policyDelta = PolicyDelta.toJSON(message.policyDelta);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<AuditData>): AuditData {
-    return AuditData.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<AuditData>): AuditData {
-    const message = createBaseAuditData();
-    message.policyDelta = (object.policyDelta !== undefined && object.policyDelta !== null)
-      ? PolicyDelta.fromPartial(object.policyDelta)
       : undefined;
     return message;
   },
