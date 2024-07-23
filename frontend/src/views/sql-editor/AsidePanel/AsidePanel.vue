@@ -76,7 +76,7 @@ watch([project, projectContextReady], ([project, ready]) => {
 });
 
 const handleSwitchProject = (name: string | undefined) => {
-  if (!isValidProjectName(name)) {
+  if (!name || !isValidProjectName(name)) {
     project.value = "";
   } else {
     project.value = name;

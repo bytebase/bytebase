@@ -118,7 +118,7 @@ const value = computed(() => {
 });
 
 const prepare = () => {
-  if (isValidProjectName(props.projectName)) {
+  if (props.projectName && isValidProjectName(props.projectName)) {
     projectV1Store.getOrFetchProjectByName(props.projectName);
   } else {
     // Need not to fetch the entire member list since it's done in
@@ -164,9 +164,10 @@ const getUserListFromWorkspace = () => {
 };
 
 const rawUserList = computed(() => {
-  const list = isValidProjectName(props.projectName)
-    ? getUserListFromProject(props.projectName)
-    : getUserListFromWorkspace();
+  const list =
+    props.projectName && isValidProjectName(props.projectName)
+      ? getUserListFromProject(props.projectName)
+      : getUserListFromWorkspace();
 
   return list.filter((user) => {
     if (
