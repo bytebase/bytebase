@@ -196,11 +196,11 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.ProjectService_RemoveWebhook_FullMethodName,
 		v1pb.ProjectService_TestWebhook_FullMethodName,
 
-		v1pb.ProjectService_GetDatabaseGroup_FullMethodName,
-		v1pb.ProjectService_CreateDatabaseGroup_FullMethodName,
-		v1pb.ProjectService_UpdateDatabaseGroup_FullMethodName,
-		v1pb.ProjectService_DeleteDatabaseGroup_FullMethodName,
-		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
+		v1pb.DatabaseGroupService_GetDatabaseGroup_FullMethodName,
+		v1pb.DatabaseGroupService_CreateDatabaseGroup_FullMethodName,
+		v1pb.DatabaseGroupService_UpdateDatabaseGroup_FullMethodName,
+		v1pb.DatabaseGroupService_DeleteDatabaseGroup_FullMethodName,
+		v1pb.DatabaseGroupService_ListDatabaseGroups_FullMethodName,
 
 		v1pb.ProjectService_GetProjectProtectionRules_FullMethodName,
 		v1pb.ProjectService_UpdateProjectProtectionRules_FullMethodName:
