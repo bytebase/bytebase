@@ -262,7 +262,7 @@ const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 const disallowExportQueryData = useAppFeature(
-  "bb.feature.disallow-export-query-data"
+  "bb.feature.sql-editor.disallow-export-query-data"
 );
 
 const viewMode = computed((): ViewMode => {
