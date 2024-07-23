@@ -4,9 +4,12 @@ import (
 	"context"
 	"log/slog"
 
+	annotationsproto "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/pkg/errors"
@@ -365,4 +368,47 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 		return false, errors.Wrapf(err, "failed to search databases")
 	}
 	return len(databases) > 0, nil
+}
+
+func getResourceFromRequest(request any) string {
+	var resource string
+	pm, ok := request.(proto.Message)
+	if !ok {
+		return ""
+	}
+	mr := pm.ProtoReflect()
+
+	parentDesc := mr.Descriptor().Fields().ByName("parent")
+	if parentDesc != nil {
+		v := mr.Get(parentDesc)
+		return v.String()
+	}
+	nameDesc := mr.Descriptor().Fields().ByName("name")
+	if nameDesc != nil {
+		v := mr.Get(nameDesc)
+		return v.String()
+	}
+
+	mr.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if fd.Name() == "name" {
+			resource = v.String()
+			return false
+		}
+		fdm := fd.Message()
+		if fdm == nil {
+			return true
+		}
+		if !proto.HasExtension(fdm.Options(), annotationsproto.E_Resource) {
+			return true
+		}
+
+		nameDesc := fdm.Fields().ByName("name")
+		if nameDesc != nil {
+			rn := v.Message().Get(nameDesc)
+			resource = rn.String()
+			return false
+		}
+		return false
+	})
+	return resource
 }
