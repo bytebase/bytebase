@@ -18,6 +18,7 @@ service IssueService {
     option (google.api.http) = {get: "/v1/{name=projects/*/issues/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.issues.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc CreateIssue(CreateIssueRequest) returns (Issue) {
@@ -28,12 +29,14 @@ service IssueService {
     option (google.api.method_signature) = "parent,issue";
     // XXX: issues.action needs respective plans.action and rollouts.action permissions if the issue type is change database.
     option (bytebase.v1.permission) = "bb.issues.create";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/issues"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issues.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
@@ -41,6 +44,7 @@ service IssueService {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/issues:search"};
     // TODO(d): secure it.
     option (bytebase.v1.permission) = "bb.issues.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateIssue(UpdateIssueRequest) returns (Issue) {
@@ -50,12 +54,14 @@ service IssueService {
     };
     option (google.api.method_signature) = "issue,update_mask";
     option (bytebase.v1.permission) = "bb.issues.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListIssueComments(ListIssueCommentsRequest) returns (ListIssueCommentsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/issues/*}/issueComments"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issueComments.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
@@ -65,6 +71,7 @@ service IssueService {
     };
     option (google.api.method_signature) = "parent,issue_comment";
     option (bytebase.v1.permission) = "bb.issueComments.create";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
@@ -74,6 +81,7 @@ service IssueService {
     };
     option (google.api.method_signature) = "parent,issue_comment,update_mask";
     option (bytebase.v1.permission) = "bb.issueComments.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc BatchUpdateIssuesStatus(BatchUpdateIssuesStatusRequest) returns (BatchUpdateIssuesStatusResponse) {
@@ -82,6 +90,7 @@ service IssueService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.issues.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
@@ -89,6 +98,7 @@ service IssueService {
       post: "/v1/{name=projects/*/issues/*}:approve"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it. Controlled by org policy.
   }
 
@@ -97,6 +107,7 @@ service IssueService {
       post: "/v1/{name=projects/*/issues/*}:reject"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it. Controlled by org policy.
   }
 
@@ -105,6 +116,7 @@ service IssueService {
       post: "/v1/{name=projects/*/issues/*}:request"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it. Controlled by org policy.
   }
 }

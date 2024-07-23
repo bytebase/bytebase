@@ -3288,6 +3288,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               80,
@@ -3384,6 +3385,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               84,
@@ -3528,6 +3530,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               27,
@@ -3571,6 +3574,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               126,
@@ -3713,6 +3717,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               26,
@@ -3755,6 +3760,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([18, 58, 1, 42, 34, 13, 47, 118, 49, 47, 115, 113, 108, 47, 99, 104, 101, 99, 107]),
           ],
@@ -3770,6 +3776,7 @@ export const SQLServiceDefinition = {
       options: {
         _unknownFields: {
           800000: [new Uint8Array([1])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               31,
@@ -3817,6 +3824,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 115, 113, 108, 47, 112, 114, 101, 116, 116, 121]),
           ],
@@ -3831,6 +3839,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               39,
@@ -3886,6 +3895,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               58,

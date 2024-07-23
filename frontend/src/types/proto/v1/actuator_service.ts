@@ -1048,6 +1048,7 @@ export const ActuatorServiceDefinition = {
               107,
             ]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               29,
@@ -1131,6 +1132,7 @@ export const ActuatorServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               20,

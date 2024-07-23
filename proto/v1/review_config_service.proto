@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/org_policy_service.proto";
 
 option go_package = "generated-go/v1";
@@ -19,16 +20,19 @@ service ReviewConfigService {
       body: "review_config"
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListReviewConfigs(ListReviewConfigsRequest) returns (ListReviewConfigsResponse) {
     option (google.api.http) = {get: "/v1/reviewConfigs"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GetReviewConfig(GetReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {get: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
@@ -37,11 +41,13 @@ service ReviewConfigService {
       body: "review_config"
     };
     option (google.api.method_signature) = "review_config,update_mask";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeleteReviewConfig(DeleteReviewConfigRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 

@@ -37,6 +37,7 @@ service DatabaseService {
 
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.databases.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Deprecated. This will be removed in the next release.
@@ -45,6 +46,7 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/databases:search"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.databases.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
@@ -108,6 +110,7 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/slowQueries"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.slowQueries.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {

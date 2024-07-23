@@ -5139,6 +5139,7 @@ export const RolloutServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               63,
@@ -5219,6 +5220,7 @@ export const RolloutServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               64,
@@ -5300,6 +5302,7 @@ export const RolloutServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               77,
