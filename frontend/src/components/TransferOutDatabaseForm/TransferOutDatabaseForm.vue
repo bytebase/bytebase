@@ -138,7 +138,7 @@ watch(
 
 const targetProject = computed(() => {
   const name = targetProjectName.value;
-  if (!isValidProjectName(name)) return undefined;
+  if (!name || !isValidProjectName(name)) return undefined;
   return projectStore.getProjectByName(name);
 });
 

@@ -39,7 +39,7 @@ export const useRecentProjects = () => {
       })
       .filter(
         (project) =>
-          isValidProjectName(project) &&
+          isValidProjectName(project.name) &&
           hasProjectPermissionV2(project, currentUser.value, "bb.projects.get")
       );
   });
