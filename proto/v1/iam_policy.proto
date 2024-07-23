@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/type/expr.proto";
+import "v1/audit_log_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -57,11 +58,4 @@ message Binding {
 
   // The parsed expression of the condition.
   google.api.expr.v1alpha1.ParsedExpr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
-
-message BindingDelta {
-  string action = 1;
-  string member = 2;
-  string role = 3;
-  google.type.Expr condition = 4;
 }

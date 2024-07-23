@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Expr } from "../google/type/expr";
+import { BindingDelta } from "./audit_log_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -66,13 +67,6 @@ export interface Binding {
     | undefined;
   /** The parsed expression of the condition. */
   parsedExpr: ParsedExpr | undefined;
-}
-
-export interface BindingDelta {
-  action: string;
-  member: string;
-  role: string;
-  condition: Expr | undefined;
 }
 
 function createBaseGetIamPolicyRequest(): GetIamPolicyRequest {
@@ -417,112 +411,6 @@ export const Binding = {
       : undefined;
     message.parsedExpr = (object.parsedExpr !== undefined && object.parsedExpr !== null)
       ? ParsedExpr.fromPartial(object.parsedExpr)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseBindingDelta(): BindingDelta {
-  return { action: "", member: "", role: "", condition: undefined };
-}
-
-export const BindingDelta = {
-  encode(message: BindingDelta, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.action !== "") {
-      writer.uint32(10).string(message.action);
-    }
-    if (message.member !== "") {
-      writer.uint32(18).string(message.member);
-    }
-    if (message.role !== "") {
-      writer.uint32(26).string(message.role);
-    }
-    if (message.condition !== undefined) {
-      Expr.encode(message.condition, writer.uint32(34).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BindingDelta {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBindingDelta();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.action = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.member = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.role = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.condition = Expr.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BindingDelta {
-    return {
-      action: isSet(object.action) ? globalThis.String(object.action) : "",
-      member: isSet(object.member) ? globalThis.String(object.member) : "",
-      role: isSet(object.role) ? globalThis.String(object.role) : "",
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-    };
-  },
-
-  toJSON(message: BindingDelta): unknown {
-    const obj: any = {};
-    if (message.action !== "") {
-      obj.action = message.action;
-    }
-    if (message.member !== "") {
-      obj.member = message.member;
-    }
-    if (message.role !== "") {
-      obj.role = message.role;
-    }
-    if (message.condition !== undefined) {
-      obj.condition = Expr.toJSON(message.condition);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<BindingDelta>): BindingDelta {
-    return BindingDelta.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<BindingDelta>): BindingDelta {
-    const message = createBaseBindingDelta();
-    message.action = object.action ?? "";
-    message.member = object.member ?? "";
-    message.role = object.role ?? "";
-    message.condition = (object.condition !== undefined && object.condition !== null)
-      ? Expr.fromPartial(object.condition)
       : undefined;
     return message;
   },

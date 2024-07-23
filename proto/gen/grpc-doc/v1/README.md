@@ -44,6 +44,7 @@
   
 - [v1/audit_log_service.proto](#v1_audit_log_service-proto)
     - [AuditLog](#bytebase-v1-AuditLog)
+    - [BindingDelta](#bytebase-v1-BindingDelta)
     - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
     - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
     - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
@@ -245,7 +246,6 @@
   
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
-    - [BindingDelta](#bytebase-v1-BindingDelta)
     - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [IamPolicy](#bytebase-v1-IamPolicy)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
@@ -1221,6 +1221,24 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | request | [string](#string) |  | JSON-encoded request. |
 | response | [string](#string) |  | JSON-encoded response. Some fields are omitted because they are too large or contain sensitive information. |
 | status | [google.rpc.Status](#google-rpc-Status) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BindingDelta"></a>
+
+### BindingDelta
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [string](#string) |  |  |
+| member | [string](#string) |  |  |
+| role | [string](#string) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 
@@ -4321,24 +4339,6 @@ The environment&#39;s `name` field is used to identify the environment to update
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
 | parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
-
-
-
-
-
-
-<a name="bytebase-v1-BindingDelta"></a>
-
-### BindingDelta
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [string](#string) |  |  |
-| member | [string](#string) |  |  |
-| role | [string](#string) |  |  |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 

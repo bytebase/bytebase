@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/rpc/status.proto";
+import "google/type/expr.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -122,4 +123,11 @@ message AuditLog {
     ALERT = 7;
     EMERGENCY = 8;
   }
+}
+
+message BindingDelta {
+  string action = 1;
+  string member = 2;
+  string role = 3;
+  google.type.Expr condition = 4;
 }
