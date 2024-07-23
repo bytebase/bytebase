@@ -35,8 +35,16 @@ const (
 	AuthMethodCustom
 )
 
+type Resource struct {
+	Type      string
+	Name      string
+	Project   string
+	Workspace bool
+}
+
 type AuthContext struct {
 	AllowWithoutCredential bool
 	Permission             string
 	AuthMethod             AuthMethod
+	Resources              []*Resource
 }
