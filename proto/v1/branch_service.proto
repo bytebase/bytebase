@@ -43,24 +43,28 @@ service BranchService {
     };
     option (google.api.method_signature) = "branch,update_mask";
     option (bytebase.v1.permission) = "bb.branches.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc MergeBranch(MergeBranchRequest) returns (Branch) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc RebaseBranch(RebaseBranchRequest) returns (RebaseBranchResponse) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:rebase"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeleteBranch(DeleteBranchRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/branches/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.delete";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // DiffDatabase works similar to branch rebase.

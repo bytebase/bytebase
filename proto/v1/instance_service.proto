@@ -36,6 +36,7 @@ service InstanceService {
       additional_bindings: {get: "/v1/{parent=projects/*}/instances:search"}
     };
     option (google.api.method_signature) = "";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
