@@ -8738,6 +8738,10 @@ components:
                          Some fields are omitted because they are too large or contain sensitive information.
                 status:
                     $ref: '#/components/schemas/Status'
+                serviceData:
+                    allOf:
+                        - $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: service-specific data about the request, response, and other activities.
         BatchCancelPlanCheckRunsRequest:
             type: object
             properties:
