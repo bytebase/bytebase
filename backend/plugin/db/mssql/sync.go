@@ -221,6 +221,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 				INNER JOIN sys.all_objects AS O ON EP.major_id = O.object_id
 				INNER JOIN sys.schemas AS S ON O.schema_id = S.schema_id
 				INNER JOIN sys.columns AS C ON EP.major_id = C.object_id AND EP.minor_id = C.column_id
+			WHERE S.name IS NOT NULL AND O.name IS NOT NULL AND C.name IS NOT NULL
 		) IJ ON IJ.SchemaName = IC.table_schema AND IJ.TableName = IC.table_name AND IJ.ColumnName = IC.column_name
 		ORDER BY IC.table_schema, IC.table_name, IC.ordinal_position;`
 	rows, err := txn.Query(query)
