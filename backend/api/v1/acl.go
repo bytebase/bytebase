@@ -44,7 +44,18 @@ func NewACLInterceptor(store *store.Store, secret string, iamManager *iam.Manage
 }
 
 // ACLInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ any, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", serverInfo.FullMethod, perr)
+
+			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
+		}
+	}()
 	user, err := in.getUser(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
@@ -75,15 +86,31 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
-		return nil, err
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", serverInfo.FullMethod, authContext.Permission, extra)
 	}
 
 	return handler(ctx, request)
 }
 
 // ACLStreamInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", serverInfo.FullMethod, perr)
+
+			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
+		}
+	}()
+
 	ctx := ss.Context()
 
 	user, err := in.getUser(ctx)
@@ -117,8 +144,12 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
-		return err
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
+	}
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", serverInfo.FullMethod, authContext.Permission, extra)
 	}
 
 	return handler(request, ss)
@@ -166,29 +197,6 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 		}
 	}
 	return false
-}
-
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			perr, ok := r.(error)
-			if !ok {
-				perr = errors.Errorf("%v", r)
-			}
-			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", fullMethod, perr)
-
-			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
-		}
-	}()
-	ok, extra, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user, authContext)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err)
-	}
-	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra)
-	}
-
-	return nil
 }
 
 func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
