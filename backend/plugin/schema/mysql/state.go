@@ -1162,7 +1162,7 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 					if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s", subPartition.name)); err != nil {
 						return err
 					}
-					if err := p.writePartitionOptions(buf); err != nil {
+					if err := writePartitionOptions(buf); err != nil {
 						return err
 					}
 					if j == len(sortedSubpartitions)-1 {
@@ -1176,7 +1176,7 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 					}
 				}
 			} else {
-				if err := p.writePartitionOptions(buf); err != nil {
+				if err := writePartitionOptions(buf); err != nil {
 					return err
 				}
 			}
@@ -1196,7 +1196,7 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 	return nil
 }
 
-func (*partitionState) writePartitionOptions(buf io.StringWriter) error {
+func writePartitionOptions(buf io.StringWriter) error {
 	/*
 		int err = 0;
 		err += add_space(fptr);
