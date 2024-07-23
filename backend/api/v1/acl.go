@@ -183,18 +183,11 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	return nil
 }
 
-func isSkippedMethod(fullMethod string, authContext *common.AuthContext) bool {
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
-		return true
+		return true, nil, nil
 	}
 	if authContext.AuthMethod == common.AuthMethodCustom {
-		return true
-	}
-	return false
-}
-
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
-	if isSkippedMethod(fullMethod, authContext) {
 		return true, nil, nil
 	}
 
