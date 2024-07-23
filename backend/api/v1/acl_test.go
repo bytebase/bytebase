@@ -61,6 +61,13 @@ func TestGetResourceFromRequest(t *testing.T) {
 			method: "/bytebase.v1.InstanceService/UpdateInstance",
 			want:   nil,
 		},
+		{
+			request: &v1pb.UpdateSubscriptionRequest{
+				Patch: &v1pb.PatchSubscription{License: "123"},
+			},
+			method: "/bytebase.v1.SubscriptionService/UpdateSubscription",
+			want:   nil,
+		},
 	}
 
 	for _, tt := range tests {

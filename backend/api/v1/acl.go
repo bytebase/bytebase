@@ -317,12 +317,15 @@ func getResourceFromRequest(request any, method string) *common.Resource {
 	}
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
-	resourceValue := mr.Get(resourceDesc)
-	if resourceDesc != nil && proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
+	if resourceDesc == nil {
+		return nil
+	}
+	if proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
 		// Parent-less resource. Return workspace resource for Create() method.
 		if isCreate {
 			return &common.Resource{Workspace: true}
 		}
+		resourceValue := mr.Get(resourceDesc)
 		resourceNameDesc := resourceDesc.Message().Fields().ByName("name")
 		if resourceNameDesc != nil {
 			v := resourceValue.Message().Get(resourceNameDesc)
