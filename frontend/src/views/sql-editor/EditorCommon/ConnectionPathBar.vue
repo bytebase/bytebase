@@ -58,9 +58,11 @@
             <heroicons-outline:database />
             <span class="ml-2">{{ database.databaseName }}</span>
 
-            <HideInStandaloneMode>
-              <ReadonlyDatasourceHint :instance="instance" class="ml-1" />
-            </HideInStandaloneMode>
+            <ReadonlyDatasourceHint
+              v-if="!hideReadonlyDatasourceHint"
+              :instance="instance"
+              class="ml-1"
+            />
           </div>
         </div>
       </NButton>
@@ -96,9 +98,9 @@
 import { NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
+  useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -112,6 +114,9 @@ import ReadonlyDatasourceHint from "./ReadonlyDatasourceHint.vue";
 const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { showConnectionPanel } = useSQLEditorContext();
 const { projectContextReady } = storeToRefs(useSQLEditorStore());
+const hideReadonlyDatasourceHint = useAppFeature(
+  "bb.feature.sql-editor.hide-readonly-datasource-hint"
+);
 
 const { instance, database, environment } =
   useConnectionOfCurrentSQLEditorTab();

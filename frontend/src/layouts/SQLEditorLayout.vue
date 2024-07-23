@@ -5,7 +5,7 @@
       class="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
     ></ul>
 
-    <BannersWrapper v-if="showBanners" />
+    <BannersWrapper />
     <template v-if="ready">
       <ProvideSQLEditorSettingContext v-if="isSettingPage" />
       <ProvideSQLEditorContext v-else />
@@ -23,7 +23,6 @@ import ProvideSQLEditorSettingContext from "@/components/ProvideSQLEditorSetting
 import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
 import {
   useEnvironmentV1Store,
-  usePageMode,
   usePolicyV1Store,
   useRoleStore,
   useSettingV1Store,
@@ -33,7 +32,6 @@ import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 
 const router = useRouter();
-const pageMode = usePageMode();
 
 // provide context for SQL Editor
 provideSQLEditorContext();
@@ -44,10 +42,6 @@ const isSettingPage = computed(() => {
   return !!router.currentRoute.value.matched.find(
     (r) => r.name === SQL_EDITOR_SETTING_MODULE
   );
-});
-
-const showBanners = computed(() => {
-  return pageMode.value === "BUNDLED";
 });
 
 const ready = ref(false);

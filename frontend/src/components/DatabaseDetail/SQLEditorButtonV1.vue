@@ -21,7 +21,7 @@
     v-if="state.showRequestQueryPanel"
     :project-name="database?.project"
     :database="database"
-    :redirect-to-issue-page="pageMode === 'BUNDLED'"
+    :redirect-to-issue-page="!disallowNavigateToConsole"
     @close="state.showRequestQueryPanel = false"
   />
 </template>
@@ -33,7 +33,11 @@ import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
+import {
+  useCurrentUserV1,
+  useAppFeature,
+  useSQLEditorTreeStore,
+} from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import type { VueClass } from "@/utils";
@@ -74,7 +78,9 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
-const pageMode = usePageMode();
+const disallowNavigateToConsole = useAppFeature(
+  "bb.feature.disallow-navigate-to-console"
+);
 const state = reactive<LocalState>({
   showRequestQueryPanel: false,
 });
