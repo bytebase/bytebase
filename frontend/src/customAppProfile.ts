@@ -54,7 +54,7 @@ export const overrideAppProfile = () => {
     });
     if (actuatorStore.appProfile.embedded) {
       actuatorStore.overrideAppFeatures({
-        "bb.feature.hide-issue-review-actions": true,
+        "bb.feature.issue.hide-review-actions": true,
       });
     }
   }

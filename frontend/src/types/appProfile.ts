@@ -9,11 +9,11 @@ export type AppFeatures = {
   "bb.feature.hide-help": boolean;
   "bb.feature.hide-quick-start": boolean;
   "bb.feature.hide-release-remind": boolean;
-  "bb.feature.hide-issue-review-actions": boolean;
   "bb.feature.console.hide-sidebar": boolean;
   "bb.feature.console.hide-header": boolean;
   "bb.feature.console.hide-quick-action": boolean;
   "bb.feature.project.hide-default": boolean;
+  "bb.feature.issue.hide-review-actions": boolean;
   "bb.feature.issue.disable-schema-editor": boolean;
   "bb.feature.issue.hide-subscribers": boolean;
   "bb.feature.sql-check.hide-doc-link": boolean;
@@ -55,11 +55,11 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.hide-help": false,
     "bb.feature.hide-quick-start": false,
     "bb.feature.hide-release-remind": false,
-    "bb.feature.hide-issue-review-actions": false,
     "bb.feature.console.hide-sidebar": false,
     "bb.feature.console.hide-header": false,
     "bb.feature.console.hide-quick-action": false,
     "bb.feature.project.hide-default": false,
+    "bb.feature.issue.hide-review-actions": false,
     "bb.feature.issue.disable-schema-editor": false,
     "bb.feature.issue.hide-subscribers": false,
     "bb.feature.sql-check.hide-doc-link": false,
