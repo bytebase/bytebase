@@ -5,7 +5,6 @@ package bytebase.v1;
 import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/type/expr.proto";
-import "v1/audit_log_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -37,8 +36,6 @@ message IamPolicy {
   // If an etag is provided and does not match the current etag of the poliy,
   // the call will be blocked and an ABORTED error will be returned.
   string etag = 2;
-
-  repeated BindingDelta binding_deltas = 3;
 }
 
 message Binding {

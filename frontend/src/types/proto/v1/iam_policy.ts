@@ -3,7 +3,6 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Expr } from "../google/type/expr";
-import { BindingDelta } from "./audit_log_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -42,7 +41,6 @@ export interface IamPolicy {
    * the call will be blocked and an ABORTED error will be returned.
    */
   etag: string;
-  bindingDeltas: BindingDelta[];
 }
 
 export interface Binding {
@@ -218,7 +216,7 @@ export const SetIamPolicyRequest = {
 };
 
 function createBaseIamPolicy(): IamPolicy {
-  return { bindings: [], etag: "", bindingDeltas: [] };
+  return { bindings: [], etag: "" };
 }
 
 export const IamPolicy = {
@@ -228,9 +226,6 @@ export const IamPolicy = {
     }
     if (message.etag !== "") {
       writer.uint32(18).string(message.etag);
-    }
-    for (const v of message.bindingDeltas) {
-      BindingDelta.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -256,13 +251,6 @@ export const IamPolicy = {
 
           message.etag = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.bindingDeltas.push(BindingDelta.decode(reader, reader.uint32()));
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -276,9 +264,6 @@ export const IamPolicy = {
     return {
       bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
-      bindingDeltas: globalThis.Array.isArray(object?.bindingDeltas)
-        ? object.bindingDeltas.map((e: any) => BindingDelta.fromJSON(e))
-        : [],
     };
   },
 
@@ -290,9 +275,6 @@ export const IamPolicy = {
     if (message.etag !== "") {
       obj.etag = message.etag;
     }
-    if (message.bindingDeltas?.length) {
-      obj.bindingDeltas = message.bindingDeltas.map((e) => BindingDelta.toJSON(e));
-    }
     return obj;
   },
 
@@ -303,7 +285,6 @@ export const IamPolicy = {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
     message.etag = object.etag ?? "";
-    message.bindingDeltas = object.bindingDeltas?.map((e) => BindingDelta.fromPartial(e)) || [];
     return message;
   },
 };

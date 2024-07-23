@@ -44,7 +44,6 @@
   
 - [v1/audit_log_service.proto](#v1_audit_log_service-proto)
     - [AuditLog](#bytebase-v1-AuditLog)
-    - [BindingDelta](#bytebase-v1-BindingDelta)
     - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
     - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
     - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
@@ -1221,24 +1220,6 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | request | [string](#string) |  | JSON-encoded request. |
 | response | [string](#string) |  | JSON-encoded response. Some fields are omitted because they are too large or contain sensitive information. |
 | status | [google.rpc.Status](#google-rpc-Status) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BindingDelta"></a>
-
-### BindingDelta
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [string](#string) |  |  |
-| member | [string](#string) |  |  |
-| role | [string](#string) |  |  |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 
@@ -4370,7 +4351,6 @@ The environment&#39;s `name` field is used to identify the environment to update
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
 | etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the poliy, the call will be blocked and an ABORTED error will be returned. |
-| binding_deltas | [BindingDelta](#bytebase-v1-BindingDelta) | repeated |  |
 
 
 
