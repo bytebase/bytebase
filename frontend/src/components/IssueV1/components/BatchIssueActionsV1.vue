@@ -122,10 +122,7 @@ const handleUpdated = () => {
 const startBatchIssueStatusAction = (action: IssueStatusAction) => {
   ongoingIssueStatusAction.value = {
     action,
-    title: t("issue.batch-transition.action-n-issues", {
-      action: issueStatusActionDisplayName(action),
-      n: props.issueList.length,
-    }),
+    title: issueStatusActionDisplayName(action, props.issueList.length),
   };
 };
 </script>
