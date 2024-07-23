@@ -1,5 +1,6 @@
 <template>
   <a
+    v-if="!hide"
     class="inline-flex items-center"
     :class="[color === 'normal' ? 'normal-link' : 'light-link']"
     :href="url"
@@ -12,9 +13,10 @@
 
 <script lang="ts" setup>
 import { ExternalLinkIcon } from "lucide-vue-next";
-import type { PropType } from "vue";
+import { computed, type PropType } from "vue";
+import { useActuatorV1Store } from "@/store";
 
-defineProps({
+const props = defineProps({
   url: {
     type: String,
     required: true,
@@ -23,5 +25,14 @@ defineProps({
     type: String as PropType<"normal" | "light">,
     default: "normal",
   },
+  hideWhenEmbedded: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const hide = computed(() => {
+  if (!props.hideWhenEmbedded) return false;
+  return useActuatorV1Store().appProfile.embedded;
 });
 </script>

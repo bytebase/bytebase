@@ -7,11 +7,11 @@ import {
   useActuatorV1Store,
   useRouterStore,
   useCurrentUserV1,
-  usePageMode,
   useProjectV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
   useSQLEditorTabStore,
+  useAppFeature,
 } from "@/store";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
@@ -58,10 +58,12 @@ export const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
-  const pageMode = usePageMode();
+  const disallowNavigateAwaySQLEditor = useAppFeature(
+    "bb.feature.disallow-navigate-to-console"
+  );
 
   // In standalone mode, we don't want to user get out of some standalone pages.
-  if (pageMode.value === "STANDALONE") {
+  if (disallowNavigateAwaySQLEditor.value) {
     // If user is trying to navigate away from SQL Editor, we'll explicitly return false to cancel the navigation.
     if (
       from.name?.toString().startsWith("sql-editor") &&

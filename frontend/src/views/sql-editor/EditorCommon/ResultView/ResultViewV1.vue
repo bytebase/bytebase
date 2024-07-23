@@ -49,18 +49,22 @@
       <template v-else-if="viewMode === 'ERROR'">
         <ErrorView :error="resultSet.error">
           <template #suffix>
-            <HideInStandaloneMode>
-              <RequestQueryButton
-                v-if="resultSet.status === Status.PERMISSION_DENIED"
-                :database="database ?? connectedDb"
-              />
-              <SyncDatabaseButton
-                v-else-if="resultSet.error.includes('resource not found')"
-                :type="'primary'"
-                :text="true"
-                :database="database"
-              />
-            </HideInStandaloneMode>
+            <RequestQueryButton
+              v-if="
+                !disallowRequestQuery &&
+                resultSet.status === Status.PERMISSION_DENIED
+              "
+              :database="database ?? connectedDb"
+            />
+            <SyncDatabaseButton
+              v-else-if="
+                !disallowSyncSchema &&
+                resultSet.error.includes('resource not found')
+              "
+              :type="'primary'"
+              :text="true"
+              :database="database"
+            />
           </template>
         </ErrorView>
       </template>
@@ -96,6 +100,7 @@ import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { Drawer } from "@/components/v2";
 import {
+  useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
   usePolicyV1Store,
@@ -146,6 +151,12 @@ const currentUser = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
 const { instance, database: connectedDb } =
   useConnectionOfCurrentSQLEditorTab();
+const disallowRequestQuery = useAppFeature(
+  "bb.feature.sql-editor.disallow-request-query"
+);
+const disallowSyncSchema = useAppFeature(
+  "bb.feature.sql-editor.disallow-sync-schema"
+);
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref({
   show: false,

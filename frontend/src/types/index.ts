@@ -40,5 +40,6 @@ export * from "./changeHistory";
 export * from "./semanticTypes";
 export * from "./iam";
 export * from "./misc";
+export * from "./appProfile";
 
 export * from "./v1";

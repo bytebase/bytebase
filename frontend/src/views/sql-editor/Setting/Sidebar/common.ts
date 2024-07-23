@@ -14,7 +14,7 @@ import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
 } from "@/router/sqlEditor";
-import { useCurrentUserV1, usePageMode } from "@/store";
+import { useCurrentUserV1, useAppFeature } from "@/store";
 import type { WorkspacePermission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -22,7 +22,7 @@ export const useSidebarItems = () => {
   const route = useRoute();
   const { t } = useI18n();
   const me = useCurrentUserV1();
-  const pageMode = usePageMode();
+  const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 
   const getItemClass = (item: SidebarItem) => {
     if (route.name === item.name) {
@@ -95,8 +95,8 @@ export const useSidebarItems = () => {
   };
 
   const itemList = computed((): SidebarItem[] => {
-    if (pageMode.value === "STANDALONE") {
-      // Hide SQL Editor settings entirely in STANDALONE mode
+    if (disableSetting.value) {
+      // Hide SQL Editor settings entirely if embedded in iframe
       return [];
     }
 
