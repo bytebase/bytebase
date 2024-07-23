@@ -177,7 +177,6 @@
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
-    - [BindingDelta](#bytebase-store-BindingDelta)
     - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
@@ -187,7 +186,6 @@
     - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
-    - [PolicyDelta](#bytebase-store-PolicyDelta)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
@@ -195,7 +193,6 @@
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
-    - [BindingDelta.Action](#bytebase-store-BindingDelta-Action)
     - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
@@ -2843,25 +2840,6 @@ Type is the database change type.
 
 
 
-<a name="bytebase-store-BindingDelta"></a>
-
-### BindingDelta
-One delta entry for Binding. Each individual change (only one member in each
-entry) to a binding will be a separate entry.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [BindingDelta.Action](#bytebase-store-BindingDelta-Action) |  | The action that was performed on a Binding. |
-| role | [string](#string) |  | Role that is assigned to `members`. For example, `roles/projectOwner`. |
-| member | [string](#string) |  | Follows the same format of Binding.members. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. |
-
-
-
-
-
-
 <a name="bytebase-store-DisableCopyDataPolicy"></a>
 
 ### DisableCopyDataPolicy
@@ -3009,21 +2987,6 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
-<a name="bytebase-store-PolicyDelta"></a>
-
-### PolicyDelta
-The difference delta between two policies.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| binding_deltas | [BindingDelta](#bytebase-store-BindingDelta) | repeated | The delta for Bindings between two policies. |
-
-
-
-
-
-
 <a name="bytebase-store-RestrictIssueCreationForSQLReviewPolicy"></a>
 
 ### RestrictIssueCreationForSQLReviewPolicy
@@ -3122,19 +3085,6 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 
  
-
-
-<a name="bytebase-store-BindingDelta-Action"></a>
-
-### BindingDelta.Action
-The type of action performed on a Binding in a policy.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| ADD | 1 |  |
-| REMOVE | 2 |  |
-
 
 
 <a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>

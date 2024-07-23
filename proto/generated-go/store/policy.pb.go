@@ -171,56 +171,6 @@ func (EnvironmentTierPolicy_EnvironmentTier) EnumDescriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{9, 0}
 }
 
-// The type of action performed on a Binding in a policy.
-type BindingDelta_Action int32
-
-const (
-	BindingDelta_ACTION_UNSPECIFIED BindingDelta_Action = 0
-	BindingDelta_ADD                BindingDelta_Action = 1
-	BindingDelta_REMOVE             BindingDelta_Action = 2
-)
-
-// Enum value maps for BindingDelta_Action.
-var (
-	BindingDelta_Action_name = map[int32]string{
-		0: "ACTION_UNSPECIFIED",
-		1: "ADD",
-		2: "REMOVE",
-	}
-	BindingDelta_Action_value = map[string]int32{
-		"ACTION_UNSPECIFIED": 0,
-		"ADD":                1,
-		"REMOVE":             2,
-	}
-)
-
-func (x BindingDelta_Action) Enum() *BindingDelta_Action {
-	p := new(BindingDelta_Action)
-	*p = x
-	return p
-}
-
-func (x BindingDelta_Action) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (BindingDelta_Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[3].Descriptor()
-}
-
-func (BindingDelta_Action) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[3]
-}
-
-func (x BindingDelta_Action) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use BindingDelta_Action.Descriptor instead.
-func (BindingDelta_Action) EnumDescriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{14, 0}
-}
-
 type RolloutPolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -963,133 +913,6 @@ func (x *RestrictIssueCreationForSQLReviewPolicy) GetDisallow() bool {
 	return false
 }
 
-// The difference delta between two policies.
-type PolicyDelta struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// The delta for Bindings between two policies.
-	BindingDeltas []*BindingDelta `protobuf:"bytes,1,rep,name=binding_deltas,json=bindingDeltas,proto3" json:"binding_deltas,omitempty"`
-}
-
-func (x *PolicyDelta) Reset() {
-	*x = PolicyDelta{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_policy_proto_msgTypes[13]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PolicyDelta) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PolicyDelta) ProtoMessage() {}
-
-func (x *PolicyDelta) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[13]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PolicyDelta.ProtoReflect.Descriptor instead.
-func (*PolicyDelta) Descriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *PolicyDelta) GetBindingDeltas() []*BindingDelta {
-	if x != nil {
-		return x.BindingDeltas
-	}
-	return nil
-}
-
-// One delta entry for Binding. Each individual change (only one member in each
-// entry) to a binding will be a separate entry.
-type BindingDelta struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// The action that was performed on a Binding.
-	Action BindingDelta_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.store.BindingDelta_Action" json:"action,omitempty"`
-	// Role that is assigned to `members`.
-	// For example, `roles/projectOwner`.
-	Role string `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
-	// Follows the same format of Binding.members.
-	Member string `protobuf:"bytes,3,opt,name=member,proto3" json:"member,omitempty"`
-	// The condition that is associated with this binding.
-	Condition *expr.Expr `protobuf:"bytes,4,opt,name=condition,proto3" json:"condition,omitempty"`
-}
-
-func (x *BindingDelta) Reset() {
-	*x = BindingDelta{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_policy_proto_msgTypes[14]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BindingDelta) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BindingDelta) ProtoMessage() {}
-
-func (x *BindingDelta) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[14]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BindingDelta.ProtoReflect.Descriptor instead.
-func (*BindingDelta) Descriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *BindingDelta) GetAction() BindingDelta_Action {
-	if x != nil {
-		return x.Action
-	}
-	return BindingDelta_ACTION_UNSPECIFIED
-}
-
-func (x *BindingDelta) GetRole() string {
-	if x != nil {
-		return x.Role
-	}
-	return ""
-}
-
-func (x *BindingDelta) GetMember() string {
-	if x != nil {
-		return x.Member
-	}
-	return ""
-}
-
-func (x *BindingDelta) GetCondition() *expr.Expr {
-	if x != nil {
-		return x.Condition
-	}
-	return nil
-}
-
 type MaskingExceptionPolicy_MaskingException struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1110,7 +933,7 @@ type MaskingExceptionPolicy_MaskingException struct {
 func (x *MaskingExceptionPolicy_MaskingException) Reset() {
 	*x = MaskingExceptionPolicy_MaskingException{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_policy_proto_msgTypes[15]
+		mi := &file_store_policy_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1123,7 +946,7 @@ func (x *MaskingExceptionPolicy_MaskingException) String() string {
 func (*MaskingExceptionPolicy_MaskingException) ProtoMessage() {}
 
 func (x *MaskingExceptionPolicy_MaskingException) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[15]
+	mi := &file_store_policy_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1181,7 +1004,7 @@ type MaskingRulePolicy_MaskingRule struct {
 func (x *MaskingRulePolicy_MaskingRule) Reset() {
 	*x = MaskingRulePolicy_MaskingRule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_policy_proto_msgTypes[16]
+		mi := &file_store_policy_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1194,7 +1017,7 @@ func (x *MaskingRulePolicy_MaskingRule) String() string {
 func (*MaskingRulePolicy_MaskingRule) ProtoMessage() {}
 
 func (x *MaskingRulePolicy_MaskingRule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[16]
+	mi := &file_store_policy_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1367,33 +1190,14 @@ var file_store_policy_proto_rawDesc = []byte{
 	0x6f, 0x6e, 0x46, 0x6f, 0x72, 0x53, 0x51, 0x4c, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x50, 0x6f,
 	0x6c, 0x69, 0x63, 0x79, 0x12, 0x1a, 0x0a, 0x08, 0x64, 0x69, 0x73, 0x61, 0x6c, 0x6c, 0x6f, 0x77,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x64, 0x69, 0x73, 0x61, 0x6c, 0x6c, 0x6f, 0x77,
-	0x22, 0x52, 0x0a, 0x0b, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x44, 0x65, 0x6c, 0x74, 0x61, 0x12,
-	0x43, 0x0a, 0x0e, 0x62, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x5f, 0x64, 0x65, 0x6c, 0x74, 0x61,
-	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
-	0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x42, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67,
-	0x44, 0x65, 0x6c, 0x74, 0x61, 0x52, 0x0d, 0x62, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x44, 0x65,
-	0x6c, 0x74, 0x61, 0x73, 0x22, 0xdf, 0x01, 0x0a, 0x0c, 0x42, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67,
-	0x44, 0x65, 0x6c, 0x74, 0x61, 0x12, 0x3b, 0x0a, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x42, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x44, 0x65,
-	0x6c, 0x74, 0x61, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x2f,
-	0x0a, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x11, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x2e,
-	0x45, 0x78, 0x70, 0x72, 0x52, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x22,
-	0x35, 0x0a, 0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x16, 0x0a, 0x12, 0x41, 0x43, 0x54,
-	0x49, 0x4f, 0x4e, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10,
-	0x00, 0x12, 0x07, 0x0a, 0x03, 0x41, 0x44, 0x44, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x52, 0x45,
-	0x4d, 0x4f, 0x56, 0x45, 0x10, 0x02, 0x2a, 0x51, 0x0a, 0x12, 0x53, 0x51, 0x4c, 0x52, 0x65, 0x76,
-	0x69, 0x65, 0x77, 0x52, 0x75, 0x6c, 0x65, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x15, 0x0a, 0x11,
-	0x4c, 0x45, 0x56, 0x45, 0x4c, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
-	0x44, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x10, 0x01, 0x12, 0x0b,
-	0x0a, 0x07, 0x57, 0x41, 0x52, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x0c, 0x0a, 0x08, 0x44,
-	0x49, 0x53, 0x41, 0x42, 0x4c, 0x45, 0x44, 0x10, 0x03, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e,
-	0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x2a, 0x51, 0x0a, 0x12, 0x53, 0x51, 0x4c, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x75, 0x6c,
+	0x65, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x15, 0x0a, 0x11, 0x4c, 0x45, 0x56, 0x45, 0x4c, 0x5f,
+	0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x09, 0x0a,
+	0x05, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x57, 0x41, 0x52, 0x4e,
+	0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x0c, 0x0a, 0x08, 0x44, 0x49, 0x53, 0x41, 0x42, 0x4c, 0x45,
+	0x44, 0x10, 0x03, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64,
+	0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -1408,59 +1212,53 @@ func file_store_policy_proto_rawDescGZIP() []byte {
 	return file_store_policy_proto_rawDescData
 }
 
-var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_store_policy_proto_goTypes = []any{
 	(SQLReviewRuleLevel)(0),                             // 0: bytebase.store.SQLReviewRuleLevel
 	(MaskingExceptionPolicy_MaskingException_Action)(0), // 1: bytebase.store.MaskingExceptionPolicy.MaskingException.Action
 	(EnvironmentTierPolicy_EnvironmentTier)(0),          // 2: bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	(BindingDelta_Action)(0),                            // 3: bytebase.store.BindingDelta.Action
-	(*RolloutPolicy)(nil),                               // 4: bytebase.store.RolloutPolicy
-	(*MaskingPolicy)(nil),                               // 5: bytebase.store.MaskingPolicy
-	(*MaskData)(nil),                                    // 6: bytebase.store.MaskData
-	(*MaskingExceptionPolicy)(nil),                      // 7: bytebase.store.MaskingExceptionPolicy
-	(*MaskingRulePolicy)(nil),                           // 8: bytebase.store.MaskingRulePolicy
-	(*SQLReviewRule)(nil),                               // 9: bytebase.store.SQLReviewRule
-	(*TagPolicy)(nil),                                   // 10: bytebase.store.TagPolicy
-	(*Binding)(nil),                                     // 11: bytebase.store.Binding
-	(*IamPolicy)(nil),                                   // 12: bytebase.store.IamPolicy
-	(*EnvironmentTierPolicy)(nil),                       // 13: bytebase.store.EnvironmentTierPolicy
-	(*SlowQueryPolicy)(nil),                             // 14: bytebase.store.SlowQueryPolicy
-	(*DisableCopyDataPolicy)(nil),                       // 15: bytebase.store.DisableCopyDataPolicy
-	(*RestrictIssueCreationForSQLReviewPolicy)(nil),     // 16: bytebase.store.RestrictIssueCreationForSQLReviewPolicy
-	(*PolicyDelta)(nil),                                 // 17: bytebase.store.PolicyDelta
-	(*BindingDelta)(nil),                                // 18: bytebase.store.BindingDelta
-	(*MaskingExceptionPolicy_MaskingException)(nil),     // 19: bytebase.store.MaskingExceptionPolicy.MaskingException
-	(*MaskingRulePolicy_MaskingRule)(nil),               // 20: bytebase.store.MaskingRulePolicy.MaskingRule
-	nil,                                                 // 21: bytebase.store.TagPolicy.TagsEntry
-	(MaskingLevel)(0),                                   // 22: bytebase.store.MaskingLevel
-	(Engine)(0),                                         // 23: bytebase.store.Engine
-	(*expr.Expr)(nil),                                   // 24: google.type.Expr
+	(*RolloutPolicy)(nil),                               // 3: bytebase.store.RolloutPolicy
+	(*MaskingPolicy)(nil),                               // 4: bytebase.store.MaskingPolicy
+	(*MaskData)(nil),                                    // 5: bytebase.store.MaskData
+	(*MaskingExceptionPolicy)(nil),                      // 6: bytebase.store.MaskingExceptionPolicy
+	(*MaskingRulePolicy)(nil),                           // 7: bytebase.store.MaskingRulePolicy
+	(*SQLReviewRule)(nil),                               // 8: bytebase.store.SQLReviewRule
+	(*TagPolicy)(nil),                                   // 9: bytebase.store.TagPolicy
+	(*Binding)(nil),                                     // 10: bytebase.store.Binding
+	(*IamPolicy)(nil),                                   // 11: bytebase.store.IamPolicy
+	(*EnvironmentTierPolicy)(nil),                       // 12: bytebase.store.EnvironmentTierPolicy
+	(*SlowQueryPolicy)(nil),                             // 13: bytebase.store.SlowQueryPolicy
+	(*DisableCopyDataPolicy)(nil),                       // 14: bytebase.store.DisableCopyDataPolicy
+	(*RestrictIssueCreationForSQLReviewPolicy)(nil),     // 15: bytebase.store.RestrictIssueCreationForSQLReviewPolicy
+	(*MaskingExceptionPolicy_MaskingException)(nil),     // 16: bytebase.store.MaskingExceptionPolicy.MaskingException
+	(*MaskingRulePolicy_MaskingRule)(nil),               // 17: bytebase.store.MaskingRulePolicy.MaskingRule
+	nil,                                                 // 18: bytebase.store.TagPolicy.TagsEntry
+	(MaskingLevel)(0),                                   // 19: bytebase.store.MaskingLevel
+	(Engine)(0),                                         // 20: bytebase.store.Engine
+	(*expr.Expr)(nil),                                   // 21: google.type.Expr
 }
 var file_store_policy_proto_depIdxs = []int32{
-	6,  // 0: bytebase.store.MaskingPolicy.mask_data:type_name -> bytebase.store.MaskData
-	22, // 1: bytebase.store.MaskData.masking_level:type_name -> bytebase.store.MaskingLevel
-	19, // 2: bytebase.store.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException
-	20, // 3: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
+	5,  // 0: bytebase.store.MaskingPolicy.mask_data:type_name -> bytebase.store.MaskData
+	19, // 1: bytebase.store.MaskData.masking_level:type_name -> bytebase.store.MaskingLevel
+	16, // 2: bytebase.store.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException
+	17, // 3: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
 	0,  // 4: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRuleLevel
-	23, // 5: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
-	21, // 6: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
-	24, // 7: bytebase.store.Binding.condition:type_name -> google.type.Expr
-	11, // 8: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
+	20, // 5: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
+	18, // 6: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
+	21, // 7: bytebase.store.Binding.condition:type_name -> google.type.Expr
+	10, // 8: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
 	2,  // 9: bytebase.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	18, // 10: bytebase.store.PolicyDelta.binding_deltas:type_name -> bytebase.store.BindingDelta
-	3,  // 11: bytebase.store.BindingDelta.action:type_name -> bytebase.store.BindingDelta.Action
-	24, // 12: bytebase.store.BindingDelta.condition:type_name -> google.type.Expr
-	1,  // 13: bytebase.store.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException.Action
-	22, // 14: bytebase.store.MaskingExceptionPolicy.MaskingException.masking_level:type_name -> bytebase.store.MaskingLevel
-	24, // 15: bytebase.store.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
-	24, // 16: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	22, // 17: bytebase.store.MaskingRulePolicy.MaskingRule.masking_level:type_name -> bytebase.store.MaskingLevel
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	1,  // 10: bytebase.store.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException.Action
+	19, // 11: bytebase.store.MaskingExceptionPolicy.MaskingException.masking_level:type_name -> bytebase.store.MaskingLevel
+	21, // 12: bytebase.store.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
+	21, // 13: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	19, // 14: bytebase.store.MaskingRulePolicy.MaskingRule.masking_level:type_name -> bytebase.store.MaskingLevel
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_store_policy_proto_init() }
@@ -1627,30 +1425,6 @@ func file_store_policy_proto_init() {
 			}
 		}
 		file_store_policy_proto_msgTypes[13].Exporter = func(v any, i int) any {
-			switch v := v.(*PolicyDelta); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_policy_proto_msgTypes[14].Exporter = func(v any, i int) any {
-			switch v := v.(*BindingDelta); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_policy_proto_msgTypes[15].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingExceptionPolicy_MaskingException); i {
 			case 0:
 				return &v.state
@@ -1662,7 +1436,7 @@ func file_store_policy_proto_init() {
 				return nil
 			}
 		}
-		file_store_policy_proto_msgTypes[16].Exporter = func(v any, i int) any {
+		file_store_policy_proto_msgTypes[14].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingRulePolicy_MaskingRule); i {
 			case 0:
 				return &v.state
@@ -1680,8 +1454,8 @@ func file_store_policy_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_policy_proto_rawDesc,
-			NumEnums:      4,
-			NumMessages:   18,
+			NumEnums:      3,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
