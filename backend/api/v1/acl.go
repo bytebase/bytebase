@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	annotationsproto "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/grpc"
@@ -60,7 +61,10 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "auth context not found2")
+		return nil, status.Errorf(codes.Internal, "auth context not found")
+	}
+	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
 	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
@@ -99,7 +103,10 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return status.Errorf(codes.Internal, "auth context not found3")
+		return status.Errorf(codes.Internal, "auth context not found")
+	}
+	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+		return status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
 	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
@@ -245,7 +252,17 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 	return len(databases) > 0, nil
 }
 
-func getResourceFromRequest(request any) string {
+func (*ACLInterceptor) populateRawResources(authContext *common.AuthContext, request any, method string) error {
+	name := getResourceFromRequest(request, method)
+	if name != "" {
+		authContext.Resources = append(authContext.Resources, &common.Resource{
+			Name: name,
+		})
+	}
+	return nil
+}
+
+func getResourceFromRequest(request any, method string) string {
 	var resource string
 	pm, ok := request.(proto.Message)
 	if !ok {
@@ -254,14 +271,27 @@ func getResourceFromRequest(request any) string {
 	mr := pm.ProtoReflect()
 
 	parentDesc := mr.Descriptor().Fields().ByName("parent")
-	if parentDesc != nil {
+	if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(parentDesc)
 		return v.String()
 	}
 	nameDesc := mr.Descriptor().Fields().ByName("name")
-	if nameDesc != nil {
+	if nameDesc != nil && proto.HasExtension(nameDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(nameDesc)
 		return v.String()
+	}
+	// This is primarily used by Get/SetIAMPolicy().
+	resourceDesc := mr.Descriptor().Fields().ByName("resource")
+	if resourceDesc != nil && proto.HasExtension(resourceDesc.Options(), annotationsproto.E_ResourceReference) {
+		v := mr.Get(resourceDesc)
+		return v.String()
+	}
+	methodTokens := strings.Split(method, "/")
+	if len(methodTokens) != 3 {
+		return ""
+	}
+	if strings.HasPrefix(methodTokens[2], "Create") {
+		return ""
 	}
 
 	mr.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {

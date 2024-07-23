@@ -11,17 +11,21 @@ import (
 func TestGetResourceFromRequest(t *testing.T) {
 	tests := []struct {
 		request any
+		method  string
 		want    string
 	}{
 		{
 			request: &v1pb.LoginRequest{Email: "hello@world.com"},
+			method:  "/bytebase.v1.AuthService/Login",
 			want:    "",
 		},
+		// The database group has not been annotated with resource yet.
 		{
 			request: &v1pb.CreateDatabaseGroupRequest{
 				Parent: "projects/hello",
 			},
-			want: "projects/hello",
+			method: "/bytebase.v1.DatabaseGroupService/CreateDatabaseGroup",
+			want:   "",
 		},
 		{
 			request: &v1pb.UpdateProjectRequest{
@@ -29,7 +33,8 @@ func TestGetResourceFromRequest(t *testing.T) {
 					Name: "projects/hello",
 				},
 			},
-			want: "projects/hello",
+			method: "/bytebase.v1.ProjectService/UpdateProject",
+			want:   "projects/hello",
 		},
 		{
 			// The instance has not been annotated with resource yet.
@@ -38,12 +43,13 @@ func TestGetResourceFromRequest(t *testing.T) {
 					Name: "instances/hello",
 				},
 			},
-			want: "",
+			method: "/bytebase.v1.InstanceService/UpdateInstance",
+			want:   "",
 		},
 	}
 
 	for _, tt := range tests {
-		got := getResourceFromRequest(tt.request)
-		require.Equal(t, tt.want, got)
+		got := getResourceFromRequest(tt.request, tt.method)
+		require.Equal(t, tt.want, got, tt.method)
 	}
 }
