@@ -15,6 +15,7 @@ export type AppFeatures = {
   "bb.feature.console.hide-quick-action": boolean;
   "bb.feature.issue.disable-schema-editor": boolean;
   "bb.feature.issue.hide-subscribers": boolean;
+  "bb.feature.sql-check.hide-doc-link": boolean;
   "bb.feature.databases.operations": Set<
     | "EDIT-SCHEMA"
     | "CHANGE-DATA"
@@ -55,6 +56,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.console.hide-quick-action": false,
     "bb.feature.issue.disable-schema-editor": false,
     "bb.feature.issue.hide-subscribers": false,
+    "bb.feature.sql-check.hide-doc-link": false,
     "bb.feature.databases.operations": new Set([
       "EDIT-SCHEMA",
       "CHANGE-DATA",
