@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Any } from "../google/protobuf/any";
 import { Status } from "../google/rpc/status";
 
 export const protobufPackage = "bytebase.store";
@@ -30,7 +31,11 @@ export interface AuditLog {
    * Some fields are omitted because they are too large or contain sensitive information.
    */
   response: string;
-  status: Status | undefined;
+  status:
+    | Status
+    | undefined;
+  /** service-specific data about the request, response, and other activities. */
+  serviceData: Any | undefined;
 }
 
 export enum AuditLog_Severity {
@@ -144,6 +149,7 @@ function createBaseAuditLog(): AuditLog {
     request: "",
     response: "",
     status: undefined,
+    serviceData: undefined,
   };
 }
 
@@ -172,6 +178,9 @@ export const AuditLog = {
     }
     if (message.status !== undefined) {
       Status.encode(message.status, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.serviceData !== undefined) {
+      Any.encode(message.serviceData, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -239,6 +248,13 @@ export const AuditLog = {
 
           message.status = Status.decode(reader, reader.uint32());
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.serviceData = Any.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -258,6 +274,7 @@ export const AuditLog = {
       request: isSet(object.request) ? globalThis.String(object.request) : "",
       response: isSet(object.response) ? globalThis.String(object.response) : "",
       status: isSet(object.status) ? Status.fromJSON(object.status) : undefined,
+      serviceData: isSet(object.serviceData) ? Any.fromJSON(object.serviceData) : undefined,
     };
   },
 
@@ -287,6 +304,9 @@ export const AuditLog = {
     if (message.status !== undefined) {
       obj.status = Status.toJSON(message.status);
     }
+    if (message.serviceData !== undefined) {
+      obj.serviceData = Any.toJSON(message.serviceData);
+    }
     return obj;
   },
 
@@ -304,6 +324,9 @@ export const AuditLog = {
     message.response = object.response ?? "";
     message.status = (object.status !== undefined && object.status !== null)
       ? Status.fromPartial(object.status)
+      : undefined;
+    message.serviceData = (object.serviceData !== undefined && object.serviceData !== null)
+      ? Any.fromPartial(object.serviceData)
       : undefined;
     return message;
   },
