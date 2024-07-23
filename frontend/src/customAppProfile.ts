@@ -25,6 +25,7 @@ export const overrideAppProfile = () => {
       "bb.feature.console.hide-sidebar": true,
       "bb.feature.console.hide-header": true,
       "bb.feature.console.hide-quick-action": true,
+      "bb.feature.project.hide-default": true,
       "bb.feature.issue.disable-schema-editor": true,
       "bb.feature.issue.hide-subscribers": true,
       "bb.feature.sql-check.hide-doc-link": true,

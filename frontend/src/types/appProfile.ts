@@ -13,6 +13,7 @@ export type AppFeatures = {
   "bb.feature.console.hide-sidebar": boolean;
   "bb.feature.console.hide-header": boolean;
   "bb.feature.console.hide-quick-action": boolean;
+  "bb.feature.project.hide-default": boolean;
   "bb.feature.issue.disable-schema-editor": boolean;
   "bb.feature.issue.hide-subscribers": boolean;
   "bb.feature.sql-check.hide-doc-link": boolean;
@@ -54,6 +55,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.console.hide-sidebar": false,
     "bb.feature.console.hide-header": false,
     "bb.feature.console.hide-quick-action": false,
+    "bb.feature.project.hide-default": false,
     "bb.feature.issue.disable-schema-editor": false,
     "bb.feature.issue.hide-subscribers": false,
     "bb.feature.sql-check.hide-doc-link": false,

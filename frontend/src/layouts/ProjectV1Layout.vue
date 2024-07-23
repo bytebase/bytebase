@@ -1,16 +1,14 @@
 <template>
   <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
   <div class="px-4 h-full overflow-auto">
-    <HideInStandaloneMode>
-      <template v-if="isDefaultProject">
-        <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
-          {{ $t("database.unassigned-databases") }}
-        </h1>
-      </template>
-      <BBAttention v-if="isDefaultProject" class="mb-4" type="info">
+    <template v-if="!hideDefaultProject && isDefaultProject">
+      <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
+        {{ $t("database.unassigned-databases") }}
+      </h1>
+      <BBAttention class="mb-4" type="info">
         {{ $t("project.overview.info-slot-content") }}
       </BBAttention>
-    </HideInStandaloneMode>
+    </template>
     <QuickActionPanel
       v-if="!hideQuickActionPanel"
       :quick-action-list="quickActionList"
@@ -31,7 +29,6 @@ import { computed, onMounted, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
   PROJECT_V1_ROUTE_DATABASES,
@@ -54,6 +51,7 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const recentProjects = useRecentProjects();
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
+const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
