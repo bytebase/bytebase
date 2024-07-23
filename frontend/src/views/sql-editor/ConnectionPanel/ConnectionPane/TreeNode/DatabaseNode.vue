@@ -27,14 +27,12 @@
         ({{ database.instanceResource.title }})
       </span>
     </span>
-    <HideInStandaloneMode>
-      <RequestQueryButton
-        v-if="!canQuery"
-        :database="database"
-        :size="'tiny'"
-        :panel-placement="'left'"
-      />
-    </HideInStandaloneMode>
+    <RequestQueryButton
+      v-if="!disallowRequestQuery && !canQuery"
+      :database="database"
+      :size="'tiny'"
+      :panel-placement="'left'"
+    />
   </div>
 </template>
 
@@ -42,7 +40,7 @@
 import { computed } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
+import { useAppFeature, useCurrentUserV1 } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
@@ -58,6 +56,9 @@ const props = defineProps<{
 }>();
 
 const me = useCurrentUserV1();
+const disallowRequestQuery = useAppFeature(
+  "bb.feature.sql-editor.disallow-request-query"
+);
 
 const database = computed(
   () => (props.node as TreeNode<"database">).meta.target

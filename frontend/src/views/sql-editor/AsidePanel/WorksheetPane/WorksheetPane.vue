@@ -31,7 +31,7 @@
           />
         </NCollapseItem>
         <NCollapseItem
-          v-if="!isStandaloneMode"
+          v-if="!disallowShareWorksheet"
           name="shared"
           :title="$t('sheet.shared')"
         >
@@ -51,12 +51,12 @@
 
 <script setup lang="ts">
 import { NButton, NCollapse, NCollapseItem, NScrollbar } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { SearchBox } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useCurrentUserV1,
-  usePageMode,
+  useAppFeature,
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
@@ -67,11 +67,12 @@ import type { GroupType } from "./common";
 import { useScrollLogic } from "./scroll-logic";
 
 const { showPanel, events: sheetEvents } = useSheetContext();
-const pageMode = usePageMode();
 const tabStore = useSQLEditorTabStore();
 const sheetStore = useWorkSheetStore();
 const me = useCurrentUserV1();
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
+const disallowShareWorksheet = useAppFeature(
+  "bb.feature.sql-editor.disallow-share-worksheet"
+);
 const keyword = ref("");
 const expandedGroups = ref<GroupType[]>(["my", "starred", "shared", "draft"]);
 

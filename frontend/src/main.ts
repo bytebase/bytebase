@@ -7,6 +7,7 @@ import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
+import { overrideAppProfile } from "./customAppProfile";
 import dataSourceType from "./directives/data-source-type";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
@@ -15,13 +16,7 @@ import NaiveUI from "./plugins/naive-ui";
 import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
 import { AUTH_SIGNIN_MODULE } from "./router/auth";
-import type { PageMode } from "./store";
-import {
-  pinia,
-  pushNotification,
-  useActuatorV1Store,
-  useAuthStore,
-} from "./store";
+import { pinia, pushNotification, useAuthStore } from "./store";
 import {
   environmentName,
   humanizeTs,
@@ -35,7 +30,6 @@ import {
   sizeToFit,
   urlfy,
 } from "./utils";
-import { applyCustomTheme } from "./utils/customTheme";
 
 protobufjs.util.Long = Long;
 protobufjs.configure();
@@ -153,22 +147,17 @@ app
   .directive("data-source-type", dataSourceType)
   .use(pinia);
 
-const initSearchParams = () => {
-  const actuatorStore = useActuatorV1Store();
-  const searchParams = new URLSearchParams(window.location.search);
-  const mode = searchParams.get("mode") as PageMode;
-  if (mode === "BUNDLED" || mode === "STANDALONE") {
-    actuatorStore.pageMode = mode;
-  }
-  const customTheme = searchParams.get("customTheme");
-  if (customTheme) {
-    actuatorStore.customTheme = customTheme;
-    applyCustomTheme(customTheme);
-  }
-  const lang = searchParams.get("lang");
+const overrideLang = () => {
+  const query = new URLSearchParams(window.location.search);
+  const lang = query.get("lang");
   if (lang) {
     i18n.global.locale.value = lang;
   }
+};
+
+const initSearchParams = () => {
+  overrideAppProfile();
+  overrideLang();
 };
 
 initSearchParams();

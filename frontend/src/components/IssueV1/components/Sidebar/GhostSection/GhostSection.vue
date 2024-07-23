@@ -15,12 +15,11 @@
               class="whitespace-pre-line max-w-[20rem]"
             >
               <template #link>
-                <HideInStandaloneMode>
-                  <LearnMoreLink
-                    url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql"
-                    color="light"
-                  />
-                </HideInStandaloneMode>
+                <LearnMoreLink
+                  url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql"
+                  color="light"
+                  hide-when-embedded
+                />
               </template>
             </i18n-t>
           </template>
