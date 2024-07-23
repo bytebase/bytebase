@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // EnvironmentMessage is the mssage for environment.
@@ -136,11 +138,11 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		return nil, err
 	}
 
-	value := api.EnvironmentTierValueUnprotected
+	value := storepb.EnvironmentTierPolicy_UNPROTECTED
 	if create.Protected {
-		value = api.EnvironmentTierValueProtected
+		value = storepb.EnvironmentTierPolicy_PROTECTED
 	}
-	payload, err := (&api.EnvironmentTierPolicy{EnvironmentTier: value}).String()
+	payload, err := protojson.Marshal(&storepb.EnvironmentTierPolicy{EnvironmentTier: value})
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +151,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		ResourceUID:       uid,
 		Type:              api.PolicyTypeEnvironmentTier,
 		InheritFromParent: true,
-		Payload:           payload,
+		Payload:           string(payload),
 		Enforce:           true,
 	}, creatorID); err != nil {
 		return nil, err
@@ -215,11 +217,11 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 
 	// TODO(d): consider moving tier to environment table to simplify things.
 	if patch.Protected != nil {
-		value := api.EnvironmentTierValueUnprotected
+		value := storepb.EnvironmentTierPolicy_UNPROTECTED
 		if *patch.Protected {
-			value = api.EnvironmentTierValueProtected
+			value = storepb.EnvironmentTierPolicy_PROTECTED
 		}
-		payload, err := (&api.EnvironmentTierPolicy{EnvironmentTier: value}).String()
+		payload, err := protojson.Marshal(&storepb.EnvironmentTierPolicy{EnvironmentTier: value})
 		if err != nil {
 			return nil, err
 		}
@@ -228,7 +230,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 			ResourceUID:       environmentUID,
 			Type:              api.PolicyTypeEnvironmentTier,
 			InheritFromParent: true,
-			Payload:           payload,
+			Payload:           string(payload),
 			Enforce:           true,
 		}, updaterID); err != nil {
 			return nil, err
@@ -308,11 +310,11 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 		}
 		environment.Deleted = convertRowStatusToDeleted(rowStatus)
 		if tierPayload.Valid {
-			policy, err := api.UnmarshalEnvironmentTierPolicy(tierPayload.String)
-			if err != nil {
+			policy := &storepb.EnvironmentTierPolicy{}
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tierPayload.String), policy); err != nil {
 				return nil, err
 			}
-			environment.Protected = policy.EnvironmentTier == api.EnvironmentTierValueProtected
+			environment.Protected = policy.EnvironmentTier == storepb.EnvironmentTierPolicy_PROTECTED
 		}
 
 		environments = append(environments, &environment)

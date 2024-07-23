@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -54,8 +52,8 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		})
 
 	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, task.CreatorID)
-	payload := &api.TaskDatabaseDataExportPayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseDataExportPayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database data export payload")
 	}
 
@@ -74,7 +72,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Errorf("instance not found")
 	}
 
-	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	statement, err := exec.store.GetSheetStatementByID(ctx, int(payload.SheetId))
 	if err != nil {
 		return true, nil, err
 	}

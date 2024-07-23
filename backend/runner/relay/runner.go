@@ -3,7 +3,6 @@ package relay
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -116,15 +116,15 @@ func (r *Runner) listenCheckExternalApprovalChan(ctx context.Context, wg *sync.W
 }
 
 func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.ExternalApprovalMessage) error {
-	payload := &api.ExternalApprovalPayloadRelay{}
-	if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
+	payload := &storepb.ExternalApprovalPayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(approval.Payload), payload); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal external approval payload")
 	}
-	node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeID)
+	node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeId)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get external approval node %s", payload.ExternalApprovalNodeID)
+		return errors.Wrapf(err, "failed to get external approval node %s", payload.ExternalApprovalNodeId)
 	}
-	id := payload.ID
+	id := payload.Id
 	resp, err := r.Client.GetApproval(node.Endpoint, id)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, id: %s", node.Id, node.Endpoint, id)
@@ -185,24 +185,24 @@ func (r *Runner) cancelExternalApproval(ctx context.Context, issueUID int) {
 			slog.Error("failed to archive external approval", log.BBError(err))
 			continue
 		}
-		payload := &api.ExternalApprovalPayloadRelay{}
-		if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
+		payload := &storepb.ExternalApprovalPayload{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(approval.Payload), payload); err != nil {
 			slog.Error("failed to unmarshal external approval payload", log.BBError(err))
 			continue
 		}
 		// don't wait for http requests, just fire and forget
-		node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeID)
+		node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeId)
 		if err != nil {
 			slog.Error("failed to get external approval node", log.BBError(err))
 			continue
 		}
 		if node == nil {
-			slog.Error("external approval node not found", slog.String("id", payload.ExternalApprovalNodeID))
+			slog.Error("external approval node not found", slog.String("id", payload.ExternalApprovalNodeId))
 			continue
 		}
 		go func() {
-			if err := r.Client.UpdateApproval(node.Endpoint, payload.ID, &relayplugin.UpdatePayload{}); err != nil {
-				slog.Error("failed to update external approval status", slog.String("endpoint", node.Endpoint), slog.String("id", payload.ID), log.BBError(err))
+			if err := r.Client.UpdateApproval(node.Endpoint, payload.Id, &relayplugin.UpdatePayload{}); err != nil {
+				slog.Error("failed to update external approval status", slog.String("endpoint", node.Endpoint), slog.String("id", payload.Id), log.BBError(err))
 			}
 		}()
 	}

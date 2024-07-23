@@ -4,6 +4,7 @@
 ## Table of Contents
 
 - [store/common.proto](#store_common-proto)
+    - [DatabaseLabel](#bytebase-store-DatabaseLabel)
     - [PageToken](#bytebase-store-PageToken)
     - [Position](#bytebase-store-Position)
   
@@ -16,6 +17,10 @@
     - [Advice](#bytebase-store-Advice)
   
     - [Advice.Status](#bytebase-store-Advice-Status)
+  
+- [store/anomaly.proto](#store_anomaly-proto)
+    - [AnomalyConnectionPayload](#bytebase-store-AnomalyConnectionPayload)
+    - [AnomalyDatabaseSchemaDriftPayload](#bytebase-store-AnomalyDatabaseSchemaDriftPayload)
   
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
@@ -161,17 +166,19 @@
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
     - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
-    - [PlanCheckRunConfig.PreUpdateBackupDetail](#bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
+    - [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail)
   
     - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
+    - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
+    - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
@@ -179,11 +186,14 @@
     - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [SlowQueryPolicy](#bytebase-store-SlowQueryPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
+    - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
@@ -219,6 +229,7 @@
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
     - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-store-DataClassificationSetting-DataClassificationConfig-DataClassification)
     - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level)
+    - [ExternalApprovalPayload](#bytebase-store-ExternalApprovalPayload)
     - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [MaskingAlgorithmSetting](#bytebase-store-MaskingAlgorithmSetting)
@@ -253,6 +264,12 @@
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
     - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
+  
+- [store/task.proto](#store_task-proto)
+    - [TaskDatabaseCreatePayload](#bytebase-store-TaskDatabaseCreatePayload)
+    - [TaskDatabaseDataExportPayload](#bytebase-store-TaskDatabaseDataExportPayload)
+    - [TaskDatabaseUpdatePayload](#bytebase-store-TaskDatabaseUpdatePayload)
+    - [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry)
   
 - [store/task_run.proto](#store_task_run-proto)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
@@ -293,6 +310,22 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/common.proto
+
+
+
+<a name="bytebase-store-DatabaseLabel"></a>
+
+### DatabaseLabel
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
 
 
 
@@ -458,6 +491,54 @@ Used internally for obfuscating the page token.
 | WARNING | 2 |  |
 | ERROR | 3 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_anomaly-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/anomaly.proto
+
+
+
+<a name="bytebase-store-AnomalyConnectionPayload"></a>
+
+### AnomalyConnectionPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| detail | [string](#string) |  | Connection failure detail |
+
+
+
+
+
+
+<a name="bytebase-store-AnomalyDatabaseSchemaDriftPayload"></a>
+
+### AnomalyDatabaseSchemaDriftPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The schema version corresponds to the expected schema |
+| expect | [string](#string) |  | The expected latest schema stored in the migration history table |
+| actual | [string](#string) |  | The actual schema dumped from the database |
+
+
+
+
+
+ 
 
  
 
@@ -2584,7 +2665,7 @@ Type is the database change type.
 | database_name | [string](#string) |  |  |
 | database_group_uid | [int64](#int64) | optional | database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
-| pre_update_backup_detail | [PlanCheckRunConfig.PreUpdateBackupDetail](#bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
+| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
 
 
@@ -2601,21 +2682,6 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail"></a>
-
-### PlanCheckRunConfig.PreUpdateBackupDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -2695,6 +2761,21 @@ Type is the database change type.
 
 
 
+
+<a name="bytebase-store-PreUpdateBackupDetail"></a>
+
+### PreUpdateBackupDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
  
 
 
@@ -2752,6 +2833,36 @@ Type is the database change type.
 | role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+
+
+
+
+
+
+<a name="bytebase-store-DisableCopyDataPolicy"></a>
+
+### DisableCopyDataPolicy
+DisableCopyDataPolicy is the policy configuration for disabling copying data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-EnvironmentTierPolicy"></a>
+
+### EnvironmentTierPolicy
+EnvironmentTierPolicy is the tier of an environment.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| environment_tier | [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier) |  |  |
 
 
 
@@ -2875,6 +2986,21 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
+<a name="bytebase-store-RestrictIssueCreationForSQLReviewPolicy"></a>
+
+### RestrictIssueCreationForSQLReviewPolicy
+RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disallow | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-RolloutPolicy"></a>
 
 ### RolloutPolicy
@@ -2912,6 +3038,21 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
+<a name="bytebase-store-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+SlowQueryPolicy is the policy configuration for slow query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-TagPolicy"></a>
 
 ### TagPolicy
@@ -2943,6 +3084,19 @@ Format: users/{userUID} or groups/{group email} |
 
 
  
+
+
+<a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>
+
+### EnvironmentTierPolicy.EnvironmentTier
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
+| PROTECTED | 1 |  |
+| UNPROTECTED | 2 |  |
+
 
 
 <a name="bytebase-store-MaskingExceptionPolicy-MaskingException-Action"></a>
@@ -3387,6 +3541,22 @@ The type of target.
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ExternalApprovalPayload"></a>
+
+### ExternalApprovalPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_approval_node_id | [string](#string) |  |  |
+| id | [string](#string) |  |  |
 
 
 
@@ -3920,6 +4090,102 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | total_rows_examined | [int32](#int32) |  | The total rows examined of the slow query log. |
 | maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_task-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/task.proto
+
+
+
+<a name="bytebase-store-TaskDatabaseCreatePayload"></a>
+
+### TaskDatabaseCreatePayload
+TaskDatabaseCreatePayload is the task payload for creating databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| skipped | [bool](#bool) |  | common fields |
+| skipped_reason | [string](#string) |  |  |
+| spec_id | [string](#string) |  |  |
+| project_id | [int32](#int32) |  |  |
+| database_name | [string](#string) |  |  |
+| table_name | [string](#string) |  |  |
+| sheet_id | [int32](#int32) |  |  |
+| character_set | [string](#string) |  |  |
+| collation | [string](#string) |  |  |
+| environment_id | [string](#string) |  |  |
+| labels | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskDatabaseDataExportPayload"></a>
+
+### TaskDatabaseDataExportPayload
+TaskDatabaseDataExportPayload is the task payload for database data export.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| spec_id | [string](#string) |  | common fields |
+| sheet_id | [int32](#int32) |  |  |
+| password | [string](#string) |  |  |
+| format | [ExportFormat](#bytebase-store-ExportFormat) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskDatabaseUpdatePayload"></a>
+
+### TaskDatabaseUpdatePayload
+TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| skipped | [bool](#bool) |  | common fields |
+| skipped_reason | [string](#string) |  |  |
+| spec_id | [string](#string) |  |  |
+| schema_version | [string](#string) |  |  |
+| sheet_id | [int32](#int32) |  |  |
+| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
+| flags | [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry) | repeated | flags is used for ghost sync |
+
+
+
+
+
+
+<a name="bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry"></a>
+
+### TaskDatabaseUpdatePayload.FlagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 

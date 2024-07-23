@@ -4,8 +4,6 @@ import type { Database } from "./database";
 import type { Environment } from "./environment";
 import type { CommandId, CommandRegisterId } from "./id";
 import type { Instance } from "./instance";
-import type { Issue } from "./issue";
-import type { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import type { Principal } from "./principal";
 import type { Project, ProjectMember } from "./project";
 import type { SQLReviewPolicy } from "./sqlReview";
@@ -61,12 +59,7 @@ export type ResourceType =
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
-  | "ISSUE"
-  | "PIPELINE"
   | "POLICY"
-  | "STAGE"
-  | "TASK_PROGRESS"
-  | "TASK"
   | "ACTIVITY"
   | "REPOSITORY"
   | "ANOMALY"
@@ -83,11 +76,6 @@ interface ResourceMaker {
   (type: "INSTANCE"): Instance;
   (type: "DATABASE"): Database;
   (type: "DATA_SOURCE"): DataSource;
-  (type: "ISSUE"): Issue;
-  (type: "PIPELINE"): Pipeline;
-  (type: "STAGE"): Stage;
-  (type: "TASK_PROGRESS"): TaskProgress;
-  (type: "TASK"): Task;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
 }
 
@@ -187,63 +175,6 @@ const makeUnknown = (type: ResourceType) => {
     updateSsl: false,
   };
 
-  const UNKNOWN_PIPELINE: Pipeline = {
-    id: UNKNOWN_ID,
-    name: "<<Unknown pipeline>>",
-    stageList: [],
-  };
-
-  const UNKNOWN_ISSUE: Issue = {
-    id: UNKNOWN_ID,
-    project: UNKNOWN_PROJECT,
-    pipeline: UNKNOWN_PIPELINE,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    name: "<<Unknown issue>>",
-    status: "DONE",
-    type: "bb.issue.general",
-    description: "",
-    subscriberList: [],
-    payload: {},
-  };
-
-  const UNKNOWN_STAGE: Stage = {
-    id: UNKNOWN_ID,
-    pipeline: UNKNOWN_PIPELINE,
-    name: "<<Unknown stage>>",
-    environment: UNKNOWN_ENVIRONMENT,
-    taskList: [],
-  };
-
-  const UNKNOWN_TASK_PROGRESS: TaskProgress = {
-    totalUnit: 0,
-    completedUnit: 0,
-    createdTs: 0,
-    updatedTs: 0,
-  };
-
-  const UNKNOWN_TASK: Task = {
-    id: UNKNOWN_ID,
-    pipeline: UNKNOWN_PIPELINE,
-    stage: UNKNOWN_STAGE,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    name: "<<Unknown task>>",
-    type: "bb.task.general",
-    status: "DONE",
-    instance: UNKNOWN_INSTANCE,
-    database: UNKNOWN_DATABASE,
-    earliestAllowedTs: 0,
-    taskRunList: [],
-    taskCheckRunList: [],
-    blockedBy: [],
-    progress: { ...UNKNOWN_TASK_PROGRESS },
-  };
-
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: `${UNKNOWN_ID}`,
     enforce: false,
@@ -267,16 +198,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_DATABASE;
     case "DATA_SOURCE":
       return UNKNOWN_DATA_SOURCE;
-    case "ISSUE":
-      return UNKNOWN_ISSUE;
-    case "PIPELINE":
-      return UNKNOWN_PIPELINE;
-    case "STAGE":
-      return UNKNOWN_STAGE;
-    case "TASK_PROGRESS":
-      return UNKNOWN_TASK_PROGRESS;
-    case "TASK":
-      return UNKNOWN_TASK;
     case "SQL_REVIEW":
       return UNKNOWN_SQL_REVIEW_POLICY;
   }
@@ -380,63 +301,6 @@ const makeEmpty = (type: ResourceType) => {
     updateSsl: false,
   };
 
-  const EMPTY_PIPELINE: Pipeline = {
-    id: EMPTY_ID,
-    name: "",
-    stageList: [],
-  };
-
-  const EMPTY_ISSUE: Issue = {
-    id: EMPTY_ID,
-    pipeline: EMPTY_PIPELINE,
-    project: EMPTY_PROJECT,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    name: "",
-    status: "DONE",
-    type: "bb.issue.general",
-    description: "",
-    subscriberList: [],
-    payload: {},
-  };
-
-  const EMPTY_STAGE: Stage = {
-    id: EMPTY_ID,
-    pipeline: EMPTY_PIPELINE,
-    name: "",
-    environment: EMPTY_ENVIRONMENT,
-    taskList: [],
-  };
-
-  const EMPTY_TASK_PROGRESS: TaskProgress = {
-    totalUnit: 0,
-    completedUnit: 0,
-    createdTs: 0,
-    updatedTs: 0,
-  };
-
-  const EMPTY_TASK: Task = {
-    id: EMPTY_ID,
-    pipeline: EMPTY_PIPELINE,
-    stage: EMPTY_STAGE,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    name: "",
-    type: "bb.task.general",
-    status: "DONE",
-    instance: EMPTY_INSTANCE,
-    database: EMPTY_DATABASE,
-    taskRunList: [],
-    taskCheckRunList: [],
-    earliestAllowedTs: 0,
-    blockedBy: [],
-    progress: { ...EMPTY_TASK_PROGRESS },
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -452,16 +316,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_DATABASE;
     case "DATA_SOURCE":
       return EMPTY_DATA_SOURCE;
-    case "ISSUE":
-      return EMPTY_ISSUE;
-    case "PIPELINE":
-      return EMPTY_PIPELINE;
-    case "STAGE":
-      return EMPTY_STAGE;
-    case "TASK_PROGRESS":
-      return EMPTY_TASK_PROGRESS;
-    case "TASK":
-      return EMPTY_TASK;
   }
 };
 

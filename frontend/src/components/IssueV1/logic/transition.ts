@@ -8,7 +8,6 @@ import type {
 import { ISSUE_STATUS_TRANSITION_LIST } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
 import {
   isDatabaseChangeRelatedIssue,
   flattenTaskV1List,
@@ -86,19 +85,6 @@ export const calcApplicableIssueStatusTransitionList = (
   });
   return applicableTransitionList;
 };
-
-export function isApplicableTransition<
-  T extends
-    | IssueStatusTransition
-    | TaskStatusTransition
-    | StageStatusTransition,
->(target: T, list: T[]): boolean {
-  return (
-    list.findIndex((applicable) => {
-      return applicable.to === target.to && applicable.type === target.type;
-    }) >= 0
-  );
-}
 
 const allowUserToApplyIssueStatusTransition = (
   issue: ComposedIssue,
