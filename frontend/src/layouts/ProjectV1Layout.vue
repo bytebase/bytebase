@@ -117,11 +117,7 @@ const quickActionListForDatabaseGroup = computed((): QuickActionType[] => {
     return [];
   }
 
-  return [
-    "quickaction.bb.database.schema.update",
-    "quickaction.bb.database.data.update",
-    "quickaction.bb.group.database-group.create",
-  ];
+  return ["quickaction.bb.group.database-group.create"];
 });
 
 const quickActionListForDatabase = computed((): QuickActionType[] => {
