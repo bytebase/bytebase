@@ -62,7 +62,7 @@ const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { strictProject } = storeToRefs(useSQLEditorStore());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 
 const { props: buttonProps, style: buttonStyle } = useButton({
   size: toRef(props, "size"),
@@ -101,7 +101,7 @@ const showSchemaPane = computed(() => {
 });
 
 const hideSettingButton = computed(() => {
-  if (inIframe.value) {
+  if (disableSetting.value) {
     return true;
   }
   if (strictProject.value) {

@@ -14,7 +14,10 @@ export const overrideAppProfile = () => {
     actuatorStore.overrideAppFeatures({
       "bb.feature.embedded-in-iframe": true,
       "bb.feature.disable-kbar": true,
-      "bb.feature.databases.operations": new Set(["CHANGE-DATA", "EDIT-SCHEMA"]),
+      "bb.feature.databases.operations": new Set([
+        "CHANGE-DATA",
+        "EDIT-SCHEMA",
+      ]),
       "bb.feature.hide-banner": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-quick-start": true,
@@ -27,6 +30,8 @@ export const overrideAppProfile = () => {
       "bb.feature.databases.hide-unassigned": true,
       "bb.feature.databases.hide-inalterable": true,
       "bb.feature.sql-editor.disallow-share-worksheet": true,
+      "bb.feature.sql-editor.disable-setting": true,
+      "bb.feature.sql-editor.hide-profile": true,
     });
   }
 

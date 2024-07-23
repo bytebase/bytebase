@@ -43,7 +43,7 @@
     </div>
 
     <div class="hidden lg:block -mt-0.5">
-      <ProfileDropdown v-if="!hideProfileDropdown" />
+      <ProfileDropdown v-if="!hideProfile" />
     </div>
 
     <ContextMenu ref="contextMenuRef" />
@@ -59,11 +59,7 @@ import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import {
-  useAppFeature,
-  useFilterStore,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useAppFeature, useFilterStore, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import {
   defer,
@@ -90,7 +86,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+const hideProfile = useAppFeature("bb.feature.sql-editor.hide-profile");
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();
@@ -99,10 +95,6 @@ const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 const scrollState = reactive({
   moreLeft: false,
   moreRight: false,
-});
-
-const hideProfileDropdown = computed(() => {
-  return inIframe.value;
 });
 
 const filteredTabIdList = computed(() => {

@@ -22,7 +22,7 @@ export const useSidebarItems = () => {
   const route = useRoute();
   const { t } = useI18n();
   const me = useCurrentUserV1();
-  const inIframe = useAppFeature("bb.feature.embedded-in-iframe");
+  const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 
   const getItemClass = (item: SidebarItem) => {
     if (route.name === item.name) {
@@ -95,7 +95,7 @@ export const useSidebarItems = () => {
   };
 
   const itemList = computed((): SidebarItem[] => {
-    if (inIframe.value) {
+    if (disableSetting.value) {
       // Hide SQL Editor settings entirely if embedded in iframe
       return [];
     }
