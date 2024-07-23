@@ -100,7 +100,6 @@ import { FeatureModal } from "@/components/FeatureGuard";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { hasFeature, pushNotification } from "@/store";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSDLState } from "./useSDLState";

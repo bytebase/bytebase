@@ -39,7 +39,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { useAppFeature, useCurrentUserV1 } from "@/store";
 import type {

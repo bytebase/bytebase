@@ -46,7 +46,6 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";

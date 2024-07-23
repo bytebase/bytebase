@@ -28,7 +28,6 @@ import { TriangleAlertIcon } from "lucide-vue-next";
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, useSQLEditorTabStore } from "@/store";
 import type { ComposedInstance } from "@/types";

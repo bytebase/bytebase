@@ -87,7 +87,6 @@ import {
 } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
 import { planServiceClient } from "@/grpcweb";
 import { pushNotification, useDBGroupStore } from "@/store";
