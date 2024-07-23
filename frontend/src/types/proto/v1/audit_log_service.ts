@@ -821,6 +821,7 @@ export const AuditLogServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               22,
@@ -859,6 +860,7 @@ export const AuditLogServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               25,

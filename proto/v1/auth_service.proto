@@ -16,11 +16,13 @@ service AuthService {
   rpc GetUser(GetUserRequest) returns (User) {
     option (google.api.http) = {get: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
     option (google.api.http) = {get: "/v1/users"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc CreateUser(CreateUserRequest) returns (User) {
@@ -30,6 +32,7 @@ service AuthService {
     };
     option (google.api.method_signature) = "user";
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateUser(UpdateUserRequest) returns (User) {
@@ -38,11 +41,13 @@ service AuthService {
       body: "user"
     };
     option (google.api.method_signature) = "user,update_mask";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UndeleteUser(UndeleteUserRequest) returns (User) {
@@ -50,6 +55,7 @@ service AuthService {
       post: "/v1/{name=users/*}:undelete"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Login(LoginRequest) returns (LoginResponse) {
