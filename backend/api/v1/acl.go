@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"regexp"
 	"strings"
 
 	annotationsproto "google.golang.org/genproto/googleapis/api/annotations"
@@ -253,67 +254,81 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 }
 
 func (*ACLInterceptor) populateRawResources(authContext *common.AuthContext, request any, method string) error {
-	name := getResourceFromRequest(request, method)
-	if name != "" {
-		authContext.Resources = append(authContext.Resources, &common.Resource{
-			Name: name,
-		})
+	resource := getResourceFromRequest(request, method)
+	if resource != nil {
+		authContext.Resources = append(authContext.Resources, resource)
 	}
 	return nil
 }
 
-func getResourceFromRequest(request any, method string) string {
-	var resource string
+func getResourceFromRequest(request any, method string) *common.Resource {
 	pm, ok := request.(proto.Message)
 	if !ok {
-		return ""
+		return nil
 	}
 	mr := pm.ProtoReflect()
 
 	parentDesc := mr.Descriptor().Fields().ByName("parent")
 	if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(parentDesc)
-		return v.String()
+		return &common.Resource{Name: v.String()}
 	}
 	nameDesc := mr.Descriptor().Fields().ByName("name")
 	if nameDesc != nil && proto.HasExtension(nameDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(nameDesc)
-		return v.String()
+		return &common.Resource{Name: v.String()}
 	}
 	// This is primarily used by Get/SetIAMPolicy().
-	resourceDesc := mr.Descriptor().Fields().ByName("resource")
-	if resourceDesc != nil && proto.HasExtension(resourceDesc.Options(), annotationsproto.E_ResourceReference) {
-		v := mr.Get(resourceDesc)
-		return v.String()
+	resourceFieldDesc := mr.Descriptor().Fields().ByName("resource")
+	if resourceFieldDesc != nil && proto.HasExtension(resourceFieldDesc.Options(), annotationsproto.E_ResourceReference) {
+		v := mr.Get(resourceFieldDesc)
+		return &common.Resource{Name: v.String()}
 	}
+
 	methodTokens := strings.Split(method, "/")
 	if len(methodTokens) != 3 {
-		return ""
-	}
-	if strings.HasPrefix(methodTokens[2], "Create") {
-		return ""
+		return nil
 	}
 
-	mr.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
-		if fd.Name() == "name" {
-			resource = v.String()
-			return false
-		}
-		fdm := fd.Message()
-		if fdm == nil {
-			return true
-		}
-		if !proto.HasExtension(fdm.Options(), annotationsproto.E_Resource) {
-			return true
-		}
+	// Listing top-level resources.
+	if strings.HasPrefix(methodTokens[2], "List") {
+		return &common.Resource{Workspace: true}
+	}
 
-		nameDesc := fdm.Fields().ByName("name")
-		if nameDesc != nil {
-			rn := v.Message().Get(nameDesc)
-			resource = rn.String()
-			return false
+	isCreate := strings.HasPrefix(methodTokens[2], "Create")
+	isUpdate := strings.HasPrefix(methodTokens[2], "Update")
+	if !isCreate && !isUpdate {
+		return nil
+	}
+	var resourceName string
+	if isCreate {
+		resourceName = strings.TrimPrefix(methodTokens[2], "Create")
+	}
+	if isUpdate {
+		resourceName = strings.TrimPrefix(methodTokens[2], "Update")
+	}
+	resourceName = toSnakeCase(resourceName)
+	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
+	resourceValue := mr.Get(resourceDesc)
+	if resourceDesc != nil && proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
+		// Parent-less resource. Return workspace resource for Create() method.
+		if isCreate {
+			return &common.Resource{Workspace: true}
 		}
-		return false
-	})
-	return resource
+		resourceNameDesc := resourceDesc.Message().Fields().ByName("name")
+		if resourceNameDesc != nil {
+			v := resourceValue.Message().Get(resourceNameDesc)
+			return &common.Resource{Name: v.String()}
+		}
+	}
+	return nil
+}
+
+var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+func toSnakeCase(str string) string {
+	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
+	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+	return strings.ToLower(snake)
 }
