@@ -2,7 +2,6 @@ export type AppMode = "CONSOLE" | "SQL-EDITOR";
 
 export type AppFeatures = {
   // Use simple and accurate phrases. Namespace if needed
-  "bb.feature.embedded-in-iframe": boolean;
   "bb.feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.feature.disable-kbar": boolean;
   "bb.feature.disallow-navigate-to-console": boolean;
@@ -42,7 +41,6 @@ export const defaultAppProfile = (): AppProfile => ({
   mode: "CONSOLE",
   embedded: false,
   features: {
-    "bb.feature.embedded-in-iframe": false,
     "bb.feature.custom-color-scheme": undefined,
     "bb.feature.disable-kbar": false,
     "bb.feature.disallow-navigate-to-console": false,
