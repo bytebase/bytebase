@@ -1364,7 +1364,7 @@ The type of action performed on a Binding in a policy.
 <a name="bytebase-v1-AuditData"></a>
 
 ### AuditData
-Temporarily used for IAM auditing.
+
 
 
 | Field | Type | Label | Description |

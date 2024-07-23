@@ -489,7 +489,6 @@ func (x *AuditLog) GetServiceData() *anypb.Any {
 	return nil
 }
 
-// Temporarily used for IAM auditing.
 type AuditData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

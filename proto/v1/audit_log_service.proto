@@ -129,7 +129,6 @@ message AuditLog {
   }
 }
 
-// Temporarily used for IAM auditing.
 message AuditData {
   PolicyDelta policy_delta = 1;
 }

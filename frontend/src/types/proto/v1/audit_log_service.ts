@@ -210,7 +210,6 @@ export function auditLog_SeverityToNumber(object: AuditLog_Severity): number {
   }
 }
 
-/** Temporarily used for IAM auditing. */
 export interface AuditData {
   policyDelta: PolicyDelta | undefined;
 }
