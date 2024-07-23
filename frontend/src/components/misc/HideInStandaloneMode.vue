@@ -1,10 +1,10 @@
 <template>
-  <slot v-if="pageMode !== 'STANDALONE'" name="default" />
+  <slot v-if="!embedded" name="default" />
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { useActuatorV1Store } from "@/store";
 
-const { pageMode } = storeToRefs(useActuatorV1Store());
+const embedded = computed(() => useActuatorV1Store().appProfile.embedded);
 </script>

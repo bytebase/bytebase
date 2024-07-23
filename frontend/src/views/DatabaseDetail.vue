@@ -216,6 +216,7 @@ import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAnomalyV1Store,
+  useAppFeature,
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -282,6 +283,7 @@ const {
   allowListChangeHistories,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
+const disableSchemaEditor = useAppFeature("bb.feature.issue.disable-schema-editor");
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
@@ -343,7 +345,8 @@ const createMigration = async (
   if (type === "bb.issue.database.schema.update") {
     if (
       database.value.syncState === State.ACTIVE &&
-      allowUsingSchemaEditor([database.value])
+      allowUsingSchemaEditor([database.value]) &&
+      !disableSchemaEditor.value
     ) {
       state.showSchemaEditorModal = true;
       return;

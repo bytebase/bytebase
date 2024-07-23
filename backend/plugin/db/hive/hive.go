@@ -61,13 +61,6 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		if !config.SASLConfig.Check() {
 			return nil, errors.New("SASL settings error")
 		}
-
-		db.KrbEnvLock()
-		defer db.KrbEnvUnlock()
-
-		if err := config.SASLConfig.InitEnv(); err != nil {
-			return nil, errors.Wrapf(err, "failed to init SASL environment")
-		}
 		pool, err := CreateHiveConnPool(numMaxConn, &config)
 		if err != nil {
 			return nil, err
@@ -163,10 +156,6 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementsStr st
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
-	}
-
-	if err := SetRole(ctx, d.conn, "admin"); err != nil {
-		return nil, err
 	}
 
 	for _, statement := range statements {

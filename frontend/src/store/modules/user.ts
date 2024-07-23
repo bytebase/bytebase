@@ -1,6 +1,6 @@
 import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import {
   type PrincipalType,
@@ -24,15 +24,22 @@ export const useUserStore = defineStore("user", () => {
   const workspaceStore = useWorkspaceV1Store();
 
   const setUser = (user: User) => {
-    const roles = roleListInIAM(workspaceStore.workspaceIamPolicy, user.email);
     const composedUser: ComposedUser = {
       ...user,
-      roles,
+      roles: roleListInIAM(workspaceStore.workspaceIamPolicy, user.email),
     };
+    watch(
+      () => workspaceStore.workspaceIamPolicy,
+      (iamPolicy) => {
+        // re-calculate workspace permission roles for user when
+        // workspace iam policy updated
+        composedUser.roles = roleListInIAM(iamPolicy, user.email);
+        // invalid permission cache
+        usePermissionStore().invalidCacheByUser(composedUser);
+      }
+    );
     userMapByName.value.set(user.name, composedUser);
 
-    // invalid permission cache
-    usePermissionStore().invalidCacheByUser(composedUser);
     return composedUser;
   };
 

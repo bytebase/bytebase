@@ -96,18 +96,16 @@
             </span>
           </div>
 
-          <HideInStandaloneMode>
-            <div class="pl-2 first:pl-0">
-              <a
-                v-if="row.link"
-                class="normal-link"
-                :href="row.link.url"
-                :target="row.link.target"
-              >
-                {{ row.link.title }}
-              </a>
-            </div>
-          </HideInStandaloneMode>
+          <div v-if="!hideDocLink" class="pl-2 first:pl-0">
+            <a
+              v-if="row.link"
+              class="normal-link"
+              :href="row.link.url"
+              :target="row.link.target"
+            >
+              {{ row.link.title }}
+            </a>
+          </div>
 
           <!-- Only show the error line for latest plan check run -->
           <div
@@ -194,16 +192,14 @@
           {{ row.checkResult.sqlSummaryReport.affectedRows }}
         </template>
 
-        <HideInStandaloneMode>
-          <a
-            v-if="row.link"
-            class="ml-1 normal-link"
-            :href="row.link.url"
-            :target="row.link.target"
-          >
-            {{ row.link.title }}
-          </a>
-        </HideInStandaloneMode>
+        <a
+          v-if="!hideDocLink && row.link"
+          class="ml-1 normal-link"
+          :href="row.link.url"
+          :target="row.link.target"
+        >
+          {{ row.link.title }}
+        </a>
 
         <!-- Only show the error line for latest plan check run -->
         <template
@@ -246,10 +242,9 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { planServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { useReviewPolicyForDatabase } from "@/store";
+import { useAppFeature, useReviewPolicyForDatabase } from "@/store";
 import {
   getProjectNamePlanIdPlanCheckRunId,
   planNamePrefix,
@@ -300,6 +295,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const { events } = usePlanCheckRunContext();
+const hideDocLink = useAppFeature("bb.feature.sql-check.hide-doc-link");
 const state = reactive<LocalState>({
   activeRule: undefined,
   activeResultDefinition: undefined,

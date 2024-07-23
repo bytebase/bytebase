@@ -24,7 +24,6 @@
     <Suspense>
       <AIChatToSQL
         v-if="tab && !isDisconnected && showAIChatBox"
-        :allow-config="pageMode === 'BUNDLED'"
         @apply-statement="handleApplyStatement"
       />
     </Suspense>
@@ -41,7 +40,7 @@ import { defineAsyncComponent, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import { useInstanceV1Store, usePageMode, useSQLEditorTabStore } from "@/store";
+import { useInstanceV1Store, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
 import {
   EditorAction,
@@ -57,7 +56,6 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { showAIChatBox, standardModeEnabled } = useSQLEditorContext();
-const pageMode = usePageMode();
 
 const { execute } = useExecuteSQL();
 

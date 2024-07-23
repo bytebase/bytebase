@@ -163,7 +163,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
   useDBGroupStore,
-  usePageMode,
+  useAppFeature,
 } from "@/store";
 import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
@@ -229,9 +229,7 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
-const pageMode = usePageMode();
-
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
+const disableSchemaEditor = useAppFeature("bb.feature.issue.disable-schema-editor");
 
 const featureModalContext = ref<{
   feature?: FeatureType;
@@ -484,7 +482,7 @@ const generateMultiDb = async () => {
     flattenSelectedDatabaseList.value.length === 1 &&
     isEditSchema.value &&
     allowUsingSchemaEditor(flattenSelectedDatabaseList.value) &&
-    !isStandaloneMode.value
+    !disableSchemaEditor.value
   ) {
     schemaEditorContext.value.databaseIdList = [
       ...flattenSelectedDatabaseUidList.value,

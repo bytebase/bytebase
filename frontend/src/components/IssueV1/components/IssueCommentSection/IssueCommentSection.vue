@@ -5,9 +5,7 @@
         {{ $t("common.activity") }}
       </span>
 
-      <HideInStandaloneMode>
-        <Subscribers />
-      </HideInStandaloneMode>
+      <Subscribers v-if="!hideSubscribers" />
     </div>
 
     <IssueCommentList />
@@ -15,7 +13,9 @@
 </template>
 
 <script lang="ts" setup>
-import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
+import { useAppFeature } from "@/store";
 import IssueCommentList from "./IssueCommentList.vue";
 import Subscribers from "./Subscribers";
+
+const hideSubscribers = useAppFeature("bb.feature.issue.hide-subscribers");
 </script>

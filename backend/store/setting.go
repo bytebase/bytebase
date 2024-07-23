@@ -207,6 +207,9 @@ func (s *Store) GetDataClassificationConfigByID(ctx context.Context, classificat
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache.Purge()
+	s.policyCache.Purge()
+	s.userEmailCache.Purge()
+	s.userIDCache.Purge()
 }
 
 // GetSettingV2 returns the setting by name.

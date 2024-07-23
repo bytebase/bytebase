@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -149,8 +149,8 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 
 	switch anomaly.Type {
 	case api.AnomalyInstanceConnection:
-		var detail api.AnomalyInstanceConnectionPayload
-		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
+		detail := &storepb.AnomalyConnectionPayload{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal instance connection anomaly payload")
 		}
 		pbAnomaly.Type = v1pb.Anomaly_INSTANCE_CONNECTION
@@ -160,8 +160,8 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 			},
 		}
 	case api.AnomalyDatabaseConnection:
-		var detail api.AnomalyDatabaseConnectionPayload
-		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
+		detail := &storepb.AnomalyConnectionPayload{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal database connection anomaly payload")
 		}
 		pbAnomaly.Type = v1pb.Anomaly_DATABASE_CONNECTION
@@ -171,8 +171,8 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 			},
 		}
 	case api.AnomalyDatabaseSchemaDrift:
-		var detail api.AnomalyDatabaseSchemaDriftPayload
-		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
+		detail := &storepb.AnomalyDatabaseSchemaDriftPayload{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal database schema drift anomaly payload")
 		}
 		pbAnomaly.Type = v1pb.Anomaly_DATABASE_SCHEMA_DRIFT

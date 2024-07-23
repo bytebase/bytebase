@@ -102,6 +102,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 }
 
 // SearchInstance searches for instances.
+// Deprecated.
 func (s *InstanceService) SearchInstances(ctx context.Context, request *v1pb.SearchInstancesRequest) (*v1pb.SearchInstancesResponse, error) {
 	var project *store.ProjectMessage
 	if request.Parent != "" {

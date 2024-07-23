@@ -6,6 +6,14 @@ import { ChangedResources } from "./instance_change_history";
 
 export const protobufPackage = "bytebase.store";
 
+export interface PreUpdateBackupDetail {
+  /**
+   * The database for keeping the backup data.
+   * Format: instances/{instance}/databases/{database}
+   */
+  database: string;
+}
+
 export interface PlanCheckRunConfig {
   sheetUid: number;
   changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
@@ -15,7 +23,7 @@ export interface PlanCheckRunConfig {
   databaseGroupUid?: Long | undefined;
   ghostFlags: { [key: string]: string };
   /** If set, a backup of the modified data will be created automatically before any changes are applied. */
-  preUpdateBackupDetail?: PlanCheckRunConfig_PreUpdateBackupDetail | undefined;
+  preUpdateBackupDetail?: PreUpdateBackupDetail | undefined;
 }
 
 export enum PlanCheckRunConfig_ChangeDatabaseType {
@@ -90,14 +98,6 @@ export function planCheckRunConfig_ChangeDatabaseTypeToNumber(object: PlanCheckR
 export interface PlanCheckRunConfig_GhostFlagsEntry {
   key: string;
   value: string;
-}
-
-export interface PlanCheckRunConfig_PreUpdateBackupDetail {
-  /**
-   * The database for keeping the backup data.
-   * Format: instances/{instance}/databases/{database}
-   */
-  database: string;
 }
 
 export interface PlanCheckRunResult {
@@ -197,6 +197,63 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
   endPosition: Position | undefined;
 }
 
+function createBasePreUpdateBackupDetail(): PreUpdateBackupDetail {
+  return { database: "" };
+}
+
+export const PreUpdateBackupDetail = {
+  encode(message: PreUpdateBackupDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.database !== "") {
+      writer.uint32(10).string(message.database);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PreUpdateBackupDetail {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreUpdateBackupDetail();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreUpdateBackupDetail {
+    return { database: isSet(object.database) ? globalThis.String(object.database) : "" };
+  },
+
+  toJSON(message: PreUpdateBackupDetail): unknown {
+    const obj: any = {};
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreUpdateBackupDetail>): PreUpdateBackupDetail {
+    return PreUpdateBackupDetail.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreUpdateBackupDetail>): PreUpdateBackupDetail {
+    const message = createBasePreUpdateBackupDetail();
+    message.database = object.database ?? "";
+    return message;
+  },
+};
+
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
   return {
     sheetUid: 0,
@@ -230,7 +287,7 @@ export const PlanCheckRunConfig = {
       PlanCheckRunConfig_GhostFlagsEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).ldelim();
     });
     if (message.preUpdateBackupDetail !== undefined) {
-      PlanCheckRunConfig_PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(58).fork()).ldelim();
+      PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -292,7 +349,7 @@ export const PlanCheckRunConfig = {
             break;
           }
 
-          message.preUpdateBackupDetail = PlanCheckRunConfig_PreUpdateBackupDetail.decode(reader, reader.uint32());
+          message.preUpdateBackupDetail = PreUpdateBackupDetail.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -319,7 +376,7 @@ export const PlanCheckRunConfig = {
         }, {})
         : {},
       preUpdateBackupDetail: isSet(object.preUpdateBackupDetail)
-        ? PlanCheckRunConfig_PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
+        ? PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
         : undefined,
     };
   },
@@ -351,7 +408,7 @@ export const PlanCheckRunConfig = {
       }
     }
     if (message.preUpdateBackupDetail !== undefined) {
-      obj.preUpdateBackupDetail = PlanCheckRunConfig_PreUpdateBackupDetail.toJSON(message.preUpdateBackupDetail);
+      obj.preUpdateBackupDetail = PreUpdateBackupDetail.toJSON(message.preUpdateBackupDetail);
     }
     return obj;
   },
@@ -380,7 +437,7 @@ export const PlanCheckRunConfig = {
     );
     message.preUpdateBackupDetail =
       (object.preUpdateBackupDetail !== undefined && object.preUpdateBackupDetail !== null)
-        ? PlanCheckRunConfig_PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
+        ? PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
         : undefined;
     return message;
   },
@@ -456,63 +513,6 @@ export const PlanCheckRunConfig_GhostFlagsEntry = {
     const message = createBasePlanCheckRunConfig_GhostFlagsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBasePlanCheckRunConfig_PreUpdateBackupDetail(): PlanCheckRunConfig_PreUpdateBackupDetail {
-  return { database: "" };
-}
-
-export const PlanCheckRunConfig_PreUpdateBackupDetail = {
-  encode(message: PlanCheckRunConfig_PreUpdateBackupDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.database !== "") {
-      writer.uint32(10).string(message.database);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRunConfig_PreUpdateBackupDetail {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanCheckRunConfig_PreUpdateBackupDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanCheckRunConfig_PreUpdateBackupDetail {
-    return { database: isSet(object.database) ? globalThis.String(object.database) : "" };
-  },
-
-  toJSON(message: PlanCheckRunConfig_PreUpdateBackupDetail): unknown {
-    const obj: any = {};
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanCheckRunConfig_PreUpdateBackupDetail>): PlanCheckRunConfig_PreUpdateBackupDetail {
-    return PlanCheckRunConfig_PreUpdateBackupDetail.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<PlanCheckRunConfig_PreUpdateBackupDetail>): PlanCheckRunConfig_PreUpdateBackupDetail {
-    const message = createBasePlanCheckRunConfig_PreUpdateBackupDetail();
-    message.database = object.database ?? "";
     return message;
   },
 };

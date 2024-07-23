@@ -9,7 +9,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1, usePageMode } from "@/store";
+import { useCurrentUserV1, useAppFeature } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   instanceOfSQLEditorTreeNode,
@@ -38,7 +38,9 @@ type DropdownOptionWithTreeNode = DropdownOption & {
 export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
-  const pageMode = usePageMode();
+  const disallowNavigateAwaySQLEditor = useAppFeature(
+    "bb.feature.disallow-navigate-to-console"
+  );
 
   const show = ref(false);
   const position = ref<Position>({
@@ -107,7 +109,7 @@ export const useDropdown = () => {
           });
         }
       }
-      if (pageMode.value === "BUNDLED") {
+      if (!disallowNavigateAwaySQLEditor.value) {
         if (type === "database") {
           const database = target as ComposedDatabase;
           items.push({

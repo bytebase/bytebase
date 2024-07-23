@@ -42,8 +42,8 @@ import DatabaseV1Table, {
   DatabaseOperations,
 } from "@/components/v2/Model/DatabaseV1Table";
 import {
+  useAppFeature,
   useDatabaseV1Store,
-  usePageMode,
   useProjectV1List,
   useUIStateStore,
 } from "@/store";
@@ -71,7 +71,9 @@ interface LocalState {
 
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
-const pageMode = usePageMode();
+const hideUnassignedDatabases = useAppFeature(
+  "bb.feature.databases.hide-unassigned"
+);
 const route = useRoute();
 const router = useRouter();
 
@@ -119,8 +121,6 @@ const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
   [...CommonFilterScopeIdList, "project", "project-assigned"]
 );
-
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const selectedInstance = computed(() => {
   return (
@@ -200,7 +200,7 @@ const filteredDatabaseList = computed(() => {
       return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
     });
   }
-  if (isStandaloneMode.value) {
+  if (hideUnassignedDatabases.value) {
     list = list.filter((db) => db.projectEntity.name !== DEFAULT_PROJECT_NAME);
   }
   const keyword = state.params.query.trim().toLowerCase();

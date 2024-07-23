@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -465,12 +464,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.Internal, "failed to list external approvals: %v", err)
 			}
 			for _, approval := range approvals {
-				payload := &api.ExternalApprovalPayloadRelay{}
-				if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
+				payload := &storepb.ExternalApprovalPayload{}
+				if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(approval.Payload), payload); err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to unmarshal external approval payload: %v", err)
 				}
-				if removed[payload.ExternalApprovalNodeID] {
-					return nil, status.Errorf(codes.InvalidArgument, "cannot remove %s because it is used by the external approval node in issue %d", payload.ExternalApprovalNodeID, approval.IssueUID)
+				if removed[payload.ExternalApprovalNodeId] {
+					return nil, status.Errorf(codes.InvalidArgument, "cannot remove %s because it is used by the external approval node in issue %d", payload.ExternalApprovalNodeId, approval.IssueUID)
 				}
 			}
 		}

@@ -171,6 +171,18 @@ func TestGhostTenant(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	// Create a project.
+	projectID := generateRandomString("project", 10)
+	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:  fmt.Sprintf("projects/%s", projectID),
+			Title: projectID,
+			Key:   projectID,
+		},
+		ProjectId: projectID,
+	})
+	a.NoError(err)
+
 	// Provision instances.
 	var testInstances []*v1pb.Instance
 	var prodInstances []*v1pb.Instance
@@ -220,7 +232,7 @@ func TestGhostTenant(t *testing.T) {
 	// Create deployment configuration.
 	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 		Config: &v1pb.DeploymentConfig{
-			Name:     common.FormatDeploymentConfig(ctl.project.Name),
+			Name:     common.FormatDeploymentConfig(project.Name),
 			Schedule: deploySchedule,
 		},
 	})
@@ -228,18 +240,16 @@ func TestGhostTenant(t *testing.T) {
 
 	// Create issues that create databases.
 	for i, testInstance := range testInstances {
-		err := ctl.createDatabaseV2(ctx, ctl.project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
-		err := ctl.createDatabaseV2(ctx, ctl.project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
-	// Getting databases for each environment.
 	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
-		Parent: "instances/-",
-		Filter: fmt.Sprintf(`project == "%s"`, ctl.project.Name),
+		Parent: project.Name,
 	})
 	a.NoError(err)
 	databases := resp.Databases
@@ -266,7 +276,7 @@ func TestGhostTenant(t *testing.T) {
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: ctl.project.Name,
+		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "migration statement sheet 1",
 			Content: []byte(mysqlMigrationStatement),
@@ -280,7 +290,7 @@ func TestGhostTenant(t *testing.T) {
 				Id: uuid.NewString(),
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Target: fmt.Sprintf("%s/deploymentConfigs/default", ctl.project.Name),
+						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
 						Sheet:  sheet1.Name,
 						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 					},
@@ -288,7 +298,7 @@ func TestGhostTenant(t *testing.T) {
 			},
 		},
 	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{step})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
 	a.NoError(err)
 
 	// Query schema.
@@ -304,7 +314,7 @@ func TestGhostTenant(t *testing.T) {
 	}
 
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: ctl.project.Name,
+		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "migration statement sheet 2",
 			Content: []byte(mysqlGhostMigrationStatement),
@@ -319,7 +329,7 @@ func TestGhostTenant(t *testing.T) {
 				Id: uuid.NewString(),
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Target: fmt.Sprintf("%s/deploymentConfigs/default", ctl.project.Name),
+						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
 						Sheet:  sheet2.Name,
 						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
 					},
@@ -327,7 +337,7 @@ func TestGhostTenant(t *testing.T) {
 			},
 		},
 	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{step})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
 	a.NoError(err)
 
 	// Query schema.

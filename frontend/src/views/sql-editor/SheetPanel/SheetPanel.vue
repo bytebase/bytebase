@@ -16,7 +16,7 @@
         />
       </NTabPane>
       <NTabPane
-        v-if="!isStandaloneMode"
+        v-if="!disallowShareWorksheet"
         name="shared"
         :tab="$t('sheet.shared')"
       >
@@ -45,10 +45,10 @@
 
 <script setup lang="ts">
 import { NButton, NTabs, NTabPane } from "naive-ui";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
-import { usePageMode } from "@/store";
+import { useAppFeature } from "@/store";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { useSheetContext, openWorksheetByName, addNewSheet } from "../Sheet";
 import { useSQLEditorContext } from "../context";
@@ -61,10 +61,10 @@ const emit = defineEmits<{
 const editorContext = useSQLEditorContext();
 const worksheetContext = useSheetContext();
 const { view, isFetching, events } = worksheetContext;
-const pageMode = usePageMode();
+const disallowShareWorksheet = useAppFeature(
+  "bb.feature.sql-editor.disallow-share-worksheet"
+);
 const keyword = ref("");
-
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const handleSelectSheet = async (sheet: Worksheet) => {
   if (await openWorksheetByName(sheet.name, editorContext, worksheetContext)) {

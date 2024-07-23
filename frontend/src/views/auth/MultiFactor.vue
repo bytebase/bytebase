@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mx-auto w-full h-full min-h-screen flex flex-col justify-center items-center bg-gray-100"
+    class="mx-auto w-full h-full py-6 flex flex-col justify-center items-center bg-gray-100 rounded-lg"
   >
     <div class="w-80 bg-white p-8 py-6 rounded-lg shadow">
       <img
@@ -33,7 +33,7 @@
           />
         </template>
         <div class="w-full mt-4">
-          <NButton attr-type="submit" type="primary">
+          <NButton class="!w-full" attr-type="submit" type="primary">
             {{ $t("common.verify") }}
           </NButton>
         </div>

@@ -3693,6 +3693,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Deprecated. */
     searchInstances: {
       name: "SearchInstances",
       requestType: SearchInstancesRequest,

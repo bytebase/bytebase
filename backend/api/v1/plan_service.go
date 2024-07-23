@@ -406,8 +406,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 							return nil
 						}
-						payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-						if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+						payload := &storepb.TaskDatabaseUpdatePayload{}
+						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 						}
 						newFlags := spec.GetChangeDatabaseConfig().GetGhostFlags()
@@ -457,8 +457,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if task.Type != api.TaskDatabaseDataUpdate {
 							return nil
 						}
-						payload := &api.TaskDatabaseDataUpdatePayload{}
-						if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+						payload := &storepb.TaskDatabaseUpdatePayload{}
+						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
@@ -478,7 +478,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							}
 						}
 						if databaseName != nil {
-							taskPatch.PreUpdateBackupDetail = &api.PreUpdateBackupDetail{
+							taskPatch.PreUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
 								Database: *databaseName,
 							}
 							doUpdate = true
@@ -558,8 +558,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if task.Type != api.TaskDatabaseDataExport {
 							return nil
 						}
-						payload := &api.TaskDatabaseDataExportPayload{}
-						if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+						payload := &storepb.TaskDatabaseDataExportPayload{}
+						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)

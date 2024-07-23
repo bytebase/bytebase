@@ -33,24 +33,3 @@ const (
 func (t IssueType) String() string {
 	return string(t)
 }
-
-// IssueFieldID is the field ID for an issue.
-// It has to be string type because the id for stage field contain multiple parts.
-type IssueFieldID string
-
-const (
-	// IssueFieldName is the field ID for name.
-	IssueFieldName IssueFieldID = "1"
-	// IssueFieldStatus is the field ID for status.
-	IssueFieldStatus IssueFieldID = "2"
-	// IssueFieldAssignee is the field ID for assignee.
-	IssueFieldAssignee IssueFieldID = "3"
-	// IssueFieldDescription is the field ID for description.
-	IssueFieldDescription IssueFieldID = "4"
-	// IssueFieldProject is the field ID for project.
-	IssueFieldProject IssueFieldID = "5"
-	// IssueFieldSubscriberList is the field ID for subscriber list.
-	IssueFieldSubscriberList IssueFieldID = "6"
-	// IssueFieldSQL is the field ID for SQL.
-	IssueFieldSQL IssueFieldID = "7"
-)

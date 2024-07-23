@@ -275,9 +275,9 @@ func convertDatabaseLabels(labelsMap map[string]string) (string, error) {
 	if len(labelsMap) > api.DatabaseLabelSizeMax {
 		return "", errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
 	}
-	var labels []*api.DatabaseLabel
+	var labels []*storepb.DatabaseLabel
 	for k, v := range labelsMap {
-		labels = append(labels, &api.DatabaseLabel{
+		labels = append(labels, &storepb.DatabaseLabel{
 			Key:   k,
 			Value: v,
 		})
@@ -585,7 +585,7 @@ func convertToDatabaseLabels(labelsJSON string) (map[string]string, error) {
 	if labelsJSON == "" {
 		return nil, nil
 	}
-	var labels []*api.DatabaseLabel
+	var labels []*storepb.DatabaseLabel
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
 		return nil, err
 	}
@@ -597,8 +597,8 @@ func convertToDatabaseLabels(labelsJSON string) (map[string]string, error) {
 }
 
 func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	payload := &api.TaskDatabaseCreatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseCreatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
@@ -615,7 +615,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
-		SpecId:         payload.SpecID,
+		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
@@ -626,10 +626,10 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Project:      "",
 				Database:     payload.DatabaseName,
 				Table:        payload.TableName,
-				Sheet:        getResourceNameForSheet(project, payload.SheetID),
+				Sheet:        getResourceNameForSheet(project, int(payload.SheetId)),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
-				Environment:  common.FormatEnvironment(payload.EnvironmentID),
+				Environment:  common.FormatEnvironment(payload.EnvironmentId),
 				Labels:       labels,
 			},
 		},
@@ -642,8 +642,8 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &api.TaskDatabaseSchemaBaselinePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseUpdatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
@@ -657,7 +657,7 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
-		SpecId:         payload.SpecID,
+		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
@@ -676,8 +676,8 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &api.TaskDatabaseSchemaUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseUpdatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
@@ -692,7 +692,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
-		SpecId:         payload.SpecID,
+		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
@@ -700,7 +700,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
-				Sheet:         getResourceNameForSheet(project, payload.SheetID),
+				Sheet:         getResourceNameForSheet(project, int(payload.SheetId)),
 				SchemaVersion: payload.SchemaVersion,
 			},
 		},
@@ -712,8 +712,8 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &api.TaskDatabaseSchemaUpdateGhostCutoverPayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseUpdatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
@@ -727,7 +727,7 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
-		SpecId:         payload.SpecID,
+		SpecId:         payload.SpecId,
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
 		Type:           convertToTaskType(task.Type),
@@ -742,8 +742,8 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &api.TaskDatabaseDataUpdatePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseUpdatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
@@ -758,7 +758,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
-		SpecId:         payload.SpecID,
+		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
@@ -768,7 +768,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:         getResourceNameForSheet(project, payload.SheetID),
+			Sheet:         getResourceNameForSheet(project, int(payload.SheetId)),
 			SchemaVersion: payload.SchemaVersion,
 		},
 	}
@@ -781,8 +781,8 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &api.TaskDatabaseDataExportPayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseDataExportPayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
@@ -793,7 +793,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 		return nil, errors.Errorf("database not found")
 	}
 	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	sheet := getResourceNameForSheet(project, payload.SheetID)
+	sheet := getResourceNameForSheet(project, int(payload.SheetId))
 	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
 			Target:   targetDatabaseName,
@@ -806,7 +806,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 		Name:    fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
 		Uid:     fmt.Sprintf("%d", task.ID),
 		Title:   task.Name,
-		SpecId:  payload.SpecID,
+		SpecId:  payload.SpecId,
 		Type:    convertToTaskType(task.Type),
 		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
 		Target:  targetDatabaseName,

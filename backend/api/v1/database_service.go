@@ -112,6 +112,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	return database, nil
 }
 
+// Deprecated.
 func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
 	find, err := getDatabaseFind(request.Filter)
 	if err != nil {
@@ -168,8 +169,8 @@ func searchDatabases(ctx context.Context, s *store.Store, iamManager *iam.Manage
 	return filterDatabasesV2(ctx, s, iamManager, databases, iam.PermissionDatabasesGet)
 }
 
-// ListDatabases lists all databases.
-func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
+// ListInstanceDatabases lists all databases for an instance.
+func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1pb.ListInstanceDatabasesRequest) (*v1pb.ListInstanceDatabasesResponse, error) {
 	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -182,13 +183,15 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	limitPlusOne := limit + 1
 
 	find := &store.FindDatabaseMessage{
-		Limit:  &limitPlusOne,
-		Offset: &offset,
-	}
-	if instanceID != "-" {
-		find.InstanceID = &instanceID
+		InstanceID: &instanceID,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
 	}
 
+	// Deprecated. Remove this later.
+	if instanceID == "-" {
+		find.InstanceID = nil
+	}
 	if request.Filter != "" {
 		projectFilter, err := getProjectFilter(request.Filter)
 		if err != nil {
@@ -200,6 +203,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		}
 		find.ProjectID = &projectID
 	}
+
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -216,9 +220,60 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		}
 	}
 
-	databaseMessages, err = filterDatabasesV2(ctx, s.store, s.iamManager, databaseMessages, iam.PermissionDatabasesList)
+	response := &v1pb.ListInstanceDatabasesResponse{
+		NextPageToken: nextPageToken,
+	}
+	for _, databaseMessage := range databaseMessages {
+		database, err := s.convertToDatabase(ctx, databaseMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+		}
+		response.Databases = append(response.Databases, database)
+	}
+	return response, nil
+}
+
+// ListDatabases lists all databases.
+func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
+	var projectID *string
+	switch {
+	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
+		p, err := common.GetProjectID(request.Parent)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid project parent %q", request.Parent)
+		}
+		projectID = &p
+	case strings.HasPrefix(request.Parent, common.WorkspacePrefix):
+		// List all databases in a workspace.
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+	}
+
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
+		return nil, err
+	}
+	limitPlusOne := limit + 1
+
+	find := &store.FindDatabaseMessage{
+		ProjectID: projectID,
+		Limit:     &limitPlusOne,
+		Offset:    &offset}
+
+	databaseMessages, err := s.store.ListDatabases(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	nextPageToken := ""
+	if len(databaseMessages) == limitPlusOne {
+		databaseMessages = databaseMessages[:limit]
+		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
 	}
 
 	response := &v1pb.ListDatabasesResponse{
