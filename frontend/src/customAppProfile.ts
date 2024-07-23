@@ -26,6 +26,7 @@ export const overrideAppProfile = () => {
       "bb.feature.console.hide-header": true,
       "bb.feature.console.hide-quick-action": true,
       "bb.feature.issue.disable-schema-editor": true,
+      "bb.feature.issue.hide-subscribers": true,
       "bb.feature.databases.hide-unassigned": true,
       "bb.feature.databases.hide-inalterable": true,
       "bb.feature.sql-editor.disallow-share-worksheet": true,
