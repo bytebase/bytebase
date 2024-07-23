@@ -48,10 +48,10 @@ import { usePlanCheckRunContext } from "./context";
 
 const props = withDefaults(
   defineProps<{
-    allowRunChecks: boolean;
-    labelClass: VueClass;
+    allowRunChecks?: boolean;
+    labelClass?: VueClass;
     planName: string;
-    planCheckRunList: PlanCheckRun[];
+    planCheckRunList?: PlanCheckRun[];
     database: ComposedDatabase;
   }>(),
   {
