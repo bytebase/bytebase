@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"os"
 	"strings"
@@ -19,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -79,13 +77,14 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get schema update gh-ost sync task for cutover task")
 	}
-	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-	if err := json.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
+	payload := &storepb.TaskDatabaseUpdatePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-	statement, err := e.store.GetSheetStatementByID(ctx, payload.SheetID)
+	sheetID := int(payload.SheetId)
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get sheet statement by id: %d", payload.SheetID)
+		return true, nil, errors.Wrapf(err, "failed to get sheet statement by id: %d", sheetID)
 	}
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
@@ -109,7 +108,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
 	version := model.Version{Version: payload.SchemaVersion}
-	terminated, result, err := cutover(ctx, taskContext, e.store, e.dbFactory, e.stateCfg, e.profile, task, taskRunUID, statement, payload.SheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	terminated, result, err := cutover(ctx, taskContext, e.store, e.dbFactory, e.stateCfg, e.profile, task, taskRunUID, statement, sheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
