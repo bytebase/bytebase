@@ -577,7 +577,7 @@ func (diff *diffNode) appendModifyColumn(tableName string, modifyColumns []plsql
 		if _, err := buf.WriteString("\n	"); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(column.GetParser().GetTokenStream().GetTextFromRuleContext(column)); err != nil {
+		if _, err := buf.WriteString(convertToModifyColumn(column)); err != nil {
 			return err
 		}
 	}
@@ -586,6 +586,31 @@ func (diff *diffNode) appendModifyColumn(tableName string, modifyColumns []plsql
 	}
 	diff.modifyColumn = append(diff.modifyColumn, buf.String())
 	return nil
+}
+
+func convertToModifyColumn(column plsql.IColumn_definitionContext) string {
+	var results []string
+	results = append(results, column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Column_name()))
+	if column.Datatype() != nil {
+		results = append(results, column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Datatype()))
+	}
+
+	if column.DEFAULT() != nil && column.Expression() != nil {
+		results = append(results, "DEFAULT")
+		results = append(results, column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Expression()))
+	}
+
+	for _, item := range column.AllInline_constraint() {
+		if item.NULL_() != nil {
+			if item.NOT() != nil {
+				results = append(results, "NOT NULL")
+			} else {
+				results = append(results, "NULL")
+			}
+		}
+	}
+
+	return strings.Join(results, " ")
 }
 
 func (diff *diffNode) appendAddColumn(tableName string, addColumns []plsql.IColumn_definitionContext) error {
@@ -630,9 +655,43 @@ func (diff *diffNode) appendAddColumn(tableName string, addColumns []plsql.IColu
 
 func isColumnEqual(oldColumn, newColumn plsql.IColumn_definitionContext) bool {
 	// TODO: compare column definition instead of text.
-	oldString := oldColumn.GetParser().GetTokenStream().GetTextFromRuleContext(oldColumn)
-	newString := newColumn.GetParser().GetTokenStream().GetTextFromRuleContext(newColumn)
+	// TODO: ignore visible now.
+	oldString := getColumnCompareString(oldColumn)
+	newString := getColumnCompareString(newColumn)
 	return oldString == newString
+}
+
+func getColumnCompareString(column plsql.IColumn_definitionContext) string {
+	var results []string
+	if column.Datatype() != nil {
+		results = append(results, column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Datatype()))
+	}
+
+	if column.DEFAULT() != nil {
+		if column.Expression() != nil {
+			results = append(results, column.GetParser().GetTokenStream().GetTextFromTokens(
+				column.DEFAULT().GetSymbol(),
+				column.Expression().GetStop(),
+			))
+		} else if column.Identity_clause() != nil {
+			results = append(results, column.GetParser().GetTokenStream().GetTextFromTokens(
+				column.DEFAULT().GetSymbol(),
+				column.Identity_clause().GetStop(),
+			))
+		}
+	}
+
+	for _, item := range column.AllInline_constraint() {
+		if item.NULL_() != nil {
+			if item.NOT() != nil {
+				results = append(results, "NOT NULL")
+			} else {
+				results = append(results, "NULL")
+			}
+		}
+	}
+
+	return strings.Join(results, " ")
 }
 
 func buildSchemaInfo(statement string, strictMode bool) (*schemaInfo, error) {
