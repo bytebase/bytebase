@@ -116,7 +116,7 @@ const filterInstance = (instance: ComposedInstance) => {
 };
 
 const changeProjectFilter = (name: string | undefined) => {
-  if (!isValidProjectName(name)) {
+  if (!name || !isValidProjectName(name)) {
     return emit("select-project", undefined);
   }
   emit("select-project", useProjectV1Store().getProjectByName(name));
