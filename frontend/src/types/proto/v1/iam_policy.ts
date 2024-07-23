@@ -67,6 +67,84 @@ export interface Binding {
   parsedExpr: ParsedExpr | undefined;
 }
 
+/** The difference delta between two policies. */
+export interface PolicyDelta {
+  /** The delta for Bindings between two policies. */
+  bindingDeltas: BindingDelta[];
+}
+
+/**
+ * One delta entry for Binding. Each individual change (only one member in each
+ * entry) to a binding will be a separate entry.
+ */
+export interface BindingDelta {
+  /** The action that was performed on a Binding. */
+  action: BindingDelta_Action;
+  /**
+   * Role that is assigned to `members`.
+   * For example, `roles/projectOwner`.
+   */
+  role: string;
+  /** Follows the same format of Binding.members. */
+  member: string;
+  /** The condition that is associated with this binding. */
+  condition: Expr | undefined;
+}
+
+/** The type of action performed on a Binding in a policy. */
+export enum BindingDelta_Action {
+  ACTION_UNSPECIFIED = "ACTION_UNSPECIFIED",
+  ADD = "ADD",
+  REMOVE = "REMOVE",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function bindingDelta_ActionFromJSON(object: any): BindingDelta_Action {
+  switch (object) {
+    case 0:
+    case "ACTION_UNSPECIFIED":
+      return BindingDelta_Action.ACTION_UNSPECIFIED;
+    case 1:
+    case "ADD":
+      return BindingDelta_Action.ADD;
+    case 2:
+    case "REMOVE":
+      return BindingDelta_Action.REMOVE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return BindingDelta_Action.UNRECOGNIZED;
+  }
+}
+
+export function bindingDelta_ActionToJSON(object: BindingDelta_Action): string {
+  switch (object) {
+    case BindingDelta_Action.ACTION_UNSPECIFIED:
+      return "ACTION_UNSPECIFIED";
+    case BindingDelta_Action.ADD:
+      return "ADD";
+    case BindingDelta_Action.REMOVE:
+      return "REMOVE";
+    case BindingDelta_Action.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function bindingDelta_ActionToNumber(object: BindingDelta_Action): number {
+  switch (object) {
+    case BindingDelta_Action.ACTION_UNSPECIFIED:
+      return 0;
+    case BindingDelta_Action.ADD:
+      return 1;
+    case BindingDelta_Action.REMOVE:
+      return 2;
+    case BindingDelta_Action.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 function createBaseGetIamPolicyRequest(): GetIamPolicyRequest {
   return { resource: "" };
 }
@@ -392,6 +470,175 @@ export const Binding = {
       : undefined;
     message.parsedExpr = (object.parsedExpr !== undefined && object.parsedExpr !== null)
       ? ParsedExpr.fromPartial(object.parsedExpr)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePolicyDelta(): PolicyDelta {
+  return { bindingDeltas: [] };
+}
+
+export const PolicyDelta = {
+  encode(message: PolicyDelta, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.bindingDeltas) {
+      BindingDelta.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyDelta {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyDelta();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.bindingDeltas.push(BindingDelta.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyDelta {
+    return {
+      bindingDeltas: globalThis.Array.isArray(object?.bindingDeltas)
+        ? object.bindingDeltas.map((e: any) => BindingDelta.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PolicyDelta): unknown {
+    const obj: any = {};
+    if (message.bindingDeltas?.length) {
+      obj.bindingDeltas = message.bindingDeltas.map((e) => BindingDelta.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PolicyDelta>): PolicyDelta {
+    return PolicyDelta.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PolicyDelta>): PolicyDelta {
+    const message = createBasePolicyDelta();
+    message.bindingDeltas = object.bindingDeltas?.map((e) => BindingDelta.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseBindingDelta(): BindingDelta {
+  return { action: BindingDelta_Action.ACTION_UNSPECIFIED, role: "", member: "", condition: undefined };
+}
+
+export const BindingDelta = {
+  encode(message: BindingDelta, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.action !== BindingDelta_Action.ACTION_UNSPECIFIED) {
+      writer.uint32(8).int32(bindingDelta_ActionToNumber(message.action));
+    }
+    if (message.role !== "") {
+      writer.uint32(18).string(message.role);
+    }
+    if (message.member !== "") {
+      writer.uint32(26).string(message.member);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BindingDelta {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBindingDelta();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.action = bindingDelta_ActionFromJSON(reader.int32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.role = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.member = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BindingDelta {
+    return {
+      action: isSet(object.action)
+        ? bindingDelta_ActionFromJSON(object.action)
+        : BindingDelta_Action.ACTION_UNSPECIFIED,
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      member: isSet(object.member) ? globalThis.String(object.member) : "",
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+    };
+  },
+
+  toJSON(message: BindingDelta): unknown {
+    const obj: any = {};
+    if (message.action !== BindingDelta_Action.ACTION_UNSPECIFIED) {
+      obj.action = bindingDelta_ActionToJSON(message.action);
+    }
+    if (message.role !== "") {
+      obj.role = message.role;
+    }
+    if (message.member !== "") {
+      obj.member = message.member;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BindingDelta>): BindingDelta {
+    return BindingDelta.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BindingDelta>): BindingDelta {
+    const message = createBaseBindingDelta();
+    message.action = object.action ?? BindingDelta_Action.ACTION_UNSPECIFIED;
+    message.role = object.role ?? "";
+    message.member = object.member ?? "";
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
       : undefined;
     return message;
   },
