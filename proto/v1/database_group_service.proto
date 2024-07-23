@@ -17,14 +17,13 @@ service DatabaseGroupService {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.projects.get";
-    // TODO(d): move around.
+    // option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.get";
-    // TODO(d): move around.
   }
 
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
@@ -34,7 +33,6 @@ service DatabaseGroupService {
     };
     option (google.api.method_signature) = "parent,databaseGroup";
     option (bytebase.v1.permission) = "bb.projects.update";
-    // TODO(d): move around.
   }
 
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
@@ -44,14 +42,12 @@ service DatabaseGroupService {
     };
     option (google.api.method_signature) = "database_group,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
-    // TODO(d): move around.
   }
 
   rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.update";
-    // TODO(d): move around.
   }
 }
 
