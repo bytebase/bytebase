@@ -119,7 +119,7 @@
 import { uniqBy } from "lodash-es";
 import { NButton, NCheckbox, NTooltip } from "naive-ui";
 import type { PropType } from "vue";
-import { computed, reactive, ref, watchEffect } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
@@ -131,7 +131,6 @@ import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
-  useDBGroupStore,
   useAppFeature,
 } from "@/store";
 import type { ComposedDatabase, FeatureType } from "@/types";
@@ -188,7 +187,6 @@ const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
-const dbGroupStore = useDBGroupStore();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
@@ -265,20 +263,6 @@ const { ready } = useSearchDatabaseV1List(
     };
   })
 );
-
-const prepareDatabaseGroupList = async () => {
-  if (selectedProject.value) {
-    await dbGroupStore.getOrFetchDBGroupListByProjectName(
-      selectedProject.value.name
-    );
-  } else {
-    await dbGroupStore.fetchAllDatabaseGroupList();
-  }
-};
-
-watchEffect(async () => {
-  await prepareDatabaseGroupList();
-});
 
 const rawDatabaseList = computed(() => {
   let list: ComposedDatabase[] = [];
