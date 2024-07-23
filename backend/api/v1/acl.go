@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -259,7 +258,6 @@ func (*ACLInterceptor) populateRawResources(authContext *common.AuthContext, req
 		authContext.Resources = append(authContext.Resources, &common.Resource{
 			Name: name,
 		})
-		fmt.Printf("Barny1: %s, %s\n", name, method)
 	}
 	return nil
 }
