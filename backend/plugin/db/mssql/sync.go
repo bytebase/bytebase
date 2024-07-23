@@ -146,7 +146,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 		SELECT
 			SCHEMA_NAME(t.schema_id),
 			t.name,
-			SUM(ps.row_count),ßß
+			SUM(ps.row_count),
 			lj.PropertyValue AS comment
 		FROM sys.tables t
 		INNER JOIN sys.dm_db_partition_stats ps ON ps.object_id = t.object_id
