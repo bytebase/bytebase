@@ -97,10 +97,7 @@ const title = computed(() => {
   const { action } = props;
   if (!action) return "";
 
-  return t("issue.batch-transition.action-n-issues", {
-    action: issueStatusActionDisplayName(action),
-    n: props.issueList.length,
-  });
+  return issueStatusActionDisplayName(action, props.issueList.length);
 });
 
 const confirmButtonProps = computed(() => {

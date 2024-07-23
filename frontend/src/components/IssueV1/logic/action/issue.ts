@@ -63,15 +63,28 @@ export const getApplicableIssueStatusActionList = (
   });
 };
 
-export const issueStatusActionDisplayName = (action: IssueStatusAction) => {
+export const issueStatusActionDisplayName = (
+  action: IssueStatusAction,
+  count: number = 1
+) => {
+  let actionText = "";
   switch (action) {
     case "RESOLVE":
-      return t("issue.status-transition.dropdown.resolve");
+      actionText = t("issue.batch-transition.resolve");
+      break;
     case "CLOSE":
-      return t("issue.status-transition.dropdown.close");
+      actionText = t("issue.batch-transition.close");
+      break;
     case "REOPEN":
-      return t("issue.status-transition.dropdown.reopen");
+      actionText = t("issue.batch-transition.reopen");
+      break;
+    default:
+      return "";
   }
+  return t("issue.batch-transition.action-n-issues", {
+    action: actionText,
+    n: count,
+  });
 };
 
 export const issueStatusActionButtonProps = (

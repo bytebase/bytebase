@@ -67,7 +67,6 @@
 <script lang="ts" setup>
 import type { PropType } from "vue";
 import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { TooltipButton } from "@/components/v2";
 import { refreshIssueList } from "@/store";
 import type { ComposedIssue } from "@/types";
@@ -92,8 +91,6 @@ const props = defineProps({
 const state = reactive<LocalState>({
   isRequesting: false,
 });
-
-const { t } = useI18n();
 
 const ongoingIssueStatusAction = ref<{
   action: IssueStatusAction;
@@ -122,10 +119,7 @@ const handleUpdated = () => {
 const startBatchIssueStatusAction = (action: IssueStatusAction) => {
   ongoingIssueStatusAction.value = {
     action,
-    title: t("issue.batch-transition.action-n-issues", {
-      action: issueStatusActionDisplayName(action),
-      n: props.issueList.length,
-    }),
+    title: issueStatusActionDisplayName(action, props.issueList.length),
   };
 };
 </script>
