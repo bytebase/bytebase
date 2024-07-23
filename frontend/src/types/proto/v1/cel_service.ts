@@ -278,6 +278,7 @@ export const CelServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               23,
@@ -317,6 +318,7 @@ export const CelServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               25,

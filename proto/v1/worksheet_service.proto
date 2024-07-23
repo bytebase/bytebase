@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
 
@@ -18,15 +19,18 @@ service WorksheetService {
       body: "worksheet"
     };
     option (google.api.method_signature) = "parent,worksheet";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GetWorksheet(GetWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {get: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
     option (google.api.http) = {get: "/v1/worksheets:search"};
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateWorksheet(UpdateWorksheetRequest) returns (Worksheet) {
@@ -35,6 +39,7 @@ service WorksheetService {
       body: "worksheet"
     };
     option (google.api.method_signature) = "worksheet,update_mask";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateWorksheetOrganizer(UpdateWorksheetOrganizerRequest) returns (WorksheetOrganizer) {
@@ -43,11 +48,13 @@ service WorksheetService {
       body: "organizer"
     };
     option (google.api.method_signature) = "organizer,update_mask";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeleteWorksheet(DeleteWorksheetRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 

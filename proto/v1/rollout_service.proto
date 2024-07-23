@@ -61,6 +61,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 
@@ -70,6 +71,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 
@@ -79,6 +81,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 }

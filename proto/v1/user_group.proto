@@ -41,12 +41,14 @@ service UserGroupService {
     };
     option (google.api.method_signature) = "group,update_mask";
     option (bytebase.v1.permission) = "bb.userGroups.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeleteUserGroup(DeleteUserGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.userGroups.delete";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 
