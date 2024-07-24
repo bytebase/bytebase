@@ -53,11 +53,11 @@ const fetchInstances = async (project: string) => {
   );
 };
 
-const fetchDatabases = async (project: string) => {
+const fetchDatabases = async (optionalProject: string) => {
   const filters = [`instance = "instances/-"`];
   // If `projectId` is provided in the route, filter the database list by the project.
-  if (project) {
-    filters.push(`project = "${projectNamePrefix}${project}"`);
+  if (optionalProject) {
+    filters.push(`project = "${projectNamePrefix}${optionalProject}"`);
   }
   await databaseStore.searchDatabases({
     filter: filters.join(" && "),
@@ -65,11 +65,11 @@ const fetchDatabases = async (project: string) => {
 };
 
 const instanceAndDatabaseInitialized = new Set<string /* project */>();
-const fetchInstancesAndDatabases = async (project: string) => {
-  if (instanceAndDatabaseInitialized.has(project || "")) return;
+const fetchInstancesAndDatabases = async (optionalProject: string) => {
+  if (instanceAndDatabaseInitialized.has(optionalProject || "")) return;
   try {
-    await Promise.all([fetchInstances(project), fetchDatabases(project)]);
-    instanceAndDatabaseInitialized.add(project || "");
+    await Promise.all([fetchInstances(optionalProject), fetchDatabases(optionalProject)]);
+    instanceAndDatabaseInitialized.add(optionalProject || "");
   } catch {
     // nothing
   }
