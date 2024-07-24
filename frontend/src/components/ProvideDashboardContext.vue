@@ -45,8 +45,8 @@ const isSwitchingProject = ref(false);
 const policyStore = usePolicyV1Store();
 const databaseStore = useDatabaseV1Store();
 
-const fetchInstances = async (project: string) => {
-  const parent = project ? `${projectNamePrefix}${project}` : undefined;
+const fetchInstances = async (optionalProject: string) => {
+  const parent = optionalProject ? `${projectNamePrefix}${optionalProject}` : undefined;
   await useInstanceV1Store().fetchInstanceList(
     /* !showDeleted */ false,
     parent

@@ -164,7 +164,8 @@ const prepareInstances = async () => {
       extractProjectResourceName(project)
     );
   } else {
-    await instanceStore.fetchInstanceList();
+    // TODO(d): do we still have non-project cases?
+    await instanceStore.listInstances();
   }
 };
 
