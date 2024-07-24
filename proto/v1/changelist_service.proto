@@ -117,10 +117,7 @@ message UpdateChangelistRequest {
   //
   // The changelist's `name` field is used to identify the changelist to update.
   // Format: projects/{project}/changelists/{changelist}
-  Changelist changelist = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Changelist"}
-  ];
+  Changelist changelist = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to be updated.
   google.protobuf.FieldMask update_mask = 2;
