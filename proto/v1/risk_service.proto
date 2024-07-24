@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
@@ -85,10 +86,18 @@ message UpdateRiskRequest {
 message DeleteRiskRequest {
   // The name of the risk to delete.
   // Format: risks/{risk}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Risk"}
+  ];
 }
 
 message Risk {
+  option (google.api.resource) = {
+    type: "bytebase.com/Risk"
+    pattern: "risks/{risk}"
+  };
+
   // Format: risks/{risk}
   string name = 1;
 
