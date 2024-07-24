@@ -34,7 +34,7 @@ const (
 
 type TableReference struct {
 	Database      string
-	SpecifySchema bool
+	HasSchema     bool
 	Schema        string
 	Table         string
 	Alias         string
@@ -92,7 +92,7 @@ func generateSQL(ctx base.TransformContext, statementInfoList []statementInfo, t
 				return nil, errors.Wrap(err, "failed to write to buffer")
 			}
 		} else {
-			if table.SpecifySchema {
+			if table.HasSchema {
 				if _, err := buf.WriteString(fmt.Sprintf(`"%s"."%s".* FROM `, table.Schema, table.Table)); err != nil {
 					return nil, errors.Wrap(err, "failed to write to buffer")
 				}
@@ -287,14 +287,14 @@ func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refCon
 	if dmlTableExpr != nil && dmlTableExpr.Tableview_name() != nil {
 		_, schemaName, tableName := NormalizeTableViewName("", dmlTableExpr.Tableview_name())
 		e.table = &TableReference{
-			Database:      schemaName,
-			SpecifySchema: true,
-			Schema:        schemaName,
-			Table:         tableName,
+			Database:  schemaName,
+			HasSchema: true,
+			Schema:    schemaName,
+			Table:     tableName,
 		}
 		if schemaName == "" {
 			e.table.Schema = e.defaultSchema
-			e.table.SpecifySchema = false
+			e.table.HasSchema = false
 		}
 		if ctx.Table_alias() != nil {
 			e.table.Alias = normalizeTableAlias(ctx.Table_alias())
