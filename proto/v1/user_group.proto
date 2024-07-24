@@ -58,7 +58,7 @@ message GetUserGroupRequest {
   // Format: groups/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+    (google.api.resource_reference) = {type: "bytebase.com/UserGroup"}
   ];
 }
 
@@ -107,7 +107,7 @@ message DeleteUserGroupRequest {
   // Format: groups/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+    (google.api.resource_reference) = {type: "bytebase.com/UserGroup"}
   ];
 }
 

@@ -130,7 +130,7 @@ message DeleteIdentityProviderRequest {
   // Format: idps/{identity_provider}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+    (google.api.resource_reference) = {type: "bytebase.com/IDP"}
   ];
 }
 
@@ -139,7 +139,7 @@ message UndeleteIdentityProviderRequest {
   // Format: idps/{identity_provider}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+    (google.api.resource_reference) = {type: "bytebase.com/IDP"}
   ];
 }
 
