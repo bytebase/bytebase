@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
@@ -55,7 +56,10 @@ service UserGroupService {
 message GetUserGroupRequest {
   // The name of the group to retrieve.
   // Format: groups/{email}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/UserGroup"}
+  ];
 }
 
 message ListUserGroupsRequest {
@@ -101,7 +105,10 @@ message UpdateUserGroupRequest {
 message DeleteUserGroupRequest {
   // The name of the group to delete.
   // Format: groups/{email}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/UserGroup"}
+  ];
 }
 
 message UserGroupMember {
@@ -120,8 +127,13 @@ message UserGroupMember {
 }
 
 message UserGroup {
+  option (google.api.resource) = {
+    type: "bytebase.com/UserGroup"
+    pattern: "userGroups/{userGroup}"
+  };
+
   // The name of the group to retrieve.
-  // Format: groups/{email}
+  // Format: userGroups/{userGroup}, userGroup is an email.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 2;
