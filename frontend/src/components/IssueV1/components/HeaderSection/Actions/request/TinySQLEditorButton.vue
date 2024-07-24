@@ -1,5 +1,5 @@
 <template>
-  <NButton type="primary" size="large" @click="gotoSQLEditor">
+  <NButton type="primary" @click="gotoSQLEditor">
     <template #icon>
       <heroicons-solid:terminal class="w-5 h-5" />
     </template>

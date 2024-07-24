@@ -981,6 +981,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		}
 	}()
 
+	// If the issue is a grant request and approved, we will always auto close it.
 	if issue.Type == api.IssueGrantRequest {
 		if err := func() error {
 			payload := issue.Payload
