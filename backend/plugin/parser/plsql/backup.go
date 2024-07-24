@@ -34,6 +34,7 @@ const (
 
 type TableReference struct {
 	Database      string
+	HasSchema     bool
 	Schema        string
 	Table         string
 	Alias         string
@@ -91,8 +92,14 @@ func generateSQL(ctx base.TransformContext, statementInfoList []statementInfo, t
 				return nil, errors.Wrap(err, "failed to write to buffer")
 			}
 		} else {
-			if _, err := buf.WriteString(fmt.Sprintf(`"%s"."%s".* FROM `, table.Schema, table.Table)); err != nil {
-				return nil, errors.Wrap(err, "failed to write to buffer")
+			if table.HasSchema {
+				if _, err := buf.WriteString(fmt.Sprintf(`"%s"."%s".* FROM `, table.Schema, table.Table)); err != nil {
+					return nil, errors.Wrap(err, "failed to write to buffer")
+				}
+			} else {
+				if _, err := buf.WriteString(fmt.Sprintf(`"%s".* FROM `, table.Table)); err != nil {
+					return nil, errors.Wrap(err, "failed to write to buffer")
+				}
 			}
 		}
 
@@ -278,11 +285,16 @@ type tableExtractor struct {
 func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refContext) {
 	dmlTableExpr := ctx.Dml_table_expression_clause()
 	if dmlTableExpr != nil && dmlTableExpr.Tableview_name() != nil {
-		_, schemaName, tableName := NormalizeTableViewName(e.defaultSchema, dmlTableExpr.Tableview_name())
+		_, schemaName, tableName := NormalizeTableViewName("", dmlTableExpr.Tableview_name())
 		e.table = &TableReference{
-			Database: schemaName,
-			Schema:   schemaName,
-			Table:    tableName,
+			Database:  schemaName,
+			HasSchema: true,
+			Schema:    schemaName,
+			Table:     tableName,
+		}
+		if schemaName == "" {
+			e.table.Schema = e.defaultSchema
+			e.table.HasSchema = false
 		}
 		if ctx.Table_alias() != nil {
 			e.table.Alias = normalizeTableAlias(ctx.Table_alias())
