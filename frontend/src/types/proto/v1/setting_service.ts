@@ -129,7 +129,7 @@ export interface Setting {
   /**
    * The resource name of the setting. Must be one of the following forms:
    *
-   * - `setting/{setting_name}`
+   * - `setting/{setting}`
    * For example, "settings/bb.branding.logo"
    */
   name: string;

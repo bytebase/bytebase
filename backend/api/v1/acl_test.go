@@ -49,7 +49,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 				Parent: "projects/hello",
 			},
 			method: "/bytebase.v1.DatabaseGroupService/CreateDatabaseGroup",
-			want:   nil,
+			want:   &common.Resource{Name: "projects/hello"},
 		},
 		{
 			// The instance has not been annotated with resource yet.

@@ -75,7 +75,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "auth context not found")
 	}
-	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+	if err := in.populateRawResources(ctx, authContext, request, serverInfo.FullMethod); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
@@ -133,7 +133,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	if !ok {
 		return status.Errorf(codes.Internal, "auth context not found")
 	}
-	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+	if err := in.populateRawResources(ctx, authContext, request, serverInfo.FullMethod); err != nil {
 		return status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
@@ -261,9 +261,28 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 	return len(databases) > 0, nil
 }
 
-func (*ACLInterceptor) populateRawResources(authContext *common.AuthContext, request any, method string) error {
+var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
+var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
+
+func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext *common.AuthContext, request any, method string) error {
 	resource := getResourceFromRequest(request, method)
 	if resource != nil {
+		switch {
+		case strings.HasPrefix(resource.Name, "projects/"):
+			match := projectRegex.FindString(resource.Name)
+			if match != "" {
+				resource.Project = match
+			}
+		case strings.HasPrefix(resource.Name, "instances/") && strings.Contains(resource.Name, "/databases/"):
+			match := databaseRegex.FindString(resource.Name)
+			if match != "" {
+				database, err := getDatabaseMessage(ctx, in.store, match)
+				if err != nil {
+					return errors.Wrapf(err, "failed to get database %q", match)
+				}
+				resource.Project = database.ProjectID
+			}
+		}
 		authContext.Resources = append(authContext.Resources, resource)
 	}
 	return nil

@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
@@ -79,10 +80,18 @@ message UpdateRoleRequest {
 
 message DeleteRoleRequest {
   // Format: roles/{role}
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Role"}
+  ];
 }
 
 message Role {
+  option (google.api.resource) = {
+    type: "bytebase.com/Role"
+    pattern: "roles/{role}"
+  };
+
   // Format: roles/{role}
   string name = 1;
   string title = 2;
