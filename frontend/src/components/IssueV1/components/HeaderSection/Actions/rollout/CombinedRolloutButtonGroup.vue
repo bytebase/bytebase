@@ -12,12 +12,7 @@
     />
 
     <IssueStatusActionButtonGroup
-      :display-mode="
-        shouldShowExtraActionButtonGroup ||
-        primaryTaskRolloutActionList.length > 0
-          ? 'DROPDOWN'
-          : 'BUTTON'
-      "
+      :display-mode="issueStatusButtonsDisplayMode"
       :issue-status-action-list="issueStatusActionList"
       :extra-action-list="extraActionList"
     />
@@ -137,6 +132,13 @@ const extraActionList = computed(() => {
 
 const shouldShowExtraActionButtonGroup = computed(() => {
   return isDatabaseDataExportIssue(issue.value);
+});
+
+const issueStatusButtonsDisplayMode = computed(() => {
+  return shouldShowExtraActionButtonGroup.value ||
+    primaryTaskRolloutActionList.value.length > 0
+    ? "DROPDOWN"
+    : "BUTTON";
 });
 
 const performRolloutAction = async (params: RolloutAction) => {
