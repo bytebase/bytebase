@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/task_run.proto";
+
 option go_package = "generated-go/store";
 
 message TaskRunLog {
@@ -15,6 +17,8 @@ message TaskRunLog {
     DATABASE_SYNC_END = 6;
     TASK_RUN_STATUS_UPDATE = 7;
     TRANSACTION_CONTROL = 8;
+    PRIOR_BACKUP_START = 9;
+    PRIOR_BACKUP_END = 10;
   }
   Type type = 1;
   SchemaDumpStart schema_dump_start = 2;
@@ -25,6 +29,8 @@ message TaskRunLog {
   DatabaseSyncEnd database_sync_end = 7;
   TaskRunStatusUpdate task_run_status_update = 8;
   TransactionControl transaction_control = 9;
+  PriorBackupStart prior_backup_start = 10;
+  PriorBackupEnd prior_backup_end = 11;
 
   message SchemaDumpStart {}
   message SchemaDumpEnd {
@@ -65,6 +71,11 @@ message TaskRunLog {
       ROLLBACK = 3;
     }
     Type type = 1;
+    string error = 2;
+  }
+  message PriorBackupStart {}
+  message PriorBackupEnd {
+    PriorBackupDetail prior_backup_detail = 1;
     string error = 2;
   }
 }
