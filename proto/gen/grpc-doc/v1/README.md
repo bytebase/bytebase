@@ -2635,6 +2635,7 @@ ColumnMetadata is the metadata for columns.
 | effective_environment | [string](#string) |  | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 | instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
+| backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
 
 
 
