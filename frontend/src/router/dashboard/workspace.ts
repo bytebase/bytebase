@@ -33,35 +33,39 @@ import {
   WORKSPACE_ROUTE_IM,
 } from "./workspaceRoutes";
 
+const homePage: RouteRecordRaw = {
+  path: "",
+  name: WORKSPACE_HOME_MODULE,
+  meta: {
+    getQuickActionList: () => {
+      return [
+        "quickaction.bb.database.schema.update",
+        "quickaction.bb.database.data.update",
+        "quickaction.bb.database.create",
+        "quickaction.bb.instance.create",
+        "quickaction.bb.issue.grant.request.querier",
+        "quickaction.bb.issue.grant.request.exporter",
+      ];
+    },
+  },
+  components: {
+    content: MyIssues,
+    leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+  },
+  props: {
+    content: true,
+    leftSidebar: true,
+  },
+};
+
 const workspaceRoutes: RouteRecordRaw[] = [
   {
-    path: "",
-    name: WORKSPACE_HOME_MODULE,
-    redirect: { name: WORKSPACE_ROUTE_MY_ISSUES },
+    ...homePage,
   },
   {
+    ...homePage,
     path: "issues",
     name: WORKSPACE_ROUTE_MY_ISSUES,
-    meta: {
-      getQuickActionList: () => {
-        return [
-          "quickaction.bb.database.schema.update",
-          "quickaction.bb.database.data.update",
-          "quickaction.bb.database.create",
-          "quickaction.bb.instance.create",
-          "quickaction.bb.issue.grant.request.querier",
-          "quickaction.bb.issue.grant.request.exporter",
-        ];
-      },
-    },
-    components: {
-      content: MyIssues,
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
   },
   {
     path: "projects",

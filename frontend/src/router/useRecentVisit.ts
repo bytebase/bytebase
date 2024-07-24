@@ -19,8 +19,6 @@ export function useRecentVisit() {
   const recentVisit = useLocalStorage(STORAGE_KEY, [] as RecentVisit[]);
 
   const lastVisit = computed(() => {
-    console.log("recentVisit.value");
-    console.log(recentVisit.value);
     if (recentVisit.value.length === 0) {
       return;
     }
@@ -51,13 +49,7 @@ export function useRecentVisit() {
     // Debounce the listener so we can skip internal immediate redirections
     useDebounce(currentRoute, 50),
     async (currentRoute) => {
-      // console.log(`recent visit: ${url}`);
-      if (
-        !currentRoute ||
-        currentRoute.name === WORKSPACE_HOME_MODULE ||
-        currentRoute.name === WORKSPACE_ROUTE_MY_ISSUES
-      )
-        return;
+      if (!currentRoute) return;
       if (currentRoute.path.startsWith("/auth")) {
         // ignore auth related pages
         // kbar is invisible on these pages
