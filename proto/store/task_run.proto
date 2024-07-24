@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
+
 option go_package = "generated-go/store";
 
 message TaskRunResult {
@@ -21,14 +23,27 @@ message TaskRunResult {
   // The uid of the export archive.
   int32 export_archive_uid = 6;
 
-  // The prior backups that will be used to rollback the task run.
-  repeated PriorBackupInfo prior_backups = 7;
+  // The prior backup detail that will be used to rollback the task run.
+  PriorBackupDetail prior_backup_detail = 7;
 }
 
-message PriorBackupInfo {
-  // The backup table information.
-  string database = 1;
-  string schema = 2;
-  string table = 3;
-  optional int32 original_line = 4;
+message PriorBackupDetail {
+  message Item {
+    message Table {
+      // The database information.
+      // Format: instances/{instance}/databases/{database}
+      string database = 1;
+      string schema = 2;
+      string table = 3;
+    }
+
+    // The original table information.
+    Table source_table = 1;
+    // The target backup table information.
+    Table target_table = 2;
+    Position start_position = 3;
+    Position end_position = 4;
+  }
+
+  repeated Item items = 1;
 }
