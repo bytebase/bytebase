@@ -136,7 +136,7 @@ export function userGroupMember_RoleToNumber(object: UserGroupMember_Role): numb
 export interface UserGroup {
   /**
    * The name of the group to retrieve.
-   * Format: groups/{email}
+   * Format: userGroups/{userGroup}, userGroup is an email.
    */
   name: string;
   title: string;
