@@ -44,9 +44,9 @@ export const defaultProject = (): ComposedProject => {
   };
 };
 
-export const isValidProjectName = (name: any): name is string => {
+export const isValidProjectName = (name: string | undefined) => {
   return (
-    typeof name === "string" &&
+    !!name &&
     name.startsWith("projects/") &&
     name !== EMPTY_PROJECT_NAME &&
     name !== UNKNOWN_PROJECT_NAME

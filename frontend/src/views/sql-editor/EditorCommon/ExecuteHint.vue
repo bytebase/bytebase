@@ -59,7 +59,6 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -67,8 +66,8 @@ import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
-  useActuatorV1Store,
   useCurrentUserV1,
+  useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
@@ -88,7 +87,9 @@ const { t } = useI18n();
 const me = useCurrentUserV1();
 const tabStore = useSQLEditorTabStore();
 const { standardModeEnabled } = useSQLEditorContext();
-const { pageMode } = storeToRefs(useActuatorV1Store());
+const disallowNavigateToConsole = useAppFeature(
+  "bb.feature.disallow-navigate-to-console"
+);
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;
@@ -114,7 +115,7 @@ const actions = computed(() => {
   }
   if (standardModeEnabled.value) {
     actions.action = "STANDARD_MODE";
-  } else if (pageMode.value === "BUNDLED") {
+  } else if (!disallowNavigateToConsole.value) {
     actions.action = "CREATE_ISSUE";
   }
 

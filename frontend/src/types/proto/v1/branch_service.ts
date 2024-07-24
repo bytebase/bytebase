@@ -1949,6 +1949,7 @@ export const BranchServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               49,
@@ -2018,6 +2019,7 @@ export const BranchServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               40,
@@ -2078,6 +2080,7 @@ export const BranchServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               41,
@@ -2139,6 +2142,7 @@ export const BranchServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 98, 114, 97, 110, 99, 104, 101, 115, 46, 100, 101, 108, 101, 116, 101]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               34,

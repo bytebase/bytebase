@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/any.proto";
 import "google/rpc/status.proto";
 
 option go_package = "generated-go/store";
@@ -33,6 +34,9 @@ message AuditLog {
   string response = 7;
 
   google.rpc.Status status = 8;
+
+  // service-specific data about the request, response, and other activities.
+  google.protobuf.Any service_data = 10;
 
   enum Severity {
     DEFAULT = 0;

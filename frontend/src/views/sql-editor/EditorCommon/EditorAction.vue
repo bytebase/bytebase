@@ -72,7 +72,7 @@
           </span>
         </NButton>
         <NPopover
-          v-if="!isStandaloneMode"
+          v-if="!disallowShareWorksheet"
           trigger="click"
           placement="bottom-end"
           :show-arrow="false"
@@ -114,11 +114,10 @@ import { computed, reactive, ref } from "vue";
 import {
   useUIStateStore,
   featureToRef,
-  usePageMode,
-  useActuatorV1Store,
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
   useWorkSheetStore,
+  useAppFeature,
 } from "@/store";
 import type { FeatureType, SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
@@ -138,7 +137,6 @@ const emit = defineEmits<{
   (e: "clear-screen"): void;
 }>();
 
-const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
@@ -146,9 +144,13 @@ const { standardModeEnabled, events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
-const pageMode = usePageMode();
+const disallowShareWorksheet = useAppFeature(
+  "bb.feature.sql-editor.disallow-share-worksheet"
+);
+const hasCustomQueryDatasourceFeature = useAppFeature(
+  "bb.feature.sql-editor.custom-query-datasource"
+);
 
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
 const isEmptyStatement = computed(() => {
@@ -243,7 +245,7 @@ const showQueryContextSettingPopover = computed(() => {
   return (
     Boolean(instance.value) &&
     tab.mode !== "ADMIN" &&
-    actuatorStore.customTheme === "lixiang"
+    hasCustomQueryDatasourceFeature.value
   );
 });
 

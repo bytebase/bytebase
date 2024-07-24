@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
@@ -19,7 +20,7 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
@@ -31,6 +32,7 @@ service ProjectService {
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects:search"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 
@@ -134,35 +136,35 @@ service ProjectService {
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.projects.get";
-    // TODO(d): move around.
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   // Deprecated.
   rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.get";
-    // TODO(d): move around.
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   // Deprecated.
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.method_signature) = "parent,databaseGroup";
     option (bytebase.v1.permission) = "bb.projects.update";
-    // TODO(d): move around.
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   // Deprecated.
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.method_signature) = "database_group,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
-    // TODO(d): move around.
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   // Deprecated.
   rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.update";
-    // TODO(d): move around.
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc GetProjectProtectionRules(GetProjectProtectionRulesRequest) returns (ProtectionRules) {
@@ -182,7 +184,10 @@ service ProjectService {
 message GetProjectRequest {
   // The name of the project to retrieve.
   // Format: projects/{project}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 }
 
 message ListProjectsRequest {
@@ -248,7 +253,10 @@ message UpdateProjectRequest {
 message DeleteProjectRequest {
   // The name of the project to delete.
   // Format: projects/{project}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
   bool force = 2;
@@ -257,7 +265,10 @@ message DeleteProjectRequest {
 message UndeleteProjectRequest {
   // The name of the deleted project.
   // Format: projects/{project}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 }
 
 message BatchGetIamPolicyRequest {
@@ -293,6 +304,11 @@ message Label {
 }
 
 message Project {
+  option (google.api.resource) = {
+    type: "bytebase.com/Project"
+    pattern: "projects/{project}"
+  };
+
   reserved 8;
 
   // The name of the project.

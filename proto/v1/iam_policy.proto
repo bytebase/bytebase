@@ -56,3 +56,33 @@ message Binding {
   // The parsed expression of the condition.
   google.api.expr.v1alpha1.ParsedExpr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
+
+// The difference delta between two policies.
+message PolicyDelta {
+  // The delta for Bindings between two policies.
+  repeated BindingDelta binding_deltas = 1;
+}
+
+// One delta entry for Binding. Each individual change (only one member in each
+// entry) to a binding will be a separate entry.
+message BindingDelta {
+  // The type of action performed on a Binding in a policy.
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ADD = 1;
+    REMOVE = 2;
+  }
+
+  // The action that was performed on a Binding.
+  Action action = 1;
+
+  // Role that is assigned to `members`.
+  // For example, `roles/projectOwner`.
+  string role = 2;
+
+  // Follows the same format of Binding.members.
+  string member = 3;
+
+  // The condition that is associated with this binding.
+  google.type.Expr condition = 4;
+}

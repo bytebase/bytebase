@@ -18,7 +18,6 @@
     </div>
     <div class="space-y-2">
       <DatabaseOperations
-        v-if="showDatabaseOperations"
         :project-name="project.name"
         :databases="selectedDatabases"
       />
@@ -37,7 +36,7 @@
 import { reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
-import { useDatabaseV1Store, useFilterStore, usePageMode } from "@/store";
+import { useDatabaseV1Store, useFilterStore } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams } from "@/utils";
@@ -64,7 +63,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const pageMode = usePageMode();
 const { filter } = useFilterStore();
 const databaseV1Store = useDatabaseV1Store();
 
@@ -131,14 +129,6 @@ const filteredDatabaseList = computed(() => {
     list = list.filter((db) => db.name === filter.database);
   }
   return list;
-});
-
-const showDatabaseOperations = computed(() => {
-  if (pageMode.value === "STANDALONE") {
-    return true;
-  }
-
-  return true;
 });
 
 const selectedDatabases = computed((): ComposedDatabase[] => {

@@ -87,7 +87,7 @@
             {{ $t("plugin.ai.chat-sql") }}
           </template>
         </NTooltip>
-        <template v-if="showExportButton">
+        <template v-if="!disallowExportQueryData">
           <DataExportButton
             v-if="allowToExportData"
             size="small"
@@ -192,9 +192,9 @@ import {
   useSQLEditorTabStore,
   featureToRef,
   useCurrentUserV1,
-  useActuatorV1Store,
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
+  useAppFeature,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import type {
@@ -255,13 +255,15 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
-const actuatorStore = useActuatorV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
+const disallowExportQueryData = useAppFeature(
+  "bb.feature.sql-editor.disallow-export-query-data"
+);
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -283,10 +285,6 @@ const showSearchFeature = computed(() => {
     return false;
   }
   return instanceV1HasStructuredQueryResult(connectedInstance.value);
-});
-
-const showExportButton = computed(() => {
-  return actuatorStore.customTheme !== "lixiang";
 });
 
 const allowToExportData = computed(() => {

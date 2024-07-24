@@ -5,12 +5,14 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
 
 service AnomalyService {
   rpc SearchAnomalies(SearchAnomaliesRequest) returns (SearchAnomaliesResponse) {
     option (google.api.http) = {get: "/v1/anomalies:search"};
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 

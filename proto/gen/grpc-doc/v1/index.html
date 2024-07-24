@@ -335,8 +335,51 @@
         
           
           <li>
+            <a href="#v1%2fiam_policy.proto">v1/iam_policy.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.Binding"><span class="badge">M</span>Binding</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BindingDelta"><span class="badge">M</span>BindingDelta</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetIamPolicyRequest"><span class="badge">M</span>GetIamPolicyRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IamPolicy"><span class="badge">M</span>IamPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PolicyDelta"><span class="badge">M</span>PolicyDelta</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SetIamPolicyRequest"><span class="badge">M</span>SetIamPolicyRequest</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.BindingDelta.Action"><span class="badge">E</span>BindingDelta.Action</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2faudit_log_service.proto">v1/audit_log_service.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.AuditData"><span class="badge">M</span>AuditData</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.AuditLog"><span class="badge">M</span>AuditLog</a>
@@ -1160,33 +1203,6 @@
                 <li>
                   <a href="#bytebase.v1.EnvironmentService"><span class="badge">S</span>EnvironmentService</a>
                 </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#v1%2fiam_policy.proto">v1/iam_policy.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.Binding"><span class="badge">M</span>Binding</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetIamPolicyRequest"><span class="badge">M</span>GetIamPolicyRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.IamPolicy"><span class="badge">M</span>IamPolicy</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SetIamPolicyRequest"><span class="badge">M</span>SetIamPolicyRequest</a>
-                </li>
-              
-              
-              
               
             </ul>
           </li>
@@ -4183,10 +4199,297 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/iam_policy.proto">v1/iam_policy.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.Binding">Binding</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The role that is assigned to the members.
+Format: roles/{role} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>members</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Specifies the principals requesting access for a Bytebase resource.
+For users, the member should be: user:{email}
+For groups, the member should be: group:{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
+                  <td></td>
+                  <td><p>The condition that is associated with this binding.
+If the condition evaluates to true, then this binding applies to the current request.
+If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parsed_expr</td>
+                  <td><a href="#google.api.expr.v1alpha1.ParsedExpr">google.api.expr.v1alpha1.ParsedExpr</a></td>
+                  <td></td>
+                  <td><p>The parsed expression of the condition. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BindingDelta">BindingDelta</h3>
+        <p>One delta entry for Binding. Each individual change (only one member in each</p><p>entry) to a binding will be a separate entry.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>action</td>
+                  <td><a href="#bytebase.v1.BindingDelta.Action">BindingDelta.Action</a></td>
+                  <td></td>
+                  <td><p>The action that was performed on a Binding. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Role that is assigned to `members`.
+For example, `roles/projectOwner`. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>member</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Follows the same format of Binding.members. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
+                  <td></td>
+                  <td><p>The condition that is associated with this binding. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the resource to get the IAM policy.
+Format: projects/{project}
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IamPolicy">IamPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>bindings</td>
+                  <td><a href="#bytebase.v1.Binding">Binding</a></td>
+                  <td>repeated</td>
+                  <td><p>Collection of binding.
+A binding binds one or more project members to a single project role. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>etag</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The current etag of the policy.
+If an etag is provided and does not match the current etag of the poliy,
+the call will be blocked and an ABORTED error will be returned. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PolicyDelta">PolicyDelta</h3>
+        <p>The difference delta between two policies.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>binding_deltas</td>
+                  <td><a href="#bytebase.v1.BindingDelta">BindingDelta</a></td>
+                  <td>repeated</td>
+                  <td><p>The delta for Bindings between two policies. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the resource to set the IAM policy.
+Format: projects/{project}
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>policy</td>
+                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>etag</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The current etag of the policy. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.BindingDelta.Action">BindingDelta.Action</h3>
+        <p>The type of action performed on a Binding in a policy.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ACTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ADD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REMOVE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="v1/audit_log_service.proto">v1/audit_log_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
+      
+        <h3 id="bytebase.v1.AuditData">AuditData</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>policy_delta</td>
+                  <td><a href="#bytebase.v1.PolicyDelta">PolicyDelta</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
       
         <h3 id="bytebase.v1.AuditLog">AuditLog</h3>
         <p></p>
@@ -4263,6 +4566,13 @@ Some fields are omitted because they are too large or contain sensitive informat
                   <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_data</td>
+                  <td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
+                  <td></td>
+                  <td><p>service-specific data about the request, response, and other activities. </p></td>
                 </tr>
               
             </tbody>
@@ -13315,170 +13625,6 @@ Format: environments/{environment} </p></td>
           </table>
           
         
-    
-      
-      <div class="file-heading">
-        <h2 id="v1/iam_policy.proto">v1/iam_policy.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.Binding">Binding</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The role that is assigned to the members.
-Format: roles/{role} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>members</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Specifies the principals requesting access for a Bytebase resource.
-For users, the member should be: user:{email}
-For groups, the member should be: group:{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>condition</td>
-                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
-                  <td></td>
-                  <td><p>The condition that is associated with this binding.
-If the condition evaluates to true, then this binding applies to the current request.
-If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>parsed_expr</td>
-                  <td><a href="#google.api.expr.v1alpha1.ParsedExpr">google.api.expr.v1alpha1.ParsedExpr</a></td>
-                  <td></td>
-                  <td><p>The parsed expression of the condition. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>resource</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the resource to get the IAM policy.
-Format: projects/{project}
-Format: workspaces/{workspace} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.IamPolicy">IamPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>bindings</td>
-                  <td><a href="#bytebase.v1.Binding">Binding</a></td>
-                  <td>repeated</td>
-                  <td><p>Collection of binding.
-A binding binds one or more project members to a single project role. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>etag</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The current etag of the policy.
-If an etag is provided and does not match the current etag of the poliy,
-the call will be blocked and an ABORTED error will be returned. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>resource</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the resource to set the IAM policy.
-Format: projects/{project}
-Format: workspaces/{workspace} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>policy</td>
-                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>etag</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The current etag of the policy. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
     
       
       <div class="file-heading">

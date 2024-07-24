@@ -2,7 +2,10 @@ package mysql
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -91,11 +94,202 @@ func StringifyTable(metadata *storepb.TableMetadata) (string, error) {
 		}
 	}
 
+	if len(metadata.Partitions) > 0 {
+		if err := printPartitionClause(&buf, metadata.Partitions); err != nil {
+			return "", err
+		}
+	}
+
 	if _, err := fmt.Fprintf(&buf, ";\n"); err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
+}
+
+// Copy the logic from backend/plugin/schema/mysql/state.go.
+func printPartitionClause(buf *strings.Builder, partitions []*storepb.TablePartitionMetadata) error {
+	if len(partitions) == 0 {
+		return nil
+	}
+	vsc := getVersionSpecificComment(partitions)
+	curComment := vsc
+	if _, err := fmt.Fprintf(buf, "%s PARTITION BY ", curComment); err != nil {
+		return err
+	}
+	switch partitions[0].Type {
+	case storepb.TablePartitionMetadata_RANGE:
+		if _, err := fmt.Fprintf(buf, "RANGE (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		if _, err := fmt.Fprintf(buf, "RANGE COLUMNS (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_LIST:
+		if _, err := fmt.Fprintf(buf, "LIST (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+		if _, err := fmt.Fprintf(buf, "LIST COLUMNS (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_HASH:
+		if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_KEY:
+		if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_LINEAR_HASH:
+		if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_LINEAR_KEY:
+		if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("unknown partition type: %v", partitions[0].Type)
+	}
+
+	useDefault := int64(0)
+	if partitions[0].UseDefault != "" {
+		var err error
+		useDefault, err = strconv.ParseInt(partitions[0].UseDefault, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	if useDefault != 0 {
+		if _, err := fmt.Fprintf(buf, "\nPARTITIONS %d", useDefault); err != nil {
+			return err
+		}
+	}
+
+	if len(partitions[0].Subpartitions) > 0 {
+		if _, err := fmt.Fprintf(buf, "\nSUBPARTITION BY "); err != nil {
+			return err
+		}
+		switch partitions[0].Subpartitions[0].Type {
+		case storepb.TablePartitionMetadata_HASH:
+			if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		case storepb.TablePartitionMetadata_LINEAR_HASH:
+			if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		case storepb.TablePartitionMetadata_KEY:
+			if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		case storepb.TablePartitionMetadata_LINEAR_KEY:
+			if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		default:
+			return errors.Errorf("invalid subpartition type: %v", partitions[0].Subpartitions[0].Type)
+		}
+	}
+
+	subUseDefault := 0
+	if len(partitions[0].Subpartitions) > 0 && partitions[0].Subpartitions[0].UseDefault != "" {
+		var err error
+		subUseDefault, err = strconv.Atoi(partitions[0].Subpartitions[0].UseDefault)
+		if err != nil {
+			return err
+		}
+	}
+
+	if subUseDefault != 0 {
+		if _, err := fmt.Fprintf(buf, "\nSUBPARTITIONS %d", subUseDefault); err != nil {
+			return err
+		}
+	}
+
+	if useDefault == 0 {
+		if _, err := fmt.Fprintf(buf, "\n("); err != nil {
+			return err
+		}
+		preposition, err := getPrepositionByType(partitions[0].Type)
+		if err != nil {
+			return err
+		}
+		for i, partition := range partitions {
+			if i != 0 {
+				if _, err := fmt.Fprintf(buf, ",\n "); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintf(buf, "PARTITION %s", partition.Name); err != nil {
+				return err
+			}
+			if preposition != "" {
+				if partition.Value != "MAXVALUE" {
+					if _, err := fmt.Fprintf(buf, " VALUES %s (%s)", preposition, partition.Value); err != nil {
+						return err
+					}
+				} else {
+					if _, err := fmt.Fprintf(buf, " VALUES %s %s", preposition, partition.Value); err != nil {
+						return err
+					}
+				}
+			}
+
+			if subUseDefault == 0 && len(partition.Subpartitions) > 0 {
+				if _, err := fmt.Fprintf(buf, "\n ("); err != nil {
+					return err
+				}
+				for j, subPartition := range partition.Subpartitions {
+					if _, err := fmt.Fprintf(buf, "SUBPARTITION %s", subPartition.Name); err != nil {
+						return err
+					}
+					if err := writePartitionOptions(buf); err != nil {
+						return err
+					}
+					if j == len(partition.Subpartitions)-1 {
+						if _, err := fmt.Fprintf(buf, ")"); err != nil {
+							return err
+						}
+					} else {
+						if _, err := fmt.Fprintf(buf, ",\n  "); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				if err := writePartitionOptions(buf); err != nil {
+					return err
+				}
+			}
+
+			if i == len(partitions)-1 {
+				if _, err := fmt.Fprintf(buf, ")"); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	if _, err := fmt.Fprintf(buf, " */"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getVersionSpecificComment(partitions []*storepb.TablePartitionMetadata) string {
+	if len(partitions) == 0 {
+		return ""
+	}
+	partition := partitions[0]
+	if partition.Type == storepb.TablePartitionMetadata_RANGE_COLUMNS || partition.Type == storepb.TablePartitionMetadata_LIST_COLUMNS {
+		// MySQL introduce columns partitioning in 5.5+
+		return "\n/*!50500"
+	}
+	return "\n/*!50100"
 }
 
 func printCheckClause(buf *strings.Builder, check *storepb.CheckConstraintMetadata) error {

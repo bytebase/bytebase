@@ -3,10 +3,15 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"regexp"
+	"strings"
 
+	annotationsproto "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/pkg/errors"
@@ -39,7 +44,18 @@ func NewACLInterceptor(store *store.Store, secret string, iamManager *iam.Manage
 }
 
 // ACLInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ any, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", serverInfo.FullMethod, perr)
+
+			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
+		}
+	}()
 	user, err := in.getUser(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
@@ -57,7 +73,10 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "auth context not found2")
+		return nil, status.Errorf(codes.Internal, "auth context not found")
+	}
+	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
 	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
@@ -67,15 +86,31 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
-		return nil, err
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", serverInfo.FullMethod, authContext.Permission, extra)
 	}
 
 	return handler(ctx, request)
 }
 
 // ACLStreamInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", serverInfo.FullMethod, perr)
+
+			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
+		}
+	}()
+
 	ctx := ss.Context()
 
 	user, err := in.getUser(ctx)
@@ -96,7 +131,10 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return status.Errorf(codes.Internal, "auth context not found3")
+		return status.Errorf(codes.Internal, "auth context not found")
+	}
+	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+		return status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
 	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
@@ -106,8 +144,12 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	if err := in.checkIAMPermission(ctx, serverInfo.FullMethod, request, user, authContext); err != nil {
-		return err
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
+	}
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", serverInfo.FullMethod, authContext.Permission, extra)
 	}
 
 	return handler(request, ss)
@@ -157,159 +199,11 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 	return false
 }
 
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			perr, ok := r.(error)
-			if !ok {
-				perr = errors.Errorf("%v", r)
-			}
-			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", fullMethod, perr)
-
-			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
-		}
-	}()
-	ok, extra, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user, authContext)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err)
-	}
-	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra)
-	}
-
-	return nil
-}
-
-func isSkippedMethod(fullMethod string, authContext *common.AuthContext) bool {
-	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
-		return true
-	}
-
-	// Below are the skipped.
-	switch fullMethod {
-	// skip methods that are not considered to be resource-related.
-	case
-		v1pb.ActuatorService_GetResourcePackage_FullMethodName,
-		v1pb.ActuatorService_GetActuatorInfo_FullMethodName,
-		v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName,
-		v1pb.ActuatorService_DeleteCache_FullMethodName,
-		v1pb.ActuatorService_ListDebugLog_FullMethodName,
-		v1pb.AnomalyService_SearchAnomalies_FullMethodName,
-		v1pb.AuthService_GetUser_FullMethodName,
-		v1pb.AuthService_ListUsers_FullMethodName,
-		v1pb.AuthService_CreateUser_FullMethodName,
-		v1pb.AuthService_UpdateUser_FullMethodName,
-		v1pb.AuthService_DeleteUser_FullMethodName,
-		v1pb.AuthService_UndeleteUser_FullMethodName,
-		v1pb.AuthService_Login_FullMethodName,
-		v1pb.AuthService_Logout_FullMethodName,
-		v1pb.CelService_BatchParse_FullMethodName,
-		v1pb.CelService_BatchDeparse_FullMethodName,
-		v1pb.SQLService_Query_FullMethodName,
-		// TODO(steven): maybe needs to add a permission to check.
-		v1pb.SQLService_Execute_FullMethodName,
-		v1pb.SQLService_SearchQueryHistories_FullMethodName,
-		v1pb.SQLService_Export_FullMethodName,
-		v1pb.SQLService_DifferPreview_FullMethodName,
-		v1pb.SQLService_Check_FullMethodName,
-		v1pb.SQLService_ParseMyBatisMapper_FullMethodName,
-		v1pb.SQLService_Pretty_FullMethodName,
-		v1pb.SQLService_StringifyMetadata_FullMethodName,
-		v1pb.SQLService_GenerateRestoreSQL_FullMethodName,
-		v1pb.SubscriptionService_GetSubscription_FullMethodName,
-		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
-		v1pb.SubscriptionService_UpdateSubscription_FullMethodName,
-		// TODO(p0ny): permission for review config service.
-		v1pb.ReviewConfigService_CreateReviewConfig_FullMethodName,
-		v1pb.ReviewConfigService_ListReviewConfigs_FullMethodName,
-		v1pb.ReviewConfigService_GetReviewConfig_FullMethodName,
-		v1pb.ReviewConfigService_UpdateReviewConfig_FullMethodName,
-		v1pb.ReviewConfigService_DeleteReviewConfig_FullMethodName:
-		return true
-	// skip checking for sheet service because we want to
-	// discriminate bytebase artifact sheets and user sheets first.
-	// TODO(p0ny): implement
-	case
-		v1pb.SheetService_CreateSheet_FullMethodName,
-		v1pb.SheetService_GetSheet_FullMethodName,
-		v1pb.SheetService_UpdateSheet_FullMethodName:
-		return true
-	// skip checking for sheet service because we want to
-	// discriminate bytebase artifact sheets and user sheets first.
-	// TODO(p0ny): implement
-	case
-		v1pb.WorksheetService_CreateWorksheet_FullMethodName,
-		v1pb.WorksheetService_GetWorksheet_FullMethodName,
-		v1pb.WorksheetService_SearchWorksheets_FullMethodName,
-		v1pb.WorksheetService_UpdateWorksheet_FullMethodName,
-		v1pb.WorksheetService_UpdateWorksheetOrganizer_FullMethodName,
-		v1pb.WorksheetService_DeleteWorksheet_FullMethodName:
-		return true
-	// handled in the method because we need to consider branch.Creator.
-	case
-		v1pb.BranchService_UpdateBranch_FullMethodName,
-		v1pb.BranchService_DeleteBranch_FullMethodName,
-		v1pb.BranchService_MergeBranch_FullMethodName,
-		v1pb.BranchService_RebaseBranch_FullMethodName:
-		return true
-	// handled in the method because we need to consider changelist.Creator.
-	case
-		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
-		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
-		return true
-	// handled in the method because we need to consider plan.Creator.
-	case
-		v1pb.PlanService_UpdatePlan_FullMethodName,
-		// TODO: maybe needs to add permission checks.
-		v1pb.PlanService_BatchCancelPlanCheckRuns_FullMethodName:
-		return true
-	// handled in the method because we need to consider issue.Creator and issue type.
-	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
-	case
-		v1pb.IssueService_GetIssue_FullMethodName,
-		v1pb.IssueService_ListIssueComments_FullMethodName,
-		v1pb.IssueService_CreateIssue_FullMethodName,
-		v1pb.IssueService_CreateIssueComment_FullMethodName,
-		v1pb.IssueService_UpdateIssue_FullMethodName,
-		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName,
-		v1pb.IssueService_UpdateIssueComment_FullMethodName:
-		return true
-	// skip checking for custom approval.
-	case
-		v1pb.IssueService_ApproveIssue_FullMethodName,
-		v1pb.IssueService_RejectIssue_FullMethodName,
-		v1pb.IssueService_RequestIssue_FullMethodName:
-		return true
-	// skip checking for the rollout-related.
-	// these are determined by the rollout policy.
-	case
-		v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName,
-		v1pb.RolloutService_BatchSkipTasks_FullMethodName,
-		v1pb.RolloutService_BatchRunTasks_FullMethodName:
-		return true
-	// handled in the method because checking is complex.
-	case
-		v1pb.AuditLogService_SearchAuditLogs_FullMethodName,
-		v1pb.AuditLogService_ExportAuditLogs_FullMethodName,
-		v1pb.InstanceService_SearchInstances_FullMethodName,
-		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
-		v1pb.DatabaseService_ListDatabases_FullMethodName,
-		v1pb.DatabaseService_SearchDatabases_FullMethodName,
-		v1pb.IssueService_ListIssues_FullMethodName,
-		v1pb.IssueService_SearchIssues_FullMethodName,
-
-		v1pb.ProjectService_SearchProjects_FullMethodName,
-		v1pb.PlanService_ListPlans_FullMethodName,
-		v1pb.PlanService_SearchPlans_FullMethodName,
-		v1pb.UserGroupService_DeleteUserGroup_FullMethodName,
-		v1pb.UserGroupService_UpdateUserGroup_FullMethodName:
-		return true
-	}
-	return false
-}
-
 func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
-	if isSkippedMethod(fullMethod, authContext) {
+	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
+		return true, nil, nil
+	}
+	if authContext.AuthMethod == common.AuthMethodCustom {
 		return true, nil, nil
 	}
 
@@ -365,4 +259,87 @@ func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, us
 		return false, errors.Wrapf(err, "failed to search databases")
 	}
 	return len(databases) > 0, nil
+}
+
+func (*ACLInterceptor) populateRawResources(authContext *common.AuthContext, request any, method string) error {
+	resource := getResourceFromRequest(request, method)
+	if resource != nil {
+		authContext.Resources = append(authContext.Resources, resource)
+	}
+	return nil
+}
+
+func getResourceFromRequest(request any, method string) *common.Resource {
+	pm, ok := request.(proto.Message)
+	if !ok {
+		return nil
+	}
+	mr := pm.ProtoReflect()
+
+	parentDesc := mr.Descriptor().Fields().ByName("parent")
+	if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) {
+		v := mr.Get(parentDesc)
+		return &common.Resource{Name: v.String()}
+	}
+	nameDesc := mr.Descriptor().Fields().ByName("name")
+	if nameDesc != nil && proto.HasExtension(nameDesc.Options(), annotationsproto.E_ResourceReference) {
+		v := mr.Get(nameDesc)
+		return &common.Resource{Name: v.String()}
+	}
+	// This is primarily used by Get/SetIAMPolicy().
+	resourceFieldDesc := mr.Descriptor().Fields().ByName("resource")
+	if resourceFieldDesc != nil && proto.HasExtension(resourceFieldDesc.Options(), annotationsproto.E_ResourceReference) {
+		v := mr.Get(resourceFieldDesc)
+		return &common.Resource{Name: v.String()}
+	}
+
+	methodTokens := strings.Split(method, "/")
+	if len(methodTokens) != 3 {
+		return nil
+	}
+
+	// Listing top-level resources.
+	if strings.HasPrefix(methodTokens[2], "List") {
+		return &common.Resource{Workspace: true}
+	}
+
+	isCreate := strings.HasPrefix(methodTokens[2], "Create")
+	isUpdate := strings.HasPrefix(methodTokens[2], "Update")
+	if !isCreate && !isUpdate {
+		return nil
+	}
+	var resourceName string
+	if isCreate {
+		resourceName = strings.TrimPrefix(methodTokens[2], "Create")
+	}
+	if isUpdate {
+		resourceName = strings.TrimPrefix(methodTokens[2], "Update")
+	}
+	resourceName = toSnakeCase(resourceName)
+	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
+	if resourceDesc == nil {
+		return nil
+	}
+	if proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
+		// Parent-less resource. Return workspace resource for Create() method.
+		if isCreate {
+			return &common.Resource{Workspace: true}
+		}
+		resourceValue := mr.Get(resourceDesc)
+		resourceNameDesc := resourceDesc.Message().Fields().ByName("name")
+		if resourceNameDesc != nil {
+			v := resourceValue.Message().Get(resourceNameDesc)
+			return &common.Resource{Name: v.String()}
+		}
+	}
+	return nil
+}
+
+var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+func toSnakeCase(str string) string {
+	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
+	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+	return strings.ToLower(snake)
 }

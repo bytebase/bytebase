@@ -1,9 +1,11 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Any } from "../google/protobuf/any";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Status } from "../google/rpc/status";
 import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber } from "./common";
+import { PolicyDelta } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -100,7 +102,11 @@ export interface AuditLog {
    * Some fields are omitted because they are too large or contain sensitive information.
    */
   response: string;
-  status: Status | undefined;
+  status:
+    | Status
+    | undefined;
+  /** service-specific data about the request, response, and other activities. */
+  serviceData: Any | undefined;
 }
 
 export enum AuditLog_Severity {
@@ -202,6 +208,10 @@ export function auditLog_SeverityToNumber(object: AuditLog_Severity): number {
     default:
       return -1;
   }
+}
+
+export interface AuditData {
+  policyDelta: PolicyDelta | undefined;
 }
 
 function createBaseSearchAuditLogsRequest(): SearchAuditLogsRequest {
@@ -541,6 +551,7 @@ function createBaseAuditLog(): AuditLog {
     request: "",
     response: "",
     status: undefined,
+    serviceData: undefined,
   };
 }
 
@@ -572,6 +583,9 @@ export const AuditLog = {
     }
     if (message.status !== undefined) {
       Status.encode(message.status, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.serviceData !== undefined) {
+      Any.encode(message.serviceData, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -646,6 +660,13 @@ export const AuditLog = {
 
           message.status = Status.decode(reader, reader.uint32());
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.serviceData = Any.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -666,6 +687,7 @@ export const AuditLog = {
       request: isSet(object.request) ? globalThis.String(object.request) : "",
       response: isSet(object.response) ? globalThis.String(object.response) : "",
       status: isSet(object.status) ? Status.fromJSON(object.status) : undefined,
+      serviceData: isSet(object.serviceData) ? Any.fromJSON(object.serviceData) : undefined,
     };
   },
 
@@ -698,6 +720,9 @@ export const AuditLog = {
     if (message.status !== undefined) {
       obj.status = Status.toJSON(message.status);
     }
+    if (message.serviceData !== undefined) {
+      obj.serviceData = Any.toJSON(message.serviceData);
+    }
     return obj;
   },
 
@@ -717,6 +742,68 @@ export const AuditLog = {
     message.status = (object.status !== undefined && object.status !== null)
       ? Status.fromPartial(object.status)
       : undefined;
+    message.serviceData = (object.serviceData !== undefined && object.serviceData !== null)
+      ? Any.fromPartial(object.serviceData)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAuditData(): AuditData {
+  return { policyDelta: undefined };
+}
+
+export const AuditData = {
+  encode(message: AuditData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.policyDelta !== undefined) {
+      PolicyDelta.encode(message.policyDelta, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AuditData {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAuditData();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.policyDelta = PolicyDelta.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AuditData {
+    return { policyDelta: isSet(object.policyDelta) ? PolicyDelta.fromJSON(object.policyDelta) : undefined };
+  },
+
+  toJSON(message: AuditData): unknown {
+    const obj: any = {};
+    if (message.policyDelta !== undefined) {
+      obj.policyDelta = PolicyDelta.toJSON(message.policyDelta);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AuditData>): AuditData {
+    return AuditData.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AuditData>): AuditData {
+    const message = createBaseAuditData();
+    message.policyDelta = (object.policyDelta !== undefined && object.policyDelta !== null)
+      ? PolicyDelta.fromPartial(object.policyDelta)
+      : undefined;
     return message;
   },
 };
@@ -734,6 +821,7 @@ export const AuditLogServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               22,
@@ -772,6 +860,7 @@ export const AuditLogServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               25,
