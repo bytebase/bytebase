@@ -1,7 +1,6 @@
 import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import DashboardLandingPage from "@/views/DashboardLandingPage.vue";
 import MyIssues from "@/views/MyIssues.vue";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
@@ -38,14 +37,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "",
     name: WORKSPACE_HOME_MODULE,
-    components: {
-      content: DashboardLandingPage,
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
+    redirect: { name: WORKSPACE_ROUTE_MY_ISSUES },
   },
   {
     path: "issues",
