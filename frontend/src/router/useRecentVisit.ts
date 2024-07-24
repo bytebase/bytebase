@@ -1,10 +1,6 @@
 import { useLocalStorage, useDebounce } from "@vueuse/core";
 import { computed, ref, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
-import {
-  WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_HOME_MODULE,
-} from "@/router/dashboard/workspaceRoutes";
 
 type RecentVisit = {
   title: string;
