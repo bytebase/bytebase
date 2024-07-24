@@ -12,7 +12,7 @@ var (
 		"TEMPDB":   "tempdb",
 	}
 
-	// SELECT * FROM INFORMATION_SCHEMA.SCHEMATA;
+	// SELECT * FROM INFORMATION_SCHEMA.SCHEMATA;.
 	systemSchemas = map[string]string{
 		"INFORMATION_SCHEMA": "INFORMATION_SCHEMA",
 		"SYS":                "sys",
