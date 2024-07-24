@@ -75,7 +75,7 @@ message TaskRunLog {
   }
   message PriorBackupStart {}
   message PriorBackupEnd {
-    repeated PriorBackupInfo prior_backups = 1;
+    PriorBackupDetail prior_backup_detail = 1;
     string error = 2;
   }
 }
