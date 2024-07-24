@@ -117,7 +117,7 @@ const filteredComposedSlowQueryPolicyList = computed(() => {
 const prepare = async () => {
   try {
     const prepareInstanceList = async () => {
-      const list = await instanceV1Store.fetchInstanceList(
+      const list = await instanceV1Store.listInstances(
         false /* !showDeleted */
       );
       state.instanceList = list.filter(instanceV1SupportSlowQuery);
