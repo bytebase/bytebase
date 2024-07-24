@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
@@ -54,7 +55,10 @@ service DatabaseGroupService {
 message ListDatabaseGroupsRequest {
   // The parent resource whose database groups are to be listed.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // Not used. The maximum number of anomalies to return. The service may return fewer than
   // this value.
@@ -82,7 +86,10 @@ message ListDatabaseGroupsResponse {
 message GetDatabaseGroupRequest {
   // The name of the database group to retrieve.
   // Format: projects/{project}/databaseGroups/{databaseGroup}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseGroup"}
+  ];
 
   // The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
   DatabaseGroupView view = 2;
@@ -91,7 +98,10 @@ message GetDatabaseGroupRequest {
 message CreateDatabaseGroupRequest {
   // The parent resource where this database group will be created.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The database group to create.
   DatabaseGroup database_group = 2 [(google.api.field_behavior) = REQUIRED];
@@ -121,7 +131,10 @@ message UpdateDatabaseGroupRequest {
 message DeleteDatabaseGroupRequest {
   // The name of the database group to delete.
   // Format: projects/{project}/databaseGroups/{databaseGroup}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseGroup"}
+  ];
 }
 
 enum DatabaseGroupView {
@@ -137,6 +150,11 @@ enum DatabaseGroupView {
 }
 
 message DatabaseGroup {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseGroup"
+    pattern: "projects/{project}/databaseGroups/{databaseGroup}"
+  };
+
   // The name of the database group.
   // Format: projects/{project}/databaseGroups/{databaseGroup}
   string name = 1;

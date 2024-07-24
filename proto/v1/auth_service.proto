@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
@@ -78,7 +79,10 @@ service AuthService {
 message GetUserRequest {
   // The name of the user to retrieve.
   // Format: users/{user uid or user email}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
 }
 
 message ListUsersRequest {
@@ -137,13 +141,19 @@ message UpdateUserRequest {
 message DeleteUserRequest {
   // The name of the user to delete.
   // Format: users/{user}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
 }
 
 message UndeleteUserRequest {
   // The name of the deleted user.
   // Format: users/{user}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
 }
 
 message LoginRequest {
@@ -193,7 +203,10 @@ message LoginResponse {
 message LogoutRequest {}
 
 message User {
-  reserved 6, 13;
+  option (google.api.resource) = {
+    type: "bytebase.com/User"
+    pattern: "users/{user}"
+  };
 
   // The name of the user.
   // Format: users/{user}. {user} is a system-generated unique ID.
