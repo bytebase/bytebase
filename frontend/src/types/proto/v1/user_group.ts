@@ -136,7 +136,7 @@ export function userGroupMember_RoleToNumber(object: UserGroupMember_Role): numb
 export interface UserGroup {
   /**
    * The name of the group to retrieve.
-   * Format: groups/{email}
+   * Format: userGroups/{userGroup}, userGroup is an email.
    */
   name: string;
   title: string;
@@ -894,6 +894,7 @@ export const UserGroupServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               34,
@@ -970,6 +971,7 @@ export const UserGroupServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               21,

@@ -24,6 +24,7 @@ service SQLService {
         body: "*"
       }
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
@@ -36,6 +37,7 @@ service SQLService {
         body: "*"
       }
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
@@ -45,6 +47,7 @@ service SQLService {
 
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {get: "/v1/queryHistories:search"};
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Export(ExportRequest) returns (ExportResponse) {
@@ -61,6 +64,7 @@ service SQLService {
         body: "*"
       }
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
@@ -68,6 +72,7 @@ service SQLService {
       post: "/v1/sql/differPreview"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Check(CheckRequest) returns (CheckResponse) {
@@ -75,6 +80,7 @@ service SQLService {
       post: "/v1/sql/check"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
@@ -83,6 +89,7 @@ service SQLService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
@@ -90,6 +97,7 @@ service SQLService {
       post: "/v1/sql/pretty"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
@@ -97,6 +105,7 @@ service SQLService {
       post: "/v1/schemaDesign:stringifyMetadata"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GenerateRestoreSQL(GenerateRestoreSQLRequest) returns (GenerateRestoreSQLResponse) {
@@ -104,6 +113,7 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:generateRestoreSQL"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 

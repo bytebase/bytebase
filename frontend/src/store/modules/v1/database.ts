@@ -83,6 +83,15 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
     }
   };
+  const listDatabases = async (parent : string) => {
+    const { databases } = await databaseServiceClient.listDatabases({
+      parent: parent,
+      pageSize: DEFAULT_DATABASE_PAGE_SIZE,
+    });
+    const composedDatabaseList = await upsertDatabaseMap(databases);
+    return composedDatabaseList;
+  };
+  // Deprecated.
   const searchDatabases = async (args: Partial<SearchDatabasesRequest>) => {
     const { databases } = await databaseServiceClient.searchDatabases({
       pageSize: DEFAULT_DATABASE_PAGE_SIZE,
@@ -226,6 +235,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     reset,
     removeCacheByInstance,
     databaseList,
+    listDatabases,
     searchDatabases,
     syncDatabase,
     databaseListByUser,
