@@ -52,6 +52,12 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     return composedInstances;
   };
+  const listInstances = async (showDeleted = false) => {
+    const { instances } = await instanceServiceClient.listInstances({ showDeleted });
+    const composed = await upsertInstances(instances);
+    return composed;
+  };
+  // Deprecated.
   const fetchInstanceList = async (showDeleted = false, parent?: string) => {
     const request = hasWorkspacePermissionV2(
       currentUser.value,
@@ -205,6 +211,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     restoreInstance,
     syncInstance,
     batchSyncInstance,
+    listInstances,
     fetchInstanceList,
     fetchProjectInstanceList,
     getInstanceByName,

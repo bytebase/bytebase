@@ -462,7 +462,13 @@ const reviewPolicy = useReviewPolicyForDatabase(
 );
 
 const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
-  const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
+  const engine = props.database?.instanceResource.engine;
+  const rule = reviewPolicy.value?.ruleList.find((rule) => {
+    if (engine && rule.engine !== engine) {
+      return false;
+    }
+    return rule.type === type;
+  });
   if (!rule) {
     return undefined;
   }

@@ -4781,7 +4781,7 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the identity provider. Format: idps/{identity_provider} |
+| name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
@@ -9562,7 +9562,7 @@ The schema of setting.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The resource name of the setting. Must be one of the following forms:
 
-- `setting/{setting_name}` For example, &#34;settings/bb.branding.logo&#34; |
+- `setting/{setting}` For example, &#34;settings/bb.branding.logo&#34; |
 | value | [Value](#bytebase-v1-Value) |  | The value of the setting. |
 
 
@@ -10594,7 +10594,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the group to retrieve. Format: groups/{email} |
+| name | [string](#string) |  | The name of the group to retrieve. Format: userGroups/{userGroup}, userGroup is an email. |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | creator | [string](#string) |  | The name for the creator. Format: users/hello@world.com |

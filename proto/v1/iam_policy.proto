@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/type/expr.proto";
 
 option go_package = "generated-go/v1";
@@ -12,14 +13,20 @@ message GetIamPolicyRequest {
   // The name of the resource to get the IAM policy.
   // Format: projects/{project}
   // Format: workspaces/{workspace}
-  string resource = 1 [(google.api.field_behavior) = REQUIRED];
+  string resource = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/IAMPolicy"}
+  ];
 }
 
 message SetIamPolicyRequest {
   // The name of the resource to set the IAM policy.
   // Format: projects/{project}
   // Format: workspaces/{workspace}
-  string resource = 1 [(google.api.field_behavior) = REQUIRED];
+  string resource = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/IAMPolicy"}
+  ];
 
   IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
 
