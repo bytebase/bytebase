@@ -164,7 +164,8 @@ const prepareInstances = async () => {
       extractProjectResourceName(project)
     );
   } else {
-    await instanceStore.fetchInstanceList();
+    // TODO(d): do we still have non-project cases?
+    await instanceStore.listInstances();
   }
 };
 
@@ -174,16 +175,9 @@ const prepareDatabases = async () => {
     return;
   }
   const { project } = editorStore;
-  const filters = [`instance = "instances/-"`];
-  if (project) {
-    filters.push(`project = "${project}"`);
-  }
-  // `databaseList` is the database list accessible by current user.
-  // Only accessible instances and databases will be listed in the tree.
+  // `databaseList` is the database list in the project.
   const databaseList = (
-    await databaseStore.searchDatabases({
-      filter: filters.join(" && "),
-    })
+    await databaseStore.listDatabases(project)
   ).filter((db) => db.syncState === State.ACTIVE);
 
   editorStore.databaseList = databaseList;

@@ -65,13 +65,7 @@ const defaultExpandedKeys = ref<string[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const project = await useProjectV1Store().getOrFetchProjectByName(
-    props.projectName
-  );
-  const filters = [`instance = "instances/-"`, `project = "${project.name}"`];
-  await databaseStore.searchDatabases({
-    filter: filters.join(" && "),
-  });
+  await databaseStore.listDatabases(props.projectName);
 
   await Promise.all(
     selectedValueList.value.map(async (key) => {

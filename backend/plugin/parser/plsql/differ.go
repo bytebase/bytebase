@@ -26,16 +26,17 @@ type diffNode struct {
 	// 2. does not compare the storage option.
 	strictMode bool
 
-	schemaName     string
-	dropConstraint []string
-	dropIndex      []string
-	dropColumn     []string
-	dropTable      []string
-	createTable    []string
-	addColumn      []string
-	modifyColumn   []string
-	addIndex       []string
-	addConstraint  []string
+	schemaName             string
+	dropConstraint         []string
+	dropIndex              []string
+	dropColumn             []string
+	dropTable              []string
+	createTable            []string
+	addColumn              []string
+	modifyColumn           []string
+	modifyColumnVisibility []string
+	addIndex               []string
+	addConstraint          []string
 }
 
 func (diff *diffNode) String() (string, error) {
@@ -90,6 +91,14 @@ func (diff *diffNode) String() (string, error) {
 	}
 	for _, modifyColumn := range diff.modifyColumn {
 		if _, err := buf.WriteString(modifyColumn); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, modifyColumnVisibility := range diff.modifyColumnVisibility {
+		if _, err := buf.WriteString(modifyColumnVisibility); err != nil {
 			return "", err
 		}
 		if _, err := buf.WriteString("\n"); err != nil {
@@ -458,6 +467,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 
 	var addColumns []plsql.IColumn_definitionContext
 	var modifyColumns []plsql.IColumn_definitionContext
+	var modifyColumnVisibility []plsql.IColumn_definitionContext
 	var dropColumns []string
 	oldColumnMap := buildColumnMap(oldTable)
 	for _, item := range newTable.createTable.Relational_table().AllRelational_property() {
@@ -476,6 +486,9 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 		if !isColumnEqual(oldColumn, item.Column_definition()) {
 			modifyColumns = append(modifyColumns, item.Column_definition())
 		}
+		if !isColumnVisibilityEqual(oldColumn, item.Column_definition()) {
+			modifyColumnVisibility = append(modifyColumnVisibility, item.Column_definition())
+		}
 		delete(oldColumnMap, newColumnName)
 	}
 	for _, column := range oldColumnMap {
@@ -486,10 +499,10 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 		return dropColumns[i] < dropColumns[j]
 	})
 
-	return diff.appendColumnDiff(oldTable.name, addColumns, modifyColumns, dropColumns)
+	return diff.appendColumnDiff(oldTable.name, addColumns, modifyColumns, modifyColumnVisibility, dropColumns)
 }
 
-func (diff *diffNode) appendColumnDiff(tableName string, addColumns []plsql.IColumn_definitionContext, modifyColumns []plsql.IColumn_definitionContext, dropColumns []string) error {
+func (diff *diffNode) appendColumnDiff(tableName string, addColumns, modifyColumns, modifyColumnVisibility []plsql.IColumn_definitionContext, dropColumns []string) error {
 	if len(addColumns) != 0 {
 		if err := diff.appendAddColumn(tableName, addColumns); err != nil {
 			return err
@@ -497,6 +510,11 @@ func (diff *diffNode) appendColumnDiff(tableName string, addColumns []plsql.ICol
 	}
 	if len(modifyColumns) != 0 {
 		if err := diff.appendModifyColumn(tableName, modifyColumns); err != nil {
+			return err
+		}
+	}
+	if len(modifyColumnVisibility) != 0 {
+		if err := diff.appendModifyColumnVisibility(tableName, modifyColumnVisibility); err != nil {
 			return err
 		}
 	}
@@ -548,6 +566,53 @@ func (diff *diffNode) appendDropColumn(tableName string, dropColumns []string) e
 	return nil
 }
 
+func (diff *diffNode) appendModifyColumnVisibility(tableName string, modifyColumnVisibility []plsql.IColumn_definitionContext) error {
+	var buf strings.Builder
+
+	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
+		return err
+	}
+	if diff.strictMode {
+		if _, err := buf.WriteString(diff.schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(tableName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`" MODIFY (`); err != nil {
+		return err
+	}
+	for i, column := range modifyColumnVisibility {
+		if i != 0 {
+			if _, err := buf.WriteString(`,`); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString("\n	"); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Column_name())); err != nil {
+			return err
+		}
+		columnVisibility := " VISIBLE"
+		if column.INVISIBLE() != nil {
+			columnVisibility = " INVISIBLE"
+		}
+		if _, err := buf.WriteString(columnVisibility); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n);"); err != nil {
+		return err
+	}
+	diff.modifyColumnVisibility = append(diff.modifyColumnVisibility, buf.String())
+	return nil
+}
+
 func (diff *diffNode) appendModifyColumn(tableName string, modifyColumns []plsql.IColumn_definitionContext) error {
 	var buf strings.Builder
 
@@ -595,8 +660,18 @@ func convertToModifyColumn(column plsql.IColumn_definitionContext) string {
 		results = append(results, column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Datatype()))
 	}
 
+	if column.COLLATE() != nil {
+		results = append(results, column.GetParser().GetTokenStream().GetTextFromTokens(
+			column.COLLATE().GetSymbol(),
+			column.Column_collation_name().GetStop(),
+		))
+	}
+
 	if column.DEFAULT() != nil && column.Expression() != nil {
 		results = append(results, "DEFAULT")
+		if column.NULL_() != nil {
+			results = append(results, "NO NULL")
+		}
 		results = append(results, column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Expression()))
 	}
 
@@ -653,6 +728,18 @@ func (diff *diffNode) appendAddColumn(tableName string, addColumns []plsql.IColu
 	return nil
 }
 
+func isColumnVisibilityEqual(oldColumn, newColumn plsql.IColumn_definitionContext) bool {
+	oldVisible := true
+	newVisible := true
+	if oldColumn.INVISIBLE() != nil {
+		oldVisible = false
+	}
+	if newColumn.INVISIBLE() != nil {
+		newVisible = false
+	}
+	return oldVisible == newVisible
+}
+
 func isColumnEqual(oldColumn, newColumn plsql.IColumn_definitionContext) bool {
 	// TODO: compare column definition instead of text.
 	// TODO: ignore visible now.
@@ -665,6 +752,13 @@ func getColumnCompareString(column plsql.IColumn_definitionContext) string {
 	var results []string
 	if column.Datatype() != nil {
 		results = append(results, column.GetParser().GetTokenStream().GetTextFromRuleContext(column.Datatype()))
+	}
+
+	if column.COLLATE() != nil {
+		results = append(results, column.GetParser().GetTokenStream().GetTextFromTokens(
+			column.COLLATE().GetSymbol(),
+			column.Column_collation_name().GetStop(),
+		))
 	}
 
 	if column.DEFAULT() != nil {

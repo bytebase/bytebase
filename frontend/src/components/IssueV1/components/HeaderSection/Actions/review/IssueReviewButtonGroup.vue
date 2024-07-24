@@ -30,10 +30,7 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import {
-  useCurrentUserV1,
-  useAppFeature,
-} from "@/store";
+import { useCurrentUserV1, useAppFeature } from "@/store";
 import { PresetRoleType } from "@/types";
 import {
   IssueStatus,
@@ -72,7 +69,6 @@ const shouldShowApproveOrReject = computed(() => {
 });
 const shouldShowApprove = computed(() => {
   if (!shouldShowApproveOrReject.value) return false;
-
   return status.value === Issue_Approver_Status.PENDING;
 });
 const shouldShowReject = computed(() => {
