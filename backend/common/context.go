@@ -27,7 +27,24 @@ func GetProjectIDsFromContext(ctx context.Context) ([]string, bool) {
 	return v, ok
 }
 
+type AuthMethod int
+
+const (
+	AuthMethodUnspecified AuthMethod = iota
+	AuthMethodIAM
+	AuthMethodCustom
+)
+
+type Resource struct {
+	Type      string
+	Name      string
+	Project   string
+	Workspace bool
+}
+
 type AuthContext struct {
 	AllowWithoutCredential bool
 	Permission             string
+	AuthMethod             AuthMethod
+	Resources              []*Resource
 }

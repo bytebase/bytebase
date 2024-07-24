@@ -231,7 +231,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.
 }
 
 // GetSlowQueryPolicy will get the slow query policy for instance ID.
-func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.SlowQueryPolicy, error) {
+func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*storepb.SlowQueryPolicy, error) {
 	pType := api.PolicyTypeSlowQuery
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -243,10 +243,15 @@ func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyR
 	}
 
 	if policy == nil {
-		return &api.SlowQueryPolicy{Active: false}, nil
+		return &storepb.SlowQueryPolicy{Active: false}, nil
 	}
 
-	return api.UnmarshalSlowQueryPolicy(policy.Payload)
+	payload := &storepb.SlowQueryPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal slow query policy payload")
+	}
+
+	return payload, nil
 }
 
 // GetMaskingRulePolicy will get the masking rule policy.

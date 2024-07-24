@@ -96,12 +96,11 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		return
 	}
 
-	var storeValue storepb.SMTPMailDeliverySetting
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(mailSetting.Value), &storeValue); err != nil {
+	storeValue := &storepb.SMTPMailDeliverySetting{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(mailSetting.Value), storeValue); err != nil {
 		slog.Error("Failed to unmarshal setting value", log.BBError(err))
 		return
 	}
-	apiValue := convertStorepbToAPIMailDeliveryValue(&storeValue)
 
 	consoleRedirectURL := "www.bytebase.com"
 	workspaceProfileSettingName := api.SettingWorkspaceProfile
@@ -134,8 +133,8 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 
 	var activePolicies []*store.PolicyMessage
 	for _, policy := range policies {
-		payload, err := api.UnmarshalSlowQueryPolicy(policy.Payload)
-		if err != nil {
+		payload := &storepb.SlowQueryPolicy{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), payload); err != nil {
 			slog.Error("Failed to unmarshal slow query policy payload", log.BBError(err))
 			return
 		}
@@ -150,8 +149,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
 			for _, user := range users {
-				apiValue.SMTPTo = user.Email
-				if err := s.sendNeedConfigSlowQueryPolicyEmail(apiValue, consoleRedirectURL); err != nil {
+				if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
 					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
 			}
@@ -162,8 +160,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			slog.Error("Failed to list owner users", log.BBError(err))
 		} else {
 			for _, user := range users {
-				apiValue.SMTPTo = user.Email
-				if err := s.sendNeedConfigSlowQueryPolicyEmail(apiValue, consoleRedirectURL); err != nil {
+				if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
 					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
 			}
@@ -177,8 +174,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
 			for _, user := range users {
-				apiValue.SMTPTo = user.Email
-				if err := send(apiValue, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
+				if err := send(storeValue, user.Email, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
 					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
 			}
@@ -214,9 +210,8 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			if user.ID == api.SystemBotID {
 				continue
 			}
-			apiValue.SMTPTo = user.Email
 			subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
-			if err := send(apiValue, subject, body); err != nil {
+			if err := send(storeValue, user.Email, subject, body); err != nil {
 				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 			}
 		}
@@ -421,22 +416,22 @@ func engineTypeString(engine storepb.Engine) string {
 	return ""
 }
 
-func send(mailSetting *api.SettingWorkspaceMailDeliveryValue, subject string, body string) error {
+func send(mailSetting *storepb.SMTPMailDeliverySetting, to, subject, body string) error {
 	email := mail.NewEmailMsg()
 
-	email.SetFrom(fmt.Sprintf("Bytebase <%s>", mailSetting.SMTPFrom)).
-		AddTo(mailSetting.SMTPTo).
+	email.SetFrom(fmt.Sprintf("Bytebase <%s>", mailSetting.From)).
+		AddTo(to).
 		SetSubject(subject).
 		SetBody(body)
-	client := mail.NewSMTPClient(mailSetting.SMTPServerHost, mailSetting.SMTPServerPort)
-	client.SetAuthType(convertToMailSMTPAuthType(mailSetting.SMTPAuthenticationType)).
-		SetAuthCredentials(mailSetting.SMTPUsername, *mailSetting.SMTPPassword).
-		SetEncryptionType(convertToMailSMTPEncryptionType(mailSetting.SMTPEncryptionType))
+	client := mail.NewSMTPClient(mailSetting.Server, int(mailSetting.Port))
+	client.SetAuthType(convertToMailSMTPAuthType(mailSetting.Authentication)).
+		SetAuthCredentials(mailSetting.Username, mailSetting.Password).
+		SetEncryptionType(convertToMailSMTPEncryptionType(mailSetting.Encryption))
 
 	if err := client.SendMail(email); err != nil {
 		return err
 	}
-	slog.Debug("Successfully sent need configure slow query policy email", slog.String("to", mailSetting.SMTPTo), slog.String("subject", subject))
+	slog.Debug("Successfully sent need configure slow query policy email", slog.String("to", to), slog.String("subject", subject))
 	return nil
 }
 
@@ -704,7 +699,7 @@ func engineOrder(engine storepb.Engine) int {
 	}
 }
 
-func (*SlowQueryWeeklyMailSender) sendNeedConfigSlowQueryPolicyEmail(mailSetting *api.SettingWorkspaceMailDeliveryValue, visitURL string) error {
+func (*SlowQueryWeeklyMailSender) sendNeedConfigSlowQueryPolicyEmail(mailSetting *storepb.SMTPMailDeliverySetting, to, visitURL string) error {
 	email := mail.NewEmailMsg()
 
 	needConfigureTemplate, err := emailTemplates.ReadFile("templates/for-dba/need_configure.html")
@@ -715,19 +710,19 @@ func (*SlowQueryWeeklyMailSender) sendNeedConfigSlowQueryPolicyEmail(mailSetting
 	body := strings.ReplaceAll(string(needConfigureTemplate), "{{VISIT_URL}}", visitURL)
 	body = strings.ReplaceAll(body, "{{DOC_LINK}}", `https://www.bytebase.com/docs/slow-query/overview`)
 
-	email.SetFrom(fmt.Sprintf("Bytebase <%s>", mailSetting.SMTPFrom)).
-		AddTo(mailSetting.SMTPTo).
+	email.SetFrom(fmt.Sprintf("Bytebase <%s>", mailSetting.From)).
+		AddTo(to).
 		SetSubject("Configure your database slow query report").
 		SetBody(body)
-	client := mail.NewSMTPClient(mailSetting.SMTPServerHost, mailSetting.SMTPServerPort)
-	client.SetAuthType(convertToMailSMTPAuthType(mailSetting.SMTPAuthenticationType)).
-		SetAuthCredentials(mailSetting.SMTPUsername, *mailSetting.SMTPPassword).
-		SetEncryptionType(convertToMailSMTPEncryptionType(mailSetting.SMTPEncryptionType))
+	client := mail.NewSMTPClient(mailSetting.Server, int(mailSetting.Port))
+	client.SetAuthType(convertToMailSMTPAuthType(mailSetting.Authentication)).
+		SetAuthCredentials(mailSetting.Username, mailSetting.Password).
+		SetEncryptionType(convertToMailSMTPEncryptionType(mailSetting.Encryption))
 
 	if err := client.SendMail(email); err != nil {
 		return err
 	}
-	slog.Debug("Successfully sent need configure slow query policy email", slog.String("to", mailSetting.SMTPTo))
+	slog.Debug("Successfully sent need configure slow query policy email", slog.String("to", to))
 	return nil
 }
 
@@ -755,23 +750,6 @@ func convertToMailSMTPAuthType(auth storepb.SMTPMailDeliverySetting_Authenticati
 		return mail.SMTPAuthTypeLogin
 	}
 	return mail.SMTPAuthTypeNone
-}
-
-func convertStorepbToAPIMailDeliveryValue(pb *storepb.SMTPMailDeliverySetting) *api.SettingWorkspaceMailDeliveryValue {
-	if pb == nil {
-		return nil
-	}
-	password := pb.Password
-	value := api.SettingWorkspaceMailDeliveryValue{
-		SMTPServerHost:         pb.Server,
-		SMTPServerPort:         int(pb.Port),
-		SMTPEncryptionType:     pb.Encryption,
-		SMTPAuthenticationType: pb.Authentication,
-		SMTPUsername:           pb.Username,
-		SMTPPassword:           &password,
-		SMTPFrom:               pb.From,
-	}
-	return &value
 }
 
 func generateDateRange(now time.Time) string {

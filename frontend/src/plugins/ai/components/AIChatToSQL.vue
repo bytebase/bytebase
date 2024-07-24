@@ -19,15 +19,6 @@ type LocalState = {
   showHistoryDialog: boolean;
 };
 
-withDefaults(
-  defineProps<{
-    allowConfig?: boolean;
-  }>(),
-  {
-    allowConfig: true,
-  }
-);
-
 const emit = defineEmits<{
   (
     event: "apply-statement",

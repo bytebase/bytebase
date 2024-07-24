@@ -355,6 +355,10 @@ func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecute
 		Results: nil,
 	}
 	for _, result := range r.Results {
+		if result == nil {
+			n.Results = append(n.Results, &v1pb.QueryResult{})
+			continue
+		}
 		n.Results = append(n.Results, &v1pb.QueryResult{
 			ColumnNames:     result.ColumnNames,
 			ColumnTypeNames: result.ColumnTypeNames,

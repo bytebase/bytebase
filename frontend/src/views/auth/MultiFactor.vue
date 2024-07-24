@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mx-auto w-full h-full min-h-screen flex flex-col justify-center items-center bg-gray-100"
+    class="mx-auto w-full h-full py-6 flex flex-col justify-center items-center bg-gray-100 rounded-lg"
   >
     <div class="w-80 bg-white p-8 py-6 rounded-lg shadow">
       <img
@@ -33,7 +33,7 @@
           />
         </template>
         <div class="w-full mt-4">
-          <NButton attr-type="submit" type="primary">
+          <NButton class="!w-full" attr-type="submit" type="primary">
             {{ $t("common.verify") }}
           </NButton>
         </div>
@@ -65,6 +65,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";

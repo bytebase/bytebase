@@ -9,14 +9,12 @@
     <p class="py-1">
       <template v-if="allowManageInstance">
         {{ $t("instance.no-read-only-data-source-warn-for-admin-dba") }}
-        <HideInStandaloneMode>
-          <span
-            class="underline text-accent cursor-pointer hover:opacity-80"
-            @click="gotoInstanceDetailPage"
-          >
-            {{ $t("sql-editor.create-read-only-data-source") }}
-          </span>
-        </HideInStandaloneMode>
+        <span
+          class="underline text-accent cursor-pointer hover:opacity-80"
+          @click="gotoInstanceDetailPage"
+        >
+          {{ $t("sql-editor.create-read-only-data-source") }}
+        </span>
       </template>
       <template v-else>
         {{ $t("instance.no-read-only-data-source-warn-for-developer") }}

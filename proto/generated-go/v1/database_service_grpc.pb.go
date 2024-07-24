@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	DatabaseService_GetDatabase_FullMethodName            = "/bytebase.v1.DatabaseService/GetDatabase"
+	DatabaseService_ListInstanceDatabases_FullMethodName  = "/bytebase.v1.DatabaseService/ListInstanceDatabases"
 	DatabaseService_ListDatabases_FullMethodName          = "/bytebase.v1.DatabaseService/ListDatabases"
 	DatabaseService_SearchDatabases_FullMethodName        = "/bytebase.v1.DatabaseService/SearchDatabases"
 	DatabaseService_UpdateDatabase_FullMethodName         = "/bytebase.v1.DatabaseService/UpdateDatabase"
@@ -44,7 +45,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DatabaseServiceClient interface {
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
+	ListInstanceDatabases(ctx context.Context, in *ListInstanceDatabasesRequest, opts ...grpc.CallOption) (*ListInstanceDatabasesResponse, error)
 	ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*ListDatabasesResponse, error)
+	// Deprecated. This will be removed in the next release.
 	// Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
 	SearchDatabases(ctx context.Context, in *SearchDatabasesRequest, opts ...grpc.CallOption) (*SearchDatabasesResponse, error)
 	UpdateDatabase(ctx context.Context, in *UpdateDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
@@ -75,6 +78,16 @@ func (c *databaseServiceClient) GetDatabase(ctx context.Context, in *GetDatabase
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Database)
 	err := c.cc.Invoke(ctx, DatabaseService_GetDatabase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *databaseServiceClient) ListInstanceDatabases(ctx context.Context, in *ListInstanceDatabasesRequest, opts ...grpc.CallOption) (*ListInstanceDatabasesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListInstanceDatabasesResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_ListInstanceDatabases_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +259,9 @@ func (c *databaseServiceClient) GetChangeHistory(ctx context.Context, in *GetCha
 // for forward compatibility
 type DatabaseServiceServer interface {
 	GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error)
+	ListInstanceDatabases(context.Context, *ListInstanceDatabasesRequest) (*ListInstanceDatabasesResponse, error)
 	ListDatabases(context.Context, *ListDatabasesRequest) (*ListDatabasesResponse, error)
+	// Deprecated. This will be removed in the next release.
 	// Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
 	SearchDatabases(context.Context, *SearchDatabasesRequest) (*SearchDatabasesResponse, error)
 	UpdateDatabase(context.Context, *UpdateDatabaseRequest) (*Database, error)
@@ -272,6 +287,9 @@ type UnimplementedDatabaseServiceServer struct {
 
 func (UnimplementedDatabaseServiceServer) GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDatabase not implemented")
+}
+func (UnimplementedDatabaseServiceServer) ListInstanceDatabases(context.Context, *ListInstanceDatabasesRequest) (*ListInstanceDatabasesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListInstanceDatabases not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListDatabases(context.Context, *ListDatabasesRequest) (*ListDatabasesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDatabases not implemented")
@@ -348,6 +366,24 @@ func _DatabaseService_GetDatabase_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DatabaseServiceServer).GetDatabase(ctx, req.(*GetDatabaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DatabaseService_ListInstanceDatabases_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListInstanceDatabasesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).ListInstanceDatabases(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_ListInstanceDatabases_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).ListInstanceDatabases(ctx, req.(*ListInstanceDatabasesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -650,6 +686,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDatabase",
 			Handler:    _DatabaseService_GetDatabase_Handler,
+		},
+		{
+			MethodName: "ListInstanceDatabases",
+			Handler:    _DatabaseService_ListInstanceDatabases_Handler,
 		},
 		{
 			MethodName: "ListDatabases",

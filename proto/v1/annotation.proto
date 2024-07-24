@@ -9,4 +9,13 @@ option go_package = "generated-go/v1";
 extend google.protobuf.MethodOptions {
   bool allow_without_credential = 100000;
   string permission = 100001;
+  AuthMethod auth_method = 100002;
+}
+
+enum AuthMethod {
+  AUTH_METHOD_UNSPECIFIED = 0;
+  // IAM uses the standard IAM authorization check on the organizational resources.
+  IAM = 1;
+  // Custom authorization method.
+  CUSTOM = 2;
 }

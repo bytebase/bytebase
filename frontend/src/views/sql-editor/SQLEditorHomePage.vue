@@ -77,7 +77,7 @@
       </Pane>
     </Splitpanes>
 
-    <Quickstart v-if="showQuickstart" />
+    <Quickstart v-if="!hideQuickStart" />
 
     <Drawer v-model:show="showSheetPanel">
       <DrawerContent :title="$t('sql-editor.sheet.self')">
@@ -114,8 +114,8 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useActuatorV1Store,
   useConnectionOfCurrentSQLEditorTab,
+  useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
@@ -151,13 +151,12 @@ const state = reactive<LocalState>({
 
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const actuatorStore = useActuatorV1Store();
 const tabStore = useSQLEditorTabStore();
 const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
-const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
+const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();

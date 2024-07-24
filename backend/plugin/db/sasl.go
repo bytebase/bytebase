@@ -4,17 +4,34 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
 )
 
+// There are two places where the KRB5_CONFIG is needed:
+//  1. The 'kinit' command in the subprocess.
+//  2. gohive.Connect() in the same process.
+func init() {
+	if err := os.Setenv("KRB5_CONFIG", DftKrbConfPath); err != nil {
+		panic(fmt.Sprintf("failed to set env %s: %s", "KRB5_CONFIG", DftKrbConfPath))
+	}
+}
+
+type SASLType string
+
+const (
+	SASLTypeNone     SASLType = "NONE"
+	SASLTypeKerberos SASLType = "KERBEROS"
+)
+
 type SASLConfig interface {
 	InitEnv() error
 	Check() bool
 	// used for gohive.
-	GetTypeName() string
+	GetTypeName() SASLType
 }
 
 type Realm struct {
@@ -35,17 +52,16 @@ type KerberosEnv struct {
 	KrbConfPath  string
 	KeytabPath   string
 	KinitBinPath string
-	realms       map[string]Realm
+	CurrRealm    *Realm
 }
 
 var (
 	_            SASLConfig = &KerberosConfig{}
 	singletonEnv            = KerberosEnv{
-		KrbConfPath: "/tmp/krb5.conf",
-		KeytabPath:  "/tmp/tmp.keytab",
+		KrbConfPath: DftKrbConfPath,
+		KeytabPath:  DftKeytabPath,
 		// be careful of your environment variables.
-		KinitBinPath: "kinit",
-		realms:       map[string]Realm{},
+		KinitBinPath: DftKinitBinPath,
 		krbEnvMutex:  &sync.Mutex{},
 	}
 
@@ -53,15 +69,21 @@ var (
 	// 'root/admin@EXAMPLE.COM' or 'root@EXAMPLE.COM'.
 	PrincipalWithoutInstanceFmt = "%s@%s"
 	PrincipalWithInstanceFmt    = "%s/%s@%s"
-	// KrbConfRealmFmt is the content format for krb5.conf, for example:
+	// content format of a krb5.conf file:
+	// [libdefaults]
+	//   default_realm = {realm}
 	// [realms]
 	//   {realm} = {
 	//	   kdc = {transport_protocol}/{host}:{port}
 	// 	 }
-	KrbConfRealmKeyword = "[realms]"
-	KrbConfRealmFmt     = "\t%s = {\n\t\tkdc = %s%s:%s\n\t}\n"
+	KrbConfLibDftKeyword = "[libdefaults]\n"
+	KrbConfDftRealmFmt   = "\tdefault_realm = %s\n"
+	KrbConfRealmKeyword  = "[realms]\n"
+	KrbConfRealmFmt      = "\t%s = {\n\t\tkdc = %s%s:%s\n\t}\n"
 	// We have to specify the path of 'krb5.conf' for the 'kinit' command.
-	KrbConfEnvVarFmt = "KRB5_CONFIG=%s"
+	DftKrbConfPath  = "/tmp/krb5.conf"
+	DftKeytabPath   = "/tmp/tmp.keytab"
+	DftKinitBinPath = "kinit"
 )
 
 // let users manually solve the resource competition problem.
@@ -74,13 +96,8 @@ func KrbEnvUnlock() {
 }
 
 func (krbConfig *KerberosConfig) InitEnv() error {
-	// KDCs can use either 'tcp' or 'udp' as their transport protocol.
-	if krbConfig.Realm.KDCTransportProtocol != "udp" && krbConfig.Realm.KDCTransportProtocol != "tcp" {
-		return errors.Errorf("invalid transport protocol for KDC connection: %s", krbConfig.Realm.KDCTransportProtocol)
-	}
-
 	// Create tmp krb5.conf.
-	if err := singletonEnv.AddRealm(krbConfig.Realm); err != nil {
+	if err := singletonEnv.SetRealm(krbConfig.Realm); err != nil {
 		return err
 	}
 
@@ -108,8 +125,7 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 		principal = fmt.Sprintf(PrincipalWithInstanceFmt, krbConfig.Primary, krbConfig.Instance, krbConfig.Realm.Name)
 	}
 	args := []string{
-		fmt.Sprintf(KrbConfEnvVarFmt, singletonEnv.KrbConfPath),
-		"kinit",
+		singletonEnv.KinitBinPath,
 		"-kt",
 		singletonEnv.KeytabPath,
 		principal,
@@ -123,7 +139,15 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 	return nil
 }
 
-func (*KerberosEnv) AddRealm(realm Realm) error {
+func isRealmSettingsEqual(a, b Realm) bool {
+	return a.KDCHost == b.KDCHost && a.KDCTransportProtocol == b.KDCTransportProtocol && a.KDCPort == b.KDCPort && a.Name == b.Name
+}
+
+func (e *KerberosEnv) SetRealm(realm Realm) error {
+	if e.CurrRealm != nil && isRealmSettingsEqual(*e.CurrRealm, realm) {
+		return nil
+	}
+
 	// Create a krb5.conf file.
 	file, err := os.Create(singletonEnv.KrbConfPath)
 	if err != nil {
@@ -132,14 +156,21 @@ func (*KerberosEnv) AddRealm(realm Realm) error {
 	defer file.Close()
 
 	// Write configurations.
-	if _, err = file.WriteString(fmt.Sprintf("%s\n", KrbConfRealmKeyword)); err != nil {
+	if _, err = file.WriteString(KrbConfLibDftKeyword); err != nil {
+		return err
+	}
+	if _, err = file.WriteString(fmt.Sprintf(KrbConfDftRealmFmt, realm.Name)); err != nil {
+		return err
+	}
+	if _, err = file.WriteString(KrbConfRealmKeyword); err != nil {
 		return err
 	}
 
 	var kdcConnStr string
-	if realm.KDCTransportProtocol == "tcp" {
-		// This will force kinit client to communicate with KDC over tcp as Mac
+	if realm.KDCTransportProtocol == "tcp" && runtime.GOOS == "darwin" {
+		// This will force kinit client to communicate with KDC over tcp as Darwin
 		// doesn't has fall-down mechanism if it fails to communicate over udp.
+		// However, Linux doesn't need this.
 		kdcConnStr = fmt.Sprintf(KrbConfRealmFmt, realm.Name, "tcp/", realm.KDCHost, realm.KDCPort)
 	} else {
 		kdcConnStr = fmt.Sprintf(KrbConfRealmFmt, realm.Name, "", realm.KDCHost, realm.KDCPort)
@@ -153,14 +184,18 @@ func (*KerberosEnv) AddRealm(realm Realm) error {
 
 // check whether Kerberos is enabled and its settings are valid.
 func (krbConfig *KerberosConfig) Check() bool {
+	// KDCs can use either 'tcp' or 'udp' as their transport protocol.
+	if krbConfig.Realm.KDCTransportProtocol != "udp" && krbConfig.Realm.KDCTransportProtocol != "tcp" {
+		return false
+	}
 	if krbConfig.Primary == "" || krbConfig.Realm.Name == "" || len(krbConfig.Keytab) == 0 || krbConfig.Realm.KDCTransportProtocol == "" {
 		return false
 	}
 	return true
 }
 
-func (*KerberosConfig) GetTypeName() string {
-	return "KERBEROS"
+func (*KerberosConfig) GetTypeName() SASLType {
+	return SASLTypeKerberos
 }
 
 type PlainSASLConfig struct {
@@ -174,8 +209,8 @@ func (*PlainSASLConfig) Check() bool {
 	return true
 }
 
-func (*PlainSASLConfig) GetTypeName() string {
-	return "NONE"
+func (*PlainSASLConfig) GetTypeName() SASLType {
+	return SASLTypeNone
 }
 
 func (*PlainSASLConfig) InitEnv() error {

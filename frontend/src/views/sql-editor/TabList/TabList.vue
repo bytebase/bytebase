@@ -43,7 +43,7 @@
     </div>
 
     <div class="hidden lg:block -mt-0.5">
-      <ProfileDropdown v-if="showProfileDropdown" />
+      <ProfileDropdown v-if="!hideProfile" />
     </div>
 
     <ContextMenu ref="contextMenuRef" />
@@ -53,18 +53,13 @@
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
 import { useDialog } from "naive-ui";
-import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import {
-  useActuatorV1Store,
-  useFilterStore,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useAppFeature, useFilterStore, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import {
   defer,
@@ -91,7 +86,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const { pageMode } = storeToRefs(useActuatorV1Store());
+const hideProfile = useAppFeature("bb.feature.sql-editor.hide-profile");
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();
@@ -100,10 +95,6 @@ const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 const scrollState = reactive({
   moreLeft: false,
   moreRight: false,
-});
-
-const showProfileDropdown = computed(() => {
-  return pageMode.value === "BUNDLED";
 });
 
 const filteredTabIdList = computed(() => {

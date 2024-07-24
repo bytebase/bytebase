@@ -1,10 +1,10 @@
 <template>
   <component
-    :is="isLink ? 'router-link' : 'span'"
+    :is="!disallowNavigateToConsole ? 'router-link' : 'span'"
     v-if="userEmail !== userStore.systemBotUser?.email"
     v-bind="bindings"
     class="font-medium text-main whitespace-nowrap"
-    :class="[isLink && 'hover:underline']"
+    :class="[!disallowNavigateToConsole && 'hover:underline']"
   >
     {{ user?.title }}
   </component>
@@ -19,7 +19,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import { usePageMode, useUserStore } from "@/store";
+import { useAppFeature, useUserStore } from "@/store";
 import { extractUserResourceName } from "@/utils";
 
 const props = defineProps<{
@@ -27,8 +27,10 @@ const props = defineProps<{
   creator: string;
 }>();
 
-const pageMode = usePageMode();
 const userStore = useUserStore();
+const disallowNavigateToConsole = useAppFeature(
+  "bb.feature.disallow-navigate-to-console"
+);
 
 const userEmail = computed(() => {
   return extractUserResourceName(props.creator);
@@ -38,21 +40,17 @@ const user = computed(() => {
   return userStore.getUserByEmail(userEmail.value);
 });
 
-const isLink = computed(() => {
-  return pageMode.value === "BUNDLED";
-});
-
 const bindings = computed(() => {
-  if (isLink.value) {
-    return {
-      to: `/users/${userEmail.value}`,
-      activeClass: "",
-      exactActiveClass: "",
-      onClick: (e: MouseEvent) => {
-        e.stopPropagation();
-      },
-    };
+  if (disallowNavigateToConsole.value) {
+    return undefined;
   }
-  return {};
+  return {
+    to: `/users/${userEmail.value}`,
+    activeClass: "",
+    exactActiveClass: "",
+    onClick: (e: MouseEvent) => {
+      e.stopPropagation();
+    },
+  };
 });
 </script>

@@ -3693,6 +3693,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Deprecated. */
     searchInstances: {
       name: "SearchInstances",
       requestType: SearchInstancesRequest,
@@ -3702,6 +3703,7 @@ export const InstanceServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               66,

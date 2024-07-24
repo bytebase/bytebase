@@ -27,34 +27,28 @@ const props = defineProps<{
 
 const isLoading = ref(false);
 
+const showSessionTables = computed(
+  () => props.taskRun.status === TaskRun_Status.RUNNING
+);
+
 const taskRunSession = computedAsync(
-  async () => {
+  () => {
     if (!showSessionTables.value) {
       return undefined;
     }
-
-    try {
-      const session = await rolloutServiceClient.getTaskRunSession(
-        {
-          parent: props.taskRun.name,
-        },
-        {
-          silent: true,
-        }
-      );
-      return session;
-    } catch (error) {
-      return undefined;
-    }
+    return rolloutServiceClient.getTaskRunSession(
+      {
+        parent: props.taskRun.name,
+      },
+      {
+        silent: true,
+      }
+    );
   },
   undefined,
   {
     evaluating: isLoading,
   }
-);
-
-const showSessionTables = computed(
-  () => props.taskRun.status === TaskRun_Status.RUNNING
 );
 
 const postgresSession = computed(() => taskRunSession.value?.postgres);

@@ -15,7 +15,6 @@ export * from "./issue";
 export * from "./member";
 export * from "./notification";
 export * from "./oauth";
-export * from "./pipeline";
 export * from "./plan";
 export * from "./principal";
 export * from "./project";
@@ -41,5 +40,6 @@ export * from "./changeHistory";
 export * from "./semanticTypes";
 export * from "./iam";
 export * from "./misc";
+export * from "./appProfile";
 
 export * from "./v1";

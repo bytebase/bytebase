@@ -75,16 +75,12 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 		return v, nil
 	}
 
-	users, err := s.listAndCacheAllUsers(ctx)
-	if err != nil {
+	if _, err := s.listAndCacheAllUsers(ctx); err != nil {
 		return nil, err
 	}
-	for _, user := range users {
-		if user.ID == id {
-			return user, nil
-		}
-	}
-	return nil, nil
+
+	user, _ := s.userIDCache.Get(id)
+	return user, nil
 }
 
 // GetUserByEmail gets the user by email.
@@ -93,16 +89,12 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 		return v, nil
 	}
 
-	users, err := s.listAndCacheAllUsers(ctx)
-	if err != nil {
+	if _, err := s.listAndCacheAllUsers(ctx); err != nil {
 		return nil, err
 	}
-	for _, user := range users {
-		if user.Email == email {
-			return user, nil
-		}
-	}
-	return nil, nil
+
+	user, _ := s.userEmailCache.Get(email)
+	return user, nil
 }
 
 // ListUsers list users.

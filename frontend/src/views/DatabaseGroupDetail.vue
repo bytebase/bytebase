@@ -122,7 +122,7 @@ import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import {
   DatabaseGroupView,
   type DatabaseGroup,
-} from "@/types/proto/v1/project_service";
+} from "@/types/proto/v1/database_group_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 

@@ -23,6 +23,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The type of action performed on a Binding in a policy.
+type BindingDelta_Action int32
+
+const (
+	BindingDelta_ACTION_UNSPECIFIED BindingDelta_Action = 0
+	BindingDelta_ADD                BindingDelta_Action = 1
+	BindingDelta_REMOVE             BindingDelta_Action = 2
+)
+
+// Enum value maps for BindingDelta_Action.
+var (
+	BindingDelta_Action_name = map[int32]string{
+		0: "ACTION_UNSPECIFIED",
+		1: "ADD",
+		2: "REMOVE",
+	}
+	BindingDelta_Action_value = map[string]int32{
+		"ACTION_UNSPECIFIED": 0,
+		"ADD":                1,
+		"REMOVE":             2,
+	}
+)
+
+func (x BindingDelta_Action) Enum() *BindingDelta_Action {
+	p := new(BindingDelta_Action)
+	*p = x
+	return p
+}
+
+func (x BindingDelta_Action) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BindingDelta_Action) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_iam_policy_proto_enumTypes[0].Descriptor()
+}
+
+func (BindingDelta_Action) Type() protoreflect.EnumType {
+	return &file_v1_iam_policy_proto_enumTypes[0]
+}
+
+func (x BindingDelta_Action) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BindingDelta_Action.Descriptor instead.
+func (BindingDelta_Action) EnumDescriptor() ([]byte, []int) {
+	return file_v1_iam_policy_proto_rawDescGZIP(), []int{5, 0}
+}
+
 type GetIamPolicyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -280,6 +330,133 @@ func (x *Binding) GetParsedExpr() *v1alpha1.ParsedExpr {
 	return nil
 }
 
+// The difference delta between two policies.
+type PolicyDelta struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The delta for Bindings between two policies.
+	BindingDeltas []*BindingDelta `protobuf:"bytes,1,rep,name=binding_deltas,json=bindingDeltas,proto3" json:"binding_deltas,omitempty"`
+}
+
+func (x *PolicyDelta) Reset() {
+	*x = PolicyDelta{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_iam_policy_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PolicyDelta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PolicyDelta) ProtoMessage() {}
+
+func (x *PolicyDelta) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_iam_policy_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PolicyDelta.ProtoReflect.Descriptor instead.
+func (*PolicyDelta) Descriptor() ([]byte, []int) {
+	return file_v1_iam_policy_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PolicyDelta) GetBindingDeltas() []*BindingDelta {
+	if x != nil {
+		return x.BindingDeltas
+	}
+	return nil
+}
+
+// One delta entry for Binding. Each individual change (only one member in each
+// entry) to a binding will be a separate entry.
+type BindingDelta struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The action that was performed on a Binding.
+	Action BindingDelta_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.v1.BindingDelta_Action" json:"action,omitempty"`
+	// Role that is assigned to `members`.
+	// For example, `roles/projectOwner`.
+	Role string `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	// Follows the same format of Binding.members.
+	Member string `protobuf:"bytes,3,opt,name=member,proto3" json:"member,omitempty"`
+	// The condition that is associated with this binding.
+	Condition *expr.Expr `protobuf:"bytes,4,opt,name=condition,proto3" json:"condition,omitempty"`
+}
+
+func (x *BindingDelta) Reset() {
+	*x = BindingDelta{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_iam_policy_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BindingDelta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BindingDelta) ProtoMessage() {}
+
+func (x *BindingDelta) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_iam_policy_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BindingDelta.ProtoReflect.Descriptor instead.
+func (*BindingDelta) Descriptor() ([]byte, []int) {
+	return file_v1_iam_policy_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *BindingDelta) GetAction() BindingDelta_Action {
+	if x != nil {
+		return x.Action
+	}
+	return BindingDelta_ACTION_UNSPECIFIED
+}
+
+func (x *BindingDelta) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *BindingDelta) GetMember() string {
+	if x != nil {
+		return x.Member
+	}
+	return ""
+}
+
+func (x *BindingDelta) GetCondition() *expr.Expr {
+	if x != nil {
+		return x.Condition
+	}
+	return nil
+}
+
 var File_v1_iam_policy_proto protoreflect.FileDescriptor
 
 var file_v1_iam_policy_proto_rawDesc = []byte{
@@ -319,7 +496,26 @@ var file_v1_iam_policy_proto_rawDesc = []byte{
 	0x28, 0x0b, 0x32, 0x24, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x65, 0x78, 0x70, 0x72, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x61,
 	0x72, 0x73, 0x65, 0x64, 0x45, 0x78, 0x70, 0x72, 0x42, 0x04, 0xe2, 0x41, 0x01, 0x03, 0x52, 0x0a,
-	0x70, 0x61, 0x72, 0x73, 0x65, 0x64, 0x45, 0x78, 0x70, 0x72, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65,
+	0x70, 0x61, 0x72, 0x73, 0x65, 0x64, 0x45, 0x78, 0x70, 0x72, 0x22, 0x4f, 0x0a, 0x0b, 0x50, 0x6f,
+	0x6c, 0x69, 0x63, 0x79, 0x44, 0x65, 0x6c, 0x74, 0x61, 0x12, 0x40, 0x0a, 0x0e, 0x62, 0x69, 0x6e,
+	0x64, 0x69, 0x6e, 0x67, 0x5f, 0x64, 0x65, 0x6c, 0x74, 0x61, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x19, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x42, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x44, 0x65, 0x6c, 0x74, 0x61, 0x52, 0x0d, 0x62, 0x69,
+	0x6e, 0x64, 0x69, 0x6e, 0x67, 0x44, 0x65, 0x6c, 0x74, 0x61, 0x73, 0x22, 0xdc, 0x01, 0x0a, 0x0c,
+	0x42, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x44, 0x65, 0x6c, 0x74, 0x61, 0x12, 0x38, 0x0a, 0x06,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x20, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x6e, 0x64, 0x69,
+	0x6e, 0x67, 0x44, 0x65, 0x6c, 0x74, 0x61, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x65,
+	0x6d, 0x62, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x62,
+	0x65, 0x72, 0x12, 0x2f, 0x0a, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x74,
+	0x79, 0x70, 0x65, 0x2e, 0x45, 0x78, 0x70, 0x72, 0x52, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74,
+	0x69, 0x6f, 0x6e, 0x22, 0x35, 0x0a, 0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x16, 0x0a,
+	0x12, 0x41, 0x43, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
+	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x41, 0x44, 0x44, 0x10, 0x01, 0x12, 0x0a,
+	0x0a, 0x06, 0x52, 0x45, 0x4d, 0x4f, 0x56, 0x45, 0x10, 0x02, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65,
 	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
@@ -336,25 +532,32 @@ func file_v1_iam_policy_proto_rawDescGZIP() []byte {
 	return file_v1_iam_policy_proto_rawDescData
 }
 
-var file_v1_iam_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_v1_iam_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_iam_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_v1_iam_policy_proto_goTypes = []any{
-	(*GetIamPolicyRequest)(nil), // 0: bytebase.v1.GetIamPolicyRequest
-	(*SetIamPolicyRequest)(nil), // 1: bytebase.v1.SetIamPolicyRequest
-	(*IamPolicy)(nil),           // 2: bytebase.v1.IamPolicy
-	(*Binding)(nil),             // 3: bytebase.v1.Binding
-	(*expr.Expr)(nil),           // 4: google.type.Expr
-	(*v1alpha1.ParsedExpr)(nil), // 5: google.api.expr.v1alpha1.ParsedExpr
+	(BindingDelta_Action)(0),    // 0: bytebase.v1.BindingDelta.Action
+	(*GetIamPolicyRequest)(nil), // 1: bytebase.v1.GetIamPolicyRequest
+	(*SetIamPolicyRequest)(nil), // 2: bytebase.v1.SetIamPolicyRequest
+	(*IamPolicy)(nil),           // 3: bytebase.v1.IamPolicy
+	(*Binding)(nil),             // 4: bytebase.v1.Binding
+	(*PolicyDelta)(nil),         // 5: bytebase.v1.PolicyDelta
+	(*BindingDelta)(nil),        // 6: bytebase.v1.BindingDelta
+	(*expr.Expr)(nil),           // 7: google.type.Expr
+	(*v1alpha1.ParsedExpr)(nil), // 8: google.api.expr.v1alpha1.ParsedExpr
 }
 var file_v1_iam_policy_proto_depIdxs = []int32{
-	2, // 0: bytebase.v1.SetIamPolicyRequest.policy:type_name -> bytebase.v1.IamPolicy
-	3, // 1: bytebase.v1.IamPolicy.bindings:type_name -> bytebase.v1.Binding
-	4, // 2: bytebase.v1.Binding.condition:type_name -> google.type.Expr
-	5, // 3: bytebase.v1.Binding.parsed_expr:type_name -> google.api.expr.v1alpha1.ParsedExpr
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 0: bytebase.v1.SetIamPolicyRequest.policy:type_name -> bytebase.v1.IamPolicy
+	4, // 1: bytebase.v1.IamPolicy.bindings:type_name -> bytebase.v1.Binding
+	7, // 2: bytebase.v1.Binding.condition:type_name -> google.type.Expr
+	8, // 3: bytebase.v1.Binding.parsed_expr:type_name -> google.api.expr.v1alpha1.ParsedExpr
+	6, // 4: bytebase.v1.PolicyDelta.binding_deltas:type_name -> bytebase.v1.BindingDelta
+	0, // 5: bytebase.v1.BindingDelta.action:type_name -> bytebase.v1.BindingDelta.Action
+	7, // 6: bytebase.v1.BindingDelta.condition:type_name -> google.type.Expr
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_iam_policy_proto_init() }
@@ -411,19 +614,44 @@ func file_v1_iam_policy_proto_init() {
 				return nil
 			}
 		}
+		file_v1_iam_policy_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*PolicyDelta); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_iam_policy_proto_msgTypes[5].Exporter = func(v any, i int) any {
+			switch v := v.(*BindingDelta); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_iam_policy_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   4,
+			NumEnums:      1,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_v1_iam_policy_proto_goTypes,
 		DependencyIndexes: file_v1_iam_policy_proto_depIdxs,
+		EnumInfos:         file_v1_iam_policy_proto_enumTypes,
 		MessageInfos:      file_v1_iam_policy_proto_msgTypes,
 	}.Build()
 	File_v1_iam_policy_proto = out.File
