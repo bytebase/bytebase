@@ -10274,7 +10274,7 @@ components:
                     type: string
                     description: |-
                         The name of the identity provider.
-                         Format: idps/{identity_provider}
+                         Format: idps/{idp}
                 uid:
                     readOnly: true
                     type: string
@@ -12973,7 +12973,7 @@ components:
                     description: |-
                         The resource name of the setting. Must be one of the following forms:
 
-                         - `setting/{setting_name}`
+                         - `setting/{setting}`
                          For example, "settings/bb.branding.logo"
                 value:
                     allOf:
@@ -14108,7 +14108,7 @@ components:
                     type: string
                     description: |-
                         The name of the group to retrieve.
-                         Format: groups/{email}
+                         Format: userGroups/{userGroup}, userGroup is an email.
                 title:
                     type: string
                 description:
