@@ -18,5 +18,17 @@ message TaskRunResult {
   Position start_position = 4;
   Position end_position = 5;
 
+  // The uid of the export archive.
   int32 export_archive_uid = 6;
+
+  // The prior backups that will be used to rollback the task run.
+  repeated PriorBackupInfo prior_backups = 7;
+}
+
+message PriorBackupInfo {
+  // The backup table information.
+  string database = 1;
+  string schema = 2;
+  string table = 3;
+  optional int32 original_line = 4;
 }
