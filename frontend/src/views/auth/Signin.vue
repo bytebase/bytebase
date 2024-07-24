@@ -251,7 +251,7 @@
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton, NCard, NTabPane, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { AUTH_MFA_MODULE, AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
@@ -298,14 +298,16 @@ const groupedIdentityProviderList = computed(() =>
   )
 );
 
-onMounted(async () => {
+watchEffect(() => {
   // Navigate to signup if needs admin setup.
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
   if (actuatorStore.needAdminSetup && !disallowSignup.value) {
     router.push({ name: AUTH_SIGNUP_MODULE, replace: true });
   }
+});
 
+onMounted(async () => {
   const url = new URL(window.location.href);
   const params = new URLSearchParams(url.search);
   state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
