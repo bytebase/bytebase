@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
@@ -101,6 +102,11 @@ enum BranchView {
 }
 
 message Branch {
+  option (google.api.resource) = {
+    type: "bytebase.com/Branch"
+    pattern: "projects/{project}/branches/{branch}"
+  };
+
   // The name of the branch.
   // Format: projects/{project}/branches/{branch}
   // {branch} should be the id of a sheet.
@@ -154,13 +160,19 @@ message Branch {
 message GetBranchRequest {
   // The name of the branch to retrieve.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 }
 
 message ListBranchesRequest {
   // The parent resource of the branch.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // To filter the search result.
   string filter = 2;
@@ -193,7 +205,10 @@ message ListBranchesResponse {
 message CreateBranchRequest {
   // The parent, which owns this collection of branches.
   // Format: project/{project}
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   Branch branch = 2;
 
@@ -223,7 +238,10 @@ message UpdateBranchRequest {
 message MergeBranchRequest {
   // The name of the base branch to merge to.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // The head branch to merge from.
   // Format: projects/{project}/branches/{branch}
@@ -242,7 +260,10 @@ message MergeBranchRequest {
 message RebaseBranchRequest {
   // The name of the base branch to merge to.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // The database (remote upstream) used to rebase.
   // We use its schema as baseline and reapply the difference between base and head of the named branch.
@@ -284,7 +305,10 @@ message RebaseBranchResponse {
 message DeleteBranchRequest {
   // The name of the branch to delete.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // By default, server will return `FAILED_PRECONDITION` error
   // if delete the branch that is parent of other branches.

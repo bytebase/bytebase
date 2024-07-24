@@ -309,8 +309,6 @@ message Project {
     pattern: "projects/{project}"
   };
 
-  reserved 8;
-
   // The name of the project.
   // Format: projects/{project}
   string name = 1;
