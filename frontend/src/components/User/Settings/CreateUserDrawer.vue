@@ -255,9 +255,9 @@ const availableRoleOptions = computed(
       {
         type: "group",
         key: "project-roles",
-        label: `${t("role.project-roles.self")} (${t(
+        label: `${t("role.project-roles.self")} (${t("common.optional")}, ${t(
           "role.project-roles.apply-to-all-projects"
-        )})`,
+        ).toLocaleLowerCase()})`,
         children: PRESET_PROJECT_ROLES.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
@@ -271,9 +271,9 @@ const availableRoleOptions = computed(
       roleGroups.push({
         type: "group",
         key: "custom-roles",
-        label: `${t("role.custom-roles")} (${t(
+        label: `${t("role.custom-roles")} (${t("common.optional")}, ${t(
           "role.project-roles.apply-to-all-projects"
-        )})`,
+        ).toLocaleLowerCase()})`,
         children: customRoles.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
