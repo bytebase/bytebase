@@ -10798,6 +10798,18 @@ components:
                 principal:
                     type: string
                     description: 'Format: users/hello@world.com'
+        Item_Table:
+            type: object
+            properties:
+                database:
+                    type: string
+                    description: |-
+                        The database information.
+                         Format: instances/{instance}/databases/{database}
+                schema:
+                    type: string
+                table:
+                    type: string
         KerberosConfig:
             type: object
             properties:
@@ -11972,6 +11984,28 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Plan'
                     description: The plan used to preview rollout.
+        PriorBackupDetail:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PriorBackupDetail_Item'
+        PriorBackupDetail_Item:
+            type: object
+            properties:
+                sourceTable:
+                    allOf:
+                        - $ref: '#/components/schemas/Item_Table'
+                    description: The original table information.
+                targetTable:
+                    allOf:
+                        - $ref: '#/components/schemas/Item_Table'
+                    description: The target backup table information.
+                startPosition:
+                    $ref: '#/components/schemas/Position'
+                endPosition:
+                    $ref: '#/components/schemas/Position'
         ProcedureConfig:
             type: object
             properties:
@@ -13695,6 +13729,8 @@ components:
                         - DATABASE_SYNC_END
                         - TASK_RUN_STATUS_UPDATE
                         - TRANSACTION_CONTROL
+                        - PRIOR_BACKUP_START
+                        - PRIOR_BACKUP_END
                     type: string
                     format: enum
                 schemaDumpStart:
@@ -13713,6 +13749,10 @@ components:
                     $ref: '#/components/schemas/TaskRunLog_TaskRunStatusUpdate'
                 transactionControl:
                     $ref: '#/components/schemas/TaskRunLog_TransactionControl'
+                priorBackupStart:
+                    $ref: '#/components/schemas/TaskRunLog_PriorBackupStart'
+                priorBackupEnd:
+                    $ref: '#/components/schemas/TaskRunLog_PriorBackupEnd'
         TaskRunLog_CommandExecute:
             type: object
             properties:
@@ -13750,6 +13790,16 @@ components:
                 error:
                     type: string
         TaskRunLog_DatabaseSyncStart:
+            type: object
+            properties: {}
+        TaskRunLog_PriorBackupEnd:
+            type: object
+            properties:
+                priorBackupDetail:
+                    $ref: '#/components/schemas/PriorBackupDetail'
+                error:
+                    type: string
+        TaskRunLog_PriorBackupStart:
             type: object
             properties: {}
         TaskRunLog_SchemaDumpEnd:
