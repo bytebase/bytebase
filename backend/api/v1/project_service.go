@@ -360,178 +360,90 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	var oriIamPolicy *storepb.IamPolicy
-	projectID, err := common.GetProjectID(request.Resource)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
-	}
-	roleMessages, err := s.store.ListRoles(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
-	}
-	roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
-	}
-	if err := s.validateIAMPolicy(ctx, request.Policy, roles); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Resource)
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Resource)
-	}
-
-	policy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project iam policy with error: %v", err.Error())
-	}
-	if request.Etag != policyMessage.Etag {
-		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
-	}
-	oriIamPolicy = policyMessage.Policy
-
-	policyPayload, err := protojson.Marshal(policy)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       project.UID,
-		ResourceType:      api.PolicyResourceTypeProject,
-		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeIAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}, creatorUID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	v1IamPolicy, err := convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
-	if err != nil {
-		return nil, err
-	}
-	v1IamPolicy.BindingDeltas = findIamPolicyDeltas(oriIamPolicy, iamPolicyMessage.Policy)
-	return v1IamPolicy, nil
-}
-
-type bindMapKey struct {
-	User string
-	Role string
-}
-
-type condMap map[string]bool
-
-func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.IamPolicy) []*v1pb.BindingDelta {
+	var oriIamPolicyMsg *store.IamPolicyMessage
+	var newIamPolicyMsg *store.IamPolicyMessage
 	var deltas []*v1pb.BindingDelta
-	oriBindMap := make(map[bindMapKey]condMap)
-	newBindMap := make(map[bindMapKey]condMap)
 
-	// build map.
-	for _, binding := range oriIamPolicy.Bindings {
-		if binding.Condition == nil {
-			continue
+	v1pbIamPolicy, apiErr := func() (*v1pb.IamPolicy, error) {
+		projectID, err := common.GetProjectID(request.Resource)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		for _, mem := range binding.Members {
-			key := bindMapKey{
-				User: mem,
-				Role: binding.Role,
-			}
-
-			exprBytes, err := protojson.Marshal(binding.Condition)
-			if err != nil {
-				return nil
-			}
-			expr := string(exprBytes)
-			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[expr]; ok {
-					continue
-				}
-				oriBindMap[key][expr] = true
-				continue
-			}
-			condMap := make(condMap)
-			condMap[expr] = true
-			oriBindMap[key] = condMap
+		creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+		if !ok {
+			return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
 		}
-	}
-
-	// find added items.
-	for _, binding := range newIamPolicy.Bindings {
-		for _, mem := range binding.Members {
-			key := bindMapKey{
-				User: mem,
-				Role: binding.Role,
-			}
-			exprBytes, err := protojson.Marshal(binding.Condition)
-			if err != nil {
-				return nil
-			}
-			expr := string(exprBytes)
-
-			// ensure the array is unique.
-			if condMap, ok := newBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[expr]; ok {
-					continue
-				}
-			}
-			tmpCondMap := make(condMap)
-			tmpCondMap[expr] = true
-			newBindMap[key] = tmpCondMap
-
-			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[expr]; ok {
-					delete(oriBindMap[key], expr)
-					continue
-				}
-			}
-			deltas = append(deltas, &v1pb.BindingDelta{
-				Action:    "ADD",
-				Member:    mem,
-				Role:      binding.Role,
-				Condition: binding.Condition,
-			})
+		roleMessages, err := s.store.ListRoles(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 		}
-	}
+		roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
+		}
+		if err := s.validateIAMPolicy(ctx, request.Policy, roles); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, "project %q not found", request.Resource)
+		}
+		if project.Deleted {
+			return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Resource)
+		}
 
-	// find removed items.
-	for bindMapKey, condMap := range oriBindMap {
-		for cond := range condMap {
-			expr := &expr.Expr{}
-			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(cond), expr); err != nil {
-				return nil
-			}
-			deltas = append(deltas, &v1pb.BindingDelta{
-				Action:    "REMOVE",
-				Member:    bindMapKey.User,
-				Role:      bindMapKey.Role,
-				Condition: expr,
-			})
+		policy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find project iam policy with error: %v", err.Error())
+		}
+		if request.Etag != policyMessage.Etag {
+			return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
+		}
+		oriIamPolicyMsg = policyMessage
+
+		policyPayload, err := protojson.Marshal(policy)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+			ResourceUID:       project.UID,
+			ResourceType:      api.PolicyResourceTypeProject,
+			Payload:           string(policyPayload),
+			Type:              api.PolicyTypeIAM,
+			InheritFromParent: false,
+			// Enforce cannot be false while creating a policy.
+			Enforce: true,
+		}, creatorUID); err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		newIamPolicyMsg = iamPolicyMessage
+
+		return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
+	}()
+
+	if oriIamPolicyMsg != nil && newIamPolicyMsg != nil {
+		deltas = findIamPolicyDeltas(oriIamPolicyMsg.Policy, newIamPolicyMsg.Policy)
+		if err := CreateAuditLog(ctx, request, v1pbIamPolicy, v1pb.ProjectService_SetIamPolicy_FullMethodName, s.store, deltas, apiErr); err != nil {
+			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
 
-	return deltas
+	return v1pbIamPolicy, nil
 }
 
 // GetDeploymentConfig returns the deployment config for a project.

@@ -482,7 +482,7 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 			},
 			want: []*v1pb.BindingDelta{
 				{
-					Action: "ADD",
+					Action: v1pb.BindingDelta_ADD,
 					Member: "usr103",
 					Role:   "roles/projectQuerier",
 					Condition: &expr.Expr{
@@ -490,19 +490,19 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 					},
 				},
 				{
-					Action:    "ADD",
+					Action:    v1pb.BindingDelta_ADD,
 					Member:    "usr101",
 					Role:      "roles/projectOwner",
 					Condition: &expr.Expr{},
 				},
 				{
-					Action:    "ADD",
+					Action:    v1pb.BindingDelta_ADD,
 					Member:    "usr102",
 					Role:      "roles/projectOwner",
 					Condition: &expr.Expr{},
 				},
 				{
-					Action: "REMOVE",
+					Action: v1pb.BindingDelta_REMOVE,
 					Member: "usr103",
 					Role:   "roles/projectQuerier",
 					Condition: &expr.Expr{
