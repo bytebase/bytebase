@@ -71,7 +71,7 @@ service IdentityProviderService {
 message GetIdentityProviderRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/IDP"}
+    (google.api.resource_reference) = {type: "bytebase.com/IdP"}
   ];
 }
 
@@ -130,7 +130,7 @@ message DeleteIdentityProviderRequest {
   // Format: idps/{identity_provider}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/IDP"}
+    (google.api.resource_reference) = {type: "bytebase.com/IdP"}
   ];
 }
 
@@ -139,7 +139,7 @@ message UndeleteIdentityProviderRequest {
   // Format: idps/{identity_provider}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/IDP"}
+    (google.api.resource_reference) = {type: "bytebase.com/IdP"}
   ];
 }
 
@@ -161,7 +161,7 @@ message TestIdentityProviderResponse {}
 
 message IdentityProvider {
   option (google.api.resource) = {
-    type: "bytebase.com/IDP"
+    type: "bytebase.com/IdP"
     pattern: "idps/{idp}"
   };
 
