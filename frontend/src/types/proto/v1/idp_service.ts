@@ -225,7 +225,7 @@ export interface TestIdentityProviderResponse {
 export interface IdentityProvider {
   /**
    * The name of the identity provider.
-   * Format: idps/{identity_provider}
+   * Format: idps/{idp}
    */
   name: string;
   /** The system-assigned, unique identifier for a resource. */

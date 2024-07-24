@@ -16,11 +16,13 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watch } from "vue";
-import { useRoute } from "vue-router";
+import { reactive, watch, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import HelpDrawer from "@/components/HelpDrawer";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
+import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import { useAppFeature, useHelpStore, useUIStateStore } from "@/store";
 import type { RouteMapList } from "@/types";
 
@@ -30,10 +32,12 @@ interface LocalState {
 }
 
 const route = useRoute();
+const router = useRouter();
 const state = reactive<LocalState>({
   helpTimer: undefined,
   RouteMapList: null,
 });
+const { lastVisit } = useRecentVisit();
 const hideHelp = useAppFeature("bb.feature.hide-help");
 
 // watch route change for help
@@ -72,4 +76,16 @@ watch(
     }
   }
 );
+
+onMounted(() => {
+  if (lastVisit.value?.path) {
+    router.replace({
+      path: lastVisit.value?.path,
+    });
+  } else {
+    router.replace({
+      name: WORKSPACE_ROUTE_MY_ISSUES,
+    });
+  }
+});
 </script>

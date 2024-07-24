@@ -210,7 +210,7 @@ func (exec *DataUpdateExecutor) backupData(
 			num := int32(statement.OriginalLine)
 			originalLine = &num
 		case storepb.Engine_ORACLE:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("COMMENT ON TABLE %s.%s IS 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
 				return errors.Wrap(err, "failed to set table comment")
 			}
 			num := int32(statement.OriginalLine)
