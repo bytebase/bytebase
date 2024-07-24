@@ -1,23 +1,27 @@
-import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { useStorage, useDebounce } from "@vueuse/core";
+import { useLocalStorage, useDebounce } from "@vueuse/core";
 import { computed, ref, watch, nextTick } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 
 type RecentVisit = {
   title: string;
-  url: string;
+  path: string;
 };
 
-const STORAGE_KEY = "ui.kbar.recently_visited";
+const STORAGE_KEY = "bb.recently_visited";
 const MAX_HISTORY = 3;
 
 export function useRecentVisit() {
-  const { t } = useI18n();
   const route = useRoute();
-  const router = useRouter();
-  const recentVisit = useStorage(STORAGE_KEY, [] as RecentVisit[]);
-  const url = computed(() => {
+  const recentVisit = useLocalStorage(STORAGE_KEY, [] as RecentVisit[]);
+
+  const lastVisit = computed(() => {
+    if (recentVisit.value.length === 0) {
+      return;
+    }
+    return recentVisit.value[0];
+  });
+
+  const currentRoute = computed(() => {
     if (route.matched.length === 0) {
       // When the application is landing, vue router will
       //   perform a redirection from "/" to current path
@@ -30,16 +34,19 @@ export function useRecentVisit() {
       //   because Home page is not shown at this time.
       return undefined;
     }
-    return route.fullPath;
+    return {
+      name: route.name?.toString() ?? "",
+      path: route.fullPath,
+    };
   });
   const currentPage = ref<RecentVisit>();
 
   watch(
     // Debounce the listener so we can skip internal immediate redirections
-    useDebounce(url, 50),
-    async (url) => {
-      if (!url) return;
-      if (url.startsWith("/auth")) {
+    useDebounce(currentRoute, 50),
+    async (currentRoute) => {
+      if (!currentRoute) return;
+      if (currentRoute.path.startsWith("/auth")) {
         // ignore auth related pages
         // kbar is invisible on these pages
         // and navigating to these pages does not make sense
@@ -50,8 +57,8 @@ export function useRecentVisit() {
       await nextTick();
       const { title } = document;
       currentPage.value = {
-        url,
         title,
+        ...currentRoute,
       };
     },
     { immediate: true }
@@ -68,7 +75,7 @@ export function useRecentVisit() {
         //   e.g. "/db?environment=5003" & "/db?environment=5005"
         // Because usually they are just different tab-panes
         //   or filters on the page.
-        return getPath(item.url) === getPath(curr.url);
+        return getPath(item.path) === getPath(item.path);
       });
       if (index >= 0) {
         // current page exists in the history already
@@ -91,26 +98,10 @@ export function useRecentVisit() {
     }
   );
 
-  const actions = computed(() => {
-    return recentVisit.value
-      .slice(1) // The first item is current page, just skip it.
-      .filter(({ title, url }) => title && url)
-      .map(({ title, url }, index) =>
-        defineAction({
-          // here `id` looks like "bb.recent_visited.1"
-          id: `bb.recently_visited.${index + 1}`,
-          section: t("kbar.recently-visited"),
-          name: title,
-          subtitle: url,
-          shortcut: ["g", `${index + 1}`],
-          keywords: "recently visited",
-          perform: () => router.push({ path: url }),
-        })
-      );
-  });
-
-  // prepend recent visit actions to kbar
-  useRegisterActions(actions, true);
+  return {
+    recentVisit,
+    lastVisit,
+  };
 }
 
 function getPath(url: string): string {
