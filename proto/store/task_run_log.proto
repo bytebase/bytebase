@@ -29,6 +29,8 @@ message TaskRunLog {
   DatabaseSyncEnd database_sync_end = 7;
   TaskRunStatusUpdate task_run_status_update = 8;
   TransactionControl transaction_control = 9;
+  PriorBackupStart prior_backup_start = 10;
+  PriorBackupEnd prior_backup_end = 11;
 
   message SchemaDumpStart {}
   message SchemaDumpEnd {
