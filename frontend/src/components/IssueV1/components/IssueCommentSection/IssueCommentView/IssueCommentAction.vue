@@ -15,6 +15,7 @@
 
         <NButton
           v-if="showRestoreButton(issueComment)"
+          size="small"
           @click.prevent="createRestoreIssue(issueComment)"
         >
           <span>{{ $t("activity.restore") }}</span>
@@ -61,6 +62,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
