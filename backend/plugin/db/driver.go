@@ -237,14 +237,11 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit    int
-	Explain  bool
-	ReadOnly bool
+	Limit   int
+	Explain bool
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string
-	// ShareDB is for Redshift.
-	ShareDB bool
 }
 
 // DatabaseRoleMessage is the API message for database role.
