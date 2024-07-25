@@ -480,6 +480,8 @@ func convertToIssueCommentEventTaskUpdateStatus(s *storepb.IssueCommentPayload_T
 		r = v1pb.IssueComment_TaskUpdate_PENDING
 	case storepb.IssueCommentPayload_TaskUpdate_RUNNING:
 		r = v1pb.IssueComment_TaskUpdate_RUNNING
+	case storepb.IssueCommentPayload_TaskUpdate_SKIPPED:
+		r = v1pb.IssueComment_TaskUpdate_SKIPPED
 	case storepb.IssueCommentPayload_TaskUpdate_STATUS_UNSPECIFIED:
 		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED
 	default:
