@@ -696,7 +696,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.Trim(singleSQL.Text, " \n\t;")
+	statement := singleSQL.Text
 	isSet := variableSetStmtRegexp.MatchString(statement)
 	isShow := variableShowStmtRegexp.MatchString(statement)
 	if !isSet && !isShow {

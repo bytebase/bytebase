@@ -261,7 +261,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := singleSQL.Text
 	if queryContext != nil && queryContext.Explain {
 		statement = fmt.Sprintf("EXPLAIN %s", statement)
 	} else if queryContext != nil && queryContext.Limit > 0 {
