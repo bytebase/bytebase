@@ -73,7 +73,7 @@ func CreateAuditLog(ctx context.Context, request, response any, method string, s
 		}
 	}
 
-	servicData, err := convertToProtoAny(deltas)
+	serviceData, err := convertToProtoAny(deltas)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func CreateAuditLog(ctx context.Context, request, response any, method string, s
 			Request:     requestString,
 			Response:    responseString,
 			Status:      st.Proto(),
-			ServiceData: servicData,
+			ServiceData: serviceData,
 		}
 		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
 			return errors.Wrapf(err, "failed to create audit log")
@@ -414,7 +414,6 @@ func isAuditMethod(method string) bool {
 		v1pb.AuthService_UpdateUser_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
-		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,
@@ -435,39 +434,6 @@ func isStreamAuditMethod(method string) bool {
 		return false
 	}
 }
-
-// func computeDeltas(ctx context.Context, request any, s *store.Store, handler grpc.UnaryHandler) (resp, deltas any, err, apiErr error) {
-// 	switch r := request.(type) {
-// 	case *v1pb.SetIamPolicyRequest:
-// 		projectID, err := common.GetProjectID(r.Resource)
-// 		if err != nil {
-// 			return nil, nil, status.Errorf(codes.InvalidArgument, err.Error()), nil
-// 		}
-// 		project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{
-// 			ResourceID: &projectID,
-// 		})
-// 		if err != nil {
-// 			return nil, nil, status.Errorf(codes.Internal, err.Error()), nil
-// 		}
-// 		oriIamPolicy, err := s.GetProjectIamPolicy(ctx, project.UID)
-// 		if err != nil {
-// 			return nil, nil, err, nil
-// 		}
-
-// 		resp, apiErr := handler(ctx, request)
-
-// 		newIamPolicy, err := s.GetProjectIamPolicy(ctx, project.UID)
-// 		if err != nil {
-// 			return nil, nil, err, nil
-// 		}
-// 		deltas := findIamPolicyDeltas(oriIamPolicy.Policy, newIamPolicy.Policy)
-// 		return deltas, resp, nil, apiErr
-
-// 	default:
-// 		resp, apiErr = handler(ctx, request)
-// 		return resp, nil, nil, apiErr
-// 	}
-// }
 
 type bindMapKey struct {
 	User string

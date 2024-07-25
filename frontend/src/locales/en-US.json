@@ -2926,7 +2926,8 @@
       "method": "Method",
       "request": "Request",
       "response": "Response",
-      "status": "Status"
+      "status": "Status",
+      "service-data": "Service Data"
     },
     "type": {
       "workspace": {

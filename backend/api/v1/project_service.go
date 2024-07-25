@@ -438,9 +438,9 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 	if oriIamPolicyMsg != nil && newIamPolicyMsg != nil {
 		deltas = findIamPolicyDeltas(oriIamPolicyMsg.Policy, newIamPolicyMsg.Policy)
-		if err := CreateAuditLog(ctx, request, v1pbIamPolicy, v1pb.ProjectService_SetIamPolicy_FullMethodName, s.store, deltas, apiErr); err != nil {
-			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
-		}
+	}
+	if err := CreateAuditLog(ctx, request, v1pbIamPolicy, v1pb.ProjectService_SetIamPolicy_FullMethodName, s.store, deltas, apiErr); err != nil {
+		slog.Warn("failed to create audit log", log.BBError(err))
 	}
 
 	return v1pbIamPolicy, nil

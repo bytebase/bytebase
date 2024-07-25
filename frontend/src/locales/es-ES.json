@@ -2926,7 +2926,8 @@
       "method": "Método",
       "request": "Pedido",
       "response": "Respuesta",
-      "status": "Estatus"
+      "status": "Estatus",
+      "service-data": "Datos del Servicio"
     },
     "type": {
       "workspace": {

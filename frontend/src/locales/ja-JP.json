@@ -2926,7 +2926,8 @@
       "method": "方法",
       "request": "リクエスト",
       "response": "応答",
-      "status": "ポジション"
+      "status": "ポジション",
+      "service-data": "サービスデータ"
     },
     "type": {
       "workspace": {
