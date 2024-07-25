@@ -17,6 +17,7 @@ import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { isDev } from "@/utils";
+import { FeatureModal } from "../FeatureGuard";
 import { defaultPortForEngine } from "./constants";
 import { provideInstanceFormContext } from "./context";
 

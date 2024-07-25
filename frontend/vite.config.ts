@@ -35,7 +35,7 @@ export default defineConfig({
       strictMessage: false,
     }),
     Components({
-      dirs: [resolve("src/components"), resolve("src/bbkit")],
+      allowOverrides: true,
       // auto import icons
       resolvers: [
         IconsResolver({
@@ -43,7 +43,9 @@ export default defineConfig({
         }),
       ],
     }),
-    Icons(),
+    Icons({
+      compiler: "vue3",
+    }),
     yaml(),
     CodeInspectorPlugin({
       bundler: "vite",

@@ -435,7 +435,6 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	}
 
 	queryContext := &db.QueryContext{
-		ReadOnly:        true,
 		CurrentDatabase: database.DatabaseName,
 	}
 	if request.Limit != 0 {
@@ -781,7 +780,6 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
 		Explain:         request.Explain,
-		ReadOnly:        true,
 		CurrentDatabase: database.DatabaseName,
 	})
 	select {
@@ -1274,21 +1272,11 @@ func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 			Line:          int32(advice.GetStartPosition().GetLine()),
 			Column:        int32(advice.GetStartPosition().GetColumn()),
 			Detail:        advice.Detail,
-			StartPosition: convertAdvicePosition(advice.StartPosition),
-			EndPosition:   convertAdvicePosition(advice.EndPosition),
+			StartPosition: convertToPosition(advice.StartPosition),
+			EndPosition:   convertToPosition(advice.EndPosition),
 		})
 	}
 	return result
-}
-
-func convertAdvicePosition(p *storepb.Position) *v1pb.Position {
-	if p == nil {
-		return nil
-	}
-	return &v1pb.Position{
-		Line:   p.Line,
-		Column: p.Column,
-	}
 }
 
 func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
@@ -1556,7 +1544,19 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, request.Statement)
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get sheet UID: %v", err)
+	}
+	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, LoadFull: true})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get sheet: %v", err)
+	}
+	if sheet == nil {
+		return nil, status.Errorf(codes.NotFound, "sheet %q not found", sheetUID)
+	}
+
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, sheet.Statement)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to split SQL: %v", err)
 	}

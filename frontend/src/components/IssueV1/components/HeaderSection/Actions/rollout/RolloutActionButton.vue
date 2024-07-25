@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
+import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type {

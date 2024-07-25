@@ -27,8 +27,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
+import QuickActionPanel from "@/components/QuickActionPanel.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
   PROJECT_V1_ROUTE_DATABASES,
@@ -117,11 +119,7 @@ const quickActionListForDatabaseGroup = computed((): QuickActionType[] => {
     return [];
   }
 
-  return [
-    "quickaction.bb.database.schema.update",
-    "quickaction.bb.database.data.update",
-    "quickaction.bb.group.database-group.create",
-  ];
+  return ["quickaction.bb.group.database-group.create"];
 });
 
 const quickActionListForDatabase = computed((): QuickActionType[] => {

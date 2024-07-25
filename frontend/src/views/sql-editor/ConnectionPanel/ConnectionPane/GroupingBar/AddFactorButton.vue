@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { useElementBounding } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, type SelectOption } from "naive-ui";
+import { NButton, NPopselect, type SelectOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, h, nextTick, ref, watch } from "vue";
 import { useSQLEditorTreeStore } from "@/store";

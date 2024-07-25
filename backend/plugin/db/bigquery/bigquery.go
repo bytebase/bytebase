@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -255,16 +254,12 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 	return result, nil
 }
 
-func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRight(stmt, " \n\t;")
-	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		limitPart := ""
-		if limit > 0 {
-			limitPart = fmt.Sprintf(" LIMIT %d", limit)
-		}
-		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
+func getStatementWithResultLimit(statement string, limit int) string {
+	limitPart := ""
+	if limit > 0 {
+		limitPart = fmt.Sprintf(" LIMIT %d", limit)
 	}
-	return stmt
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", util.TrimStatement(statement), limitPart)
 }
 
 func convertValue(v bigquery.Value, fieldType bigquery.FieldType) *v1pb.RowValue {

@@ -272,12 +272,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Snowflake doesn't support READ ONLY transactions.
-	// https://github.com/snowflakedb/gosnowflake/blob/0450f0b16a4679b216baecd3fd6cdce739dbb683/connection.go#L166
-	if queryContext != nil {
-		queryContext.ReadOnly = false
-	}
-
 	// TODO(rebelice): support multiple queries in a single statement.
 	var results []*v1pb.QueryResult
 
@@ -294,20 +288,20 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := singleSQL.Text
 	if queryContext != nil && queryContext.Explain {
 		statement = fmt.Sprintf("EXPLAIN %s", statement)
 	} else if queryContext != nil && queryContext.Limit > 0 {
 		stmt, err := getStatementWithResultLimit(statement, queryContext.Limit)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-			stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, queryContext.Limit)
+			stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", util.TrimStatement(stmt), queryContext.Limit)
 		}
 		statement = stmt
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_SNOWFLAKE, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_SNOWFLAKE, conn, statement)
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"math/big"
 	"strconv"
-	"strings"
 	"time"
 
 	// Import go-dm DM driver.
@@ -158,11 +157,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// DM does not support transaction isolation level for read-only queries.(also like Oracle :)
-	if queryContext != nil {
-		queryContext.ReadOnly = false
-	}
-
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -187,14 +181,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func getDMStatementWithResultLimit(statement string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", statement, limit)
-}
-
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := singleSQL.Text
-	statement = strings.TrimRight(statement, " \n\t;")
-
 	if queryContext != nil && queryContext.Explain {
 		startTime := time.Now()
 		randNum, err := rand.Int(rand.Reader, big.NewInt(999))
@@ -203,32 +191,28 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		}
 		randomID := fmt.Sprintf("%d%d", startTime.UnixMilli(), randNum.Int64())
 
-		statement = fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)
-		if _, err := conn.ExecContext(ctx, statement); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)); err != nil {
 			return nil, err
 		}
-		explainQuery := fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
-		result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, explainQuery, queryContext)
-		if err != nil {
-			return nil, err
-		}
-		result.Latency = durationpb.New(time.Since(startTime))
-		result.Statement = statement
-		return result, nil
+		statement = fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
 	}
 
-	if queryContext != nil && queryContext.Limit > 0 {
-		statement = getDMStatementWithResultLimit(statement, queryContext.Limit)
+	if queryContext != nil && !queryContext.Explain && queryContext.Limit > 0 {
+		statement = getStatementWithResultLimit(statement, queryContext.Limit)
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_DM, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_DM, conn, statement)
 	if err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
 	return result, nil
+}
+
+func getStatementWithResultLimit(statement string, limit int) string {
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(statement), limit)
 }
 
 // RunStatement runs a SQL statement in a given connection.

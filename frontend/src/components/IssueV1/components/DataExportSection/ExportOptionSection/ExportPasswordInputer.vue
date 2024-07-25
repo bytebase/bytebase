@@ -4,7 +4,7 @@
     :disabled="!editable"
     size="small"
   />
-  <tempalte v-if="editable && state.encryptEnabled">
+  <template v-if="editable && state.encryptEnabled">
     <span class="textinfolabel pl-4 pr-2"
       >{{ $t("common.password") }}
       <RequiredStar />
@@ -17,7 +17,7 @@
       :input-props="{ autocomplete: 'new-password' }"
       :placeholder="$t('common.password')"
     />
-  </tempalte>
+  </template>
 </template>
 
 <script setup lang="ts">

@@ -61,12 +61,13 @@
 
 <script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
+import { NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBAttention } from "@/bbkit";
+import { BBAttention, BBSpin } from "@/bbkit";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {

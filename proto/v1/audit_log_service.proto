@@ -4,21 +4,26 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "google/rpc/status.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
 
 service AuditLogService {
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
     option (google.api.http) = {get: "/v1/auditLogs:search"};
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
   rpc ExportAuditLogs(ExportAuditLogsRequest) returns (ExportAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/auditLogs:export"
       body: "*"
     };
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 
@@ -111,6 +116,9 @@ message AuditLog {
 
   google.rpc.Status status = 9;
 
+  // service-specific data about the request, response, and other activities.
+  google.protobuf.Any service_data = 10;
+
   enum Severity {
     DEFAULT = 0;
     DEBUG = 1;
@@ -122,4 +130,8 @@ message AuditLog {
     ALERT = 7;
     EMERGENCY = 8;
   }
+}
+
+message AuditData {
+  PolicyDelta policy_delta = 1;
 }

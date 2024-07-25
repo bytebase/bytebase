@@ -20,7 +20,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { BBModal } from "@/bbkit";
 import { pushNotification } from "@/store";
 import { toClipboard } from "@/utils";
 

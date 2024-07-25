@@ -107,6 +107,7 @@ import {
   DatabaseGroupFactorOptionsMap,
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
+import { FeatureAttentionForInstanceLicense } from "@/components/FeatureGuard";
 import TenantIcon from "@/components/TenantIcon.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {

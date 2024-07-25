@@ -132,7 +132,9 @@
               :key="database.name"
               class="w-full group flex flex-row justify-start items-center px-2 py-1 leading-8 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded hover:bg-gray-50"
               :class="
-                database.name === state.selectedDatabaseName ? '!bg-gray-100' : ''
+                database.name === state.selectedDatabaseName
+                  ? '!bg-gray-100'
+                  : ''
               "
               @click="() => (state.selectedDatabaseName = database.name)"
             >
@@ -234,6 +236,7 @@ import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   pushNotification,
@@ -256,6 +259,7 @@ import DiffViewPanel from "./DiffViewPanel.vue";
 import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import type { RawSQLState, SourceSchemaType } from "./types";
+import { EngineIcon } from "../Icon";
 
 interface DatabaseSourceSchema {
   environmentName: string;
@@ -425,7 +429,9 @@ const getSourceDatabase = () => {
   if (!props.databaseSourceSchema) {
     return;
   }
-  return databaseStore.getDatabaseByName(props.databaseSourceSchema.databaseName);
+  return databaseStore.getDatabaseByName(
+    props.databaseSourceSchema.databaseName
+  );
 };
 
 const getDatabaseSourceSchemaEnvironment = () => {

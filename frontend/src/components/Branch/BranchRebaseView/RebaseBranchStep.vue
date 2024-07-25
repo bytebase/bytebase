@@ -61,12 +61,13 @@
 </template>
 
 <script setup lang="ts">
+import { NTab, NTabs } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import type {
   LineHighlightOption,
   LineHighlightOverviewRulerPosition,
 } from "@/components/MonacoEditor";
-import { MonacoEditor } from "@/components/MonacoEditor";
+import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import { useDatabaseV1Store } from "@/store";
 import type { ComposedProject } from "@/types";

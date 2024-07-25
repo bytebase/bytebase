@@ -11,6 +11,8 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
+import { FeatureAttention } from "@/components/FeatureGuard";
+import { SQLReviewCreation } from "@/components/SQLReview";
 import { useSQLReviewStore } from "@/store";
 
 const attachedResources = computed(() => {

@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import type { NButton } from "naive-ui";
+import { NButton } from "naive-ui";
 import type { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
 import { readableSQLEditorTreeFactor } from "@/types";
 

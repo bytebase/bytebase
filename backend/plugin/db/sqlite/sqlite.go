@@ -149,14 +149,14 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_SQLITE, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_SQLITE, conn, statement)
 	if err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = strings.TrimRight(statement, " \n\t;")
+	result.Statement = statement
 
 	return []*v1pb.QueryResult{result}, nil
 }

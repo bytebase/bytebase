@@ -49,20 +49,9 @@
   </div>
 </template>
 
-<script lang="ts">
-import { storeToRefs } from "pinia";
-import { defineComponent, ref } from "vue";
-import { useActuatorV1Store } from "@/store";
+<script lang="ts" setup>
+import { NButton } from "naive-ui";
+import { ref } from "vue";
 
-export default defineComponent({
-  name: "BannerDemo",
-  setup() {
-    const actuatorStore = useActuatorV1Store();
-    const show = ref(true);
-
-    const { isReadonly } = storeToRefs(actuatorStore);
-
-    return { show, isReadonly };
-  },
-});
+const show = ref(true);
 </script>

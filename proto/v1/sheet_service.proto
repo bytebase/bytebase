@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 
@@ -19,11 +20,13 @@ service SheetService {
       body: "sheet"
     };
     option (google.api.method_signature) = "parent,sheet";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GetSheet(GetSheetRequest) returns (Sheet) {
     option (google.api.http) = {get: "/v1/{name=projects/*/sheets/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateSheet(UpdateSheetRequest) returns (Sheet) {
@@ -32,6 +35,7 @@ service SheetService {
       body: "sheet"
     };
     option (google.api.method_signature) = "sheet,update_mask";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 

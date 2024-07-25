@@ -55,6 +55,8 @@ import { useSettingV1Store } from "@/store";
 import type { Engine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
+import { EngineIcon } from "../Icon";
+import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
 
 const props = defineProps<{

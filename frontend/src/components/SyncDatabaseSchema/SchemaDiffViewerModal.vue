@@ -5,6 +5,7 @@
 </template>
 
 <script lang="ts" setup>
+import { BBModal } from "@/bbkit";
 import SchemaDiffViewer from "./SchemaDiffViewer.vue";
 
 defineProps<{

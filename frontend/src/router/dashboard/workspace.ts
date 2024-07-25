@@ -1,7 +1,6 @@
 import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import DashboardLandingPage from "@/views/DashboardLandingPage.vue";
 import MyIssues from "@/views/MyIssues.vue";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
@@ -34,42 +33,39 @@ import {
   WORKSPACE_ROUTE_IM,
 } from "./workspaceRoutes";
 
-const workspaceRoutes: RouteRecordRaw[] = [
-  {
-    path: "",
-    name: WORKSPACE_HOME_MODULE,
-    components: {
-      content: DashboardLandingPage,
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
+const homePage: RouteRecordRaw = {
+  path: "",
+  name: WORKSPACE_HOME_MODULE,
+  meta: {
+    getQuickActionList: () => {
+      return [
+        "quickaction.bb.database.schema.update",
+        "quickaction.bb.database.data.update",
+        "quickaction.bb.database.create",
+        "quickaction.bb.instance.create",
+        "quickaction.bb.issue.grant.request.querier",
+        "quickaction.bb.issue.grant.request.exporter",
+      ];
     },
   },
+  components: {
+    content: MyIssues,
+    leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+  },
+  props: {
+    content: true,
+    leftSidebar: true,
+  },
+};
+
+const workspaceRoutes: RouteRecordRaw[] = [
   {
+    ...homePage,
+  },
+  {
+    ...homePage,
     path: "issues",
     name: WORKSPACE_ROUTE_MY_ISSUES,
-    meta: {
-      getQuickActionList: () => {
-        return [
-          "quickaction.bb.database.schema.update",
-          "quickaction.bb.database.data.update",
-          "quickaction.bb.database.create",
-          "quickaction.bb.instance.create",
-          "quickaction.bb.issue.grant.request.querier",
-          "quickaction.bb.issue.grant.request.exporter",
-        ];
-      },
-    },
-    components: {
-      content: MyIssues,
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
   },
   {
     path: "projects",

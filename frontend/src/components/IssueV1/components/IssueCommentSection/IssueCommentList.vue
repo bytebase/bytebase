@@ -108,9 +108,11 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import {
   useCurrentUserV1,
   useIssueCommentStore,

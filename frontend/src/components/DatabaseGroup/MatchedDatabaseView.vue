@@ -116,8 +116,10 @@
 <script lang="ts" setup>
 import { NEllipsis, NVirtualList } from "naive-ui";
 import { reactive } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
+import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {
   showMatchedDatabaseList: boolean;

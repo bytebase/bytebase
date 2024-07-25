@@ -57,9 +57,13 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
+import { NButton } from "naive-ui";
 import { reactive, computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
+import { BBButtonConfirm } from "@/bbkit";
+import { VCSProviderBasicInfoPanel } from "@/components/VCS";
 import VCSConnectorTable from "@/components/VCSConnectorTable.vue";
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,

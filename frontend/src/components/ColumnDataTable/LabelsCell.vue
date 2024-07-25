@@ -38,6 +38,7 @@ import {
   SchemaConfig,
   TableConfig,
 } from "@/types/proto/v1/database_service";
+import LabelEditorDrawer from "../LabelEditorDrawer.vue";
 
 type LocalState = {
   showLabelsDrawer: boolean;

@@ -25,6 +25,7 @@ service ActuatorService {
       body: "actuator"
     };
     option (google.api.method_signature) = "actuator,update_mask";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
@@ -35,6 +36,7 @@ service ActuatorService {
   rpc ListDebugLog(ListDebugLogRequest) returns (ListDebugLogResponse) {
     option (google.api.http) = {get: "/v1/actuator/debug"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GetResourcePackage(GetResourcePackageRequest) returns (ResourcePackage) {

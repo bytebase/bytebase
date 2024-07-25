@@ -61,6 +61,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 
@@ -70,6 +71,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 
@@ -79,6 +81,7 @@ service RolloutService {
       body: "*"
     };
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 }
@@ -382,6 +385,29 @@ message TaskRun {
     EXPORTED = 2;
   }
   ExportArchiveStatus export_archive_status = 16;
+
+  message PriorBackupDetail {
+    message Item {
+      message Table {
+        // The database information.
+        // Format: instances/{instance}/databases/{database}
+        string database = 1;
+        string schema = 2;
+        string table = 3;
+      }
+
+      // The original table information.
+      Table source_table = 1;
+      // The target backup table information.
+      Table target_table = 2;
+      Position start_position = 3;
+      Position end_position = 4;
+    }
+
+    repeated Item items = 1;
+  }
+  // The prior backup detail that will be used to rollback the task run.
+  PriorBackupDetail prior_backup_detail = 17;
 }
 
 message TaskRunLog {

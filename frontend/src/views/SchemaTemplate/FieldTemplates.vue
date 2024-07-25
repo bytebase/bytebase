@@ -66,6 +66,7 @@
 import { NButton, NCheckbox } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { reactive, computed, onMounted } from "vue";
+import { EngineIcon } from "@/components/Icon";
 import FieldTemplateForm from "@/components/SchemaTemplate/FieldTemplateForm.vue";
 import FieldTemplateView from "@/components/SchemaTemplate/FieldTemplateView.vue";
 import { engineList } from "@/components/SchemaTemplate/utils";

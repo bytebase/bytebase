@@ -26,6 +26,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type { ExternalTableMetadata } from "@/types/proto/v1/database_service";
+import ExternalTableDetailDrawer from "./ExternalTableDetailDrawer.vue";
 
 type LocalState = {
   selectedTableName?: string;

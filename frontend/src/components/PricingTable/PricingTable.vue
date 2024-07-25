@@ -292,6 +292,7 @@ import { useSubscriptionV1Store } from "@/store";
 import type { Plan } from "@/types";
 import { PLANS, FEATURE_SECTIONS, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import WeChatQRModal from "../WeChatQRModal.vue";
 import FeatureItem from "./FeatureItem.vue";
 import type { LocalPlan } from "./types";
 

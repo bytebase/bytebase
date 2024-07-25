@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
@@ -61,7 +62,10 @@ service EnvironmentService {
 message GetEnvironmentRequest {
   // The name of the environment to retrieve.
   // Format: environments/{environment}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Environment"}
+  ];
 }
 
 message ListEnvironmentsRequest {
@@ -117,16 +121,27 @@ message UpdateEnvironmentRequest {
 message DeleteEnvironmentRequest {
   // The name of the environment to delete.
   // Format: environments/{environment}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Environment"}
+  ];
 }
 
 message UndeleteEnvironmentRequest {
   // The name of the deleted environment.
   // Format: environments/{environment}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Environment"}
+  ];
 }
 
 message Environment {
+  option (google.api.resource) = {
+    type: "bytebase.com/Environment"
+    pattern: "environments/{environment}"
+  };
+
   // The name of the environment.
   // Format: environments/{environment}
   string name = 1;

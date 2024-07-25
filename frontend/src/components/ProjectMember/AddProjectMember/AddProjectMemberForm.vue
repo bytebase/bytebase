@@ -98,11 +98,11 @@
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { NInputNumber, NInput, NRadioGroup, NRadio } from "naive-ui";
+import { NInputNumber, NInput, NRadioGroup, NRadio, NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import { ProjectRoleSelect, UserGroupSelect } from "@/components/v2/Select";
+import { ProjectRoleSelect, UserGroupSelect, UserSelect } from "@/components/v2/Select";
 import {
   useUserStore,
   useUserGroupStore,

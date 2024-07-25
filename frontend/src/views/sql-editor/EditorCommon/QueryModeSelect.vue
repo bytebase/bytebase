@@ -35,7 +35,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NPopover, NRadioGroup } from "naive-ui";
+import { NButton, NPopover, NRadio, NRadioGroup } from "naive-ui";
 import { computed } from "vue";
 import { useSQLEditorTabStore } from "@/store";
 

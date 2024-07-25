@@ -158,6 +158,7 @@ import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { RolloutPolicy } from "@/types/proto/v1/org_policy_service";
 import type { Role } from "@/types/proto/v1/role_service";
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
+import { ProjectRoleSelect } from "../v2";
 
 const props = defineProps<{
   policy: Policy;

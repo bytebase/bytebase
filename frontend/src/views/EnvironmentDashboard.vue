@@ -63,7 +63,7 @@
 
 <script lang="ts" setup>
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-vue-next";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTabPane, NButton } from "naive-ui";
 import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRouter } from "vue-router";
 import type { BBTabItem } from "@/bbkit/types";
@@ -72,6 +72,7 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
 import { useBodyLayoutContext } from "@/layouts/common";

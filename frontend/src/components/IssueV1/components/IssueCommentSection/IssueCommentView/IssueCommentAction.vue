@@ -15,6 +15,7 @@
 
         <NButton
           v-if="showRestoreButton(issueComment)"
+          size="small"
           @click.prevent="createRestoreIssue(issueComment)"
         >
           <span>{{ $t("activity.restore") }}</span>
@@ -61,13 +62,18 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
+import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { IssueCommentType, type ComposedIssueComment } from "@/store";
+import {
+  IssueCommentType,
+  useSQLStore,
+  type ComposedIssueComment,
+} from "@/store";
 import { useSheetV1Store, useUserStore } from "@/store";
-import { useGenerateRestoreSQL } from "@/store/modules/restore";
 import type { ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { IssueComment_TaskPriorBackup } from "@/types/proto/v1/issue_service";
@@ -75,7 +81,6 @@ import type { IssueComment } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   extractProjectResourceName,
-  getSheetStatement,
   sheetNameOfTaskV1,
   extractDatabaseResourceName,
 } from "@/utils";
@@ -130,11 +135,11 @@ const createRestoreIssue = async (comment: IssueComment) => {
     console.error(`Sheet ${sheetName} not found`);
     return;
   }
-  const statement = getSheetStatement(sheet);
+
   const { instance } = extractDatabaseResourceName(selectedTask.value.target);
-  const restoreSQL = await useGenerateRestoreSQL().generateRestoreSQL({
+  const { statement: restoreSQL } = await useSQLStore().generateRestoreSQL({
     name: selectedTask.value.target,
-    statement: statement,
+    sheet: sheet.name,
     backupDataSource: `${instance}/databases/${backupDatabase.length > 0 ? backupDatabase : "bbdataarchive"}`,
     backupTable: tables[0].table,
   });

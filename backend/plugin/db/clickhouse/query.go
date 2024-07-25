@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -87,8 +88,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {
-	statement = strings.TrimRight(statement, " \n\t;")
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", statement, limit)
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {

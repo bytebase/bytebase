@@ -68,7 +68,9 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 		FROM role
 		WHERE resource_id = $1
 	`
-	var role RoleMessage
+	role := &RoleMessage{
+		Permissions: map[string]bool{},
+	}
 	var permissions []byte
 	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Name, &role.Description, &permissions); err != nil {
 		if err == sql.ErrNoRows {
@@ -84,8 +86,8 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 		role.Permissions[v] = true
 	}
 	role.ResourceID = resourceID
-	s.rolesCache.Add(resourceID, &role)
-	return &role, nil
+	s.rolesCache.Add(resourceID, role)
+	return role, nil
 }
 
 // ListRoles returns a list of roles.

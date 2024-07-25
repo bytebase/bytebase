@@ -59,6 +59,7 @@ import DeleteChangelistButton from "./DeleteChangelistButton.vue";
 import NavBar from "./NavBar";
 import RawSQLPanel from "./RawSQLPanel";
 import { provideChangelistDetailContext } from "./context";
+import { BBSpin } from "@/bbkit";
 
 const { t } = useI18n();
 const route = useRoute();

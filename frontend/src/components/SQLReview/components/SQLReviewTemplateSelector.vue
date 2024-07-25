@@ -96,10 +96,12 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { BBBadge } from "@/bbkit";
 import { useSQLReviewPolicyList } from "@/store";
 import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import { TEMPLATE_LIST_V2 as builtInTemplateList } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
 import { rulesToTemplate } from "./utils";
 
 const props = withDefaults(

@@ -3448,8 +3448,13 @@ func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (allSystems 
 	return userMsg == "" && systemMsg != "", nil
 }
 
-func isSystemResource(base.ColumnResource, bool) string {
-	// TODO(zp): fix me.
+func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) string {
+	if IsSystemDatabase(resource.Database, !ignoreCaseSensitive) {
+		return fmt.Sprintf("system database %s", resource.Database)
+	}
+	if IsSystemSchema(resource.Schema, !ignoreCaseSensitive) {
+		return fmt.Sprintf("system schema %s", resource.Schema)
+	}
 	return ""
 }
 

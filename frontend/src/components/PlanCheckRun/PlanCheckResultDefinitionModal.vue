@@ -16,6 +16,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
+import { BBModal } from "@/bbkit";
+
 defineProps<{ definition: string }>();
 
 const emit = defineEmits<{

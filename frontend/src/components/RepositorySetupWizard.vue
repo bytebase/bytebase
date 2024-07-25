@@ -46,6 +46,7 @@
 import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBAttention } from "@/bbkit";
 import { StepTab } from "@/components/v2";
 import {
   pushNotification,
@@ -58,6 +59,9 @@ import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import type { ProjectRepositoryConfig } from "../types";
+import RepositoryConfigPanel from "./RepositoryConfigPanel.vue";
+import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
+import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
 
 const CHOOSE_PROVIDER_STEP = 0;
 // const CHOOSE_REPOSITORY_STEP = 1;

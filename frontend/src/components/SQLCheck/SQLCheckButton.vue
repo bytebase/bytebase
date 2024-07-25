@@ -77,6 +77,7 @@ import { NButton, NPopover } from "naive-ui";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
 import { sqlServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1, useReviewPolicyForDatabase } from "@/store";

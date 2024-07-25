@@ -78,15 +78,18 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
+import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import { BBButtonConfirm } from "@/bbkit";
 import { useVCSProviderStore, useVCSConnectorStore } from "@/store";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
+import type { ComposedProject, RepositoryConfig } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
-import type { Project } from "@/types/proto/v1/project_service";
 import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
-import type { RepositoryConfig } from "../types";
+import RepositoryForm from "./RepositoryForm.vue";
+import TroubleshootLink from "./TroubleshootLink.vue";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -94,7 +97,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: Project;
+  project: ComposedProject;
   vcsConnector: VCSConnector;
   allowEdit: boolean;
   allowDelete: boolean;

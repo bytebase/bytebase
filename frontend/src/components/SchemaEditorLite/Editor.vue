@@ -50,6 +50,7 @@
 
 <script lang="ts" setup>
 import { reactive, watch } from "vue";
+import EmptyTips from "./EmptyTips.vue";
 import DatabaseEditor from "./Panels/DatabaseEditor.vue";
 import FunctionEditor from "./Panels/FunctionEditor.vue";
 import ProcedureEditor from "./Panels/ProcedureEditor.vue";

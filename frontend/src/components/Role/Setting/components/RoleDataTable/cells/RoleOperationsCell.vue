@@ -19,7 +19,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { useDialog } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {

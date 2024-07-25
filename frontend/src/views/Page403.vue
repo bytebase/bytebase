@@ -18,22 +18,14 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { useRouter } from "vue-router";
 import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 
-export default {
-  name: "ThePage403",
-  setup() {
-    const router = useRouter();
+const router = useRouter();
 
-    const goHome = () => {
-      router.push({ name: WORKSPACE_HOME_MODULE });
-    };
-
-    return {
-      goHome,
-    };
-  },
+const goHome = () => {
+  router.push({ name: WORKSPACE_HOME_MODULE });
 };
 </script>

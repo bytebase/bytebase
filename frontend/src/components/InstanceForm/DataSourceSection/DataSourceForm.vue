@@ -547,7 +547,9 @@
                 "
                 :disabled="!allowEdit || dataSource.useEmptyMasterPassword"
                 :value="
-                  dataSource.useEmptyMasterPassword ? '' : dataSource.updatedMasterPassword
+                  dataSource.useEmptyMasterPassword
+                    ? ''
+                    : dataSource.updatedMasterPassword
                 "
                 @update:value="dataSource.updatedMasterPassword = $event.trim()"
               />
@@ -870,6 +872,10 @@ import {
 } from "naive-ui";
 import { watch, reactive, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTextField } from "@/bbkit";
+import { FeatureBadge } from "@/components/FeatureGuard";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import type { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto/v1/common";
 import type { DataSource } from "@/types/proto/v1/instance_service";
@@ -887,7 +893,9 @@ import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
+import CreateDataSourceExample from "./CreateDataSourceExample.vue";
 import GcpCredentialInput from "./GcpCredentialInput.vue";
+import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateFormV1 from "./SslCertificateFormV1.vue";
 

@@ -412,7 +412,11 @@ export interface Database {
   /** Labels will be used for deployment and policy control. */
   labels: { [key: string]: string };
   /** The instance resource. */
-  instanceResource: InstanceResource | undefined;
+  instanceResource:
+    | InstanceResource
+    | undefined;
+  /** The database is available for DML prior backup. */
+  backupAvailable: boolean;
 }
 
 export interface Database_LabelsEntry {
@@ -3033,6 +3037,7 @@ function createBaseDatabase(): Database {
     effectiveEnvironment: "",
     labels: {},
     instanceResource: undefined,
+    backupAvailable: false,
   };
 }
 
@@ -3067,6 +3072,9 @@ export const Database = {
     });
     if (message.instanceResource !== undefined) {
       InstanceResource.encode(message.instanceResource, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.backupAvailable === true) {
+      writer.uint32(88).bool(message.backupAvailable);
     }
     return writer;
   },
@@ -3151,6 +3159,13 @@ export const Database = {
 
           message.instanceResource = InstanceResource.decode(reader, reader.uint32());
           continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.backupAvailable = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3177,6 +3192,7 @@ export const Database = {
         }, {})
         : {},
       instanceResource: isSet(object.instanceResource) ? InstanceResource.fromJSON(object.instanceResource) : undefined,
+      backupAvailable: isSet(object.backupAvailable) ? globalThis.Boolean(object.backupAvailable) : false,
     };
   },
 
@@ -3218,6 +3234,9 @@ export const Database = {
     if (message.instanceResource !== undefined) {
       obj.instanceResource = InstanceResource.toJSON(message.instanceResource);
     }
+    if (message.backupAvailable === true) {
+      obj.backupAvailable = message.backupAvailable;
+    }
     return obj;
   },
 
@@ -3243,6 +3262,7 @@ export const Database = {
     message.instanceResource = (object.instanceResource !== undefined && object.instanceResource !== null)
       ? InstanceResource.fromPartial(object.instanceResource)
       : undefined;
+    message.backupAvailable = object.backupAvailable ?? false;
     return message;
   },
 };
@@ -9183,6 +9203,7 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([0])],
           800010: [new Uint8Array([17, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               74,
@@ -9279,6 +9300,7 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([0])],
           800010: [new Uint8Array([16, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               22,
@@ -10010,6 +10032,7 @@ export const DatabaseServiceDefinition = {
               116,
             ]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               50,

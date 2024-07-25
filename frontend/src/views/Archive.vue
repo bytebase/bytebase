@@ -42,6 +42,8 @@ import {
   EnvironmentV1Table,
   InstanceV1Table,
   ProjectV1Table,
+  SearchBox,
+  TabFilter,
 } from "@/components/v2";
 import {
   useCurrentUserV1,
@@ -76,7 +78,7 @@ const { projectList } = useProjectV1List(true /* showDeleted */);
 
 const prepareList = () => {
   if (hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list")) {
-    instanceStore.fetchInstanceList(true /* showDeleted */);
+    instanceStore.listInstances(true /* showDeleted */);
 
     useEnvironmentV1Store().fetchEnvironments(true);
   }

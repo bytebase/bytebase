@@ -35,6 +35,7 @@
 </template>
 
 <script lang="ts" setup>
+import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import type { ComposedIssue } from "@/types";
 import ActionCreator from "./ActionCreator.vue";
 import type { DistinctIssueComment } from "./common";

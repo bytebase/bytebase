@@ -104,11 +104,13 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NInput, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { hasFeature, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 interface LocalState {
   openAIKey: string;

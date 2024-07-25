@@ -399,8 +399,8 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 				Column:        report.SqlReviewReport.Column,
 				Detail:        report.SqlReviewReport.Detail,
 				Code:          report.SqlReviewReport.Code,
-				StartPosition: convertAdvicePosition(report.SqlReviewReport.StartPosition),
-				EndPosition:   convertAdvicePosition(report.SqlReviewReport.EndPosition),
+				StartPosition: convertToPosition(report.SqlReviewReport.StartPosition),
+				EndPosition:   convertToPosition(report.SqlReviewReport.EndPosition),
 			},
 		}
 	}
@@ -481,6 +481,10 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		}
 	}
 
+	if taskRun.ResultProto.PriorBackupDetail != nil {
+		t.PriorBackupDetail = convertToTaskRunPriorBackupDetail(taskRun.ResultProto.PriorBackupDetail)
+	}
+
 	return t, nil
 }
 
@@ -500,6 +504,29 @@ func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
 		return v1pb.TaskRun_CANCELED
 	default:
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
+	}
+}
+
+func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDetail) *v1pb.TaskRun_PriorBackupDetail {
+	convertTable := func(table *storepb.PriorBackupDetail_Item_Table) *v1pb.TaskRun_PriorBackupDetail_Item_Table {
+		return &v1pb.TaskRun_PriorBackupDetail_Item_Table{
+			Database: table.Database,
+			Schema:   table.Schema,
+			Table:    table.Table,
+		}
+	}
+
+	items := []*v1pb.TaskRun_PriorBackupDetail_Item{}
+	for _, item := range priorBackupDetail.Items {
+		items = append(items, &v1pb.TaskRun_PriorBackupDetail_Item{
+			SourceTable:   convertTable(item.SourceTable),
+			TargetTable:   convertTable(item.TargetTable),
+			StartPosition: convertToPosition(item.StartPosition),
+			EndPosition:   convertToPosition(item.EndPosition),
+		})
+	}
+	return &v1pb.TaskRun_PriorBackupDetail{
+		Items: items,
 	}
 }
 
