@@ -133,6 +133,9 @@ import {
   InstanceV1Name,
   Drawer,
   DrawerContent,
+  EnvironmentV1Name,
+  ProjectV1Name,
+  SearchBox,
 } from "@/components/v2";
 import {
   useCurrentUserV1,

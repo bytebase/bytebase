@@ -166,6 +166,7 @@ import { NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
 import {
   ProjectSelect,
@@ -198,6 +199,7 @@ import {
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
 } from "@/utils";
+import { FeatureModal } from "../FeatureGuard";
 
 interface LocalState {
   projectName?: string;

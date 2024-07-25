@@ -99,7 +99,9 @@ import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import ProjectSwitchModal from "@/components/Project/ProjectSwitchModal.vue";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
+import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {

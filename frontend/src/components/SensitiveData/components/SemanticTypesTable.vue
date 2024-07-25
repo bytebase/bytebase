@@ -143,6 +143,7 @@ import { NPopconfirm, NSelect, NInput } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";

@@ -214,10 +214,12 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import { NButton, NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { BBTextField } from "@/bbkit";
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,

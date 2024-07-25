@@ -15,6 +15,7 @@
 <script lang="ts" setup>
 import type { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "./Instance";
+import { FeatureBadge } from "@/components/FeatureGuard";
 
 defineProps<{
   database: ComposedDatabase;

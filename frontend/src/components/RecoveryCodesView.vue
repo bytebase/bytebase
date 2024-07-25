@@ -45,6 +45,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
+import { BBAttention } from "@/bbkit";
+
 const props = withDefaults(
   defineProps<{
     recoveryCodes: string[];

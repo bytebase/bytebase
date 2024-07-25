@@ -133,10 +133,11 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import { NCheckbox, NInput } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBButtonConfirm } from "@/bbkit";
 import {
   useEnvironmentV1List,
   useEnvironmentV1Store,
@@ -152,6 +153,11 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { extractEnvironmentResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import { FeatureBadge } from "../FeatureGuard";
+import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
+import { ResourceIdField } from "../v2";
+import AccessControlConfigure from "./AccessControlConfigure.vue";
+import RolloutPolicyConfig from "./RolloutPolicyConfig.vue";
 import { useEnvironmentFormContext } from "./context";
 
 defineProps<{

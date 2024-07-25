@@ -27,6 +27,7 @@
 <script setup lang="ts">
 import { CheckIcon, XCircleIcon } from "lucide-vue-next";
 import { computed } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
 import type { RebaseBranchValidationState, RebaseSourceType } from "./types";

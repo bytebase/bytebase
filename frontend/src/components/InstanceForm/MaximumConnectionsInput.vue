@@ -59,6 +59,7 @@
 import { NInputNumber, NRadio } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
+import { FeatureBadge } from "../FeatureGuard";
 import { useInstanceFormContext } from "./context";
 
 type Mode = "DEFAULT" | "CUSTOM";

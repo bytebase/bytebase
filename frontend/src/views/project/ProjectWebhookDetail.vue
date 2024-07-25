@@ -25,6 +25,7 @@ import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProjectWebhook } from "@/types";
 import { idFromSlug } from "@/utils";
+import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 
 const props = defineProps<{
   projectId: string;

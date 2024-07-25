@@ -13,6 +13,9 @@
 </template>
 
 <script setup lang="ts">
+import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlConfigure.vue";
+import RestrictIssueCreationConfigure from "@/components/GeneralSetting/RestrictIssueCreationConfigure.vue";
+import { SQLReviewForResource } from "@/components/SQLReview";
 import type { ComposedProject } from "@/types";
 
 defineProps<{

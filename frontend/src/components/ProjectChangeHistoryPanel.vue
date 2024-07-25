@@ -45,6 +45,7 @@ import { useChangeHistoryStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import { databaseV1Url } from "@/utils";
+import NoDataPlaceholder from "./misc/NoDataPlaceholder.vue";
 
 // Show at most 5 recent migration history for each database
 const MAX_MIGRATION_HISTORY_COUNT = 5;

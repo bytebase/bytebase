@@ -36,8 +36,10 @@
 </template>
 
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { toRef } from "vue";
+import { BBAvatar } from "@/bbkit";
 import {
   extractReviewContext,
   useWrappedReviewStepsV1,

@@ -67,7 +67,7 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { useDialog } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-common";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -84,6 +84,7 @@ import type { ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
 import { defer, isOwnerOfProjectV1 } from "@/utils";
+import BranchComparison from "../common/BranchComparison.vue";
 import RebaseBranchSelect from "./RebaseBranchSelect.vue";
 import RebaseBranchValidationStateView from "./RebaseBranchValidationStateView.vue";
 import ResolveConflict from "./ResolveConflict.vue";

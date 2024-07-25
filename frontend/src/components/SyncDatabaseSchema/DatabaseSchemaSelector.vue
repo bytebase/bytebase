@@ -109,6 +109,7 @@ import {
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import type { ChangeHistorySourceSchema } from "./types";
+import { FeatureModal } from "../FeatureGuard";
 
 const props = defineProps<{
   selectState?: ChangeHistorySourceSchema;

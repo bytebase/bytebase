@@ -37,7 +37,7 @@
             {{ $t("project.create-modal.key") }}
             <NTooltip>
               <template #trigger>
-                <heroicons-outline:information-circle class="ml-1 w-4 h-auto" />
+                <InfoIcon class="ml-1 w-4 h-4" />
               </template>
               {{ $t("project.key-hint") }}
             </NTooltip>
@@ -84,11 +84,12 @@
 
 <script lang="ts" setup>
 import { isEmpty } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBSpin, BBTextField } from "@/bbkit";
 import { DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { pushNotification, useUIStateStore, useCurrentUserV1 } from "@/store";
@@ -100,6 +101,8 @@ import type { Project } from "@/types/proto/v1/project_service";
 import { randomString } from "@/utils";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import { InfoIcon } from "lucide-vue-next";
+import { FeatureModal } from "../FeatureGuard";
 
 interface LocalState {
   project: Project;

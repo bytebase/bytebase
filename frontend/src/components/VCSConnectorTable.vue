@@ -22,6 +22,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBTable, BBTableCell } from "@/bbkit";
 import { PROJECT_V1_ROUTE_GITOPS_DETAIL } from "@/router/dashboard/projectV1";
 import { useProjectV1Store, useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";

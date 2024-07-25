@@ -107,10 +107,11 @@
 </template>
 
 <script lang="ts" setup>
+import { NRadio, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTextField } from "@/bbkit";
+import { BBAttention, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useSQLReviewStore } from "@/store";
 import {
@@ -123,7 +124,7 @@ import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { getErrorCode } from "@/utils/grpcweb";
-import { DatabaseSelect, ProjectSelect } from "../v2";
+import { DatabaseSelect, EnvironmentSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";
 import { type ResourceType } from "./components/useReviewConfigAttachedResource";
 

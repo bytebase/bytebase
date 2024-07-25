@@ -4,6 +4,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import ProjectWebhookPanel from "@/components/ProjectWebhookPanel.vue";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 

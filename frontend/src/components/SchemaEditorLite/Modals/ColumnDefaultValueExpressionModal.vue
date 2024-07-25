@@ -27,6 +27,7 @@
 import type { InputInst } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { onMounted, reactive, ref } from "vue";
+import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
 
 interface LocalState {

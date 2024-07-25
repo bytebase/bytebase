@@ -125,6 +125,7 @@ import {
 import { displayRoleTitle } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils";
 import { wildcardToRegex } from "../Branch/utils";
+import { DeleteConfirmButton } from "../v2/Button";
 
 const props = defineProps<{
   project: ComposedProject;

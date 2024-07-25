@@ -66,6 +66,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
+import { FeatureAttention } from "@/components/FeatureGuard";
 import {
   InstanceForm,
   Form as InstanceFormBody,

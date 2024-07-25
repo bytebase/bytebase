@@ -18,6 +18,7 @@
 import { NTooltip } from "naive-ui";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import type { Instance } from "../types";
+import { EngineIcon } from "./Icon";
 
 defineProps<{
   instance: Instance;

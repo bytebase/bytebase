@@ -24,6 +24,7 @@
 
 <script lang="ts" setup>
 import { onMounted, reactive, ref, toRef } from "vue";
+import { BBSpin } from "@/bbkit";
 import {
   CustomApproval,
   ApprovalRuleDialog,
@@ -31,6 +32,11 @@ import {
   provideCustomApprovalContext,
   TabValueList,
 } from "@/components/CustomApproval/Settings/components/CustomApproval/";
+import {
+  FeatureAttention,
+  FeatureAttentionForInstanceLicense,
+  FeatureModal,
+} from "@/components/FeatureGuard";
 import { useRouteHash } from "@/composables/useRouteHash";
 import {
   featureToRef,
