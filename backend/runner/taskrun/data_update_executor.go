@@ -106,7 +106,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 			Error: "",
 		},
 	})
-	if result != nil && priorBackupDetail != nil {
+	if result != nil {
 		result.PriorBackupDetail = priorBackupDetail
 	}
 	return terminated, result, err
@@ -147,27 +147,27 @@ func (exec *DataUpdateExecutor) backupData(
 
 	backupInstanceID, backupDatabaseName, err := common.GetInstanceDatabaseID(targetDatabaseName)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to parse backup database")
 	}
 
 	if instance.Engine != storepb.Engine_POSTGRES {
 		backupDatabase, err = exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get backup database")
 		}
 		if backupDatabase == nil {
 			return nil, errors.Errorf("backup database %q not found", targetDatabaseName)
 		}
 		backupDriver, err = exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, backupDatabase, db.ConnectionContext{})
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get backup database driver")
 		}
 		defer backupDriver.Close(driverCtx)
 	}
 
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get database driver")
 	}
 	defer driver.Close(driverCtx)
 
