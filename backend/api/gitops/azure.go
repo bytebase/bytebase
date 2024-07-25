@@ -48,6 +48,7 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 	}
 
 	prInfo := &pullRequestInfo{
+		action: webhookActionCreateIssue,
 		// TODO(ed): get the email.
 		url:         pushEvent.Resource.Links.Web.Href,
 		title:       pushEvent.Resource.Title,

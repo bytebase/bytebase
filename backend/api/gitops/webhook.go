@@ -100,7 +100,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return c.String(http.StatusOK, "OK")
 			case "pull_request":
 			default:
-				return c.String(http.StatusOK, "OK")
+				return c.String(http.StatusOK, fmt.Sprintf(`skip webhook event "%v"`, eventType))
 			}
 
 			prInfo, err = getGitHubPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
@@ -119,19 +119,23 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 		case storepb.VCSType_BITBUCKET:
 			eventType := c.Request().Header.Get("X-Event-Key")
+			var action webhookAction
 			switch eventType {
 			case "pullrequest:created", "pullrequest:updated":
-				return c.String(http.StatusOK, "OK")
+				action = webhookActionSQLReview
 			case "pullrequest:fulfilled":
+				action = webhookActionCreateIssue
 			default:
-				return c.String(http.StatusOK, "OK")
+				return c.String(http.StatusOK, fmt.Sprintf(`skip webhook event "%v"`, eventType))
 			}
 
 			prInfo, err = getBitBucketPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
+			prInfo.action = action
 		case storepb.VCSType_AZURE_DEVOPS:
+			// TODO(ed): support pr update/create event.
 			secretToken := c.Request().Header.Get("X-Azure-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
@@ -147,19 +151,32 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		if len(prInfo.changes) == 0 {
 			return c.String(http.StatusOK, fmt.Sprintf("no relevant file change directly under the base directory %q for pull request %q", vcsConnector.Payload.BaseDirectory, prInfo.url))
 		}
-		issue, err := s.createIssueFromPRInfo(ctx, project, vcsProvider, vcsConnector, prInfo)
-		if err != nil {
-			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
+
+		var comment string
+		switch prInfo.action {
+		case webhookActionCreateIssue:
+			issue, err := s.createIssueFromPRInfo(ctx, project, vcsProvider, vcsConnector, prInfo)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
+			}
+			comment = getPullRequestComment(setting.ExternalUrl, issue.Name)
+		case webhookActionSQLReview:
+			// TODO(ed): sql review.
+		default:
 		}
-		comment := getPullRequestComment(setting.ExternalUrl, issue.Name)
-		pullRequestID := getPullRequestID(prInfo.url)
-		if err := vcs.Get(
-			vcsProvider.Type,
-			vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
-		).CreatePullRequestComment(ctx, vcsConnector.Payload.ExternalId, pullRequestID, comment); err != nil {
-			return c.String(http.StatusOK, fmt.Sprintf("failed to create pull request comment, error %v", err))
+
+		if comment != "" {
+			pullRequestID := getPullRequestID(prInfo.url)
+			// TODO(ed): upsert the commont.
+			if err := vcs.Get(
+				vcsProvider.Type,
+				vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
+			).CreatePullRequestComment(ctx, vcsConnector.Payload.ExternalId, pullRequestID, comment); err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to create pull request comment, error %v", err))
+			}
 		}
-		return nil
+
+		return c.String(http.StatusOK, fmt.Sprintf("successfully handle the pull request %v", prInfo.url))
 	})
 }
 

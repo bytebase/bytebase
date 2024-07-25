@@ -17,7 +17,15 @@ var (
 	versionRE = regexp.MustCompile(`^[0-9]+`)
 )
 
+type webhookAction string
+
+const (
+	webhookActionCreateIssue webhookAction = "CREATE_ISSUE"
+	webhookActionSQLReview   webhookAction = "SQL_REVIEW"
+)
+
 type pullRequestInfo struct {
+	action      webhookAction
 	email       string
 	title       string
 	description string
