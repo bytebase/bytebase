@@ -1544,7 +1544,19 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, request.Statement)
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get sheet UID: %v", err)
+	}
+	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, LoadFull: true})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get sheet: %v", err)
+	}
+	if sheet == nil {
+		return nil, status.Errorf(codes.NotFound, "sheet %q not found", sheetUID)
+	}
+
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, sheet.Statement)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to split SQL: %v", err)
 	}
