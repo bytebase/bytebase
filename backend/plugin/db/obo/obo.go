@@ -178,7 +178,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := singleSQL.Text
 
 	if queryContext != nil && queryContext.Explain {
 		startTime := time.Now()
@@ -209,7 +209,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", statement, limit)
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(statement), limit)
 }
 
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
