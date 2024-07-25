@@ -13719,6 +13719,10 @@ components:
                         - EXPORTED
                     type: string
                     format: enum
+                priorBackupDetail:
+                    allOf:
+                        - $ref: '#/components/schemas/TaskRun_PriorBackupDetail'
+                    description: The prior backup detail that will be used to rollback the task run.
         TaskRunLog:
             type: object
             properties:
@@ -13876,6 +13880,13 @@ components:
                     $ref: '#/components/schemas/ExecutionDetail_Position'
                 commandEndPosition:
                     $ref: '#/components/schemas/ExecutionDetail_Position'
+        TaskRun_PriorBackupDetail:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PriorBackupDetail_Item'
         Task_DatabaseCreate:
             type: object
             properties:

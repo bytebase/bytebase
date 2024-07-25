@@ -1272,21 +1272,11 @@ func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
 			Line:          int32(advice.GetStartPosition().GetLine()),
 			Column:        int32(advice.GetStartPosition().GetColumn()),
 			Detail:        advice.Detail,
-			StartPosition: convertAdvicePosition(advice.StartPosition),
-			EndPosition:   convertAdvicePosition(advice.EndPosition),
+			StartPosition: convertToPosition(advice.StartPosition),
+			EndPosition:   convertToPosition(advice.EndPosition),
 		})
 	}
 	return result
-}
-
-func convertAdvicePosition(p *storepb.Position) *v1pb.Position {
-	if p == nil {
-		return nil
-	}
-	return &v1pb.Position{
-		Line:   p.Line,
-		Column: p.Column,
-	}
 }
 
 func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
