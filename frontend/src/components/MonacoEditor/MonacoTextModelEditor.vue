@@ -47,6 +47,7 @@ import {
   watchEffect,
   computed,
 } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { SQLDialect } from "@/types";
 import {
   type AutoCompleteContext,

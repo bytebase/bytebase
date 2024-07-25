@@ -43,8 +43,11 @@
 </template>
 
 <script lang="ts" setup>
+import { NTab, NTabs } from "naive-ui";
 import { ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import SchemaEditorLite from "@/components/SchemaEditorLite";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import type { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 

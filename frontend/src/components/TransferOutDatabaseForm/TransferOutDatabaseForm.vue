@@ -72,6 +72,7 @@ import { NButton, NTooltip, NDivider, NRadioGroup, NRadio } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import { ProjectSelect, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASES } from "@/router/dashboard/projectV1";
 import {
@@ -86,6 +87,7 @@ import {
   isValidProjectName,
 } from "@/types";
 import { extractProjectResourceName } from "@/utils";
+import { MultipleDatabaseSelector } from "../TransferDatabaseForm";
 
 const props = defineProps<{
   databaseList: ComposedDatabase[];

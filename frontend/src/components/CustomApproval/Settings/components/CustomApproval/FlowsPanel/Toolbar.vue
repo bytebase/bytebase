@@ -12,6 +12,7 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import { useCustomApprovalContext } from "../context";
 import { emptyLocalApprovalRule } from "../logic";
 

@@ -122,6 +122,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
@@ -137,6 +138,11 @@ import type { ComposedProject } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Anomaly_AnomalySeverity } from "@/types/proto/v1/anomaly_service";
 import { databaseV1Url, sortDatabaseV1List, sortInstanceV1List } from "@/utils";
+import {
+  FeatureAttention,
+  FeatureAttentionForInstanceLicense,
+} from "../FeatureGuard";
+import { SearchBox, TabFilter } from "../v2";
 import AnomalyTable from "./AnomalyTable.vue";
 
 type Summary = {

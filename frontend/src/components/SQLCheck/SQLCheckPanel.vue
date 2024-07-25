@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed, watchEffect, ref } from "vue";
+import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { usePolicyV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";

@@ -78,11 +78,13 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NInput, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { useSettingV1Store, useActuatorV1Store } from "@/store";
+import LearnMoreLink from "../LearnMoreLink.vue";
 
 defineProps<{
   allowEdit: boolean;

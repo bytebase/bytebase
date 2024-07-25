@@ -35,6 +35,7 @@ import { useI18n } from "vue-i18n";
 import { pushNotification, useActuatorV1Store } from "@/store";
 import { IdentityProviderType } from "@/types/proto/v1/idp_service";
 import { toClipboard } from "@/utils";
+import ShowMoreIcon from "../ShowMoreIcon.vue";
 
 const props = defineProps<{
   type: IdentityProviderType;

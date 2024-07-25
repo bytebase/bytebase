@@ -185,7 +185,9 @@ import type { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import type { ExportOption } from "@/components/DataExportButton.vue";
+import DataExportButton from "@/components/DataExportButton.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {

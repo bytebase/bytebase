@@ -282,9 +282,9 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
-import { NSwitch } from "naive-ui";
+import { NButton, NSwitch } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
-import { BBSpin } from "@/bbkit";
+import { BBModal, BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
@@ -317,6 +317,7 @@ import {
   hasProjectPermissionV2,
   getAffectedTableDisplayName,
 } from "@/utils";
+import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
 
 interface LocalState {
   showDiff: boolean;

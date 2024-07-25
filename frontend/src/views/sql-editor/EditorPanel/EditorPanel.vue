@@ -37,6 +37,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { defineAsyncComponent, watch } from "vue";
+import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import { useInstanceV1Store, useSQLEditorTabStore } from "@/store";

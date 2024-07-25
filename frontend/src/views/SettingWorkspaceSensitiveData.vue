@@ -43,12 +43,14 @@
 import { NTabs, NTabPane } from "naive-ui";
 import { reactive, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { FeatureAttention } from "@/components/FeatureGuard";
 import {
   SensitiveColumnView,
   GlobalMaskingRulesView,
   SemanticTypesView,
   ClassificationView,
 } from "@/components/SensitiveData";
+import MaskingAlgorithmsView from "@/components/SensitiveData/MaskingAlgorithmsView.vue";
 import { featureToRef } from "@/store";
 
 const dataMaskingTabList = [

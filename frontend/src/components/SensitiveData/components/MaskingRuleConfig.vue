@@ -83,7 +83,7 @@
 <script lang="ts" setup>
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
-import { NSelect, NPopconfirm } from "naive-ui";
+import { NSelect, NPopconfirm, NInput, NButton } from "naive-ui";
 import { computed, reactive, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";

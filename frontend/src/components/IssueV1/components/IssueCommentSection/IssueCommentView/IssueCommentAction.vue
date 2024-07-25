@@ -66,6 +66,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
+import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   IssueCommentType,

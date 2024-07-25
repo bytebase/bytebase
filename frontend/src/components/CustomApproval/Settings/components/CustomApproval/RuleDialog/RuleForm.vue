@@ -70,7 +70,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { NInput } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, nextTick, onMounted, ref } from "vue";
 import type { LocalApprovalRule } from "@/types";
 import { SYSTEM_BOT_USER_NAME } from "@/types";

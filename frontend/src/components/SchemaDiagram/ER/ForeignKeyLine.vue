@@ -24,6 +24,7 @@ import {
   useSchemaDiagramContext,
 } from "../common";
 import type { Point, Rect, Path, ForeignKey } from "../types";
+import SVGLine from "./libs/SVGLine.vue";
 
 type Direction = "LEFT" | "RIGHT";
 type Segment1D = [number, number];

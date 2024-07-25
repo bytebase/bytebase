@@ -117,7 +117,14 @@
 
 <script lang="tsx" setup>
 import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
-import { NSwitch, NCheckbox, NDataTable, NButton, NDivider } from "naive-ui";
+import {
+  NSwitch,
+  NCheckbox,
+  NDataTable,
+  NButton,
+  NDivider,
+  NTooltip,
+} from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";

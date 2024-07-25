@@ -205,11 +205,11 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual, uniqBy } from "lodash-es";
 import { Building2Icon } from "lucide-vue-next";
-import { NButton, NTooltip, useDialog } from "naive-ui";
+import { NButton, NTag, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridRow } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
+import { BBButtonConfirm, BBGrid } from "@/bbkit";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
@@ -233,6 +233,7 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
+import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
 import type { ProjectBinding } from "../types";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";

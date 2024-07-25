@@ -22,6 +22,7 @@ import Emittery from "emittery";
 import { NSpin } from "naive-ui";
 import { computed, onMounted, reactive, toRef } from "vue";
 import { useI18n } from "vue-i18n";
+import { FeatureModal } from "@/components/FeatureGuard";
 import {
   DataExportIssueDetailPage,
   GrantRequestIssueDetailPage,
