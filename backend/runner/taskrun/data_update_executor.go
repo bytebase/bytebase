@@ -82,6 +82,10 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	}
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &sheetID)
+	if result != nil {
+		// Save prior backup detail to task run result.
+		result.PriorBackupDetail = priorBackupDetail
+	}
 	// sync database schema anyways
 	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
 		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
@@ -106,9 +110,6 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 			Error: "",
 		},
 	})
-	if result != nil {
-		result.PriorBackupDetail = priorBackupDetail
-	}
 	return terminated, result, err
 }
 
@@ -274,8 +275,5 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 	}
 
-	if len(priorBackupDetail.Items) == 0 {
-		return nil, nil
-	}
 	return priorBackupDetail, nil
 }
