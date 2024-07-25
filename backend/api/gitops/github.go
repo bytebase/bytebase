@@ -13,17 +13,23 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-const (
-	closeAction = "closed"
-)
-
 func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, body []byte) (*pullRequestInfo, error) {
 	var pushEvent github.PullRequestPushEvent
 	if err := json.Unmarshal(body, &pushEvent); err != nil {
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
 	}
-	if pushEvent.Action != closeAction || !pushEvent.PullRequest.Merged {
-		return nil, errors.Errorf("skip webhook event action, got %s, want closed with merged", pushEvent.Action)
+
+	var actionType webhookAction
+	switch pushEvent.Action {
+	case github.PullRequestEventOpened, github.PullRequestEventSynchronize:
+		actionType = webhookActionSQLReview
+	case github.PullRequestEventClosed:
+		if !pushEvent.PullRequest.Merged {
+			return nil, errors.Errorf("skip pull request close action, pull request is not merged")
+		}
+		actionType = webhookActionCreateIssue
+	default:
+		return nil, errors.Errorf(`skip webhook event action "%s"`, pushEvent.Action)
 	}
 
 	if pushEvent.PullRequest.Base.Ref != vcsConnector.Payload.Branch {
@@ -36,6 +42,7 @@ func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	}
 
 	prInfo := &pullRequestInfo{
+		action: actionType,
 		// email. How do we determine the user for GitHub user?
 		url:         pushEvent.PullRequest.HTMLURL,
 		title:       pushEvent.PullRequest.Title,

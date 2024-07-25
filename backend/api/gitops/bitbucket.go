@@ -29,6 +29,7 @@ func getBitBucketPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProv
 	}
 
 	prInfo := &pullRequestInfo{
+		action: webhookActionCreateIssue,
 		// email. How do we determine the user for BitBucket user?
 		url:         pushEvent.PullRequest.Links.HTML.Href,
 		title:       pushEvent.PullRequest.Title,
