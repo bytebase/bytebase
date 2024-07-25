@@ -36,11 +36,6 @@ const (
 	ProjectService_UpdateWebhook_FullMethodName                = "/bytebase.v1.ProjectService/UpdateWebhook"
 	ProjectService_RemoveWebhook_FullMethodName                = "/bytebase.v1.ProjectService/RemoveWebhook"
 	ProjectService_TestWebhook_FullMethodName                  = "/bytebase.v1.ProjectService/TestWebhook"
-	ProjectService_ListDatabaseGroups_FullMethodName           = "/bytebase.v1.ProjectService/ListDatabaseGroups"
-	ProjectService_GetDatabaseGroup_FullMethodName             = "/bytebase.v1.ProjectService/GetDatabaseGroup"
-	ProjectService_CreateDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/CreateDatabaseGroup"
-	ProjectService_UpdateDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/UpdateDatabaseGroup"
-	ProjectService_DeleteDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/DeleteDatabaseGroup"
 	ProjectService_GetProjectProtectionRules_FullMethodName    = "/bytebase.v1.ProjectService/GetProjectProtectionRules"
 	ProjectService_UpdateProjectProtectionRules_FullMethodName = "/bytebase.v1.ProjectService/UpdateProjectProtectionRules"
 )
@@ -65,16 +60,6 @@ type ProjectServiceClient interface {
 	UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
-	// Deprecated.
-	ListDatabaseGroups(ctx context.Context, in *ListDatabaseGroupsRequest, opts ...grpc.CallOption) (*ListDatabaseGroupsResponse, error)
-	// Deprecated.
-	GetDatabaseGroup(ctx context.Context, in *GetDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
-	// Deprecated.
-	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
-	// Deprecated.
-	UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
-	// Deprecated.
-	DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
 	UpdateProjectProtectionRules(ctx context.Context, in *UpdateProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
 }
@@ -247,56 +232,6 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookR
 	return out, nil
 }
 
-func (c *projectServiceClient) ListDatabaseGroups(ctx context.Context, in *ListDatabaseGroupsRequest, opts ...grpc.CallOption) (*ListDatabaseGroupsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListDatabaseGroupsResponse)
-	err := c.cc.Invoke(ctx, ProjectService_ListDatabaseGroups_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) GetDatabaseGroup(ctx context.Context, in *GetDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DatabaseGroup)
-	err := c.cc.Invoke(ctx, ProjectService_GetDatabaseGroup_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DatabaseGroup)
-	err := c.cc.Invoke(ctx, ProjectService_CreateDatabaseGroup_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DatabaseGroup)
-	err := c.cc.Invoke(ctx, ProjectService_UpdateDatabaseGroup_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, ProjectService_DeleteDatabaseGroup_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ProtectionRules)
@@ -337,16 +272,6 @@ type ProjectServiceServer interface {
 	UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error)
 	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error)
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
-	// Deprecated.
-	ListDatabaseGroups(context.Context, *ListDatabaseGroupsRequest) (*ListDatabaseGroupsResponse, error)
-	// Deprecated.
-	GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error)
-	// Deprecated.
-	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
-	// Deprecated.
-	UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error)
-	// Deprecated.
-	DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error)
 	GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error)
 	UpdateProjectProtectionRules(context.Context, *UpdateProjectProtectionRulesRequest) (*ProtectionRules, error)
 	mustEmbedUnimplementedProjectServiceServer()
@@ -403,21 +328,6 @@ func (UnimplementedProjectServiceServer) RemoveWebhook(context.Context, *RemoveW
 }
 func (UnimplementedProjectServiceServer) TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestWebhook not implemented")
-}
-func (UnimplementedProjectServiceServer) ListDatabaseGroups(context.Context, *ListDatabaseGroupsRequest) (*ListDatabaseGroupsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListDatabaseGroups not implemented")
-}
-func (UnimplementedProjectServiceServer) GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseGroup not implemented")
-}
-func (UnimplementedProjectServiceServer) CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateDatabaseGroup not implemented")
-}
-func (UnimplementedProjectServiceServer) UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateDatabaseGroup not implemented")
-}
-func (UnimplementedProjectServiceServer) DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteDatabaseGroup not implemented")
 }
 func (UnimplementedProjectServiceServer) GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectProtectionRules not implemented")
@@ -726,96 +636,6 @@ func _ProjectService_TestWebhook_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_ListDatabaseGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListDatabaseGroupsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).ListDatabaseGroups(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_ListDatabaseGroups_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).ListDatabaseGroups(ctx, req.(*ListDatabaseGroupsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetDatabaseGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDatabaseGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetDatabaseGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetDatabaseGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetDatabaseGroup(ctx, req.(*GetDatabaseGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_CreateDatabaseGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateDatabaseGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).CreateDatabaseGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_CreateDatabaseGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).CreateDatabaseGroup(ctx, req.(*CreateDatabaseGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_UpdateDatabaseGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateDatabaseGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).UpdateDatabaseGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_UpdateDatabaseGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).UpdateDatabaseGroup(ctx, req.(*UpdateDatabaseGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_DeleteDatabaseGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteDatabaseGroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).DeleteDatabaseGroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_DeleteDatabaseGroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).DeleteDatabaseGroup(ctx, req.(*DeleteDatabaseGroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_GetProjectProtectionRules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetProjectProtectionRulesRequest)
 	if err := dec(in); err != nil {
@@ -922,26 +742,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TestWebhook",
 			Handler:    _ProjectService_TestWebhook_Handler,
-		},
-		{
-			MethodName: "ListDatabaseGroups",
-			Handler:    _ProjectService_ListDatabaseGroups_Handler,
-		},
-		{
-			MethodName: "GetDatabaseGroup",
-			Handler:    _ProjectService_GetDatabaseGroup_Handler,
-		},
-		{
-			MethodName: "CreateDatabaseGroup",
-			Handler:    _ProjectService_CreateDatabaseGroup_Handler,
-		},
-		{
-			MethodName: "UpdateDatabaseGroup",
-			Handler:    _ProjectService_UpdateDatabaseGroup_Handler,
-		},
-		{
-			MethodName: "DeleteDatabaseGroup",
-			Handler:    _ProjectService_DeleteDatabaseGroup_Handler,
 		},
 		{
 			MethodName: "GetProjectProtectionRules",

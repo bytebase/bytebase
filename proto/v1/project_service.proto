@@ -10,7 +10,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/database_group_service.proto";
 import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
@@ -130,41 +129,6 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
-  }
-
-  // Deprecated.
-  rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.method_signature) = "parent,databaseGroup";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.method_signature) = "database_group,update_mask";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc GetProjectProtectionRules(GetProjectProtectionRulesRequest) returns (ProtectionRules) {
