@@ -9,12 +9,13 @@ import (
 
 	plsql "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 // singleStatement must be a selectStatement for oracle.
 func getStatementWithResultLimitFor11g(singleStatement string, limitCount int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", singleStatement, limitCount)
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(singleStatement), limitCount)
 }
 
 // singleStatement must be a selectStatement for oracle.

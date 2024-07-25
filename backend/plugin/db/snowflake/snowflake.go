@@ -288,14 +288,14 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := singleSQL.Text
 	if queryContext != nil && queryContext.Explain {
 		statement = fmt.Sprintf("EXPLAIN %s", statement)
 	} else if queryContext != nil && queryContext.Limit > 0 {
 		stmt, err := getStatementWithResultLimit(statement, queryContext.Limit)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-			stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, queryContext.Limit)
+			stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", util.TrimStatement(stmt), queryContext.Limit)
 		}
 		statement = stmt
 	}

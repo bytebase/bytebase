@@ -498,12 +498,15 @@ export function queryHistory_TypeToNumber(object: QueryHistory_Type): number {
 
 export interface GenerateRestoreSQLRequest {
   /**
-   * The name is the instance name to execute the query against.
+   * The database name to execute the query against.
    * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /** The original SQL statement. */
-  statement: string;
+  /**
+   * The resource name of the sheet. It is used to get the original statement.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  sheet: string;
   /**
    * The data source to restore from.
    * Format: instances/{instance}/databases/{databaseName}, for general engines.
@@ -3115,7 +3118,7 @@ export const QueryHistory = {
 };
 
 function createBaseGenerateRestoreSQLRequest(): GenerateRestoreSQLRequest {
-  return { name: "", statement: "", backupDataSource: "", backupTable: "" };
+  return { name: "", sheet: "", backupDataSource: "", backupTable: "" };
 }
 
 export const GenerateRestoreSQLRequest = {
@@ -3123,8 +3126,8 @@ export const GenerateRestoreSQLRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.statement !== "") {
-      writer.uint32(18).string(message.statement);
+    if (message.sheet !== "") {
+      writer.uint32(18).string(message.sheet);
     }
     if (message.backupDataSource !== "") {
       writer.uint32(26).string(message.backupDataSource);
@@ -3154,7 +3157,7 @@ export const GenerateRestoreSQLRequest = {
             break;
           }
 
-          message.statement = reader.string();
+          message.sheet = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -3182,7 +3185,7 @@ export const GenerateRestoreSQLRequest = {
   fromJSON(object: any): GenerateRestoreSQLRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       backupDataSource: isSet(object.backupDataSource) ? globalThis.String(object.backupDataSource) : "",
       backupTable: isSet(object.backupTable) ? globalThis.String(object.backupTable) : "",
     };
@@ -3193,8 +3196,8 @@ export const GenerateRestoreSQLRequest = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.statement !== "") {
-      obj.statement = message.statement;
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
     }
     if (message.backupDataSource !== "") {
       obj.backupDataSource = message.backupDataSource;
@@ -3211,7 +3214,7 @@ export const GenerateRestoreSQLRequest = {
   fromPartial(object: DeepPartial<GenerateRestoreSQLRequest>): GenerateRestoreSQLRequest {
     const message = createBaseGenerateRestoreSQLRequest();
     message.name = object.name ?? "";
-    message.statement = object.statement ?? "";
+    message.sheet = object.sheet ?? "";
     message.backupDataSource = object.backupDataSource ?? "";
     message.backupTable = object.backupTable ?? "";
     return message;
