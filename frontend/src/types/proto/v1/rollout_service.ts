@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber } from "./common";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber, Position } from "./common";
 import { Plan } from "./plan_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -476,6 +476,8 @@ export interface TaskRun {
   executionDetail: TaskRun_ExecutionDetail | undefined;
   startTime: Date | undefined;
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
+  /** The prior backup detail that will be used to rollback the task run. */
+  priorBackupDetail: TaskRun_PriorBackupDetail | undefined;
 }
 
 export enum TaskRun_Status {
@@ -682,6 +684,31 @@ export interface TaskRun_ExecutionDetail_Position {
   line: number;
   /** The column number, starting from 0. */
   column: number;
+}
+
+export interface TaskRun_PriorBackupDetail {
+  items: TaskRun_PriorBackupDetail_Item[];
+}
+
+export interface TaskRun_PriorBackupDetail_Item {
+  /** The original table information. */
+  sourceTable:
+    | TaskRun_PriorBackupDetail_Item_Table
+    | undefined;
+  /** The target backup table information. */
+  targetTable: TaskRun_PriorBackupDetail_Item_Table | undefined;
+  startPosition: Position | undefined;
+  endPosition: Position | undefined;
+}
+
+export interface TaskRun_PriorBackupDetail_Item_Table {
+  /**
+   * The database information.
+   * Format: instances/{instance}/databases/{database}
+   */
+  database: string;
+  schema: string;
+  table: string;
 }
 
 export interface TaskRunLog {
@@ -2910,6 +2937,7 @@ function createBaseTaskRun(): TaskRun {
     executionDetail: undefined,
     startTime: undefined,
     exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
+    priorBackupDetail: undefined,
   };
 }
 
@@ -2959,6 +2987,9 @@ export const TaskRun = {
     }
     if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
       writer.uint32(128).int32(taskRun_ExportArchiveStatusToNumber(message.exportArchiveStatus));
+    }
+    if (message.priorBackupDetail !== undefined) {
+      TaskRun_PriorBackupDetail.encode(message.priorBackupDetail, writer.uint32(138).fork()).ldelim();
     }
     return writer;
   },
@@ -3075,6 +3106,13 @@ export const TaskRun = {
 
           message.exportArchiveStatus = taskRun_ExportArchiveStatusFromJSON(reader.int32());
           continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.priorBackupDetail = TaskRun_PriorBackupDetail.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3107,6 +3145,9 @@ export const TaskRun = {
       exportArchiveStatus: isSet(object.exportArchiveStatus)
         ? taskRun_ExportArchiveStatusFromJSON(object.exportArchiveStatus)
         : TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
+      priorBackupDetail: isSet(object.priorBackupDetail)
+        ? TaskRun_PriorBackupDetail.fromJSON(object.priorBackupDetail)
+        : undefined,
     };
   },
 
@@ -3157,6 +3198,9 @@ export const TaskRun = {
     if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
       obj.exportArchiveStatus = taskRun_ExportArchiveStatusToJSON(message.exportArchiveStatus);
     }
+    if (message.priorBackupDetail !== undefined) {
+      obj.priorBackupDetail = TaskRun_PriorBackupDetail.toJSON(message.priorBackupDetail);
+    }
     return obj;
   },
 
@@ -3183,6 +3227,9 @@ export const TaskRun = {
     message.startTime = object.startTime ?? undefined;
     message.exportArchiveStatus = object.exportArchiveStatus ??
       TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED;
+    message.priorBackupDetail = (object.priorBackupDetail !== undefined && object.priorBackupDetail !== null)
+      ? TaskRun_PriorBackupDetail.fromPartial(object.priorBackupDetail)
+      : undefined;
     return message;
   },
 };
@@ -3369,6 +3416,272 @@ export const TaskRun_ExecutionDetail_Position = {
     const message = createBaseTaskRun_ExecutionDetail_Position();
     message.line = object.line ?? 0;
     message.column = object.column ?? 0;
+    return message;
+  },
+};
+
+function createBaseTaskRun_PriorBackupDetail(): TaskRun_PriorBackupDetail {
+  return { items: [] };
+}
+
+export const TaskRun_PriorBackupDetail = {
+  encode(message: TaskRun_PriorBackupDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.items) {
+      TaskRun_PriorBackupDetail_Item.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_PriorBackupDetail {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_PriorBackupDetail();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.items.push(TaskRun_PriorBackupDetail_Item.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_PriorBackupDetail {
+    return {
+      items: globalThis.Array.isArray(object?.items)
+        ? object.items.map((e: any) => TaskRun_PriorBackupDetail_Item.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TaskRun_PriorBackupDetail): unknown {
+    const obj: any = {};
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => TaskRun_PriorBackupDetail_Item.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_PriorBackupDetail>): TaskRun_PriorBackupDetail {
+    return TaskRun_PriorBackupDetail.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_PriorBackupDetail>): TaskRun_PriorBackupDetail {
+    const message = createBaseTaskRun_PriorBackupDetail();
+    message.items = object.items?.map((e) => TaskRun_PriorBackupDetail_Item.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTaskRun_PriorBackupDetail_Item(): TaskRun_PriorBackupDetail_Item {
+  return { sourceTable: undefined, targetTable: undefined, startPosition: undefined, endPosition: undefined };
+}
+
+export const TaskRun_PriorBackupDetail_Item = {
+  encode(message: TaskRun_PriorBackupDetail_Item, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.sourceTable !== undefined) {
+      TaskRun_PriorBackupDetail_Item_Table.encode(message.sourceTable, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.targetTable !== undefined) {
+      TaskRun_PriorBackupDetail_Item_Table.encode(message.targetTable, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.startPosition !== undefined) {
+      Position.encode(message.startPosition, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.endPosition !== undefined) {
+      Position.encode(message.endPosition, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_PriorBackupDetail_Item {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_PriorBackupDetail_Item();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sourceTable = TaskRun_PriorBackupDetail_Item_Table.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.targetTable = TaskRun_PriorBackupDetail_Item_Table.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.startPosition = Position.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.endPosition = Position.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_PriorBackupDetail_Item {
+    return {
+      sourceTable: isSet(object.sourceTable)
+        ? TaskRun_PriorBackupDetail_Item_Table.fromJSON(object.sourceTable)
+        : undefined,
+      targetTable: isSet(object.targetTable)
+        ? TaskRun_PriorBackupDetail_Item_Table.fromJSON(object.targetTable)
+        : undefined,
+      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
+      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
+    };
+  },
+
+  toJSON(message: TaskRun_PriorBackupDetail_Item): unknown {
+    const obj: any = {};
+    if (message.sourceTable !== undefined) {
+      obj.sourceTable = TaskRun_PriorBackupDetail_Item_Table.toJSON(message.sourceTable);
+    }
+    if (message.targetTable !== undefined) {
+      obj.targetTable = TaskRun_PriorBackupDetail_Item_Table.toJSON(message.targetTable);
+    }
+    if (message.startPosition !== undefined) {
+      obj.startPosition = Position.toJSON(message.startPosition);
+    }
+    if (message.endPosition !== undefined) {
+      obj.endPosition = Position.toJSON(message.endPosition);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_PriorBackupDetail_Item>): TaskRun_PriorBackupDetail_Item {
+    return TaskRun_PriorBackupDetail_Item.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_PriorBackupDetail_Item>): TaskRun_PriorBackupDetail_Item {
+    const message = createBaseTaskRun_PriorBackupDetail_Item();
+    message.sourceTable = (object.sourceTable !== undefined && object.sourceTable !== null)
+      ? TaskRun_PriorBackupDetail_Item_Table.fromPartial(object.sourceTable)
+      : undefined;
+    message.targetTable = (object.targetTable !== undefined && object.targetTable !== null)
+      ? TaskRun_PriorBackupDetail_Item_Table.fromPartial(object.targetTable)
+      : undefined;
+    message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
+      ? Position.fromPartial(object.startPosition)
+      : undefined;
+    message.endPosition = (object.endPosition !== undefined && object.endPosition !== null)
+      ? Position.fromPartial(object.endPosition)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRun_PriorBackupDetail_Item_Table(): TaskRun_PriorBackupDetail_Item_Table {
+  return { database: "", schema: "", table: "" };
+}
+
+export const TaskRun_PriorBackupDetail_Item_Table = {
+  encode(message: TaskRun_PriorBackupDetail_Item_Table, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.database !== "") {
+      writer.uint32(10).string(message.database);
+    }
+    if (message.schema !== "") {
+      writer.uint32(18).string(message.schema);
+    }
+    if (message.table !== "") {
+      writer.uint32(26).string(message.table);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_PriorBackupDetail_Item_Table {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_PriorBackupDetail_Item_Table();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_PriorBackupDetail_Item_Table {
+    return {
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+    };
+  },
+
+  toJSON(message: TaskRun_PriorBackupDetail_Item_Table): unknown {
+    const obj: any = {};
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_PriorBackupDetail_Item_Table>): TaskRun_PriorBackupDetail_Item_Table {
+    return TaskRun_PriorBackupDetail_Item_Table.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_PriorBackupDetail_Item_Table>): TaskRun_PriorBackupDetail_Item_Table {
+    const message = createBaseTaskRun_PriorBackupDetail_Item_Table();
+    message.database = object.database ?? "";
+    message.schema = object.schema ?? "";
+    message.table = object.table ?? "";
     return message;
   },
 };
