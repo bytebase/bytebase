@@ -213,18 +213,6 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 	return nil
 }
 
-// IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
-func IsAffectedRowsStatement(stmt string) bool {
-	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
-	upperStatement := strings.TrimLeft(strings.ToUpper(stmt), " \t\r\n")
-	for _, prefix := range affectedRowsStatementPrefix {
-		if strings.HasPrefix(upperStatement, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
 // ConvertYesNo converts YES/NO to bool.
 func ConvertYesNo(s string) (bool, error) {
 	// ClickHouse uses 0 and 1.
