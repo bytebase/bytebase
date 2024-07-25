@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/masker"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -33,19 +32,9 @@ func FormatErrorWithQuery(err error, query string) error {
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) (*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	readOnly := false
-	if queryContext != nil {
-		readOnly = queryContext.ReadOnly
-	}
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, statement)
+	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
 	}
