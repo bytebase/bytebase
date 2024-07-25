@@ -24,8 +24,6 @@
     comment on view public.v4 is 'comment with ''; test escape';
   diff: |+
     DROP VIEW "public"."v2", "public"."v3";
-    CREATE VIEW "public"."v2" AS SELECT 1 AS "a", 1 AS "b", 1 AS "c";;
-    CREATE VIEW "public"."v4" AS SELECT 1 AS "a", 1 AS "b", 1 AS "c";;
     CREATE OR REPLACE VIEW public.v2 AS SELECT t1.a, t1.b, t1.c FROM public.t1;
     CREATE OR REPLACE VIEW public.v4 AS SELECT v2.a, v2.b, v2.c FROM public.v2;
     COMMENT ON COLUMN "public"."v2"."b" IS 'comment with ''sdkfjaslkdjf; test escape for b';
