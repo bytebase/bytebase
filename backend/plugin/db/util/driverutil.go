@@ -4,7 +4,6 @@ package util
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -212,26 +211,6 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 	}
 
 	return nil
-}
-
-func getStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
-}
-
-func getMySQLStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
-}
-
-// IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
-func IsAffectedRowsStatement(stmt string) bool {
-	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
-	upperStatement := strings.TrimLeft(strings.ToUpper(stmt), " \t\r\n")
-	for _, prefix := range affectedRowsStatementPrefix {
-		if strings.HasPrefix(upperStatement, prefix) {
-			return true
-		}
-	}
-	return false
 }
 
 // ConvertYesNo converts YES/NO to bool.
