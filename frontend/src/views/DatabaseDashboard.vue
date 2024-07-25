@@ -37,7 +37,10 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import DatabaseV1Table, {
+  DatabaseLabelFilter,
+  DatabaseOperations,
+} from "@/components/v2/Model/DatabaseV1Table";
 import {
   useAppFeature,
   useDatabaseV1Store,

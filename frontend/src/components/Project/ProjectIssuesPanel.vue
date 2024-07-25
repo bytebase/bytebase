@@ -85,7 +85,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import type { TabFilterItem } from "@/components/v2";
+import { TabFilter, type TabFilterItem } from "@/components/v2";
 import type { ComposedProject } from "@/types";
 import type {
   SearchParams,

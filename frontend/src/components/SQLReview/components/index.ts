@@ -1,3 +1,4 @@
+import SQLReviewForResource from "./SQLReviewForResource.vue";
 import SQLReviewTemplateSelector from "./SQLReviewTemplateSelector.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
 import SQLRuleFilter from "./SQLRuleFilter.vue";
@@ -8,6 +9,7 @@ export {
   SQLRuleTable,
   SQLRuleFilter,
   SQLRuleEditDialog,
+  SQLReviewForResource,
 };
 export * from "./useSQLRuleFilter";
 export * from "./utils";

@@ -52,13 +52,16 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
+import { BBModal } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import WeChatQRModal from "./WeChatQRModal.vue";
 
 interface LocalState {
   showQRCodeModal: boolean;

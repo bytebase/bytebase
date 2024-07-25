@@ -15,7 +15,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { NCheckbox, NTag, type SelectOption } from "naive-ui";
+import { NCheckbox, NSelect, NTag, type SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed } from "vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";

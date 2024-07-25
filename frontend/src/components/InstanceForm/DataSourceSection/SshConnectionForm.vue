@@ -99,6 +99,7 @@ import { cloneDeep } from "lodash-es";
 import { NInput, NRadio } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { FeatureModal } from "@/components/FeatureGuard";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { useSubscriptionV1Store } from "@/store";
 import type { Instance } from "@/types/proto/v1/instance_service";

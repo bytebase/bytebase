@@ -68,7 +68,7 @@
 
 <script setup lang="tsx">
 import { cloneDeep } from "lodash-es";
-import { NDivider, useDialog } from "naive-ui";
+import { NButton, NDivider, useDialog } from "naive-ui";
 import { watch, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {

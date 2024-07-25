@@ -58,14 +58,12 @@
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
-                  @update:user="(uid: string) => updateMemberEmail(i, uid)"
+                  @update:user="(uid) => updateMemberEmail(i, uid)"
                 />
                 <GroupMemberRoleSelect
                   :value="member.role"
                   :size="'medium'"
-                  @update:value="
-                    (role: UserGroupMember_Role) => updateMemberRole(i, role)
-                  "
+                  @update:value="(role) => updateMemberRole(i, role)"
                 />
                 <div class="pl-5 flex justify-end">
                   <NButton
@@ -137,6 +135,7 @@ import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
 import {
   extractGroupEmail,
   useUserGroupStore,
@@ -158,6 +157,7 @@ import {
   hasWorkspacePermissionV2,
 } from "@/utils";
 import RemoveGroupButton from "./RemoveGroupButton.vue";
+import GroupMemberRoleSelect from "./UserDataTableByGroup/cells/GroupMemberRoleSelect.vue";
 
 interface LocalState {
   isRequesting: boolean;
@@ -296,7 +296,10 @@ const getUserUidForMember = (member: UserGroupMember) => {
   return extractUserUID(user.name);
 };
 
-const updateMemberEmail = (index: number, uid: string) => {
+const updateMemberEmail = (index: number, uid: string | undefined) => {
+  if (!uid) {
+    return;
+  }
   const user = userStore.getUserById(uid);
   if (!user) {
     return;

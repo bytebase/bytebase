@@ -121,6 +121,8 @@ import { NButton, NCheckbox, NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
+import { FeatureModal } from "@/components/FeatureGuard";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,

@@ -24,6 +24,7 @@
 </template>
 <script lang="ts" setup>
 import { TrashIcon, Undo2Icon } from "lucide-vue-next";
+import { NTooltip } from "naive-ui";
 import { MiniActionButton } from "@/components/v2";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
 

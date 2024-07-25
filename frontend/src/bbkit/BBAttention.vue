@@ -27,7 +27,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NAlert } from "naive-ui";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { NAlert, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 

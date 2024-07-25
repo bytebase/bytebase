@@ -1,11 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img
-        class="h-12 w-auto"
-        src="../../assets/logo-full.svg"
-        alt="Bytebase"
-      />
+      <img class="h-12 w-auto" src="@/assets/logo-full.svg" alt="Bytebase" />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         {{ $t("auth.password-forget.title") }}
       </h2>
@@ -55,6 +51,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useActuatorV1Store } from "@/store";
 

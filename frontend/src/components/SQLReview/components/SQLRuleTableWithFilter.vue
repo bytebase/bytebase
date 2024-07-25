@@ -35,6 +35,7 @@ import {
   useSQLRuleFilter,
   SQLRuleTable,
 } from "@/components/SQLReview/components";
+import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import type { RuleTemplateV2 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";

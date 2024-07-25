@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NTooltip, type TooltipProps } from "naive-ui";
+import { NButton, NTooltip, type TooltipProps } from "naive-ui";
 import { computed, useSlots } from "vue";
 import type { TooltipMode } from "./types";
 

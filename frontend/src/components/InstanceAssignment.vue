@@ -124,7 +124,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import { NButton, NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -147,6 +147,7 @@ import {
   hostPortOfInstanceV1,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import LearnMoreLink from "./LearnMoreLink.vue";
 
 const props = withDefaults(
   defineProps<{

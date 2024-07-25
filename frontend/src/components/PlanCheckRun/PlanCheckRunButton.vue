@@ -9,7 +9,7 @@
   >
     <template #icon>
       <BBSpin v-if="hasRunningPlanCheck" :size="16" />
-      <heroicons-outline:play v-else class="w-4 h-4" />
+      <PlayIcon v-else class="w-4 h-4" />
     </template>
     <template #default="{ action }">
       <template v-if="hasRunningPlanCheck">
@@ -23,8 +23,10 @@
 </template>
 
 <script setup lang="ts">
+import { PlayIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
 import type { ContextMenuButtonAction } from "@/components/v2";
 import { ContextMenuButton } from "@/components/v2";
 import {

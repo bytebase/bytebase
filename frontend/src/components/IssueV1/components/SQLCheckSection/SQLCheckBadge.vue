@@ -47,6 +47,7 @@ import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { databaseForTask, useIssueContext } from "../../logic";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
+import { TaskSpinner } from "../common";
 
 const props = defineProps<{
   isRunning: boolean;

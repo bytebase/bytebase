@@ -76,10 +76,12 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBModal, BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";

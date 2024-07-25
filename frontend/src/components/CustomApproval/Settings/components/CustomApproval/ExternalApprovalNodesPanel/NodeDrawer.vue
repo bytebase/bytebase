@@ -90,6 +90,8 @@ import { NButton, NInput } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { ExternalApprovalSetting_Node } from "@/types/proto/store/setting";

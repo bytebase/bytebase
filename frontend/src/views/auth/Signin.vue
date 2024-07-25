@@ -253,6 +253,8 @@ import { NButton, NCard, NTabPane, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { BBSpin, BBTextField } from "@/bbkit";
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { AUTH_MFA_MODULE, AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,

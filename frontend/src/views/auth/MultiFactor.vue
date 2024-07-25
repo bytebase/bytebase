@@ -69,6 +69,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import { BBTextField } from "@/bbkit";
 import { useAuthStore } from "@/store";
 
 type MFAType = "OTP" | "RECOVERY_CODE";

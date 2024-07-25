@@ -49,9 +49,11 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTable, BBTableCell } from "@/bbkit";
 import type { DebugLog } from "@/types/proto/v1/actuator_service";
 import EllipsisText from "../EllipsisText.vue";
 

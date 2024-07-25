@@ -8,6 +8,7 @@
 </template>
 
 <script lang="ts" setup>
+import { BBTextField } from "@/bbkit";
 import type { RuleConfigComponent } from "@/types";
 
 defineProps<{

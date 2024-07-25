@@ -10,11 +10,11 @@
 </template>
 
 <script lang="ts" setup>
-import type { Project } from "@/types/proto/v1/project_service";
-import type { ProjectRepositoryConfig } from "../types";
+import type { ComposedProject, ProjectRepositoryConfig } from "@/types";
+import RepositoryForm from "./RepositoryForm.vue";
 
 defineProps<{
   config: ProjectRepositoryConfig;
-  project: Project;
+  project: ComposedProject;
 }>();
 </script>

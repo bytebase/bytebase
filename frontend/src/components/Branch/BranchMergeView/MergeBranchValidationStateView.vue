@@ -46,6 +46,7 @@ import { PROJECT_V1_ROUTE_BRANCH_REBASE } from "@/router/dashboard/projectV1";
 import type { ComposedProject } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
 import type { MergeBranchValidationState } from "./types";
+import { BBSpin } from "@/bbkit";
 
 defineProps<{
   project: ComposedProject;

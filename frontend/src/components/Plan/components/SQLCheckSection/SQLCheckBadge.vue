@@ -39,6 +39,7 @@ import { SQLCheckPanel } from "@/components/SQLCheck";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { databaseForSpec, usePlanContext } from "../../logic";
+import { TaskSpinner } from "../common";
 
 const props = defineProps<{
   isRunning: boolean;
