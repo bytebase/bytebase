@@ -72,7 +72,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 		Permissions: map[string]bool{},
 	}
 	var permissions []byte
-	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(role.CreatorID, role.Name, role.Description, &permissions); err != nil {
+	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Name, &role.Description, &permissions); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
