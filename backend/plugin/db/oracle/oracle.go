@@ -252,7 +252,7 @@ func (driver *Driver) getOracleStatementWithResultLimit(stmt string, queryContex
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := singleSQL.Text
 
 	if queryContext != nil && queryContext.Explain {
 		startTime := time.Now()
