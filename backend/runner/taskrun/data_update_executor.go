@@ -273,5 +273,8 @@ func (exec *DataUpdateExecutor) backupData(
 			)
 		}
 	}
+	if len(priorBackupDetail.Items) == 0 {
+		return nil, nil
+	}
 	return priorBackupDetail, nil
 }
