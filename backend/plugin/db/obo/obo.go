@@ -153,11 +153,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 }
 
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Oracle does not support transaction isolation level for read-only queries.
-	if queryContext != nil {
-		queryContext.ReadOnly = false
-	}
-
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -204,7 +199,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_OCEANBASE_ORACLE, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_OCEANBASE_ORACLE, conn, statement)
 	if err != nil {
 		return nil, err
 	}

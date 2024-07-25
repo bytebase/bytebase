@@ -168,13 +168,17 @@ func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, sch
 		queryStatement = fmt.Sprintf("SHOW CREATE TABLE %s", schemaName)
 	}
 
-	schemaDDLResults, err := d.QueryWithConn(ctx, nil, queryStatement, nil)
+	conn, err := d.connPool.Get("")
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to dump %s %s", schemaType, schemaName)
+		return "", err
+	}
+	schemaDDLResult, err := runSingleStatement(ctx, conn, queryStatement)
+	if err != nil {
+		return "", err
 	}
 
 	var schemaDDL string
-	for _, row := range schemaDDLResults[0].Rows {
+	for _, row := range schemaDDLResult.Rows {
 		schemaDDL += fmt.Sprintln(row.Values[0].GetStringValue())
 	}
 

@@ -332,12 +332,6 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Datashare doesn't support read-only transactions.
-	if driver.datashare && queryContext != nil {
-		queryContext.ReadOnly = false
-		queryContext.ShareDB = true
-	}
-
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -366,7 +360,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
 	if !isSet {
@@ -377,13 +371,12 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		}
 	}
 
-	// TODO(d): use a Redshift extraction for shared database.
-	if queryContext != nil && queryContext.ShareDB {
+	if driver.datashare {
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_REDSHIFT, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_REDSHIFT, conn, statement)
 	if err != nil {
 		return nil, err
 	}
