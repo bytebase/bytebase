@@ -435,7 +435,6 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	}
 
 	queryContext := &db.QueryContext{
-		ReadOnly:        true,
 		CurrentDatabase: database.DatabaseName,
 	}
 	if request.Limit != 0 {
@@ -781,7 +780,6 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:           int(request.Limit),
 		Explain:         request.Explain,
-		ReadOnly:        true,
 		CurrentDatabase: database.DatabaseName,
 	})
 	select {

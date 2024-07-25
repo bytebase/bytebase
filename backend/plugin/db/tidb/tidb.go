@@ -329,12 +329,6 @@ func isNonTransactionStatement(stmt string) bool {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
-	// https://github.com/pingcap/tidb/issues/34626
-	if queryContext != nil {
-		queryContext.ReadOnly = false
-	}
-
 	connectionID, err := getConnectionID(ctx, conn)
 	if err != nil {
 		return nil, err
@@ -398,7 +392,7 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, d.dbType, conn, statement, queryContext)
+	result, err := util.Query(ctx, d.dbType, conn, statement)
 	if err != nil {
 		return nil, err
 	}

@@ -273,10 +273,8 @@ func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, sta
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
 
-	if queryCtx != nil && !queryCtx.ReadOnly {
-		if err := SetRole(ctx, conn, "admin"); err != nil {
-			return nil, err
-		}
+	if err := SetRole(ctx, conn, "admin"); err != nil {
+		return nil, err
 	}
 
 	for _, statement := range statements {

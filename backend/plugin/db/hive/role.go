@@ -30,7 +30,7 @@ func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, e
 }
 
 func (d *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
-	roleResults, err := d.QueryConn(ctx, nil, "SHOW ROLES", &db.QueryContext{ReadOnly: false})
+	roleResults, err := d.QueryConn(ctx, nil, "SHOW ROLES", &db.QueryContext{})
 	var roleMessages []*db.DatabaseRoleMessage
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get roles")
@@ -67,7 +67,7 @@ func SetRole(ctx context.Context, conn *gohive.Connection, roleName string) erro
 }
 
 func (d *Driver) GetRoleGrant(ctx context.Context, roleName string) (string, error) {
-	grantResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW GRANT ROLE %s", roleName), &db.QueryContext{ReadOnly: false})
+	grantResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW GRANT ROLE %s", roleName), &db.QueryContext{})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get grant from %s", roleName)
 	}
