@@ -156,10 +156,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 		return nil, err
 	}
 
-	if err := SetRole(ctx, conn, "admin"); err != nil {
-		return nil, err
-	}
-
 	var results []*v1pb.QueryResult
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")

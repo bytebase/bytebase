@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -53,19 +52,6 @@ func (d *Driver) DeleteRole(ctx context.Context, roleName string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to drop role %s", roleName)
 	}
-	return nil
-}
-
-// some DMLs need admin role.
-func SetRole(ctx context.Context, conn *gohive.Connection, roleName string) error {
-	cursor := conn.Cursor()
-	defer cursor.Close()
-
-	cursor.Exec(ctx, fmt.Sprintf("SET ROLE %s", roleName))
-	if cursor.Err != nil {
-		return errors.Wrapf(cursor.Err, "failed to set role to %s", roleName)
-	}
-
 	return nil
 }
 
