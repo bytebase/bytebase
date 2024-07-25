@@ -9617,6 +9617,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/InstanceResource'
                     description: The instance resource.
+                backupAvailable:
+                    readOnly: true
+                    type: boolean
+                    description: The database is available for DML prior backup.
         DatabaseConfig:
             type: object
             properties:

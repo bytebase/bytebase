@@ -209,12 +209,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Starrocks doesn't support READ ONLY transactions.
-	// Error: Error 1064 (HY000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'READ' at line 1
-	if queryContext != nil {
-		queryContext.ReadOnly = false
-	}
-
 	connectionID, err := getConnectionID(ctx, conn)
 	if err != nil {
 		return nil, err
@@ -276,7 +270,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, driver.dbType, conn, statement, queryContext)
+	result, err := util.Query(ctx, driver.dbType, conn, statement)
 	if err != nil {
 		return nil, err
 	}

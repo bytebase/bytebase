@@ -97,37 +97,48 @@ func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	results, err := d.QueryWithConn(ctx, nil, "SELECT VERSION()", nil)
-	if err != nil || len(results) == 0 {
+	conn, err := d.connPool.Get("")
+	if err != nil {
+		return "", err
+	}
+	result, err := runSingleStatement(ctx, conn, "SELECT VERSION()")
+	if err != nil {
 		return "", errors.Wrap(err, "failed to get version from instance")
 	}
-	versionRawStr := results[0].Rows[0].Values[0].GetStringValue()
+	versionRawStr := result.Rows[0].Values[0].GetStringValue()
 	version := strings.Split(versionRawStr, " ")[0]
 	return version, nil
 }
 
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 	var databaseNames []string
-	results, err := d.QueryWithConn(ctx, nil, "SHOW DATABASES", nil)
+	conn, err := d.connPool.Get("")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get databases from instance")
+		return nil, err
 	}
-	for _, row := range results[0].Rows {
+	result, err := runSingleStatement(ctx, conn, "SHOW DATABASES")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get version from instance")
+	}
+	for _, row := range result.Rows {
 		databaseNames = append(databaseNames, row.Values[0].GetStringValue())
 	}
 	return databaseNames, nil
 }
 
 func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]string, error) {
-	var tabNames []string
-	tabResults, err := d.QueryWithConn(ctx, nil, fmt.Sprintf("SHOW TABLES FROM %s", databaseName), nil)
-
-	for _, row := range tabResults[0].Rows {
-		tabNames = append(tabNames, row.Values[0].GetStringValue())
+	conn, err := d.connPool.Get("")
+	if err != nil {
+		return nil, err
+	}
+	result, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
 
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from instance")
+	var tabNames []string
+	for _, row := range result.Rows {
+		tabNames = append(tabNames, row.Values[0].GetStringValue())
 	}
 	return tabNames, nil
 }
@@ -199,9 +210,13 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		}
 
 		// partitions.
-		partitionResults, err := d.QueryWithConn(ctx, nil, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tabName), nil)
+		conn, err := d.connPool.Get("")
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		partitionResult, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tabName))
 		if err == nil {
-			for _, row := range partitionResults[0].Rows {
+			for _, row := range partitionResult.Rows {
 				tableMetadata.Partitions = append(tableMetadata.Partitions, &storepb.TablePartitionMetadata{
 					Name: row.Values[0].GetStringValue(),
 				})
