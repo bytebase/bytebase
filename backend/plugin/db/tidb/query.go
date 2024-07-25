@@ -11,6 +11,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/format"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
@@ -18,7 +19,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	stmt, err := getStatementWithResultLimitForTiDB(stmt, limit)
 	if err != nil {
 		slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
-		stmt = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+		stmt = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
 	}
 	return stmt
 }

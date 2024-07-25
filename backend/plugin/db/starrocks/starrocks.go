@@ -259,7 +259,7 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
+	statement := util.TrimStatement(singleSQL.Text)
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
 	if !isSet {
 		if queryContext != nil && queryContext.Explain {
