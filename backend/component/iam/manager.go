@@ -171,6 +171,9 @@ func (m *Manager) hasPermissionOnWorkspace(ctx context.Context, p Permission, wo
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
+		if permissions == nil {
+			continue
+		}
 		if permissions[p] {
 			return true, nil
 		}
