@@ -16,7 +16,7 @@ import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { PresetRoleType } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { isGrantRequestIssue, isIssueActuallyRolledout } from "@/utils";
+import { isGrantRequestIssue, isIssueActuallySucceedRolledout } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
 import { TinySQLEditorButton } from "./request";
@@ -52,7 +52,7 @@ const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
     return "REVIEW";
   }
 
-  if (reviewDone.value || isIssueActuallyRolledout(issue.value)) {
+  if (reviewDone.value || isIssueActuallySucceedRolledout(issue.value)) {
     return "ROLLOUT";
   }
 
