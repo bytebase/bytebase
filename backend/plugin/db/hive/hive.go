@@ -142,9 +142,33 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 }
 
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.QueryWithConn(ctx, d.conn, statementsStr, queryCtx)
+	if d.connPool == nil {
+		return nil, errors.Errorf("no database connection established")
+	}
+
+	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split statements")
+	}
+
+	conn, err := d.connPool.Get("")
 	if err != nil {
 		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	for _, statement := range statements {
+		statementStr := strings.TrimRight(statement.Text, ";")
+		if queryCtx != nil && queryCtx.Explain {
+			statementStr = fmt.Sprintf("EXPLAIN %s", statementStr)
+		}
+
+		result, err := runSingleStatement(ctx, conn, statementStr)
+		if err != nil && result == nil {
+			return results, err
+		}
+
+		results = append(results, result)
 	}
 	return results, nil
 }
@@ -251,46 +275,4 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 		return result, nil
 	}
 	return nil, nil
-}
-
-func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if d.connPool == nil {
-		return nil, errors.Errorf("no database connection established")
-	}
-
-	if conn == nil {
-		var err error
-		conn, err = d.connPool.Get("")
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var results []*v1pb.QueryResult
-
-	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split statements")
-	}
-
-	if queryCtx != nil && !queryCtx.ReadOnly {
-		if err := SetRole(ctx, conn, "admin"); err != nil {
-			return nil, err
-		}
-	}
-
-	for _, statement := range statements {
-		statementStr := strings.TrimRight(statement.Text, ";")
-		if queryCtx != nil && queryCtx.Explain {
-			statementStr = fmt.Sprintf("EXPLAIN %s", statementStr)
-		}
-
-		result, err := runSingleStatement(ctx, conn, statementStr)
-		if err != nil && result == nil {
-			return results, err
-		}
-
-		results = append(results, result)
-	}
-	return results, nil
 }

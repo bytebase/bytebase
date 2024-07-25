@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -30,18 +29,21 @@ func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, e
 }
 
 func (d *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
-	roleResults, err := d.QueryConn(ctx, nil, "SHOW ROLES", &db.QueryContext{ReadOnly: false})
-	var roleMessages []*db.DatabaseRoleMessage
+	conn, err := d.connPool.Get("")
+	if err != nil {
+		return nil, err
+	}
+	roleResult, err := runSingleStatement(ctx, conn, "SHOW ROLES")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get roles")
 	}
 
-	for _, row := range roleResults[0].Rows {
+	var roleMessages []*db.DatabaseRoleMessage
+	for _, row := range roleResult.Rows {
 		roleMessages = append(roleMessages, &db.DatabaseRoleMessage{
 			Name: row.Values[0].GetStringValue(),
 		})
 	}
-
 	return roleMessages, nil
 }
 
@@ -53,27 +55,19 @@ func (d *Driver) DeleteRole(ctx context.Context, roleName string) error {
 	return nil
 }
 
-// some DMLs need admin role.
-func SetRole(ctx context.Context, conn *gohive.Connection, roleName string) error {
-	cursor := conn.Cursor()
-	defer cursor.Close()
-
-	cursor.Exec(ctx, fmt.Sprintf("SET ROLE %s", roleName))
-	if cursor.Err != nil {
-		return errors.Wrapf(cursor.Err, "failed to set role to %s", roleName)
-	}
-
-	return nil
-}
-
 func (d *Driver) GetRoleGrant(ctx context.Context, roleName string) (string, error) {
-	grantResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW GRANT ROLE %s", roleName), &db.QueryContext{ReadOnly: false})
+	conn, err := d.connPool.Get("")
+	if err != nil {
+		return "", err
+	}
+	grantResult, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW GRANT ROLE %s", roleName))
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get grant from %s", roleName)
 	}
+
 	var grantStrings []string
 	// get grant-info rows from a certain role and combine them into a string.
-	for _, row := range grantResults[0].Rows {
+	for _, row := range grantResult.Rows {
 		databaseName := row.Values[0].GetStringValue()
 		tableName := row.Values[1].GetStringValue()
 		privilege := row.Values[6].GetStringValue()

@@ -201,11 +201,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Oracle does not support transaction isolation level for read-only queries.
-	if queryContext != nil {
-		queryContext.ReadOnly = false
-	}
-
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -267,21 +262,13 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		}
 		randomID := fmt.Sprintf("%d%d", startTime.UnixMilli(), randNum.Int64())
 
-		statement = fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)
-		if _, err := conn.ExecContext(ctx, statement); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)); err != nil {
 			return nil, err
 		}
-		explainQuery := fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
-		result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, explainQuery, queryContext)
-		if err != nil {
-			return nil, err
-		}
-		result.Latency = durationpb.New(time.Since(startTime))
-		result.Statement = statement
-		return result, nil
+		statement = fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
 	}
 
-	if queryContext != nil && queryContext.Limit > 0 {
+	if queryContext != nil && !queryContext.Explain && queryContext.Limit > 0 {
 		stmt, err := driver.getOracleStatementWithResultLimit(statement, queryContext)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
@@ -291,7 +278,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, statement)
 	if err != nil {
 		return nil, err
 	}

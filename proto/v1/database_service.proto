@@ -426,6 +426,9 @@ message Database {
 
   // The instance resource.
   InstanceResource instance_resource = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The database is available for DML prior backup.
+  bool backup_available = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DatabaseMetadata is the metadata for databases.
