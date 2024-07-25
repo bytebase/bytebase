@@ -725,31 +725,6 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	return resp, nil
 }
 
-// CreateDatabaseGroup creates a database group.
-func (*ProjectService) CreateDatabaseGroup(_ context.Context, _ *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	return &v1pb.DatabaseGroup{}, nil
-}
-
-// UpdateDatabaseGroup updates a database group.
-func (*ProjectService) UpdateDatabaseGroup(_ context.Context, _ *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	return &v1pb.DatabaseGroup{}, nil
-}
-
-// DeleteDatabaseGroup deletes a database group.
-func (*ProjectService) DeleteDatabaseGroup(_ context.Context, _ *v1pb.DeleteDatabaseGroupRequest) (*emptypb.Empty, error) {
-	return &emptypb.Empty{}, nil
-}
-
-// ListDatabaseGroups lists database groups.
-func (*ProjectService) ListDatabaseGroups(_ context.Context, _ *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
-	return &v1pb.ListDatabaseGroupsResponse{}, nil
-}
-
-// GetDatabaseGroup gets a database group.
-func (*ProjectService) GetDatabaseGroup(_ context.Context, _ *v1pb.GetDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	return &v1pb.DatabaseGroup{}, nil
-}
-
 // GetProjectProtectionRules gets a project protection rules.
 func (s *ProjectService) GetProjectProtectionRules(ctx context.Context, request *v1pb.GetProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
 	projectName, err := common.TrimSuffix(request.Name, common.ProtectionRulesSuffix)
