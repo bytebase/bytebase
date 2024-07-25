@@ -63,7 +63,7 @@
               "
               :type="'primary'"
               :text="true"
-              :database="database"
+              :database="database ?? connectedDb"
             />
           </template>
         </ErrorView>
@@ -98,6 +98,8 @@ import type { PropType } from "vue";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
+import { BBSpin } from "@/bbkit";
+import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import { Drawer } from "@/components/v2";
 import {
   useAppFeature,

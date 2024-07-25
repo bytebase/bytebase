@@ -451,6 +451,7 @@ import {
 import { Status } from "nice-grpc-common";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBAttention, BBBetaBadge } from "@/bbkit";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
 import {
   EnvironmentSelect,
@@ -468,10 +469,7 @@ import {
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
-import {
-  UNKNOWN_ID,
-  isValidEnvironmentName,
-} from "@/types";
+import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -482,8 +480,10 @@ import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { isDev, extractInstanceResourceName, onlyAllowNumber } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
+import MaximumConnectionsInput from "./MaximumConnectionsInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import {

@@ -136,6 +136,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import {
   Drawer,

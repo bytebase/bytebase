@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { SelectOption } from "naive-ui";
+import { NSelect, type SelectOption } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useInstanceV1Store } from "@/store";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";

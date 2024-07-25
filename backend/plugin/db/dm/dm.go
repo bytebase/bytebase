@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"math/big"
 	"strconv"
-	"strings"
 	"time"
 
 	// Import go-dm DM driver.
@@ -183,8 +182,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
-
+	statement := singleSQL.Text
 	if queryContext != nil && queryContext.Explain {
 		startTime := time.Now()
 		randNum, err := rand.Int(rand.Reader, big.NewInt(999))
@@ -214,7 +212,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", statement, limit)
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(statement), limit)
 }
 
 // RunStatement runs a SQL statement in a given connection.

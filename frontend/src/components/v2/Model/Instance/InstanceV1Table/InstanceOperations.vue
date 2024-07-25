@@ -38,6 +38,7 @@ import { NButton } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import {
   useInstanceV1Store,
   pushNotification,

@@ -44,6 +44,7 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { watchEffect, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -52,6 +53,7 @@ import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceR
 import { useSQLReviewStore, useCurrentUserV1, pushNotification } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import SQLReviewPolicyDataTable from "./SQLReviewPolicyDataTable.vue";
 
 const props = defineProps<{
   show: boolean;

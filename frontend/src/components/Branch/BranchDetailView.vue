@@ -145,6 +145,7 @@ import type { CSSProperties } from "vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBButtonConfirm } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { validateDatabaseMetadata } from "@/components/SchemaEditorLite";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
@@ -283,8 +284,7 @@ const showRebaseBranchButton = computed(() => {
 // Only show apply to database button when the branch is main branch.
 const showApplyBranchButton = computed(() => {
   return (
-    !parentBranch.value &&
-    isOwnerOfProjectV1(props.project, currentUser.value)
+    !parentBranch.value && isOwnerOfProjectV1(props.project, currentUser.value)
   );
 });
 

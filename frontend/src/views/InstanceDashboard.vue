@@ -26,6 +26,7 @@ import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
+import { FeatureAttention } from "@/components/FeatureGuard";
 import { InstanceV1Table } from "@/components/v2";
 import {
   useUIStateStore,

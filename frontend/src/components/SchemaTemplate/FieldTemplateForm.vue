@@ -272,6 +272,8 @@ import {
   convertKVListToLabels,
   convertLabelsToKVList,
 } from "@/utils";
+import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
+import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
 import { engineList, categoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{

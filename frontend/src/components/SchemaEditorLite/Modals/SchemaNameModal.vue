@@ -25,9 +25,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NInput } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";

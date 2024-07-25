@@ -40,9 +40,14 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { ref } from "vue";
 import type { Engine } from "@/types/proto/v1/common";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
+import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
+import SQLReviewRulesSelectPanel from "./components/SQLReviewRulesSelectPanel.vue";
+import SQLReviewTabsByEngine from "./components/SQLReviewTabsByEngine.vue";
+import SQLRuleTableWithFilter from "./components/SQLRuleTableWithFilter.vue";
 
 defineProps<{
   ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;

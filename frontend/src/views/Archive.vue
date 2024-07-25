@@ -42,6 +42,8 @@ import {
   EnvironmentV1Table,
   InstanceV1Table,
   ProjectV1Table,
+  SearchBox,
+  TabFilter,
 } from "@/components/v2";
 import {
   useCurrentUserV1,

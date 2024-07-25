@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed, watch } from "vue";
-import { ProjectSelect } from "@/components/v2";
+import { ProjectSelect, SearchBox } from "@/components/v2";
 import { UNKNOWN_PROJECT_NAME, isValidProjectName } from "@/types";
 import { useChangelistDashboardContext } from "./context";
 

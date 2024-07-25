@@ -67,7 +67,7 @@
 
 <script lang="ts" setup>
 import type { SelectOption } from "naive-ui";
-import { NSelect } from "naive-ui";
+import { NButton, NSelect } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { BBModal } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";

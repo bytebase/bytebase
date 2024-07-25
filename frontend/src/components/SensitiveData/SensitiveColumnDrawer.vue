@@ -273,7 +273,7 @@ import { useI18n } from "vue-i18n";
 import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, MiniActionButton } from "@/components/v2";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
   useSettingV1Store,

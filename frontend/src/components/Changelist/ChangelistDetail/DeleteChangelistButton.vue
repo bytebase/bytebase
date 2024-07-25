@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NPopconfirm } from "naive-ui";
+import { NButton, NPopconfirm, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

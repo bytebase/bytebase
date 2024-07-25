@@ -111,6 +111,7 @@ import { useElementSize } from "@vueuse/core";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import {
   useUIStateStore,
   featureToRef,

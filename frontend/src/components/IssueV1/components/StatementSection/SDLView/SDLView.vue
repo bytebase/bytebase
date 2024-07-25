@@ -93,8 +93,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NTabs, NTab, NTooltip } from "naive-ui";
+import { NTabs, NTab, NTooltip, NButton } from "naive-ui";
 import { reactive } from "vue";
+import { BBSpin } from "@/bbkit";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";

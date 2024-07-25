@@ -26,6 +26,7 @@ import type { DataTableColumn } from "naive-ui";
 import { computed, h, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import VCSIcon from "@/components/VCS/VCSIcon.vue";
 import {
   PROJECT_V1_ROUTE_GITOPS_DETAIL,

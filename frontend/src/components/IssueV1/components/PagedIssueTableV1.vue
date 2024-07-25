@@ -33,6 +33,7 @@ import { useSessionStorage } from "@vueuse/core";
 import { isEqual } from "lodash-es";
 import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { ComposeIssueConfig, ListIssueParams } from "@/store";
 import { useIsLoggedIn, useIssueV1Store, useRefreshIssueList } from "@/store";
 import type { IssueFilter, ComposedIssue } from "@/types";

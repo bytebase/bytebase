@@ -54,12 +54,13 @@
 
 <script setup lang="ts">
 import { MoveLeftIcon } from "lucide-vue-next";
-import { NRadioGroup } from "naive-ui";
+import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, toRef } from "vue";
 import { DatabaseSelect } from "@/components/v2";
 import { useDatabaseInGroupFilter, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
+import BranchSelector from "../BranchSelector.vue";
 import type { RebaseSourceType } from "./types";
 
 const props = defineProps<{

@@ -1,6 +1,6 @@
 <template>
   <Suspense>
-    <DiffEditor ref="diffEditorRef" v-bind="$attrs as any" />
+    <DiffEditor ref="diffEditorRef" v-bind="$attrs" />
     <template #fallback>
       <div ref="spinnerWrapperElRef" :class="classes">
         <BBSpin />
@@ -12,6 +12,7 @@
 <script setup lang="ts">
 import { useParentElement } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref } from "vue";
+import { BBSpin } from "@/bbkit";
 
 const DiffEditor = defineAsyncComponent(() => import("./DiffEditor.vue"));
 

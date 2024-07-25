@@ -25,10 +25,12 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import type { PropType } from "vue";
 import { reactive } from "vue";
 import type { Defer } from "@/utils";
 import { defer } from "@/utils";
+import BBModal from "./BBModal.vue";
 
 const props = defineProps({
   title: {

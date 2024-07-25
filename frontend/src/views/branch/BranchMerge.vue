@@ -15,6 +15,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BranchMergeView from "@/components/Branch/BranchMergeView";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import {
   PROJECT_V1_ROUTE_BRANCH_MERGE,
   PROJECT_V1_ROUTE_BRANCH_DETAIL,

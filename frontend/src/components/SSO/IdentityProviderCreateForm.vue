@@ -624,12 +624,14 @@ import {
   NRadio,
   NTooltip,
   NInputNumber,
+  NButton,
 } from "naive-ui";
 import type { ClientError } from "nice-grpc-common";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAttention, BBButtonConfirm, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
@@ -668,6 +670,7 @@ import {
   openWindowForSSO,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import IdentityProviderExternalURL from "./IdentityProviderExternalURL.vue";
 
 interface LocalState {
   type: IdentityProviderType;

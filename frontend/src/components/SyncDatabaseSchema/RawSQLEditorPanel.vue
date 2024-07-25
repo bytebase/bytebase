@@ -33,6 +33,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { Drawer, DrawerContent } from "@/components/v2";
 import RawSQLEditor from "./RawSQLEditor.vue";
 import type { RawSQLState } from "./types";

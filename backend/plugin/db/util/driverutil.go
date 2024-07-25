@@ -47,7 +47,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 		}, nil
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+	result.Statement = statement
 	return result, nil
 }
 
@@ -93,7 +93,7 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 				ColumnTypeNames: types,
 				Rows:            rows,
 				Latency:         durationpb.New(time.Since(startTime)),
-				Statement:       strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t"),
+				Statement:       singleSQL.Text,
 			})
 			continue
 		}
@@ -120,7 +120,7 @@ func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stat
 		}
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+	result.Statement = statement
 	return result
 }
 
@@ -295,4 +295,9 @@ func mssqlMakeScanDestByTypeName(tn string) (dest any, wantByte bool) {
 		return new(sql.NullString), true
 	}
 	return new(sql.NullString), true
+}
+
+// TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
+func TrimStatement(statement string) string {
+	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
 }

@@ -53,6 +53,7 @@ import { NCheckbox } from "naive-ui";
 import { computed, ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { restartAppRoot } from "@/AppRootContext";
+import { BBButtonConfirm } from "@/bbkit";
 import {
   useCurrentUserV1,
   useInstanceV1Store,
@@ -62,6 +63,7 @@ import {
 import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { FeatureModal } from "../FeatureGuard";
 
 interface LocalState {
   showFeatureModal: boolean;

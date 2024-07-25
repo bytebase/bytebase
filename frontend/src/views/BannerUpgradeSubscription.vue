@@ -71,10 +71,12 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { reactive } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBModal } from "@/bbkit";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
 import type { FeatureType } from "@/types";

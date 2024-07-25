@@ -21,10 +21,11 @@ import { useRoute, useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import HelpDrawer from "@/components/HelpDrawer";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
-import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import { useAppFeature, useHelpStore, useUIStateStore } from "@/store";
 import type { RouteMapList } from "@/types";
+import { isDev } from "@/utils";
 
 interface LocalState {
   helpTimer: number | undefined;
@@ -78,13 +79,13 @@ watch(
 );
 
 onMounted(() => {
-  if (lastVisit.value?.path) {
+  if (
+    isDev() &&
+    lastVisit.value?.path &&
+    route.name?.toString() === WORKSPACE_HOME_MODULE
+  ) {
     router.replace({
       path: lastVisit.value?.path,
-    });
-  } else {
-    router.replace({
-      name: WORKSPACE_ROUTE_MY_ISSUES,
     });
   }
 });

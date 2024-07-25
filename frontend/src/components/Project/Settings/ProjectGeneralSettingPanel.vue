@@ -64,9 +64,10 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
-import { NTooltip } from "naive-ui";
+import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { FeatureModal } from "@/components/FeatureGuard";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { pushNotification, useProjectV1Store } from "@/store";
 import type { FeatureType } from "@/types";
