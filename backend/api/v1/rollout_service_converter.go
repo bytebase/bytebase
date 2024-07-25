@@ -399,8 +399,8 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 				Column:        report.SqlReviewReport.Column,
 				Detail:        report.SqlReviewReport.Detail,
 				Code:          report.SqlReviewReport.Code,
-				StartPosition: convertAdvicePosition(report.SqlReviewReport.StartPosition),
-				EndPosition:   convertAdvicePosition(report.SqlReviewReport.EndPosition),
+				StartPosition: convertToPosition(report.SqlReviewReport.StartPosition),
+				EndPosition:   convertToPosition(report.SqlReviewReport.EndPosition),
 			},
 		}
 	}
@@ -515,19 +515,14 @@ func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDet
 			Table:    table.Table,
 		}
 	}
-	convertPosition := func(position *storepb.Position) *v1pb.Position {
-		return &v1pb.Position{
-			Line:   position.Line,
-			Column: position.Column,
-		}
-	}
+
 	items := []*v1pb.TaskRun_PriorBackupDetail_Item{}
 	for _, item := range priorBackupDetail.Items {
 		items = append(items, &v1pb.TaskRun_PriorBackupDetail_Item{
 			SourceTable:   convertTable(item.SourceTable),
 			TargetTable:   convertTable(item.TargetTable),
-			StartPosition: convertPosition(item.StartPosition),
-			EndPosition:   convertPosition(item.EndPosition),
+			StartPosition: convertToPosition(item.StartPosition),
+			EndPosition:   convertToPosition(item.EndPosition),
 		})
 	}
 	return &v1pb.TaskRun_PriorBackupDetail{
