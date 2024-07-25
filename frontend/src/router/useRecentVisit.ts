@@ -46,7 +46,7 @@ export function useRecentVisit() {
     useDebounce(currentRoute, 50),
     async (currentRoute) => {
       if (!currentRoute) return;
-      if (currentRoute.path.startsWith("/auth")) {
+      if (currentRoute.path.startsWith("/auth") || currentRoute.path.startsWith("/sql-editor")) {
         // ignore auth related pages
         // kbar is invisible on these pages
         // and navigating to these pages does not make sense
