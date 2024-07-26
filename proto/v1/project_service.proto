@@ -26,6 +26,7 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/projects"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.projects.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
@@ -42,6 +43,7 @@ service ProjectService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.projects.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateProject(UpdateProjectRequest) returns (Project) {
@@ -51,12 +53,14 @@ service ProjectService {
     };
     option (google.api.method_signature) = "project,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
@@ -65,16 +69,19 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.undelete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
     option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
+    // TODO(d): secure it.
   }
 
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -83,11 +90,13 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.setIamPolicy";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {get: "/v1/{name=projects/*/deploymentConfigs/*}"};
     option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
@@ -96,6 +105,7 @@ service ProjectService {
       body: "config"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
@@ -104,6 +114,7 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
@@ -113,6 +124,7 @@ service ProjectService {
     };
     option (google.api.method_signature) = "webhook,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
@@ -121,6 +133,7 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
@@ -129,11 +142,13 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetProjectProtectionRules(GetProjectProtectionRulesRequest) returns (ProtectionRules) {
     option (google.api.http) = {get: "/v1/{name=projects/*/protectionRules}"};
     option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateProjectProtectionRules(UpdateProjectProtectionRulesRequest) returns (ProtectionRules) {
@@ -142,6 +157,7 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

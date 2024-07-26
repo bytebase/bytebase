@@ -208,6 +208,9 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 	}
 	if authContext.AuthMethod == common.AuthMethodIAM {
 		// Handle GetProject() error status.
+		if len(authContext.Resources) == 0 {
+			return false, nil, errors.Errorf("no resource found for IAM auth method")
+		}
 		for _, resource := range authContext.Resources {
 			slog.Debug("IAM auth method", slog.String("method", fullMethod), slog.String("permission", authContext.Permission), slog.String("project", resource.ProjectID), slog.Bool("workspace", resource.Workspace))
 			if resource.Workspace {
