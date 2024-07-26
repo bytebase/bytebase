@@ -107,11 +107,13 @@ export interface ActuatorInfo {
   debug: boolean;
   /** lsp is the enablement of lsp in SQL Editor. */
   lsp: boolean;
-  /** lsp is the enablement of data backup prior to data update. */
+  /** pre_update_backup is the enablement of data backup prior to data update. */
   preUpdateBackup: boolean;
   /** iam_guard is the enablement of IAM checks. */
   iamGuard: boolean;
   unlicensedFeatures: string[];
+  /** deploy_id is the identifier for the started bytebase service deployment. */
+  deployId: string;
 }
 
 function createBaseGetResourcePackageRequest(): GetResourcePackageRequest {
@@ -664,6 +666,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     preUpdateBackup: false,
     iamGuard: false,
     unlicensedFeatures: [],
+    deployId: "",
   };
 }
 
@@ -725,6 +728,9 @@ export const ActuatorInfo = {
     }
     for (const v of message.unlicensedFeatures) {
       writer.uint32(154).string(v!);
+    }
+    if (message.deployId !== "") {
+      writer.uint32(162).string(message.deployId);
     }
     return writer;
   },
@@ -869,6 +875,13 @@ export const ActuatorInfo = {
 
           message.unlicensedFeatures.push(reader.string());
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.deployId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -901,6 +914,7 @@ export const ActuatorInfo = {
       unlicensedFeatures: globalThis.Array.isArray(object?.unlicensedFeatures)
         ? object.unlicensedFeatures.map((e: any) => globalThis.String(e))
         : [],
+      deployId: isSet(object.deployId) ? globalThis.String(object.deployId) : "",
     };
   },
 
@@ -963,6 +977,9 @@ export const ActuatorInfo = {
     if (message.unlicensedFeatures?.length) {
       obj.unlicensedFeatures = message.unlicensedFeatures;
     }
+    if (message.deployId !== "") {
+      obj.deployId = message.deployId;
+    }
     return obj;
   },
 
@@ -990,6 +1007,7 @@ export const ActuatorInfo = {
     message.preUpdateBackup = object.preUpdateBackup ?? false;
     message.iamGuard = object.iamGuard ?? false;
     message.unlicensedFeatures = object.unlicensedFeatures?.map((e) => e) || [];
+    message.deployId = object.deployId ?? "";
     return message;
   },
 };
