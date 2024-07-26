@@ -38,7 +38,7 @@ const (
 type Resource struct {
 	Type      string
 	Name      string
-	Project   string
+	ProjectID string
 	Workspace bool
 }
 
