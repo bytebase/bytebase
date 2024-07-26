@@ -532,7 +532,10 @@ message Activity {
 message GetProjectProtectionRulesRequest {
   // The name of the protection rules.
   // Format: projects/{project}/protectionRules
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/ProtectionRules"}
+  ];
 }
 
 message UpdateProjectProtectionRulesRequest {
@@ -541,7 +544,7 @@ message UpdateProjectProtectionRulesRequest {
 
 message ProtectionRules {
   option (google.api.resource) = {
-    type: "bytebase.com/ProjectProtectionRules"
+    type: "bytebase.com/ProtectionRules"
     pattern: "projects/{project}/protectionRules"
   };
 
