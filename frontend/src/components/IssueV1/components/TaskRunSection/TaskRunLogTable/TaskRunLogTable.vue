@@ -10,13 +10,14 @@
 
 <script setup lang="tsx">
 import { computedAsync } from "@vueuse/core";
+import { head } from "lodash-es";
 import { CircleAlertIcon } from "lucide-vue-next";
 import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueContext } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
-import { useActuatorV1Store, useSheetV1Store } from "@/store";
+import { useSheetV1Store } from "@/store";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
@@ -33,7 +34,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const actuatorStore = useActuatorV1Store();
 const { selectedTask } = useIssueContext();
 const isLoadingTaskRunLog = ref(false);
 const isLoadingSheet = ref(false);
@@ -160,6 +160,7 @@ const flattenLogEntries = computed(() => {
   });
   return flattenEntries;
 });
+const headDeployId = computed(() => head(logEntries.value)?.deployId);
 
 const rowKey = (entry: FlattenLogEntry) => {
   return `${entry.batch}-${entry.serial}`;
@@ -207,7 +208,7 @@ const columns = computed(() => {
         return (
           <div class="flex flex-row items-center gap-1">
             <span>{String(entry.batch + 1)}</span>
-            {actuatorStore.serverInfo?.deployId !== entry.deployId && (
+            {headDeployId.value !== entry.deployId && (
               <NTooltip>
                 {{
                   trigger: () => (

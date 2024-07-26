@@ -355,6 +355,7 @@
   
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
+    - [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
@@ -375,6 +376,7 @@
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
+    - [DataSourceQueryPolicy.Restricton](#bytebase-v1-DataSourceQueryPolicy-Restricton)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
@@ -794,7 +796,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | pre_update_backup | [bool](#bool) |  | pre_update_backup is the enablement of data backup prior to data update. |
 | iam_guard | [bool](#bool) |  | iam_guard is the enablement of IAM checks. |
 | unlicensed_features | [string](#string) | repeated |  |
-| deploy_id | [string](#string) |  | deploy_id is the identifier for the started bytebase service deployment. |
 
 
 
@@ -5961,6 +5962,21 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-DataSourceQueryPolicy"></a>
+
+### DataSourceQueryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| admin_data_source_restriction | [DataSourceQueryPolicy.Restricton](#bytebase-v1-DataSourceQueryPolicy-Restricton) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-DeletePolicyRequest"></a>
 
 ### DeletePolicyRequest
@@ -6165,6 +6181,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
 | restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
+| data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
@@ -6291,6 +6308,19 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
  
+
+
+<a name="bytebase-v1-DataSourceQueryPolicy-Restricton"></a>
+
+### DataSourceQueryPolicy.Restricton
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESTRICTION_UNSPECIFIED | 0 |  |
+| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
+| DISALLOW | 2 | Disallow to query admin data sources. |
+
 
 
 <a name="bytebase-v1-MaskingExceptionPolicy-MaskingException-Action"></a>

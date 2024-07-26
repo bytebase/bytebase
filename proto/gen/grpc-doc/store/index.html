@@ -885,6 +885,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DataSourceQueryPolicy"><span class="badge">M</span>DataSourceQueryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.DisableCopyDataPolicy"><span class="badge">M</span>DisableCopyDataPolicy</a>
                 </li>
               
@@ -944,6 +948,10 @@
                   <a href="#bytebase.store.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceQueryPolicy.Restricton"><span class="badge">E</span>DataSourceQueryPolicy.Restricton</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.EnvironmentTierPolicy.EnvironmentTier"><span class="badge">E</span>EnvironmentTierPolicy.EnvironmentTier</a>
@@ -7495,6 +7503,30 @@ If the condition evaluates to false, then this binding does not apply to the cur
 
         
       
+        <h3 id="bytebase.store.DataSourceQueryPolicy">DataSourceQueryPolicy</h3>
+        <p>DataSourceQueryPolicy is the policy configuration for data source query.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>admin_data_source_restriction</td>
+                  <td><a href="#bytebase.store.DataSourceQueryPolicy.Restricton">DataSourceQueryPolicy.Restricton</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.DisableCopyDataPolicy">DisableCopyDataPolicy</h3>
         <p>DisableCopyDataPolicy is the policy configuration for disabling copying data.</p>
 
@@ -7987,6 +8019,35 @@ for example, the environment resource can have the sql review config tag, like &
         
       
 
+      
+        <h3 id="bytebase.store.DataSourceQueryPolicy.Restricton">DataSourceQueryPolicy.Restricton</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RESTRICTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FALLBACK</td>
+                <td>1</td>
+                <td><p>Allow to query admin data sources when there is no read-only data source.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW</td>
+                <td>2</td>
+                <td><p>Disallow to query admin data sources.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.EnvironmentTierPolicy.EnvironmentTier">EnvironmentTierPolicy.EnvironmentTier</h3>
         <p></p>
