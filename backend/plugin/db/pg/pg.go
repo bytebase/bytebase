@@ -174,6 +174,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	}
 	if config.ReadOnly {
 		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
+		connConfig.RuntimeParams["application_name"] = "bytebase"
 	}
 
 	return connConfig, nil
@@ -204,7 +205,7 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s application_name=bytebase",
 		conf.Host, conf.Port, conf.Username, password, conf.Database,
 	)
 	return pgx.ParseConfig(dsn)
@@ -220,7 +221,7 @@ func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) 
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("user=%s database=%s", conf.Username, conf.Database)
+	dsn := fmt.Sprintf("user=%s database=%s application_name=bytebase", conf.Username, conf.Database)
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
