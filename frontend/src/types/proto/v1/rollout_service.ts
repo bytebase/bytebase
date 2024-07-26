@@ -720,6 +720,7 @@ export interface TaskRunLog {
 export interface TaskRunLogEntry {
   type: TaskRunLogEntry_Type;
   logTime: Date | undefined;
+  deployId: string;
   schemaDump: TaskRunLogEntry_SchemaDump | undefined;
   commandExecute: TaskRunLogEntry_CommandExecute | undefined;
   databaseSync: TaskRunLogEntry_DatabaseSync | undefined;
@@ -3766,6 +3767,7 @@ function createBaseTaskRunLogEntry(): TaskRunLogEntry {
   return {
     type: TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
     logTime: undefined,
+    deployId: "",
     schemaDump: undefined,
     commandExecute: undefined,
     databaseSync: undefined,
@@ -3781,6 +3783,9 @@ export const TaskRunLogEntry = {
     }
     if (message.logTime !== undefined) {
       Timestamp.encode(toTimestamp(message.logTime), writer.uint32(50).fork()).ldelim();
+    }
+    if (message.deployId !== "") {
+      writer.uint32(98).string(message.deployId);
     }
     if (message.schemaDump !== undefined) {
       TaskRunLogEntry_SchemaDump.encode(message.schemaDump, writer.uint32(18).fork()).ldelim();
@@ -3820,6 +3825,13 @@ export const TaskRunLogEntry = {
           }
 
           message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.deployId = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -3869,6 +3881,7 @@ export const TaskRunLogEntry = {
     return {
       type: isSet(object.type) ? taskRunLogEntry_TypeFromJSON(object.type) : TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
       logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
+      deployId: isSet(object.deployId) ? globalThis.String(object.deployId) : "",
       schemaDump: isSet(object.schemaDump) ? TaskRunLogEntry_SchemaDump.fromJSON(object.schemaDump) : undefined,
       commandExecute: isSet(object.commandExecute)
         ? TaskRunLogEntry_CommandExecute.fromJSON(object.commandExecute)
@@ -3890,6 +3903,9 @@ export const TaskRunLogEntry = {
     }
     if (message.logTime !== undefined) {
       obj.logTime = message.logTime.toISOString();
+    }
+    if (message.deployId !== "") {
+      obj.deployId = message.deployId;
     }
     if (message.schemaDump !== undefined) {
       obj.schemaDump = TaskRunLogEntry_SchemaDump.toJSON(message.schemaDump);
@@ -3916,6 +3932,7 @@ export const TaskRunLogEntry = {
     const message = createBaseTaskRunLogEntry();
     message.type = object.type ?? TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
     message.logTime = object.logTime ?? undefined;
+    message.deployId = object.deployId ?? "";
     message.schemaDump = (object.schemaDump !== undefined && object.schemaDump !== null)
       ? TaskRunLogEntry_SchemaDump.fromPartial(object.schemaDump)
       : undefined;

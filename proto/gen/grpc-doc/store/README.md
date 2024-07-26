@@ -4326,6 +4326,7 @@ The following fields are used for error reporting.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type) |  |  |
+| deploy_id | [string](#string) |  |  |
 | schema_dump_start | [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart) |  |  |
 | schema_dump_end | [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd) |  |  |
 | command_execute | [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute) |  |  |
