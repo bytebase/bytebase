@@ -428,6 +428,7 @@ message TaskRunLogEntry {
   }
   Type type = 1;
   google.protobuf.Timestamp log_time = 6;
+  string deploy_id = 12;
   SchemaDump schema_dump = 2;
   CommandExecute command_execute = 3;
   DatabaseSync database_sync = 4;

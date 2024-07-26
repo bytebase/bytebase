@@ -902,8 +902,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 		switch l.Payload.Type {
 		case storepb.TaskRunLog_SCHEMA_DUMP_START:
 			e := &v1pb.TaskRunLogEntry{
-				Type:    v1pb.TaskRunLogEntry_SCHEMA_DUMP,
-				LogTime: timestamppb.New(l.T),
+				Type:     v1pb.TaskRunLogEntry_SCHEMA_DUMP,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
 				SchemaDump: &v1pb.TaskRunLogEntry_SchemaDump{
 					StartTime: timestamppb.New(l.T),
 				},
@@ -923,8 +924,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_COMMAND_EXECUTE:
 			e := &v1pb.TaskRunLogEntry{
-				Type:    v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
-				LogTime: timestamppb.New(l.T),
+				Type:     v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
 				CommandExecute: &v1pb.TaskRunLogEntry_CommandExecute{
 					LogTime:        timestamppb.New(l.T),
 					CommandIndexes: l.Payload.CommandExecute.CommandIndexes,
@@ -952,8 +954,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_DATABASE_SYNC_START:
 			e := &v1pb.TaskRunLogEntry{
-				Type:    v1pb.TaskRunLogEntry_DATABASE_SYNC,
-				LogTime: timestamppb.New(l.T),
+				Type:     v1pb.TaskRunLogEntry_DATABASE_SYNC,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
 				DatabaseSync: &v1pb.TaskRunLogEntry_DatabaseSync{
 					StartTime: timestamppb.New(l.T),
 				},
@@ -973,8 +976,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE:
 			e := &v1pb.TaskRunLogEntry{
-				Type:    v1pb.TaskRunLogEntry_TASK_RUN_STATUS_UPDATE,
-				LogTime: timestamppb.New(l.T),
+				Type:     v1pb.TaskRunLogEntry_TASK_RUN_STATUS_UPDATE,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
 				TaskRunStatusUpdate: &v1pb.TaskRunLogEntry_TaskRunStatusUpdate{
 					Status: convertTaskRunLogTaskRunStatus(l.Payload.TaskRunStatusUpdate.Status),
 				},
@@ -983,8 +987,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_TRANSACTION_CONTROL:
 			e := &v1pb.TaskRunLogEntry{
-				Type:    v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
-				LogTime: timestamppb.New(l.T),
+				Type:     v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
 				TransactionControl: &v1pb.TaskRunLogEntry_TransactionControl{
 					Type:  convertTaskRunLogTransactionControlType(l.Payload.TransactionControl.Type),
 					Error: l.Payload.TransactionControl.Error,
