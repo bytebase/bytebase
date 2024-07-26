@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -32,14 +33,16 @@ type SchedulerV2 struct {
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
 	executorMap    map[api.TaskType]Executor
+	profile        *config.Profile
 }
 
 // NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager) *SchedulerV2 {
+func NewSchedulerV2(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile) *SchedulerV2 {
 	return &SchedulerV2{
 		store:          store,
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
+		profile:        profile,
 		executorMap:    map[api.TaskType]Executor{},
 	}
 }
@@ -298,7 +301,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to running")
 	}
-	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), &storepb.TaskRunLog{
+	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
 		TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
 			Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_WAITING,
@@ -383,7 +386,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, true)
 		}
 
-		s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), &storepb.TaskRunLog{
+		s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
 			Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
 			TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
 				Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING,

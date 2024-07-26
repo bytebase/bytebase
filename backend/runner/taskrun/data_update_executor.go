@@ -82,12 +82,12 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &sheetID)
 	// sync database schema anyways
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
+	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
 		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
 	})
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
 			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
 				Error: err.Error(),
@@ -99,7 +99,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 			log.BBError(err),
 		)
 	}
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), &storepb.TaskRunLog{
+	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_DATABASE_SYNC_END,
 		DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
 			Error: "",
