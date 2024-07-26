@@ -3,6 +3,8 @@ package cmd
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
@@ -28,6 +30,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Version:            version,
 		GitCommit:          gitcommit,
 		PgURL:              flags.pgURL,
+		DeployID:           uuid.NewString()[:8],
 		LastActiveTs:       time.Now().Unix(),
 		Lsp:                flags.lsp,
 		PreUpdateBackup:    flags.preUpdateBackup,
