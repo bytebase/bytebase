@@ -232,11 +232,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = secret
-	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
 	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
+	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 
 	// Configure echo server.
