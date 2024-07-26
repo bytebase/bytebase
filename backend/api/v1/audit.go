@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"reflect"
 
-	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -39,7 +38,7 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 	}
 }
 
-func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, deltas any, rerr error) error {
+func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -73,11 +72,6 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 		}
 	}
 
-	serviceData, err := convertToProtoAny(deltas)
-	if err != nil {
-		return err
-	}
-
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, parent := range parents {
 		p := &storepb.AuditLog{
@@ -100,11 +94,16 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 }
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	ctxWithDeltas(&ctx, serverInfo.FullMethod)
+	ctxWithServiceData(&ctx, serverInfo.FullMethod)
 	response, rerr := handler(ctx, request)
 	if isAuditMethod(serverInfo.FullMethod) {
-		deltas := getCtxDeltas(ctx, serverInfo.FullMethod)
-		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, deltas, rerr); err != nil {
+		if err := func() error {
+			serviceData, ok := ctx.Value(common.ServiceDataKey).(*anypb.Any)
+			if !ok {
+				return errors.New("failed to get service data")
+			}
+			return createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr)
+		}(); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
@@ -438,104 +437,6 @@ func isStreamAuditMethod(method string) bool {
 	}
 }
 
-type bindMapKey struct {
-	User string
-	Role string
-}
-
-type condMap map[string]bool
-
-func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.IamPolicy) []*v1pb.BindingDelta {
-	var deltas []*v1pb.BindingDelta
-	oriBindMap := make(map[bindMapKey]condMap)
-	newBindMap := make(map[bindMapKey]condMap)
-
-	// build map.
-	for _, binding := range oriIamPolicy.Bindings {
-		if binding.Condition == nil {
-			continue
-		}
-		for _, mem := range binding.Members {
-			key := bindMapKey{
-				User: mem,
-				Role: binding.Role,
-			}
-
-			exprBytes, err := protojson.Marshal(binding.Condition)
-			if err != nil {
-				return nil
-			}
-			expr := string(exprBytes)
-			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[expr]; ok {
-					continue
-				}
-				oriBindMap[key][expr] = true
-				continue
-			}
-			condMap := make(condMap)
-			condMap[expr] = true
-			oriBindMap[key] = condMap
-		}
-	}
-
-	// find added items.
-	for _, binding := range newIamPolicy.Bindings {
-		for _, mem := range binding.Members {
-			key := bindMapKey{
-				User: mem,
-				Role: binding.Role,
-			}
-			exprBytes, err := protojson.Marshal(binding.Condition)
-			if err != nil {
-				return nil
-			}
-			expr := string(exprBytes)
-
-			// ensure the array is unique.
-			if condMap, ok := newBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[expr]; ok {
-					continue
-				}
-			}
-			tmpCondMap := make(condMap)
-			tmpCondMap[expr] = true
-			newBindMap[key] = tmpCondMap
-
-			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
-				if _, ok := condMap[expr]; ok {
-					delete(oriBindMap[key], expr)
-					continue
-				}
-			}
-			deltas = append(deltas, &v1pb.BindingDelta{
-				Action:    v1pb.BindingDelta_ADD,
-				Member:    mem,
-				Role:      binding.Role,
-				Condition: binding.Condition,
-			})
-		}
-	}
-
-	// find removed items.
-	for bindMapKey, condMap := range oriBindMap {
-		for cond := range condMap {
-			expr := &expr.Expr{}
-			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(cond), expr); err != nil {
-				return nil
-			}
-			deltas = append(deltas, &v1pb.BindingDelta{
-				Action:    v1pb.BindingDelta_REMOVE,
-				Member:    bindMapKey.User,
-				Role:      bindMapKey.Role,
-				Condition: expr,
-			})
-		}
-	}
-
-	return deltas
-}
-
 func convertToProtoAny(i any) (*anypb.Any, error) {
 	switch deltas := i.(type) {
 	case *[]*v1pb.BindingDelta:
@@ -550,19 +451,10 @@ func convertToProtoAny(i any) (*anypb.Any, error) {
 	}
 }
 
-func ctxWithDeltas(ctx *context.Context, method string) {
+func ctxWithServiceData(ctx *context.Context, method string) {
 	switch method {
 	case v1pb.ProjectService_SetIamPolicy_FullMethodName:
-		*ctx = context.WithValue(*ctx, common.BindingDeltaKey, &[]*v1pb.BindingDelta{})
+		*ctx = context.WithValue(*ctx, common.ServiceDataKey, &anypb.Any{})
 	default:
 	}
-}
-
-func getCtxDeltas(ctx context.Context, method string) any {
-	switch method {
-	case v1pb.ProjectService_SetIamPolicy_FullMethodName:
-		return ctx.Value(common.BindingDeltaKey)
-	default:
-	}
-	return nil
 }
