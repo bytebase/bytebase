@@ -85,6 +85,8 @@ const renderActionSentence = () => {
             return t("activity.sentence.canceled-issue");
           case IssueStatus.OPEN:
             return t("activity.sentence.reopened-issue");
+          default:
+            return "";
         }
       }
       case IssueComment_IssueUpdate_ChangeType.LABELS:
