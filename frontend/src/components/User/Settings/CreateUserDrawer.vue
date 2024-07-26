@@ -308,8 +308,7 @@ const rolesChanged = computed(() => {
 
   return (
     !isUndefined(state.user.roles) &&
-    state.user.roles.length > 0 &&
-    !isEqual(props.user?.roles, state.user.roles)
+    !isEqual(initUser().roles, state.user.roles)
   );
 });
 
