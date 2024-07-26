@@ -278,7 +278,8 @@
     "closed": "Cerrado",
     "options": "Opciones",
     "reset": "Reiniciar",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "rollback": "Retroceder"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

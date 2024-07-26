@@ -278,7 +278,8 @@
     "closed": "閉まっている",
     "options": "オプション",
     "reset": "リセット",
-    "refresh": "リフレッシュ"
+    "refresh": "リフレッシュ",
+    "rollback": "ロールバック"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
