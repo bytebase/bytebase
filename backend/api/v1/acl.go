@@ -293,11 +293,11 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 	if resource != nil {
 		switch {
 		case strings.HasPrefix(resource.Name, "projects/"):
-			match := projectRegex.FindString(resource.Name)
-			if match == "" {
+			project := projectRegex.FindString(resource.Name)
+			if project == "" {
 				return errors.Errorf("invalid project resource %q", resource.Name)
 			}
-			projectID, err := common.GetProjectID(resource.Name)
+			projectID, err := common.GetProjectID(project)
 			if err != nil {
 				return err
 			}
