@@ -1943,6 +1943,7 @@ export const IdentityProviderServiceDefinition = {
               116,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([19, 18, 17, 47, 118, 49, 47, 123, 110, 97, 109, 101, 61, 105, 100, 112, 115, 47, 42, 125]),
           ],
@@ -2004,6 +2005,7 @@ export const IdentityProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               29,
@@ -2115,6 +2117,7 @@ export const IdentityProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               56,
@@ -2220,6 +2223,7 @@ export const IdentityProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([19, 42, 17, 47, 118, 49, 47, 123, 110, 97, 109, 101, 61, 105, 100, 112, 115, 47, 42, 125]),
           ],
@@ -2268,6 +2272,7 @@ export const IdentityProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               31,
@@ -2347,6 +2352,7 @@ export const IdentityProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               20,

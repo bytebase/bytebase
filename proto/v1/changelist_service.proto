@@ -21,18 +21,21 @@ service ChangelistService {
     };
     option (google.api.method_signature) = "parent,changelist";
     option (bytebase.v1.permission) = "bb.changelists.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetChangelist(GetChangelistRequest) returns (Changelist) {
     option (google.api.http) = {get: "/v1/{name=projects/*/changelists/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.changelists.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListChangelists(ListChangelistsRequest) returns (ListChangelistsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/changelists"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.changelists.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateChangelist(UpdateChangelistRequest) returns (Changelist) {
@@ -42,14 +45,14 @@ service ChangelistService {
     };
     option (google.api.method_signature) = "changelist,update_mask";
     option (bytebase.v1.permission) = "bb.changelists.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteChangelist(DeleteChangelistRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/changelists/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.changelists.delete";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
