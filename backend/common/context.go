@@ -16,6 +16,7 @@ const (
 	UserContextKey
 	ProjectIDsContextKey
 	AuthContextKey
+	BindingDeltaKey
 )
 
 func WithProjectIDs(ctx context.Context, projectIDs []string) context.Context {

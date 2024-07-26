@@ -100,9 +100,11 @@ func CreateAuditLog(ctx context.Context, request, response any, method string, s
 }
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	ctxWithDeltas(&ctx, serverInfo.FullMethod)
 	response, rerr := handler(ctx, request)
 	if isAuditMethod(serverInfo.FullMethod) {
-		if err := CreateAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, nil, rerr); err != nil {
+		deltas := getCtxDeltas(ctx, serverInfo.FullMethod)
+		if err := CreateAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, deltas, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
@@ -412,6 +414,7 @@ func isAuditMethod(method string) bool {
 		v1pb.AuthService_Login_FullMethodName,
 		v1pb.AuthService_CreateUser_FullMethodName,
 		v1pb.AuthService_UpdateUser_FullMethodName,
+		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
@@ -535,14 +538,31 @@ func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.
 
 func convertToProtoAny(i any) (*anypb.Any, error) {
 	switch deltas := i.(type) {
-	case []*v1pb.BindingDelta:
+	case *[]*v1pb.BindingDelta:
 		auditData := v1pb.AuditData{
 			PolicyDelta: &v1pb.PolicyDelta{
-				BindingDeltas: deltas,
+				BindingDeltas: *deltas,
 			},
 		}
 		return anypb.New(&auditData)
 	default:
 		return &anypb.Any{}, nil
 	}
+}
+
+func ctxWithDeltas(ctx *context.Context, method string) {
+	switch method {
+	case v1pb.ProjectService_SetIamPolicy_FullMethodName:
+		*ctx = context.WithValue(*ctx, common.BindingDeltaKey, &[]*v1pb.BindingDelta{})
+	default:
+	}
+}
+
+func getCtxDeltas(ctx context.Context, method string) any {
+	switch method {
+	case v1pb.ProjectService_SetIamPolicy_FullMethodName:
+		return ctx.Value(common.BindingDeltaKey)
+	default:
+	}
+	return nil
 }

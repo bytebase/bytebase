@@ -361,89 +361,79 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
 	var oriIamPolicyMsg *store.IamPolicyMessage
-	var newIamPolicyMsg *store.IamPolicyMessage
-	var deltas []*v1pb.BindingDelta
 
-	v1pbIamPolicy, apiErr := func() (*v1pb.IamPolicy, error) {
-		projectID, err := common.GetProjectID(request.Resource)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
-		}
-		roleMessages, err := s.store.ListRoles(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
-		}
-		roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
-		}
-		if err := s.validateIAMPolicy(ctx, request.Policy, roles); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, "project %q not found", request.Resource)
-		}
-		if project.Deleted {
-			return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Resource)
-		}
-
-		policy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-
-		policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find project iam policy with error: %v", err.Error())
-		}
-		if request.Etag != policyMessage.Etag {
-			return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
-		}
-		oriIamPolicyMsg = policyMessage
-
-		policyPayload, err := protojson.Marshal(policy)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-			ResourceUID:       project.UID,
-			ResourceType:      api.PolicyResourceTypeProject,
-			Payload:           string(policyPayload),
-			Type:              api.PolicyTypeIAM,
-			InheritFromParent: false,
-			// Enforce cannot be false while creating a policy.
-			Enforce: true,
-		}, creatorUID); err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-
-		iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		newIamPolicyMsg = iamPolicyMessage
-
-		return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
-	}()
-
-	if oriIamPolicyMsg != nil && newIamPolicyMsg != nil {
-		deltas = findIamPolicyDeltas(oriIamPolicyMsg.Policy, newIamPolicyMsg.Policy)
+	projectID, err := common.GetProjectID(request.Resource)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if err := CreateAuditLog(ctx, request, v1pbIamPolicy, v1pb.ProjectService_SetIamPolicy_FullMethodName, s.store, deltas, apiErr); err != nil {
-		slog.Warn("failed to create audit log", log.BBError(err))
+	creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
+	}
+	roleMessages, err := s.store.ListRoles(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
+	}
+	roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
+	}
+	if err := s.validateIAMPolicy(ctx, request.Policy, roles); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Resource)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Resource)
 	}
 
-	return v1pbIamPolicy, nil
+	policy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project iam policy with error: %v", err.Error())
+	}
+	if request.Etag != policyMessage.Etag {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
+	}
+	oriIamPolicyMsg = policyMessage
+
+	policyPayload, err := protojson.Marshal(policy)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       project.UID,
+		ResourceType:      api.PolicyResourceTypeProject,
+		Payload:           string(policyPayload),
+		Type:              api.PolicyTypeIAM,
+		InheritFromParent: false,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	}, creatorUID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if bd, ok := ctx.Value(common.BindingDeltaKey).(*[]*v1pb.BindingDelta); ok {
+		*bd = findIamPolicyDeltas(oriIamPolicyMsg.Policy, iamPolicyMessage.Policy)
+	}
+
+	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
