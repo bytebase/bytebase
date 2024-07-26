@@ -215,6 +215,7 @@ message Policy {
     MaskingExceptionPolicy masking_exception_policy = 18;
     RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
     TagPolicy tag_policy = 21;
+    DataSourceQueryPolicy data_source_query_policy = 22;
   }
 
   bool enforce = 13;
@@ -341,4 +342,15 @@ message TagPolicy {
   // tags is the key - value map for resources.
   // for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
   map<string, string> tags = 1;
+}
+
+message DataSourceQueryPolicy {
+  enum Option {
+    OPTION_UNSPECIFIED = 0;
+    // Allow to query admin data sources when there is no read-only data source. This is the default behavior.
+    ALLOW_ADMIN_WITH_NO_RO = 1;
+    // Disallow to query admin data sources.
+    DISALLOW_ADMIN = 2;
+  }
+  Option option = 1;
 }
