@@ -135,3 +135,15 @@ message DisableCopyDataPolicy {
 message RestrictIssueCreationForSQLReviewPolicy {
   bool disallow = 1;
 }
+
+// DataSourceQueryPolicy is the policy configuration for data source query.
+message DataSourceQueryPolicy {
+  enum Restricton {
+    RESTRICTION_UNSPECIFIED = 0;
+    // Allow to query admin data sources when there is no read-only data source.
+    FALLBACK = 1;
+    // Disallow to query admin data sources.
+    DISALLOW = 2;
+  }
+  Restricton admin_data_source_restriction = 1;
+}
