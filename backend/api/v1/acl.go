@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -208,9 +207,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		return true, nil, nil
 	}
 	if authContext.AuthMethod == common.AuthMethodIAM {
-		if strings.Contains(fullMethod, "ListProjects") {
-			fmt.Printf("Barny1: %+v\n", authContext.Resources)
-		}
 		// Handle GetProject() error status.
 		if len(authContext.Resources) == 0 {
 			return false, nil, errors.Errorf("no resource found for IAM auth method")
