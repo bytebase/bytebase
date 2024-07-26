@@ -21,6 +21,7 @@ message TaskRunLog {
     PRIOR_BACKUP_END = 10;
   }
   Type type = 1;
+  string deploy_id = 12;
   SchemaDumpStart schema_dump_start = 2;
   SchemaDumpEnd schema_dump_end = 3;
   CommandExecute command_execute = 4;
