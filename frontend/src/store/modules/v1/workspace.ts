@@ -28,7 +28,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
       const index = binding.members.findIndex((m) => m === member);
       if (!newRolesSet.has(binding.role)) {
         if (index >= 0) {
-          binding.members = binding.members.splice(index, 1);
+          binding.members.splice(index, 1);
         }
       } else {
         if (index < 0) {
