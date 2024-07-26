@@ -667,7 +667,7 @@ func request_ProjectService_UpdateDeploymentConfig_0(ctx context.Context, marsha
 	var protoReq UpdateDeploymentConfigRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Config); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.DeploymentConfig); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -678,14 +678,14 @@ func request_ProjectService_UpdateDeploymentConfig_0(ctx context.Context, marsha
 		_   = err
 	)
 
-	val, ok = pathParams["config.name"]
+	val, ok = pathParams["deployment_config.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "deployment_config.name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "config.name", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "deployment_config.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "deployment_config.name", err)
 	}
 
 	msg, err := client.UpdateDeploymentConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -697,7 +697,7 @@ func local_request_ProjectService_UpdateDeploymentConfig_0(ctx context.Context, 
 	var protoReq UpdateDeploymentConfigRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Config); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.DeploymentConfig); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -708,14 +708,14 @@ func local_request_ProjectService_UpdateDeploymentConfig_0(ctx context.Context, 
 		_   = err
 	)
 
-	val, ok = pathParams["config.name"]
+	val, ok = pathParams["deployment_config.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config.name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "deployment_config.name")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "config.name", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "deployment_config.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config.name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "deployment_config.name", err)
 	}
 
 	msg, err := server.UpdateDeploymentConfig(ctx, &protoReq)
@@ -1364,7 +1364,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{config.name=projects/*/deploymentConfigs/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{deployment_config.name=projects/*/deploymentConfigs/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1820,7 +1820,7 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{config.name=projects/*/deploymentConfigs/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{deployment_config.name=projects/*/deploymentConfigs/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1994,7 +1994,7 @@ var (
 
 	pattern_ProjectService_GetDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "deploymentConfigs", "name"}, ""))
 
-	pattern_ProjectService_UpdateDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "deploymentConfigs", "config.name"}, ""))
+	pattern_ProjectService_UpdateDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "deploymentConfigs", "deployment_config.name"}, ""))
 
 	pattern_ProjectService_AddWebhook_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "addWebhook"))
 

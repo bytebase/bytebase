@@ -457,10 +457,10 @@ func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.
 
 // UpdateDeploymentConfig updates the deployment config for a project.
 func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1pb.UpdateDeploymentConfigRequest) (*v1pb.DeploymentConfig, error) {
-	if request.Config == nil {
+	if request.DeploymentConfig == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "deployment config is required")
 	}
-	projectID, _, err := common.GetProjectIDDeploymentConfigID(request.Config.Name)
+	projectID, _, err := common.GetProjectIDDeploymentConfigID(request.DeploymentConfig.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -477,7 +477,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 
-	storeDeploymentConfig, err := validateAndConvertToStoreDeploymentSchedule(request.Config)
+	storeDeploymentConfig, err := validateAndConvertToStoreDeploymentSchedule(request.DeploymentConfig)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}

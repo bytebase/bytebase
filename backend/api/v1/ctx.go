@@ -416,7 +416,7 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 	case *v1pb.GetDeploymentConfigRequest:
 		projectDeploymentConfigs = append(projectDeploymentConfigs, r.GetName())
 	case *v1pb.UpdateDeploymentConfigRequest:
-		projectDeploymentConfigs = append(projectDeploymentConfigs, r.GetConfig().GetName())
+		projectDeploymentConfigs = append(projectDeploymentConfigs, r.GetDeploymentConfig().GetName())
 	case *v1pb.AddWebhookRequest:
 		projects = append(projects, r.GetProject())
 	case *v1pb.UpdateWebhookRequest:
