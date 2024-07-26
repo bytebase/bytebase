@@ -360,7 +360,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	var oriIamPolicyMsg *store.IamPolicyMessage
+	var oldIamPolicyMsg *store.IamPolicyMessage
 
 	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
@@ -406,7 +406,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if request.Etag != policyMessage.Etag {
 		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
 	}
-	oriIamPolicyMsg = policyMessage
+	oldIamPolicyMsg = policyMessage
 
 	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
@@ -430,7 +430,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 
 	if bd, ok := ctx.Value(common.BindingDeltaKey).(*[]*v1pb.BindingDelta); ok {
-		*bd = findIamPolicyDeltas(oriIamPolicyMsg.Policy, iamPolicyMessage.Policy)
+		*bd = findIamPolicyDeltas(oldIamPolicyMsg.Policy, iamPolicyMessage.Policy)
 	}
 
 	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
