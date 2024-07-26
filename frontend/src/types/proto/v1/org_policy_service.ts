@@ -375,6 +375,7 @@ export interface Policy {
   maskingExceptionPolicy?: MaskingExceptionPolicy | undefined;
   restrictIssueCreationForSqlReviewPolicy?: RestrictIssueCreationForSQLReviewPolicy | undefined;
   tagPolicy?: TagPolicy | undefined;
+  dataSourceQueryPolicy?: DataSourceQueryPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -528,6 +529,65 @@ export interface TagPolicy {
 export interface TagPolicy_TagsEntry {
   key: string;
   value: string;
+}
+
+export interface DataSourceQueryPolicy {
+  adminDataSourceRestriction: DataSourceQueryPolicy_Restricton;
+}
+
+export enum DataSourceQueryPolicy_Restricton {
+  RESTRICTION_UNSPECIFIED = "RESTRICTION_UNSPECIFIED",
+  /** FALLBACK - Allow to query admin data sources when there is no read-only data source. */
+  FALLBACK = "FALLBACK",
+  /** DISALLOW - Disallow to query admin data sources. */
+  DISALLOW = "DISALLOW",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function dataSourceQueryPolicy_RestrictonFromJSON(object: any): DataSourceQueryPolicy_Restricton {
+  switch (object) {
+    case 0:
+    case "RESTRICTION_UNSPECIFIED":
+      return DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED;
+    case 1:
+    case "FALLBACK":
+      return DataSourceQueryPolicy_Restricton.FALLBACK;
+    case 2:
+    case "DISALLOW":
+      return DataSourceQueryPolicy_Restricton.DISALLOW;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceQueryPolicy_Restricton.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceQueryPolicy_RestrictonToJSON(object: DataSourceQueryPolicy_Restricton): string {
+  switch (object) {
+    case DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED:
+      return "RESTRICTION_UNSPECIFIED";
+    case DataSourceQueryPolicy_Restricton.FALLBACK:
+      return "FALLBACK";
+    case DataSourceQueryPolicy_Restricton.DISALLOW:
+      return "DISALLOW";
+    case DataSourceQueryPolicy_Restricton.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function dataSourceQueryPolicy_RestrictonToNumber(object: DataSourceQueryPolicy_Restricton): number {
+  switch (object) {
+    case DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED:
+      return 0;
+    case DataSourceQueryPolicy_Restricton.FALLBACK:
+      return 1;
+    case DataSourceQueryPolicy_Restricton.DISALLOW:
+      return 2;
+    case DataSourceQueryPolicy_Restricton.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -1033,6 +1093,7 @@ function createBasePolicy(): Policy {
     maskingExceptionPolicy: undefined,
     restrictIssueCreationForSqlReviewPolicy: undefined,
     tagPolicy: undefined,
+    dataSourceQueryPolicy: undefined,
     enforce: false,
     resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
     resourceUid: "",
@@ -1079,6 +1140,9 @@ export const Policy = {
     }
     if (message.tagPolicy !== undefined) {
       TagPolicy.encode(message.tagPolicy, writer.uint32(170).fork()).ldelim();
+    }
+    if (message.dataSourceQueryPolicy !== undefined) {
+      DataSourceQueryPolicy.encode(message.dataSourceQueryPolicy, writer.uint32(178).fork()).ldelim();
     }
     if (message.enforce === true) {
       writer.uint32(104).bool(message.enforce);
@@ -1186,6 +1250,13 @@ export const Policy = {
 
           message.tagPolicy = TagPolicy.decode(reader, reader.uint32());
           continue;
+        case 22:
+          if (tag !== 178) {
+            break;
+          }
+
+          message.dataSourceQueryPolicy = DataSourceQueryPolicy.decode(reader, reader.uint32());
+          continue;
         case 13:
           if (tag !== 104) {
             break;
@@ -1238,6 +1309,9 @@ export const Policy = {
         ? RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy)
         : undefined,
       tagPolicy: isSet(object.tagPolicy) ? TagPolicy.fromJSON(object.tagPolicy) : undefined,
+      dataSourceQueryPolicy: isSet(object.dataSourceQueryPolicy)
+        ? DataSourceQueryPolicy.fromJSON(object.dataSourceQueryPolicy)
+        : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType)
         ? policyResourceTypeFromJSON(object.resourceType)
@@ -1285,6 +1359,9 @@ export const Policy = {
     }
     if (message.tagPolicy !== undefined) {
       obj.tagPolicy = TagPolicy.toJSON(message.tagPolicy);
+    }
+    if (message.dataSourceQueryPolicy !== undefined) {
+      obj.dataSourceQueryPolicy = DataSourceQueryPolicy.toJSON(message.dataSourceQueryPolicy);
     }
     if (message.enforce === true) {
       obj.enforce = message.enforce;
@@ -1335,6 +1412,10 @@ export const Policy = {
     message.tagPolicy = (object.tagPolicy !== undefined && object.tagPolicy !== null)
       ? TagPolicy.fromPartial(object.tagPolicy)
       : undefined;
+    message.dataSourceQueryPolicy =
+      (object.dataSourceQueryPolicy !== undefined && object.dataSourceQueryPolicy !== null)
+        ? DataSourceQueryPolicy.fromPartial(object.dataSourceQueryPolicy)
+        : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
     message.resourceUid = object.resourceUid ?? "";
@@ -2433,6 +2514,68 @@ export const TagPolicy_TagsEntry = {
     const message = createBaseTagPolicy_TagsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSourceQueryPolicy(): DataSourceQueryPolicy {
+  return { adminDataSourceRestriction: DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED };
+}
+
+export const DataSourceQueryPolicy = {
+  encode(message: DataSourceQueryPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED) {
+      writer.uint32(8).int32(dataSourceQueryPolicy_RestrictonToNumber(message.adminDataSourceRestriction));
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataSourceQueryPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceQueryPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.adminDataSourceRestriction = dataSourceQueryPolicy_RestrictonFromJSON(reader.int32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceQueryPolicy {
+    return {
+      adminDataSourceRestriction: isSet(object.adminDataSourceRestriction)
+        ? dataSourceQueryPolicy_RestrictonFromJSON(object.adminDataSourceRestriction)
+        : DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED,
+    };
+  },
+
+  toJSON(message: DataSourceQueryPolicy): unknown {
+    const obj: any = {};
+    if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED) {
+      obj.adminDataSourceRestriction = dataSourceQueryPolicy_RestrictonToJSON(message.adminDataSourceRestriction);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSourceQueryPolicy>): DataSourceQueryPolicy {
+    return DataSourceQueryPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSourceQueryPolicy>): DataSourceQueryPolicy {
+    const message = createBaseDataSourceQueryPolicy();
+    message.adminDataSourceRestriction = object.adminDataSourceRestriction ??
+      DataSourceQueryPolicy_Restricton.RESTRICTION_UNSPECIFIED;
     return message;
   },
 };

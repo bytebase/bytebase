@@ -150,7 +150,6 @@
                     </div>
                     <div>BE Git hash: {{ gitCommitBE }}</div>
                     <div>FE Git hash: {{ gitCommitFE }}</div>
-                    <div>Deploy ID: {{ deployId }}</div>
                   </div>
                 </template>
               </NTooltip>
@@ -350,9 +349,6 @@ const gitCommitBE = computed(() => {
 const gitCommitFE = computed(() => {
   const commitHash = import.meta.env.BB_GIT_COMMIT_ID_FE as string | undefined;
   return (commitHash ?? "unknown").substring(0, 7);
-});
-const deployId = computed(() => {
-  return actuatorStore.serverInfo?.deployId;
 });
 
 const currentPlan = computed((): string => {

@@ -1526,6 +1526,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceQueryPolicy"><span class="badge">M</span>DataSourceQueryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DeletePolicyRequest"><span class="badge">M</span>DeletePolicyRequest</a>
                 </li>
               
@@ -1601,6 +1605,10 @@
                   <a href="#bytebase.v1.UpdatePolicyRequest"><span class="badge">M</span>UpdatePolicyRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceQueryPolicy.Restricton"><span class="badge">E</span>DataSourceQueryPolicy.Restricton</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.MaskingExceptionPolicy.MaskingException.Action"><span class="badge">E</span>MaskingExceptionPolicy.MaskingException.Action</a>
@@ -3142,13 +3150,6 @@
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>deploy_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>deploy_id is the identifier for the started bytebase service deployment. </p></td>
                 </tr>
               
             </tbody>
@@ -16998,6 +16999,30 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
 
         
       
+        <h3 id="bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>admin_data_source_restriction</td>
+                  <td><a href="#bytebase.v1.DataSourceQueryPolicy.Restricton">DataSourceQueryPolicy.Restricton</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DeletePolicyRequest">DeletePolicyRequest</h3>
         <p></p>
 
@@ -17485,6 +17510,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>data_source_query_policy</td>
+                  <td><a href="#bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -17761,6 +17793,35 @@ In this situation, `update_mask` is ignored. </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.DataSourceQueryPolicy.Restricton">DataSourceQueryPolicy.Restricton</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RESTRICTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FALLBACK</td>
+                <td>1</td>
+                <td><p>Allow to query admin data sources when there is no read-only data source.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW</td>
+                <td>2</td>
+                <td><p>Disallow to query admin data sources.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</h3>
         <p></p>
