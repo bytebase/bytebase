@@ -10,12 +10,13 @@
 
 <script setup lang="tsx">
 import { computedAsync } from "@vueuse/core";
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { CircleAlertIcon } from "lucide-vue-next";
+import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueContext } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
-import { useSheetV1Store } from "@/store";
+import { useActuatorV1Store, useSheetV1Store } from "@/store";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
@@ -32,6 +33,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const actuatorStore = useActuatorV1Store();
 const { selectedTask } = useIssueContext();
 const isLoadingTaskRunLog = ref(false);
 const isLoadingSheet = ref(false);
@@ -77,6 +79,7 @@ const flattenLogEntries = computed(() => {
       commandExecute,
       transactionControl,
       databaseSync,
+      deployId,
     } = entry;
     if (
       type === TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE &&
@@ -84,6 +87,7 @@ const flattenLogEntries = computed(() => {
     ) {
       flattenEntries.push({
         batch,
+        deployId,
         serial: 0,
         type: TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE,
         startTime: entry.logTime,
@@ -94,6 +98,7 @@ const flattenLogEntries = computed(() => {
     if (type === TaskRunLogEntry_Type.DATABASE_SYNC && databaseSync) {
       flattenEntries.push({
         batch,
+        deployId,
         serial: 0,
         type: TaskRunLogEntry_Type.DATABASE_SYNC,
         startTime: databaseSync.startTime,
@@ -107,6 +112,7 @@ const flattenLogEntries = computed(() => {
     ) {
       flattenEntries.push({
         batch,
+        deployId,
         serial: 0,
         type: TaskRunLogEntry_Type.TRANSACTION_CONTROL,
         startTime: entry.logTime,
@@ -117,6 +123,7 @@ const flattenLogEntries = computed(() => {
     if (type === TaskRunLogEntry_Type.SCHEMA_DUMP && schemaDump) {
       flattenEntries.push({
         batch,
+        deployId,
         serial: 0,
         type: TaskRunLogEntry_Type.SCHEMA_DUMP,
         startTime: schemaDump.startTime,
@@ -137,6 +144,7 @@ const flattenLogEntries = computed(() => {
         const endTime = response?.logTime;
         flattenEntries.push({
           batch,
+          deployId,
           serial,
           type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
           startTime,
@@ -196,7 +204,26 @@ const columns = computed(() => {
         return 1;
       },
       render: (entry) => {
-        return String(entry.batch + 1);
+        return (
+          <div class="flex flex-row items-center gap-1">
+            <span>{String(entry.batch + 1)}</span>
+            {actuatorStore.serverInfo?.deployId !== entry.deployId && (
+              <NTooltip>
+                {{
+                  trigger: () => (
+                    <CircleAlertIcon class="w-4 h-auto text-red-600" />
+                  ),
+                  default: () => (
+                    <div class="max-w-[20rem]">
+                      Deploy ID mismatch. Please check if there is another
+                      deployment running.
+                    </div>
+                  ),
+                }}
+              </NTooltip>
+            )}
+          </div>
+        );
       },
     },
     {
