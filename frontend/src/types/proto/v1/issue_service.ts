@@ -866,23 +866,78 @@ export function issueComment_Approval_StatusToNumber(object: IssueComment_Approv
 }
 
 export interface IssueComment_IssueUpdate {
-  fromTitle?: string | undefined;
-  toTitle?: string | undefined;
-  fromDescription?: string | undefined;
-  toDescription?: string | undefined;
-  fromStatus?: IssueStatus | undefined;
-  toStatus?:
-    | IssueStatus
-    | undefined;
-  /**
-   * TODO(d): deprecate from_assignee and to_assignee.
-   * Format: users/{email}
-   */
-  fromAssignee?:
-    | string
-    | undefined;
-  /** Format: users/{email} */
-  toAssignee?: string | undefined;
+  from: string;
+  to: string;
+  type: IssueComment_IssueUpdate_ChangeType;
+}
+
+export enum IssueComment_IssueUpdate_ChangeType {
+  CHANGE_TYPE_UNSPECIFIED = "CHANGE_TYPE_UNSPECIFIED",
+  TITLE = "TITLE",
+  DESCRIPTION = "DESCRIPTION",
+  STATUS = "STATUS",
+  LABELS = "LABELS",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function issueComment_IssueUpdate_ChangeTypeFromJSON(object: any): IssueComment_IssueUpdate_ChangeType {
+  switch (object) {
+    case 0:
+    case "CHANGE_TYPE_UNSPECIFIED":
+      return IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED;
+    case 1:
+    case "TITLE":
+      return IssueComment_IssueUpdate_ChangeType.TITLE;
+    case 2:
+    case "DESCRIPTION":
+      return IssueComment_IssueUpdate_ChangeType.DESCRIPTION;
+    case 3:
+    case "STATUS":
+      return IssueComment_IssueUpdate_ChangeType.STATUS;
+    case 4:
+    case "LABELS":
+      return IssueComment_IssueUpdate_ChangeType.LABELS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return IssueComment_IssueUpdate_ChangeType.UNRECOGNIZED;
+  }
+}
+
+export function issueComment_IssueUpdate_ChangeTypeToJSON(object: IssueComment_IssueUpdate_ChangeType): string {
+  switch (object) {
+    case IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+      return "CHANGE_TYPE_UNSPECIFIED";
+    case IssueComment_IssueUpdate_ChangeType.TITLE:
+      return "TITLE";
+    case IssueComment_IssueUpdate_ChangeType.DESCRIPTION:
+      return "DESCRIPTION";
+    case IssueComment_IssueUpdate_ChangeType.STATUS:
+      return "STATUS";
+    case IssueComment_IssueUpdate_ChangeType.LABELS:
+      return "LABELS";
+    case IssueComment_IssueUpdate_ChangeType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function issueComment_IssueUpdate_ChangeTypeToNumber(object: IssueComment_IssueUpdate_ChangeType): number {
+  switch (object) {
+    case IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+      return 0;
+    case IssueComment_IssueUpdate_ChangeType.TITLE:
+      return 1;
+    case IssueComment_IssueUpdate_ChangeType.DESCRIPTION:
+      return 2;
+    case IssueComment_IssueUpdate_ChangeType.STATUS:
+      return 3;
+    case IssueComment_IssueUpdate_ChangeType.LABELS:
+      return 4;
+    case IssueComment_IssueUpdate_ChangeType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 export interface IssueComment_StageEnd {
@@ -3674,43 +3729,19 @@ export const IssueComment_Approval = {
 };
 
 function createBaseIssueComment_IssueUpdate(): IssueComment_IssueUpdate {
-  return {
-    fromTitle: undefined,
-    toTitle: undefined,
-    fromDescription: undefined,
-    toDescription: undefined,
-    fromStatus: undefined,
-    toStatus: undefined,
-    fromAssignee: undefined,
-    toAssignee: undefined,
-  };
+  return { from: "", to: "", type: IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED };
 }
 
 export const IssueComment_IssueUpdate = {
   encode(message: IssueComment_IssueUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.fromTitle !== undefined) {
-      writer.uint32(10).string(message.fromTitle);
+    if (message.from !== "") {
+      writer.uint32(10).string(message.from);
     }
-    if (message.toTitle !== undefined) {
-      writer.uint32(18).string(message.toTitle);
+    if (message.to !== "") {
+      writer.uint32(18).string(message.to);
     }
-    if (message.fromDescription !== undefined) {
-      writer.uint32(26).string(message.fromDescription);
-    }
-    if (message.toDescription !== undefined) {
-      writer.uint32(34).string(message.toDescription);
-    }
-    if (message.fromStatus !== undefined) {
-      writer.uint32(40).int32(issueStatusToNumber(message.fromStatus));
-    }
-    if (message.toStatus !== undefined) {
-      writer.uint32(48).int32(issueStatusToNumber(message.toStatus));
-    }
-    if (message.fromAssignee !== undefined) {
-      writer.uint32(58).string(message.fromAssignee);
-    }
-    if (message.toAssignee !== undefined) {
-      writer.uint32(66).string(message.toAssignee);
+    if (message.type !== IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(issueComment_IssueUpdate_ChangeTypeToNumber(message.type));
     }
     return writer;
   },
@@ -3727,56 +3758,21 @@ export const IssueComment_IssueUpdate = {
             break;
           }
 
-          message.fromTitle = reader.string();
+          message.from = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.toTitle = reader.string();
+          message.to = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.fromDescription = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.toDescription = reader.string();
-          continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.fromStatus = issueStatusFromJSON(reader.int32());
-          continue;
-        case 6:
-          if (tag !== 48) {
-            break;
-          }
-
-          message.toStatus = issueStatusFromJSON(reader.int32());
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.fromAssignee = reader.string();
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.toAssignee = reader.string();
+          message.type = issueComment_IssueUpdate_ChangeTypeFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3789,42 +3785,24 @@ export const IssueComment_IssueUpdate = {
 
   fromJSON(object: any): IssueComment_IssueUpdate {
     return {
-      fromTitle: isSet(object.fromTitle) ? globalThis.String(object.fromTitle) : undefined,
-      toTitle: isSet(object.toTitle) ? globalThis.String(object.toTitle) : undefined,
-      fromDescription: isSet(object.fromDescription) ? globalThis.String(object.fromDescription) : undefined,
-      toDescription: isSet(object.toDescription) ? globalThis.String(object.toDescription) : undefined,
-      fromStatus: isSet(object.fromStatus) ? issueStatusFromJSON(object.fromStatus) : undefined,
-      toStatus: isSet(object.toStatus) ? issueStatusFromJSON(object.toStatus) : undefined,
-      fromAssignee: isSet(object.fromAssignee) ? globalThis.String(object.fromAssignee) : undefined,
-      toAssignee: isSet(object.toAssignee) ? globalThis.String(object.toAssignee) : undefined,
+      from: isSet(object.from) ? globalThis.String(object.from) : "",
+      to: isSet(object.to) ? globalThis.String(object.to) : "",
+      type: isSet(object.type)
+        ? issueComment_IssueUpdate_ChangeTypeFromJSON(object.type)
+        : IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED,
     };
   },
 
   toJSON(message: IssueComment_IssueUpdate): unknown {
     const obj: any = {};
-    if (message.fromTitle !== undefined) {
-      obj.fromTitle = message.fromTitle;
+    if (message.from !== "") {
+      obj.from = message.from;
     }
-    if (message.toTitle !== undefined) {
-      obj.toTitle = message.toTitle;
+    if (message.to !== "") {
+      obj.to = message.to;
     }
-    if (message.fromDescription !== undefined) {
-      obj.fromDescription = message.fromDescription;
-    }
-    if (message.toDescription !== undefined) {
-      obj.toDescription = message.toDescription;
-    }
-    if (message.fromStatus !== undefined) {
-      obj.fromStatus = issueStatusToJSON(message.fromStatus);
-    }
-    if (message.toStatus !== undefined) {
-      obj.toStatus = issueStatusToJSON(message.toStatus);
-    }
-    if (message.fromAssignee !== undefined) {
-      obj.fromAssignee = message.fromAssignee;
-    }
-    if (message.toAssignee !== undefined) {
-      obj.toAssignee = message.toAssignee;
+    if (message.type !== IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
+      obj.type = issueComment_IssueUpdate_ChangeTypeToJSON(message.type);
     }
     return obj;
   },
@@ -3834,14 +3812,9 @@ export const IssueComment_IssueUpdate = {
   },
   fromPartial(object: DeepPartial<IssueComment_IssueUpdate>): IssueComment_IssueUpdate {
     const message = createBaseIssueComment_IssueUpdate();
-    message.fromTitle = object.fromTitle ?? undefined;
-    message.toTitle = object.toTitle ?? undefined;
-    message.fromDescription = object.fromDescription ?? undefined;
-    message.toDescription = object.toDescription ?? undefined;
-    message.fromStatus = object.fromStatus ?? undefined;
-    message.toStatus = object.toStatus ?? undefined;
-    message.fromAssignee = object.fromAssignee ?? undefined;
-    message.toAssignee = object.toAssignee ?? undefined;
+    message.from = object.from ?? "";
+    message.to = object.to ?? "";
+    message.type = object.type ?? IssueComment_IssueUpdate_ChangeType.CHANGE_TYPE_UNSPECIFIED;
     return message;
   },
 };

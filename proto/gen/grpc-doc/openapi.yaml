@@ -9557,6 +9557,16 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSourceQueryPolicy:
+            type: object
+            properties:
+                adminDataSourceRestriction:
+                    enum:
+                        - RESTRICTION_UNSPECIFIED
+                        - FALLBACK
+                        - DISALLOW
+                    type: string
+                    format: enum
         DataSource_Address:
             type: object
             properties:
@@ -10712,38 +10722,19 @@ components:
         IssueComment_IssueUpdate:
             type: object
             properties:
-                fromTitle:
+                from:
                     type: string
-                toTitle:
+                to:
                     type: string
-                fromDescription:
-                    type: string
-                toDescription:
-                    type: string
-                fromStatus:
+                type:
                     enum:
-                        - ISSUE_STATUS_UNSPECIFIED
-                        - OPEN
-                        - DONE
-                        - CANCELED
+                        - CHANGE_TYPE_UNSPECIFIED
+                        - TITLE
+                        - DESCRIPTION
+                        - STATUS
+                        - LABELS
                     type: string
                     format: enum
-                toStatus:
-                    enum:
-                        - ISSUE_STATUS_UNSPECIFIED
-                        - OPEN
-                        - DONE
-                        - CANCELED
-                    type: string
-                    format: enum
-                fromAssignee:
-                    type: string
-                    description: |-
-                        TODO(d): deprecate from_assignee and to_assignee.
-                         Format: users/{email}
-                toAssignee:
-                    type: string
-                    description: 'Format: users/{email}'
         IssueComment_StageEnd:
             type: object
             properties:
@@ -11867,6 +11858,8 @@ components:
                     $ref: '#/components/schemas/RestrictIssueCreationForSQLReviewPolicy'
                 tagPolicy:
                     $ref: '#/components/schemas/TagPolicy'
+                dataSourceQueryPolicy:
+                    $ref: '#/components/schemas/DataSourceQueryPolicy'
                 enforce:
                     type: boolean
                 resourceType:

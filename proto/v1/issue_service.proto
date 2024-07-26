@@ -524,17 +524,17 @@ message IssueComment {
   }
 
   message IssueUpdate {
-    optional string from_title = 1;
-    optional string to_title = 2;
-    optional string from_description = 3;
-    optional string to_description = 4;
-    optional IssueStatus from_status = 5;
-    optional IssueStatus to_status = 6;
-    // TODO(d): deprecate from_assignee and to_assignee.
-    // Format: users/{email}
-    optional string from_assignee = 7;
-    // Format: users/{email}
-    optional string to_assignee = 8;
+    enum ChangeType {
+      CHANGE_TYPE_UNSPECIFIED = 0;
+      TITLE = 1;
+      DESCRIPTION = 2;
+      STATUS = 3;
+      LABELS = 4;
+    }
+
+    string from = 1;
+    string to = 2;
+    ChangeType type = 3;
   }
 
   message StageEnd {

@@ -348,6 +348,7 @@
     - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [IssueComment.IssueUpdate.ChangeType](#bytebase-v1-IssueComment-IssueUpdate-ChangeType)
     - [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status)
     - [IssueStatus](#bytebase-v1-IssueStatus)
   
@@ -355,6 +356,7 @@
   
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
+    - [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
@@ -375,6 +377,7 @@
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
+    - [DataSourceQueryPolicy.Restricton](#bytebase-v1-DataSourceQueryPolicy-Restricton)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
@@ -5512,14 +5515,9 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| from_title | [string](#string) | optional |  |
-| to_title | [string](#string) | optional |  |
-| from_description | [string](#string) | optional |  |
-| to_description | [string](#string) | optional |  |
-| from_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
-| to_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
-| from_assignee | [string](#string) | optional | TODO(d): deprecate from_assignee and to_assignee. Format: users/{email} |
-| to_assignee | [string](#string) | optional | Format: users/{email} |
+| from | [string](#string) |  |  |
+| to | [string](#string) |  |  |
+| type | [IssueComment.IssueUpdate.ChangeType](#bytebase-v1-IssueComment-IssueUpdate-ChangeType) |  |  |
 
 
 
@@ -5878,6 +5876,21 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-IssueComment-IssueUpdate-ChangeType"></a>
+
+### IssueComment.IssueUpdate.ChangeType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| TITLE | 1 |  |
+| DESCRIPTION | 2 |  |
+| STATUS | 3 |  |
+| LABELS | 4 |  |
+
+
+
 <a name="bytebase-v1-IssueComment-TaskUpdate-Status"></a>
 
 ### IssueComment.TaskUpdate.Status
@@ -5955,6 +5968,21 @@ ANY means approving any node will proceed.
 | parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
 | policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSourceQueryPolicy"></a>
+
+### DataSourceQueryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| admin_data_source_restriction | [DataSourceQueryPolicy.Restricton](#bytebase-v1-DataSourceQueryPolicy-Restricton) |  |  |
 
 
 
@@ -6165,6 +6193,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
 | restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
+| data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
@@ -6291,6 +6320,19 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
  
+
+
+<a name="bytebase-v1-DataSourceQueryPolicy-Restricton"></a>
+
+### DataSourceQueryPolicy.Restricton
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESTRICTION_UNSPECIFIED | 0 |  |
+| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
+| DISALLOW | 2 | Disallow to query admin data sources. |
+
 
 
 <a name="bytebase-v1-MaskingExceptionPolicy-MaskingException-Action"></a>

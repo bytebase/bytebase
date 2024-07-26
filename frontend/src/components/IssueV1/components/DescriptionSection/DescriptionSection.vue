@@ -5,7 +5,10 @@
         {{ title }}
       </span>
 
-      <div v-if="!isCreating && allowEdit" class="flex items-center gap-x-2">
+      <div
+        v-if="!isCreating && allowEditIssue"
+        class="flex items-center gap-x-2"
+      >
         <NButton v-if="!state.isEditing" size="tiny" @click.prevent="beginEdit">
           {{ $t("common.edit") }}
         </NButton>
@@ -73,13 +76,9 @@ import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { pushNotification, useCurrentUserV1 } from "@/store";
-import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
-import {
-  extractUserResourceName,
-  hasProjectPermissionV2,
-  isGrantRequestIssue,
-} from "@/utils";
+import { pushNotification } from "@/store";
+import { Issue } from "@/types/proto/v1/issue_service";
+import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
 
 type LocalState = {
@@ -89,8 +88,7 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const { isCreating, issue } = useIssueContext();
-const currentUser = useCurrentUserV1();
+const { isCreating, issue, allowEditIssue } = useIssueContext();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 
 const state = reactive<LocalState>({
@@ -105,34 +103,6 @@ const title = computed(() => {
   return isGrantRequestIssue(issue.value)
     ? t("common.reason")
     : t("common.description");
-});
-
-const allowEdit = computed(() => {
-  if (isCreating.value) {
-    return true;
-  }
-  if (issue.value.status !== IssueStatus.OPEN) {
-    return false;
-  }
-
-  if (
-    extractUserResourceName(issue.value.creator) === currentUser.value.email
-  ) {
-    // Allowed if current user is the creator.
-    return true;
-  }
-
-  if (
-    hasProjectPermissionV2(
-      issue.value.projectEntity,
-      currentUser.value,
-      "bb.issues.update"
-    )
-  ) {
-    // Allowed if current has issue update permission in the project
-    return true;
-  }
-  return false;
 });
 
 const onDescriptionChange = (description: string) => {

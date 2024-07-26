@@ -17,11 +17,13 @@ import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
   IssueComment_IssueUpdate,
+  IssueComment_IssueUpdate_ChangeType,
   IssueComment_StageEnd,
   IssueComment_TaskPriorBackup,
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
   IssueStatus,
+  issueStatusFromJSON,
 } from "@/types/proto/v1/issue_service";
 import {
   extractTaskUID,
@@ -63,31 +65,30 @@ const renderActionSentence = () => {
       return maybeAutomaticallyVerb(issueComment, verb);
     }
   } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE) {
-    const {
-      fromTitle,
-      toTitle,
-      fromDescription,
-      toDescription,
-      fromStatus,
-      toStatus,
-    } = IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
-    if (fromTitle !== undefined && toTitle !== undefined) {
-      return t("activity.sentence.changed-from-to", {
-        name: t("issue.issue-name").toLowerCase(),
-        oldValue: fromTitle,
-        newValue: toTitle,
-      });
-    } else if (fromDescription !== undefined && toDescription !== undefined) {
-      // Description could be very long, so we don't display it.
-      return t("activity.sentence.changed-description");
-    } else if (fromStatus !== undefined && toStatus !== undefined) {
-      if (toStatus === IssueStatus.DONE) {
-        return t("activity.sentence.resolved-issue");
-      } else if (toStatus === IssueStatus.CANCELED) {
-        return t("activity.sentence.canceled-issue");
-      } else if (toStatus === IssueStatus.OPEN) {
-        return t("activity.sentence.reopened-issue");
+    const { type, from, to } = IssueComment_IssueUpdate.fromPartial(
+      issueComment.issueUpdate || {}
+    );
+    switch (type) {
+      case IssueComment_IssueUpdate_ChangeType.DESCRIPTION:
+        return t("activity.sentence.changed-description");
+      case IssueComment_IssueUpdate_ChangeType.TITLE:
+        return t("activity.sentence.changed-from-to", {
+          name: t("issue.issue-name").toLowerCase(),
+          oldValue: from,
+          newValue: to,
+        });
+      case IssueComment_IssueUpdate_ChangeType.STATUS: {
+        switch (issueStatusFromJSON(to)) {
+          case IssueStatus.DONE:
+            return t("activity.sentence.resolved-issue");
+          case IssueStatus.CANCELED:
+            return t("activity.sentence.canceled-issue");
+          case IssueStatus.OPEN:
+            return t("activity.sentence.reopened-issue");
+        }
       }
+      case IssueComment_IssueUpdate_ChangeType.LABELS:
+        return t("activity.sentence.changed-labels");
     }
   } else if (issueComment.type === IssueCommentType.STAGE_END) {
     const { stage } = IssueComment_StageEnd.fromPartial(

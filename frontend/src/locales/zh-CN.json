@@ -942,6 +942,7 @@
       "created-issue": "创建工单",
       "commented": "评论",
       "changed-description": "修改描述",
+      "changed-labels": "改变标签",
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "unset-from": "撤销 {name} 的值 (从 \"{oldValue}\")",
       "set-to": "将 {name} 设置为 \"{newValue}\"",
