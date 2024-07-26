@@ -228,6 +228,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 				}
 			}
 		}
+		return true, nil, nil
 	}
 
 	p := authContext.Permission
