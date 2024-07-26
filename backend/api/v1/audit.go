@@ -39,7 +39,7 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 	}
 }
 
-func CreateAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, deltas any, rerr error) error {
+func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, deltas any, rerr error) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -104,7 +104,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 	response, rerr := handler(ctx, request)
 	if isAuditMethod(serverInfo.FullMethod) {
 		deltas := getCtxDeltas(ctx, serverInfo.FullMethod)
-		if err := CreateAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, deltas, rerr); err != nil {
+		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, deltas, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
@@ -139,7 +139,7 @@ func (s *AuditStream) SendMsg(resp any) error {
 	}
 	// audit log.
 	if s.needAudit && s.curRequest != nil {
-		if auditErr := CreateAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil, nil); auditErr != nil {
+		if auditErr := createAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil, nil); auditErr != nil {
 			return auditErr
 		}
 	}
@@ -163,7 +163,7 @@ func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream
 
 	err := handler(srv, auditStream)
 	if err != nil {
-		return CreateAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, nil, err)
+		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, nil, err)
 	}
 
 	return nil
