@@ -366,7 +366,8 @@ func getResourceFromRequest(request any, method string) *common.Resource {
 
 	isCreate := strings.HasPrefix(methodTokens[2], "Create")
 	isUpdate := strings.HasPrefix(methodTokens[2], "Update")
-	if !isCreate && !isUpdate {
+	isRemove := strings.HasPrefix(methodTokens[2], "Remove")
+	if !isCreate && !isUpdate && !isRemove {
 		return nil
 	}
 	var resourceName string
@@ -375,6 +376,10 @@ func getResourceFromRequest(request any, method string) *common.Resource {
 	}
 	if isUpdate {
 		resourceName = strings.TrimPrefix(methodTokens[2], "Update")
+	}
+	// RemoveWebhook.
+	if isRemove {
+		resourceName = strings.TrimPrefix(methodTokens[2], "Remove")
 	}
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))

@@ -7424,7 +7424,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| config | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |  |
+| deployment_config | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |  |
 
 
 

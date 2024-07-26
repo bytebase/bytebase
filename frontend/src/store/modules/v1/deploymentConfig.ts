@@ -36,7 +36,7 @@ export const useDeploymentConfigV1Store = defineStore(
       config: DeploymentConfig
     ) => {
       const updated = await projectServiceClient.updateDeploymentConfig({
-        config,
+        deploymentConfig: config,
       });
       deploymentConfigByProjectName.set(project, updated);
       return updated;

@@ -245,7 +245,7 @@ export interface GetDeploymentConfigRequest {
 }
 
 export interface UpdateDeploymentConfigRequest {
-  config: DeploymentConfig | undefined;
+  deploymentConfig: DeploymentConfig | undefined;
 }
 
 export interface Label {
@@ -1750,13 +1750,13 @@ export const GetDeploymentConfigRequest = {
 };
 
 function createBaseUpdateDeploymentConfigRequest(): UpdateDeploymentConfigRequest {
-  return { config: undefined };
+  return { deploymentConfig: undefined };
 }
 
 export const UpdateDeploymentConfigRequest = {
   encode(message: UpdateDeploymentConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.config !== undefined) {
-      DeploymentConfig.encode(message.config, writer.uint32(10).fork()).ldelim();
+    if (message.deploymentConfig !== undefined) {
+      DeploymentConfig.encode(message.deploymentConfig, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -1773,7 +1773,7 @@ export const UpdateDeploymentConfigRequest = {
             break;
           }
 
-          message.config = DeploymentConfig.decode(reader, reader.uint32());
+          message.deploymentConfig = DeploymentConfig.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1785,13 +1785,15 @@ export const UpdateDeploymentConfigRequest = {
   },
 
   fromJSON(object: any): UpdateDeploymentConfigRequest {
-    return { config: isSet(object.config) ? DeploymentConfig.fromJSON(object.config) : undefined };
+    return {
+      deploymentConfig: isSet(object.deploymentConfig) ? DeploymentConfig.fromJSON(object.deploymentConfig) : undefined,
+    };
   },
 
   toJSON(message: UpdateDeploymentConfigRequest): unknown {
     const obj: any = {};
-    if (message.config !== undefined) {
-      obj.config = DeploymentConfig.toJSON(message.config);
+    if (message.deploymentConfig !== undefined) {
+      obj.deploymentConfig = DeploymentConfig.toJSON(message.deploymentConfig);
     }
     return obj;
   },
@@ -1801,8 +1803,8 @@ export const UpdateDeploymentConfigRequest = {
   },
   fromPartial(object: DeepPartial<UpdateDeploymentConfigRequest>): UpdateDeploymentConfigRequest {
     const message = createBaseUpdateDeploymentConfigRequest();
-    message.config = (object.config !== undefined && object.config !== null)
-      ? DeploymentConfig.fromPartial(object.config)
+    message.deploymentConfig = (object.deploymentConfig !== undefined && object.deploymentConfig !== null)
+      ? DeploymentConfig.fromPartial(object.deploymentConfig)
       : undefined;
     return message;
   },
@@ -4125,9 +4127,20 @@ export const ProjectServiceDefinition = {
           800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
+              80,
               58,
-              58,
-              6,
+              17,
+              100,
+              101,
+              112,
+              108,
+              111,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
               99,
               111,
               110,
@@ -4135,12 +4148,23 @@ export const ProjectServiceDefinition = {
               105,
               103,
               50,
-              48,
+              59,
               47,
               118,
               49,
               47,
               123,
+              100,
+              101,
+              112,
+              108,
+              111,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
               99,
               111,
               110,

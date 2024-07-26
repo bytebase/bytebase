@@ -101,8 +101,8 @@ service ProjectService {
 
   rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {
-      patch: "/v1/{config.name=projects/*/deploymentConfigs/*}"
-      body: "config"
+      patch: "/v1/{deployment_config.name=projects/*/deploymentConfigs/*}"
+      body: "deployment_config"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
@@ -277,7 +277,7 @@ message GetDeploymentConfigRequest {
 }
 
 message UpdateDeploymentConfigRequest {
-  DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED];
+  DeploymentConfig deployment_config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Label {
