@@ -24,7 +24,7 @@
               <span>{{ $t("activity.sentence.created-issue") }}</span>
               <HumanizeTs
                 :ts="(issue.createTime?.getTime() ?? 0) / 1000"
-                class="ml-1"
+                class="ml-1 text-gray-400"
               />
             </div>
           </div>

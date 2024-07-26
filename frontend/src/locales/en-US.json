@@ -278,7 +278,8 @@
     "closed": "Closed",
     "options": "Options",
     "reset": "Reset",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "rollback": "Rollback"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -398,7 +399,7 @@
       "disable": "Disable online migration",
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
-    "prior-backup-tips": "Back up affected data ahead of time"
+    "prior-backup-tips": "Backup affected data ahead of time"
   },
   "task-run": {
     "status": {
