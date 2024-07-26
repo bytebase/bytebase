@@ -8338,10 +8338,6 @@ components:
                     type: array
                     items:
                         type: string
-                deployId:
-                    readOnly: true
-                    type: string
-                    description: deploy_id is the identifier for the started bytebase service deployment.
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -9557,6 +9553,16 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSourceQueryPolicy:
+            type: object
+            properties:
+                adminDataSourceRestriction:
+                    enum:
+                        - RESTRICTION_UNSPECIFIED
+                        - FALLBACK
+                        - DISALLOW
+                    type: string
+                    format: enum
         DataSource_Address:
             type: object
             properties:
@@ -11867,6 +11873,8 @@ components:
                     $ref: '#/components/schemas/RestrictIssueCreationForSQLReviewPolicy'
                 tagPolicy:
                     $ref: '#/components/schemas/TagPolicy'
+                dataSourceQueryPolicy:
+                    $ref: '#/components/schemas/DataSourceQueryPolicy'
                 enforce:
                     type: boolean
                 resourceType:
