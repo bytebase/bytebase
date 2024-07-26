@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   databaseForTask,
+  latestTaskRunForTask,
   notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
@@ -14,48 +15,66 @@ import {
   useIssueCommentStore,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import {
+  Task_Status,
+  Task_Type,
+  TaskRun_Status,
+} from "@/types/proto/v1/rollout_service";
 import {
   extractUserResourceName,
   hasProjectPermissionV2,
   isDatabaseChangeRelatedIssue,
 } from "@/utils";
 
+const PRE_BACKUP_AVAILABLE_ENGINES = [
+  Engine.MYSQL,
+  Engine.TIDB,
+  Engine.MSSQL,
+  Engine.ORACLE,
+  Engine.POSTGRES,
+];
+
+const ROLLBACK_AVAILABLE_ENGINES = [Engine.MYSQL];
+
 export const usePreBackupContext = () => {
-  const currentUserV1 = useCurrentUserV1();
-  const context = useIssueContext();
   const { t } = useI18n();
-  const { isCreating, issue, selectedTask: task, events } = context;
+  const currentUserV1 = useCurrentUserV1();
+  const { isCreating, issue, selectedTask, events } = useIssueContext();
+
   const project = computed(() => issue.value.projectEntity);
+
+  const database = computed(() =>
+    databaseForTask(issue.value, selectedTask.value)
+  );
+
+  const latestTaskRun = computed(() =>
+    latestTaskRunForTask(issue.value, selectedTask.value)
+  );
 
   const showPreBackupSection = computed((): boolean => {
     if (!isDatabaseChangeRelatedIssue(issue.value)) {
       return false;
     }
-    if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
+    if (selectedTask.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
       return false;
     }
-    const database = databaseForTask(issue.value, task.value);
-    const { engine } = database.instanceResource;
-    if (
-      engine !== Engine.MYSQL &&
-      engine !== Engine.TIDB &&
-      engine !== Engine.MSSQL &&
-      engine !== Engine.ORACLE &&
-      engine !== Engine.POSTGRES
-    ) {
+    const { engine } = database.value.instanceResource;
+    if (!PRE_BACKUP_AVAILABLE_ENGINES.includes(engine)) {
       return false;
     }
     return true;
   });
 
   const allowPreBackup = computed((): boolean => {
+    // Always allow pre-backup when creating.
     if (isCreating.value) {
       return true;
     }
+
+    // Only allow pre-backup for non-done and non-running tasks.
     if (
-      ![Task_Status.NOT_STARTED, Task_Status.PENDING].includes(
-        task.value.status
+      [Task_Status.DONE, Task_Status.RUNNING].includes(
+        selectedTask.value.status
       )
     ) {
       return false;
@@ -63,8 +82,8 @@ export const usePreBackupContext = () => {
 
     const user = currentUserV1.value;
 
+    // Allowed to the issue creator.
     if (user.email === extractUserResourceName(issue.value.creator)) {
-      // Allowed to the issue creator.
       return true;
     }
 
@@ -76,15 +95,14 @@ export const usePreBackupContext = () => {
   });
 
   const preBackupEnabled = computed((): boolean => {
-    const spec = specForTask(issue.value.planEntity, task.value);
+    const spec = specForTask(issue.value.planEntity, selectedTask.value);
     const database =
       spec?.changeDatabaseConfig?.preUpdateBackupDetail?.database;
     return database !== undefined && database !== "";
   });
 
   const archiveDatabase = computed((): string => {
-    const database = databaseForTask(issue.value, task.value);
-    const { engine } = database.instanceResource;
+    const { engine } = database.value.instanceResource;
     if (engine === Engine.ORACLE) {
       return "BBDATAARCHIVE";
     }
@@ -94,12 +112,12 @@ export const usePreBackupContext = () => {
 
   const togglePreBackup = async (on: boolean) => {
     if (isCreating.value) {
-      const spec = specForTask(issue.value.planEntity, task.value);
+      const spec = specForTask(issue.value.planEntity, selectedTask.value);
       if (spec && spec.changeDatabaseConfig) {
-        const database = databaseForTask(issue.value, task.value);
         if (on) {
           spec.changeDatabaseConfig.preUpdateBackupDetail = {
-            database: database.instance + "/databases/" + archiveDatabase.value,
+            database:
+              database.value.instance + "/databases/" + archiveDatabase.value,
           };
         } else {
           spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
@@ -108,15 +126,16 @@ export const usePreBackupContext = () => {
     } else {
       // patch plan to reconcile rollout/stages/tasks
       const planPatch = cloneDeep(issue.value.planEntity);
-      const spec = specForTask(planPatch, task.value);
+      const spec = specForTask(planPatch, selectedTask.value);
       if (!planPatch || !spec || !spec.changeDatabaseConfig) {
         notifyNotEditableLegacyIssue();
         return;
       }
-      const database = databaseForTask(issue.value, task.value);
+
       if (on) {
         spec.changeDatabaseConfig.preUpdateBackupDetail = {
-          database: database.instance + "/databases/" + archiveDatabase.value,
+          database:
+            database.value.instance + "/databases/" + archiveDatabase.value,
         };
       } else {
         spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
@@ -128,7 +147,6 @@ export const usePreBackupContext = () => {
       });
       issue.value.planEntity = updatedPlan;
 
-      const action = on ? "Enable" : "Disable";
       events.emit("status-changed", { eager: true });
       pushNotification({
         module: "bytebase",
@@ -136,10 +154,11 @@ export const usePreBackupContext = () => {
         title: t("common.updated"),
       });
 
+      const action = on ? "Enable" : "Disable";
       try {
         await useIssueCommentStore().createIssueComment({
           issueName: issue.value.name,
-          comment: `${action} prior backup for task [${task.value.title}].`,
+          comment: `${action} prior backup for task [${selectedTask.value.title}].`,
         });
       } catch {
         // fail to comment won't be too bad
@@ -147,10 +166,49 @@ export const usePreBackupContext = () => {
     }
   };
 
+  const showRollbackSection = computed((): boolean => {
+    if (!showPreBackupSection.value) {
+      return false;
+    }
+    if (!preBackupEnabled.value) {
+      return false;
+    }
+    if (
+      !ROLLBACK_AVAILABLE_ENGINES.includes(
+        database.value.instanceResource.engine
+      )
+    ) {
+      return false;
+    }
+    if (!latestTaskRun.value) {
+      return false;
+    }
+    if (latestTaskRun.value.status !== TaskRun_Status.DONE) {
+      return false;
+    }
+    if (latestTaskRun.value.priorBackupDetail?.items.length === 0) {
+      return false;
+    }
+    return true;
+  });
+
+  const allowRollback = computed((): boolean => {
+    return hasProjectPermissionV2(
+      project.value,
+      currentUserV1.value,
+      "bb.issues.create"
+    );
+  });
+
   return {
+    // Pre-backup related.
     showPreBackupSection,
     preBackupEnabled,
     allowPreBackup,
     togglePreBackup,
+
+    // Rollback related.
+    showRollbackSection,
+    allowRollback,
   };
 };
