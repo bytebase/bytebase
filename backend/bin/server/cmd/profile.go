@@ -30,7 +30,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Version:            version,
 		GitCommit:          gitcommit,
 		PgURL:              flags.pgURL,
-		InstanceUUID:       uuid.NewString()[:8],
+		DeployID:           uuid.NewString()[:8],
 		LastActiveTs:       time.Now().Unix(),
 		Lsp:                flags.lsp,
 		PreUpdateBackup:    flags.preUpdateBackup,

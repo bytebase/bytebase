@@ -7,7 +7,7 @@ export const protobufPackage = "bytebase.store";
 
 export interface TaskRunLog {
   type: TaskRunLog_Type;
-  instanceUuid: string;
+  deployId: string;
   schemaDumpStart: TaskRunLog_SchemaDumpStart | undefined;
   schemaDumpEnd: TaskRunLog_SchemaDumpEnd | undefined;
   commandExecute: TaskRunLog_CommandExecute | undefined;
@@ -304,7 +304,7 @@ export interface TaskRunLog_PriorBackupEnd {
 function createBaseTaskRunLog(): TaskRunLog {
   return {
     type: TaskRunLog_Type.TYPE_UNSPECIFIED,
-    instanceUuid: "",
+    deployId: "",
     schemaDumpStart: undefined,
     schemaDumpEnd: undefined,
     commandExecute: undefined,
@@ -323,8 +323,8 @@ export const TaskRunLog = {
     if (message.type !== TaskRunLog_Type.TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(taskRunLog_TypeToNumber(message.type));
     }
-    if (message.instanceUuid !== "") {
-      writer.uint32(98).string(message.instanceUuid);
+    if (message.deployId !== "") {
+      writer.uint32(98).string(message.deployId);
     }
     if (message.schemaDumpStart !== undefined) {
       TaskRunLog_SchemaDumpStart.encode(message.schemaDumpStart, writer.uint32(18).fork()).ldelim();
@@ -378,7 +378,7 @@ export const TaskRunLog = {
             break;
           }
 
-          message.instanceUuid = reader.string();
+          message.deployId = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -462,7 +462,7 @@ export const TaskRunLog = {
   fromJSON(object: any): TaskRunLog {
     return {
       type: isSet(object.type) ? taskRunLog_TypeFromJSON(object.type) : TaskRunLog_Type.TYPE_UNSPECIFIED,
-      instanceUuid: isSet(object.instanceUuid) ? globalThis.String(object.instanceUuid) : "",
+      deployId: isSet(object.deployId) ? globalThis.String(object.deployId) : "",
       schemaDumpStart: isSet(object.schemaDumpStart)
         ? TaskRunLog_SchemaDumpStart.fromJSON(object.schemaDumpStart)
         : undefined,
@@ -499,8 +499,8 @@ export const TaskRunLog = {
     if (message.type !== TaskRunLog_Type.TYPE_UNSPECIFIED) {
       obj.type = taskRunLog_TypeToJSON(message.type);
     }
-    if (message.instanceUuid !== "") {
-      obj.instanceUuid = message.instanceUuid;
+    if (message.deployId !== "") {
+      obj.deployId = message.deployId;
     }
     if (message.schemaDumpStart !== undefined) {
       obj.schemaDumpStart = TaskRunLog_SchemaDumpStart.toJSON(message.schemaDumpStart);
@@ -541,7 +541,7 @@ export const TaskRunLog = {
   fromPartial(object: DeepPartial<TaskRunLog>): TaskRunLog {
     const message = createBaseTaskRunLog();
     message.type = object.type ?? TaskRunLog_Type.TYPE_UNSPECIFIED;
-    message.instanceUuid = object.instanceUuid ?? "";
+    message.deployId = object.deployId ?? "";
     message.schemaDumpStart = (object.schemaDumpStart !== undefined && object.schemaDumpStart !== null)
       ? TaskRunLog_SchemaDumpStart.fromPartial(object.schemaDumpStart)
       : undefined;

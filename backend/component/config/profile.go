@@ -64,7 +64,7 @@ type Profile struct {
 	// LastActiveTs is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTs int64
 	// Unique ID per Bytebase instance run.
-	InstanceUUID string
+	DeployID string
 
 	Lsp             bool
 	PreUpdateBackup bool

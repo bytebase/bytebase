@@ -13743,7 +13743,7 @@ components:
                         - PRIOR_BACKUP_END
                     type: string
                     format: enum
-                instanceUuid:
+                deployId:
                     type: string
                 schemaDumpStart:
                     $ref: '#/components/schemas/TaskRunLog_SchemaDumpStart'

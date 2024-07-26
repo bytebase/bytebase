@@ -128,7 +128,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	slog.Info(fmt.Sprintf("instanceRunUUID=%s", profile.InstanceUUID))
+	slog.Info(fmt.Sprintf("instanceRunUUID=%s", profile.DeployID))
 	slog.Info("-----Config END-------")
 
 	serverStarted := false
