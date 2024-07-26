@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -207,6 +208,9 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		return true, nil, nil
 	}
 	if authContext.AuthMethod == common.AuthMethodIAM {
+		if strings.Contains(fullMethod, "ListProjects") {
+			fmt.Printf("Barny1: %+v\n", authContext.Resources)
+		}
 		// Handle GetProject() error status.
 		if len(authContext.Resources) == 0 {
 			return false, nil, errors.Errorf("no resource found for IAM auth method")
@@ -341,6 +345,12 @@ func getResourceFromRequest(request any, method string) *common.Resource {
 	resourceFieldDesc := mr.Descriptor().Fields().ByName("resource")
 	if resourceFieldDesc != nil && proto.HasExtension(resourceFieldDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(resourceFieldDesc)
+		return &common.Resource{Name: v.String()}
+	}
+	// This is primarily used by AddWebhook().
+	projectFieldDesc := mr.Descriptor().Fields().ByName("project")
+	if projectFieldDesc != nil && proto.HasExtension(projectFieldDesc.Options(), annotationsproto.E_ResourceReference) {
+		v := mr.Get(projectFieldDesc)
 		return &common.Resource{Name: v.String()}
 	}
 
