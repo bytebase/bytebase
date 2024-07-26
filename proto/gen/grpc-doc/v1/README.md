@@ -791,9 +791,10 @@ Actuator concept is similar to the Spring Boot Actuator.
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
 | lsp | [bool](#bool) |  | lsp is the enablement of lsp in SQL Editor. |
-| pre_update_backup | [bool](#bool) |  | lsp is the enablement of data backup prior to data update. |
+| pre_update_backup | [bool](#bool) |  | pre_update_backup is the enablement of data backup prior to data update. |
 | iam_guard | [bool](#bool) |  | iam_guard is the enablement of IAM checks. |
 | unlicensed_features | [string](#string) | repeated |  |
+| deploy_id | [string](#string) |  | deploy_id is the identifier for the started bytebase service deployment. |
 
 
 

@@ -8330,7 +8330,7 @@ components:
                     description: lsp is the enablement of lsp in SQL Editor.
                 preUpdateBackup:
                     type: boolean
-                    description: lsp is the enablement of data backup prior to data update.
+                    description: pre_update_backup is the enablement of data backup prior to data update.
                 iamGuard:
                     type: boolean
                     description: iam_guard is the enablement of IAM checks.
@@ -8338,6 +8338,10 @@ components:
                     type: array
                     items:
                         type: string
+                deployId:
+                    readOnly: true
+                    type: string
+                    description: deploy_id is the identifier for the started bytebase service deployment.
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.
