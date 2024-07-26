@@ -97,7 +97,7 @@ func TestTenant(t *testing.T) {
 
 	// Create deployment configuration.
 	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
-		Config: &v1pb.DeploymentConfig{
+		DeploymentConfig: &v1pb.DeploymentConfig{
 			Name:     common.FormatDeploymentConfig(project.Name),
 			Schedule: deploySchedule,
 		},
