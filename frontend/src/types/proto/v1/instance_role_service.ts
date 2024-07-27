@@ -94,7 +94,7 @@ export interface UndeleteInstanceRoleRequest {
 export interface InstanceRole {
   /**
    * The name of the role.
-   * Format: instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role}
    * The role name is the unique name for the role.
    */
   name: string;
@@ -777,6 +777,7 @@ export const InstanceRoleServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               32,
@@ -827,6 +828,7 @@ export const InstanceRoleServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               32,
@@ -900,6 +902,7 @@ export const InstanceRoleServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               38,
@@ -979,6 +982,7 @@ export const InstanceRoleServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -1063,6 +1067,7 @@ export const InstanceRoleServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               32,
@@ -1135,6 +1140,7 @@ export const InstanceRoleServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               44,

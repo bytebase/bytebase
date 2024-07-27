@@ -10519,7 +10519,7 @@ components:
                     type: string
                     description: |-
                         The name of the role.
-                         Format: instances/{instance}/roles/{role name}
+                         Format: instances/{instance}/roles/{role}
                          The role name is the unique name for the role.
                 roleName:
                     type: string
