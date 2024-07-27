@@ -292,6 +292,12 @@ var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
 func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext *common.AuthContext, request any, method string) error {
+	if authContext.AllowWithoutCredential {
+		return nil
+	}
+	if authContext.AuthMethod != common.AuthMethodIAM {
+		return nil
+	}
 	resource := getResourceFromRequest(request, method)
 	if resource != nil {
 		switch {
