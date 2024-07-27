@@ -149,6 +149,9 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
 			for _, user := range users {
+				if user.Email == api.SystemBotEmail {
+					continue
+				}
 				if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
 					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
@@ -174,6 +177,9 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
 			for _, user := range users {
+				if user.Email == api.SystemBotEmail {
+					continue
+				}
 				if err := send(storeValue, user.Email, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
 					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
@@ -207,7 +213,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 
 		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, policyMessage.Policy)
 		for _, user := range users {
-			if user.ID == api.SystemBotID {
+			if user.Email == api.SystemBotEmail {
 				continue
 			}
 			subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
