@@ -314,6 +314,8 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 				}
 				resource.ProjectID = database.ProjectID
 			}
+		default:
+			resource.Workspace = true
 		}
 		authContext.Resources = append(authContext.Resources, resource)
 	}
