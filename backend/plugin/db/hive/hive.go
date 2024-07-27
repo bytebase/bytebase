@@ -155,6 +155,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	if err != nil {
 		return nil, err
 	}
+	defer d.connPool.Put(conn)
 
 	var results []*v1pb.QueryResult
 	for _, statement := range statements {
