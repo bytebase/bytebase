@@ -21,19 +21,16 @@ service ReviewConfigService {
       body: "review_config"
     };
     option (google.api.method_signature) = "";
-    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListReviewConfigs(ListReviewConfigsRequest) returns (ListReviewConfigsResponse) {
     option (google.api.http) = {get: "/v1/reviewConfigs"};
     option (google.api.method_signature) = "";
-    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetReviewConfig(GetReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {get: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";
-    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
@@ -42,13 +39,11 @@ service ReviewConfigService {
       body: "review_config"
     };
     option (google.api.method_signature) = "review_config,update_mask";
-    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteReviewConfig(DeleteReviewConfigRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";
-    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

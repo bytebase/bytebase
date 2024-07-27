@@ -88,6 +88,11 @@ func TestGetResourceFromRequest(t *testing.T) {
 				Name: "idps/hello",
 			},
 		},
+		{
+			request: &v1pb.ListReviewConfigsRequest{},
+			method:  "/bytebase.v1.ReviewConfigService/ListReviewConfigs",
+			want:    &common.Resource{Workspace: true},
+		},
 	}
 
 	for _, tt := range tests {
