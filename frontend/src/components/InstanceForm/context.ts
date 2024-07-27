@@ -375,7 +375,7 @@ export const provideInstanceFormContext = (baseContext: {
         try {
           await instanceServiceClient.addDataSource(
             {
-              instance: instance.value!.name,
+              name: instance.value!.name,
               dataSource: ds,
               validateOnly: true,
             },
@@ -400,7 +400,7 @@ export const provideInstanceFormContext = (baseContext: {
           const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
           await instanceServiceClient.updateDataSource(
             {
-              instance: instance.value!.name,
+              name: instance.value!.name,
               dataSource: ds,
               updateMask,
               validateOnly: true,

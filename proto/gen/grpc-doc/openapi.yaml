@@ -1232,7 +1232,8 @@ paths:
                 - name: parent
                   in: query
                   description: |-
-                    The parent parameter's value depends on the target resource for the request.
+                    Deprecated.
+                     The parent parameter's value depends on the target resource for the request.
                      - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
                      - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
                   schema:
@@ -8343,11 +8344,11 @@ components:
                  Actuator concept is similar to the Spring Boot Actuator.
         AddDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to add a data source to.
@@ -12280,11 +12281,11 @@ components:
                     type: string
         RemoveDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to remove a data source from.
@@ -14074,11 +14075,11 @@ components:
                          Format: users/{user}
         UpdateDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to update a data source.
