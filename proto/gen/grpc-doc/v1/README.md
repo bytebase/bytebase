@@ -7793,7 +7793,7 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The sql review toupdate.
+| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The sql review to update.
 
 The name field is used to identify the sql review to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
