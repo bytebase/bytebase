@@ -62,12 +62,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	default:
 	}
 
-	// TODO(zp): figure out hive authorization.
-	// rolesMetadata, err := d.getRoles(ctx)
-	// if err != nil {
-	// 	return nil, errors.Wrapf(err, "failed to get role metadata")
-	// }
-	// instanceMetadata.InstanceRoles = rolesMetadata
 	instanceMetadata.Version = version
 	return &instanceMetadata, nil
 }
@@ -231,30 +225,6 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 
 	return tableMetadatas, extTableMetadatas, viewMetadatas, mtViewMetadatas, nil
 }
-
-// TODO(zp): figure out hive authorization.
-// getRoles fetches role names and grant info from instance and returns structed role data.
-// func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
-// 	var roleMetadata []*storepb.InstanceRoleMetadata
-// 	roleMessages, err := d.ListRole(ctx)
-// 	if err != nil {
-// 		return nil, errors.Wrapf(err, "failed to get role names")
-// 	}
-
-// 	for _, roleMessage := range roleMessages {
-// 		roleName := roleMessage.Name
-// 		grantString, err := d.GetRoleGrant(ctx, roleName)
-// 		if err != nil {
-// 			return nil, errors.Wrapf(err, "failed to get grant info from role %s", roleName)
-// 		}
-// 		roleMetadata = append(roleMetadata, &storepb.InstanceRoleMetadata{
-// 			Name:  roleName,
-// 			Grant: grantString,
-// 		})
-// 	}
-
-// 	return roleMetadata, nil
-// }
 
 // This function gets certain database info by name.
 func (d *Driver) getDatabaseInfoByName(ctx context.Context, databaseName string) (*storepb.SchemaMetadata, error) {
