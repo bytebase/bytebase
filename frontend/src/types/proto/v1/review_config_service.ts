@@ -56,7 +56,7 @@ export interface UpdateReviewConfigRequest {
 export interface GetReviewConfigRequest {
   /**
    * The name of the sql review to retrieve.
-   * Format: reviewConfigs/{uid}
+   * Format: reviewConfigs/{reviewConfig}
    */
   name: string;
 }
@@ -64,7 +64,7 @@ export interface GetReviewConfigRequest {
 export interface DeleteReviewConfigRequest {
   /**
    * The name of the sql review to delete.
-   * Format: reviewConfigs/{uid}
+   * Format: reviewConfigs/{reviewConfig}
    */
   name: string;
 }
@@ -72,7 +72,7 @@ export interface DeleteReviewConfigRequest {
 export interface ReviewConfig {
   /**
    * The name of the sql review to retrieve.
-   * Format: reviewConfigs/{uid}
+   * Format: reviewConfigs/{reviewConfig}
    */
   name: string;
   title: string;
@@ -677,7 +677,7 @@ export const ReviewConfigServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               34,
@@ -729,7 +729,7 @@ export const ReviewConfigServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               19,
@@ -766,7 +766,7 @@ export const ReviewConfigServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               28,
@@ -841,7 +841,7 @@ export const ReviewConfigServiceDefinition = {
               107,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               57,
@@ -916,7 +916,7 @@ export const ReviewConfigServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               28,

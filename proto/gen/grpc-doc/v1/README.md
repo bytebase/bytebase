@@ -7707,7 +7707,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to delete. Format: reviewConfigs/{uid} |
+| name | [string](#string) |  | The name of the sql review to delete. Format: reviewConfigs/{reviewConfig} |
 
 
 
@@ -7722,7 +7722,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{uid} |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{reviewConfig} |
 
 
 
@@ -7771,7 +7771,7 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{uid} |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{reviewConfig} |
 | title | [string](#string) |  |  |
 | enabled | [bool](#bool) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |

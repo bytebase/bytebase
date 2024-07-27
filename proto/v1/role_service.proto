@@ -16,6 +16,7 @@ service RoleService {
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
     option (bytebase.v1.permission) = "bb.roles.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc CreateRole(CreateRoleRequest) returns (Role) {
     option (google.api.http) = {
@@ -23,6 +24,7 @@ service RoleService {
       body: "role"
     };
     option (bytebase.v1.permission) = "bb.roles.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc UpdateRole(UpdateRoleRequest) returns (Role) {
     option (google.api.http) = {
@@ -31,11 +33,13 @@ service RoleService {
     };
     option (google.api.method_signature) = "role,update_mask";
     option (bytebase.v1.permission) = "bb.roles.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=roles/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.roles.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
