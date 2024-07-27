@@ -80,6 +80,7 @@ export interface GetInstanceRequest {
 
 export interface ListInstancesRequest {
   /**
+   * Deprecated.
    * The parent parameter's value depends on the target resource for the request.
    * - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
    * - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
@@ -206,7 +207,7 @@ export interface AddDataSourceRequest {
    * The name of the instance to add a data source to.
    * Format: instances/{instance}
    */
-  instance: string;
+  name: string;
   /**
    * Identified by data source ID.
    * Only READ_ONLY data source can be added.
@@ -223,7 +224,7 @@ export interface RemoveDataSourceRequest {
    * The name of the instance to remove a data source from.
    * Format: instances/{instance}
    */
-  instance: string;
+  name: string;
   /**
    * Identified by data source ID.
    * Only READ_ONLY data source can be removed.
@@ -236,7 +237,7 @@ export interface UpdateDataSourceRequest {
    * The name of the instance to update a data source.
    * Format: instances/{instance}
    */
-  instance: string;
+  name: string;
   /** Identified by data source ID. */
   dataSource:
     | DataSource
@@ -1600,13 +1601,13 @@ export const BatchSyncInstanceResponse = {
 };
 
 function createBaseAddDataSourceRequest(): AddDataSourceRequest {
-  return { instance: "", dataSource: undefined, validateOnly: false };
+  return { name: "", dataSource: undefined, validateOnly: false };
 }
 
 export const AddDataSourceRequest = {
   encode(message: AddDataSourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.instance !== "") {
-      writer.uint32(10).string(message.instance);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.dataSource !== undefined) {
       DataSource.encode(message.dataSource, writer.uint32(18).fork()).ldelim();
@@ -1629,7 +1630,7 @@ export const AddDataSourceRequest = {
             break;
           }
 
-          message.instance = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1656,7 +1657,7 @@ export const AddDataSourceRequest = {
 
   fromJSON(object: any): AddDataSourceRequest {
     return {
-      instance: isSet(object.instance) ? globalThis.String(object.instance) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       dataSource: isSet(object.dataSource) ? DataSource.fromJSON(object.dataSource) : undefined,
       validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
     };
@@ -1664,8 +1665,8 @@ export const AddDataSourceRequest = {
 
   toJSON(message: AddDataSourceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== "") {
-      obj.instance = message.instance;
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     if (message.dataSource !== undefined) {
       obj.dataSource = DataSource.toJSON(message.dataSource);
@@ -1681,7 +1682,7 @@ export const AddDataSourceRequest = {
   },
   fromPartial(object: DeepPartial<AddDataSourceRequest>): AddDataSourceRequest {
     const message = createBaseAddDataSourceRequest();
-    message.instance = object.instance ?? "";
+    message.name = object.name ?? "";
     message.dataSource = (object.dataSource !== undefined && object.dataSource !== null)
       ? DataSource.fromPartial(object.dataSource)
       : undefined;
@@ -1691,13 +1692,13 @@ export const AddDataSourceRequest = {
 };
 
 function createBaseRemoveDataSourceRequest(): RemoveDataSourceRequest {
-  return { instance: "", dataSource: undefined };
+  return { name: "", dataSource: undefined };
 }
 
 export const RemoveDataSourceRequest = {
   encode(message: RemoveDataSourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.instance !== "") {
-      writer.uint32(10).string(message.instance);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.dataSource !== undefined) {
       DataSource.encode(message.dataSource, writer.uint32(18).fork()).ldelim();
@@ -1717,7 +1718,7 @@ export const RemoveDataSourceRequest = {
             break;
           }
 
-          message.instance = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1737,15 +1738,15 @@ export const RemoveDataSourceRequest = {
 
   fromJSON(object: any): RemoveDataSourceRequest {
     return {
-      instance: isSet(object.instance) ? globalThis.String(object.instance) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       dataSource: isSet(object.dataSource) ? DataSource.fromJSON(object.dataSource) : undefined,
     };
   },
 
   toJSON(message: RemoveDataSourceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== "") {
-      obj.instance = message.instance;
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     if (message.dataSource !== undefined) {
       obj.dataSource = DataSource.toJSON(message.dataSource);
@@ -1758,7 +1759,7 @@ export const RemoveDataSourceRequest = {
   },
   fromPartial(object: DeepPartial<RemoveDataSourceRequest>): RemoveDataSourceRequest {
     const message = createBaseRemoveDataSourceRequest();
-    message.instance = object.instance ?? "";
+    message.name = object.name ?? "";
     message.dataSource = (object.dataSource !== undefined && object.dataSource !== null)
       ? DataSource.fromPartial(object.dataSource)
       : undefined;
@@ -1767,13 +1768,13 @@ export const RemoveDataSourceRequest = {
 };
 
 function createBaseUpdateDataSourceRequest(): UpdateDataSourceRequest {
-  return { instance: "", dataSource: undefined, updateMask: undefined, validateOnly: false };
+  return { name: "", dataSource: undefined, updateMask: undefined, validateOnly: false };
 }
 
 export const UpdateDataSourceRequest = {
   encode(message: UpdateDataSourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.instance !== "") {
-      writer.uint32(10).string(message.instance);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.dataSource !== undefined) {
       DataSource.encode(message.dataSource, writer.uint32(18).fork()).ldelim();
@@ -1799,7 +1800,7 @@ export const UpdateDataSourceRequest = {
             break;
           }
 
-          message.instance = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1833,7 +1834,7 @@ export const UpdateDataSourceRequest = {
 
   fromJSON(object: any): UpdateDataSourceRequest {
     return {
-      instance: isSet(object.instance) ? globalThis.String(object.instance) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       dataSource: isSet(object.dataSource) ? DataSource.fromJSON(object.dataSource) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
       validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
@@ -1842,8 +1843,8 @@ export const UpdateDataSourceRequest = {
 
   toJSON(message: UpdateDataSourceRequest): unknown {
     const obj: any = {};
-    if (message.instance !== "") {
-      obj.instance = message.instance;
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     if (message.dataSource !== undefined) {
       obj.dataSource = DataSource.toJSON(message.dataSource);
@@ -1862,7 +1863,7 @@ export const UpdateDataSourceRequest = {
   },
   fromPartial(object: DeepPartial<UpdateDataSourceRequest>): UpdateDataSourceRequest {
     const message = createBaseUpdateDataSourceRequest();
-    message.instance = object.instance ?? "";
+    message.name = object.name ?? "";
     message.dataSource = (object.dataSource !== undefined && object.dataSource !== null)
       ? DataSource.fromPartial(object.dataSource)
       : undefined;
@@ -3591,6 +3592,7 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               24,
@@ -3633,6 +3635,7 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([0])],
           800010: [new Uint8Array([17, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               52,
@@ -3790,6 +3793,7 @@ export const InstanceServiceDefinition = {
           800010: [
             new Uint8Array([19, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               25,
@@ -3880,6 +3884,7 @@ export const InstanceServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -3964,6 +3969,7 @@ export const InstanceServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               24,
@@ -4030,6 +4036,7 @@ export const InstanceServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               36,
@@ -4083,6 +4090,7 @@ export const InstanceServiceDefinition = {
       options: {
         _unknownFields: {
           800010: [new Uint8Array([17, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 115, 121, 110, 99])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               32,
@@ -4200,26 +4208,23 @@ export const InstanceServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
-              45,
+              41,
               58,
               1,
               42,
               34,
-              40,
+              36,
               47,
               118,
               49,
               47,
               123,
-              105,
               110,
-              115,
-              116,
               97,
-              110,
-              99,
+              109,
               101,
               61,
               105,
@@ -4285,26 +4290,23 @@ export const InstanceServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
-              48,
+              44,
               58,
               1,
               42,
               34,
-              43,
+              39,
               47,
               118,
               49,
               47,
               123,
-              105,
               110,
-              115,
-              116,
               97,
-              110,
-              99,
+              109,
               101,
               61,
               105,
@@ -4373,26 +4375,23 @@ export const InstanceServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
-              48,
+              44,
               58,
               1,
               42,
               50,
-              43,
+              39,
               47,
               118,
               49,
               47,
               123,
-              105,
               110,
-              115,
-              116,
               97,
-              110,
-              99,
+              109,
               101,
               61,
               105,
@@ -4438,6 +4437,7 @@ export const InstanceServiceDefinition = {
       options: {
         _unknownFields: {
           800010: [new Uint8Array([17, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 115, 121, 110, 99])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               91,

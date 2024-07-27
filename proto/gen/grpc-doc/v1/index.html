@@ -5635,7 +5635,7 @@ Could be empty. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to add a data source to.
@@ -6480,7 +6480,8 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent parameter&#39;s value depends on the target resource for the request.
+                  <td><p>Deprecated.
+The parent parameter&#39;s value depends on the target resource for the request.
 - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to.
 - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. </p></td>
                 </tr>
@@ -6563,7 +6564,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to remove a data source from.
@@ -6760,7 +6761,7 @@ Format: instances/{instance} </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to update a data source.
@@ -7253,7 +7254,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>AddDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:addDataSource</td>
+                <td>/v1/{name=instances/*}:addDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7263,7 +7264,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>RemoveDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:removeDataSource</td>
+                <td>/v1/{name=instances/*}:removeDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7273,7 +7274,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>UpdateDataSource</td>
                 <td>PATCH</td>
-                <td>/v1/{instance=instances/*}:updateDataSource</td>
+                <td>/v1/{name=instances/*}:updateDataSource</td>
                 <td>*</td>
               </tr>
               
