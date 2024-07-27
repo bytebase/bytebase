@@ -71,7 +71,7 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.InstanceService_DeleteInstance_FullMethodName,
 		v1pb.InstanceService_UndeleteInstance_FullMethodName,
 		v1pb.InstanceService_SyncInstance_FullMethodName,
-		v1pb.InstanceService_BatchSyncInstance_FullMethodName,
+		v1pb.InstanceService_BatchSyncInstances_FullMethodName,
 		v1pb.InstanceService_AddDataSource_FullMethodName,
 		v1pb.InstanceService_RemoveDataSource_FullMethodName,
 		v1pb.InstanceService_UpdateDataSource_FullMethodName,
