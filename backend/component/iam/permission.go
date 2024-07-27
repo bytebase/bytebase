@@ -17,6 +17,11 @@ const (
 	PermissionVCSProvidersListProjects   Permission = "bb.vcsProviders.listProjects"
 	PermissionVCSProvidersSearchProjects Permission = "bb.vcsProviders.searchProjects"
 	PermissionVCSProvidersUpdate         Permission = "bb.vcsProviders.update"
+	PermissionReviewConfigsCreate        Permission = "bb.reviewConfigs.create"
+	PermissionReviewConfigsDelete        Permission = "bb.reviewConfigs.delete"
+	PermissionReviewConfigsGet           Permission = "bb.reviewConfigs.get"
+	PermissionReviewConfigsList          Permission = "bb.reviewConfigs.list"
+	PermissionReviewConfigsUpdate        Permission = "bb.reviewConfigs.update"
 	PermissionIdentityProvidersCreate    Permission = "bb.identityProviders.create"
 	PermissionIdentityProvidersDelete    Permission = "bb.identityProviders.delete"
 	PermissionIdentityProvidersGet       Permission = "bb.identityProviders.get"
@@ -123,6 +128,11 @@ var allWorkspacePermissions = []Permission{
 	PermissionVCSProvidersListProjects,
 	PermissionVCSProvidersSearchProjects,
 	PermissionVCSProvidersUpdate,
+	PermissionReviewConfigsCreate,
+	PermissionReviewConfigsDelete,
+	PermissionReviewConfigsGet,
+	PermissionReviewConfigsList,
+	PermissionReviewConfigsUpdate,
 	PermissionIdentityProvidersCreate,
 	PermissionIdentityProvidersDelete,
 	PermissionIdentityProvidersGet,

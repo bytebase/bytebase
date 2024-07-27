@@ -25,6 +25,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
@@ -38,6 +39,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.policies.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
@@ -64,6 +66,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "parent,policy";
     option (bytebase.v1.permission) = "bb.policies.create";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
@@ -90,6 +93,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "policy,update_mask";
     option (bytebase.v1.permission) = "bb.policies.update";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
@@ -103,6 +107,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.delete";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 
