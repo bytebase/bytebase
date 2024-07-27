@@ -59,7 +59,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 				},
 			},
 			method: "/bytebase.v1.InstanceService/UpdateInstance",
-			want:   nil,
+			want:   &common.Resource{Name: "instances/hello"},
 		},
 		{
 			request: &v1pb.UpdateSubscriptionRequest{
