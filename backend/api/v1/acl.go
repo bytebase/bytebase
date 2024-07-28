@@ -414,7 +414,7 @@ func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
 	if resourceDesc == nil {
-		return nil
+		return &common.Resource{Workspace: true}
 	}
 	if proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
 		// Parent-less resource. Return workspace resource for Create() method.
@@ -428,7 +428,7 @@ func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *
 			return &common.Resource{Name: v.String()}
 		}
 	}
-	return nil
+	return &common.Resource{Workspace: true}
 }
 
 var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")

@@ -27,7 +27,8 @@ service SubscriptionService {
       body: "patch"
     };
     option (google.api.method_signature) = "patch";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.settings.set";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
