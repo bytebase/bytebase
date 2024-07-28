@@ -100,7 +100,7 @@ const actions = computed((): Action[] => {
 const syncSchema = async () => {
   try {
     state.loading = true;
-    await instanceStore.batchSyncInstance(
+    await instanceStore.batchSyncInstances(
       props.instanceList.map((instance) => instance.name)
     );
     pushNotification({

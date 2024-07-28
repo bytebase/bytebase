@@ -3301,12 +3301,12 @@ paths:
         post:
             tags:
                 - InstanceService
-            operationId: InstanceService_BatchSyncInstance
+            operationId: InstanceService_BatchSyncInstances
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchSyncInstanceRequest'
+                            $ref: '#/components/schemas/BatchSyncInstancesRequest'
                 required: true
             responses:
                 "200":
@@ -3314,7 +3314,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchSyncInstanceResponse'
+                                $ref: '#/components/schemas/BatchSyncInstancesResponse'
                 default:
                     description: Default error response
                     content:
@@ -8864,7 +8864,7 @@ components:
         BatchSkipTasksResponse:
             type: object
             properties: {}
-        BatchSyncInstanceRequest:
+        BatchSyncInstancesRequest:
             required:
                 - requests
             type: object
@@ -8876,7 +8876,7 @@ components:
                     description: |-
                         The request message specifying the instances to sync.
                          A maximum of 1000 instances can be synced in a batch.
-        BatchSyncInstanceResponse:
+        BatchSyncInstancesResponse:
             type: object
             properties: {}
         BatchUpdateDatabasesRequest:
@@ -10519,7 +10519,7 @@ components:
                     type: string
                     description: |-
                         The name of the role.
-                         Format: instances/{instance}/roles/{role name}
+                         Format: instances/{instance}/roles/{role}
                          The role name is the unique name for the role.
                 roleName:
                     type: string
@@ -12377,7 +12377,7 @@ components:
                     type: string
                     description: |-
                         The name of the sql review to retrieve.
-                         Format: reviewConfigs/{uid}
+                         Format: reviewConfigs/{reviewConfig}
                 title:
                     type: string
                 enabled:

@@ -637,7 +637,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 }
 
 // SyncInstance syncs the instance.
-func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.BatchSyncInstanceRequest) (*v1pb.BatchSyncInstanceResponse, error) {
+func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.BatchSyncInstancesRequest) (*v1pb.BatchSyncInstancesResponse, error) {
 	for _, r := range request.Requests {
 		instance, err := getInstanceMessage(ctx, s.store, r.Name)
 		if err != nil {
@@ -655,7 +655,7 @@ func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.B
 		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 	}
 
-	return &v1pb.BatchSyncInstanceResponse{}, nil
+	return &v1pb.BatchSyncInstancesResponse{}, nil
 }
 
 // AddDataSource adds a data source to an instance.

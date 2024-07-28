@@ -18,12 +18,14 @@ service UserGroupService {
     option (google.api.http) = {get: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.userGroups.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListUserGroups(ListUserGroupsRequest) returns (ListUserGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.userGroups.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateUserGroup(CreateUserGroupRequest) returns (UserGroup) {
@@ -33,6 +35,7 @@ service UserGroupService {
     };
     option (google.api.method_signature) = "group";
     option (bytebase.v1.permission) = "bb.userGroups.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateUserGroup(UpdateUserGroupRequest) returns (UserGroup) {
@@ -42,14 +45,14 @@ service UserGroupService {
     };
     option (google.api.method_signature) = "group,update_mask";
     option (bytebase.v1.permission) = "bb.userGroups.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteUserGroup(DeleteUserGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.userGroups.delete";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

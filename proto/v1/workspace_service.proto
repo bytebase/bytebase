@@ -12,6 +12,7 @@ service WorkspaceService {
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.policies.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -20,5 +21,6 @@ service WorkspaceService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.policies.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }

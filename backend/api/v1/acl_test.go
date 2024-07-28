@@ -13,7 +13,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 	tests := []struct {
 		request any
 		method  string
-		want    *common.Resource
+		want    []*common.Resource
 	}{
 		{
 			request: &v1pb.LoginRequest{Email: "hello@world.com"},
@@ -27,7 +27,9 @@ func TestGetResourceFromRequest(t *testing.T) {
 				},
 			},
 			method: "/bytebase.v1.ProjectService/CreateProject",
-			want:   &common.Resource{Workspace: true},
+			want: []*common.Resource{
+				{Workspace: true},
+			},
 		},
 		{
 			request: &v1pb.UpdateProjectRequest{
@@ -36,12 +38,16 @@ func TestGetResourceFromRequest(t *testing.T) {
 				},
 			},
 			method: "/bytebase.v1.ProjectService/UpdateProject",
-			want:   &common.Resource{Name: "projects/hello"},
+			want: []*common.Resource{
+				{Name: "projects/hello"},
+			},
 		},
 		{
 			request: &v1pb.ListProjectsRequest{},
 			method:  "/bytebase.v1.ProjectService/ListProjects",
-			want:    &common.Resource{Workspace: true},
+			want: []*common.Resource{
+				{Workspace: true},
+			},
 		},
 		// The database group has not been annotated with resource yet.
 		{
@@ -49,7 +55,9 @@ func TestGetResourceFromRequest(t *testing.T) {
 				Parent: "projects/hello",
 			},
 			method: "/bytebase.v1.DatabaseGroupService/CreateDatabaseGroup",
-			want:   &common.Resource{Name: "projects/hello"},
+			want: []*common.Resource{
+				{Name: "projects/hello"},
+			},
 		},
 		{
 			// The instance has not been annotated with resource yet.
@@ -59,7 +67,9 @@ func TestGetResourceFromRequest(t *testing.T) {
 				},
 			},
 			method: "/bytebase.v1.InstanceService/UpdateInstance",
-			want:   &common.Resource{Name: "instances/hello"},
+			want: []*common.Resource{
+				{Name: "instances/hello"},
+			},
 		},
 		{
 			request: &v1pb.UpdateSubscriptionRequest{
@@ -75,7 +85,9 @@ func TestGetResourceFromRequest(t *testing.T) {
 				},
 			},
 			method: "/bytebase.v1.ProjectService/RemoveWebhook",
-			want:   &common.Resource{Name: "projects/aaa/webhooks/bbb"},
+			want: []*common.Resource{
+				{Name: "projects/aaa/webhooks/bbb"},
+			},
 		},
 		{
 			request: &v1pb.UpdateIdentityProviderRequest{
@@ -84,8 +96,50 @@ func TestGetResourceFromRequest(t *testing.T) {
 				},
 			},
 			method: "/bytebase.v1.IdentityProviderService/UpdateIdentityProvider",
-			want: &common.Resource{
-				Name: "idps/hello",
+			want: []*common.Resource{
+				{Name: "idps/hello"},
+			},
+		},
+		{
+			request: &v1pb.ListReviewConfigsRequest{},
+			method:  "/bytebase.v1.ReviewConfigService/ListReviewConfigs",
+			want: []*common.Resource{
+				{Workspace: true},
+			},
+		},
+		{
+			request: &v1pb.BatchUpdateDatabasesRequest{
+				Requests: []*v1pb.UpdateDatabaseRequest{
+					{Database: &v1pb.Database{Name: "instances/hello/databases/hello"}},
+					{Database: &v1pb.Database{Name: "instances/world/databases/world"}},
+				},
+			},
+			method: "/bytebase.v1.DatabaseService/BatchUpdateDatabases",
+			want: []*common.Resource{
+				{Name: "instances/hello/databases/hello"},
+				{Name: "instances/world/databases/world"},
+			},
+		},
+		{
+			request: &v1pb.SyncInstanceRequest{
+				Name: "instances/hello",
+			},
+			method: "/bytebase.v1.InstanceService/SyncInstance",
+			want: []*common.Resource{
+				{Name: "instances/hello"},
+			},
+		},
+		{
+			request: &v1pb.BatchSyncInstancesRequest{
+				Requests: []*v1pb.SyncInstanceRequest{
+					{Name: "instances/hello"},
+					{Name: "instances/world"},
+				},
+			},
+			method: "/bytebase.v1.InstanceService/BatchSyncInstances",
+			want: []*common.Resource{
+				{Name: "instances/hello"},
+				{Name: "instances/world"},
 			},
 		},
 	}
