@@ -103,6 +103,9 @@ const (
 	PermissionPlansGet              Permission = "bb.plans.get"
 	PermissionPlansList             Permission = "bb.plans.list"
 	PermissionPlansUpdate           Permission = "bb.plans.update"
+	PermissionSheetsCreate          Permission = "bb.sheets.create"
+	PermissionSheetsUpdate          Permission = "bb.sheets.update"
+	PermissionSheetsGet             Permission = "bb.sheets.get"
 	PermissionProjectsGet           Permission = "bb.projects.get"
 	PermissionProjectsGetIAMPolicy  Permission = "bb.projects.getIamPolicy"
 	PermissionProjectsSetIAMPolicy  Permission = "bb.projects.setIamPolicy"
@@ -214,6 +217,9 @@ var allProjectPermissions = []Permission{
 	PermissionPlansGet,
 	PermissionPlansList,
 	PermissionPlansUpdate,
+	PermissionSheetsCreate,
+	PermissionSheetsUpdate,
+	PermissionSheetsGet,
 	PermissionProjectsGet,
 	PermissionProjectsGetIAMPolicy,
 	PermissionProjectsSetIAMPolicy,
