@@ -865,6 +865,7 @@ export const ChangelistServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               49,
@@ -934,6 +935,7 @@ export const ChangelistServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 99, 104, 97, 110, 103, 101, 108, 105, 115, 116, 115, 46, 103, 101, 116]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               37,
@@ -1012,6 +1014,7 @@ export const ChangelistServiceDefinition = {
               116,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               37,
@@ -1118,7 +1121,7 @@ export const ChangelistServiceDefinition = {
               101,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               60,
@@ -1222,7 +1225,7 @@ export const ChangelistServiceDefinition = {
               101,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               37,

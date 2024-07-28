@@ -500,11 +500,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchSyncInstanceRequest"><span class="badge">M</span>BatchSyncInstanceRequest</a>
+                  <a href="#bytebase.v1.BatchSyncInstancesRequest"><span class="badge">M</span>BatchSyncInstancesRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchSyncInstanceResponse"><span class="badge">M</span>BatchSyncInstanceResponse</a>
+                  <a href="#bytebase.v1.BatchSyncInstancesResponse"><span class="badge">M</span>BatchSyncInstancesResponse</a>
                 </li>
               
                 <li>
@@ -3156,13 +3156,6 @@
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>deploy_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>deploy_id is the identifier for the started bytebase service deployment. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -5646,7 +5639,7 @@ Could be empty. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to add a data source to.
@@ -5675,7 +5668,7 @@ Only READ_ONLY data source can be added. </p></td>
 
         
       
-        <h3 id="bytebase.v1.BatchSyncInstanceRequest">BatchSyncInstanceRequest</h3>
+        <h3 id="bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</h3>
         <p></p>
 
         
@@ -5700,7 +5693,7 @@ A maximum of 1000 instances can be synced in a batch. </p></td>
 
         
       
-        <h3 id="bytebase.v1.BatchSyncInstanceResponse">BatchSyncInstanceResponse</h3>
+        <h3 id="bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</h3>
         <p></p>
 
         
@@ -6491,7 +6484,8 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent parameter&#39;s value depends on the target resource for the request.
+                  <td><p>Deprecated.
+The parent parameter&#39;s value depends on the target resource for the request.
 - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to.
 - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. </p></td>
                 </tr>
@@ -6574,7 +6568,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to remove a data source from.
@@ -6771,7 +6765,7 @@ Format: instances/{instance} </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to update a data source.
@@ -7103,9 +7097,9 @@ Format: instances/{instance} </p></td>
               </tr>
             
               <tr>
-                <td>BatchSyncInstance</td>
-                <td><a href="#bytebase.v1.BatchSyncInstanceRequest">BatchSyncInstanceRequest</a></td>
-                <td><a href="#bytebase.v1.BatchSyncInstanceResponse">BatchSyncInstanceResponse</a></td>
+                <td>BatchSyncInstances</td>
+                <td><a href="#bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</a></td>
+                <td><a href="#bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -7252,7 +7246,7 @@ Format: instances/{instance} </p></td>
               
               
               <tr>
-                <td>BatchSyncInstance</td>
+                <td>BatchSyncInstances</td>
                 <td>POST</td>
                 <td>/v1/instances:batchSync</td>
                 <td>*</td>
@@ -7264,7 +7258,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>AddDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:addDataSource</td>
+                <td>/v1/{name=instances/*}:addDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7274,7 +7268,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>RemoveDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:removeDataSource</td>
+                <td>/v1/{name=instances/*}:removeDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7284,7 +7278,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>UpdateDataSource</td>
                 <td>PATCH</td>
-                <td>/v1/{instance=instances/*}:updateDataSource</td>
+                <td>/v1/{name=instances/*}:updateDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -14663,7 +14657,7 @@ The role name is the unique name for the role. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the role.
-Format: instances/{instance}/roles/{role name}
+Format: instances/{instance}/roles/{role}
 The role name is the unique name for the role. </p></td>
                 </tr>
               
@@ -21629,7 +21623,7 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to delete.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
             </tbody>
@@ -21654,7 +21648,7 @@ Format: reviewConfigs/{uid} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
             </tbody>
@@ -21748,7 +21742,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
                 <tr>
@@ -21822,7 +21816,7 @@ Format: {resurce}/{resource id}, for example, environments/test. </p></td>
                   <td>review_config</td>
                   <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
                   <td></td>
-                  <td><p>The sql review toupdate.
+                  <td><p>The sql review to update.
 
 The name field is used to identify the sql review to update. </p></td>
                 </tr>

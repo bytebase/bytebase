@@ -115,8 +115,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       name: instance.name,
     });
   };
-  const batchSyncInstance = async (instanceNameList: string[]) => {
-    await instanceServiceClient.batchSyncInstance({
+  const batchSyncInstances = async (instanceNameList: string[]) => {
+    await instanceServiceClient.batchSyncInstances({
       requests: instanceNameList.map((name) => ({ name })),
     });
   };
@@ -169,7 +169,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     dataSource: DataSource
   ) => {
     const updatedInstance = await instanceServiceClient.addDataSource({
-      instance: instance.name,
+      name: instance.name,
       dataSource: dataSource,
     });
     const [composed] = await upsertInstances([updatedInstance]);
@@ -181,7 +181,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     updateMask: string[]
   ) => {
     const updatedInstance = await instanceServiceClient.updateDataSource({
-      instance: instance.name,
+      name: instance.name,
       dataSource: dataSource,
       updateMask,
     });
@@ -193,7 +193,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     dataSource: DataSource
   ) => {
     const updatedInstance = await instanceServiceClient.removeDataSource({
-      instance: instance.name,
+      name: instance.name,
       dataSource: dataSource,
     });
     const [composed] = await upsertInstances([updatedInstance]);
@@ -210,7 +210,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     archiveInstance,
     restoreInstance,
     syncInstance,
-    batchSyncInstance,
+    batchSyncInstances,
     listInstances,
     fetchInstanceList,
     fetchProjectInstanceList,

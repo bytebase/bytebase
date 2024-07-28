@@ -1050,6 +1050,7 @@ export const VCSProviderServiceDefinition = {
               116,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               27,
@@ -1119,6 +1120,7 @@ export const VCSProviderServiceDefinition = {
               116,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([18, 18, 16, 47, 118, 49, 47, 118, 99, 115, 80, 114, 111, 118, 105, 100, 101, 114, 115]),
           ],
@@ -1161,6 +1163,7 @@ export const VCSProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               32,
@@ -1265,6 +1268,7 @@ export const VCSProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               54,
@@ -1362,6 +1366,7 @@ export const VCSProviderServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               27,
@@ -1440,6 +1445,7 @@ export const VCSProviderServiceDefinition = {
               115,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               49,
@@ -1538,6 +1544,7 @@ export const VCSProviderServiceDefinition = {
               115,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               41,

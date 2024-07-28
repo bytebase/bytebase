@@ -1232,7 +1232,8 @@ paths:
                 - name: parent
                   in: query
                   description: |-
-                    The parent parameter's value depends on the target resource for the request.
+                    Deprecated.
+                     The parent parameter's value depends on the target resource for the request.
                      - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
                      - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
                   schema:
@@ -3300,12 +3301,12 @@ paths:
         post:
             tags:
                 - InstanceService
-            operationId: InstanceService_BatchSyncInstance
+            operationId: InstanceService_BatchSyncInstances
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchSyncInstanceRequest'
+                            $ref: '#/components/schemas/BatchSyncInstancesRequest'
                 required: true
             responses:
                 "200":
@@ -3313,7 +3314,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchSyncInstanceResponse'
+                                $ref: '#/components/schemas/BatchSyncInstancesResponse'
                 default:
                     description: Default error response
                     content:
@@ -8338,20 +8339,16 @@ components:
                     type: array
                     items:
                         type: string
-                deployId:
-                    readOnly: true
-                    type: string
-                    description: deploy_id is the identifier for the started bytebase service deployment.
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.
         AddDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to add a data source to.
@@ -8867,7 +8864,7 @@ components:
         BatchSkipTasksResponse:
             type: object
             properties: {}
-        BatchSyncInstanceRequest:
+        BatchSyncInstancesRequest:
             required:
                 - requests
             type: object
@@ -8879,7 +8876,7 @@ components:
                     description: |-
                         The request message specifying the instances to sync.
                          A maximum of 1000 instances can be synced in a batch.
-        BatchSyncInstanceResponse:
+        BatchSyncInstancesResponse:
             type: object
             properties: {}
         BatchUpdateDatabasesRequest:
@@ -10522,7 +10519,7 @@ components:
                     type: string
                     description: |-
                         The name of the role.
-                         Format: instances/{instance}/roles/{role name}
+                         Format: instances/{instance}/roles/{role}
                          The role name is the unique name for the role.
                 roleName:
                     type: string
@@ -12265,11 +12262,11 @@ components:
                     type: string
         RemoveDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to remove a data source from.
@@ -12361,7 +12358,7 @@ components:
                     type: string
                     description: |-
                         The name of the sql review to retrieve.
-                         Format: reviewConfigs/{uid}
+                         Format: reviewConfigs/{reviewConfig}
                 title:
                     type: string
                 enabled:
@@ -14059,11 +14056,11 @@ components:
                          Format: users/{user}
         UpdateDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to update a data source.

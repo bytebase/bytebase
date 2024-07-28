@@ -775,6 +775,7 @@ export const UserGroupServiceDefinition = {
           800010: [
             new Uint8Array([17, 98, 98, 46, 117, 115, 101, 114, 71, 114, 111, 117, 112, 115, 46, 103, 101, 116]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               21,
@@ -816,6 +817,7 @@ export const UserGroupServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 117, 115, 101, 114, 71, 114, 111, 117, 112, 115, 46, 108, 105, 115, 116]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [new Uint8Array([12, 18, 10, 47, 118, 49, 47, 103, 114, 111, 117, 112, 115])],
         },
       },
@@ -854,6 +856,7 @@ export const UserGroupServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([19, 58, 5, 103, 114, 111, 117, 112, 34, 10, 47, 118, 49, 47, 103, 114, 111, 117, 112, 115]),
           ],
@@ -894,7 +897,7 @@ export const UserGroupServiceDefinition = {
               101,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               34,
@@ -971,7 +974,7 @@ export const UserGroupServiceDefinition = {
               101,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               21,

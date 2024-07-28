@@ -48,7 +48,7 @@ func TestDataSource(t *testing.T) {
 	err = ctl.removeLicense(ctx)
 	a.NoError(err)
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
-		Instance: instance.Name,
+		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
@@ -64,7 +64,7 @@ func TestDataSource(t *testing.T) {
 	err = ctl.setLicense(ctx)
 	a.NoError(err)
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
-		Instance: instance.Name,
+		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
@@ -84,7 +84,7 @@ func TestDataSource(t *testing.T) {
 	a.NoError(err)
 
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
-		Instance: instance.Name,
+		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:   "readonly",
 			Host: "127.0.0.1",
@@ -99,7 +99,7 @@ func TestDataSource(t *testing.T) {
 	err = ctl.setLicense(ctx)
 	a.NoError(err)
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
-		Instance: instance.Name,
+		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:   "readonly",
 			Host: "127.0.0.1",
@@ -112,7 +112,7 @@ func TestDataSource(t *testing.T) {
 	a.NoError(err)
 
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
-		Instance: instance.Name,
+		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:       "second-read-only-datasource",
 			Type:     v1pb.DataSourceType_READ_ONLY,
@@ -126,7 +126,7 @@ func TestDataSource(t *testing.T) {
 	a.NoError(err)
 
 	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, &v1pb.RemoveDataSourceRequest{
-		Instance:   instance.Name,
+		Name:       instance.Name,
 		DataSource: &v1pb.DataSource{Id: "readonly"},
 	})
 	a.NoError(err)
