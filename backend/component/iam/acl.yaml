@@ -73,6 +73,9 @@ roles:
       - bb.plans.get
       - bb.plans.list
       - bb.plans.update
+      - bb.sheets.create
+      - bb.sheets.update
+      - bb.sheets.get
       - bb.policies.create
       - bb.policies.delete
       - bb.policies.get
@@ -181,6 +184,9 @@ roles:
       - bb.plans.get
       - bb.plans.list
       - bb.plans.update
+      - bb.sheets.create
+      - bb.sheets.update
+      - bb.sheets.get
       - bb.policies.create
       - bb.policies.delete
       - bb.policies.get
@@ -271,6 +277,9 @@ roles:
       - bb.plans.get
       - bb.plans.list
       - bb.plans.update
+      - bb.sheets.create
+      - bb.sheets.update
+      - bb.sheets.get
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
@@ -305,6 +314,9 @@ roles:
       - bb.plans.create
       - bb.plans.get
       - bb.plans.list
+      - bb.sheets.create
+      - bb.sheets.update
+      - bb.sheets.get
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.rollouts.create
