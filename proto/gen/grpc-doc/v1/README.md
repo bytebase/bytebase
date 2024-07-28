@@ -89,8 +89,8 @@
   
 - [v1/instance_service.proto](#v1_instance_service-proto)
     - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
-    - [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest)
-    - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
+    - [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest)
+    - [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse)
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
     - [DataSource.Address](#bytebase-v1-DataSource-Address)
@@ -1811,9 +1811,9 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
-<a name="bytebase-v1-BatchSyncInstanceRequest"></a>
+<a name="bytebase-v1-BatchSyncInstancesRequest"></a>
 
-### BatchSyncInstanceRequest
+### BatchSyncInstancesRequest
 
 
 
@@ -1826,9 +1826,9 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
-<a name="bytebase-v1-BatchSyncInstanceResponse"></a>
+<a name="bytebase-v1-BatchSyncInstancesResponse"></a>
 
-### BatchSyncInstanceResponse
+### BatchSyncInstancesResponse
 
 
 
@@ -2364,7 +2364,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
-| BatchSyncInstance | [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest) | [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse) |  |
+| BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) |  |
 | AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
@@ -5106,7 +5106,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role name} The role name is the unique name for the role. |
+| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role} The role name is the unique name for the role. |
 | role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
 | password | [string](#string) | optional | The role password. |
 | connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
@@ -7707,7 +7707,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to delete. Format: reviewConfigs/{uid} |
+| name | [string](#string) |  | The name of the sql review to delete. Format: reviewConfigs/{reviewConfig} |
 
 
 
@@ -7722,7 +7722,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{uid} |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{reviewConfig} |
 
 
 
@@ -7771,7 +7771,7 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{uid} |
+| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{reviewConfig} |
 | title | [string](#string) |  |  |
 | enabled | [bool](#bool) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
@@ -7793,7 +7793,7 @@ When paginating, all other parameters provided to `ListSQLReviews` must match th
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The sql review toupdate.
+| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The sql review to update.
 
 The name field is used to identify the sql review to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |

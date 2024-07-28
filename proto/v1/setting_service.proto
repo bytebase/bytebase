@@ -23,12 +23,14 @@ service SettingService {
     option (google.api.http) = {get: "/v1/settings"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.settings.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.settings.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
@@ -37,6 +39,7 @@ service SettingService {
       body: "setting"
     };
     option (bytebase.v1.permission) = "bb.settings.set";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

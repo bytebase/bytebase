@@ -17,6 +17,7 @@ service RolloutService {
     option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
@@ -26,6 +27,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent,rollout";
     option (bytebase.v1.permission) = "bb.rollouts.create";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
@@ -35,24 +37,28 @@ service RolloutService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.preview";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc GetTaskRunSession(GetTaskRunSessionRequest) returns (TaskRunSession) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {

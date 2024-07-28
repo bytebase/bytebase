@@ -21,18 +21,21 @@ service VCSConnectorService {
     };
     option (google.api.method_signature) = "parent,vcsConnector";
     option (bytebase.v1.permission) = "bb.vcsConnectors.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetVCSConnector(GetVCSConnectorRequest) returns (VCSConnector) {
     option (google.api.http) = {get: "/v1/{name=projects/*/vcsConnectors/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.vcsConnectors.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListVCSConnectors(ListVCSConnectorsRequest) returns (ListVCSConnectorsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/vcsConnectors"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.vcsConnectors.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateVCSConnector(UpdateVCSConnectorRequest) returns (VCSConnector) {
@@ -42,12 +45,14 @@ service VCSConnectorService {
     };
     option (google.api.method_signature) = "vcs_connector,update_mask";
     option (bytebase.v1.permission) = "bb.vcsConnectors.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteVCSConnector(DeleteVCSConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/vcsConnectors/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.vcsConnectors.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

@@ -906,6 +906,7 @@ export const VCSConnectorServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               54,
@@ -1002,6 +1003,7 @@ export const VCSConnectorServiceDefinition = {
               116,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               39,
@@ -1084,6 +1086,7 @@ export const VCSConnectorServiceDefinition = {
               116,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               39,
@@ -1197,6 +1200,7 @@ export const VCSConnectorServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               68,
@@ -1310,6 +1314,7 @@ export const VCSConnectorServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               39,
