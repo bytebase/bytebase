@@ -21,12 +21,14 @@ service SheetService {
       body: "sheet"
     };
     option (google.api.method_signature) = "parent,sheet";
+    option (bytebase.v1.permission) = "bb.sheets.create";
     option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetSheet(GetSheetRequest) returns (Sheet) {
     option (google.api.http) = {get: "/v1/{name=projects/*/sheets/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.sheets.get";
     option (bytebase.v1.auth_method) = IAM;
   }
 
@@ -36,6 +38,7 @@ service SheetService {
       body: "sheet"
     };
     option (google.api.method_signature) = "sheet,update_mask";
+    option (bytebase.v1.permission) = "bb.sheets.update";
     option (bytebase.v1.auth_method) = IAM;
   }
 }
