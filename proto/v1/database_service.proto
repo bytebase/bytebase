@@ -409,7 +409,7 @@ message DiffSchemaResponse {
 message Database {
   option (google.api.resource) = {
     type: "bytebase.com/Database"
-    pattern: "bytebase.com/Database/databases/{database}"
+    pattern: "instances/{instance}/databases/{database}"
   };
 
   // The name of the database.

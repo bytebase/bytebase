@@ -76,7 +76,9 @@ func TestGetResourceFromRequest(t *testing.T) {
 				Patch: &v1pb.PatchSubscription{License: "123"},
 			},
 			method: "/bytebase.v1.SubscriptionService/UpdateSubscription",
-			want:   nil,
+			want: []*common.Resource{
+				{Workspace: true},
+			},
 		},
 		{
 			request: &v1pb.RemoveWebhookRequest{

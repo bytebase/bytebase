@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
@@ -25,7 +26,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.get";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
@@ -39,7 +40,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.policies.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
@@ -66,7 +67,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "parent,policy";
     option (bytebase.v1.permission) = "bb.policies.create";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
@@ -93,7 +94,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "policy,update_mask";
     option (bytebase.v1.permission) = "bb.policies.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
@@ -107,7 +108,7 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.delete";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
@@ -117,7 +118,10 @@ message CreatePolicyRequest {
   // Environment resource name: environments/environment-id.
   // Instance resource name: instances/instance-id.
   // Database resource name: instances/instance-id/databases/database-name.
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/Policy"}
+  ];
 
   // The policy to create.
   Policy policy = 2 [(google.api.field_behavior) = REQUIRED];
@@ -151,19 +155,28 @@ message DeletePolicyRequest {
   // Environment resource name: environments/environment-id.
   // Instance resource name: instances/instance-id.
   // Database resource name: instances/instance-id/databases/database-name.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Policy"}
+  ];
 }
 
 message GetPolicyRequest {
   // The name of the policy to retrieve.
   // Format: {resource type}/{resource id}/policies/{policy type}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Policy"}
+  ];
 }
 
 message ListPoliciesRequest {
   // The parent, which owns this collection of policies.
   // Format: {resource type}/{resource id}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/Policy"}
+  ];
 
   optional PolicyType policy_type = 2;
 
@@ -194,7 +207,14 @@ message ListPoliciesResponse {
 }
 
 message Policy {
-  reserved 7, 10, 11;
+  option (google.api.resource) = {
+    type: "bytebase.com/Policy"
+    pattern: "policies/{policy}"
+    pattern: "projects/{project}/policies/{policy}"
+    pattern: "environments/{environment}/policies/{policy}"
+    pattern: "instances/{instance}/policies/{policy}"
+    pattern: "instances/{instance}/databases/{database}/policies/{policy}"
+  };
 
   // The name of the policy.
   // Format: {resource name}/policies/{policy type}
