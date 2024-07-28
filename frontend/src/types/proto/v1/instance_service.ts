@@ -191,7 +191,7 @@ export interface SyncInstanceRequest {
 export interface SyncInstanceResponse {
 }
 
-export interface BatchSyncInstanceRequest {
+export interface BatchSyncInstancesRequest {
   /**
    * The request message specifying the instances to sync.
    * A maximum of 1000 instances can be synced in a batch.
@@ -199,7 +199,7 @@ export interface BatchSyncInstanceRequest {
   requests: SyncInstanceRequest[];
 }
 
-export interface BatchSyncInstanceResponse {
+export interface BatchSyncInstancesResponse {
 }
 
 export interface AddDataSourceRequest {
@@ -1496,22 +1496,22 @@ export const SyncInstanceResponse = {
   },
 };
 
-function createBaseBatchSyncInstanceRequest(): BatchSyncInstanceRequest {
+function createBaseBatchSyncInstancesRequest(): BatchSyncInstancesRequest {
   return { requests: [] };
 }
 
-export const BatchSyncInstanceRequest = {
-  encode(message: BatchSyncInstanceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BatchSyncInstancesRequest = {
+  encode(message: BatchSyncInstancesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.requests) {
       SyncInstanceRequest.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchSyncInstanceRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchSyncInstancesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchSyncInstanceRequest();
+    const message = createBaseBatchSyncInstancesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1531,7 +1531,7 @@ export const BatchSyncInstanceRequest = {
     return message;
   },
 
-  fromJSON(object: any): BatchSyncInstanceRequest {
+  fromJSON(object: any): BatchSyncInstancesRequest {
     return {
       requests: globalThis.Array.isArray(object?.requests)
         ? object.requests.map((e: any) => SyncInstanceRequest.fromJSON(e))
@@ -1539,7 +1539,7 @@ export const BatchSyncInstanceRequest = {
     };
   },
 
-  toJSON(message: BatchSyncInstanceRequest): unknown {
+  toJSON(message: BatchSyncInstancesRequest): unknown {
     const obj: any = {};
     if (message.requests?.length) {
       obj.requests = message.requests.map((e) => SyncInstanceRequest.toJSON(e));
@@ -1547,29 +1547,29 @@ export const BatchSyncInstanceRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<BatchSyncInstanceRequest>): BatchSyncInstanceRequest {
-    return BatchSyncInstanceRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchSyncInstancesRequest>): BatchSyncInstancesRequest {
+    return BatchSyncInstancesRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<BatchSyncInstanceRequest>): BatchSyncInstanceRequest {
-    const message = createBaseBatchSyncInstanceRequest();
+  fromPartial(object: DeepPartial<BatchSyncInstancesRequest>): BatchSyncInstancesRequest {
+    const message = createBaseBatchSyncInstancesRequest();
     message.requests = object.requests?.map((e) => SyncInstanceRequest.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseBatchSyncInstanceResponse(): BatchSyncInstanceResponse {
+function createBaseBatchSyncInstancesResponse(): BatchSyncInstancesResponse {
   return {};
 }
 
-export const BatchSyncInstanceResponse = {
-  encode(_: BatchSyncInstanceResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const BatchSyncInstancesResponse = {
+  encode(_: BatchSyncInstancesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): BatchSyncInstanceResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchSyncInstancesResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchSyncInstanceResponse();
+    const message = createBaseBatchSyncInstancesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1582,20 +1582,20 @@ export const BatchSyncInstanceResponse = {
     return message;
   },
 
-  fromJSON(_: any): BatchSyncInstanceResponse {
+  fromJSON(_: any): BatchSyncInstancesResponse {
     return {};
   },
 
-  toJSON(_: BatchSyncInstanceResponse): unknown {
+  toJSON(_: BatchSyncInstancesResponse): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create(base?: DeepPartial<BatchSyncInstanceResponse>): BatchSyncInstanceResponse {
-    return BatchSyncInstanceResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchSyncInstancesResponse>): BatchSyncInstancesResponse {
+    return BatchSyncInstancesResponse.fromPartial(base ?? {});
   },
-  fromPartial(_: DeepPartial<BatchSyncInstanceResponse>): BatchSyncInstanceResponse {
-    const message = createBaseBatchSyncInstanceResponse();
+  fromPartial(_: DeepPartial<BatchSyncInstancesResponse>): BatchSyncInstancesResponse {
+    const message = createBaseBatchSyncInstancesResponse();
     return message;
   },
 };
@@ -4131,15 +4131,16 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    batchSyncInstance: {
-      name: "BatchSyncInstance",
-      requestType: BatchSyncInstanceRequest,
+    batchSyncInstances: {
+      name: "BatchSyncInstances",
+      requestType: BatchSyncInstancesRequest,
       requestStream: false,
-      responseType: BatchSyncInstanceResponse,
+      responseType: BatchSyncInstancesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           800010: [new Uint8Array([17, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 115, 121, 110, 99])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               28,

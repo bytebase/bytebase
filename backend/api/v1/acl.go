@@ -292,8 +292,14 @@ var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
 func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext *common.AuthContext, request any, method string) error {
-	resource := getResourceFromRequest(request, method)
-	if resource != nil {
+	if authContext.AllowWithoutCredential {
+		return nil
+	}
+	if authContext.AuthMethod != common.AuthMethodIAM {
+		return nil
+	}
+	resources := getResourceFromRequest(request, method)
+	for _, resource := range resources {
 		switch {
 		case strings.HasPrefix(resource.Name, "projects/"):
 			project := projectRegex.FindString(resource.Name)
@@ -317,18 +323,49 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 		default:
 			resource.Workspace = true
 		}
-		authContext.Resources = append(authContext.Resources, resource)
 	}
+	authContext.Resources = resources
 	return nil
 }
 
-func getResourceFromRequest(request any, method string) *common.Resource {
+func getResourceFromRequest(request any, method string) []*common.Resource {
 	pm, ok := request.(proto.Message)
 	if !ok {
 		return nil
 	}
 	mr := pm.ProtoReflect()
 
+	methodTokens := strings.Split(method, "/")
+	if len(methodTokens) != 3 {
+		return nil
+	}
+	shortMethod := methodTokens[2]
+
+	var resources []*common.Resource
+	if strings.HasPrefix(shortMethod, "Batch") {
+		requestsDesc := mr.Descriptor().Fields().ByName("requests")
+		if requestsDesc != nil {
+			requestsValue := mr.Get(requestsDesc)
+			requestsValueList := requestsValue.List()
+			shortMethodWithoutBatch := strings.TrimSuffix(strings.TrimPrefix(shortMethod, "Batch"), "s")
+			for i := 0; i < requestsValueList.Len(); i++ {
+				r := requestsValueList.Get(i).Message()
+				resource := getResourceFromSingleRequest(r, shortMethodWithoutBatch)
+				if resource != nil {
+					resources = append(resources, resource)
+				}
+			}
+			return resources
+		}
+	}
+	resource := getResourceFromSingleRequest(mr, shortMethod)
+	if resource != nil {
+		resources = append(resources, resource)
+	}
+	return resources
+}
+
+func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *common.Resource {
 	parentDesc := mr.Descriptor().Fields().ByName("parent")
 	if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(parentDesc)
@@ -352,32 +389,27 @@ func getResourceFromRequest(request any, method string) *common.Resource {
 		return &common.Resource{Name: v.String()}
 	}
 
-	methodTokens := strings.Split(method, "/")
-	if len(methodTokens) != 3 {
-		return nil
-	}
-
 	// Listing top-level resources.
-	if strings.HasPrefix(methodTokens[2], "List") {
+	if strings.HasPrefix(shortMethod, "List") {
 		return &common.Resource{Workspace: true}
 	}
 
-	isCreate := strings.HasPrefix(methodTokens[2], "Create")
-	isUpdate := strings.HasPrefix(methodTokens[2], "Update")
-	isRemove := strings.HasPrefix(methodTokens[2], "Remove")
+	isCreate := strings.HasPrefix(shortMethod, "Create")
+	isUpdate := strings.HasPrefix(shortMethod, "Update")
+	isRemove := strings.HasPrefix(shortMethod, "Remove")
 	if !isCreate && !isUpdate && !isRemove {
 		return nil
 	}
 	var resourceName string
 	if isCreate {
-		resourceName = strings.TrimPrefix(methodTokens[2], "Create")
+		resourceName = strings.TrimPrefix(shortMethod, "Create")
 	}
 	if isUpdate {
-		resourceName = strings.TrimPrefix(methodTokens[2], "Update")
+		resourceName = strings.TrimPrefix(shortMethod, "Update")
 	}
 	// RemoveWebhook.
 	if isRemove {
-		resourceName = strings.TrimPrefix(methodTokens[2], "Remove")
+		resourceName = strings.TrimPrefix(shortMethod, "Remove")
 	}
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))

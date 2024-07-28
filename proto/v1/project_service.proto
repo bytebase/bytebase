@@ -81,6 +81,7 @@ service ProjectService {
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
     option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
+    option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
   }
 

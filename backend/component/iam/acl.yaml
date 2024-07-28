@@ -38,11 +38,16 @@ roles:
       - bb.environments.update
       - bb.vcsProviders.create
       - bb.vcsProviders.delete
+      - bb.vcsProviders.update
       - bb.vcsProviders.get
       - bb.vcsProviders.list
       - bb.vcsProviders.listProjects
       - bb.vcsProviders.searchProjects
-      - bb.vcsProviders.update
+      - bb.reviewConfigs.create
+      - bb.reviewConfigs.delete
+      - bb.reviewConfigs.update
+      - bb.reviewConfigs.get
+      - bb.reviewConfigs.list
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -141,11 +146,16 @@ roles:
       - bb.environments.update
       - bb.vcsProviders.create
       - bb.vcsProviders.delete
+      - bb.vcsProviders.update
       - bb.vcsProviders.get
       - bb.vcsProviders.list
       - bb.vcsProviders.listProjects
       - bb.vcsProviders.searchProjects
-      - bb.vcsProviders.update
+      - bb.reviewConfigs.create
+      - bb.reviewConfigs.delete
+      - bb.reviewConfigs.update
+      - bb.reviewConfigs.get
+      - bb.reviewConfigs.list
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -209,6 +219,8 @@ roles:
       - bb.vcsProviders.get
       - bb.vcsProviders.list
       - bb.vcsProviders.searchProjects
+      - bb.reviewConfigs.get
+      - bb.reviewConfigs.list
       - bb.policies.get
       - bb.policies.list
       - bb.risks.list

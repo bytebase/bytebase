@@ -18,6 +18,7 @@ service PlanService {
     option (google.api.http) = {get: "/v1/{name=projects/*/plans/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.plans.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {
@@ -41,6 +42,7 @@ service PlanService {
     };
     option (google.api.method_signature) = "parent,plan";
     option (bytebase.v1.permission) = "bb.plans.create";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
@@ -57,6 +59,7 @@ service PlanService {
     option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.planCheckRuns.list";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc RunPlanChecks(RunPlanChecksRequest) returns (RunPlanChecksResponse) {
@@ -66,6 +69,7 @@ service PlanService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc BatchCancelPlanCheckRuns(BatchCancelPlanCheckRunsRequest) returns (BatchCancelPlanCheckRunsResponse) {
