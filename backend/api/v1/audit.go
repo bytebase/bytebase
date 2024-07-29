@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/pkg/errors"
 
@@ -38,7 +39,7 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 	}
 }
 
-func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, rerr error) error {
+func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -84,14 +85,15 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, parent := range parents {
 		p := &storepb.AuditLog{
-			Parent:   parent,
-			Method:   method,
-			Resource: getRequestResource(request),
-			Severity: storepb.AuditLog_INFO,
-			User:     user,
-			Request:  requestString,
-			Response: responseString,
-			Status:   st.Proto(),
+			Parent:      parent,
+			Method:      method,
+			Resource:    getRequestResource(request),
+			Severity:    storepb.AuditLog_INFO,
+			User:        user,
+			Request:     requestString,
+			Response:    responseString,
+			Status:      st.Proto(),
+			ServiceData: serviceData,
 		}
 		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
 			return errors.Wrapf(err, "failed to create audit log")
@@ -102,9 +104,15 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 }
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	var serviceData *anypb.Any
+	ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
+		serviceData = a
+	})
 	response, rerr := handler(ctx, request)
 	if isAuditMethod(serverInfo.FullMethod) {
-		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, rerr); err != nil {
+		if err := func() error {
+			return createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr)
+		}(); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
@@ -139,7 +147,7 @@ func (s *AuditStream) SendMsg(resp any) error {
 	}
 	// audit log.
 	if s.needAudit && s.curRequest != nil {
-		if auditErr := createAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil); auditErr != nil {
+		if auditErr := createAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil, nil); auditErr != nil {
 			return auditErr
 		}
 	}
@@ -163,7 +171,7 @@ func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream
 
 	err := handler(srv, auditStream)
 	if err != nil {
-		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, err)
+		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, nil, err)
 	}
 
 	return nil
@@ -414,9 +422,9 @@ func isAuditMethod(method string) bool {
 		v1pb.AuthService_Login_FullMethodName,
 		v1pb.AuthService_CreateUser_FullMethodName,
 		v1pb.AuthService_UpdateUser_FullMethodName,
+		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
-		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,

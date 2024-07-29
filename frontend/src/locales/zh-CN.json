@@ -2928,7 +2928,8 @@
       "method": "操作",
       "request": "请求信息",
       "response": "响应信息",
-      "status": "状态"
+      "status": "状态",
+      "service-data": "服务数据"
     },
     "type": {
       "workspace": {
