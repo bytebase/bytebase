@@ -22,9 +22,12 @@ func WithProjectIDs(ctx context.Context, projectIDs []string) context.Context {
 	return context.WithValue(ctx, ProjectIDsContextKey, projectIDs)
 }
 
-func GetProjectIDsFromContext(ctx context.Context) ([]string, bool) {
+func GetProjectIDsFromContext(ctx context.Context) []string {
 	v, ok := ctx.Value(ProjectIDsContextKey).([]string)
-	return v, ok
+	if !ok {
+		return nil
+	}
+	return v
 }
 
 type AuthMethod int

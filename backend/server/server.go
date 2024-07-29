@@ -311,7 +311,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		grpc.ChainStreamInterceptor(
 			debugProvider.DebugStreamInterceptor,
 			authProvider.AuthenticationStreamInterceptor,
-			contextProvider.StreamInterceptor,
 			aclProvider.ACLStreamInterceptor,
 			auditProvider.AuditStreamInterceptor,
 			recoveryStreamInterceptor,
