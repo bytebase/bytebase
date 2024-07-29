@@ -250,7 +250,8 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 	resources := getResourceFromRequest(request, method)
 	for _, resource := range resources {
 		switch {
-		case strings.HasPrefix(resource.Name, "projects/"):
+		// TODO(d): remove "projects/-" hack later.
+		case strings.HasPrefix(resource.Name, "projects/") && resource.Name != "projects/-":
 			project := projectRegex.FindString(resource.Name)
 			if project == "" {
 				return errors.Errorf("invalid project resource %q", resource.Name)
