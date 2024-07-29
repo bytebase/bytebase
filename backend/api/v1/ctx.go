@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -184,32 +183,6 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 			databaseNames = append(databaseNames, r.GetName())
 		} else if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) && r.GetConnectionDatabase() != "" {
 			databaseNames = append(databaseNames, fmt.Sprintf("%s/%s%s", r.GetName(), common.DatabaseIDPrefix, r.GetConnectionDatabase()))
-		}
-	case *v1pb.UpdateDatabaseRequest:
-		databaseNames = append(databaseNames, r.GetDatabase().GetName())
-		if hasPath(r.GetUpdateMask(), "project") {
-			projectID, err := common.GetProjectID(r.GetDatabase().GetProject())
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
-			}
-			// allow to transfer databases to the default project.
-			if projectID != api.DefaultProjectID {
-				projectIDs = append(projectIDs, projectID)
-			}
-		}
-	case *v1pb.BatchUpdateDatabasesRequest:
-		for _, request := range r.Requests {
-			databaseNames = append(databaseNames, request.GetDatabase().GetName())
-			if hasPath(request.GetUpdateMask(), "project") {
-				projectID, err := common.GetProjectID(request.GetDatabase().GetProject())
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get projectID from %q", request.GetDatabase().GetProject())
-				}
-				// allow to transfer databases to the default project.
-				if projectID != api.DefaultProjectID {
-					projectIDs = append(projectIDs, projectID)
-				}
-			}
 		}
 	}
 
