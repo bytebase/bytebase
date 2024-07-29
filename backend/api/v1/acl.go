@@ -21,7 +21,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
@@ -247,7 +249,10 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 	if authContext.AuthMethod != common.AuthMethodIAM {
 		return nil
 	}
-	resources := getResourceFromRequest(request, method)
+	resources, err := getResourceFromRequest(request, method)
+	if err != nil {
+		return err
+	}
 	for _, resource := range resources {
 		switch {
 		// TODO(d): remove "projects/-" hack later.
@@ -278,20 +283,43 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 	return nil
 }
 
-func getResourceFromRequest(request any, method string) []*common.Resource {
+func getResourceFromRequest(request any, method string) ([]*common.Resource, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
-		return nil
+		return nil, errors.Errorf("invalid request for method %q", method)
 	}
 	mr := pm.ProtoReflect()
 
 	methodTokens := strings.Split(method, "/")
 	if len(methodTokens) != 3 {
-		return nil
+		return nil, errors.Errorf("invalid method %q", method)
 	}
 	shortMethod := methodTokens[2]
 
 	var resources []*common.Resource
+
+	// Transferring database projects needs to check both projects.
+	var updateDatabaseRequests []*v1pb.UpdateDatabaseRequest
+	switch r := request.(type) {
+	case *v1pb.UpdateDatabaseRequest:
+		updateDatabaseRequests = append(updateDatabaseRequests, r)
+	case *v1pb.BatchUpdateDatabasesRequest:
+		updateDatabaseRequests = append(updateDatabaseRequests, r.Requests...)
+	}
+	for _, r := range updateDatabaseRequests {
+		if hasPath(r.GetUpdateMask(), "project") {
+			projectID, err := common.GetProjectID(r.GetDatabase().GetProject())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
+			}
+			// Allow to transfer databases to the default project.
+			if projectID == api.DefaultProjectID {
+				continue
+			}
+			resources = append(resources, &common.Resource{Name: r.GetDatabase().GetProject()})
+		}
+	}
+
 	if strings.HasPrefix(shortMethod, "Batch") {
 		requestsDesc := mr.Descriptor().Fields().ByName("requests")
 		if requestsDesc != nil {
@@ -305,14 +333,14 @@ func getResourceFromRequest(request any, method string) []*common.Resource {
 					resources = append(resources, resource)
 				}
 			}
-			return resources
+			return resources, nil
 		}
 	}
 	resource := getResourceFromSingleRequest(mr, shortMethod)
 	if resource != nil {
 		resources = append(resources, resource)
 	}
-	return resources
+	return resources, nil
 }
 
 func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *common.Resource {
