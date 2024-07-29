@@ -871,18 +871,9 @@ export interface IssueComment_IssueUpdate {
   fromDescription?: string | undefined;
   toDescription?: string | undefined;
   fromStatus?: IssueStatus | undefined;
-  toStatus?:
-    | IssueStatus
-    | undefined;
-  /**
-   * TODO(d): deprecate from_assignee and to_assignee.
-   * Format: users/{email}
-   */
-  fromAssignee?:
-    | string
-    | undefined;
-  /** Format: users/{email} */
-  toAssignee?: string | undefined;
+  toStatus?: IssueStatus | undefined;
+  fromLabels: string[];
+  toLabels: string[];
 }
 
 export interface IssueComment_StageEnd {
@@ -3681,8 +3672,8 @@ function createBaseIssueComment_IssueUpdate(): IssueComment_IssueUpdate {
     toDescription: undefined,
     fromStatus: undefined,
     toStatus: undefined,
-    fromAssignee: undefined,
-    toAssignee: undefined,
+    fromLabels: [],
+    toLabels: [],
   };
 }
 
@@ -3706,11 +3697,11 @@ export const IssueComment_IssueUpdate = {
     if (message.toStatus !== undefined) {
       writer.uint32(48).int32(issueStatusToNumber(message.toStatus));
     }
-    if (message.fromAssignee !== undefined) {
-      writer.uint32(58).string(message.fromAssignee);
+    for (const v of message.fromLabels) {
+      writer.uint32(74).string(v!);
     }
-    if (message.toAssignee !== undefined) {
-      writer.uint32(66).string(message.toAssignee);
+    for (const v of message.toLabels) {
+      writer.uint32(82).string(v!);
     }
     return writer;
   },
@@ -3764,19 +3755,19 @@ export const IssueComment_IssueUpdate = {
 
           message.toStatus = issueStatusFromJSON(reader.int32());
           continue;
-        case 7:
-          if (tag !== 58) {
+        case 9:
+          if (tag !== 74) {
             break;
           }
 
-          message.fromAssignee = reader.string();
+          message.fromLabels.push(reader.string());
           continue;
-        case 8:
-          if (tag !== 66) {
+        case 10:
+          if (tag !== 82) {
             break;
           }
 
-          message.toAssignee = reader.string();
+          message.toLabels.push(reader.string());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3795,8 +3786,10 @@ export const IssueComment_IssueUpdate = {
       toDescription: isSet(object.toDescription) ? globalThis.String(object.toDescription) : undefined,
       fromStatus: isSet(object.fromStatus) ? issueStatusFromJSON(object.fromStatus) : undefined,
       toStatus: isSet(object.toStatus) ? issueStatusFromJSON(object.toStatus) : undefined,
-      fromAssignee: isSet(object.fromAssignee) ? globalThis.String(object.fromAssignee) : undefined,
-      toAssignee: isSet(object.toAssignee) ? globalThis.String(object.toAssignee) : undefined,
+      fromLabels: globalThis.Array.isArray(object?.fromLabels)
+        ? object.fromLabels.map((e: any) => globalThis.String(e))
+        : [],
+      toLabels: globalThis.Array.isArray(object?.toLabels) ? object.toLabels.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -3820,11 +3813,11 @@ export const IssueComment_IssueUpdate = {
     if (message.toStatus !== undefined) {
       obj.toStatus = issueStatusToJSON(message.toStatus);
     }
-    if (message.fromAssignee !== undefined) {
-      obj.fromAssignee = message.fromAssignee;
+    if (message.fromLabels?.length) {
+      obj.fromLabels = message.fromLabels;
     }
-    if (message.toAssignee !== undefined) {
-      obj.toAssignee = message.toAssignee;
+    if (message.toLabels?.length) {
+      obj.toLabels = message.toLabels;
     }
     return obj;
   },
@@ -3840,8 +3833,8 @@ export const IssueComment_IssueUpdate = {
     message.toDescription = object.toDescription ?? undefined;
     message.fromStatus = object.fromStatus ?? undefined;
     message.toStatus = object.toStatus ?? undefined;
-    message.fromAssignee = object.fromAssignee ?? undefined;
-    message.toAssignee = object.toAssignee ?? undefined;
+    message.fromLabels = object.fromLabels?.map((e) => e) || [];
+    message.toLabels = object.toLabels?.map((e) => e) || [];
     return message;
   },
 };

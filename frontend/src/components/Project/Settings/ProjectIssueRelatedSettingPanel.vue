@@ -4,16 +4,18 @@
       {{ $t("project.settings.issue-related.self") }}
     </h3>
     <div class="w-full flex flex-col justify-start items-start gap-2">
-      <span class="textlabel">{{
-        $t("project.settings.issue-related.labels.self")
-      }}</span>
-      <NDynamicTags
-        :size="'large'"
-        :disabled="!allowEdit"
-        :value="labelValues"
-        :render-tag="renderLabel"
-        @update:value="onLabelsUpdate"
-      />
+      <div class="space-y-2 mb-4">
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.labels.self") }}
+        </span>
+        <NDynamicTags
+          :size="'large'"
+          :disabled="!allowEdit"
+          :value="labelValues"
+          :render-tag="renderLabel"
+          @update:value="onLabelsUpdate"
+        />
+      </div>
       <div>
         <NCheckbox
           v-model:checked="state.forceIssueLabels"

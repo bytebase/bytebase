@@ -1,7 +1,7 @@
 import type Emittery from "emittery";
 import type { useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import type { InjectionKey, Ref } from "vue";
+import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide } from "vue";
 import type { ComposedIssue, ComposedUser, ReviewFlow } from "@/types";
 import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
@@ -48,6 +48,7 @@ export type IssueContext = {
   isGhostMode: Ref<boolean>;
   isLegacyIssue: Ref<boolean>;
   releaserCandidates: Ref<ComposedUser[]>;
+  allowEditIssue: ComputedRef<boolean>;
 
   // review status
   reviewContext: ReviewContext;

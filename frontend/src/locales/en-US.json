@@ -942,6 +942,7 @@
       "created-issue": "created issue",
       "commented": "commented",
       "changed-description": "changed description",
+      "changed-labels": "changed labels",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "unset-from": "unset {name} from \"{oldValue}\"",
       "set-to": "set {name} to \"{newValue}\"",

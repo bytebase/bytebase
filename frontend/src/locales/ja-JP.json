@@ -942,6 +942,7 @@
       "created-issue": "作業指示書を作成する",
       "commented": "コメント",
       "changed-description": "説明の変更",
+      "changed-labels": "ラベルを変更しました",
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "unset-from": "{name} の値を元に戻します (「{oldValue}」から)",
       "set-to": "{name} を「{newValue}」に設定します",
