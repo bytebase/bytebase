@@ -210,24 +210,23 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		if len(authContext.Resources) == 0 {
 			return false, nil, errors.Errorf("no resource found for IAM auth method")
 		}
-		for _, resource := range authContext.Resources {
-			slog.Debug("IAM auth method", slog.String("method", fullMethod), slog.String("permission", authContext.Permission), slog.String("project", resource.ProjectID), slog.Bool("workspace", resource.Workspace))
-			if resource.Workspace {
-				ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
-				if err != nil {
-					return false, nil, err
-				}
-				if !ok {
-					return false, nil, nil
-				}
-			} else {
-				ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, resource.ProjectID)
-				if err != nil {
-					return false, []string{resource.ProjectID}, err
-				}
-				if !ok {
-					return false, []string{resource.ProjectID}, nil
-				}
+		if authContext.HasWorkspaceResource() {
+			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
+			if err != nil {
+				return false, nil, err
+			}
+			if !ok {
+				return false, nil, nil
+			}
+		}
+		projectIDs := authContext.GetProjectResources()
+		if len(projectIDs) > 0 {
+			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
+			if err != nil {
+				return false, projectIDs, err
+			}
+			if !ok {
+				return false, projectIDs, nil
 			}
 		}
 		return true, nil, nil
