@@ -406,8 +406,8 @@ func (p *Provider) ListPullRequestComments(ctx context.Context, repositoryID, pu
 // UpdatePullRequestComment updates a comment in a pull request.
 //
 // Docs: https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#update-an-issue-comment
-func (p *Provider) UpdatePullRequestComment(ctx context.Context, repositoryID, pullRequestID string, comment *vcs.PullRequestComment) error {
-	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments/%s", p.APIURL(p.instanceURL), repositoryID, pullRequestID, comment.ID)
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, repositoryID, _ string, comment *vcs.PullRequestComment) error {
+	url := fmt.Sprintf("%s/repos/%s/issues/comments/%s", p.APIURL(p.instanceURL), repositoryID, comment.ID)
 	commentMessage := Comment{Body: comment.Content}
 	commentCreatePayload, err := json.Marshal(commentMessage)
 	if err != nil {

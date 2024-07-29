@@ -192,7 +192,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				vcsProvider,
 				vcsConnector,
 				prInfo,
-				fmt.Sprintf("%s\n%s", commentPrefix, comment),
+				fmt.Sprintf("%s\n\n%s", commentPrefix, comment),
 				func(content string) bool { return strings.HasPrefix(content, commentPrefix) },
 			); err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to create pull request comment, error %v", err))
@@ -225,10 +225,8 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 		return "", errors.Wrapf(err, "failed to get database sample")
 	}
 
-	// TODO(ed): title
 	content := []string{}
 	for _, change := range prInfo.changes {
-		// TODO(ed): add file info
 		adviceStatus, advices, err := s.sqlService.SQLReviewCheck(
 			ctx,
 			change.content,
@@ -245,9 +243,19 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 			continue
 		}
 
+		// TODO(ed): better message format. Maybe add links for files?
+		adviceMessage := []string{}
 		for _, advice := range advices {
-			// TODO(ed): format
-			content = append(content, advice.Content)
+			message := fmt.Sprintf("- [%d] %s (line: %d)", advice.Code, advice.Title, advice.Line)
+			adviceMessage = append(adviceMessage, message)
+		}
+
+		if len(adviceMessage) > 0 {
+			if len(content) > 0 {
+				content = append(content, "\n")
+			}
+			content = append(content, fmt.Sprintf("SQL review for %s", change.path))
+			content = append(content, strings.Join(adviceMessage, "\n"))
 		}
 	}
 
