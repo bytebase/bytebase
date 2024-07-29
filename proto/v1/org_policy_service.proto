@@ -264,6 +264,7 @@ enum PolicyType {
   MASKING_EXCEPTION = 10;
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
   TAG = 13;
+  DATA_SOURCE_QUERY = 14;
 }
 
 enum PolicyResourceType {
@@ -370,12 +371,12 @@ message TagPolicy {
 }
 
 message DataSourceQueryPolicy {
-  enum Restricton {
+  enum Restriction {
     RESTRICTION_UNSPECIFIED = 0;
     // Allow to query admin data sources when there is no read-only data source.
     FALLBACK = 1;
     // Disallow to query admin data sources.
     DISALLOW = 2;
   }
-  Restricton admin_data_source_restriction = 1;
+  Restriction admin_data_source_restriction = 1;
 }

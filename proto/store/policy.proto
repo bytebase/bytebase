@@ -138,12 +138,12 @@ message RestrictIssueCreationForSQLReviewPolicy {
 
 // DataSourceQueryPolicy is the policy configuration for data source query.
 message DataSourceQueryPolicy {
-  enum Restricton {
+  enum Restriction {
     RESTRICTION_UNSPECIFIED = 0;
     // Allow to query admin data sources when there is no read-only data source.
     FALLBACK = 1;
     // Disallow to query admin data sources.
     DISALLOW = 2;
   }
-  Restricton admin_data_source_restriction = 1;
+  Restriction admin_data_source_restriction = 1;
 }
