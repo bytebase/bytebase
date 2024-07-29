@@ -16,7 +16,7 @@ import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { extractUserEmail, useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { AuditLog } from "@/types/proto/v1/audit_log_service";
+import { AuditData, type AuditLog } from "@/types/proto/v1/audit_log_service";
 import { extractProjectResourceName } from "@/utils";
 import JSONStringView from "./JSONStringView.vue";
 
@@ -131,6 +131,24 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         render: (auditLog) =>
           auditLog.status ? (
             <JSONStringView jsonString={JSON.stringify(auditLog.status)} />
+          ) : (
+            "-"
+          ),
+      },
+      {
+        key: "service-data",
+        resizable: true,
+        minWidth: 256,
+        width: 256,
+        title: t("audit-log.table.service-data"),
+        render: (auditLog) =>
+          auditLog.serviceData && auditLog.serviceData.typeUrl ? (
+            <JSONStringView
+              jsonString={JSON.stringify({
+                "@type": auditLog.serviceData.typeUrl,
+                ...AuditData.decode(auditLog.serviceData.value),
+              })}
+            />
           ) : (
             "-"
           ),

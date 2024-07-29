@@ -1,6 +1,10 @@
 package common
 
-import "context"
+import (
+	"context"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
 
 // ContextKey is the key type of context value.
 type ContextKey int
@@ -16,7 +20,17 @@ const (
 	UserContextKey
 	ProjectIDsContextKey
 	AuthContextKey
+	ServiceDataKey
 )
+
+func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
+	return context.WithValue(ctx, ServiceDataKey, setServiceData)
+}
+
+func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool) {
+	setServiceData, ok := ctx.Value(ServiceDataKey).(func(*anypb.Any))
+	return setServiceData, ok
+}
 
 func WithProjectIDs(ctx context.Context, projectIDs []string) context.Context {
 	return context.WithValue(ctx, ProjectIDsContextKey, projectIDs)

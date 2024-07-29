@@ -181,15 +181,16 @@ func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditL
 		user = common.FormatUserEmail(u.Email)
 	}
 	return &v1pb.AuditLog{
-		Name:       fmt.Sprintf("%s/%s%d", l.Payload.Parent, common.AuditLogPrefix, l.ID),
-		CreateTime: timestamppb.New(time.Unix(l.CreatedTs, 0)),
-		User:       user,
-		Method:     l.Payload.Method,
-		Severity:   convertToAuditLogSeverity(l.Payload.Severity),
-		Resource:   l.Payload.Resource,
-		Request:    l.Payload.Request,
-		Response:   l.Payload.Response,
-		Status:     l.Payload.Status,
+		Name:        fmt.Sprintf("%s/%s%d", l.Payload.Parent, common.AuditLogPrefix, l.ID),
+		CreateTime:  timestamppb.New(time.Unix(l.CreatedTs, 0)),
+		User:        user,
+		Method:      l.Payload.Method,
+		Severity:    convertToAuditLogSeverity(l.Payload.Severity),
+		Resource:    l.Payload.Resource,
+		Request:     l.Payload.Request,
+		Response:    l.Payload.Response,
+		Status:      l.Payload.Status,
+		ServiceData: l.Payload.ServiceData,
 	}, nil
 }
 
