@@ -22,14 +22,6 @@
           />
         </div>
       </div>
-      <div>
-        <p class="text-lg mb-2">{{ $t("common.project") }}</p>
-        <ProjectSelect
-          :project-name="project.name"
-          :disabled="true"
-          style="width: auto"
-        />
-      </div>
     </div>
     <NDivider />
     <div class="w-full grid grid-cols-5 gap-x-6">
@@ -42,7 +34,7 @@
           :allow-admin="true"
           :factor-list="FactorList"
           :factor-support-dropdown="factorSupportDropdown"
-          :factor-options-map="DatabaseGroupFactorOptionsMap()"
+          :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
         />
       </div>
       <div class="col-span-2">
@@ -96,11 +88,11 @@ import type {
 } from "@/types";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { getErrorCode } from "@/utils/grpcweb";
-import { ProjectSelect, ResourceIdField } from "../v2";
+import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
+import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import { factorSupportDropdown, DatabaseGroupFactorOptionsMap } from "./utils";
 import { FactorList } from "./utils";
-import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 
 const props = defineProps<{
   project: ComposedProject;
