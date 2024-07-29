@@ -28,6 +28,7 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.execute
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -139,6 +140,7 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.execute
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -263,6 +265,7 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.execute
       - bb.databases.sync
       - bb.databases.update
       - bb.issueComments.create
