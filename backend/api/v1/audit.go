@@ -94,14 +94,15 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 }
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	ctxWithServiceData(&ctx, serverInfo.FullMethod)
+	var serviceData *anypb.Any
+	setServiceData := func(a *anypb.Any) {
+		serviceData = a
+	}
+
+	ctx = context.WithValue(ctx, common.ServiceDataKey, setServiceData)
 	response, rerr := handler(ctx, request)
 	if isAuditMethod(serverInfo.FullMethod) {
 		if err := func() error {
-			serviceData, ok := ctx.Value(common.ServiceDataKey).(*anypb.Any)
-			if !ok {
-				return errors.New("failed to get service data")
-			}
 			return createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr)
 		}(); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))

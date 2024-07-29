@@ -430,15 +430,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if serviceData, ok := ctx.Value(common.ServiceDataKey).(*anypb.Any); ok {
+	if setServiceData, ok := ctx.Value(common.ServiceDataKey).(func(*anypb.Any)); ok {
 		deltas := findIamPolicyDeltas(oldIamPolicyMsg.Policy, iamPolicyMessage.Policy)
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")
 		}
-		// avoid copying lock.
-		serviceData.TypeUrl = p.TypeUrl
-		serviceData.Value = p.Value
+		setServiceData(p)
 	}
 
 	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
