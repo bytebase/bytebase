@@ -193,48 +193,41 @@ func (exec *DataUpdateExecutor) backupData(
 		if _, err := driver.Execute(driverCtx, statement.Statement, db.ExecuteOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "failed to execute backup statement %q", statement.Statement)
 		}
-		var originalLine *int32
 		switch instance.Engine {
 		case storepb.Engine_TIDB:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_MYSQL:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
-			num := int32(statement.OriginalLine)
-			originalLine = &num
 		case storepb.Engine_MSSQL:
-			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, statement.TableName), db.ExecuteOptions{}); err != nil {
+			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, statement.TargetTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
-			num := int32(statement.OriginalLine)
-			originalLine = &num
 		case storepb.Engine_POSTGRES:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
-			num := int32(statement.OriginalLine)
-			originalLine = &num
 		case storepb.Engine_ORACLE:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
-			num := int32(statement.OriginalLine)
-			originalLine = &num
 		}
 
 		priorBackupDetail.Items = append(priorBackupDetail.Items, &storepb.PriorBackupDetail_Item{
-			// TODO(rebelice): Save full information including source database and start/end position.
 			SourceTable: &storepb.PriorBackupDetail_Item_Table{
 				Database: sourceDatabaseName,
+				Table:    statement.SourceTableName,
 			},
 			TargetTable: &storepb.PriorBackupDetail_Item_Table{
 				Database: targetDatabaseName,
 				Schema:   "",
-				Table:    statement.TableName,
+				Table:    statement.TargetTableName,
 			},
+			StartPosition: statement.StartPosition,
+			EndPosition:   statement.EndPosition,
 		})
 
 		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
@@ -247,10 +240,9 @@ func (exec *DataUpdateExecutor) backupData(
 						Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
 							{
 								Schema: "",
-								Table:  statement.TableName,
+								Table:  statement.TargetTableName,
 							},
 						},
-						OriginalLine: originalLine,
 					},
 				},
 			},
