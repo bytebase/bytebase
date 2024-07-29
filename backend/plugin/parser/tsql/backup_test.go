@@ -40,10 +40,10 @@ func TestBackup(t *testing.T) {
 		result, err := TransformDMLToSelect(base.TransformContext{}, t.Input, "db", "backupDB", "rollback")
 		a.NoError(err)
 		sort.Slice(result, func(i, j int) bool {
-			if result[i].TableName == result[j].TableName {
+			if result[i].TargetTableName == result[j].TargetTableName {
 				return result[i].Statement < result[j].Statement
 			}
-			return result[i].TableName < result[j].TableName
+			return result[i].TargetTableName < result[j].TargetTableName
 		})
 
 		if record {
