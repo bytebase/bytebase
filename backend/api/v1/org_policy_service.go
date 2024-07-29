@@ -1110,14 +1110,14 @@ func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSou
 	}
 	return &v1pb.Policy_DataSourceQueryPolicy{
 		DataSourceQueryPolicy: &v1pb.DataSourceQueryPolicy{
-			AdminDataSourceRestriction: v1pb.DataSourceQueryPolicy_Restricton(payload.AdminDataSourceRestriction),
+			AdminDataSourceRestriction: v1pb.DataSourceQueryPolicy_Restriction(payload.AdminDataSourceRestriction),
 		},
 	}, nil
 }
 
 func convertToDataSourceQueryPayload(policy *v1pb.DataSourceQueryPolicy) (*storepb.DataSourceQueryPolicy, error) {
 	return &storepb.DataSourceQueryPolicy{
-		AdminDataSourceRestriction: storepb.DataSourceQueryPolicy_Restricton(policy.AdminDataSourceRestriction),
+		AdminDataSourceRestriction: storepb.DataSourceQueryPolicy_Restriction(policy.AdminDataSourceRestriction),
 	}, nil
 }
 

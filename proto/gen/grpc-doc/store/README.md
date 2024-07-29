@@ -194,7 +194,7 @@
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
-    - [DataSourceQueryPolicy.Restricton](#bytebase-store-DataSourceQueryPolicy-Restricton)
+    - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
     - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
@@ -2855,7 +2855,7 @@ DataSourceQueryPolicy is the policy configuration for data source query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| admin_data_source_restriction | [DataSourceQueryPolicy.Restricton](#bytebase-store-DataSourceQueryPolicy-Restricton) |  |  |
+| admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction) |  |  |
 
 
 
@@ -3109,9 +3109,9 @@ SlowQueryPolicy is the policy configuration for slow query.
  
 
 
-<a name="bytebase-store-DataSourceQueryPolicy-Restricton"></a>
+<a name="bytebase-store-DataSourceQueryPolicy-Restriction"></a>
 
-### DataSourceQueryPolicy.Restricton
+### DataSourceQueryPolicy.Restriction
 
 
 | Name | Number | Description |
