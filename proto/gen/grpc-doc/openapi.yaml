@@ -3058,37 +3058,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}:execute:
-        post:
-            tags:
-                - SQLService
-            operationId: SQLService_Execute
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ExecuteRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ExecuteResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}:export:
         post:
             tags:
@@ -9917,6 +9886,8 @@ components:
                     type: string
                     format: enum
         ExecuteRequest:
+            required:
+                - name
             type: object
             properties:
                 name:
