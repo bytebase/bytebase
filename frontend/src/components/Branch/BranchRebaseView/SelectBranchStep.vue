@@ -117,8 +117,9 @@
 
 <script setup lang="ts">
 import { CheckIcon, XCircleIcon, MoveLeftIcon } from "lucide-vue-next";
-import { NRadioGroup, NTab, NTabs } from "naive-ui";
+import { NRadio, NRadioGroup, NTab, NTabs } from "naive-ui";
 import { computed, ref, watch } from "vue";
+import { BBSpin } from "@/bbkit";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -127,6 +128,7 @@ import { useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import BranchSelector from "../BranchSelector.vue";
 import type { RebaseBranchValidationState, RebaseSourceType } from "./types";
 
 type TabValue = "schema-editor" | "raw-schema-text";

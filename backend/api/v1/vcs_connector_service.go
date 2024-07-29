@@ -425,6 +425,7 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 	var err error
 	switch vcsProvider.Type {
 	case storepb.VCSType_GITLAB:
+		// https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html#push-events
 		webhookCreate := gitlab.WebhookCreate{
 			URL:                   fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			SecretToken:           webhookSecretToken,
@@ -444,6 +445,7 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 				Secret:      webhookSecretToken,
 				InsecureSSL: 1,
 			},
+			// https://docs.github.com/en/webhooks/webhook-events-and-payloads
 			Events: []string{"pull_request", "pull_request_review_comment"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
@@ -455,7 +457,8 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 			Description: "Bytebase GitOps",
 			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			Active:      true,
-			Events:      []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
+			// https://support.atlassian.com/bitbucket-cloud/docs/event-payloads
+			Events: []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {
@@ -468,6 +471,11 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 		}
 		projectID, repositoryID := part[1], part[2]
 
+		// https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops
+		// TODO(ed): Azure doesn't support multiply events in a single webhook, but we need:
+		// - git.pullrequest.merged: A merge commit was created on a pull request.
+		// - git.pullrequest.created: A pull request is created in a Git repository.
+		// - git.pullrequest.updated: A pull request is updated; status, review list, reviewer vote changed, or the source branch is updated with a push.
 		webhookPost := azure.WebhookCreateOrUpdate{
 			ConsumerActionID: "httpRequest",
 			ConsumerID:       "webHooks",

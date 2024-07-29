@@ -1,5 +1,5 @@
 <template>
-  <div class="px-6 space-y-2">
+  <div class="px-6 space-y-2 mb-4">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
     <div class="flex items-center justify-between">
@@ -84,7 +84,9 @@ import {
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
 import { InstanceRoleTable, Drawer } from "@/components/v2";
-import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import DatabaseV1Table, {
+  DatabaseOperations,
+} from "@/components/v2/Model/DatabaseV1Table";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
   pushNotification,

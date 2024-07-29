@@ -62,11 +62,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	default:
 	}
 
-	rolesMetadata, err := d.getRoles(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get role metadata")
-	}
-	instanceMetadata.InstanceRoles = rolesMetadata
 	instanceMetadata.Version = version
 	return &instanceMetadata, nil
 }
@@ -97,37 +92,50 @@ func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	results, err := d.QueryWithConn(ctx, nil, "SELECT VERSION()", nil)
-	if err != nil || len(results) == 0 {
+	conn, err := d.connPool.Get("")
+	if err != nil {
+		return "", err
+	}
+	result, err := runSingleStatement(ctx, conn, "SELECT VERSION()")
+	if err != nil {
 		return "", errors.Wrap(err, "failed to get version from instance")
 	}
-	versionRawStr := results[0].Rows[0].Values[0].GetStringValue()
+	versionRawStr := result.Rows[0].Values[0].GetStringValue()
 	version := strings.Split(versionRawStr, " ")[0]
 	return version, nil
 }
 
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 	var databaseNames []string
-	results, err := d.QueryWithConn(ctx, nil, "SHOW DATABASES", nil)
+	conn, err := d.connPool.Get("")
+	defer d.connPool.Put(conn)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get databases from instance")
+		return nil, err
 	}
-	for _, row := range results[0].Rows {
+	result, err := runSingleStatement(ctx, conn, "SHOW DATABASES")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get version from instance")
+	}
+	for _, row := range result.Rows {
 		databaseNames = append(databaseNames, row.Values[0].GetStringValue())
 	}
 	return databaseNames, nil
 }
 
 func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]string, error) {
-	var tabNames []string
-	tabResults, err := d.QueryWithConn(ctx, nil, fmt.Sprintf("SHOW TABLES FROM %s", databaseName), nil)
-
-	for _, row := range tabResults[0].Rows {
-		tabNames = append(tabNames, row.Values[0].GetStringValue())
+	conn, err := d.connPool.Get("")
+	defer d.connPool.Put(conn)
+	if err != nil {
+		return nil, err
+	}
+	result, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
 
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from instance")
+	var tabNames []string
+	for _, row := range result.Rows {
+		tabNames = append(tabNames, row.Values[0].GetStringValue())
 	}
 	return tabNames, nil
 }
@@ -192,16 +200,14 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 
 		var tableMetadata storepb.TableMetadata
 
-		// indexes.
-		indexResults, err := d.getIndexesByTableName(ctx, tabName, databaseName)
-		if err != nil {
-			return nil, nil, nil, nil, errors.Wrapf(err, "failed to get index info from tab %s", tabName)
-		}
-
 		// partitions.
-		partitionResults, err := d.QueryWithConn(ctx, nil, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tabName), nil)
+		conn, err := d.connPool.Get("")
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		partitionResult, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tabName))
 		if err == nil {
-			for _, row := range partitionResults[0].Rows {
+			for _, row := range partitionResult.Rows {
 				tableMetadata.Partitions = append(tableMetadata.Partitions, &storepb.TablePartitionMetadata{
 					Name: row.Values[0].GetStringValue(),
 				})
@@ -214,72 +220,10 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		tableMetadata.DataSize = int64(tabInfo.totalSize)
 		tableMetadata.RowCount = int64(tabInfo.numRows)
 		tableMetadata.Name = tabName
-		tableMetadata.Indexes = indexResults
 		tableMetadatas = append(tableMetadatas, &tableMetadata)
 	}
 
 	return tableMetadatas, extTableMetadatas, viewMetadatas, mtViewMetadatas, nil
-}
-
-// getRoles fetches role names and grant info from instance and returns structed role data.
-func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
-	var roleMetadata []*storepb.InstanceRoleMetadata
-	roleMessages, err := d.ListRole(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get role names")
-	}
-
-	for _, roleMessage := range roleMessages {
-		roleName := roleMessage.Name
-		grantString, err := d.GetRoleGrant(ctx, roleName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get grant info from role %s", roleName)
-		}
-		roleMetadata = append(roleMetadata, &storepb.InstanceRoleMetadata{
-			Name:  roleName,
-			Grant: grantString,
-		})
-	}
-
-	return roleMetadata, nil
-}
-
-func (d *Driver) getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
-	var (
-		indexMetadata []*storepb.IndexMetadata
-	)
-
-	conn, err := d.connPool.Get("")
-	if err != nil {
-		return nil, err
-	}
-	cursor := conn.Cursor()
-	defer func() {
-		cursor.Close()
-		d.connPool.Put(conn)
-	}()
-
-	cursor.Execute(ctx, fmt.Sprintf("use %s", databaseName), false)
-	if cursor.Err != nil {
-		return nil, errors.Wrapf(cursor.Err, "failed to switch to database %s", databaseName)
-	}
-
-	cursor.Execute(ctx, fmt.Sprintf("SHOW INDEX ON `%s`", tableName), false)
-	if cursor.Err != nil {
-		return nil, errors.Wrapf(cursor.Err, "failed to get index info from table %s", tableName)
-	}
-
-	for cursor.HasMore(ctx) {
-		rowMap := cursor.RowMap(ctx)
-		indexMetadata = append(indexMetadata, &storepb.IndexMetadata{
-			Name:        strings.ReplaceAll(rowMap["idx_name"].(string), " ", ""),
-			Comment:     strings.ReplaceAll(rowMap["comment"].(string), " ", ""),
-			Type:        strings.ReplaceAll(rowMap["idx_type"].(string), " ", ""),
-			Expressions: strings.Split(strings.ReplaceAll(rowMap["col_names"].(string), " ", ""), ","),
-		})
-	}
-
-	return indexMetadata, nil
 }
 
 // This function gets certain database info by name.

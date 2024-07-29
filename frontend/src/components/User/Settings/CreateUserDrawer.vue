@@ -185,6 +185,7 @@ import {
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   getUpdateMaskFromUsers,
   pushNotification,
@@ -255,9 +256,9 @@ const availableRoleOptions = computed(
       {
         type: "group",
         key: "project-roles",
-        label: `${t("role.project-roles.self")} (${t(
+        label: `${t("role.project-roles.self")} (${t("common.optional")}, ${t(
           "role.project-roles.apply-to-all-projects"
-        )})`,
+        ).toLocaleLowerCase()})`,
         children: PRESET_PROJECT_ROLES.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
@@ -271,9 +272,9 @@ const availableRoleOptions = computed(
       roleGroups.push({
         type: "group",
         key: "custom-roles",
-        label: `${t("role.custom-roles")} (${t(
+        label: `${t("role.custom-roles")} (${t("common.optional")}, ${t(
           "role.project-roles.apply-to-all-projects"
-        )})`,
+        ).toLocaleLowerCase()})`,
         children: customRoles.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
@@ -307,8 +308,7 @@ const rolesChanged = computed(() => {
 
   return (
     !isUndefined(state.user.roles) &&
-    state.user.roles.length > 0 &&
-    !isEqual(props.user?.roles, state.user.roles)
+    !isEqual(initUser().roles, state.user.roles)
   );
 });
 

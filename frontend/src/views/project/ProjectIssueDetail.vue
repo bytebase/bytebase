@@ -22,6 +22,7 @@ import Emittery from "emittery";
 import { NSpin } from "naive-ui";
 import { computed, onMounted, reactive, toRef } from "vue";
 import { useI18n } from "vue-i18n";
+import { FeatureModal } from "@/components/FeatureGuard";
 import {
   DataExportIssueDetailPage,
   GrantRequestIssueDetailPage,
@@ -58,10 +59,8 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const { isCreating, issue, isInitializing, reInitialize } = useInitializeIssue(
-  toRef(props, "issueSlug"),
-  toRef(props, "projectId")
-);
+const { isCreating, issue, isInitializing, reInitialize, allowEditIssue } =
+  useInitializeIssue(toRef(props, "issueSlug"), toRef(props, "projectId"));
 const ready = computed(() => {
   return !isInitializing.value && !!issue.value;
 });
@@ -79,6 +78,7 @@ provideIssueContext(
     issue,
     ready,
     reInitialize,
+    allowEditIssue,
     ...issueBaseContext,
   },
   true /* root */

@@ -1,3 +1,13 @@
+- input: |-
+    DELETE FROM db.test WHERE c1 = 1;
+    UPDATE db.test SET test.c1 = 2 WHERE test.c1 = 1;
+  result:
+    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "DB"."TEST".* FROM db.test WHERE c1 = 1;
+      tablename: rollback_0_TEST
+      originalline: 1
+    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "DB"."TEST".* FROM db.test WHERE test.c1 = 1;
+      tablename: rollback_1_TEST
+      originalline: 2
 - input: UPDATE test  t SET t.c1 = 1 WHERE t.c1=2;
   result:
     - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "T".* FROM test  t WHERE t.c1=2;
@@ -32,29 +42,29 @@
     DELETE FROM test WHERE c1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "db"."TEST".* FROM test WHERE c1 = 1;
+    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE c1 = 1;
       tablename: rollback_0_TEST
       originalline: 1
-    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "db"."TEST".* FROM test WHERE test.c1 = 1;
+    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "TEST".* FROM test WHERE test.c1 = 1;
       tablename: rollback_1_TEST
       originalline: 2
 - input: DELETE FROM test WHERE c1 = 1;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "db"."TEST".* FROM test WHERE c1 = 1;
+    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE c1 = 1;
       tablename: rollback_0_TEST
       originalline: 1
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "db"."TEST".* FROM test WHERE c1=2;
+    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE c1=2;
       tablename: rollback_0_TEST
       originalline: 1
 - input: |-
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
     UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "db"."TEST".* FROM test WHERE test.c1 = 1;
+    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE test.c1 = 1;
       tablename: rollback_0_TEST
       originalline: 1
-    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "db"."TEST".* FROM test WHERE test.c1 = 5;
+    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "TEST".* FROM test WHERE test.c1 = 5;
       tablename: rollback_1_TEST
       originalline: 2

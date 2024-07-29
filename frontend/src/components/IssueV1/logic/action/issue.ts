@@ -81,6 +81,9 @@ export const issueStatusActionDisplayName = (
     default:
       return "";
   }
+  if (count <= 1) {
+    return actionText;
+  }
   return t("issue.batch-transition.action-n-issues", {
     action: actionText,
     n: count,

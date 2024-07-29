@@ -62,6 +62,10 @@
 <script setup lang="ts">
 import type { Table } from "@tanstack/vue-table";
 import { computed } from "vue";
+import {
+  FeatureBadge,
+  FeatureBadgeForInstanceLicense,
+} from "@/components/FeatureGuard";
 import { useSubscriptionV1Store } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import SensitiveDataIcon from "./DataTable/SensitiveDataIcon.vue";

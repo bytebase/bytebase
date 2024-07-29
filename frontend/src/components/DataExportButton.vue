@@ -124,10 +124,11 @@ import {
 import type { BinaryLike } from "node:crypto";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBModal, BBTextField } from "@/bbkit";
 import { pushNotification } from "@/store";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
 import { defer, isNullOrUndefined } from "@/utils";
-import { ErrorTipsButton } from "./v2";
+import { Drawer, DrawerContent, ErrorTipsButton } from "./v2";
 
 interface LocalState {
   isRequesting: boolean;

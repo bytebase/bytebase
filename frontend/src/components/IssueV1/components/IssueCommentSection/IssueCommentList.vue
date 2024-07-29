@@ -5,9 +5,9 @@
       <IssueCommentView
         v-for="(item, index) in issueComments"
         :key="item.comment.name"
-        :issue-comments="issueComments"
         :issue="issue"
         :index="index"
+        :is-last="index === issueComments.length - 1"
         :issue-comment="item.comment"
         :similar="item.similar"
       >
@@ -108,9 +108,11 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import {
   useCurrentUserV1,
   useIssueCommentStore,

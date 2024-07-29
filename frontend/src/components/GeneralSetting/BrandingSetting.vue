@@ -105,12 +105,14 @@
 
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
-import { NPopconfirm } from "naive-ui";
+import { NButton, NInput, NPopconfirm, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { FeatureBadge, FeatureModal } from "../FeatureGuard";
+import SingleFileSelector from "../SingleFileSelector.vue";
 
 interface LocalState {
   displayName?: string;

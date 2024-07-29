@@ -27,6 +27,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";

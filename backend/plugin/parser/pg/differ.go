@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -48,7 +47,6 @@ type diffNode struct {
 	createTypeList                 []ast.Node
 	alterTypeList                  []ast.Node
 	createExtensionList            []ast.Node
-	createTempViewList             []string
 	createFunctionList             []ast.Node
 	createSequenceList             []ast.Node
 	alterSequenceExceptOwnedByList []ast.Node
@@ -61,8 +59,13 @@ type diffNode struct {
 	createTriggerList              []ast.Node
 	createConstraintExceptFkList   []ast.Node
 	createForeignKeyList           []ast.Node
-	createViewList                 []*ast.CreateViewStmt
+	createViewList                 []*createViewInfo
 	setCommentList                 []ast.Node
+}
+
+type createViewInfo struct {
+	id   int
+	stmt *ast.CreateViewStmt
 }
 
 type schemaMap map[string]*schemaInfo
@@ -831,7 +834,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for _, partition := range newPartitions {
 		newPartitionMap[partition] = true
 	}
-	for _, node := range newNodes {
+	for i, node := range newNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
 			// ignore partition table
@@ -869,16 +872,11 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			oldView := oldSchemaMap.getView(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new view.
 			if oldView == nil {
-				tempView, err := getTempView(stmt)
-				if err != nil {
-					return "", err
-				}
-				diff.createTempViewList = append(diff.createTempViewList, tempView)
-				diff.createViewList = append(diff.createViewList, stmt)
+				diff.createViewList = append(diff.createViewList, &createViewInfo{id: i, stmt: stmt})
 				continue
 			}
 			oldView.existsInNew = true
-			if err := diff.ModifyView(oldView, stmt); err != nil {
+			if err := diff.ModifyView(oldView, i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.AlterTableStmt:
@@ -1082,69 +1080,6 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	}
 
 	return diff.deparse()
-}
-
-func getTempView(view *ast.CreateViewStmt) (string, error) {
-	fields, err := extractFieldNameFromSelect(view.Select.GetOriginalNode())
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to extract field name from select %v", view.Name.Name)
-	}
-
-	var buf strings.Builder
-	if _, err := fmt.Fprintf(&buf, `CREATE VIEW "%s"."%s" AS SELECT `, view.Name.Schema, view.Name.Name); err != nil {
-		return "", err
-	}
-
-	for i, column := range fields {
-		if i != 0 {
-			if _, err := buf.WriteString(", "); err != nil {
-				return "", err
-			}
-		}
-		if _, err := fmt.Fprintf(&buf, `1 AS "%s"`, column); err != nil {
-			return "", err
-		}
-	}
-	if _, err := fmt.Fprintf(&buf, ";"); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-func extractFieldNameFromSelect(node *pgquery.SelectStmt) ([]string, error) {
-	var result []string
-	for _, field := range node.TargetList {
-		resTarget, ok := field.Node.(*pgquery.Node_ResTarget)
-		if !ok {
-			return nil, errors.Errorf("expect ResTarget, but found %v", field.Node)
-		}
-		switch fieldNode := resTarget.ResTarget.Val.Node.(type) {
-		case *pgquery.Node_ColumnRef:
-			columnRef, err := pgrawparser.ConvertNodeListToColumnNameDef(fieldNode.ColumnRef.Fields)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to convert node list to column name def %v", fieldNode.ColumnRef.Fields)
-			}
-			if columnRef.ColumnName == "*" {
-				return nil, errors.Errorf("start in select is not expected for create view")
-			}
-			columnName := columnRef.ColumnName
-			if resTarget.ResTarget.Name != "" {
-				columnName = resTarget.ResTarget.Name
-			}
-			result = append(result, columnName)
-		default:
-			if resTarget.ResTarget.Name == "" {
-				columnName, err := pgExtractFieldName(resTarget.ResTarget.Val)
-				if err != nil {
-					return nil, err
-				}
-				result = append(result, columnName)
-			} else {
-				result = append(result, resTarget.ResTarget.Name)
-			}
-		}
-	}
-	return result, nil
 }
 
 func (diff *diffNode) appendDropConstraint(table *ast.TableDef, constraintList []*ast.ConstraintDef) {
@@ -1351,18 +1286,13 @@ func (diff *diffNode) modifyTableByConstraint(oldTable *ast.CreateTableStmt, new
 	return nil
 }
 
-func (diff *diffNode) ModifyView(oldView *viewInfo, newView *ast.CreateViewStmt) error {
+func (diff *diffNode) ModifyView(oldView *viewInfo, id int, newView *ast.CreateViewStmt) error {
 	if !equalView(oldView.createView, newView) {
 		diff.dropViewList = append(diff.dropViewList, oldView.createView.Name)
 		// drop the comments of the view
 		oldView.comment = ""
 		oldView.columnCommentMap = make(map[string]string)
-		tempView, err := getTempView(newView)
-		if err != nil {
-			return err
-		}
-		diff.createTempViewList = append(diff.createTempViewList, tempView)
-		diff.createViewList = append(diff.createViewList, newView)
+		diff.createViewList = append(diff.createViewList, &createViewInfo{id: id, stmt: newView})
 	}
 	return nil
 }
@@ -1888,9 +1818,12 @@ func printDropView(buf io.Writer, viewList []*ast.TableDef) error {
 	return nil
 }
 
-func printCreateViewStmt(buf io.Writer, viewList []*ast.CreateViewStmt) error {
+func printCreateViewStmt(buf io.Writer, viewList []*createViewInfo) error {
+	sort.Slice(viewList, func(i, j int) bool {
+		return viewList[i].id < viewList[j].id
+	})
 	for _, view := range viewList {
-		node := view.GetOriginalNode()
+		node := view.stmt.GetOriginalNode()
 		node.ViewStmt.Replace = true
 		text, err := pgquery.Deparse(&pgquery.ParseResult{
 			Stmts: []*pgquery.RawStmt{
@@ -1969,11 +1902,6 @@ func (diff *diffNode) deparse() (string, error) {
 	}
 	if err := printStmtSliceByText(&buf, diff.createExtensionList); err != nil {
 		return "", err
-	}
-	for _, tempView := range diff.createTempViewList {
-		if _, err := fmt.Fprintf(&buf, "%s;\n", tempView); err != nil {
-			return "", err
-		}
 	}
 	if err := printStmtSliceByText(&buf, diff.createFunctionList); err != nil {
 		return "", err

@@ -42,6 +42,8 @@ const (
 	PolicyTypeIAM PolicyType = "bb.policy.iam"
 	// PolicyTypeTag is the policy type for resource tags.
 	PolicyTypeTag PolicyType = "bb.policy.tag"
+	// PolicyTypeDataSourceQuery is the policy type for data source query.
+	PolicyTypeDataSourceQuery PolicyType = "bb.policy.data-source-query"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"

@@ -27,6 +27,7 @@
 </template>
 
 <script lang="ts" setup>
+import { BBSpin } from "@/bbkit";
 import type { Message } from "../../types";
 import CodeView from "./CodeView.vue";
 

@@ -632,7 +632,20 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal masking exception policy")
+			return "", errors.Wrap(err, "failed to marshal restrict issue creation for SQL review policy")
+		}
+		return string(payloadBytes), nil
+	case v1pb.PolicyType_DATA_SOURCE_QUERY:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
+			return "", status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		payload, err := convertToDataSourceQueryPayload(policy.GetDataSourceQueryPolicy())
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal data source query policy")
 		}
 		return string(payloadBytes), nil
 	}
@@ -730,6 +743,13 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	case api.PolicyTypeRestrictIssueCreationForSQLReview:
 		pType = v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
 		payload, err := convertToV1PBRestrictIssueCreationForSQLReviewPolicy(policyMessage.Payload)
+		if err != nil {
+			return nil, err
+		}
+		policy.Policy = payload
+	case api.PolicyTypeDataSourceQuery:
+		pType = v1pb.PolicyType_DATA_SOURCE_QUERY
+		payload, err := convertToV1PBDataSourceQueryPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -1083,6 +1103,24 @@ func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssu
 	}, nil
 }
 
+func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSourceQueryPolicy, error) {
+	payload := &storepb.DataSourceQueryPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
+		return nil, err
+	}
+	return &v1pb.Policy_DataSourceQueryPolicy{
+		DataSourceQueryPolicy: &v1pb.DataSourceQueryPolicy{
+			AdminDataSourceRestriction: v1pb.DataSourceQueryPolicy_Restriction(payload.AdminDataSourceRestriction),
+		},
+	}, nil
+}
+
+func convertToDataSourceQueryPayload(policy *v1pb.DataSourceQueryPolicy) (*storepb.DataSourceQueryPolicy, error) {
+	return &storepb.DataSourceQueryPolicy{
+		AdminDataSourceRestriction: storepb.DataSourceQueryPolicy_Restriction(policy.AdminDataSourceRestriction),
+	}, nil
+}
+
 func convertPolicyType(pType string) (api.PolicyType, error) {
 	var policyType api.PolicyType
 	switch strings.ToUpper(pType) {
@@ -1102,6 +1140,8 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeDisableCopyData, nil
 	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW.String():
 		return api.PolicyTypeRestrictIssueCreationForSQLReview, nil
+	case v1pb.PolicyType_DATA_SOURCE_QUERY.String():
+		return api.PolicyTypeDataSourceQuery, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
 }

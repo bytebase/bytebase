@@ -47,6 +47,7 @@ import { useBranchListByProject } from "@/store/modules/branch";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
+import { SearchBox } from "./v2";
 
 const props = defineProps<{
   project: ComposedProject;

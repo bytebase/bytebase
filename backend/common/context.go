@@ -39,7 +39,7 @@ const (
 type Resource struct {
 	Type      string
 	Name      string
-	Project   string
+	ProjectID string
 	Workspace bool
 }
 
@@ -48,4 +48,27 @@ type AuthContext struct {
 	Permission             string
 	AuthMethod             AuthMethod
 	Resources              []*Resource
+}
+
+func (c *AuthContext) HasWorkspaceResource() bool {
+	for _, r := range c.Resources {
+		if r.Workspace {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *AuthContext) GetProjectResources() []string {
+	projectIDMap := make(map[string]bool)
+	for _, r := range c.Resources {
+		if r.ProjectID != "" {
+			projectIDMap[r.ProjectID] = true
+		}
+	}
+	var projectIDs []string
+	for projectID := range projectIDMap {
+		projectIDs = append(projectIDs, projectID)
+	}
+	return projectIDs
 }

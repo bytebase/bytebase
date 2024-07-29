@@ -18,6 +18,7 @@ import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { FeatureModal } from "../FeatureGuard";
 import { provideEnvironmentFormContext } from "./context";
 
 const props = withDefaults(

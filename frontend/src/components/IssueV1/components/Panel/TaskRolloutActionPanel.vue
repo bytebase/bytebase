@@ -130,7 +130,14 @@
 
 <script setup lang="ts">
 import { head, uniqBy } from "lodash-es";
-import { NButton, NCheckbox, NInput, NScrollbar, NTooltip } from "naive-ui";
+import {
+  NButton,
+  NCheckbox,
+  NInput,
+  NScrollbar,
+  NTag,
+  NTooltip,
+} from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";

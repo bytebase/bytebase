@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
@@ -19,12 +20,14 @@ service BranchService {
     option (google.api.http) = {get: "/v1/{name=projects/*/branches/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/branches"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.branches.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateBranch(CreateBranchRequest) returns (Branch) {
@@ -34,6 +37,7 @@ service BranchService {
     };
     option (google.api.method_signature) = "parent,branch";
     option (bytebase.v1.permission) = "bb.branches.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateBranch(UpdateBranchRequest) returns (Branch) {
@@ -43,28 +47,28 @@ service BranchService {
     };
     option (google.api.method_signature) = "branch,update_mask";
     option (bytebase.v1.permission) = "bb.branches.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc MergeBranch(MergeBranchRequest) returns (Branch) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc RebaseBranch(RebaseBranchRequest) returns (RebaseBranchResponse) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:rebase"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteBranch(DeleteBranchRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/branches/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.delete";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // DiffDatabase works similar to branch rebase.
@@ -77,6 +81,7 @@ service BranchService {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:diffDatabase"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
@@ -101,6 +106,11 @@ enum BranchView {
 }
 
 message Branch {
+  option (google.api.resource) = {
+    type: "bytebase.com/Branch"
+    pattern: "projects/{project}/branches/{branch}"
+  };
+
   // The name of the branch.
   // Format: projects/{project}/branches/{branch}
   // {branch} should be the id of a sheet.
@@ -154,13 +164,19 @@ message Branch {
 message GetBranchRequest {
   // The name of the branch to retrieve.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 }
 
 message ListBranchesRequest {
   // The parent resource of the branch.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // To filter the search result.
   string filter = 2;
@@ -193,7 +209,10 @@ message ListBranchesResponse {
 message CreateBranchRequest {
   // The parent, which owns this collection of branches.
   // Format: project/{project}
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   Branch branch = 2;
 
@@ -223,7 +242,10 @@ message UpdateBranchRequest {
 message MergeBranchRequest {
   // The name of the base branch to merge to.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // The head branch to merge from.
   // Format: projects/{project}/branches/{branch}
@@ -242,7 +264,10 @@ message MergeBranchRequest {
 message RebaseBranchRequest {
   // The name of the base branch to merge to.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // The database (remote upstream) used to rebase.
   // We use its schema as baseline and reapply the difference between base and head of the named branch.
@@ -284,7 +309,10 @@ message RebaseBranchResponse {
 message DeleteBranchRequest {
   // The name of the branch to delete.
   // Format: projects/{project}/branches/{branch}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // By default, server will return `FAILED_PRECONDITION` error
   // if delete the branch that is parent of other branches.
@@ -294,7 +322,10 @@ message DeleteBranchRequest {
 
 message DiffDatabaseRequest {
   // The name of branch.
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // The name of the databsae to merge the branch to.
   string database = 2 [(google.api.field_behavior) = REQUIRED];

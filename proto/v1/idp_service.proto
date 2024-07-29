@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
@@ -17,6 +18,7 @@ service IdentityProviderService {
     option (google.api.http) = {get: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.identityProviders.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
@@ -33,6 +35,7 @@ service IdentityProviderService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.identityProviders.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (IdentityProvider) {
@@ -42,12 +45,14 @@ service IdentityProviderService {
     };
     option (google.api.method_signature) = "identity_provider,update_mask";
     option (bytebase.v1.permission) = "bb.identityProviders.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.identityProviders.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UndeleteIdentityProvider(UndeleteIdentityProviderRequest) returns (IdentityProvider) {
@@ -56,6 +61,7 @@ service IdentityProviderService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.identityProviders.undelete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
@@ -64,11 +70,15 @@ service IdentityProviderService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.identityProviders.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
 message GetIdentityProviderRequest {
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/IdP"}
+  ];
 }
 
 message ListIdentityProvidersRequest {
@@ -124,13 +134,19 @@ message UpdateIdentityProviderRequest {
 message DeleteIdentityProviderRequest {
   // The name of the identity provider to delete.
   // Format: idps/{identity_provider}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/IdP"}
+  ];
 }
 
 message UndeleteIdentityProviderRequest {
   // The name of the deleted identity provider.
   // Format: idps/{identity_provider}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/IdP"}
+  ];
 }
 
 message TestIdentityProviderRequest {
@@ -150,8 +166,13 @@ message OAuth2IdentityProviderTestRequestContext {
 message TestIdentityProviderResponse {}
 
 message IdentityProvider {
+  option (google.api.resource) = {
+    type: "bytebase.com/IdP"
+    pattern: "idps/{idp}"
+  };
+
   // The name of the identity provider.
-  // Format: idps/{identity_provider}
+  // Format: idps/{idp}
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.

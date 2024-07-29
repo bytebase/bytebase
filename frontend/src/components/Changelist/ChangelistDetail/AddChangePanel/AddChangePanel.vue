@@ -74,10 +74,11 @@
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
 import { File, History } from "lucide-vue-next";
-import { NRadio, NRadioGroup } from "naive-ui";
+import { NButton, NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { branchServiceClient } from "@/grpcweb";
 import {
@@ -96,11 +97,11 @@ import {
   isLocalSheet,
   setSheetStatement,
 } from "@/utils";
+import { fallbackVersionForChange } from "../../common";
 import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
 import { ChangeHistoryForm, RawSQLForm } from "./form";
 import { emptyRawSQLChange } from "./utils";
-import { fallbackVersionForChange } from "../../common";
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();

@@ -58,6 +58,7 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton, NEllipsis } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import {
   Drawer,
   DrawerContent,

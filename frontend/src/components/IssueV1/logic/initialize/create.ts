@@ -514,10 +514,7 @@ export const prepareDatabaseList = async (
 };
 
 const prepareDatabaseListByProject = async (project: string) => {
-  const filters = [`instance = "instances/-"`, `project = "${project}"`];
-  await useDatabaseV1Store().searchDatabases({
-    filter: filters.join(" && "),
-  });
+  await useDatabaseV1Store().listDatabases(project);
 };
 
 export const isValidStage = (stage: Stage): boolean => {

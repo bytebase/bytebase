@@ -21,9 +21,7 @@
       </div>
     </template>
     <template v-else>
-      <BatchQuerySelect
-        v-model:selected-database="selectedDatabase"
-      />
+      <BatchQuerySelect v-model:selected-database="selectedDatabase" />
       <template v-if="!selectedResultSet">
         <div
           class="w-full h-full flex flex-col justify-center items-center text-sm"
@@ -46,6 +44,7 @@
 import { useTimestamp } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
+import { BBSpin } from "@/bbkit";
 import { useSQLEditorTabStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { ResultViewV1 } from "../EditorCommon/";

@@ -4,7 +4,6 @@ package util
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -18,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/masker"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -33,19 +31,9 @@ func FormatErrorWithQuery(err error, query string) error {
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) (*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	readOnly := false
-	if queryContext != nil {
-		readOnly = queryContext.ReadOnly
-	}
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, statement)
+	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
 	}
@@ -59,7 +47,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 		}, nil
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+	result.Statement = statement
 	return result, nil
 }
 
@@ -105,7 +93,7 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 				ColumnTypeNames: types,
 				Rows:            rows,
 				Latency:         durationpb.New(time.Since(startTime)),
-				Statement:       strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t"),
+				Statement:       singleSQL.Text,
 			})
 			continue
 		}
@@ -132,7 +120,7 @@ func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stat
 		}
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+	result.Statement = statement
 	return result
 }
 
@@ -225,26 +213,6 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 	return nil
 }
 
-func getStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
-}
-
-func getMySQLStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
-}
-
-// IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
-func IsAffectedRowsStatement(stmt string) bool {
-	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
-	upperStatement := strings.TrimLeft(strings.ToUpper(stmt), " \t\r\n")
-	for _, prefix := range affectedRowsStatementPrefix {
-		if strings.HasPrefix(upperStatement, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
 // ConvertYesNo converts YES/NO to bool.
 func ConvertYesNo(s string) (bool, error) {
 	// ClickHouse uses 0 and 1.
@@ -327,4 +295,9 @@ func mssqlMakeScanDestByTypeName(tn string) (dest any, wantByte bool) {
 		return new(sql.NullString), true
 	}
 	return new(sql.NullString), true
+}
+
+// TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
+func TrimStatement(statement string) string {
+	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
 }

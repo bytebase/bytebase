@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
@@ -20,18 +21,21 @@ service VCSConnectorService {
     };
     option (google.api.method_signature) = "parent,vcsConnector";
     option (bytebase.v1.permission) = "bb.vcsConnectors.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetVCSConnector(GetVCSConnectorRequest) returns (VCSConnector) {
     option (google.api.http) = {get: "/v1/{name=projects/*/vcsConnectors/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.vcsConnectors.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListVCSConnectors(ListVCSConnectorsRequest) returns (ListVCSConnectorsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/vcsConnectors"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.vcsConnectors.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateVCSConnector(UpdateVCSConnectorRequest) returns (VCSConnector) {
@@ -41,19 +45,24 @@ service VCSConnectorService {
     };
     option (google.api.method_signature) = "vcs_connector,update_mask";
     option (bytebase.v1.permission) = "bb.vcsConnectors.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteVCSConnector(DeleteVCSConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/vcsConnectors/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.vcsConnectors.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
 message CreateVCSConnectorRequest {
   // The parent resource where this vcsConnector will be created.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The vcsConnector to create.
   VCSConnector vcs_connector = 2 [(google.api.field_behavior) = REQUIRED];
@@ -69,13 +78,19 @@ message CreateVCSConnectorRequest {
 message GetVCSConnectorRequest {
   // The name of the vcsConnector to retrieve.
   // Format: projects/{project}/vcsConnectors/{vcsConnector}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/VCSConnector"}
+  ];
 }
 
 message ListVCSConnectorsRequest {
   // The parent, which owns this collection of vcsConnectors.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The maximum number of databases to return. The service may return fewer than
   // this value.
@@ -114,10 +129,18 @@ message UpdateVCSConnectorRequest {
 message DeleteVCSConnectorRequest {
   // The name of the vcsConnector to delete.
   // Format: projects/{project}/vcsConnectors/{vcsConnector}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/VCSConnector"}
+  ];
 }
 
 message VCSConnector {
+  option (google.api.resource) = {
+    type: "bytebase.com/VCSConnector"
+    pattern: "projects/{project}/vcsConnectors/{vcsConnector}"
+  };
+
   // The name of the vcsConnector resource.
   // Canonical parent is project.
   // Format: projects/{project}/vcsConnectors/{vcsConnector}

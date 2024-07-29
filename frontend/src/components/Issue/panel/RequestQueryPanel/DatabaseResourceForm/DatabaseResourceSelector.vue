@@ -23,6 +23,7 @@ import { orderBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
 import { NTransfer, NTree } from "naive-ui";
 import { computed, h, onMounted, ref, watch } from "vue";
+import { BBSpin } from "@/bbkit";
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
@@ -65,13 +66,7 @@ const defaultExpandedKeys = ref<string[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const project = await useProjectV1Store().getOrFetchProjectByName(
-    props.projectName
-  );
-  const filters = [`instance = "instances/-"`, `project = "${project.name}"`];
-  await databaseStore.searchDatabases({
-    filter: filters.join(" && "),
-  });
+  await databaseStore.listDatabases(props.projectName);
 
   await Promise.all(
     selectedValueList.value.map(async (key) => {

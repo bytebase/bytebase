@@ -4,15 +4,6 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
-import {
-  CreateDatabaseGroupRequest,
-  DatabaseGroup,
-  DeleteDatabaseGroupRequest,
-  GetDatabaseGroupRequest,
-  ListDatabaseGroupsRequest,
-  ListDatabaseGroupsResponse,
-  UpdateDatabaseGroupRequest,
-} from "./database_group_service";
 import { GetIamPolicyRequest, IamPolicy, SetIamPolicyRequest } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
@@ -254,7 +245,7 @@ export interface GetDeploymentConfigRequest {
 }
 
 export interface UpdateDeploymentConfigRequest {
-  config: DeploymentConfig | undefined;
+  deploymentConfig: DeploymentConfig | undefined;
 }
 
 export interface Label {
@@ -1759,13 +1750,13 @@ export const GetDeploymentConfigRequest = {
 };
 
 function createBaseUpdateDeploymentConfigRequest(): UpdateDeploymentConfigRequest {
-  return { config: undefined };
+  return { deploymentConfig: undefined };
 }
 
 export const UpdateDeploymentConfigRequest = {
   encode(message: UpdateDeploymentConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.config !== undefined) {
-      DeploymentConfig.encode(message.config, writer.uint32(10).fork()).ldelim();
+    if (message.deploymentConfig !== undefined) {
+      DeploymentConfig.encode(message.deploymentConfig, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -1782,7 +1773,7 @@ export const UpdateDeploymentConfigRequest = {
             break;
           }
 
-          message.config = DeploymentConfig.decode(reader, reader.uint32());
+          message.deploymentConfig = DeploymentConfig.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1794,13 +1785,15 @@ export const UpdateDeploymentConfigRequest = {
   },
 
   fromJSON(object: any): UpdateDeploymentConfigRequest {
-    return { config: isSet(object.config) ? DeploymentConfig.fromJSON(object.config) : undefined };
+    return {
+      deploymentConfig: isSet(object.deploymentConfig) ? DeploymentConfig.fromJSON(object.deploymentConfig) : undefined,
+    };
   },
 
   toJSON(message: UpdateDeploymentConfigRequest): unknown {
     const obj: any = {};
-    if (message.config !== undefined) {
-      obj.config = DeploymentConfig.toJSON(message.config);
+    if (message.deploymentConfig !== undefined) {
+      obj.deploymentConfig = DeploymentConfig.toJSON(message.deploymentConfig);
     }
     return obj;
   },
@@ -1810,8 +1803,8 @@ export const UpdateDeploymentConfigRequest = {
   },
   fromPartial(object: DeepPartial<UpdateDeploymentConfigRequest>): UpdateDeploymentConfigRequest {
     const message = createBaseUpdateDeploymentConfigRequest();
-    message.config = (object.config !== undefined && object.config !== null)
-      ? DeploymentConfig.fromPartial(object.config)
+    message.deploymentConfig = (object.deploymentConfig !== undefined && object.deploymentConfig !== null)
+      ? DeploymentConfig.fromPartial(object.deploymentConfig)
       : undefined;
     return message;
   },
@@ -3508,6 +3501,7 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([0])],
           800010: [new Uint8Array([16, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [new Uint8Array([14, 18, 12, 47, 118, 49, 47, 112, 114, 111, 106, 101, 99, 116, 115])],
         },
       },
@@ -3563,6 +3557,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               23,
@@ -3629,6 +3624,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               40,
@@ -3689,6 +3685,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 100, 101, 108, 101, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               23,
@@ -3753,6 +3750,7 @@ export const ProjectServiceDefinition = {
               101,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               35,
@@ -3833,6 +3831,7 @@ export const ProjectServiceDefinition = {
               121,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               40,
@@ -3918,6 +3917,7 @@ export const ProjectServiceDefinition = {
               121,
             ]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               38,
@@ -4001,6 +4001,7 @@ export const ProjectServiceDefinition = {
               121,
             ]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -4061,6 +4062,7 @@ export const ProjectServiceDefinition = {
       options: {
         _unknownFields: {
           800010: [new Uint8Array([15, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -4123,11 +4125,23 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
+              80,
               58,
-              58,
-              6,
+              17,
+              100,
+              101,
+              112,
+              108,
+              111,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
               99,
               111,
               110,
@@ -4135,12 +4149,23 @@ export const ProjectServiceDefinition = {
               105,
               103,
               50,
-              48,
+              59,
               47,
               118,
               49,
               47,
               123,
+              100,
+              101,
+              112,
+              108,
+              111,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
               99,
               111,
               110,
@@ -4200,6 +4225,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               40,
@@ -4283,6 +4309,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               59,
@@ -4361,6 +4388,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               59,
@@ -4439,6 +4467,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               41,
@@ -4488,141 +4517,6 @@ export const ProjectServiceDefinition = {
         },
       },
     },
-    /** Deprecated. */
-    listDatabaseGroups: {
-      name: "ListDatabaseGroups",
-      requestType: ListDatabaseGroupsRequest,
-      requestStream: false,
-      responseType: ListDatabaseGroupsResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
-          800000: [new Uint8Array([1])],
-          800010: [new Uint8Array([15, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 103, 101, 116])],
-        },
-      },
-    },
-    /** Deprecated. */
-    getDatabaseGroup: {
-      name: "GetDatabaseGroup",
-      requestType: GetDatabaseGroupRequest,
-      requestStream: false,
-      responseType: DatabaseGroup,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          800000: [new Uint8Array([1])],
-          800010: [new Uint8Array([15, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 103, 101, 116])],
-        },
-      },
-    },
-    /** Deprecated. */
-    createDatabaseGroup: {
-      name: "CreateDatabaseGroup",
-      requestType: CreateDatabaseGroupRequest,
-      requestStream: false,
-      responseType: DatabaseGroup,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [
-            new Uint8Array([
-              20,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              44,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              71,
-              114,
-              111,
-              117,
-              112,
-            ]),
-          ],
-          800000: [new Uint8Array([1])],
-          800010: [
-            new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
-          ],
-        },
-      },
-    },
-    /** Deprecated. */
-    updateDatabaseGroup: {
-      name: "UpdateDatabaseGroup",
-      requestType: UpdateDatabaseGroupRequest,
-      requestStream: false,
-      responseType: DatabaseGroup,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [
-            new Uint8Array([
-              26,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              95,
-              103,
-              114,
-              111,
-              117,
-              112,
-              44,
-              117,
-              112,
-              100,
-              97,
-              116,
-              101,
-              95,
-              109,
-              97,
-              115,
-              107,
-            ]),
-          ],
-          800000: [new Uint8Array([1])],
-          800010: [
-            new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
-          ],
-        },
-      },
-    },
-    /** Deprecated. */
-    deleteDatabaseGroup: {
-      name: "DeleteDatabaseGroup",
-      requestType: DeleteDatabaseGroupRequest,
-      requestStream: false,
-      responseType: Empty,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          800000: [new Uint8Array([1])],
-          800010: [
-            new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
-          ],
-        },
-      },
-    },
     getProjectProtectionRules: {
       name: "GetProjectProtectionRules",
       requestType: GetProjectProtectionRulesRequest,
@@ -4632,6 +4526,7 @@ export const ProjectServiceDefinition = {
       options: {
         _unknownFields: {
           800010: [new Uint8Array([15, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               39,
@@ -4690,6 +4585,7 @@ export const ProjectServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               59,

@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
@@ -75,7 +74,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "auth context not found")
 	}
-	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+	if err := in.populateRawResources(ctx, authContext, request, serverInfo.FullMethod); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
@@ -86,7 +85,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
 	}
@@ -133,7 +132,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	if !ok {
 		return status.Errorf(codes.Internal, "auth context not found")
 	}
-	if err := in.populateRawResources(authContext, request, serverInfo.FullMethod); err != nil {
+	if err := in.populateRawResources(ctx, authContext, request, serverInfo.FullMethod); err != nil {
 		return status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
@@ -144,7 +143,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
 	}
@@ -199,83 +198,126 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 	return false
 }
 
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true, nil, nil
 	}
 	if authContext.AuthMethod == common.AuthMethodCustom {
 		return true, nil, nil
 	}
-
-	p := authContext.Permission
-	switch fullMethod {
-	// special cases for bb.instance.get permission check.
-	// we permit users to get instances (and all the related info) if they can get any database in the instance, even if they don't have bb.instance.get permission.
-	case
-		v1pb.InstanceService_GetInstance_FullMethodName,
-		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
-		v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName:
-		var instanceID string
-		var err error
-		switch r := req.(type) {
-		case *v1pb.GetInstanceRequest:
-			instanceID, err = common.GetInstanceID(r.GetName())
-		case *v1pb.GetInstanceRoleRequest:
-			instanceID, _, err = common.GetInstanceRoleID(r.GetName())
-		case *v1pb.ListInstanceRolesRequest:
-			instanceID, err = common.GetInstanceID(r.GetParent())
+	if authContext.AuthMethod == common.AuthMethodIAM {
+		// Handle GetProject() error status.
+		if len(authContext.Resources) == 0 {
+			return false, nil, errors.Errorf("no resource found for IAM auth method")
 		}
-		if err != nil {
-			return false, []string{instanceID}, err
+		if authContext.HasWorkspaceResource() {
+			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
+			if err != nil {
+				return false, nil, err
+			}
+			if !ok {
+				return false, nil, nil
+			}
 		}
-		ok, err := in.checkIAMPermissionInstancesGet(ctx, user, instanceID)
-		return ok, []string{instanceID}, err
+		projectIDs := authContext.GetProjectResources()
+		if len(projectIDs) > 0 {
+			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
+			if err != nil {
+				return false, projectIDs, err
+			}
+			if !ok {
+				return false, projectIDs, nil
+			}
+		}
+		return true, nil, nil
 	}
 
 	projectIDs, ok := common.GetProjectIDsFromContext(ctx)
 	if !ok {
 		return false, projectIDs, errors.Errorf("failed to get project ids")
 	}
-	ok, err := in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
+	ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
 	return ok, projectIDs, err
 }
 
-func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, user *store.UserMessage, instanceID string) (bool, error) {
-	// fast path for Admins and DBAs.
-	ok, err := in.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
-	if err != nil {
-		return false, err
-	}
-	if ok {
-		return true, nil
-	}
+var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
+var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
-	databaseFind := &store.FindDatabaseMessage{
-		InstanceID:  &instanceID,
-		ShowDeleted: true,
+func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext *common.AuthContext, request any, method string) error {
+	if authContext.AllowWithoutCredential {
+		return nil
 	}
-	databases, err := searchDatabases(ctx, in.store, in.iamManager, databaseFind)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to search databases")
+	if authContext.AuthMethod != common.AuthMethodIAM {
+		return nil
 	}
-	return len(databases) > 0, nil
-}
-
-func (*ACLInterceptor) populateRawResources(authContext *common.AuthContext, request any, method string) error {
-	resource := getResourceFromRequest(request, method)
-	if resource != nil {
-		authContext.Resources = append(authContext.Resources, resource)
+	resources := getResourceFromRequest(request, method)
+	for _, resource := range resources {
+		switch {
+		case strings.HasPrefix(resource.Name, "projects/"):
+			project := projectRegex.FindString(resource.Name)
+			if project == "" {
+				return errors.Errorf("invalid project resource %q", resource.Name)
+			}
+			projectID, err := common.GetProjectID(project)
+			if err != nil {
+				return err
+			}
+			resource.ProjectID = projectID
+		case strings.HasPrefix(resource.Name, "instances/") && strings.Contains(resource.Name, "/databases/"):
+			match := databaseRegex.FindString(resource.Name)
+			if match != "" {
+				database, err := getDatabaseMessage(ctx, in.store, match)
+				if err != nil {
+					return errors.Wrapf(err, "failed to get database %q", match)
+				}
+				resource.ProjectID = database.ProjectID
+			}
+		default:
+			resource.Workspace = true
+		}
 	}
+	authContext.Resources = resources
 	return nil
 }
 
-func getResourceFromRequest(request any, method string) *common.Resource {
+func getResourceFromRequest(request any, method string) []*common.Resource {
 	pm, ok := request.(proto.Message)
 	if !ok {
 		return nil
 	}
 	mr := pm.ProtoReflect()
 
+	methodTokens := strings.Split(method, "/")
+	if len(methodTokens) != 3 {
+		return nil
+	}
+	shortMethod := methodTokens[2]
+
+	var resources []*common.Resource
+	if strings.HasPrefix(shortMethod, "Batch") {
+		requestsDesc := mr.Descriptor().Fields().ByName("requests")
+		if requestsDesc != nil {
+			requestsValue := mr.Get(requestsDesc)
+			requestsValueList := requestsValue.List()
+			shortMethodWithoutBatch := strings.TrimSuffix(strings.TrimPrefix(shortMethod, "Batch"), "s")
+			for i := 0; i < requestsValueList.Len(); i++ {
+				r := requestsValueList.Get(i).Message()
+				resource := getResourceFromSingleRequest(r, shortMethodWithoutBatch)
+				if resource != nil {
+					resources = append(resources, resource)
+				}
+			}
+			return resources
+		}
+	}
+	resource := getResourceFromSingleRequest(mr, shortMethod)
+	if resource != nil {
+		resources = append(resources, resource)
+	}
+	return resources
+}
+
+func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *common.Resource {
 	parentDesc := mr.Descriptor().Fields().ByName("parent")
 	if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(parentDesc)
@@ -292,33 +334,39 @@ func getResourceFromRequest(request any, method string) *common.Resource {
 		v := mr.Get(resourceFieldDesc)
 		return &common.Resource{Name: v.String()}
 	}
-
-	methodTokens := strings.Split(method, "/")
-	if len(methodTokens) != 3 {
-		return nil
+	// This is primarily used by AddWebhook().
+	projectFieldDesc := mr.Descriptor().Fields().ByName("project")
+	if projectFieldDesc != nil && proto.HasExtension(projectFieldDesc.Options(), annotationsproto.E_ResourceReference) {
+		v := mr.Get(projectFieldDesc)
+		return &common.Resource{Name: v.String()}
 	}
 
 	// Listing top-level resources.
-	if strings.HasPrefix(methodTokens[2], "List") {
+	if strings.HasPrefix(shortMethod, "List") {
 		return &common.Resource{Workspace: true}
 	}
 
-	isCreate := strings.HasPrefix(methodTokens[2], "Create")
-	isUpdate := strings.HasPrefix(methodTokens[2], "Update")
-	if !isCreate && !isUpdate {
+	isCreate := strings.HasPrefix(shortMethod, "Create")
+	isUpdate := strings.HasPrefix(shortMethod, "Update")
+	isRemove := strings.HasPrefix(shortMethod, "Remove")
+	if !isCreate && !isUpdate && !isRemove {
 		return nil
 	}
 	var resourceName string
 	if isCreate {
-		resourceName = strings.TrimPrefix(methodTokens[2], "Create")
+		resourceName = strings.TrimPrefix(shortMethod, "Create")
 	}
 	if isUpdate {
-		resourceName = strings.TrimPrefix(methodTokens[2], "Update")
+		resourceName = strings.TrimPrefix(shortMethod, "Update")
+	}
+	// RemoveWebhook.
+	if isRemove {
+		resourceName = strings.TrimPrefix(shortMethod, "Remove")
 	}
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
 	if resourceDesc == nil {
-		return nil
+		return &common.Resource{Workspace: true}
 	}
 	if proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
 		// Parent-less resource. Return workspace resource for Create() method.
@@ -332,7 +380,7 @@ func getResourceFromRequest(request any, method string) *common.Resource {
 			return &common.Resource{Name: v.String()}
 		}
 	}
-	return nil
+	return &common.Resource{Workspace: true}
 }
 
 var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")

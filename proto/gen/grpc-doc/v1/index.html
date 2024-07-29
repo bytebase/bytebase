@@ -500,11 +500,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchSyncInstanceRequest"><span class="badge">M</span>BatchSyncInstanceRequest</a>
+                  <a href="#bytebase.v1.BatchSyncInstancesRequest"><span class="badge">M</span>BatchSyncInstancesRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchSyncInstanceResponse"><span class="badge">M</span>BatchSyncInstanceResponse</a>
+                  <a href="#bytebase.v1.BatchSyncInstancesResponse"><span class="badge">M</span>BatchSyncInstancesResponse</a>
                 </li>
               
                 <li>
@@ -1526,6 +1526,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceQueryPolicy"><span class="badge">M</span>DataSourceQueryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DeletePolicyRequest"><span class="badge">M</span>DeletePolicyRequest</a>
                 </li>
               
@@ -1601,6 +1605,10 @@
                   <a href="#bytebase.v1.UpdatePolicyRequest"><span class="badge">M</span>UpdatePolicyRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceQueryPolicy.Restriction"><span class="badge">E</span>DataSourceQueryPolicy.Restriction</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.MaskingExceptionPolicy.MaskingException.Action"><span class="badge">E</span>MaskingExceptionPolicy.MaskingException.Action</a>
@@ -2169,6 +2177,18 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRun.ExecutionDetail.Position"><span class="badge">M</span>TaskRun.ExecutionDetail.Position</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRun.PriorBackupDetail"><span class="badge">M</span>TaskRun.PriorBackupDetail</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item"><span class="badge">M</span>TaskRun.PriorBackupDetail.Item</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item.Table"><span class="badge">M</span>TaskRun.PriorBackupDetail.Item.Table</a>
                 </li>
               
                 <li>
@@ -3115,7 +3135,7 @@
                   <td>pre_update_backup</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>lsp is the enablement of data backup prior to data update. </p></td>
+                  <td><p>pre_update_backup is the enablement of data backup prior to data update. </p></td>
                 </tr>
               
                 <tr>
@@ -5615,7 +5635,7 @@ Could be empty. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to add a data source to.
@@ -5644,7 +5664,7 @@ Only READ_ONLY data source can be added. </p></td>
 
         
       
-        <h3 id="bytebase.v1.BatchSyncInstanceRequest">BatchSyncInstanceRequest</h3>
+        <h3 id="bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</h3>
         <p></p>
 
         
@@ -5669,7 +5689,7 @@ A maximum of 1000 instances can be synced in a batch. </p></td>
 
         
       
-        <h3 id="bytebase.v1.BatchSyncInstanceResponse">BatchSyncInstanceResponse</h3>
+        <h3 id="bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</h3>
         <p></p>
 
         
@@ -6460,7 +6480,8 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent parameter&#39;s value depends on the target resource for the request.
+                  <td><p>Deprecated.
+The parent parameter&#39;s value depends on the target resource for the request.
 - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to.
 - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. </p></td>
                 </tr>
@@ -6543,7 +6564,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to remove a data source from.
@@ -6740,7 +6761,7 @@ Format: instances/{instance} </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to update a data source.
@@ -7072,9 +7093,9 @@ Format: instances/{instance} </p></td>
               </tr>
             
               <tr>
-                <td>BatchSyncInstance</td>
-                <td><a href="#bytebase.v1.BatchSyncInstanceRequest">BatchSyncInstanceRequest</a></td>
-                <td><a href="#bytebase.v1.BatchSyncInstanceResponse">BatchSyncInstanceResponse</a></td>
+                <td>BatchSyncInstances</td>
+                <td><a href="#bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</a></td>
+                <td><a href="#bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -7221,7 +7242,7 @@ Format: instances/{instance} </p></td>
               
               
               <tr>
-                <td>BatchSyncInstance</td>
+                <td>BatchSyncInstances</td>
                 <td>POST</td>
                 <td>/v1/instances:batchSync</td>
                 <td>*</td>
@@ -7233,7 +7254,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>AddDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:addDataSource</td>
+                <td>/v1/{name=instances/*}:addDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7243,7 +7264,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>RemoveDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:removeDataSource</td>
+                <td>/v1/{name=instances/*}:removeDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7253,7 +7274,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>UpdateDataSource</td>
                 <td>PATCH</td>
-                <td>/v1/{instance=instances/*}:updateDataSource</td>
+                <td>/v1/{name=instances/*}:updateDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -8012,6 +8033,13 @@ Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-ove
                   <td><a href="#bytebase.v1.InstanceResource">InstanceResource</a></td>
                   <td></td>
                   <td><p>The instance resource. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>backup_available</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The database is available for DML prior backup. </p></td>
                 </tr>
               
             </tbody>
@@ -13777,7 +13805,7 @@ Format: idps/{identity_provider} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the identity provider.
-Format: idps/{identity_provider} </p></td>
+Format: idps/{idp} </p></td>
                 </tr>
               
                 <tr>
@@ -14625,7 +14653,7 @@ The role name is the unique name for the role. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the role.
-Format: instances/{instance}/roles/{role name}
+Format: instances/{instance}/roles/{role}
 The role name is the unique name for the role. </p></td>
                 </tr>
               
@@ -15781,18 +15809,17 @@ Keys are the following:
                 </tr>
               
                 <tr>
-                  <td>from_assignee</td>
+                  <td>from_labels</td>
                   <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>TODO(d): deprecate from_assignee and to_assignee.
-Format: users/{email} </p></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>to_assignee</td>
+                  <td>to_labels</td>
                   <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Format: users/{email} </p></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -16972,6 +16999,30 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
 
         
       
+        <h3 id="bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>admin_data_source_restriction</td>
+                  <td><a href="#bytebase.v1.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DeletePolicyRequest">DeletePolicyRequest</h3>
         <p></p>
 
@@ -17459,6 +17510,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>data_source_query_policy</td>
+                  <td><a href="#bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -17736,6 +17794,35 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
+        <h3 id="bytebase.v1.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RESTRICTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FALLBACK</td>
+                <td>1</td>
+                <td><p>Allow to query admin data sources when there is no read-only data source.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW</td>
+                <td>2</td>
+                <td><p>Disallow to query admin data sources.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</h3>
         <p></p>
         <table class="enum-table">
@@ -17871,6 +17958,12 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>TAG</td>
                 <td>13</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA_SOURCE_QUERY</td>
+                <td>14</td>
                 <td><p></p></td>
               </tr>
             
@@ -20638,7 +20731,7 @@ Format: projects/{project} </p></td>
             <tbody>
               
                 <tr>
-                  <td>config</td>
+                  <td>deployment_config</td>
                   <td><a href="#bytebase.v1.DeploymentConfig">DeploymentConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -21264,41 +21357,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
               </tr>
             
               <tr>
-                <td>ListDatabaseGroups</td>
-                <td><a href="#bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</a></td>
-                <td><a href="#bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
-              <tr>
-                <td>GetDatabaseGroup</td>
-                <td><a href="#bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</a></td>
-                <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
-              <tr>
-                <td>CreateDatabaseGroup</td>
-                <td><a href="#bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</a></td>
-                <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateDatabaseGroup</td>
-                <td><a href="#bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</a></td>
-                <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteDatabaseGroup</td>
-                <td><a href="#bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
-              <tr>
                 <td>GetProjectProtectionRules</td>
                 <td><a href="#bytebase.v1.GetProjectProtectionRulesRequest">GetProjectProtectionRulesRequest</a></td>
                 <td><a href="#bytebase.v1.ProtectionRules">ProtectionRules</a></td>
@@ -21445,8 +21503,8 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
               <tr>
                 <td>UpdateDeploymentConfig</td>
                 <td>PATCH</td>
-                <td>/v1/{config.name=projects/*/deploymentConfigs/*}</td>
-                <td>config</td>
+                <td>/v1/{deployment_config.name=projects/*/deploymentConfigs/*}</td>
+                <td>deployment_config</td>
               </tr>
               
             
@@ -21561,7 +21619,7 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to delete.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
             </tbody>
@@ -21586,7 +21644,7 @@ Format: reviewConfigs/{uid} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
             </tbody>
@@ -21680,7 +21738,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
                 <tr>
@@ -21754,7 +21812,7 @@ Format: {resurce}/{resource id}, for example, environments/test. </p></td>
                   <td>review_config</td>
                   <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
                   <td></td>
-                  <td><p>The sql review toupdate.
+                  <td><p>The sql review to update.
 
 The name field is used to identify the sql review to update. </p></td>
                 </tr>
@@ -23532,6 +23590,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>prior_backup_detail</td>
+                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail">TaskRun.PriorBackupDetail</a></td>
+                  <td></td>
+                  <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23615,6 +23680,114 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
 
         
       
+        <h3 id="bytebase.v1.TaskRun.PriorBackupDetail">TaskRun.PriorBackupDetail</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>items</td>
+                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item">TaskRun.PriorBackupDetail.Item</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRun.PriorBackupDetail.Item">TaskRun.PriorBackupDetail.Item</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>source_table</td>
+                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item.Table">TaskRun.PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The original table information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_table</td>
+                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item.Table">TaskRun.PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The target backup table information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRun.PriorBackupDetail.Item.Table">TaskRun.PriorBackupDetail.Item.Table</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database information.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.TaskRunLog">TaskRunLog</h3>
         <p></p>
 
@@ -23666,6 +23839,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                 <tr>
                   <td>log_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deploy_id</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -26224,7 +26404,7 @@ Not used. </p></td>
                   <td></td>
                   <td><p>The resource name of the setting. Must be one of the following forms:
 
-- `setting/{setting_name}`
+- `setting/{setting}`
 For example, &#34;settings/bb.branding.logo&#34; </p></td>
                 </tr>
               
@@ -27774,15 +27954,16 @@ The exported data is not masked. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the instance name to execute the query against.
+                  <td><p>The database name to execute the query against.
 Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
-                  <td>statement</td>
+                  <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The original SQL statement. </p></td>
+                  <td><p>The resource name of the sheet. It is used to get the original statement.
+Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
@@ -29041,7 +29222,7 @@ Format: groups/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the group to retrieve.
-Format: groups/{email} </p></td>
+Format: userGroups/{userGroup}, userGroup is an email. </p></td>
                 </tr>
               
                 <tr>

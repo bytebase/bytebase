@@ -27,7 +27,11 @@ import { computed } from "vue";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import type { Engine } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";
-import type { RadioGridItem, RadioGridOption } from "../../Form";
+import {
+  RadioGrid,
+  type RadioGridItem,
+  type RadioGridOption,
+} from "../../Form";
 import RichEngineName from "./RichEngineName.vue";
 
 type EngineOption = RadioGridOption<Engine>;

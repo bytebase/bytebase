@@ -233,6 +233,7 @@ import { computedAsync } from "@vueuse/core";
 import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import { BBBadge } from "@/bbkit";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import {
@@ -240,6 +241,9 @@ import {
   InstanceV1Name,
   Drawer,
   DrawerContent,
+  EnvironmentV1Name,
+  ProjectV1Name,
+  SearchBox,
 } from "@/components/v2";
 import {
   useCurrentUserV1,

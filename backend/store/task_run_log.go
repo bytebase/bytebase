@@ -18,13 +18,13 @@ type TaskRunLog struct {
 	Payload *storepb.TaskRunLog
 }
 
-func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Time, e *storepb.TaskRunLog) {
-	if err := s.CreateTaskRunLog(ctx, taskRunUID, t, e); err != nil {
+func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Time, deployID string, e *storepb.TaskRunLog) {
+	if err := s.CreateTaskRunLog(ctx, taskRunUID, t, deployID, e); err != nil {
 		slog.Error("failed to create task run log", log.BBError(err))
 	}
 }
 
-func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, e *storepb.TaskRunLog) error {
+func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, deployID string, e *storepb.TaskRunLog) error {
 	query := `
 		INSERT INTO task_run_log (
 			task_run_id,
@@ -36,6 +36,7 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 			$3
 		)
 	`
+	e.DeployId = deployID
 	p, err := protojson.Marshal(e)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal task run log")

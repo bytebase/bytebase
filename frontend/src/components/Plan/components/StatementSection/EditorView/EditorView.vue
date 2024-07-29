@@ -198,6 +198,8 @@ import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { computed, h, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBAttention, BBModal } from "@/bbkit";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import { ErrorList } from "@/components/Plan/components/common";

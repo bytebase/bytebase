@@ -25,6 +25,7 @@
 
 <script setup lang="ts">
 import { TriangleAlertIcon } from "lucide-vue-next";
+import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";

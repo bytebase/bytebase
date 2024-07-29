@@ -11,7 +11,7 @@
     />
 
     <div class="space-y-4">
-      <div class="w-fullf flex flex-row justify-between items-center gap-4">
+      <div class="w-full flex flex-row justify-between items-center gap-4">
         <h3 class="text-lg font-medium leading-7 text-main">
           {{ $t("common.deployment-config") }}
         </h3>
@@ -82,7 +82,7 @@
 import { cloneDeep, isEqual } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { Undo2Icon } from "lucide-vue-next";
-import { NPopover, useDialog } from "naive-ui";
+import { NButton, NPopover, useDialog } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, nextTick, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -104,6 +104,7 @@ import {
   validateDeploymentConfigV1,
 } from "../utils";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
+import { BBAttention, BBSpin } from "@/bbkit";
 
 type LocalState = {
   ready: boolean;

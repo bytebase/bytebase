@@ -95,6 +95,8 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { UserGroup } from "@/types/proto/v1/user_group";
+import { FeatureAttention } from "../FeatureGuard";
+import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberDataTable from "./ProjectMemberDataTable/index.vue";
 import ProjectMemberDataTableByRole from "./ProjectMemberDataTableByRole/index.vue";

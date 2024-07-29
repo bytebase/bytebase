@@ -433,10 +433,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext != nil && queryContext.ReadOnly {
-		queryContext.ReadOnly = d.getReadOnly()
-	}
-
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
@@ -488,7 +484,7 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 }
 
 func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
+	statement := util.TrimStatement(singleSQL.Text)
 	isSet := variableSetStmtRegexp.MatchString(statement)
 	isShow := variableShowStmtRegexp.MatchString(statement)
 	if !isSet && !isShow {
@@ -500,7 +496,7 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, d.dbType, conn, statement, queryContext)
+	result, err := util.Query(ctx, d.dbType, conn, statement)
 	if err != nil {
 		return nil, err
 	}

@@ -20,6 +20,7 @@
 </template>
 
 <script lang="ts" setup>
+import { BBModal } from "@/bbkit";
 import { useAIContext, useCurrentChat } from "../../logic";
 import ChatView from "../ChatView";
 import ConversationList from "./ConversationList.vue";

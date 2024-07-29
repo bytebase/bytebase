@@ -10,6 +10,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -18,7 +19,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	if err != nil {
 		slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
 		// MySQL 5.7 doesn't support WITH clause.
-		stmt = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
+		stmt = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", util.TrimStatement(stmt), limit)
 	}
 	return stmt
 }

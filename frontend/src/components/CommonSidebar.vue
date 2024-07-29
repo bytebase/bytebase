@@ -77,6 +77,7 @@
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import type { VNode } from "vue";
 import { computed, reactive, watch } from "vue";
+import BytebaseLogo from "./BytebaseLogo.vue";
 
 export interface SidebarItem {
   title?: string;

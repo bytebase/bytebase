@@ -128,6 +128,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
 	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
+	slog.Info(fmt.Sprintf("instanceRunUUID=%s", profile.DeployID))
 	slog.Info("-----Config END-------")
 
 	serverStarted := false
@@ -231,11 +232,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = secret
-	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
 	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
+	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 
 	// Configure echo server.
@@ -254,7 +255,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.relayRunner = relay.NewRunner(storeInstance, s.webhookManager, s.stateCfg)
 		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.relayRunner, s.licenseService)
 
-		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager)
+		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager, profile)
 		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))

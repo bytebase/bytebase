@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { reactive } from "vue";
+import { BBModal } from "@/bbkit";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";

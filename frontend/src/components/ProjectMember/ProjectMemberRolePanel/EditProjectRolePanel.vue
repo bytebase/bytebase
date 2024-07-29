@@ -125,8 +125,14 @@ import { cloneDeep, isEqual, uniq } from "lodash-es";
 import { NButton, NDatePicker, NInput, NInputNumber } from "naive-ui";
 import { computed, reactive, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBButtonConfirm } from "@/bbkit";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  UserGroupSelect,
+  UserSelect,
+} from "@/components/v2";
 import {
   extractGroupEmail,
   useDatabaseV1Store,

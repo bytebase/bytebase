@@ -28,6 +28,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBTable, BBTableCell } from "@/bbkit";
 import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { getSSOId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";

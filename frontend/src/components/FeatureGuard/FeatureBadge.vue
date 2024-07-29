@@ -62,6 +62,7 @@ import type {
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import InstanceAssignment from "../InstanceAssignment.vue";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;

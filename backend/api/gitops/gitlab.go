@@ -15,7 +15,6 @@ import (
 
 const (
 	mergeRequestObjectKind = "merge_request"
-	mergeAction            = "merge"
 )
 
 func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, body []byte) (*pullRequestInfo, error) {
@@ -26,8 +25,15 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	if pushEvent.ObjectKind != mergeRequestObjectKind {
 		return nil, errors.Errorf("skip webhook event type, got %s, want %s", pushEvent.ObjectKind, mergeRequestObjectKind)
 	}
-	if pushEvent.ObjectAttributes.Action != mergeAction {
-		return nil, errors.Errorf("skip webhook event action, got %s, want merge", pushEvent.ObjectAttributes.Action)
+
+	var actionType webhookAction
+	switch pushEvent.ObjectAttributes.Action {
+	case gitlab.MergeRequestOpen, gitlab.MergeRequestUpdate:
+		actionType = webhookActionSQLReview
+	case gitlab.MergeRequestMerge:
+		actionType = webhookActionCreateIssue
+	default:
+		return nil, errors.Errorf("skip webhook event action %v", pushEvent.ObjectAttributes.Action)
 	}
 
 	if pushEvent.ObjectAttributes.TargetBranch != vcsConnector.Payload.Branch {
@@ -40,6 +46,7 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	}
 
 	prInfo := &pullRequestInfo{
+		action:      actionType,
 		email:       pushEvent.User.Email,
 		url:         pushEvent.ObjectAttributes.URL,
 		title:       pushEvent.ObjectAttributes.Title,

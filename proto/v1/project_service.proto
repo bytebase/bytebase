@@ -10,7 +10,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/database_group_service.proto";
 import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
@@ -27,6 +26,7 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/projects"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.projects.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
@@ -43,6 +43,7 @@ service ProjectService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.projects.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateProject(UpdateProjectRequest) returns (Project) {
@@ -52,12 +53,14 @@ service ProjectService {
     };
     option (google.api.method_signature) = "project,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
@@ -66,16 +69,20 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.undelete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
     option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    // TODO(d): secure it.
   }
 
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -84,19 +91,22 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.setIamPolicy";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {get: "/v1/{name=projects/*/deploymentConfigs/*}"};
     option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {
-      patch: "/v1/{config.name=projects/*/deploymentConfigs/*}"
-      body: "config"
+      patch: "/v1/{deployment_config.name=projects/*/deploymentConfigs/*}"
+      body: "deployment_config"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
@@ -105,6 +115,7 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
@@ -114,6 +125,7 @@ service ProjectService {
     };
     option (google.api.method_signature) = "webhook,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
@@ -122,6 +134,7 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
@@ -130,46 +143,13 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
-  }
-
-  // Deprecated.
-  rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.method_signature) = "parent,databaseGroup";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
-    option (google.api.method_signature) = "database_group,update_mask";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Deprecated.
-  rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetProjectProtectionRules(GetProjectProtectionRulesRequest) returns (ProtectionRules) {
     option (google.api.http) = {get: "/v1/{name=projects/*/protectionRules}"};
     option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateProjectProtectionRules(UpdateProjectProtectionRulesRequest) returns (ProtectionRules) {
@@ -178,6 +158,7 @@ service ProjectService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
@@ -290,11 +271,14 @@ message BatchGetIamPolicyResponse {
 message GetDeploymentConfigRequest {
   // The name of the resource.
   // Format: projects/{project}/deploymentConfigs/default.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DeploymentConfig"}
+  ];
 }
 
 message UpdateDeploymentConfigRequest {
-  DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED];
+  DeploymentConfig deployment_config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Label {
@@ -308,8 +292,6 @@ message Project {
     type: "bytebase.com/Project"
     pattern: "projects/{project}"
   };
-
-  reserved 8;
 
   // The name of the project.
   // Format: projects/{project}
@@ -351,7 +333,10 @@ enum Workflow {
 message AddWebhookRequest {
   // The name of the project to add the webhook to.
   // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
+  string project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The webhook to add.
   Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
@@ -373,7 +358,10 @@ message RemoveWebhookRequest {
 message TestWebhookRequest {
   // The name of the project which owns the webhook to test.
   // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
+  string project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The webhook to test. Identified by its url.
   Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
@@ -385,6 +373,11 @@ message TestWebhookResponse {
 }
 
 message Webhook {
+  option (google.api.resource) = {
+    type: "bytebase.com/Webhook"
+    pattern: "projects/{project}/webhooks/{webhook}"
+  };
+
   // name is the name of the webhook, generated by the server.
   // format: projects/{project}/webhooks/{webhook}
   string name = 1;
@@ -426,6 +419,11 @@ message Webhook {
 }
 
 message DeploymentConfig {
+  option (google.api.resource) = {
+    type: "bytebase.com/DeploymentConfig"
+    pattern: "projects/{project}/deploymentConfigs/default"
+  };
+
   // The name of the resource.
   // Format: projects/{project}/deploymentConfigs/default.
   string name = 1;
@@ -535,7 +533,10 @@ message Activity {
 message GetProjectProtectionRulesRequest {
   // The name of the protection rules.
   // Format: projects/{project}/protectionRules
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/ProtectionRules"}
+  ];
 }
 
 message UpdateProjectProtectionRulesRequest {
@@ -543,6 +544,11 @@ message UpdateProjectProtectionRulesRequest {
 }
 
 message ProtectionRules {
+  option (google.api.resource) = {
+    type: "bytebase.com/ProtectionRules"
+    pattern: "projects/{project}/protectionRules"
+  };
+
   // The name of the protection rules.
   // Format: projects/{project}/protectionRules
   string name = 1;

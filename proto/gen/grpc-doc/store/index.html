@@ -885,6 +885,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DataSourceQueryPolicy"><span class="badge">M</span>DataSourceQueryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.DisableCopyDataPolicy"><span class="badge">M</span>DisableCopyDataPolicy</a>
                 </li>
               
@@ -944,6 +948,10 @@
                   <a href="#bytebase.store.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceQueryPolicy.Restriction"><span class="badge">E</span>DataSourceQueryPolicy.Restriction</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.EnvironmentTierPolicy.EnvironmentTier"><span class="badge">E</span>EnvironmentTierPolicy.EnvironmentTier</a>
@@ -1283,6 +1291,18 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.PriorBackupDetail"><span class="badge">M</span>PriorBackupDetail</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PriorBackupDetail.Item"><span class="badge">M</span>PriorBackupDetail.Item</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PriorBackupDetail.Item.Table"><span class="badge">M</span>PriorBackupDetail.Item.Table</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.TaskRunResult"><span class="badge">M</span>TaskRunResult</a>
                 </li>
               
@@ -1319,6 +1339,14 @@
               
                 <li>
                   <a href="#bytebase.store.TaskRunLog.DatabaseSyncStart"><span class="badge">M</span>TaskRunLog.DatabaseSyncStart</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.PriorBackupEnd"><span class="badge">M</span>TaskRunLog.PriorBackupEnd</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.PriorBackupStart"><span class="badge">M</span>TaskRunLog.PriorBackupStart</a>
                 </li>
               
                 <li>
@@ -6201,6 +6229,20 @@ Format: users/{userUID}. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>from_labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7475,6 +7517,30 @@ If the condition evaluates to false, then this binding does not apply to the cur
 
         
       
+        <h3 id="bytebase.store.DataSourceQueryPolicy">DataSourceQueryPolicy</h3>
+        <p>DataSourceQueryPolicy is the policy configuration for data source query.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>admin_data_source_restriction</td>
+                  <td><a href="#bytebase.store.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.DisableCopyDataPolicy">DisableCopyDataPolicy</h3>
         <p>DisableCopyDataPolicy is the policy configuration for disabling copying data.</p>
 
@@ -7967,6 +8033,35 @@ for example, the environment resource can have the sql review config tag, like &
         
       
 
+      
+        <h3 id="bytebase.store.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RESTRICTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FALLBACK</td>
+                <td>1</td>
+                <td><p>Allow to query admin data sources when there is no read-only data source.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW</td>
+                <td>2</td>
+                <td><p>Disallow to query admin data sources.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.EnvironmentTierPolicy.EnvironmentTier">EnvironmentTierPolicy.EnvironmentTier</h3>
         <p></p>
@@ -10426,6 +10521,114 @@ Default to this mode.</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.PriorBackupDetail">PriorBackupDetail</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>items</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>source_table</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The original table information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_table</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The target backup table information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database information.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.TaskRunResult">TaskRunResult</h3>
         <p></p>
 
@@ -10475,7 +10678,14 @@ Default to this mode.</p></td>
                   <td>export_archive_uid</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The uid of the export archive. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>prior_backup_detail</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail">PriorBackupDetail</a></td>
+                  <td></td>
+                  <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
                 </tr>
               
             </tbody>
@@ -10548,6 +10758,13 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
+                  <td>deploy_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>schema_dump_start</td>
                   <td><a href="#bytebase.store.TaskRunLog.SchemaDumpStart">TaskRunLog.SchemaDumpStart</a></td>
                   <td></td>
@@ -10599,6 +10816,20 @@ Default to this mode.</p></td>
                 <tr>
                   <td>transaction_control</td>
                   <td><a href="#bytebase.store.TaskRunLog.TransactionControl">TaskRunLog.TransactionControl</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>prior_backup_start</td>
+                  <td><a href="#bytebase.store.TaskRunLog.PriorBackupStart">TaskRunLog.PriorBackupStart</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>prior_backup_end</td>
+                  <td><a href="#bytebase.store.TaskRunLog.PriorBackupEnd">TaskRunLog.PriorBackupEnd</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -10705,6 +10936,44 @@ Default to this mode.</p></td>
         
       
         <h3 id="bytebase.store.TaskRunLog.DatabaseSyncStart">TaskRunLog.DatabaseSyncStart</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.PriorBackupEnd">TaskRunLog.PriorBackupEnd</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>prior_backup_detail</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail">PriorBackupDetail</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.PriorBackupStart">TaskRunLog.PriorBackupStart</h3>
         <p></p>
 
         
@@ -10922,6 +11191,18 @@ Default to this mode.</p></td>
               <tr>
                 <td>TRANSACTION_CONTROL</td>
                 <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PRIOR_BACKUP_START</td>
+                <td>9</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PRIOR_BACKUP_END</td>
+                <td>10</td>
                 <td><p></p></td>
               </tr>
             

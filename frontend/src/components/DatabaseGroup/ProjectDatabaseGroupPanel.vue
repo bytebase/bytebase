@@ -36,6 +36,7 @@ import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/proje
 import { useDBGroupStore, hasFeature } from "@/store";
 import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
+import { FeatureAttention, FeatureModal } from "../FeatureGuard";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
 
 interface LocalState {

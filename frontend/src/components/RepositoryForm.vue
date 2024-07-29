@@ -119,6 +119,7 @@
 import { Status } from "nice-grpc-common";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTextField } from "@/bbkit";
 import { DatabaseGroupSelect } from "@/components/v2/Select";
 import { useVCSConnectorStore, hasFeature, useCurrentUserV1 } from "@/store";
 import type {
@@ -131,7 +132,10 @@ import { VCSType } from "@/types/proto/v1/common";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import DatabaseGroupPanel from "./DatabaseGroup/DatabaseGroupPanel.vue";
 import FeatureBadge from "./FeatureGuard/FeatureBadge.vue";
+import { VCSIcon } from "./VCS";
+import { ResourceIdField } from "./v2";
 
 const props = withDefaults(
   defineProps<{

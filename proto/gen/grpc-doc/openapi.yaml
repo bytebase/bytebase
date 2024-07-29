@@ -623,6 +623,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -687,6 +688,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -1232,7 +1234,8 @@ paths:
                 - name: parent
                   in: query
                   description: |-
-                    The parent parameter's value depends on the target resource for the request.
+                    Deprecated.
+                     The parent parameter's value depends on the target resource for the request.
                      - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
                      - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
                   schema:
@@ -1842,6 +1845,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -1912,6 +1916,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -2611,6 +2616,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -2675,6 +2681,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -3300,12 +3307,12 @@ paths:
         post:
             tags:
                 - InstanceService
-            operationId: InstanceService_BatchSyncInstance
+            operationId: InstanceService_BatchSyncInstances
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchSyncInstanceRequest'
+                            $ref: '#/components/schemas/BatchSyncInstancesRequest'
                 required: true
             responses:
                 "200":
@@ -3313,7 +3320,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchSyncInstanceResponse'
+                                $ref: '#/components/schemas/BatchSyncInstancesResponse'
                 default:
                     description: Default error response
                     content:
@@ -3379,6 +3386,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -3447,6 +3455,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -5553,6 +5562,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -5617,6 +5627,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -8330,7 +8341,7 @@ components:
                     description: lsp is the enablement of lsp in SQL Editor.
                 preUpdateBackup:
                     type: boolean
-                    description: lsp is the enablement of data backup prior to data update.
+                    description: pre_update_backup is the enablement of data backup prior to data update.
                 iamGuard:
                     type: boolean
                     description: iam_guard is the enablement of IAM checks.
@@ -8343,11 +8354,11 @@ components:
                  Actuator concept is similar to the Spring Boot Actuator.
         AddDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to add a data source to.
@@ -8863,7 +8874,7 @@ components:
         BatchSkipTasksResponse:
             type: object
             properties: {}
-        BatchSyncInstanceRequest:
+        BatchSyncInstancesRequest:
             required:
                 - requests
             type: object
@@ -8875,7 +8886,7 @@ components:
                     description: |-
                         The request message specifying the instances to sync.
                          A maximum of 1000 instances can be synced in a batch.
-        BatchSyncInstanceResponse:
+        BatchSyncInstancesResponse:
             type: object
             properties: {}
         BatchUpdateDatabasesRequest:
@@ -9553,6 +9564,16 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSourceQueryPolicy:
+            type: object
+            properties:
+                adminDataSourceRestriction:
+                    enum:
+                        - RESTRICTION_UNSPECIFIED
+                        - FALLBACK
+                        - DISALLOW
+                    type: string
+                    format: enum
         DataSource_Address:
             type: object
             properties:
@@ -9617,6 +9638,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/InstanceResource'
                     description: The instance resource.
+                backupAvailable:
+                    readOnly: true
+                    type: boolean
+                    description: The database is available for DML prior backup.
         DatabaseConfig:
             type: object
             properties:
@@ -10197,11 +10222,13 @@ components:
                 name:
                     type: string
                     description: |-
-                        The name is the instance name to execute the query against.
+                        The database name to execute the query against.
                          Format: instances/{instance}/databases/{databaseName}
-                statement:
+                sheet:
                     type: string
-                    description: The original SQL statement.
+                    description: |-
+                        The resource name of the sheet. It is used to get the original statement.
+                         Format: projects/{project}/sheets/{sheet}
                 backupDataSource:
                     type: string
                     description: |-
@@ -10274,7 +10301,7 @@ components:
                     type: string
                     description: |-
                         The name of the identity provider.
-                         Format: idps/{identity_provider}
+                         Format: idps/{idp}
                 uid:
                     readOnly: true
                     type: string
@@ -10502,7 +10529,7 @@ components:
                     type: string
                     description: |-
                         The name of the role.
-                         Format: instances/{instance}/roles/{role name}
+                         Format: instances/{instance}/roles/{role}
                          The role name is the unique name for the role.
                 roleName:
                     type: string
@@ -10726,14 +10753,14 @@ components:
                         - CANCELED
                     type: string
                     format: enum
-                fromAssignee:
-                    type: string
-                    description: |-
-                        TODO(d): deprecate from_assignee and to_assignee.
-                         Format: users/{email}
-                toAssignee:
-                    type: string
-                    description: 'Format: users/{email}'
+                fromLabels:
+                    type: array
+                    items:
+                        type: string
+                toLabels:
+                    type: array
+                    items:
+                        type: string
         IssueComment_StageEnd:
             type: object
             properties:
@@ -10798,6 +10825,18 @@ components:
                 principal:
                     type: string
                     description: 'Format: users/hello@world.com'
+        Item_Table:
+            type: object
+            properties:
+                database:
+                    type: string
+                    description: |-
+                        The database information.
+                         Format: instances/{instance}/databases/{database}
+                schema:
+                    type: string
+                table:
+                    type: string
         KerberosConfig:
             type: object
             properties:
@@ -11827,6 +11866,7 @@ components:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 rolloutPolicy:
@@ -11845,6 +11885,8 @@ components:
                     $ref: '#/components/schemas/RestrictIssueCreationForSQLReviewPolicy'
                 tagPolicy:
                     $ref: '#/components/schemas/TagPolicy'
+                dataSourceQueryPolicy:
+                    $ref: '#/components/schemas/DataSourceQueryPolicy'
                 enforce:
                     type: boolean
                 resourceType:
@@ -11972,6 +12014,28 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Plan'
                     description: The plan used to preview rollout.
+        PriorBackupDetail:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PriorBackupDetail_Item'
+        PriorBackupDetail_Item:
+            type: object
+            properties:
+                sourceTable:
+                    allOf:
+                        - $ref: '#/components/schemas/Item_Table'
+                    description: The original table information.
+                targetTable:
+                    allOf:
+                        - $ref: '#/components/schemas/Item_Table'
+                    description: The target backup table information.
+                startPosition:
+                    $ref: '#/components/schemas/Position'
+                endPosition:
+                    $ref: '#/components/schemas/Position'
         ProcedureConfig:
             type: object
             properties:
@@ -12228,11 +12292,11 @@ components:
                     type: string
         RemoveDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to remove a data source from.
@@ -12324,7 +12388,7 @@ components:
                     type: string
                     description: |-
                         The name of the sql review to retrieve.
-                         Format: reviewConfigs/{uid}
+                         Format: reviewConfigs/{reviewConfig}
                 title:
                     type: string
                 enabled:
@@ -12973,7 +13037,7 @@ components:
                     description: |-
                         The resource name of the setting. Must be one of the following forms:
 
-                         - `setting/{setting_name}`
+                         - `setting/{setting}`
                          For example, "settings/bb.branding.logo"
                 value:
                     allOf:
@@ -13681,6 +13745,10 @@ components:
                         - EXPORTED
                     type: string
                     format: enum
+                priorBackupDetail:
+                    allOf:
+                        - $ref: '#/components/schemas/TaskRun_PriorBackupDetail'
+                    description: The prior backup detail that will be used to rollback the task run.
         TaskRunLog:
             type: object
             properties:
@@ -13695,8 +13763,12 @@ components:
                         - DATABASE_SYNC_END
                         - TASK_RUN_STATUS_UPDATE
                         - TRANSACTION_CONTROL
+                        - PRIOR_BACKUP_START
+                        - PRIOR_BACKUP_END
                     type: string
                     format: enum
+                deployId:
+                    type: string
                 schemaDumpStart:
                     $ref: '#/components/schemas/TaskRunLog_SchemaDumpStart'
                 schemaDumpEnd:
@@ -13713,6 +13785,10 @@ components:
                     $ref: '#/components/schemas/TaskRunLog_TaskRunStatusUpdate'
                 transactionControl:
                     $ref: '#/components/schemas/TaskRunLog_TransactionControl'
+                priorBackupStart:
+                    $ref: '#/components/schemas/TaskRunLog_PriorBackupStart'
+                priorBackupEnd:
+                    $ref: '#/components/schemas/TaskRunLog_PriorBackupEnd'
         TaskRunLog_CommandExecute:
             type: object
             properties:
@@ -13750,6 +13826,16 @@ components:
                 error:
                     type: string
         TaskRunLog_DatabaseSyncStart:
+            type: object
+            properties: {}
+        TaskRunLog_PriorBackupEnd:
+            type: object
+            properties:
+                priorBackupDetail:
+                    $ref: '#/components/schemas/PriorBackupDetail'
+                error:
+                    type: string
+        TaskRunLog_PriorBackupStart:
             type: object
             properties: {}
         TaskRunLog_SchemaDumpEnd:
@@ -13822,6 +13908,13 @@ components:
                     $ref: '#/components/schemas/ExecutionDetail_Position'
                 commandEndPosition:
                     $ref: '#/components/schemas/ExecutionDetail_Position'
+        TaskRun_PriorBackupDetail:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PriorBackupDetail_Item'
         Task_DatabaseCreate:
             type: object
             properties:
@@ -13993,11 +14086,11 @@ components:
                          Format: users/{user}
         UpdateDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to update a data source.
@@ -14108,7 +14201,7 @@ components:
                     type: string
                     description: |-
                         The name of the group to retrieve.
-                         Format: groups/{email}
+                         Format: userGroups/{userGroup}, userGroup is an email.
                 title:
                     type: string
                 description:

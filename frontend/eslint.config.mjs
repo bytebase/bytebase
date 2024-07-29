@@ -39,6 +39,22 @@ export default [
       "vue/no-mutating-props": "error",
       "vue/no-unused-components": "error",
       "vue/no-useless-template-attributes": "error",
+      "vue/no-undef-components": [
+        "warn",
+        {
+          ignorePatterns: [
+            /^heroicons(-solid|-outline)?:/,
+            /^carbon:/,
+            /^tabler:/,
+            /^octicon:/,
+            /^mdi:/,
+            /^router-view$/,
+            /^router-link$/,
+            /^i18n-t$/,
+            /^highlight-code-block$/,
+          ],
+        },
+      ],
       "vue/multi-word-component-names": "off",
     },
   },

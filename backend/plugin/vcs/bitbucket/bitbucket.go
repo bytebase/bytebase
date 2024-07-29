@@ -400,10 +400,17 @@ type WebhookPushEvent struct {
 // WebhookCreateOrUpdate represents a Bitbucket API request for creating or
 // updating a webhook.
 type WebhookCreateOrUpdate struct {
-	Description string   `json:"description"`
-	URL         string   `json:"url"`
-	Active      bool     `json:"active"`
-	Events      []string `json:"events"`
+	Description string `json:"description"`
+	URL         string `json:"url"`
+	Active      bool   `json:"active"`
+	// Docs for pr events: https://support.atlassian.com/bitbucket-cloud/docs/event-payloads/#Pull-request-events
+	// - pullrequest:created: A user creates a pull request for a repository.
+	// - pullrequest:updated: A user updates a pull request for a repository.
+	// - pullrequest:changes_request_created: A user requests a change for a pull request for a repository.
+	// - pullrequest:fulfilled: A user merges a pull request for a repository.
+	// - pullrequest:comment_created: A user comments on a pull request.
+	// - pullrequest:comment_updated: A user updates a comment on a pull request.
+	Events []string `json:"events"`
 }
 
 // Webhook represents a Bitbucket Cloud API response for the webhook

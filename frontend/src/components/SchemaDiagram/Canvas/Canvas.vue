@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButtonGroup, NButton } from "naive-ui";
+import { NButtonGroup, NButton, NTooltip } from "naive-ui";
 import { ref, useSlots } from "vue";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
 import { useSchemaDiagramContext } from "../common";

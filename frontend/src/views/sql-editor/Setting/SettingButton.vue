@@ -12,6 +12,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
 import { useSidebarItems } from "./Sidebar";
+import { NButton } from "naive-ui";
 
 const router = useRouter();
 const { itemList } = useSidebarItems();

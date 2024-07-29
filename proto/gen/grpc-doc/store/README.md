@@ -177,6 +177,7 @@
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
+    - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
     - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
@@ -193,6 +194,7 @@
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
+    - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
     - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
@@ -272,6 +274,9 @@
     - [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry)
   
 - [store/task_run.proto](#store_task_run-proto)
+    - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
+    - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
+    - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
     - [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position)
   
@@ -281,6 +286,8 @@
     - [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse)
     - [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd)
     - [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart)
+    - [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd)
+    - [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart)
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
     - [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate)
@@ -2305,6 +2312,8 @@ InstanceOptions is the option for instances.
 | to_description | [string](#string) | optional |  |
 | from_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
 | to_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
+| from_labels | [string](#string) | repeated |  |
+| to_labels | [string](#string) | repeated |  |
 
 
 
@@ -2840,6 +2849,21 @@ Type is the database change type.
 
 
 
+<a name="bytebase-store-DataSourceQueryPolicy"></a>
+
+### DataSourceQueryPolicy
+DataSourceQueryPolicy is the policy configuration for data source query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-DisableCopyDataPolicy"></a>
 
 ### DisableCopyDataPolicy
@@ -3085,6 +3109,19 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 
  
+
+
+<a name="bytebase-store-DataSourceQueryPolicy-Restriction"></a>
+
+### DataSourceQueryPolicy.Restriction
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESTRICTION_UNSPECIFIED | 0 |  |
+| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
+| DISALLOW | 2 | Disallow to query admin data sources. |
+
 
 
 <a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>
@@ -4209,6 +4246,56 @@ TaskDatabaseDataUpdatePayload is the task payload for database data update (DML)
 
 
 
+<a name="bytebase-store-PriorBackupDetail"></a>
+
+### PriorBackupDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item"></a>
+
+### PriorBackupDetail.Item
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table information. |
+| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The target backup table information. |
+| start_position | [Position](#bytebase-store-Position) |  |  |
+| end_position | [Position](#bytebase-store-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
+
+### PriorBackupDetail.Item.Table
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-TaskRunResult"></a>
 
 ### TaskRunResult
@@ -4222,7 +4309,8 @@ TaskDatabaseDataUpdatePayload is the task payload for database data update (DML)
 | version | [string](#string) |  |  |
 | start_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
 | end_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
-| export_archive_uid | [int32](#int32) |  |  |
+| export_archive_uid | [int32](#int32) |  | The uid of the export archive. |
+| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
 
 
 
@@ -4270,6 +4358,7 @@ The following fields are used for error reporting.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type) |  |  |
+| deploy_id | [string](#string) |  |  |
 | schema_dump_start | [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart) |  |  |
 | schema_dump_end | [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd) |  |  |
 | command_execute | [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute) |  |  |
@@ -4278,6 +4367,8 @@ The following fields are used for error reporting.
 | database_sync_end | [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd) |  |  |
 | task_run_status_update | [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate) |  |  |
 | transaction_control | [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl) |  |  |
+| prior_backup_start | [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart) |  |  |
+| prior_backup_end | [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd) |  |  |
 
 
 
@@ -4335,6 +4426,32 @@ The following fields are used for error reporting.
 <a name="bytebase-store-TaskRunLog-DatabaseSyncStart"></a>
 
 ### TaskRunLog.DatabaseSyncStart
+
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-PriorBackupEnd"></a>
+
+### TaskRunLog.PriorBackupEnd
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-PriorBackupStart"></a>
+
+### TaskRunLog.PriorBackupStart
 
 
 
@@ -4443,6 +4560,8 @@ The following fields are used for error reporting.
 | DATABASE_SYNC_END | 6 |  |
 | TASK_RUN_STATUS_UPDATE | 7 |  |
 | TRANSACTION_CONTROL | 8 |  |
+| PRIOR_BACKUP_START | 9 |  |
+| PRIOR_BACKUP_END | 10 |  |
 
 
  

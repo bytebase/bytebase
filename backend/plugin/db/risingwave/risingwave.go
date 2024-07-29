@@ -393,7 +393,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, statement)
 	if err != nil {
 		return nil, err
 	}

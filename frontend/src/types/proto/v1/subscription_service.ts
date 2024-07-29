@@ -735,7 +735,8 @@ export const SubscriptionServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([5, 112, 97, 116, 99, 104])],
-          800016: [new Uint8Array([2])],
+          800010: [new Uint8Array([15, 98, 98, 46, 115, 101, 116, 116, 105, 110, 103, 115, 46, 115, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               25,

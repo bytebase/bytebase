@@ -85,8 +85,15 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import ProjectStandardView from "@/components/AlterSchemaPrepForm/ProjectStandardView.vue";
-import { ErrorTipsButton, SearchBox } from "@/components/v2";
+import SchemalessDatabaseTable from "@/components/AlterSchemaPrepForm/SchemalessDatabaseTable.vue";
+import {
+  Drawer,
+  DrawerContent,
+  ErrorTipsButton,
+  SearchBox,
+} from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store,
@@ -153,8 +160,7 @@ const databaseList = computed(() => {
   list = databaseStore.databaseListByProject(project.value.name);
 
   list = list.filter(
-    (db) =>
-      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
+    (db) => db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
 
   list = list.filter((db) => {
@@ -214,7 +220,7 @@ const handleClickNext = async () => {
         changelist.value
       ),
       changelist: changelist.value.name,
-      databaseList: databaseList.map((db) => db.name).join(','),
+      databaseList: databaseList.map((db) => db.name).join(","),
     };
 
     router.push({

@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { SelectOption } from "naive-ui";
+import { NSelect, type SelectOption } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, ref } from "vue";
 import {

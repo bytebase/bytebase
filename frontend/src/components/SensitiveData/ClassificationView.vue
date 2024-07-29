@@ -100,7 +100,7 @@
 
 <script lang="ts" setup>
 import { head, isEqual } from "lodash-es";
-import { NSwitch, useDialog, NDivider } from "naive-ui";
+import { NSwitch, useDialog, NDivider, NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -116,6 +116,11 @@ import type {
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
 } from "@/types/proto/v1/setting_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import LearnMoreLink from "../LearnMoreLink.vue";
+import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";
+import SingleFileSelector from "../SingleFileSelector.vue";
+import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
+import DataExampleModal from "./components/DataExampleModal.vue";
 
 const uploader = ref<HTMLInputElement | null>(null);
 const maxFileSizeInMiB = 10;

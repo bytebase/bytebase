@@ -179,9 +179,11 @@
 import { cloneDeep, pull } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { ArrowLeftIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { IndexIcon } from "@/components/Icon";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";

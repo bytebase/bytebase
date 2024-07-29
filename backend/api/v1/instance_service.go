@@ -637,7 +637,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 }
 
 // SyncInstance syncs the instance.
-func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.BatchSyncInstanceRequest) (*v1pb.BatchSyncInstanceResponse, error) {
+func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.BatchSyncInstancesRequest) (*v1pb.BatchSyncInstancesResponse, error) {
 	for _, r := range request.Requests {
 		instance, err := getInstanceMessage(ctx, s.store, r.Name)
 		if err != nil {
@@ -655,7 +655,7 @@ func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.B
 		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 	}
 
-	return &v1pb.BatchSyncInstanceResponse{}, nil
+	return &v1pb.BatchSyncInstancesResponse{}, nil
 }
 
 // AddDataSource adds a data source to an instance.
@@ -673,12 +673,12 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
 
-	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 	for _, ds := range instance.DataSources {
 		if ds.ID == request.DataSource.Id {
@@ -739,12 +739,12 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 	// We create a new variable dataSource to not modify existing data source in the memory.
 	var dataSource store.DataSourceMessage
@@ -943,12 +943,12 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
 
-	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
 	// We create a new variable dataSource to not modify existing data source in the memory.
