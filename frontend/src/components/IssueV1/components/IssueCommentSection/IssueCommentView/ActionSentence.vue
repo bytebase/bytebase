@@ -22,7 +22,6 @@ import {
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
   IssueStatus,
-  issueStatusFromJSON,
 } from "@/types/proto/v1/issue_service";
 import {
   extractTaskUID,
