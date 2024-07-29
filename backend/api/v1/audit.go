@@ -437,11 +437,3 @@ func isStreamAuditMethod(method string) bool {
 		return false
 	}
 }
-
-func ctxWithServiceData(ctx *context.Context, method string) {
-	switch method {
-	case v1pb.ProjectService_SetIamPolicy_FullMethodName:
-		*ctx = context.WithValue(*ctx, common.ServiceDataKey, &anypb.Any{})
-	default:
-	}
-}
