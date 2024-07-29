@@ -108,8 +108,13 @@ func getPullRequestID(url string) string {
 	return fields[len(fields)-1]
 }
 
+const (
+	commentPrefixBytebaseBot = "[Bytebase Bot]"
+	commentPrefixSQLReview   = "[Bytebase SQL Review]"
+)
+
 func getPullRequestComment(externalURL, issue string) string {
-	return fmt.Sprintf("Bytebase Bot: this pull request has triggered a Bytebase rollout 🚀. Check out the status at %s/%s.", externalURL, issue)
+	return fmt.Sprintf("This pull request has triggered a Bytebase rollout 🚀. Check out the status at %s/%s.", externalURL, issue)
 }
 
 func convertFileContentToUTF8String(content string) string {
