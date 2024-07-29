@@ -5519,8 +5519,8 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | to_description | [string](#string) | optional |  |
 | from_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
 | to_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
-| from_assignee | [string](#string) | optional | TODO(d): deprecate from_assignee and to_assignee. Format: users/{email} |
-| to_assignee | [string](#string) | optional | Format: users/{email} |
+| from_labels | [string](#string) | repeated |  |
+| to_labels | [string](#string) | repeated |  |
 
 
 

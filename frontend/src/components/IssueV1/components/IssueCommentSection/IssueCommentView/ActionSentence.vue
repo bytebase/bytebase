@@ -70,6 +70,8 @@ const renderActionSentence = () => {
       toDescription,
       fromStatus,
       toStatus,
+      fromLabels,
+      toLabels,
     } = IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
     if (fromTitle !== undefined && toTitle !== undefined) {
       return t("activity.sentence.changed-from-to", {
@@ -88,6 +90,8 @@ const renderActionSentence = () => {
       } else if (toStatus === IssueStatus.OPEN) {
         return t("activity.sentence.reopened-issue");
       }
+    } else if (fromLabels.length !== 0 || toLabels.length !== 0) {
+      return t("activity.sentence.changed-labels");
     }
   } else if (issueComment.type === IssueCommentType.STAGE_END) {
     const { stage } = IssueComment_StageEnd.fromPartial(

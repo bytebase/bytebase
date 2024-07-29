@@ -35,6 +35,8 @@ message IssueCommentPayload {
     optional string to_description = 4;
     optional IssueStatus from_status = 5;
     optional IssueStatus to_status = 6;
+    repeated string from_labels = 7;
+    repeated string to_labels = 8;
 
     enum IssueStatus {
       ISSUE_STATUS_UNSPECIFIED = 0;
