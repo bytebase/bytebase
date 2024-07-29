@@ -18,7 +18,6 @@ const (
 	LoopbackContextKey
 	// UserContextKey is the key name used to store user message in the context.
 	UserContextKey
-	ProjectIDsContextKey
 	AuthContextKey
 	ServiceDataKey
 )
@@ -30,18 +29,6 @@ func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) 
 func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool) {
 	setServiceData, ok := ctx.Value(ServiceDataKey).(func(*anypb.Any))
 	return setServiceData, ok
-}
-
-func WithProjectIDs(ctx context.Context, projectIDs []string) context.Context {
-	return context.WithValue(ctx, ProjectIDsContextKey, projectIDs)
-}
-
-func GetProjectIDsFromContext(ctx context.Context) []string {
-	v, ok := ctx.Value(ProjectIDsContextKey).([]string)
-	if !ok {
-		return nil
-	}
-	return v
 }
 
 type AuthMethod int

@@ -160,6 +160,15 @@ func TestGetResourceFromRequest(t *testing.T) {
 				{Name: "instances/world"},
 			},
 		},
+		{
+			request: &v1pb.BatchCancelPlanCheckRunsRequest{
+				Parent: "projects/hello/plans/world",
+			},
+			method: "/bytebase.v1.PlanService/BatchCancelPlanCheckRuns",
+			want: []*common.Resource{
+				{Name: "projects/hello/plans/world"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

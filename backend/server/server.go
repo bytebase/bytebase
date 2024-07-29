@@ -282,7 +282,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, s.profile)
-	contextProvider := apiv1.NewContextProvider(s.store)
 	auditProvider := apiv1.NewAuditInterceptor(s.store)
 	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.iamManager, s.profile)
 	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, s.metricReporter)
@@ -303,7 +302,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		grpc.ChainUnaryInterceptor(
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
-			contextProvider.UnaryInterceptor,
 			aclProvider.ACLInterceptor,
 			auditProvider.AuditInterceptor,
 			recoveryUnaryInterceptor,
