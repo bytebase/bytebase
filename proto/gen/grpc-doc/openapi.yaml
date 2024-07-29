@@ -8723,6 +8723,8 @@ components:
                         - $ref: '#/components/schemas/GoogleProtobufAny'
                     description: service-specific data about the request, response, and other activities.
         BatchCancelPlanCheckRunsRequest:
+            required:
+                - parent
             type: object
             properties:
                 parent:
@@ -8735,7 +8737,8 @@ components:
                     items:
                         type: string
                     description: |-
-                        The planCheckRuns to cancel.
+                        TODO(d): update this API.
+                         The planCheckRuns to cancel.
                          Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
         BatchCancelPlanCheckRunsResponse:
             type: object

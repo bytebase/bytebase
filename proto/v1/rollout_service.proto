@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
@@ -17,7 +18,7 @@ service RolloutService {
     option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.get";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
@@ -27,7 +28,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent,rollout";
     option (bytebase.v1.permission) = "bb.rollouts.create";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
@@ -37,28 +38,28 @@ service RolloutService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.preview";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetTaskRunSession(GetTaskRunSessionRequest) returns (TaskRunSession) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
@@ -135,13 +136,19 @@ message BatchCancelTaskRunsResponse {}
 message GetRolloutRequest {
   // The name of the rollout to retrieve.
   // Format: projects/{project}/rollouts/{rollout}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Rollout"}
+  ];
 }
 
 message CreateRolloutRequest {
   // The parent project where this rollout will be created.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The rollout to create.
   Rollout rollout = 2 [(google.api.field_behavior) = REQUIRED];
@@ -150,7 +157,10 @@ message CreateRolloutRequest {
 message PreviewRolloutRequest {
   // The name of the project.
   // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
+  string project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The plan used to preview rollout.
   Plan plan = 2;
@@ -160,7 +170,10 @@ message ListTaskRunsRequest {
   // The parent, which owns this collection of plans.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   // Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Task"}
+  ];
 
   // The maximum number of taskRuns to return. The service may return fewer than
   // this value.
@@ -187,10 +200,19 @@ message ListTaskRunsResponse {
 
 message GetTaskRunLogRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  string parent = 1;
+  // TODO(d): check the resource_reference.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/TaskRun"}
+  ];
 }
 
 message Rollout {
+  option (google.api.resource) = {
+    type: "bytebase.com/Rollout"
+    pattern: "projects/{project}/rollouts/{rollout}"
+  };
+
   // The resource name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
   string name = 1;
@@ -209,6 +231,11 @@ message Rollout {
 }
 
 message Stage {
+  option (google.api.resource) = {
+    type: "bytebase.com/Stage"
+    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}"
+  };
+
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
@@ -219,6 +246,11 @@ message Stage {
 }
 
 message Task {
+  option (google.api.resource) = {
+    type: "bytebase.com/Task"
+    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}"
+  };
+
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
@@ -328,6 +360,11 @@ message Task {
 }
 
 message TaskRun {
+  option (google.api.resource) = {
+    type: "bytebase.com/TaskRun"
+    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}"
+  };
+
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
@@ -417,6 +454,11 @@ message TaskRun {
 }
 
 message TaskRunLog {
+  option (google.api.resource) = {
+    type: "bytebase.com/TaskRunLog"
+    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log"
+  };
+
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
   string name = 1;
 
@@ -494,10 +536,18 @@ message TaskRunLogEntry {
 
 message GetTaskRunSessionRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/TaskRun"}
+  ];
 }
 
 message TaskRunSession {
+  option (google.api.resource) = {
+    type: "bytebase.com/TaskRunSession"
+    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session"
+  };
+
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
   string name = 1;
 
