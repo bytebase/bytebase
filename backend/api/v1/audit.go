@@ -437,20 +437,6 @@ func isStreamAuditMethod(method string) bool {
 	}
 }
 
-func convertToProtoAny(i any) (*anypb.Any, error) {
-	switch deltas := i.(type) {
-	case *[]*v1pb.BindingDelta:
-		auditData := v1pb.AuditData{
-			PolicyDelta: &v1pb.PolicyDelta{
-				BindingDeltas: *deltas,
-			},
-		}
-		return anypb.New(&auditData)
-	default:
-		return &anypb.Any{}, nil
-	}
-}
-
 func ctxWithServiceData(ctx *context.Context, method string) {
 	switch method {
 	case v1pb.ProjectService_SetIamPolicy_FullMethodName:

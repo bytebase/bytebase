@@ -436,12 +436,26 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")
 		}
-		// avoid copy lock.
+		// avoid copying lock.
 		serviceData.TypeUrl = p.TypeUrl
 		serviceData.Value = p.Value
 	}
 
 	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
+}
+
+func convertToProtoAny(i any) (*anypb.Any, error) {
+	switch deltas := i.(type) {
+	case []*v1pb.BindingDelta:
+		auditData := v1pb.AuditData{
+			PolicyDelta: &v1pb.PolicyDelta{
+				BindingDeltas: deltas,
+			},
+		}
+		return anypb.New(&auditData)
+	default:
+		return &anypb.Any{}, nil
+	}
 }
 
 type bindMapKey struct {
