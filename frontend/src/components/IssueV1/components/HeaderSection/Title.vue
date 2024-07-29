@@ -4,7 +4,7 @@
       :value="state.title"
       :style="style"
       :loading="state.isUpdating"
-      :disabled="!allowEdit || state.isUpdating"
+      :disabled="!allowEditIssue || state.isUpdating"
       size="medium"
       required
       class="bb-issue-title-input"
@@ -23,16 +23,14 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { pushNotification, useCurrentUserV1 } from "@/store";
-import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import { pushNotification } from "@/store";
+import { Issue } from "@/types/proto/v1/issue_service";
 import { useIssueContext } from "../../logic";
 
 type ViewMode = "EDIT" | "VIEW";
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, allowEditIssue } = useIssueContext();
 
 const state = reactive({
   isEditing: false,
@@ -60,35 +58,6 @@ const style = computed(() => {
   style["--n-border-disabled"] = border;
 
   return style;
-});
-
-const allowEdit = computed(() => {
-  if (isCreating.value) {
-    return true;
-  }
-
-  if (issue.value.status !== IssueStatus.OPEN) {
-    return false;
-  }
-
-  if (
-    extractUserResourceName(issue.value.creator) === currentUser.value.email
-  ) {
-    // Allowed if current user is the creator.
-    return true;
-  }
-
-  if (
-    hasProjectPermissionV2(
-      issue.value.projectEntity,
-      currentUser.value,
-      "bb.issues.update"
-    )
-  ) {
-    // Allowed if current has issue update permission in the project
-    return true;
-  }
-  return false;
 });
 
 const onBlur = async () => {

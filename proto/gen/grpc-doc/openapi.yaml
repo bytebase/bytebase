@@ -10743,14 +10743,14 @@ components:
                         - CANCELED
                     type: string
                     format: enum
-                fromAssignee:
-                    type: string
-                    description: |-
-                        TODO(d): deprecate from_assignee and to_assignee.
-                         Format: users/{email}
-                toAssignee:
-                    type: string
-                    description: 'Format: users/{email}'
+                fromLabels:
+                    type: array
+                    items:
+                        type: string
+                toLabels:
+                    type: array
+                    items:
+                        type: string
         IssueComment_StageEnd:
             type: object
             properties:

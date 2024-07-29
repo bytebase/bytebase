@@ -4,7 +4,7 @@
       <span>{{ $t("common.labels") }}</span>
     </div>
     <IssueLabelSelector
-      :disabled="!hasEditPermission"
+      :disabled="!allowEditIssue"
       :selected="issue.labels"
       :project="issue.projectEntity"
       :size="'medium'"
@@ -14,26 +14,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import { issueServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import { Issue } from "@/types/proto/v1/issue_service";
-import { hasProjectPermissionV2 } from "@/utils";
 
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, allowEditIssue } = useIssueContext();
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
-
-const hasEditPermission = computed(() =>
-  hasProjectPermissionV2(
-    issue.value.projectEntity,
-    currentUser.value,
-    isCreating.value ? "bb.issues.create" : "bb.issues.update"
-  )
-);
 
 const onLablesUpdate = async (labels: string[]) => {
   if (isCreating.value) {

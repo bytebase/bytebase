@@ -86,6 +86,8 @@ export interface IssueCommentPayload_IssueUpdate {
   toDescription?: string | undefined;
   fromStatus?: IssueCommentPayload_IssueUpdate_IssueStatus | undefined;
   toStatus?: IssueCommentPayload_IssueUpdate_IssueStatus | undefined;
+  fromLabels: string[];
+  toLabels: string[];
 }
 
 export enum IssueCommentPayload_IssueUpdate_IssueStatus {
@@ -491,6 +493,8 @@ function createBaseIssueCommentPayload_IssueUpdate(): IssueCommentPayload_IssueU
     toDescription: undefined,
     fromStatus: undefined,
     toStatus: undefined,
+    fromLabels: [],
+    toLabels: [],
   };
 }
 
@@ -513,6 +517,12 @@ export const IssueCommentPayload_IssueUpdate = {
     }
     if (message.toStatus !== undefined) {
       writer.uint32(48).int32(issueCommentPayload_IssueUpdate_IssueStatusToNumber(message.toStatus));
+    }
+    for (const v of message.fromLabels) {
+      writer.uint32(58).string(v!);
+    }
+    for (const v of message.toLabels) {
+      writer.uint32(66).string(v!);
     }
     return writer;
   },
@@ -566,6 +576,20 @@ export const IssueCommentPayload_IssueUpdate = {
 
           message.toStatus = issueCommentPayload_IssueUpdate_IssueStatusFromJSON(reader.int32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.fromLabels.push(reader.string());
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.toLabels.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -587,6 +611,10 @@ export const IssueCommentPayload_IssueUpdate = {
       toStatus: isSet(object.toStatus)
         ? issueCommentPayload_IssueUpdate_IssueStatusFromJSON(object.toStatus)
         : undefined,
+      fromLabels: globalThis.Array.isArray(object?.fromLabels)
+        ? object.fromLabels.map((e: any) => globalThis.String(e))
+        : [],
+      toLabels: globalThis.Array.isArray(object?.toLabels) ? object.toLabels.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -610,6 +638,12 @@ export const IssueCommentPayload_IssueUpdate = {
     if (message.toStatus !== undefined) {
       obj.toStatus = issueCommentPayload_IssueUpdate_IssueStatusToJSON(message.toStatus);
     }
+    if (message.fromLabels?.length) {
+      obj.fromLabels = message.fromLabels;
+    }
+    if (message.toLabels?.length) {
+      obj.toLabels = message.toLabels;
+    }
     return obj;
   },
 
@@ -624,6 +658,8 @@ export const IssueCommentPayload_IssueUpdate = {
     message.toDescription = object.toDescription ?? undefined;
     message.fromStatus = object.fromStatus ?? undefined;
     message.toStatus = object.toStatus ?? undefined;
+    message.fromLabels = object.fromLabels?.map((e) => e) || [];
+    message.toLabels = object.toLabels?.map((e) => e) || [];
     return message;
   },
 };
