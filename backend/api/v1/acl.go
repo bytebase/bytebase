@@ -204,39 +204,33 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true, nil, nil
 	}
-	if authContext.AuthMethod == common.AuthMethodCustom {
+	if authContext.AuthMethod != common.AuthMethodIAM {
 		return true, nil, nil
 	}
-	if authContext.AuthMethod == common.AuthMethodIAM {
-		// Handle GetProject() error status.
-		if len(authContext.Resources) == 0 {
-			return false, nil, errors.Errorf("no resource found for IAM auth method")
-		}
-		if authContext.HasWorkspaceResource() {
-			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
-			if err != nil {
-				return false, nil, err
-			}
-			if !ok {
-				return false, nil, nil
-			}
-		}
-		projectIDs := authContext.GetProjectResources()
-		if len(projectIDs) > 0 {
-			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
-			if err != nil {
-				return false, projectIDs, err
-			}
-			if !ok {
-				return false, projectIDs, nil
-			}
-		}
-		return true, nil, nil
+	// Handle GetProject() error status.
+	if len(authContext.Resources) == 0 {
+		return false, nil, errors.Errorf("no resource found for IAM auth method")
 	}
-
-	projectIDs := common.GetProjectIDsFromContext(ctx)
-	ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
-	return ok, projectIDs, err
+	if authContext.HasWorkspaceResource() {
+		ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
+		if err != nil {
+			return false, nil, err
+		}
+		if !ok {
+			return false, nil, nil
+		}
+	}
+	projectIDs := authContext.GetProjectResources()
+	if len(projectIDs) > 0 {
+		ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
+		if err != nil {
+			return false, projectIDs, err
+		}
+		if !ok {
+			return false, projectIDs, nil
+		}
+	}
+	return true, nil, nil
 }
 
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
@@ -416,4 +410,34 @@ func toSnakeCase(str string) string {
 	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
+}
+
+func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse %q", databaseResourceName)
+	}
+
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found")
+	}
+
+	find := &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		ShowDeleted:         true,
+	}
+	database, err := s.GetDatabaseV2(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database")
+	}
+	if database == nil {
+		return nil, errors.Errorf("database %q not found", databaseResourceName)
+	}
+	return database, nil
 }
