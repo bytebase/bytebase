@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // ACLInterceptor is the v1 ACL interceptor for gRPC server.
@@ -86,7 +85,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
 	}
@@ -144,7 +143,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
 	}
@@ -199,7 +198,7 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 	return false
 }
 
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true, nil, nil
 	}
@@ -234,58 +233,12 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		return true, nil, nil
 	}
 
-	p := authContext.Permission
-	switch fullMethod {
-	// special cases for bb.instance.get permission check.
-	// we permit users to get instances (and all the related info) if they can get any database in the instance, even if they don't have bb.instance.get permission.
-	case
-		v1pb.InstanceService_GetInstance_FullMethodName,
-		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
-		v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName:
-		var instanceID string
-		var err error
-		switch r := req.(type) {
-		case *v1pb.GetInstanceRequest:
-			instanceID, err = common.GetInstanceID(r.GetName())
-		case *v1pb.GetInstanceRoleRequest:
-			instanceID, _, err = common.GetInstanceRoleID(r.GetName())
-		case *v1pb.ListInstanceRolesRequest:
-			instanceID, err = common.GetInstanceID(r.GetParent())
-		}
-		if err != nil {
-			return false, []string{instanceID}, err
-		}
-		ok, err := in.checkIAMPermissionInstancesGet(ctx, user, instanceID)
-		return ok, []string{instanceID}, err
-	}
-
 	projectIDs, ok := common.GetProjectIDsFromContext(ctx)
 	if !ok {
 		return false, projectIDs, errors.Errorf("failed to get project ids")
 	}
-	ok, err := in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
+	ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
 	return ok, projectIDs, err
-}
-
-func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, user *store.UserMessage, instanceID string) (bool, error) {
-	// fast path for Admins and DBAs.
-	ok, err := in.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
-	if err != nil {
-		return false, err
-	}
-	if ok {
-		return true, nil
-	}
-
-	databaseFind := &store.FindDatabaseMessage{
-		InstanceID:  &instanceID,
-		ShowDeleted: true,
-	}
-	databases, err := searchDatabases(ctx, in.store, in.iamManager, databaseFind)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to search databases")
-	}
-	return len(databases) > 0, nil
 }
 
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
