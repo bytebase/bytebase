@@ -13,17 +13,9 @@
 
         <ActionSentence :issue="issue" :issue-comment="issueComment" />
 
-        <NButton
-          v-if="showRestoreButton(issueComment)"
-          size="small"
-          @click.prevent="createRestoreIssue(issueComment)"
-        >
-          <span>{{ $t("activity.restore") }}</span>
-        </NButton>
-
         <HumanizeTs
           :ts="(issueComment.createTime?.getTime() ?? 0) / 1000"
-          class="ml-1"
+          class="ml-1 text-gray-400"
         />
 
         <span
@@ -61,107 +53,20 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
-import { NButton } from "naive-ui";
-import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  IssueCommentType,
-  useSQLStore,
-  type ComposedIssueComment,
-} from "@/store";
-import { useSheetV1Store, useUserStore } from "@/store";
+import { IssueCommentType, type ComposedIssueComment } from "@/store";
+import { useUserStore } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { IssueComment_TaskPriorBackup } from "@/types/proto/v1/issue_service";
-import type { IssueComment } from "@/types/proto/v1/issue_service";
-import {
-  extractUserResourceName,
-  extractProjectResourceName,
-  sheetNameOfTaskV1,
-  extractDatabaseResourceName,
-} from "@/utils";
+import { extractUserResourceName } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
 
-const props = defineProps<{
+defineProps<{
   issue: ComposedIssue;
   index: number;
   issueComment: ComposedIssueComment;
   similar: ComposedIssueComment[];
 }>();
 
-const { selectedTask } = useIssueContext();
-const router = useRouter();
 const userStore = useUserStore();
-
-const coreDatabaseInfo = computed(() => {
-  return databaseForTask(props.issue, selectedTask.value);
-});
-
-const showRestoreButton = (comment: ComposedIssueComment) => {
-  if (comment.type !== IssueCommentType.TASK_PRIOR_BACKUP) {
-    return false;
-  }
-  if (!selectedTask.value) {
-    return false;
-  }
-  if (coreDatabaseInfo.value.instanceResource.engine !== Engine.MYSQL) {
-    return false;
-  }
-  return true;
-};
-
-const createRestoreIssue = async (comment: IssueComment) => {
-  const {
-    tables,
-    originalLine,
-    database: backupDatabase,
-  } = IssueComment_TaskPriorBackup.fromPartial(comment.taskPriorBackup || {});
-
-  const issueNameParts: string[] = [];
-  issueNameParts.push(
-    `Restore the sql at line ${originalLine} of (${props.issue.title})`
-  );
-  const datetime = dayjs().format("%MM-DD HH:mm");
-  const tz = "UTC" + dayjs().format("ZZ");
-  issueNameParts.push(`${datetime} ${tz}`);
-  const sheetName = sheetNameOfTaskV1(selectedTask.value);
-  const sheet = useSheetV1Store().getSheetByName(sheetName);
-  if (!sheet) {
-    console.error(`Sheet ${sheetName} not found`);
-    return;
-  }
-
-  const { instance } = extractDatabaseResourceName(selectedTask.value.target);
-  const { statement: restoreSQL } = await useSQLStore().generateRestoreSQL({
-    name: selectedTask.value.target,
-    sheet: sheet.name,
-    backupDataSource: `${instance}/databases/${backupDatabase.length > 0 ? backupDatabase : "bbdataarchive"}`,
-    backupTable: tables[0].table,
-  });
-  if (!restoreSQL) {
-    console.error("Failed to generate restore SQL");
-    return;
-  }
-
-  const query: Record<string, any> = {
-    template: "bb.issue.database.data.update",
-    name: issueNameParts.join(" "),
-    databaseList: selectedTask.value.target,
-    sql: restoreSQL,
-  };
-
-  router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(selectedTask.value.name),
-      issueSlug: "create",
-    },
-    query,
-  });
-};
 </script>

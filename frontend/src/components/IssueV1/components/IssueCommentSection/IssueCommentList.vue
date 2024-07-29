@@ -5,9 +5,9 @@
       <IssueCommentView
         v-for="(item, index) in issueComments"
         :key="item.comment.name"
-        :issue-comments="issueComments"
         :issue="issue"
         :index="index"
+        :is-last="index === issueComments.length - 1"
         :issue-comment="item.comment"
         :similar="item.similar"
       >

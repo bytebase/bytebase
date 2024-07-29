@@ -43,6 +43,7 @@ service SQLService {
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
     option (bytebase.v1.permission) = "bb.instances.adminExecute";
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {

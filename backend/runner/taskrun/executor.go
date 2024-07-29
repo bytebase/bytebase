@@ -172,9 +172,9 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	return mi, nil
 }
 
-func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store) func(t time.Time, e *storepb.TaskRunLog) error {
+func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, profile *config.Profile) func(t time.Time, e *storepb.TaskRunLog) error {
 	return func(t time.Time, e *storepb.TaskRunLog) error {
-		return s.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), e)
+		return s.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), profile.DeployID, e)
 	}
 }
 
@@ -242,7 +242,7 @@ func executeMigration(
 							UpdateTime:      time.Now(),
 						})
 				}
-				opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, taskRunUID, stores)
+				opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, taskRunUID, stores, profile)
 			default:
 				// do nothing
 			}

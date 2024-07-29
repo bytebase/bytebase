@@ -386,6 +386,8 @@ func convertToIssueCommentEventIssueUpdate(u *storepb.IssueCommentPayload_IssueU
 			ToDescription:   u.IssueUpdate.ToDescription,
 			FromStatus:      convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.FromStatus),
 			ToStatus:        convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.ToStatus),
+			FromLabels:      u.IssueUpdate.FromLabels,
+			ToLabels:        u.IssueUpdate.ToLabels,
 		},
 	}
 }

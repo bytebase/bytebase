@@ -21,12 +21,14 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databases.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListInstanceDatabases(ListInstanceDatabasesRequest) returns (ListInstanceDatabasesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*}/databases"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.instances.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
@@ -38,7 +40,7 @@ service DatabaseService {
 
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.databases.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Deprecated. This will be removed in the next release.
@@ -57,6 +59,7 @@ service DatabaseService {
     };
     option (google.api.method_signature) = "database,update_mask";
     option (bytebase.v1.permission) = "bb.databases.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
@@ -65,6 +68,7 @@ service DatabaseService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.databases.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc SyncDatabase(SyncDatabaseRequest) returns (SyncDatabaseResponse) {
@@ -73,11 +77,13 @@ service DatabaseService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.databases.sync";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
     option (bytebase.v1.permission) = "bb.databases.getSchema";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateDatabaseMetadata(UpdateDatabaseMetadataRequest) returns (DatabaseMetadata) {
@@ -86,11 +92,13 @@ service DatabaseService {
       body: "database_metadata"
     };
     option (bytebase.v1.permission) = "bb.databases.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
     option (bytebase.v1.permission) = "bb.databases.getSchema";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
@@ -104,7 +112,8 @@ service DatabaseService {
       }
     };
     // TODO(d): secure it.
-    option (bytebase.v1.permission) = "bb.changeHistories.get";
+    option (bytebase.v1.permission) = "bb.databases.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
@@ -112,12 +121,15 @@ service DatabaseService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.slowQueries.list";
     option (bytebase.v1.auth_method) = CUSTOM;
+    // TODO(d): secure it.
+    // Change the design of this API.
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.databaseSecrets.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
@@ -126,28 +138,33 @@ service DatabaseService {
       body: "secret"
     };
     option (bytebase.v1.permission) = "bb.databaseSecrets.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
     option (bytebase.v1.permission) = "bb.databaseSecrets.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
     option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.databases.adviseIndex";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListChangeHistories(ListChangeHistoriesRequest) returns (ListChangeHistoriesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changeHistories"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.changeHistories.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc GetChangeHistory(GetChangeHistoryRequest) returns (ChangeHistory) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changeHistories/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.changeHistories.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
@@ -367,7 +384,10 @@ message DiffSchemaRequest {
   // Format:
   // database: instances/{instance}/databases/{database}
   // change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   oneof target {
     // The target schema.
@@ -389,7 +409,7 @@ message DiffSchemaResponse {
 message Database {
   option (google.api.resource) = {
     type: "bytebase.com/Database"
-    pattern: "bytebase.com/Database/databases/{database}"
+    pattern: "instances/{instance}/databases/{database}"
   };
 
   // The name of the database.
@@ -987,7 +1007,10 @@ message DatabaseSchema {
 // ListSlowQueriesRequest is the request of listing slow query.
 message ListSlowQueriesRequest {
   // Format: instances/{instance}/databases/{database}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   // The filter of the slow query log.
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
@@ -1094,7 +1117,10 @@ message SlowQueryDetails {
 message ListSecretsRequest {
   // The parent of the secret.
   // Format: instances/{instance}/databases/{database}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   // Not used. The maximum number of databases to return. The service may return fewer than
   // this value.
@@ -1134,11 +1160,19 @@ message DeleteSecretRequest {
   // The name of the secret to be deleted.
   // Format:
   // instances/{instance}/databases/{database}/secrets/{secret}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 }
 
 // Secret is the secret of the database now.
 message Secret {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseChangeHistory"
+    pattern: "instances/{instance}/databases/{database}/secrets/{secret}"
+  };
+
   // name is the unique name of the secret, which is specified by the client.
   // Format:
   // instances/{instance}/databases/{database}/secrets/{secret}
@@ -1160,7 +1194,10 @@ message Secret {
 // AdviseIndexRequest is the request of advising index.
 message AdviseIndexRequest {
   // Format: instances/{instance}/databases/{database}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   // The statement to be advised.
   string statement = 2;
@@ -1179,6 +1216,11 @@ message AdviseIndexResponse {
 }
 
 message ChangeHistory {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseChangeHistory"
+    pattern: "instances/{instance}/databases/{database}/changeHistories/{changeHistory}"
+  };
+
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
   string name = 1;
   string uid = 2;
@@ -1271,7 +1313,10 @@ enum ChangeHistoryView {
 message ListChangeHistoriesRequest {
   // The parent of the change histories.
   // Format: instances/{instance}/databases/{database}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   // The maximum number of change histories to return. The service may return fewer than this value.
   // If unspecified, at most 10 change histories will be returned.
@@ -1331,7 +1376,10 @@ message ListChangeHistoriesResponse {
 message GetChangeHistoryRequest {
   // The name of the change history to retrieve.
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseChangeHistory"}
+  ];
 
   ChangeHistoryView view = 2;
 

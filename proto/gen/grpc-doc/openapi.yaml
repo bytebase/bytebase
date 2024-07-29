@@ -1232,7 +1232,8 @@ paths:
                 - name: parent
                   in: query
                   description: |-
-                    The parent parameter's value depends on the target resource for the request.
+                    Deprecated.
+                     The parent parameter's value depends on the target resource for the request.
                      - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
                      - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
                   schema:
@@ -3300,12 +3301,12 @@ paths:
         post:
             tags:
                 - InstanceService
-            operationId: InstanceService_BatchSyncInstance
+            operationId: InstanceService_BatchSyncInstances
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchSyncInstanceRequest'
+                            $ref: '#/components/schemas/BatchSyncInstancesRequest'
                 required: true
             responses:
                 "200":
@@ -3313,7 +3314,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchSyncInstanceResponse'
+                                $ref: '#/components/schemas/BatchSyncInstancesResponse'
                 default:
                     description: Default error response
                     content:
@@ -8330,7 +8331,7 @@ components:
                     description: lsp is the enablement of lsp in SQL Editor.
                 preUpdateBackup:
                     type: boolean
-                    description: lsp is the enablement of data backup prior to data update.
+                    description: pre_update_backup is the enablement of data backup prior to data update.
                 iamGuard:
                     type: boolean
                     description: iam_guard is the enablement of IAM checks.
@@ -8343,11 +8344,11 @@ components:
                  Actuator concept is similar to the Spring Boot Actuator.
         AddDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to add a data source to.
@@ -8863,7 +8864,7 @@ components:
         BatchSkipTasksResponse:
             type: object
             properties: {}
-        BatchSyncInstanceRequest:
+        BatchSyncInstancesRequest:
             required:
                 - requests
             type: object
@@ -8875,7 +8876,7 @@ components:
                     description: |-
                         The request message specifying the instances to sync.
                          A maximum of 1000 instances can be synced in a batch.
-        BatchSyncInstanceResponse:
+        BatchSyncInstancesResponse:
             type: object
             properties: {}
         BatchUpdateDatabasesRequest:
@@ -9553,6 +9554,16 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSourceQueryPolicy:
+            type: object
+            properties:
+                adminDataSourceRestriction:
+                    enum:
+                        - RESTRICTION_UNSPECIFIED
+                        - FALLBACK
+                        - DISALLOW
+                    type: string
+                    format: enum
         DataSource_Address:
             type: object
             properties:
@@ -10508,7 +10519,7 @@ components:
                     type: string
                     description: |-
                         The name of the role.
-                         Format: instances/{instance}/roles/{role name}
+                         Format: instances/{instance}/roles/{role}
                          The role name is the unique name for the role.
                 roleName:
                     type: string
@@ -10732,14 +10743,14 @@ components:
                         - CANCELED
                     type: string
                     format: enum
-                fromAssignee:
-                    type: string
-                    description: |-
-                        TODO(d): deprecate from_assignee and to_assignee.
-                         Format: users/{email}
-                toAssignee:
-                    type: string
-                    description: 'Format: users/{email}'
+                fromLabels:
+                    type: array
+                    items:
+                        type: string
+                toLabels:
+                    type: array
+                    items:
+                        type: string
         IssueComment_StageEnd:
             type: object
             properties:
@@ -11863,6 +11874,8 @@ components:
                     $ref: '#/components/schemas/RestrictIssueCreationForSQLReviewPolicy'
                 tagPolicy:
                     $ref: '#/components/schemas/TagPolicy'
+                dataSourceQueryPolicy:
+                    $ref: '#/components/schemas/DataSourceQueryPolicy'
                 enforce:
                     type: boolean
                 resourceType:
@@ -12268,11 +12281,11 @@ components:
                     type: string
         RemoveDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to remove a data source from.
@@ -12364,7 +12377,7 @@ components:
                     type: string
                     description: |-
                         The name of the sql review to retrieve.
-                         Format: reviewConfigs/{uid}
+                         Format: reviewConfigs/{reviewConfig}
                 title:
                     type: string
                 enabled:
@@ -13743,6 +13756,8 @@ components:
                         - PRIOR_BACKUP_END
                     type: string
                     format: enum
+                deployId:
+                    type: string
                 schemaDumpStart:
                     $ref: '#/components/schemas/TaskRunLog_SchemaDumpStart'
                 schemaDumpEnd:
@@ -14060,11 +14075,11 @@ components:
                          Format: users/{user}
         UpdateDataSourceRequest:
             required:
-                - instance
+                - name
                 - dataSource
             type: object
             properties:
-                instance:
+                name:
                     type: string
                     description: |-
                         The name of the instance to update a data source.

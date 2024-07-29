@@ -71,7 +71,7 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.InstanceService_DeleteInstance_FullMethodName,
 		v1pb.InstanceService_UndeleteInstance_FullMethodName,
 		v1pb.InstanceService_SyncInstance_FullMethodName,
-		v1pb.InstanceService_BatchSyncInstance_FullMethodName,
+		v1pb.InstanceService_BatchSyncInstances_FullMethodName,
 		v1pb.InstanceService_AddDataSource_FullMethodName,
 		v1pb.InstanceService_RemoveDataSource_FullMethodName,
 		v1pb.InstanceService_UpdateDataSource_FullMethodName,
@@ -416,7 +416,7 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 	case *v1pb.GetDeploymentConfigRequest:
 		projectDeploymentConfigs = append(projectDeploymentConfigs, r.GetName())
 	case *v1pb.UpdateDeploymentConfigRequest:
-		projectDeploymentConfigs = append(projectDeploymentConfigs, r.GetConfig().GetName())
+		projectDeploymentConfigs = append(projectDeploymentConfigs, r.GetDeploymentConfig().GetName())
 	case *v1pb.AddWebhookRequest:
 		projects = append(projects, r.GetProject())
 	case *v1pb.UpdateWebhookRequest:

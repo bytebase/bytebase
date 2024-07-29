@@ -13,6 +13,7 @@ export type FlattenLogEntry = {
   batch: number;
   serial: number;
   type: TaskRunLogEntry_Type;
+  deployId: string;
   startTime?: Date;
   endTime?: Date;
   schemaDump?: TaskRunLogEntry_SchemaDump;

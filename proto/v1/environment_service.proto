@@ -18,12 +18,14 @@ service EnvironmentService {
     option (google.api.http) = {get: "/v1/{name=environments/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.environments.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListEnvironments(ListEnvironmentsRequest) returns (ListEnvironmentsResponse) {
     option (google.api.http) = {get: "/v1/environments"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.environments.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateEnvironment(CreateEnvironmentRequest) returns (Environment) {
@@ -33,6 +35,7 @@ service EnvironmentService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.environments.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (Environment) {
@@ -42,12 +45,14 @@ service EnvironmentService {
     };
     option (google.api.method_signature) = "environment,update_mask";
     option (bytebase.v1.permission) = "bb.environments.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteEnvironment(DeleteEnvironmentRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=environments/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.environments.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UndeleteEnvironment(UndeleteEnvironmentRequest) returns (Environment) {
@@ -56,6 +61,7 @@ service EnvironmentService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.environments.undelete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

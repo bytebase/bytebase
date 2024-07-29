@@ -20,12 +20,14 @@ service BranchService {
     option (google.api.http) = {get: "/v1/{name=projects/*/branches/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/branches"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.branches.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateBranch(CreateBranchRequest) returns (Branch) {
@@ -35,6 +37,7 @@ service BranchService {
     };
     option (google.api.method_signature) = "parent,branch";
     option (bytebase.v1.permission) = "bb.branches.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateBranch(UpdateBranchRequest) returns (Branch) {
@@ -44,28 +47,28 @@ service BranchService {
     };
     option (google.api.method_signature) = "branch,update_mask";
     option (bytebase.v1.permission) = "bb.branches.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc MergeBranch(MergeBranchRequest) returns (Branch) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc RebaseBranch(RebaseBranchRequest) returns (RebaseBranchResponse) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:rebase"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteBranch(DeleteBranchRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/branches/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.delete";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // DiffDatabase works similar to branch rebase.
@@ -78,6 +81,7 @@ service BranchService {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:diffDatabase"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.branches.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
@@ -318,7 +322,10 @@ message DeleteBranchRequest {
 
 message DiffDatabaseRequest {
   // The name of branch.
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Branch"}
+  ];
 
   // The name of the databsae to merge the branch to.
   string database = 2 [(google.api.field_behavior) = REQUIRED];

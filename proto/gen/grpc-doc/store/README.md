@@ -177,6 +177,7 @@
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
+    - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
     - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
@@ -193,6 +194,7 @@
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
+    - [DataSourceQueryPolicy.Restricton](#bytebase-store-DataSourceQueryPolicy-Restricton)
     - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
@@ -2310,6 +2312,8 @@ InstanceOptions is the option for instances.
 | to_description | [string](#string) | optional |  |
 | from_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
 | to_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
+| from_labels | [string](#string) | repeated |  |
+| to_labels | [string](#string) | repeated |  |
 
 
 
@@ -2845,6 +2849,21 @@ Type is the database change type.
 
 
 
+<a name="bytebase-store-DataSourceQueryPolicy"></a>
+
+### DataSourceQueryPolicy
+DataSourceQueryPolicy is the policy configuration for data source query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| admin_data_source_restriction | [DataSourceQueryPolicy.Restricton](#bytebase-store-DataSourceQueryPolicy-Restricton) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-DisableCopyDataPolicy"></a>
 
 ### DisableCopyDataPolicy
@@ -3090,6 +3109,19 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 
  
+
+
+<a name="bytebase-store-DataSourceQueryPolicy-Restricton"></a>
+
+### DataSourceQueryPolicy.Restricton
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESTRICTION_UNSPECIFIED | 0 |  |
+| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
+| DISALLOW | 2 | Disallow to query admin data sources. |
+
 
 
 <a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>
@@ -4326,6 +4358,7 @@ The following fields are used for error reporting.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type) |  |  |
+| deploy_id | [string](#string) |  |  |
 | schema_dump_start | [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart) |  |  |
 | schema_dump_end | [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd) |  |  |
 | command_execute | [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute) |  |  |

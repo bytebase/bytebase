@@ -720,6 +720,7 @@ export interface TaskRunLog {
 export interface TaskRunLogEntry {
   type: TaskRunLogEntry_Type;
   logTime: Date | undefined;
+  deployId: string;
   schemaDump: TaskRunLogEntry_SchemaDump | undefined;
   commandExecute: TaskRunLogEntry_CommandExecute | undefined;
   databaseSync: TaskRunLogEntry_DatabaseSync | undefined;
@@ -3766,6 +3767,7 @@ function createBaseTaskRunLogEntry(): TaskRunLogEntry {
   return {
     type: TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
     logTime: undefined,
+    deployId: "",
     schemaDump: undefined,
     commandExecute: undefined,
     databaseSync: undefined,
@@ -3781,6 +3783,9 @@ export const TaskRunLogEntry = {
     }
     if (message.logTime !== undefined) {
       Timestamp.encode(toTimestamp(message.logTime), writer.uint32(50).fork()).ldelim();
+    }
+    if (message.deployId !== "") {
+      writer.uint32(98).string(message.deployId);
     }
     if (message.schemaDump !== undefined) {
       TaskRunLogEntry_SchemaDump.encode(message.schemaDump, writer.uint32(18).fork()).ldelim();
@@ -3820,6 +3825,13 @@ export const TaskRunLogEntry = {
           }
 
           message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.deployId = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -3869,6 +3881,7 @@ export const TaskRunLogEntry = {
     return {
       type: isSet(object.type) ? taskRunLogEntry_TypeFromJSON(object.type) : TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
       logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
+      deployId: isSet(object.deployId) ? globalThis.String(object.deployId) : "",
       schemaDump: isSet(object.schemaDump) ? TaskRunLogEntry_SchemaDump.fromJSON(object.schemaDump) : undefined,
       commandExecute: isSet(object.commandExecute)
         ? TaskRunLogEntry_CommandExecute.fromJSON(object.commandExecute)
@@ -3890,6 +3903,9 @@ export const TaskRunLogEntry = {
     }
     if (message.logTime !== undefined) {
       obj.logTime = message.logTime.toISOString();
+    }
+    if (message.deployId !== "") {
+      obj.deployId = message.deployId;
     }
     if (message.schemaDump !== undefined) {
       obj.schemaDump = TaskRunLogEntry_SchemaDump.toJSON(message.schemaDump);
@@ -3916,6 +3932,7 @@ export const TaskRunLogEntry = {
     const message = createBaseTaskRunLogEntry();
     message.type = object.type ?? TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
     message.logTime = object.logTime ?? undefined;
+    message.deployId = object.deployId ?? "";
     message.schemaDump = (object.schemaDump !== undefined && object.schemaDump !== null)
       ? TaskRunLogEntry_SchemaDump.fromPartial(object.schemaDump)
       : undefined;
@@ -4997,6 +5014,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           800010: [new Uint8Array([15, 98, 98, 46, 114, 111, 108, 108, 111, 117, 116, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               34,
@@ -5051,6 +5069,7 @@ export const RolloutServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 114, 111, 108, 108, 111, 117, 116, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               43,
@@ -5135,6 +5154,7 @@ export const RolloutServiceDefinition = {
               119,
             ]),
           ],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               44,
@@ -5197,6 +5217,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               62,
@@ -5277,6 +5298,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               68,
@@ -5363,6 +5385,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               72,

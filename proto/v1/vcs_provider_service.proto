@@ -19,12 +19,14 @@ service VCSProviderService {
     option (google.api.http) = {get: "/v1/{name=vcsProviders/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.vcsProviders.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListVCSProviders(ListVCSProvidersRequest) returns (ListVCSProvidersResponse) {
     option (google.api.http) = {get: "/v1/vcsProviders"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.vcsProviders.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateVCSProvider(CreateVCSProviderRequest) returns (VCSProvider) {
@@ -34,6 +36,7 @@ service VCSProviderService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.vcsProviders.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateVCSProvider(UpdateVCSProviderRequest) returns (VCSProvider) {
@@ -43,11 +46,13 @@ service VCSProviderService {
     };
     option (google.api.method_signature) = "vcs_provider,update_mask";
     option (bytebase.v1.permission) = "bb.vcsProviders.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteVCSProvider(DeleteVCSProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=vcsProviders/*}"};
     option (bytebase.v1.permission) = "bb.vcsProviders.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc SearchVCSProviderRepositories(SearchVCSProviderRepositoriesRequest) returns (SearchVCSProviderRepositoriesResponse) {
@@ -56,11 +61,13 @@ service VCSProviderService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.vcsProviders.searchProjects";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListVCSConnectorsInProvider(ListVCSConnectorsInProviderRequest) returns (ListVCSConnectorsInProviderResponse) {
     option (google.api.http) = {get: "/v1/{name=vcsProviders/*}/vcsConnectors"};
     option (bytebase.v1.permission) = "bb.vcsProviders.listProjects";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

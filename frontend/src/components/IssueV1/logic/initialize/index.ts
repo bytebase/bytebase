@@ -2,10 +2,15 @@ import type { MaybeRef } from "vue";
 import { computed, ref, unref, watch } from "vue";
 import type { LocationQuery } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
-import { experimentalFetchIssueByUID } from "@/store";
+import { experimentalFetchIssueByUID, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
-import { uidFromSlug } from "@/utils";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import {
+  uidFromSlug,
+  hasProjectPermissionV2,
+  extractUserResourceName,
+} from "@/utils";
 import { createIssueSkeleton } from "./create";
 
 export * from "./create";
@@ -32,6 +37,7 @@ export function useInitializeIssue(
   const route = useRoute();
   const router = useRouter();
   const isInitializing = ref(false);
+  const currentUser = useCurrentUserV1();
 
   const issue = ref<ComposedIssue>(emptyIssue());
 
@@ -84,7 +90,34 @@ export function useInitializeIssue(
     }
   };
 
-  return { isCreating, issue, isInitializing, reInitialize };
+  const allowEditIssue = computed(() => {
+    if (isCreating.value) {
+      return hasProjectPermissionV2(
+        issue.value.projectEntity,
+        currentUser.value,
+        "bb.issues.create"
+      );
+    }
+
+    if (issue.value.status !== IssueStatus.OPEN) {
+      return false;
+    }
+
+    if (
+      extractUserResourceName(issue.value.creator) === currentUser.value.email
+    ) {
+      // Allowed if current user is the creator.
+      return true;
+    }
+
+    return hasProjectPermissionV2(
+      issue.value.projectEntity,
+      currentUser.value,
+      "bb.issues.update"
+    );
+  });
+
+  return { isCreating, issue, isInitializing, reInitialize, allowEditIssue };
 }
 
 export const convertRouterQuery = (query: LocationQuery) => {
