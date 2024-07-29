@@ -289,7 +289,14 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 	return res, nil
 }
 
+type Comment struct {
+	ID   int64  `json:"id"`
+	Body string `json:"body"`
+}
+
 // CreatePullRequestComment creates a pull request comment.
+//
+// Docs: https://docs.gitlab.com/ee/api/notes.html#create-new-merge-request-note
 func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error {
 	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/notes?body=%s", p.APIURL(p.instanceURL), repositoryID, pullRequestID, url.QueryEscape(comment))
 	code, body, err := internal.Post(ctx, url, p.getAuthorization(), nil)
@@ -309,6 +316,66 @@ func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, p
 			body,
 		)
 	}
+	return nil
+}
+
+// ListPullRequestComments lists comments in a pull request.
+//
+// Docs: https://docs.gitlab.com/ee/api/notes.html#list-all-merge-request-notes
+func (p *Provider) ListPullRequestComments(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestComment, error) {
+	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/notes", p.APIURL(p.instanceURL), repositoryID, pullRequestID)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to list pull request comments through URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to list pull request comments from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	var repos []*Comment
+	if err := json.Unmarshal([]byte(body), &repos); err != nil {
+		return nil, errors.Wrap(err, "unmarshal pull request comments failed")
+	}
+
+	var resp []*vcs.PullRequestComment
+	for _, v := range repos {
+		resp = append(resp,
+			&vcs.PullRequestComment{
+				ID:      fmt.Sprintf("%d", v.ID),
+				Content: v.Body,
+			},
+		)
+	}
+	return resp, nil
+}
+
+// UpdatePullRequestComment updates a comment in a pull request.
+//
+// Docs: https://docs.gitlab.com/ee/api/notes.html#modify-existing-merge-request-note
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, repositoryID, pullRequestID string, comment *vcs.PullRequestComment) error {
+	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/notes/%s?body=%s", p.APIURL(p.instanceURL), repositoryID, pullRequestID, comment.ID, url.QueryEscape(comment.Content))
+	code, body, err := internal.Put(ctx, url, p.getAuthorization(), nil)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "cannot found pull request comment through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to update pull request comment through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
 	return nil
 }
 
