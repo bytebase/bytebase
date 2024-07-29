@@ -430,7 +430,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if setServiceData, ok := ctx.Value(common.ServiceDataKey).(func(*anypb.Any)); ok {
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
 		deltas := findIamPolicyDeltas(oldIamPolicyMsg.Policy, iamPolicyMessage.Policy)
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
