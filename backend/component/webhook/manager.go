@@ -349,6 +349,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 }
 
 func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookList []*store.ProjectWebhookMessage) {
+	ctx = context.WithoutCancel(ctx)
 	setting, err := m.store.GetAppIMSetting(ctx)
 	if err != nil {
 		slog.Error("failed to get app im setting", log.BBError(err))
