@@ -376,7 +376,7 @@
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
-    - [DataSourceQueryPolicy.Restricton](#bytebase-v1-DataSourceQueryPolicy-Restricton)
+    - [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
@@ -5970,7 +5970,7 @@ ANY means approving any node will proceed.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| admin_data_source_restriction | [DataSourceQueryPolicy.Restricton](#bytebase-v1-DataSourceQueryPolicy-Restricton) |  |  |
+| admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction) |  |  |
 
 
 
@@ -6310,9 +6310,9 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
  
 
 
-<a name="bytebase-v1-DataSourceQueryPolicy-Restricton"></a>
+<a name="bytebase-v1-DataSourceQueryPolicy-Restriction"></a>
 
-### DataSourceQueryPolicy.Restricton
+### DataSourceQueryPolicy.Restriction
 
 
 | Name | Number | Description |
@@ -6368,6 +6368,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | MASKING_EXCEPTION | 10 |  |
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
+| DATA_SOURCE_QUERY | 14 |  |
 
 
 
