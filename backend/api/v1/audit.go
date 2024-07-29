@@ -61,7 +61,6 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 	if !ok {
 		return status.Errorf(codes.Internal, "auth context not found")
 	}
-	legacyProjectIDs := common.GetProjectIDsFromContext(ctx)
 
 	var parents []string
 	if authContext.HasWorkspaceResource() {
@@ -71,14 +70,8 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 		}
 		parents = append(parents, common.FormatWorkspace(workspaceID))
 	} else {
-		if len(legacyProjectIDs) > 0 {
-			for _, projectID := range legacyProjectIDs {
-				parents = append(parents, common.FormatProject(projectID))
-			}
-		} else {
-			for _, projectID := range authContext.GetProjectResources() {
-				parents = append(parents, common.FormatProject(projectID))
-			}
+		for _, projectID := range authContext.GetProjectResources() {
+			parents = append(parents, common.FormatProject(projectID))
 		}
 	}
 

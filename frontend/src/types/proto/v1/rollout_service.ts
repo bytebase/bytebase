@@ -122,7 +122,10 @@ export interface ListTaskRunsResponse {
 }
 
 export interface GetTaskRunLogRequest {
-  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
+  /**
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * TODO(d): check the resource_reference.
+   */
   parent: string;
 }
 
@@ -5014,7 +5017,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           800010: [new Uint8Array([15, 98, 98, 46, 114, 111, 108, 108, 111, 117, 116, 115, 46, 103, 101, 116])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               34,
@@ -5069,7 +5072,7 @@ export const RolloutServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 114, 111, 108, 108, 111, 117, 116, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -5154,7 +5157,7 @@ export const RolloutServiceDefinition = {
               119,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               44,
@@ -5217,7 +5220,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               62,
@@ -5298,7 +5301,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               68,
@@ -5385,7 +5388,7 @@ export const RolloutServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               72,
