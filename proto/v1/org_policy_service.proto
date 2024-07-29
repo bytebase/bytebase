@@ -264,6 +264,7 @@ enum PolicyType {
   MASKING_EXCEPTION = 10;
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
   TAG = 13;
+  DATA_SOURCE_QUERY = 14;
 }
 
 enum PolicyResourceType {

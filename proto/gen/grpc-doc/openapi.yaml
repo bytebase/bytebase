@@ -623,6 +623,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -687,6 +688,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -1843,6 +1845,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -1913,6 +1916,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -2612,6 +2616,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -2676,6 +2681,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -3380,6 +3386,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -3448,6 +3455,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -5554,6 +5562,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -5618,6 +5627,7 @@ paths:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -11856,6 +11866,7 @@ components:
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
+                        - DATA_SOURCE_QUERY
                     type: string
                     format: enum
                 rolloutPolicy:

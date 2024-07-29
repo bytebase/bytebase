@@ -6368,6 +6368,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | MASKING_EXCEPTION | 10 |  |
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
+| DATA_SOURCE_QUERY | 14 |  |
 
 
 
