@@ -2,8 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -40,13 +38,6 @@ func (p *ContextProvider) UnaryInterceptor(ctx context.Context, request any, ser
 
 func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([]string, error) {
 	switch fullMethod {
-	case
-		v1pb.SQLService_Query_FullMethodName,
-		v1pb.SQLService_Export_FullMethodName,
-		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
-		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:
-		return p.getProjectIDsForDatabase(ctx, req)
-
 	case
 		v1pb.RolloutService_GetRollout_FullMethodName,
 		v1pb.RolloutService_CreateRollout_FullMethodName,
@@ -156,42 +147,6 @@ func (*ContextProvider) getProjectIDsForPlanService(_ context.Context, req any) 
 			return nil, errors.Wrapf(err, "failed to parse project %q", project)
 		}
 		projectIDs = append(projectIDs, projectID)
-	}
-
-	return utils.Uniq(projectIDs), nil
-}
-
-func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any) ([]string, error) {
-	var projectIDs []string
-
-	var databaseNames []string
-	switch r := req.(type) {
-	case *v1pb.QueryRequest:
-		if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
-			databaseNames = append(databaseNames, r.GetName())
-		} else if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) && r.GetConnectionDatabase() != "" {
-			databaseNames = append(databaseNames, fmt.Sprintf("%s/%s%s", r.GetName(), common.DatabaseIDPrefix, r.GetConnectionDatabase()))
-		}
-	case *v1pb.ExportRequest:
-		if strings.HasPrefix(r.GetName(), common.ProjectNamePrefix) {
-			projectID, _, err := common.GetProjectIDIssueUID(r.GetName())
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetName())
-			}
-			projectIDs = append(projectIDs, projectID)
-		} else if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
-			databaseNames = append(databaseNames, r.GetName())
-		} else if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) && r.GetConnectionDatabase() != "" {
-			databaseNames = append(databaseNames, fmt.Sprintf("%s/%s%s", r.GetName(), common.DatabaseIDPrefix, r.GetConnectionDatabase()))
-		}
-	}
-
-	for _, databaseName := range databaseNames {
-		database, err := getDatabaseMessage(ctx, p.s, databaseName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-		}
-		projectIDs = append(projectIDs, database.ProjectID)
 	}
 
 	return utils.Uniq(projectIDs), nil
