@@ -10719,19 +10719,38 @@ components:
         IssueComment_IssueUpdate:
             type: object
             properties:
-                from:
+                fromTitle:
                     type: string
-                to:
+                toTitle:
                     type: string
-                type:
+                fromDescription:
+                    type: string
+                toDescription:
+                    type: string
+                fromStatus:
                     enum:
-                        - CHANGE_TYPE_UNSPECIFIED
-                        - TITLE
-                        - DESCRIPTION
-                        - STATUS
-                        - LABELS
+                        - ISSUE_STATUS_UNSPECIFIED
+                        - OPEN
+                        - DONE
+                        - CANCELED
                     type: string
                     format: enum
+                toStatus:
+                    enum:
+                        - ISSUE_STATUS_UNSPECIFIED
+                        - OPEN
+                        - DONE
+                        - CANCELED
+                    type: string
+                    format: enum
+                fromLabels:
+                    type: array
+                    items:
+                        type: string
+                toLabels:
+                    type: array
+                    items:
+                        type: string
         IssueComment_StageEnd:
             type: object
             properties:

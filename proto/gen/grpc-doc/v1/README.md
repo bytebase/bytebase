@@ -348,7 +348,6 @@
     - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
-    - [IssueComment.IssueUpdate.ChangeType](#bytebase-v1-IssueComment-IssueUpdate-ChangeType)
     - [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status)
     - [IssueStatus](#bytebase-v1-IssueStatus)
   
@@ -5514,9 +5513,14 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| from | [string](#string) |  |  |
-| to | [string](#string) |  |  |
-| type | [IssueComment.IssueUpdate.ChangeType](#bytebase-v1-IssueComment-IssueUpdate-ChangeType) |  |  |
+| from_title | [string](#string) | optional |  |
+| to_title | [string](#string) | optional |  |
+| from_description | [string](#string) | optional |  |
+| to_description | [string](#string) | optional |  |
+| from_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
+| to_status | [IssueStatus](#bytebase-v1-IssueStatus) | optional |  |
+| from_labels | [string](#string) | repeated |  |
+| to_labels | [string](#string) | repeated |  |
 
 
 
@@ -5872,21 +5876,6 @@ ANY means approving any node will proceed.
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
 | REJECTED | 3 |  |
-
-
-
-<a name="bytebase-v1-IssueComment-IssueUpdate-ChangeType"></a>
-
-### IssueComment.IssueUpdate.ChangeType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| TITLE | 1 |  |
-| DESCRIPTION | 2 |  |
-| STATUS | 3 |  |
-| LABELS | 4 |  |
 
 
 

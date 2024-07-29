@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -379,31 +378,16 @@ func convertToIssueCommentEventApproval(a *storepb.IssueCommentPayload_Approval_
 }
 
 func convertToIssueCommentEventIssueUpdate(u *storepb.IssueCommentPayload_IssueUpdate_) *v1pb.IssueComment_IssueUpdate_ {
-	var changeType v1pb.IssueComment_IssueUpdate_ChangeType
-	var from, to string
-	if u.IssueUpdate.FromTitle != nil && u.IssueUpdate.ToTitle != nil {
-		from = *u.IssueUpdate.FromTitle
-		to = *u.IssueUpdate.ToTitle
-		changeType = v1pb.IssueComment_IssueUpdate_TITLE
-	} else if u.IssueUpdate.FromDescription != nil && u.IssueUpdate.ToDescription != nil {
-		from = *u.IssueUpdate.FromDescription
-		to = *u.IssueUpdate.ToDescription
-		changeType = v1pb.IssueComment_IssueUpdate_DESCRIPTION
-	} else if u.IssueUpdate.FromStatus != nil && u.IssueUpdate.ToStatus != nil {
-		from = convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.FromStatus).String()
-		to = convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.ToStatus).String()
-		changeType = v1pb.IssueComment_IssueUpdate_STATUS
-	} else if len(u.IssueUpdate.FromLabels) != 0 || len(u.IssueUpdate.ToLabels) != 0 {
-		from = strings.Join(u.IssueUpdate.FromLabels, ",")
-		to = strings.Join(u.IssueUpdate.ToLabels, ",")
-		changeType = v1pb.IssueComment_IssueUpdate_LABELS
-	}
-
 	return &v1pb.IssueComment_IssueUpdate_{
 		IssueUpdate: &v1pb.IssueComment_IssueUpdate{
-			Type: changeType,
-			From: from,
-			To:   to,
+			FromTitle:       u.IssueUpdate.FromTitle,
+			ToTitle:         u.IssueUpdate.ToTitle,
+			FromDescription: u.IssueUpdate.FromDescription,
+			ToDescription:   u.IssueUpdate.ToDescription,
+			FromStatus:      convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.FromStatus),
+			ToStatus:        convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.ToStatus),
+			FromLabels:      u.IssueUpdate.FromLabels,
+			ToLabels:        u.IssueUpdate.ToLabels,
 		},
 	}
 }
@@ -437,6 +421,9 @@ func convertToIssueCommentPayloadIssueUpdateIssueStatus(s *v1pb.IssueStatus) *st
 }
 
 func convertToIssueCommentEventIssueUpdateStatus(s *storepb.IssueCommentPayload_IssueUpdate_IssueStatus) *v1pb.IssueStatus {
+	if s == nil {
+		return nil
+	}
 	var is v1pb.IssueStatus
 	switch *s {
 	case storepb.IssueCommentPayload_IssueUpdate_CANCELED:

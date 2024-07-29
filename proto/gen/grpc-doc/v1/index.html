@@ -1500,10 +1500,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.IssueComment.IssueUpdate.ChangeType"><span class="badge">E</span>IssueComment.IssueUpdate.ChangeType</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.IssueComment.TaskUpdate.Status"><span class="badge">E</span>IssueComment.TaskUpdate.Status</a>
                 </li>
               
@@ -15771,23 +15767,58 @@ Keys are the following:
             <tbody>
               
                 <tr>
-                  <td>from</td>
+                  <td>from_title</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>to</td>
+                  <td>to_title</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.IssueComment.IssueUpdate.ChangeType">IssueComment.IssueUpdate.ChangeType</a></td>
-                  <td></td>
+                  <td>from_description</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_description</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_status</td>
+                  <td><a href="#bytebase.v1.IssueStatus">IssueStatus</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_status</td>
+                  <td><a href="#bytebase.v1.IssueStatus">IssueStatus</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -16586,47 +16617,6 @@ Format: projects/{project}/issues/{issue} </p></td>
               <tr>
                 <td>REJECTED</td>
                 <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.IssueComment.IssueUpdate.ChangeType">IssueComment.IssueUpdate.ChangeType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CHANGE_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TITLE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DESCRIPTION</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>STATUS</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>LABELS</td>
-                <td>4</td>
                 <td><p></p></td>
               </tr>
             

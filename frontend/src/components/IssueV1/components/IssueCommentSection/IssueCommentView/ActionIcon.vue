@@ -116,7 +116,6 @@ import {
   IssueComment_IssueUpdate,
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
-  IssueComment_IssueUpdate_ChangeType,
 } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
 
@@ -198,13 +197,13 @@ const icon = computed((): ActionIconType => {
     }
     return action;
   } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE) {
-    const { type } = IssueComment_IssueUpdate.fromPartial(
-      issueComment.issueUpdate || {}
-    );
+    const { toTitle, toDescription, toLabels, fromLabels } =
+      IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
     if (
-      type === IssueComment_IssueUpdate_ChangeType.TITLE ||
-      type === IssueComment_IssueUpdate_ChangeType.DESCRIPTION ||
-      type === IssueComment_IssueUpdate_ChangeType.LABELS
+      toTitle !== undefined ||
+      toDescription !== undefined ||
+      toLabels.length !== 0 ||
+      fromLabels.length !== 0
     ) {
       return "update";
     }
