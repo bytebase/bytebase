@@ -249,6 +249,14 @@ func getRequestString(request any) (string, error) {
 			return r
 		case *v1pb.DeleteRiskRequest:
 			return r
+		case *v1pb.CreateEnvironmentRequest:
+			return r
+		case *v1pb.DeleteEnvironmentRequest:
+			return r
+		case *v1pb.UndeleteInstanceRequest:
+			return r
+		case *v1pb.UpdateEnvironmentRequest:
+			return r
 		case *v1pb.UpdateSettingRequest:
 			return r
 		default:
@@ -290,6 +298,8 @@ func getResponseString(response any) (string, error) {
 		case *v1pb.Issue:
 			return r
 		case *v1pb.Risk:
+			return r
+		case *v1pb.Environment:
 			return r
 		case *v1pb.Setting:
 			return r
@@ -430,6 +440,10 @@ func isAuditMethod(method string) bool {
 		v1pb.RiskService_CreateRisk_FullMethodName,
 		v1pb.RiskService_DeleteRisk_FullMethodName,
 		v1pb.RiskService_UpdateRisk_FullMethodName,
+		v1pb.EnvironmentService_CreateEnvironment_FullMethodName,
+		v1pb.EnvironmentService_UpdateEnvironment_FullMethodName,
+		v1pb.EnvironmentService_DeleteEnvironment_FullMethodName,
+		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
 		v1pb.SettingService_UpdateSetting_FullMethodName:
 		return true
 	default:
