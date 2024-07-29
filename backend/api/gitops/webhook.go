@@ -152,26 +152,49 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, fmt.Sprintf("no relevant file change directly under the base directory %q for pull request %q", vcsConnector.Payload.BaseDirectory, prInfo.url))
 		}
 
+		user := func() *store.UserMessage {
+			user, err := s.store.GetUserByEmail(ctx, prInfo.email)
+			if err != nil {
+				slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
+				return s.store.GetSystemBotUser(ctx)
+			}
+			if user == nil {
+				return s.store.GetSystemBotUser(ctx)
+			}
+			return user
+		}()
+		childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
+		childCtx = context.WithValue(childCtx, common.UserContextKey, user)
+		childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
+
 		var comment string
+		var commentPrefix string
 		switch prInfo.action {
 		case webhookActionCreateIssue:
-			issue, err := s.createIssueFromPRInfo(ctx, project, vcsProvider, vcsConnector, prInfo)
+			issue, err := s.createIssueFromPRInfo(childCtx, project, vcsProvider, vcsConnector, prInfo)
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 			}
 			comment = getPullRequestComment(setting.ExternalUrl, issue.Name)
+			commentPrefix = commentPrefixBytebaseBot
 		case webhookActionSQLReview:
-			// TODO(ed): sql review.
+			comment, err = s.sqlReviewWithPRInfo(childCtx, project, vcsConnector, prInfo)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to exec sql review for pull request %s, error %v", prInfo.url, err))
+			}
+			commentPrefix = commentPrefixSQLReview
 		default:
 		}
 
 		if comment != "" {
-			pullRequestID := getPullRequestID(prInfo.url)
-			// TODO(ed): upsert the commont.
-			if err := vcs.Get(
-				vcsProvider.Type,
-				vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
-			).CreatePullRequestComment(ctx, vcsConnector.Payload.ExternalId, pullRequestID, comment); err != nil {
+			if err := upsertPullRequestComment(
+				ctx,
+				vcsProvider,
+				vcsConnector,
+				prInfo,
+				fmt.Sprintf("%s\n\n%s", commentPrefix, comment),
+				func(content string) bool { return strings.HasPrefix(content, commentPrefix) },
+			); err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to create pull request comment, error %v", err))
 			}
 		}
@@ -196,24 +219,60 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
-	user := func() *store.UserMessage {
-		user, err := s.store.GetUserByEmail(ctx, prInfo.email)
+func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (string, error) {
+	instance, database, err := s.getDatabaseSample(ctx, project, vcsConnector)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get database sample")
+	}
+
+	content := []string{}
+	for _, change := range prInfo.changes {
+		adviceStatus, advices, err := s.sqlService.SQLReviewCheck(
+			ctx,
+			change.content,
+			v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED,
+			instance,
+			database,
+			nil, /* Override Metadata */
+		)
 		if err != nil {
-			slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
-			return s.store.GetSystemBotUser(ctx)
+			slog.Error("failed to exec sql review", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), log.BBError(err))
+			continue
 		}
-		if user == nil {
-			return s.store.GetSystemBotUser(ctx)
+		if adviceStatus == storepb.Advice_SUCCESS || adviceStatus == storepb.Advice_STATUS_UNSPECIFIED {
+			continue
 		}
-		return user
-	}()
+
+		// TODO(ed): better message format. Maybe add links for files?
+		adviceMessage := []string{}
+		for _, advice := range advices {
+			message := fmt.Sprintf("- [%d] %s (line: %d)", advice.Code, advice.Title, advice.Line)
+			adviceMessage = append(adviceMessage, message)
+		}
+
+		if len(adviceMessage) > 0 {
+			if len(content) > 0 {
+				content = append(content, "\n")
+			}
+			content = append(content, fmt.Sprintf("SQL review for %s", change.path))
+			content = append(content, strings.Join(adviceMessage, "\n"))
+		}
+	}
+
+	return strings.Join(content, "\n"), nil
+}
+
+func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, errors.Errorf("cannot found user in context")
+	}
 	creatorID := user.ID
 	creatorName := common.FormatUserUID(user.ID)
 
-	engine, err := s.getDatabaseEngineSample(ctx, project, vcsConnector)
+	instance, _, err := s.getDatabaseSample(ctx, project, vcsConnector)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database engine")
+		return nil, errors.Wrapf(err, "failed to get database sample")
 	}
 
 	var sheets []int
@@ -225,7 +284,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			Statement:  change.content,
 
 			Payload: &storepb.SheetPayload{
-				Engine: engine,
+				Engine: instance.Engine,
 			},
 		})
 		if err != nil {
@@ -239,10 +298,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, err
 	}
 
-	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
-	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
-	childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
-	plan, err := s.planService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+	plan, err := s.planService.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: common.FormatProject(project.ResourceID),
 		Plan: &v1pb.Plan{
 			Title: prInfo.title,
@@ -257,7 +313,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create plan")
 	}
-	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+	issue, err := s.issueService.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: common.FormatProject(project.ResourceID),
 		Issue: &v1pb.Issue{
 			Title:       prInfo.title,
@@ -270,7 +326,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create issue")
 	}
-	if _, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+	if _, err := s.rolloutService.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
 		Parent: common.FormatProject(project.ResourceID),
 		Rollout: &v1pb.Rollout{
 			Plan: plan.Name,
@@ -300,11 +356,61 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	return issue, nil
 }
 
-func (s *Service) getDatabaseEngineSample(
+type isTargetComment func(string) bool
+
+func getCommentIDByContent(ctx context.Context, provider vcs.Provider, repositoryID, pullRequestID string, checkComment isTargetComment) (string, error) {
+	comments, err := provider.ListPullRequestComments(ctx, repositoryID, pullRequestID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to list comments for PR %s", pullRequestID)
+	}
+
+	for _, comment := range comments {
+		if checkComment(comment.Content) {
+			return comment.ID, nil
+		}
+	}
+	return "", nil
+}
+
+func upsertPullRequestComment(
+	ctx context.Context,
+	vcsProvider *store.VCSProviderMessage,
+	vcsConnector *store.VCSConnectorMessage,
+	prInfo *pullRequestInfo,
+	comment string,
+	checkComment isTargetComment,
+) error {
+	pullRequestID := getPullRequestID(prInfo.url)
+	provider := vcs.Get(
+		vcsProvider.Type,
+		vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
+	)
+
+	existedCommentID, err := getCommentIDByContent(ctx, provider, vcsConnector.Payload.ExternalId, pullRequestID, checkComment)
+	if err != nil {
+		return err
+	}
+	if existedCommentID != "" {
+		if err := provider.UpdatePullRequestComment(ctx, vcsConnector.Payload.ExternalId, pullRequestID, &vcs.PullRequestComment{
+			ID:      existedCommentID,
+			Content: comment,
+		}); err != nil {
+			return errors.Wrapf(err, `failed to update comment for PR "%s"`, prInfo.url)
+		}
+		return nil
+	}
+
+	if err := provider.CreatePullRequestComment(ctx, vcsConnector.Payload.ExternalId, pullRequestID, comment); err != nil {
+		return errors.Wrapf(err, `failed to create comment for PR "%s"`, prInfo.url)
+	}
+	return nil
+}
+
+func (s *Service) getDatabaseSample(
 	ctx context.Context,
 	project *store.ProjectMessage,
 	vcsConnector *store.VCSConnectorMessage,
-) (storepb.Engine, error) {
+) (*store.InstanceMessage, *store.DatabaseMessage, error) {
 	sample, err := func() (*store.DatabaseMessage, error) {
 		if dbg := vcsConnector.Payload.GetDatabaseGroup(); dbg != "" {
 			projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(dbg)
@@ -345,17 +451,17 @@ func (s *Service) getDatabaseEngineSample(
 		return allDatabases[0], nil
 	}()
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get sample database")
+		return nil, nil, errors.Wrapf(err, "failed to get sample database")
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &sample.InstanceID})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get instance")
+		return nil, nil, errors.Wrapf(err, "failed to get instance")
 	}
 	if instance == nil {
-		return 0, errors.Errorf("instance not found")
+		return nil, nil, errors.Errorf("instance not found")
 	}
-	return instance.Engine, nil
+	return instance, sample, nil
 }
 
 func (s *Service) getChangeSteps(

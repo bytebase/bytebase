@@ -427,6 +427,18 @@ func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, p
 	return nil
 }
 
+// ListPullRequestComments lists comments in a pull request.
+// TODO(ed): implement.
+func (*Provider) ListPullRequestComments(_ context.Context, _, _ string) ([]*vcs.PullRequestComment, error) {
+	return nil, nil
+}
+
+// UpdatePullRequestComment updates a comment in a pull request.
+// TODO(ed): implement.
+func (*Provider) UpdatePullRequestComment(_ context.Context, _, _ string, _ *vcs.PullRequestComment) error {
+	return nil
+}
+
 // CreateWebhook creates a webhook in the organization, and returns the webhook ID which can be used in PatchWebhook.
 // API Version 7.0 do not specify the OAuth scope for creating webhook explicitly, but it works.
 //
