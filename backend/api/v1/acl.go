@@ -232,10 +232,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		return true, nil, nil
 	}
 
-	projectIDs, ok := common.GetProjectIDsFromContext(ctx)
-	if !ok {
-		return false, projectIDs, errors.Errorf("failed to get project ids")
-	}
+	projectIDs := common.GetProjectIDsFromContext(ctx)
 	ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
 	return ok, projectIDs, err
 }

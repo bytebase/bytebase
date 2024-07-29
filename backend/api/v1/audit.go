@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -54,20 +55,29 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 
 	st, _ := status.FromError(rerr)
 
-	projectIDs, ok := common.GetProjectIDsFromContext(ctx)
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return errors.Errorf("failed to get projects ids from context")
+		return status.Errorf(codes.Internal, "auth context not found")
 	}
+	legacyProjectIDs := common.GetProjectIDsFromContext(ctx)
+
 	var parents []string
-	if len(projectIDs) == 0 {
+	if authContext.HasWorkspaceResource() {
 		workspaceID, err := storage.GetWorkspaceID(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get workspace id")
 		}
 		parents = append(parents, common.FormatWorkspace(workspaceID))
 	} else {
-		for _, projectID := range projectIDs {
-			parents = append(parents, common.FormatProject(projectID))
+		if len(legacyProjectIDs) > 0 {
+			for _, projectID := range legacyProjectIDs {
+				parents = append(parents, common.FormatProject(projectID))
+			}
+		} else {
+			for _, projectID := range authContext.GetProjectResources() {
+				parents = append(parents, common.FormatProject(projectID))
+			}
 		}
 	}
 
