@@ -204,39 +204,33 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true, nil, nil
 	}
-	if authContext.AuthMethod == common.AuthMethodCustom {
+	if authContext.AuthMethod != common.AuthMethodIAM {
 		return true, nil, nil
 	}
-	if authContext.AuthMethod == common.AuthMethodIAM {
-		// Handle GetProject() error status.
-		if len(authContext.Resources) == 0 {
-			return false, nil, errors.Errorf("no resource found for IAM auth method")
-		}
-		if authContext.HasWorkspaceResource() {
-			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
-			if err != nil {
-				return false, nil, err
-			}
-			if !ok {
-				return false, nil, nil
-			}
-		}
-		projectIDs := authContext.GetProjectResources()
-		if len(projectIDs) > 0 {
-			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
-			if err != nil {
-				return false, projectIDs, err
-			}
-			if !ok {
-				return false, projectIDs, nil
-			}
-		}
-		return true, nil, nil
+	// Handle GetProject() error status.
+	if len(authContext.Resources) == 0 {
+		return false, nil, errors.Errorf("no resource found for IAM auth method")
 	}
-
-	projectIDs := common.GetProjectIDsFromContext(ctx)
-	ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
-	return ok, projectIDs, err
+	if authContext.HasWorkspaceResource() {
+		ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
+		if err != nil {
+			return false, nil, err
+		}
+		if !ok {
+			return false, nil, nil
+		}
+	}
+	projectIDs := authContext.GetProjectResources()
+	if len(projectIDs) > 0 {
+		ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
+		if err != nil {
+			return false, projectIDs, err
+		}
+		if !ok {
+			return false, projectIDs, nil
+		}
+	}
+	return true, nil, nil
 }
 
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
