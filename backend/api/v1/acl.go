@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -86,7 +87,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
 	}
@@ -144,7 +145,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, request, user, authContext)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
 	}
@@ -199,7 +200,7 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 	return false
 }
 
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true, nil, nil
 	}
@@ -211,81 +212,31 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		if len(authContext.Resources) == 0 {
 			return false, nil, errors.Errorf("no resource found for IAM auth method")
 		}
-		for _, resource := range authContext.Resources {
-			slog.Debug("IAM auth method", slog.String("method", fullMethod), slog.String("permission", authContext.Permission), slog.String("project", resource.ProjectID), slog.Bool("workspace", resource.Workspace))
-			if resource.Workspace {
-				ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
-				if err != nil {
-					return false, nil, err
-				}
-				if !ok {
-					return false, nil, nil
-				}
-			} else {
-				ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, resource.ProjectID)
-				if err != nil {
-					return false, []string{resource.ProjectID}, err
-				}
-				if !ok {
-					return false, []string{resource.ProjectID}, nil
-				}
+		if authContext.HasWorkspaceResource() {
+			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
+			if err != nil {
+				return false, nil, err
+			}
+			if !ok {
+				return false, nil, nil
+			}
+		}
+		projectIDs := authContext.GetProjectResources()
+		if len(projectIDs) > 0 {
+			ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
+			if err != nil {
+				return false, projectIDs, err
+			}
+			if !ok {
+				return false, projectIDs, nil
 			}
 		}
 		return true, nil, nil
 	}
 
-	p := authContext.Permission
-	switch fullMethod {
-	// special cases for bb.instance.get permission check.
-	// we permit users to get instances (and all the related info) if they can get any database in the instance, even if they don't have bb.instance.get permission.
-	case
-		v1pb.InstanceService_GetInstance_FullMethodName,
-		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
-		v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName:
-		var instanceID string
-		var err error
-		switch r := req.(type) {
-		case *v1pb.GetInstanceRequest:
-			instanceID, err = common.GetInstanceID(r.GetName())
-		case *v1pb.GetInstanceRoleRequest:
-			instanceID, _, err = common.GetInstanceRoleID(r.GetName())
-		case *v1pb.ListInstanceRolesRequest:
-			instanceID, err = common.GetInstanceID(r.GetParent())
-		}
-		if err != nil {
-			return false, []string{instanceID}, err
-		}
-		ok, err := in.checkIAMPermissionInstancesGet(ctx, user, instanceID)
-		return ok, []string{instanceID}, err
-	}
-
-	projectIDs, ok := common.GetProjectIDsFromContext(ctx)
-	if !ok {
-		return false, projectIDs, errors.Errorf("failed to get project ids")
-	}
-	ok, err := in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
+	projectIDs := common.GetProjectIDsFromContext(ctx)
+	ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
 	return ok, projectIDs, err
-}
-
-func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, user *store.UserMessage, instanceID string) (bool, error) {
-	// fast path for Admins and DBAs.
-	ok, err := in.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
-	if err != nil {
-		return false, err
-	}
-	if ok {
-		return true, nil
-	}
-
-	databaseFind := &store.FindDatabaseMessage{
-		InstanceID:  &instanceID,
-		ShowDeleted: true,
-	}
-	databases, err := searchDatabases(ctx, in.store, in.iamManager, databaseFind)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to search databases")
-	}
-	return len(databases) > 0, nil
 }
 
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
@@ -298,10 +249,14 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 	if authContext.AuthMethod != common.AuthMethodIAM {
 		return nil
 	}
-	resources := getResourceFromRequest(request, method)
+	resources, err := getResourceFromRequest(request, method)
+	if err != nil {
+		return err
+	}
 	for _, resource := range resources {
 		switch {
-		case strings.HasPrefix(resource.Name, "projects/"):
+		// TODO(d): remove "projects/-" hack later.
+		case strings.HasPrefix(resource.Name, "projects/") && resource.Name != "projects/-":
 			project := projectRegex.FindString(resource.Name)
 			if project == "" {
 				return errors.Errorf("invalid project resource %q", resource.Name)
@@ -328,20 +283,43 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 	return nil
 }
 
-func getResourceFromRequest(request any, method string) []*common.Resource {
+func getResourceFromRequest(request any, method string) ([]*common.Resource, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
-		return nil
+		return nil, errors.Errorf("invalid request for method %q", method)
 	}
 	mr := pm.ProtoReflect()
 
 	methodTokens := strings.Split(method, "/")
 	if len(methodTokens) != 3 {
-		return nil
+		return nil, errors.Errorf("invalid method %q", method)
 	}
 	shortMethod := methodTokens[2]
 
 	var resources []*common.Resource
+
+	// Transferring database projects needs to check both projects.
+	var updateDatabaseRequests []*v1pb.UpdateDatabaseRequest
+	switch r := request.(type) {
+	case *v1pb.UpdateDatabaseRequest:
+		updateDatabaseRequests = append(updateDatabaseRequests, r)
+	case *v1pb.BatchUpdateDatabasesRequest:
+		updateDatabaseRequests = append(updateDatabaseRequests, r.Requests...)
+	}
+	for _, r := range updateDatabaseRequests {
+		if hasPath(r.GetUpdateMask(), "project") {
+			projectID, err := common.GetProjectID(r.GetDatabase().GetProject())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
+			}
+			// Allow to transfer databases to the default project.
+			if projectID == api.DefaultProjectID {
+				continue
+			}
+			resources = append(resources, &common.Resource{Name: r.GetDatabase().GetProject()})
+		}
+	}
+
 	if strings.HasPrefix(shortMethod, "Batch") {
 		requestsDesc := mr.Descriptor().Fields().ByName("requests")
 		if requestsDesc != nil {
@@ -355,14 +333,14 @@ func getResourceFromRequest(request any, method string) []*common.Resource {
 					resources = append(resources, resource)
 				}
 			}
-			return resources
+			return resources, nil
 		}
 	}
 	resource := getResourceFromSingleRequest(mr, shortMethod)
 	if resource != nil {
 		resources = append(resources, resource)
 	}
-	return resources
+	return resources, nil
 }
 
 func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *common.Resource {

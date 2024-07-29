@@ -1,6 +1,8 @@
+import { uniq } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import type { Factor } from "@/plugins/cel";
-import { useEnvironmentV1Store, useInstanceV1List } from "@/store";
+import { useDatabaseV1ListByProject, useEnvironmentV1Store } from "@/store";
+import type { ComposedProject } from "@/types";
 import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
@@ -17,7 +19,7 @@ export const factorSupportDropdown: Factor[] = [
   "resource.instance_id",
 ];
 
-export const DatabaseGroupFactorOptionsMap = () => {
+export const DatabaseGroupFactorOptionsMap = (project: ComposedProject) => {
   return FactorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
@@ -25,7 +27,7 @@ export const DatabaseGroupFactorOptionsMap = () => {
         options = getEnvironmentOptions();
         break;
       case "resource.instance_id":
-        options = getInstanceIdOptions();
+        options = getInstanceIdOptions(project);
         break;
     }
     map.set(factor, options);
@@ -44,10 +46,12 @@ const getEnvironmentOptions = () => {
   });
 };
 
-const getInstanceIdOptions = () => {
-  const { instanceList } = useInstanceV1List();
-  return instanceList.value.map<SelectOption>((instance) => {
-    const instanceId = extractInstanceResourceName(instance.name);
+const getInstanceIdOptions = (project: ComposedProject) => {
+  const { databaseList } = useDatabaseV1ListByProject(project.name);
+  return uniq(
+    databaseList.value.map((d) => d.instanceResource.name)
+  ).map<SelectOption>((instanceName) => {
+    const instanceId = extractInstanceResourceName(instanceName);
     return {
       label: instanceId,
       value: instanceId,

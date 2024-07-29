@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -360,6 +361,8 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	var oldIamPolicyMsg *store.IamPolicyMessage
+
 	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -404,6 +407,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if request.Etag != policyMessage.Etag {
 		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
 	}
+	oldIamPolicyMsg = policyMessage
 
 	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
@@ -425,7 +429,129 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
+		deltas := findIamPolicyDeltas(oldIamPolicyMsg.Policy, iamPolicyMessage.Policy)
+		p, err := convertToProtoAny(deltas)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any")
+		}
+		setServiceData(p)
+	}
+
 	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
+}
+
+func convertToProtoAny(i any) (*anypb.Any, error) {
+	switch deltas := i.(type) {
+	case []*v1pb.BindingDelta:
+		auditData := v1pb.AuditData{
+			PolicyDelta: &v1pb.PolicyDelta{
+				BindingDeltas: deltas,
+			},
+		}
+		return anypb.New(&auditData)
+	default:
+		return &anypb.Any{}, nil
+	}
+}
+
+type bindMapKey struct {
+	User string
+	Role string
+}
+
+type condMap map[string]bool
+
+func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.IamPolicy) []*v1pb.BindingDelta {
+	var deltas []*v1pb.BindingDelta
+	oriBindMap := make(map[bindMapKey]condMap)
+	newBindMap := make(map[bindMapKey]condMap)
+
+	// build map.
+	for _, binding := range oriIamPolicy.Bindings {
+		if binding.Condition == nil {
+			continue
+		}
+		for _, mem := range binding.Members {
+			key := bindMapKey{
+				User: mem,
+				Role: binding.Role,
+			}
+
+			exprBytes, err := protojson.Marshal(binding.Condition)
+			if err != nil {
+				return nil
+			}
+			expr := string(exprBytes)
+			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
+				if _, ok := condMap[expr]; ok {
+					continue
+				}
+				oriBindMap[key][expr] = true
+				continue
+			}
+			condMap := make(condMap)
+			condMap[expr] = true
+			oriBindMap[key] = condMap
+		}
+	}
+
+	// find added items.
+	for _, binding := range newIamPolicy.Bindings {
+		for _, mem := range binding.Members {
+			key := bindMapKey{
+				User: mem,
+				Role: binding.Role,
+			}
+			exprBytes, err := protojson.Marshal(binding.Condition)
+			if err != nil {
+				return nil
+			}
+			expr := string(exprBytes)
+
+			// ensure the array is unique.
+			if condMap, ok := newBindMap[key]; ok && condMap != nil {
+				if _, ok := condMap[expr]; ok {
+					continue
+				}
+			}
+			tmpCondMap := make(condMap)
+			tmpCondMap[expr] = true
+			newBindMap[key] = tmpCondMap
+
+			if condMap, ok := oriBindMap[key]; ok && condMap != nil {
+				if _, ok := condMap[expr]; ok {
+					delete(oriBindMap[key], expr)
+					continue
+				}
+			}
+			deltas = append(deltas, &v1pb.BindingDelta{
+				Action:    v1pb.BindingDelta_ADD,
+				Member:    mem,
+				Role:      binding.Role,
+				Condition: binding.Condition,
+			})
+		}
+	}
+
+	// find removed items.
+	for bindMapKey, condMap := range oriBindMap {
+		for cond := range condMap {
+			expr := &expr.Expr{}
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(cond), expr); err != nil {
+				return nil
+			}
+			deltas = append(deltas, &v1pb.BindingDelta{
+				Action:    v1pb.BindingDelta_REMOVE,
+				Member:    bindMapKey.User,
+				Role:      bindMapKey.Role,
+				Condition: expr,
+			})
+		}
+	}
+
+	return deltas
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
