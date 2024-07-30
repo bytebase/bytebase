@@ -102,7 +102,7 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 			})
 			continue
 		}
-		results = append(results, adminQuery(ctx, engineType, conn, runningStatement))
+		results = append(results, adminQuery(ctx, engineType, conn, singleSQL.Text))
 	}
 
 	return results, nil
