@@ -30,6 +30,7 @@ permissions:
     - bb.databases.execute
     - bb.databases.sync
     - bb.databases.update
+    - bb.issueComments.list
     - bb.issueComments.create
     - bb.issueComments.update
     - bb.issues.create

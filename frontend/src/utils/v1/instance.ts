@@ -1,6 +1,6 @@
 import { keyBy, orderBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionV1Store } from "@/store";
+import { useEnvironmentV1Store, useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { isValidProjectName } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
@@ -35,11 +35,15 @@ export const extractInstanceResourceName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export const sortInstanceV1List = (instanceList: ComposedInstance[]) => {
+export const sortInstanceV1List = (
+  instanceList: (ComposedInstance | InstanceResource)[]
+) => {
   return orderBy(
     instanceList,
     [
-      (instance) => instance.environmentEntity.order,
+      (instance) =>
+        useEnvironmentV1Store().getEnvironmentByName(instance.environment)
+          .order,
       (instance) => instance.name,
       (instance) => instance.title,
     ],
@@ -138,7 +142,7 @@ export const instanceV1HasReadonlyMode = (
 };
 
 export const instanceV1HasCreateDatabase = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   if (engine === Engine.REDIS) return false;
@@ -153,7 +157,7 @@ export const instanceV1HasCreateDatabase = (
 };
 
 export const instanceV1HasStructuredQueryResult = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   if (engine === Engine.REDIS) return false;
@@ -161,7 +165,7 @@ export const instanceV1HasStructuredQueryResult = (
 };
 
 export const instanceV1HasSSL = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
@@ -183,7 +187,7 @@ export const instanceV1HasSSL = (
 };
 
 export const instanceV1HasSSH = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
@@ -197,7 +201,7 @@ export const instanceV1HasSSH = (
 };
 
 export const instanceV1HasCollationAndCharacterSet = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
 
@@ -214,7 +218,7 @@ export const instanceV1HasCollationAndCharacterSet = (
 };
 
 export const instanceV1AllowsCrossDatabaseQuery = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
@@ -229,7 +233,7 @@ export const instanceV1AllowsCrossDatabaseQuery = (
 };
 
 export const instanceV1AllowsReorderColumns = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
@@ -243,7 +247,7 @@ export const instanceV1SupportsConciseSchema = (
 };
 
 export const instanceV1SupportsTablePartition = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
@@ -308,14 +312,4 @@ export const engineNameV1 = (type: Engine): string => {
       return "Databricks";
   }
   return "";
-};
-
-export const formatEngineV1 = (instance: Instance): string => {
-  switch (instance.engine) {
-    case Engine.POSTGRES:
-      return "PostgreSQL";
-    // Use MySQL as default engine.
-    default:
-      return "MySQL";
-  }
 };

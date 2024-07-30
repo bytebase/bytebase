@@ -34,6 +34,6 @@ func (*Driver) DeleteRole(_ context.Context, _ string) error {
 	return errors.Errorf("not implemented")
 }
 
-func (*Driver) getInstanceRoles(_ context.Context) ([]*storepb.InstanceRoleMetadata, error) {
+func (*Driver) getInstanceRoles(_ context.Context) ([]*storepb.InstanceRole, error) {
 	return nil, nil
 }

@@ -8,7 +8,6 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_HOME_MODULE,
   WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
   WORKSPACE_ROUTE_USER_PROFILE,
@@ -90,6 +89,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
       getQuickActionList: () => {
         return ["quickaction.bb.instance.create"];
       },
+      requiredWorkspacePermissionList: () => ["bb.instances.list"],
     },
     components: {
       content: () => import("@/views/InstanceDashboard.vue"),
@@ -160,12 +160,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    // "u" stands for user. Strictly speaking, it's not accurate because we
-    // may refer to other principal type in the future. But from the endusers'
-    // perspective, they are more familiar with the "user" concept.
-    // We make an exception to use a shorthand here because it's a commonly
-    // accessed endpoint, and maybe in the future, we will further provide a
-    // shortlink such as users/<<email>>
     path: "users/:principalEmail",
     name: WORKSPACE_ROUTE_USER_PROFILE,
     components: {
@@ -358,16 +352,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSchemaTemplate.vue"),
-        props: true,
-      },
-      {
-        path: "slow-query",
-        name: WORKSPACE_ROUTE_SLOW_QUERY,
-        meta: {
-          title: () => startCase(t("slow-query.self")),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceSlowQuery.vue"),
         props: true,
       },
       {

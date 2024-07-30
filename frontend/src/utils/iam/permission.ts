@@ -2,13 +2,13 @@ import { usePermissionStore, useProjectV1List } from "@/store";
 import type {
   ComposedProject,
   ProjectPermission,
-  WorkspacePermission,
   ComposedUser,
+  Permission,
 } from "@/types";
 
 export const hasWorkspacePermissionV2 = (
   user: ComposedUser,
-  permission: WorkspacePermission
+  permission: Permission
 ): boolean => {
   const permissions =
     usePermissionStore().workspaceLevelPermissionsByUser(user);
@@ -19,7 +19,7 @@ export const hasWorkspacePermissionV2 = (
 export const hasProjectPermissionV2 = (
   project: ComposedProject | undefined,
   user: ComposedUser,
-  permission: ProjectPermission
+  permission: Permission
 ): boolean => {
   const permissionStore = usePermissionStore();
 

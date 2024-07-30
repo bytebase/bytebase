@@ -112,7 +112,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 	return response, rerr
 }
 
-type AuditStream struct {
+type auditStream struct {
 	grpc.ServerStream
 	needAudit  bool
 	curRequest any
@@ -121,7 +121,7 @@ type AuditStream struct {
 	storage    *store.Store
 }
 
-func (s *AuditStream) RecvMsg(request any) error {
+func (s *auditStream) RecvMsg(request any) error {
 	err := s.ServerStream.RecvMsg(request)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (s *AuditStream) RecvMsg(request any) error {
 	return nil
 }
 
-func (s *AuditStream) SendMsg(resp any) error {
+func (s *auditStream) SendMsg(resp any) error {
 	err := s.ServerStream.SendMsg(resp)
 	if err != nil {
 		return err
@@ -149,12 +149,12 @@ func (s *AuditStream) SendMsg(resp any) error {
 }
 
 func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	overrideStream, ok := ss.(overrideStream)
+	overrideStream, ok := ss.(*overrideStream)
 	if !ok {
 		return errors.New("type assertions failed: grpc.ServerStream -> overrideStream")
 	}
 
-	auditStream := &AuditStream{
+	auditStream := &auditStream{
 		ServerStream: overrideStream,
 		needAudit:    isStreamAuditMethod(info.FullMethod),
 		ctx:          overrideStream.childCtx,
@@ -194,13 +194,21 @@ func getRequestResource(request any) string {
 	case *v1pb.LoginRequest:
 		return r.GetEmail()
 	case *v1pb.CreateRiskRequest:
-		if r.Risk != nil {
-			return r.Risk.Name
-		}
+		return r.GetRisk().GetName()
+	case *v1pb.DeleteRiskRequest:
+		return r.Name
+	case *v1pb.UpdateRiskRequest:
+		return r.GetRisk().GetName()
+	case *v1pb.CreateEnvironmentRequest:
+		return r.GetEnvironment().GetName()
+	case *v1pb.UpdateEnvironmentRequest:
+		return r.GetEnvironment().GetName()
+	case *v1pb.DeleteEnvironmentRequest:
+		return r.Name
+	case *v1pb.UndeleteEnvironmentRequest:
+		return r.Name
 	case *v1pb.UpdateSettingRequest:
-		if r.Setting != nil {
-			return r.Setting.Name
-		}
+		return r.GetSetting().GetName()
 	default:
 	}
 	return ""
@@ -212,20 +220,10 @@ func getRequestString(request any) (string, error) {
 			return nil
 		}
 		switch r := request.(type) {
-		case *v1pb.QueryRequest:
-			return r
-		case *v1pb.AdminExecuteRequest:
-			return r
 		case *v1pb.ExportRequest:
 			//nolint:revive
 			r = proto.Clone(r).(*v1pb.ExportRequest)
 			r.Password = ""
-			return r
-		case *v1pb.UpdateDatabaseRequest:
-			return r
-		case *v1pb.BatchUpdateDatabasesRequest:
-			return r
-		case *v1pb.SetIamPolicyRequest:
 			return r
 		case *v1pb.CreateUserRequest:
 			return redactCreateUserRequest(r)
@@ -236,23 +234,10 @@ func getRequestString(request any) (string, error) {
 				return redactLoginRequest(r)
 			}
 			return nil
-		case *v1pb.CreateRiskRequest:
-			return r
-		case *v1pb.UpdateRiskRequest:
-			return r
-		case *v1pb.DeleteRiskRequest:
-			return r
-		case *v1pb.CreateEnvironmentRequest:
-			return r
-		case *v1pb.DeleteEnvironmentRequest:
-			return r
-		case *v1pb.UndeleteInstanceRequest:
-			return r
-		case *v1pb.UpdateEnvironmentRequest:
-			return r
-		case *v1pb.UpdateSettingRequest:
-			return r
 		default:
+			if p, ok := r.(protoreflect.ProtoMessage); ok {
+				return p
+			}
 			return nil
 		}
 	}()
@@ -280,23 +265,12 @@ func getResponseString(response any) (string, error) {
 			return nil
 		case *v1pb.LoginResponse:
 			return nil
-		case *v1pb.Database:
-			return r
-		case *v1pb.BatchUpdateDatabasesResponse:
-			return r
-		case *v1pb.IamPolicy:
-			return r
 		case *v1pb.User:
 			return redactUser(r)
-		case *v1pb.Issue:
-			return r
-		case *v1pb.Risk:
-			return r
-		case *v1pb.Environment:
-			return r
-		case *v1pb.Setting:
-			return r
 		default:
+			if p, ok := r.(protoreflect.ProtoMessage); ok {
+				return p
+			}
 			return nil
 		}
 	}()

@@ -79,6 +79,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     options: instance?.options
       ? cloneDeep(instance.options)
       : InstanceOptions.fromPartial({}),
+    roles: instance ? instance?.roles : [],
   };
 };
 

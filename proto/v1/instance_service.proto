@@ -11,6 +11,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/instance_role_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -363,6 +364,8 @@ message Instance {
   bool activation = 10;
 
   InstanceOptions options = 11;
+
+  repeated InstanceRole roles = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message DataSourceExternalSecret {
@@ -527,6 +530,8 @@ message InstanceResource {
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
   string environment = 7;
+
+  repeated InstanceRole roles = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message SASLConfig {

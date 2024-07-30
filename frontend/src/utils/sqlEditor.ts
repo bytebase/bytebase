@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { v1 as uuidv1 } from "uuid";
 import {
   useDatabaseV1Store,
-  useInstanceV1Store,
+  useInstanceResourceByName,
   useSQLEditorTabStore,
 } from "@/store";
 import type {
@@ -90,13 +90,12 @@ export const isSimilarToDefaultSQLEditorTabTitle = (title: string) => {
 export const suggestedTabTitleForSQLEditorConnection = (
   conn: SQLEditorConnection
 ) => {
-  const instance = useInstanceV1Store().getInstanceByName(conn.instance);
   const database = useDatabaseV1Store().getDatabaseByName(conn.database);
   const parts: string[] = [];
   if (database.uid !== String(UNKNOWN_ID)) {
     parts.push(database.databaseName);
-  } else if (isValidInstanceName(instance.name)) {
-    parts.push(instance.title);
+  } else if (isValidInstanceName(database.instance)) {
+    parts.push(database.instanceResource.title);
   }
   parts.push(defaultSQLEditorTabTitle());
   return parts.join(" ");
@@ -107,7 +106,7 @@ export const isDisconnectedSQLEditorTab = (tab: SQLEditorTab) => {
   if (!connection.instance) {
     return true;
   }
-  const instance = useInstanceV1Store().getInstanceByName(connection.instance);
+  const instance = useInstanceResourceByName(connection.instance);
   if (instanceV1AllowsCrossDatabaseQuery(instance)) {
     // Connecting to instance directly.
     return false;

@@ -61,7 +61,6 @@ import {
   extractProjectResourceName,
   getSheetStatement,
   hasProjectPermissionV2,
-  idFromSlug,
   isDatabaseV1Queryable,
   isWorksheetReadableV1,
   projectNameFromSheetSlug,
@@ -85,7 +84,6 @@ const router = useRouter();
 const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
-const instanceStore = useInstanceV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
@@ -157,18 +155,6 @@ const handleProjectSwitched = async () => {
   tabStore.maybeInitProject(project);
 };
 
-const prepareInstances = async () => {
-  const { project } = editorStore;
-  if (project) {
-    await instanceStore.fetchProjectInstanceList(
-      extractProjectResourceName(project)
-    );
-  } else {
-    // TODO(d): do we still have non-project cases?
-    await instanceStore.listInstances();
-  }
-};
-
 const prepareDatabases = async () => {
   // It will also be called when user logout
   if (me.value.name === UNKNOWN_USER_NAME) {
@@ -176,15 +162,11 @@ const prepareDatabases = async () => {
   }
   const { project } = editorStore;
   // `databaseList` is the database list in the project.
-  const databaseList = (
-    await databaseStore.listDatabases(project)
-  ).filter((db) => db.syncState === State.ACTIVE);
+  const databaseList = (await databaseStore.listDatabases(project)).filter(
+    (db) => db.syncState === State.ACTIVE
+  );
 
   editorStore.databaseList = databaseList;
-};
-
-const prepareInstancesAndDatabases = async () => {
-  await Promise.all([prepareInstances(), prepareDatabases()]);
 };
 
 const connect = (connection: SQLEditorConnection) => {
@@ -328,55 +310,6 @@ const prepareSheet = async () => {
   return true;
 };
 
-const prepareConnectionSlugLegacy = async () => {
-  const connectionSlug = (route.params.connectionSlug as string) || "";
-  const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
-  const instanceId = Number(idFromSlug(instanceSlug));
-  const databaseId = Number(idFromSlug(databaseSlug));
-
-  if (Number.isNaN(instanceId) && Number.isNaN(databaseId)) {
-    return false;
-  }
-  if (instanceId === 0 || databaseId === 0) {
-    return false;
-  }
-
-  if (Number.isNaN(databaseId)) {
-    // connected to instance
-    const instance = await useInstanceV1Store().getOrFetchInstanceByName(
-      `instances/${instanceId}`
-    );
-    if (isValidInstanceName(instance.name)) {
-      connect({
-        instance: instance.name,
-        database: "",
-      });
-      return true;
-    }
-  } else {
-    const database = await useDatabaseV1Store().getOrFetchDatabaseByUID(
-      String(databaseId)
-    );
-    if (database.uid !== String(UNKNOWN_ID)) {
-      if (!isDatabaseV1Queryable(database, me.value)) {
-        router.push({
-          name: "error.403",
-        });
-      }
-
-      // connected to db
-      await maybeSwitchProject(database.project);
-      connect({
-        instance: database.instance,
-        database: database.name,
-        schema: filter.schema,
-        table: filter.table,
-      });
-      return true;
-    }
-  }
-  return false;
-};
 const prepareConnectionParams = async () => {
   if (
     ![SQL_EDITOR_INSTANCE_MODULE, SQL_EDITOR_DATABASE_MODULE].includes(
@@ -442,9 +375,6 @@ const initializeConnectionFromQuery = async () => {
     return;
   }
 
-  if (await prepareConnectionSlugLegacy()) {
-    return true;
-  }
   if (await prepareConnectionParams()) {
     return;
   }
@@ -544,8 +474,7 @@ const syncURLWithConnection = () => {
         }
       }
       if (instanceName) {
-        const instance = instanceStore.getInstanceByName(instanceName);
-        if (isValidInstanceName(instance.name)) {
+        if (isValidInstanceName(instanceName)) {
           if (table) {
             query.table = table;
             query.schema = schema ?? "";
@@ -554,7 +483,7 @@ const syncURLWithConnection = () => {
             name: SQL_EDITOR_INSTANCE_MODULE,
             params: {
               project: extractProjectResourceName(editorStore.project),
-              instance: extractInstanceResourceName(instance.name),
+              instance: extractInstanceResourceName(instanceName),
             },
             query,
           });
@@ -603,7 +532,7 @@ onMounted(async () => {
     initializeProjects(),
     groupStore.fetchGroupList(),
   ]);
-  await prepareInstancesAndDatabases();
+  await prepareDatabases();
   tabStore.maybeInitProject(editorStore.project);
   editorStore.projectContextReady = true;
   nextTick(() => {
@@ -618,7 +547,7 @@ onMounted(async () => {
     async () => {
       editorStore.projectContextReady = false;
       await handleProjectSwitched();
-      await prepareInstancesAndDatabases();
+      await prepareDatabases();
       tabStore.maybeInitProject(editorStore.project);
       editorStore.projectContextReady = true;
       nextTick(() => {

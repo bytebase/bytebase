@@ -5,7 +5,6 @@ import { computed, reactive, ref, watch } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import type {
   ComposedDatabase,
-  ComposedInstance,
   ComposedProject,
   SQLEditorTreeFactor as Factor,
   SQLEditorTreeNode as TreeNode,
@@ -21,9 +20,10 @@ import {
   LeafTreeNodeTypes,
 } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
 import { useFilterStore } from "../filter";
-import { useEnvironmentV1Store, useInstanceV1Store } from "../v1";
+import { useEnvironmentV1Store, useInstanceResourceByName } from "../v1";
 import { useSQLEditorStore } from "./editor";
 
 export const ROOT_NODE_ID = "ROOT";
@@ -242,7 +242,7 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
     return (
       target as
         | ComposedProject
-        | ComposedInstance
+        | InstanceResource
         | Environment
         | ComposedDatabase
     ).name;
@@ -339,7 +339,7 @@ const mapGroupNode = (
     return mapTreeNodeByType("environment", environment, parent);
   }
   if (factor === "instance") {
-    const instance = useInstanceV1Store().getInstanceByName(value);
+    const instance = useInstanceResourceByName(value);
     return mapTreeNodeByType("instance", instance, parent);
   }
   // factor is label
@@ -389,7 +389,7 @@ const readableTargetByType = <T extends NodeType>(
     return (target as Environment).title;
   }
   if (type === "instance") {
-    return (target as ComposedInstance).title;
+    return (target as InstanceResource).title;
   }
   if (type === "database") {
     return (target as ComposedDatabase).databaseName;

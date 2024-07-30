@@ -78,7 +78,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		}
 	}
 
-	users, err := driver.getInstanceRoles(ctx)
+	instanceRoles, err := driver.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -115,11 +115,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}
 
 	return &db.InstanceMetadata{
-		Version:       version,
-		InstanceRoles: users,
-		Databases:     databases,
+		Version:   version,
+		Databases: databases,
 		Metadata: &storepb.InstanceMetadata{
 			MysqlLowerCaseTableNames: int32(lowerCaseTableNames),
+			Roles:                    instanceRoles,
 		},
 	}, nil
 }

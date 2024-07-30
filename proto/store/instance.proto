@@ -26,4 +26,23 @@ message InstanceMetadata {
   int32 mysql_lower_case_table_names = 1;
 
   google.protobuf.Timestamp last_sync_time = 2;
+
+  repeated InstanceRole roles = 3;
+}
+
+// InstanceRole is the API message for instance role.
+message InstanceRole {
+  // The role name.
+  string name = 1;
+
+  // The connection count limit for this role.
+  optional int32 connection_limit = 2;
+
+  // The expiration for the role's password.
+  optional string valid_until = 3;
+
+  // The role attribute.
+  // For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+  // For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
+  optional string attribute = 4;
 }

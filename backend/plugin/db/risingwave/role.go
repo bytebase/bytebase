@@ -333,13 +333,13 @@ func convertToAttributeStatement(r *db.DatabaseRoleUpsertMessage) string {
 	return attribute
 }
 
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
+func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	query := `
 		SELECT r.rolname, r.rolsuper, r.rolinherit, r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolvaliduntil, r.rolbypassrls
 		FROM pg_catalog.pg_roles r
 		WHERE r.rolname !~ '^pg_';
 	`
-	var instanceRoles []*storepb.InstanceRoleMetadata
+	var instanceRoles []*storepb.InstanceRole
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -388,10 +388,10 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		if bypassRLS {
 			attributes = append(attributes, "Bypass RLS+")
 		}
-
-		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
-			Name:  role,
-			Grant: strings.Join(attributes, ", "),
+		attribute := strings.Join(attributes, " ")
+		instanceRoles = append(instanceRoles, &storepb.InstanceRole{
+			Name:      role,
+			Attribute: &attribute,
 		})
 	}
 	if err := rows.Err(); err != nil {

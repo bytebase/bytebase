@@ -666,6 +666,10 @@
                   <a href="#bytebase.store.InstanceOptions"><span class="badge">M</span>InstanceOptions</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.InstanceRole"><span class="badge">M</span>InstanceRole</a>
+                </li>
+              
               
               
               
@@ -5787,6 +5791,13 @@ It is used to determine whether the table names and database names are case sens
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>roles</td>
+                  <td><a href="#bytebase.store.InstanceRole">InstanceRole</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5817,6 +5828,53 @@ It is used to determine whether the table names and database names are case sens
                   <td></td>
                   <td><p>The maximum number of connections.
 The default is 10 if the value is unset or zero. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.InstanceRole">InstanceRole</h3>
+        <p>InstanceRole is the API message for instance role.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The role name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>connection_limit</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>The connection count limit for this role. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>valid_until</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The expiration for the role&#39;s password. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attribute</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The role attribute.
+For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
                 </tr>
               
             </tbody>
