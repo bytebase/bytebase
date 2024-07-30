@@ -28,7 +28,6 @@ import {
   type ComposedInstance,
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
-import { State } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
@@ -44,7 +43,6 @@ const props = withDefaults(
     environmentName?: string;
     allowedEngineList?: readonly Engine[];
     includeAll?: boolean;
-    includeArchived?: boolean;
     autoReset?: boolean;
     filter?: (
       instance: ComposedInstance | InstanceResource,
@@ -56,7 +54,6 @@ const props = withDefaults(
     environmentName: undefined,
     allowedEngineList: () => supportedEngineV1List(),
     includeAll: false,
-    includeArchived: false,
     autoReset: true,
     filter: undefined,
   }
@@ -84,13 +81,7 @@ const rawInstanceList = computed(() => {
 });
 
 const combinedInstanceList = computed(() => {
-  let list = rawInstanceList.value.filter((instance) => {
-    if (props.includeArchived) return true;
-    if (instance.state === State.ACTIVE) return true;
-    // ARCHIVED
-    if (instance.name === props.instanceName) return true;
-    return false;
-  });
+  let list = rawInstanceList.value;
 
   if (props.filter) {
     list = list.filter(props.filter);

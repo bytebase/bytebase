@@ -32,8 +32,8 @@ message InstanceMetadata {
 
 // InstanceRole is the API message for instance role.
 message InstanceRole {
-  // The role name. It's unique within the instance.
-  string role_name = 1;
+  // The role name.
+  string name = 1;
 
   // The connection count limit for this role.
   optional int32 connection_limit = 2;

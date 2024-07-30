@@ -260,13 +260,14 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
 
+	if instanceMeta.Metadata == nil {
+		instanceMeta.Metadata = &storepb.InstanceMetadata{}
+	}
+	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
-		Metadata: &storepb.InstanceMetadata{
-			LastSyncTime:             timestamppb.Now(),
-			MysqlLowerCaseTableNames: instanceMeta.Metadata.GetMysqlLowerCaseTableNames(),
-		},
-		UpdaterID: api.SystemBotID,
+		Metadata:   instanceMeta.Metadata,
+		UpdaterID:  api.SystemBotID,
 	}
 	if instanceMeta.Version != instance.EngineVersion {
 		updateInstance.EngineVersion = &instanceMeta.Version
@@ -274,17 +275,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
 	if err != nil {
 		return nil, err
-	}
-
-	var instanceUsers []*store.InstanceUserMessage
-	for _, instanceUser := range instanceMeta.InstanceRoles {
-		instanceUsers = append(instanceUsers, &store.InstanceUserMessage{
-			Name:  instanceUser.Name,
-			Grant: instanceUser.Grant,
-		})
-	}
-	if err := s.store.UpsertInstanceUsers(ctx, instance.UID, instanceUsers); err != nil {
-		return updatedInstance, err
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
