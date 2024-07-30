@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
@@ -18,7 +19,7 @@ service IssueService {
     option (google.api.http) = {get: "/v1/{name=projects/*/issues/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.issues.get";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateIssue(CreateIssueRequest) returns (Issue) {
@@ -29,14 +30,14 @@ service IssueService {
     option (google.api.method_signature) = "parent,issue";
     // XXX: issues.action needs respective plans.action and rollouts.action permissions if the issue type is change database.
     option (bytebase.v1.permission) = "bb.issues.create";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/issues"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issues.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
@@ -54,14 +55,14 @@ service IssueService {
     };
     option (google.api.method_signature) = "issue,update_mask";
     option (bytebase.v1.permission) = "bb.issues.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListIssueComments(ListIssueCommentsRequest) returns (ListIssueCommentsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/issues/*}/issueComments"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issueComments.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
@@ -71,7 +72,7 @@ service IssueService {
     };
     option (google.api.method_signature) = "parent,issue_comment";
     option (bytebase.v1.permission) = "bb.issueComments.create";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
@@ -81,7 +82,7 @@ service IssueService {
     };
     option (google.api.method_signature) = "parent,issue_comment,update_mask";
     option (bytebase.v1.permission) = "bb.issueComments.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc BatchUpdateIssuesStatus(BatchUpdateIssuesStatusRequest) returns (BatchUpdateIssuesStatusResponse) {
@@ -90,7 +91,7 @@ service IssueService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.issues.update";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
@@ -124,7 +125,10 @@ service IssueService {
 message GetIssueRequest {
   // The name of the issue to retrieve.
   // Format: projects/{project}/issues/{issue}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
 
   bool force = 2;
 }
@@ -132,7 +136,10 @@ message GetIssueRequest {
 message CreateIssueRequest {
   // The parent, which owns this collection of issues.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The issue to create.
   Issue issue = 2 [(google.api.field_behavior) = REQUIRED];
@@ -141,8 +148,10 @@ message CreateIssueRequest {
 message ListIssuesRequest {
   // The parent, which owns this collection of issues.
   // Format: projects/{project}
-  // Use "projects/-" to list all issues from all projects.
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The maximum number of issues to return. The service may return fewer than
   // this value.
@@ -213,7 +222,10 @@ message UpdateIssueRequest {
   //
   // The issue's `name` field is used to identify the issue to update.
   // Format: projects/{project}/issues/{issue}
-  Issue issue = 1 [(google.api.field_behavior) = REQUIRED];
+  Issue issue = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
@@ -224,7 +236,10 @@ message BatchUpdateIssuesStatusRequest {
   // Format: projects/{project}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
   // We only support updating the status of databases for now.
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // The list of issues to update.
   // Format: projects/{project}/issues/{issue}
@@ -260,6 +275,11 @@ message RequestIssueRequest {
 }
 
 message Issue {
+  option (google.api.resource) = {
+    type: "bytebase.com/Issue"
+    pattern: "projects/{project}/issues/{issue}"
+  };
+
   // The name of the issue.
   // Format: projects/{project}/issues/{issue}
   string name = 1;
