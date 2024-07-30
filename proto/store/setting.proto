@@ -51,8 +51,8 @@ message WorkspaceProfileSetting {
   // The workspace database change mode.
   DatabaseChangeMode database_change_mode = 11;
 
-  // The workspace app mode, either Console or SQL Editor
-  AppMode app_mode = 12;
+  // The workspace mode, either Console or SQL Editor
+  WorkspaceMode workspace_mode = 12;
 }
 
 message Announcement {
@@ -344,13 +344,13 @@ enum DatabaseChangeMode {
   EDITOR = 2;
 }
 
-enum AppMode {
-  APP_MODE_UNSPECIFIED = 0;
+enum WorkspaceMode {
+  WORKSPACE_MODE_UNSPECIFIED = 0;
   // In console mode, app will navigate to console after login. All features
   // are accessible in this mode.
   // Default to this mode.
-  APP_MODE_CONSOLE = 1;
+  WORKSPACE_MODE_CONSOLE = 1;
   // In EDITOR mode, app will navigate to SQL Editor after login. Some features
   // are hidden in this mode.
-  APP_MODE_EDITOR = 2;
+  WORKSPACE_MODE_EDITOR = 2;
 }

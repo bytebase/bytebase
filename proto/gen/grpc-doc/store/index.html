@@ -1196,10 +1196,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.AppMode"><span class="badge">E</span>AppMode</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
                 </li>
               
@@ -1213,6 +1209,10 @@
               
                 <li>
                   <a href="#bytebase.store.SMTPMailDeliverySetting.Encryption"><span class="badge">E</span>SMTPMailDeliverySetting.Encryption</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.WorkspaceMode"><span class="badge">E</span>WorkspaceMode</a>
                 </li>
               
               
@@ -9811,10 +9811,10 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                 </tr>
               
                 <tr>
-                  <td>app_mode</td>
-                  <td><a href="#bytebase.store.AppMode">AppMode</a></td>
+                  <td>workspace_mode</td>
+                  <td><a href="#bytebase.store.WorkspaceMode">WorkspaceMode</a></td>
                   <td></td>
-                  <td><p>The workspace app mode, either Console or SQL Editor </p></td>
+                  <td><p>The workspace mode, either Console or SQL Editor </p></td>
                 </tr>
               
             </tbody>
@@ -9856,38 +9856,6 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                 <td>ALERT_LEVEL_CRITICAL</td>
                 <td>3</td>
                 <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.AppMode">AppMode</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>APP_MODE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>APP_MODE_CONSOLE</td>
-                <td>1</td>
-                <td><p>In console mode, app will navigate to console after login. All features
-are accessible in this mode.
-Default to this mode.</p></td>
-              </tr>
-            
-              <tr>
-                <td>APP_MODE_EDITOR</td>
-                <td>2</td>
-                <td><p>In EDITOR mode, app will navigate to SQL Editor after login. Some features
-are hidden in this mode.</p></td>
               </tr>
             
           </tbody>
@@ -10023,6 +9991,38 @@ Default to this mode.</p></td>
                 <td>ENCRYPTION_SSL_TLS</td>
                 <td>3</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.WorkspaceMode">WorkspaceMode</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>WORKSPACE_MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WORKSPACE_MODE_CONSOLE</td>
+                <td>1</td>
+                <td><p>In console mode, app will navigate to console after login. All features
+are accessible in this mode.
+Default to this mode.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WORKSPACE_MODE_EDITOR</td>
+                <td>2</td>
+                <td><p>In EDITOR mode, app will navigate to SQL Editor after login. Some features
+are hidden in this mode.</p></td>
               </tr>
             
           </tbody>

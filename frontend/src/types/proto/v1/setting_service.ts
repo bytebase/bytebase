@@ -70,63 +70,63 @@ export function databaseChangeModeToNumber(object: DatabaseChangeMode): number {
   }
 }
 
-export enum AppMode {
-  APP_MODE_UNSPECIFIED = "APP_MODE_UNSPECIFIED",
+export enum WorkspaceMode {
+  WORKSPACE_MODE_UNSPECIFIED = "WORKSPACE_MODE_UNSPECIFIED",
   /**
-   * APP_MODE_CONSOLE - In console mode, app will navigate to console after login. All features
+   * WORKSPACE_MODE_CONSOLE - In console mode, app will navigate to console after login. All features
    * are accessible in this mode.
    * Default to this mode.
    */
-  APP_MODE_CONSOLE = "APP_MODE_CONSOLE",
+  WORKSPACE_MODE_CONSOLE = "WORKSPACE_MODE_CONSOLE",
   /**
-   * APP_MODE_EDITOR - In EDITOR mode, app will navigate to SQL Editor after login. Some features
+   * WORKSPACE_MODE_EDITOR - In EDITOR mode, app will navigate to SQL Editor after login. Some features
    * are hidden in this mode.
    */
-  APP_MODE_EDITOR = "APP_MODE_EDITOR",
+  WORKSPACE_MODE_EDITOR = "WORKSPACE_MODE_EDITOR",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
-export function appModeFromJSON(object: any): AppMode {
+export function workspaceModeFromJSON(object: any): WorkspaceMode {
   switch (object) {
     case 0:
-    case "APP_MODE_UNSPECIFIED":
-      return AppMode.APP_MODE_UNSPECIFIED;
+    case "WORKSPACE_MODE_UNSPECIFIED":
+      return WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED;
     case 1:
-    case "APP_MODE_CONSOLE":
-      return AppMode.APP_MODE_CONSOLE;
+    case "WORKSPACE_MODE_CONSOLE":
+      return WorkspaceMode.WORKSPACE_MODE_CONSOLE;
     case 2:
-    case "APP_MODE_EDITOR":
-      return AppMode.APP_MODE_EDITOR;
+    case "WORKSPACE_MODE_EDITOR":
+      return WorkspaceMode.WORKSPACE_MODE_EDITOR;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return AppMode.UNRECOGNIZED;
+      return WorkspaceMode.UNRECOGNIZED;
   }
 }
 
-export function appModeToJSON(object: AppMode): string {
+export function workspaceModeToJSON(object: WorkspaceMode): string {
   switch (object) {
-    case AppMode.APP_MODE_UNSPECIFIED:
-      return "APP_MODE_UNSPECIFIED";
-    case AppMode.APP_MODE_CONSOLE:
-      return "APP_MODE_CONSOLE";
-    case AppMode.APP_MODE_EDITOR:
-      return "APP_MODE_EDITOR";
-    case AppMode.UNRECOGNIZED:
+    case WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED:
+      return "WORKSPACE_MODE_UNSPECIFIED";
+    case WorkspaceMode.WORKSPACE_MODE_CONSOLE:
+      return "WORKSPACE_MODE_CONSOLE";
+    case WorkspaceMode.WORKSPACE_MODE_EDITOR:
+      return "WORKSPACE_MODE_EDITOR";
+    case WorkspaceMode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export function appModeToNumber(object: AppMode): number {
+export function workspaceModeToNumber(object: WorkspaceMode): number {
   switch (object) {
-    case AppMode.APP_MODE_UNSPECIFIED:
+    case WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED:
       return 0;
-    case AppMode.APP_MODE_CONSOLE:
+    case WorkspaceMode.WORKSPACE_MODE_CONSOLE:
       return 1;
-    case AppMode.APP_MODE_EDITOR:
+    case WorkspaceMode.WORKSPACE_MODE_EDITOR:
       return 2;
-    case AppMode.UNRECOGNIZED:
+    case WorkspaceMode.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -448,8 +448,8 @@ export interface WorkspaceProfileSetting {
   enforceIdentityDomain: boolean;
   /** The workspace database change mode. */
   databaseChangeMode: DatabaseChangeMode;
-  /** The workspace app mode, either Console or SQL Editor */
-  appMode: AppMode;
+  /** The workspace mode, either Console or SQL Editor. */
+  workspaceMode: WorkspaceMode;
 }
 
 export interface Announcement {
@@ -2176,7 +2176,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     domains: [],
     enforceIdentityDomain: false,
     databaseChangeMode: DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
-    appMode: AppMode.APP_MODE_UNSPECIFIED,
+    workspaceMode: WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED,
   };
 }
 
@@ -2215,8 +2215,8 @@ export const WorkspaceProfileSetting = {
     if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
       writer.uint32(88).int32(databaseChangeModeToNumber(message.databaseChangeMode));
     }
-    if (message.appMode !== AppMode.APP_MODE_UNSPECIFIED) {
-      writer.uint32(96).int32(appModeToNumber(message.appMode));
+    if (message.workspaceMode !== WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED) {
+      writer.uint32(96).int32(workspaceModeToNumber(message.workspaceMode));
     }
     return writer;
   },
@@ -2310,7 +2310,7 @@ export const WorkspaceProfileSetting = {
             break;
           }
 
-          message.appMode = appModeFromJSON(reader.int32());
+          message.workspaceMode = workspaceModeFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2342,7 +2342,9 @@ export const WorkspaceProfileSetting = {
       databaseChangeMode: isSet(object.databaseChangeMode)
         ? databaseChangeModeFromJSON(object.databaseChangeMode)
         : DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
-      appMode: isSet(object.appMode) ? appModeFromJSON(object.appMode) : AppMode.APP_MODE_UNSPECIFIED,
+      workspaceMode: isSet(object.workspaceMode)
+        ? workspaceModeFromJSON(object.workspaceMode)
+        : WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED,
     };
   },
 
@@ -2381,8 +2383,8 @@ export const WorkspaceProfileSetting = {
     if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
       obj.databaseChangeMode = databaseChangeModeToJSON(message.databaseChangeMode);
     }
-    if (message.appMode !== AppMode.APP_MODE_UNSPECIFIED) {
-      obj.appMode = appModeToJSON(message.appMode);
+    if (message.workspaceMode !== WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED) {
+      obj.workspaceMode = workspaceModeToJSON(message.workspaceMode);
     }
     return obj;
   },
@@ -2410,7 +2412,7 @@ export const WorkspaceProfileSetting = {
     message.domains = object.domains?.map((e) => e) || [];
     message.enforceIdentityDomain = object.enforceIdentityDomain ?? false;
     message.databaseChangeMode = object.databaseChangeMode ?? DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED;
-    message.appMode = object.appMode ?? AppMode.APP_MODE_UNSPECIFIED;
+    message.workspaceMode = object.workspaceMode ?? WorkspaceMode.WORKSPACE_MODE_UNSPECIFIED;
     return message;
   },
 };
