@@ -68,39 +68,39 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 		startTime := time.Now()
 		runningStatement := singleSQL.Text
 		if engineType == storepb.Engine_MYSQL {
-			runningStatement := MySQLPrependBytebaseAppComment(singleSQL.Text)
-			if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
-				sqlResult, err := conn.ExecContext(ctx, runningStatement)
-				if err != nil {
-					return nil, err
-				}
-				affectedRows, err := sqlResult.RowsAffected()
-				if err != nil {
-					slog.Info("rowsAffected returns error", log.BBError(err))
-				}
+			runningStatement = MySQLPrependBytebaseAppComment(singleSQL.Text)
+		}
+		if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
+			sqlResult, err := conn.ExecContext(ctx, runningStatement)
+			if err != nil {
+				return nil, err
+			}
+			affectedRows, err := sqlResult.RowsAffected()
+			if err != nil {
+				slog.Info("rowsAffected returns error", log.BBError(err))
+			}
 
-				field := []string{"Affected Rows"}
-				types := []string{"INT"}
-				rows := []*v1pb.QueryRow{
-					{
-						Values: []*v1pb.RowValue{
-							{
-								Kind: &v1pb.RowValue_Int64Value{
-									Int64Value: affectedRows,
-								},
+			field := []string{"Affected Rows"}
+			types := []string{"INT"}
+			rows := []*v1pb.QueryRow{
+				{
+					Values: []*v1pb.RowValue{
+						{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: affectedRows,
 							},
 						},
 					},
-				}
-				results = append(results, &v1pb.QueryResult{
-					ColumnNames:     field,
-					ColumnTypeNames: types,
-					Rows:            rows,
-					Latency:         durationpb.New(time.Since(startTime)),
-					Statement:       singleSQL.Text,
-				})
-				continue
+				},
 			}
+			results = append(results, &v1pb.QueryResult{
+				ColumnNames:     field,
+				ColumnTypeNames: types,
+				Rows:            rows,
+				Latency:         durationpb.New(time.Since(startTime)),
+				Statement:       singleSQL.Text,
+			})
+			continue
 		}
 		results = append(results, adminQuery(ctx, engineType, conn, runningStatement))
 	}
