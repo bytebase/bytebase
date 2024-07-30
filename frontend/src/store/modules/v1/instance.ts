@@ -1,22 +1,18 @@
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
-import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
+import { instanceServiceClient } from "@/grpcweb";
 import type { ComposedInstance, MaybeRef } from "@/types";
 import { unknownEnvironment, unknownInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName } from "@/utils";
-import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useEnvironmentV1Store } from "./environment";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
-  const instanceRoleListMapByName = reactive(new Map<string, InstanceRole[]>());
 
   const reset = () => {
     instanceMapByName.clear();
-    instanceRoleListMapByName.clear();
   };
 
   // Getters
@@ -124,27 +120,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     await fetchInstanceByName(name, silent);
     return getInstanceByName(name);
   };
-  const fetchInstanceRoleByName = async (name: string) => {
-    const role = await instanceRoleServiceClient.getInstanceRole({ name });
-    return role;
-  };
-  const fetchInstanceRoleListByName = async (name: string) => {
-    // TODO: ListInstanceRoles will return error if instance is archived
-    // We temporarily suppress errors here now.
-    try {
-      const { roles } = await instanceRoleServiceClient.listInstanceRoles({
-        parent: name,
-      });
-      instanceRoleListMapByName.set(name, roles);
-      return roles;
-    } catch (err) {
-      console.debug(extractGrpcErrorMessage(err));
-      return [];
-    }
-  };
-  const getInstanceRoleListByName = (name: string) => {
-    return instanceRoleListMapByName.get(name) ?? [];
-  };
   const createDataSource = async (
     instance: Instance,
     dataSource: DataSource
@@ -195,9 +170,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     listInstances,
     getInstanceByName,
     getOrFetchInstanceByName,
-    fetchInstanceRoleByName,
-    fetchInstanceRoleListByName,
-    getInstanceRoleListByName,
     createDataSource,
     updateDataSource,
     deleteDataSource,
