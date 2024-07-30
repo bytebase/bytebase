@@ -18,7 +18,6 @@ import type { ComposedDatabase } from "@/types";
 import type { SearchScope } from "@/utils";
 import {
   extractEnvironmentResourceName,
-  extractInstanceResourceName,
   extractProjectResourceName,
 } from "@/utils";
 
