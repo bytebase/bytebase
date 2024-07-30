@@ -38,7 +38,6 @@ import {
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
   WORKSPACE_ROUTE_SQL_REVIEW,
@@ -257,13 +256,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("sql-review.title"),
           name: WORKSPACE_ROUTE_SQL_REVIEW,
           type: "route",
-        },
-        {
-          title: t("slow-query.self"),
-          name: WORKSPACE_ROUTE_SLOW_QUERY,
-          type: "route",
-          navigationId: "bb.navigation.slow-query",
-          shortcuts: ["g", "s", "q"],
         },
         {
           title: t("schema-template.self"),
