@@ -10373,9 +10373,9 @@ components:
         InstanceRole:
             type: object
             properties:
-                roleName:
+                name:
                     type: string
-                    description: The role name. It's unique within the instance.
+                    description: The role name.
                 connectionLimit:
                     type: integer
                     description: The connection count limit for this role.

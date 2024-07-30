@@ -2112,7 +2112,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
+| name | [string](#string) |  | The role name. |
 | connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
 | valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
 | attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |

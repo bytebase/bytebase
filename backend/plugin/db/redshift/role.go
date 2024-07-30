@@ -2,33 +2,88 @@ package redshift
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
+	"strings"
 
-	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// CreateRole creates the role.
-func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("create role for Redshift is not implemented yet")
-}
+func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+	// Reference: https://sourcegraph.com/github.com/postgres/postgres@REL_14_0/-/blob/src/bin/psql/describe.c?L3792
+	query := `
+	SELECT
+		u.usename AS rolename,
+		u.usesuper AS rolsuper,
+		true AS rolinherit,
+		false AS rolcreaterole,
+		u.usecreatedb AS rolcreatedb,
+		true AS rolcanlogin,
+		-1 AS rolconnlimit,
+		u.valuntil as rolvaliduntil
+	FROM pg_catalog.pg_user u
+	ORDER BY 1;
+	`
+	var instanceRoles []*storepb.InstanceRole
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var role string
+		var super, inherit, createrole, createdb, canLogin bool
+		var connectionLimit int32
+		var validUntil sql.NullString
+		if err := rows.Scan(
+			&role,
+			&super,
+			&inherit,
+			&createrole,
+			&createdb,
+			&canLogin,
+			&connectionLimit,
+			&validUntil,
+		); err != nil {
+			return nil, err
+		}
 
-// UpdateRole updates the role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("update role for Redshift is not implemented yet")
-}
-
-// FindRole finds the role by name.
-func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("find role for Redshift is not implemented yet")
-}
-
-// ListRole lists the role.
-func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("list role for Redshift is not implemented yet")
-}
-
-// DeleteRole deletes the role by name.
-func (*Driver) DeleteRole(_ context.Context, _ string) error {
-	return errors.Errorf("delete role for Redshift is not implemented yet")
+		var attributes []string
+		if super {
+			attributes = append(attributes, "Superuser")
+		}
+		if !inherit {
+			attributes = append(attributes, "No inheritance")
+		}
+		if createrole {
+			attributes = append(attributes, "Create role")
+		}
+		if createdb {
+			attributes = append(attributes, "Create DB")
+		}
+		if !canLogin {
+			attributes = append(attributes, "Cannot login")
+		}
+		if connectionLimit >= 0 {
+			if connectionLimit == 0 {
+				attributes = append(attributes, "No connections")
+			} else if connectionLimit == 1 {
+				attributes = append(attributes, "1 connection")
+			} else {
+				attributes = append(attributes, fmt.Sprintf("%d connections", connectionLimit))
+			}
+		}
+		if validUntil.Valid {
+			attributes = append(attributes, fmt.Sprintf("Password valid until %s", validUntil.String))
+		}
+		attribute := strings.Join(attributes, " ")
+		instanceRoles = append(instanceRoles, &storepb.InstanceRole{
+			Name:      role,
+			Attribute: &attribute,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return instanceRoles, nil
 }
