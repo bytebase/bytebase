@@ -477,8 +477,8 @@ enum AppMode {
   // In console mode, app will navigate to console after login. All features
   // are accessible in this mode.
   // Default to this mode.
-  CONSOLE = 1;
+  APP_MODE_CONSOLE = 1;
   // In EDITOR mode, app will navigate to SQL Editor after login. Some features
   // are hidden in this mode.
-  EDITOR = 2;
+  APP_MODE_EDITOR = 2;
 }
