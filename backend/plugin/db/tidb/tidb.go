@@ -399,7 +399,7 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = sqlWithBytebaseAppComment
+	result.Statement = statement
 	return result, nil
 }
 
