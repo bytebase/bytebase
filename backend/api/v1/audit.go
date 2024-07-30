@@ -112,7 +112,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 	return response, rerr
 }
 
-type AuditStream struct {
+type auditStream struct {
 	grpc.ServerStream
 	needAudit  bool
 	curRequest any
@@ -121,7 +121,7 @@ type AuditStream struct {
 	storage    *store.Store
 }
 
-func (s *AuditStream) RecvMsg(request any) error {
+func (s *auditStream) RecvMsg(request any) error {
 	err := s.ServerStream.RecvMsg(request)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (s *AuditStream) RecvMsg(request any) error {
 	return nil
 }
 
-func (s *AuditStream) SendMsg(resp any) error {
+func (s *auditStream) SendMsg(resp any) error {
 	err := s.ServerStream.SendMsg(resp)
 	if err != nil {
 		return err
@@ -149,12 +149,12 @@ func (s *AuditStream) SendMsg(resp any) error {
 }
 
 func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	overrideStream, ok := ss.(overrideStream)
+	overrideStream, ok := ss.(*overrideStream)
 	if !ok {
 		return errors.New("type assertions failed: grpc.ServerStream -> overrideStream")
 	}
 
-	auditStream := &AuditStream{
+	auditStream := &auditStream{
 		ServerStream: overrideStream,
 		needAudit:    isStreamAuditMethod(info.FullMethod),
 		ctx:          overrideStream.childCtx,

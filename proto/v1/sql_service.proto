@@ -41,7 +41,7 @@ service SQLService {
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
     option (bytebase.v1.permission) = "bb.instances.adminExecute";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
@@ -146,7 +146,10 @@ message ExecuteResponse {
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   string connection_database = 2 [deprecated = true];
 

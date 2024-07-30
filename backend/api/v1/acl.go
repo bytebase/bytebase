@@ -76,7 +76,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "auth context not found")
 	}
-	if err := in.populateRawResources(ctx, authContext, request, serverInfo.FullMethod); err != nil {
+	if err := populateRawResources(ctx, in.store, authContext, request, serverInfo.FullMethod); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
 	}
 
@@ -87,7 +87,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
 
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
+	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, serverInfo.FullMethod, user, authContext)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
 	}
@@ -126,43 +126,52 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		}
 		ctx = context.WithValue(ctx, common.RoleContextKey, role)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
-		ss = overrideStream{ServerStream: ss, childCtx: ctx}
-	}
-
-	authContextAny := ctx.Value(common.AuthContextKey)
-	authContext, ok := authContextAny.(*common.AuthContext)
-	if !ok {
-		return status.Errorf(codes.Internal, "auth context not found")
-	}
-	if err := in.populateRawResources(ctx, authContext, request, serverInfo.FullMethod); err != nil {
-		return status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
-	}
-
-	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
-		return handler(request, ss)
-	}
-	if user == nil {
-		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
-	}
-
-	ok, extra, err := in.doIAMPermissionCheck(ctx, serverInfo.FullMethod, user, authContext)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
-	}
-	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", serverInfo.FullMethod, authContext.Permission, extra)
+		ss = &overrideStream{ServerStream: ss, childCtx: ctx, iamManager: in.iamManager, store: in.store, user: user, fullMethod: serverInfo.FullMethod}
 	}
 
 	return handler(request, ss)
 }
 
 type overrideStream struct {
-	childCtx context.Context
 	grpc.ServerStream
+
+	childCtx   context.Context
+	iamManager *iam.Manager
+	store      *store.Store
+	user       *store.UserMessage
+	fullMethod string
 }
 
-func (s overrideStream) Context() context.Context {
-	return s.childCtx
+func (o overrideStream) Context() context.Context {
+	return o.childCtx
+}
+
+func (o *overrideStream) RecvMsg(request any) error {
+	authContextAny := o.childCtx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return status.Errorf(codes.Internal, "auth context not found")
+	}
+	if err := populateRawResources(o.childCtx, o.store, authContext, request, o.fullMethod); err != nil {
+		return status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
+	}
+
+	if auth.IsAuthenticationAllowed(o.fullMethod, authContext) {
+		return o.ServerStream.RecvMsg(request)
+	}
+	if o.user == nil {
+		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", o.fullMethod)
+	}
+
+	ok, extra, err := doIAMPermissionCheck(o.childCtx, o.iamManager, o.fullMethod, o.user, authContext)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", o.fullMethod, extra, err)
+	}
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", o.fullMethod, authContext.Permission, extra)
+	}
+
+	return o.ServerStream.RecvMsg(request)
 }
 
 func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, error) {
@@ -200,7 +209,7 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 	return false
 }
 
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
+func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return true, nil, nil
 	}
@@ -212,7 +221,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		return false, nil, errors.Errorf("no resource found for IAM auth method")
 	}
 	if authContext.HasWorkspaceResource() {
-		ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user)
+		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user)
 		if err != nil {
 			return false, nil, err
 		}
@@ -222,7 +231,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 	}
 	projectIDs := authContext.GetProjectResources()
 	if len(projectIDs) > 0 {
-		ok, err := in.iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
+		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
 		if err != nil {
 			return false, projectIDs, err
 		}
@@ -236,7 +245,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
-func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext *common.AuthContext, request any, method string) error {
+func populateRawResources(ctx context.Context, stores *store.Store, authContext *common.AuthContext, request any, method string) error {
 	if authContext.AllowWithoutCredential {
 		return nil
 	}
@@ -263,7 +272,7 @@ func (in *ACLInterceptor) populateRawResources(ctx context.Context, authContext 
 		case strings.HasPrefix(resource.Name, "instances/") && strings.Contains(resource.Name, "/databases/"):
 			match := databaseRegex.FindString(resource.Name)
 			if match != "" {
-				database, err := getDatabaseMessage(ctx, in.store, match)
+				database, err := getDatabaseMessage(ctx, stores, match)
 				if err != nil {
 					return errors.Wrapf(err, "failed to get database %q", match)
 				}
