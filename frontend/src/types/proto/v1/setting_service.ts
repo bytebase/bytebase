@@ -70,6 +70,68 @@ export function databaseChangeModeToNumber(object: DatabaseChangeMode): number {
   }
 }
 
+export enum AppMode {
+  APP_MODE_UNSPECIFIED = "APP_MODE_UNSPECIFIED",
+  /**
+   * APP_MODE_CONSOLE - In console mode, app will navigate to console after login. All features
+   * are accessible in this mode.
+   * Default to this mode.
+   */
+  APP_MODE_CONSOLE = "APP_MODE_CONSOLE",
+  /**
+   * APP_MODE_EDITOR - In EDITOR mode, app will navigate to SQL Editor after login. Some features
+   * are hidden in this mode.
+   */
+  APP_MODE_EDITOR = "APP_MODE_EDITOR",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function appModeFromJSON(object: any): AppMode {
+  switch (object) {
+    case 0:
+    case "APP_MODE_UNSPECIFIED":
+      return AppMode.APP_MODE_UNSPECIFIED;
+    case 1:
+    case "APP_MODE_CONSOLE":
+      return AppMode.APP_MODE_CONSOLE;
+    case 2:
+    case "APP_MODE_EDITOR":
+      return AppMode.APP_MODE_EDITOR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AppMode.UNRECOGNIZED;
+  }
+}
+
+export function appModeToJSON(object: AppMode): string {
+  switch (object) {
+    case AppMode.APP_MODE_UNSPECIFIED:
+      return "APP_MODE_UNSPECIFIED";
+    case AppMode.APP_MODE_CONSOLE:
+      return "APP_MODE_CONSOLE";
+    case AppMode.APP_MODE_EDITOR:
+      return "APP_MODE_EDITOR";
+    case AppMode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function appModeToNumber(object: AppMode): number {
+  switch (object) {
+    case AppMode.APP_MODE_UNSPECIFIED:
+      return 0;
+    case AppMode.APP_MODE_CONSOLE:
+      return 1;
+    case AppMode.APP_MODE_EDITOR:
+      return 2;
+    case AppMode.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface ListSettingsRequest {
   /**
    * The maximum number of settings to return. The service may return fewer than
@@ -386,6 +448,8 @@ export interface WorkspaceProfileSetting {
   enforceIdentityDomain: boolean;
   /** The workspace database change mode. */
   databaseChangeMode: DatabaseChangeMode;
+  /** The workspace app mode, either Console or SQL Editor */
+  appMode: AppMode;
 }
 
 export interface Announcement {
@@ -2112,6 +2176,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     domains: [],
     enforceIdentityDomain: false,
     databaseChangeMode: DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
+    appMode: AppMode.APP_MODE_UNSPECIFIED,
   };
 }
 
@@ -2149,6 +2214,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
       writer.uint32(88).int32(databaseChangeModeToNumber(message.databaseChangeMode));
+    }
+    if (message.appMode !== AppMode.APP_MODE_UNSPECIFIED) {
+      writer.uint32(96).int32(appModeToNumber(message.appMode));
     }
     return writer;
   },
@@ -2237,6 +2305,13 @@ export const WorkspaceProfileSetting = {
 
           message.databaseChangeMode = databaseChangeModeFromJSON(reader.int32());
           continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.appMode = appModeFromJSON(reader.int32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2267,6 +2342,7 @@ export const WorkspaceProfileSetting = {
       databaseChangeMode: isSet(object.databaseChangeMode)
         ? databaseChangeModeFromJSON(object.databaseChangeMode)
         : DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
+      appMode: isSet(object.appMode) ? appModeFromJSON(object.appMode) : AppMode.APP_MODE_UNSPECIFIED,
     };
   },
 
@@ -2305,6 +2381,9 @@ export const WorkspaceProfileSetting = {
     if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
       obj.databaseChangeMode = databaseChangeModeToJSON(message.databaseChangeMode);
     }
+    if (message.appMode !== AppMode.APP_MODE_UNSPECIFIED) {
+      obj.appMode = appModeToJSON(message.appMode);
+    }
     return obj;
   },
 
@@ -2331,6 +2410,7 @@ export const WorkspaceProfileSetting = {
     message.domains = object.domains?.map((e) => e) || [];
     message.enforceIdentityDomain = object.enforceIdentityDomain ?? false;
     message.databaseChangeMode = object.databaseChangeMode ?? DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED;
+    message.appMode = object.appMode ?? AppMode.APP_MODE_UNSPECIFIED;
     return message;
   },
 };

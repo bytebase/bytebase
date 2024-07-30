@@ -14579,6 +14579,14 @@ components:
                     type: string
                     description: The workspace database change mode.
                     format: enum
+                appMode:
+                    enum:
+                        - APP_MODE_UNSPECIFIED
+                        - APP_MODE_CONSOLE
+                        - APP_MODE_EDITOR
+                    type: string
+                    description: The workspace app mode, either Console or SQL Editor
+                    format: enum
         WorkspaceTrialSetting:
             type: object
             properties:

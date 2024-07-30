@@ -2491,6 +2491,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.AppMode"><span class="badge">E</span>AppMode</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
                 </li>
               
@@ -26717,6 +26721,13 @@ The external URL is used for:
                   <td><p>The workspace database change mode. </p></td>
                 </tr>
               
+                <tr>
+                  <td>app_mode</td>
+                  <td><a href="#bytebase.v1.AppMode">AppMode</a></td>
+                  <td></td>
+                  <td><p>The workspace app mode, either Console or SQL Editor </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -26815,6 +26826,38 @@ The external URL is used for:
                 <td>ALERT_LEVEL_CRITICAL</td>
                 <td>3</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.AppMode">AppMode</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>APP_MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>APP_MODE_CONSOLE</td>
+                <td>1</td>
+                <td><p>In console mode, app will navigate to console after login. All features
+are accessible in this mode.
+Default to this mode.</p></td>
+              </tr>
+            
+              <tr>
+                <td>APP_MODE_EDITOR</td>
+                <td>2</td>
+                <td><p>In EDITOR mode, app will navigate to SQL Editor after login. Some features
+are hidden in this mode.</p></td>
               </tr>
             
           </tbody>
