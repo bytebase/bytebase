@@ -8753,6 +8753,8 @@ components:
                         $ref: '#/components/schemas/Database'
                     description: Databases updated.
         BatchUpdateIssuesStatusRequest:
+            required:
+                - parent
             type: object
             properties:
                 parent:
