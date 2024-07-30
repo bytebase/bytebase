@@ -382,8 +382,8 @@ func (driver *Driver) findRoleGrant(ctx context.Context, name string) (string, e
 	return strings.Join(grantList, ";\n"), nil
 }
 
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
-	var instanceRoles []*storepb.InstanceRoleMetadata
+func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+	var instanceRoles []*storepb.InstanceRole
 	var users []string
 	var err error
 	users, err = driver.getUsersFromMySQLUser(ctx)
@@ -404,9 +404,10 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get grants for %s", name)
 		}
-		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
-			Name:  name,
-			Grant: strings.Join(grantList, "\n"),
+		attribute := strings.Join(grantList, "\n")
+		instanceRoles = append(instanceRoles, &storepb.InstanceRole{
+			Name:      name,
+			Attribute: &attribute,
 		})
 	}
 	return instanceRoles, nil

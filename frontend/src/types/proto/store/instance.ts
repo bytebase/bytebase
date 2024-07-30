@@ -32,8 +32,8 @@ export interface InstanceMetadata {
 
 /** InstanceRole is the API message for instance role. */
 export interface InstanceRole {
-  /** The role name. It's unique within the instance. */
-  roleName: string;
+  /** The role name. */
+  name: string;
   /** The connection count limit for this role. */
   connectionLimit?:
     | number
@@ -218,13 +218,13 @@ export const InstanceMetadata = {
 };
 
 function createBaseInstanceRole(): InstanceRole {
-  return { roleName: "", connectionLimit: undefined, validUntil: undefined, attribute: undefined };
+  return { name: "", connectionLimit: undefined, validUntil: undefined, attribute: undefined };
 }
 
 export const InstanceRole = {
   encode(message: InstanceRole, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.roleName !== "") {
-      writer.uint32(10).string(message.roleName);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.connectionLimit !== undefined) {
       writer.uint32(16).int32(message.connectionLimit);
@@ -250,7 +250,7 @@ export const InstanceRole = {
             break;
           }
 
-          message.roleName = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 16) {
@@ -284,7 +284,7 @@ export const InstanceRole = {
 
   fromJSON(object: any): InstanceRole {
     return {
-      roleName: isSet(object.roleName) ? globalThis.String(object.roleName) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       connectionLimit: isSet(object.connectionLimit) ? globalThis.Number(object.connectionLimit) : undefined,
       validUntil: isSet(object.validUntil) ? globalThis.String(object.validUntil) : undefined,
       attribute: isSet(object.attribute) ? globalThis.String(object.attribute) : undefined,
@@ -293,8 +293,8 @@ export const InstanceRole = {
 
   toJSON(message: InstanceRole): unknown {
     const obj: any = {};
-    if (message.roleName !== "") {
-      obj.roleName = message.roleName;
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     if (message.connectionLimit !== undefined) {
       obj.connectionLimit = Math.round(message.connectionLimit);
@@ -313,7 +313,7 @@ export const InstanceRole = {
   },
   fromPartial(object: DeepPartial<InstanceRole>): InstanceRole {
     const message = createBaseInstanceRole();
-    message.roleName = object.roleName ?? "";
+    message.name = object.name ?? "";
     message.connectionLimit = object.connectionLimit ?? undefined;
     message.validUntil = object.validUntil ?? undefined;
     message.attribute = object.attribute ?? undefined;
