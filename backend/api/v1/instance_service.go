@@ -1081,8 +1081,6 @@ func convertToInstanceResource(instanceMessage *store.InstanceMessage) (*v1pb.In
 	}
 	return &v1pb.InstanceResource{
 		Name:          instance.Name,
-		State:         instance.State,
-		Uid:           instance.Uid,
 		Title:         instance.Title,
 		Engine:        instance.Engine,
 		EngineVersion: instance.EngineVersion,
