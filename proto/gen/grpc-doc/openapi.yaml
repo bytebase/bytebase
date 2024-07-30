@@ -10472,6 +10472,19 @@ components:
         InstanceResource:
             type: object
             properties:
+                name:
+                    type: string
+                uid:
+                    readOnly: true
+                    type: string
+                    description: The system-assigned, unique identifier for a resource.
+                state:
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
+                    format: enum
                 title:
                     type: string
                 engine:
@@ -10512,11 +10525,6 @@ components:
                         $ref: '#/components/schemas/DataSource'
                 activation:
                     type: boolean
-                name:
-                    type: string
-                    description: |-
-                        The name of the instance.
-                         Format: instances/{instance}
                 environment:
                     type: string
                     description: |-

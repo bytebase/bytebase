@@ -90,6 +90,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
       getQuickActionList: () => {
         return ["quickaction.bb.instance.create"];
       },
+      requiredWorkspacePermissionList: () => ["bb.instances.list"],
     },
     components: {
       content: () => import("@/views/InstanceDashboard.vue"),
@@ -160,12 +161,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    // "u" stands for user. Strictly speaking, it's not accurate because we
-    // may refer to other principal type in the future. But from the endusers'
-    // perspective, they are more familiar with the "user" concept.
-    // We make an exception to use a shorthand here because it's a commonly
-    // accessed endpoint, and maybe in the future, we will further provide a
-    // shortlink such as users/<<email>>
     path: "users/:principalEmail",
     name: WORKSPACE_ROUTE_USER_PROFILE,
     components: {

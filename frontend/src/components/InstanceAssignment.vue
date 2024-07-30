@@ -136,12 +136,16 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useInstanceV1Store,
-  useInstanceV1List,
   useSubscriptionV1Store,
   useDatabaseV1Store,
   useCurrentUserV1,
+  useInstanceResourceList,
 } from "@/store";
 import type { ComposedInstance } from "@/types";
+import {
+  Instance,
+  type InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import {
   instanceV1Name,
   hostPortOfInstanceV1,
@@ -177,7 +181,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 
-const { instanceList } = useInstanceV1List(false /* !showDeleted */);
+const instanceList = useInstanceResourceList();
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
 const columnList = computed(() => {
@@ -254,7 +258,7 @@ const allSelectionState = computed(() => {
 });
 
 const toggleSelectInstance = (
-  instance: ComposedInstance,
+  instance: InstanceResource,
   selected: boolean
 ) => {
   if (selected) {
@@ -298,8 +302,11 @@ const updateAssignment = async () => {
     if (instance.activation && !selectedInstanceName.has(instance.name)) {
       // deactivate instance
       instance.activation = false;
-      await instanceV1Store.updateInstance(instance, ["activation"]);
-      databaseV1Store.updateDatabaseInstance(instance);
+      const composedInstance = await instanceV1Store.updateInstance(
+        Instance.fromPartial(instance),
+        ["activation"]
+      );
+      databaseV1Store.updateDatabaseInstance(composedInstance);
     }
     if (instance.activation && selectedInstanceName.has(instance.name)) {
       // remove unchanged
@@ -314,8 +321,11 @@ const updateAssignment = async () => {
     }
     // activate instance
     instance.activation = true;
-    await instanceV1Store.updateInstance(instance, ["activation"]);
-    databaseV1Store.updateDatabaseInstance(instance);
+    const composedInstance = await instanceV1Store.updateInstance(
+      Instance.fromPartial(instance),
+      ["activation"]
+    );
+    databaseV1Store.updateDatabaseInstance(composedInstance);
   }
 
   pushNotification({

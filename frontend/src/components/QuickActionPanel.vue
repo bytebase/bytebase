@@ -130,12 +130,12 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
-  useInstanceV1Store,
   useCommandStore,
   useCurrentUserIamPolicy,
   useSubscriptionV1Store,
   useProjectV1Store,
   useProjectV1List,
+  useInstanceResourceList,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type {
@@ -229,8 +229,8 @@ const transferDatabase = () => {
 };
 
 const createInstance = () => {
-  const instanceList = useInstanceV1Store().activeInstanceList;
-  if (subscriptionStore.instanceCountLimit <= instanceList.length) {
+  const instanceList = useInstanceResourceList();
+  if (subscriptionStore.instanceCountLimit <= instanceList.value.length) {
     state.feature = "bb.feature.instance-count";
     return;
   }
