@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -20,41 +19,31 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var instanceMetadata db.InstanceMetadata
-
 	// version.
 	version, err := d.getVerison()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch version from Elasticsearch server")
 	}
 
-	// indices.
-	dbSchemaMetadata, err := d.SyncDBSchema(ctx)
+	// databases.
+	dbMetadata, err := d.SyncDBSchema(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch indices from Elasticsearch server")
 	}
 
 	// roles.
-	var instanceRoles []*storepb.InstanceRoleMetadata
-	usersWithRoles, err := d.getUsersWithRoles()
+	instanceRoles, err := d.getInstanceRoles()
 	if err != nil {
 		return nil, err
 	}
-	for userName, roles := range usersWithRoles {
-		privileges, err := d.getUserPrivileges(userName)
-		if err != nil {
-			return nil, err
-		}
-		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
-			Name:  userName,
-			Grant: fmt.Sprintf("[%s]: %s", strings.Join(roles.Roles, ", "), privileges),
-		})
-	}
 
-	instanceMetadata.InstanceRoles = instanceRoles
-	instanceMetadata.Databases = append(instanceMetadata.Databases, dbSchemaMetadata)
-	instanceMetadata.Version = version
-	return &instanceMetadata, nil
+	return &db.InstanceMetadata{
+		Version:   version,
+		Databases: []*storepb.DatabaseSchemaMetadata{dbMetadata},
+		Metadata: &storepb.InstanceMetadata{
+			Roles: instanceRoles,
+		},
+	}, nil
 }
 
 // SyncDBSchema implements db.Driver.
