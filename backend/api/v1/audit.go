@@ -204,6 +204,24 @@ func getRequestResource(request any) string {
 		if r.Risk != nil {
 			return r.Risk.Name
 		}
+	case *v1pb.DeleteRiskRequest:
+		return r.Name
+	case *v1pb.UpdateRiskRequest:
+		if r.Risk != nil {
+			return r.Risk.Name
+		}
+	case *v1pb.CreateEnvironmentRequest:
+		if r.Environment != nil {
+			return r.Environment.Name
+		}
+	case *v1pb.UpdateEnvironmentRequest:
+		if r.Environment != nil {
+			return r.Environment.Name
+		}
+	case *v1pb.DeleteEnvironmentRequest:
+		return r.Name
+	case *v1pb.UndeleteEnvironmentRequest:
+		return r.Name
 	case *v1pb.UpdateSettingRequest:
 		if r.Setting != nil {
 			return r.Setting.Name
