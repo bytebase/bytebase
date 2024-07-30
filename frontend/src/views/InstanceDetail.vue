@@ -149,7 +149,7 @@ const databaseV1List = computed(() => {
 });
 
 const instanceRoleList = computed(() => {
-  return instanceV1Store.getInstanceRoleListByName(instance.value.name);
+  return instance.value.roles;
 });
 
 const allowSyncInstance = computed(() => {
