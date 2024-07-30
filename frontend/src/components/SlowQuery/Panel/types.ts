@@ -12,28 +12,21 @@ export const buildListSlowQueriesRequest = (
 
   const project = scopes.find((s) => s.id === "project")?.value;
   const environment = scopes.find((s) => s.id === "environment")?.value;
-  const instance = scopes.find((s) => s.id === "instance")?.value;
   const database = scopes.find((s) => s.id === "database")?.value;
   const { fromTime, toTime } = timeRange;
 
   const query: string[] = [];
-  request.parent = "instances/-/databases/-";
+  request.parent = `projects/${project}`;
   if (database) {
     const uid = database.split("-").slice(-1)[0];
     const db = useDatabaseV1Store().getDatabaseByUID(uid);
     if (db.uid !== `${UNKNOWN_ID}`) {
-      request.parent = db.name;
+      query.push(`database = "${db.name}"`);
     }
-  } else if (instance) {
-    request.parent = `instances/${instance}/databases/-`;
   } else if (environment) {
-    request.parent = `instances/-/databases/-`;
     query.push(`environment = "environments/${environment}"`);
   }
 
-  if (project) {
-    query.push(`project = "projects/${project}"`);
-  }
   if (fromTime) {
     const start = dayjs(fromTime).toISOString();
     query.push(`start_time >= "${start}"`);

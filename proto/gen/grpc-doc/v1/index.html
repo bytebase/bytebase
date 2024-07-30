@@ -9469,7 +9469,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
+                  <td><p>Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
@@ -9478,10 +9478,10 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td></td>
                   <td><p>The filter of the slow query log.
 follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-Support filter by project and start_time in SlowQueryDetails for now.
+Support filter by database and start_time in SlowQueryDetails for now.
 For example:
-Search the slow query log of the specific project:
-  - the specific project: project = &#34;projects/{project}&#34;
+Search the slow query log of the specific database:
+  - the specific database: database = &#34;instances/{instance}/databases/{database}&#34;
 Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
   - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34;
   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
@@ -11410,7 +11410,7 @@ Search for databases that the caller has the bb.databases.get permission on, and
               <tr>
                 <td>ListSlowQueries</td>
                 <td>GET</td>
-                <td>/v1/{parent=instances/*/databases/*}/slowQueries</td>
+                <td>/v1/{parent=projects/*}/slowQueries</td>
                 <td></td>
               </tr>
               
