@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,12 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	InstanceRoleService_GetInstanceRole_FullMethodName      = "/bytebase.v1.InstanceRoleService/GetInstanceRole"
-	InstanceRoleService_ListInstanceRoles_FullMethodName    = "/bytebase.v1.InstanceRoleService/ListInstanceRoles"
-	InstanceRoleService_CreateInstanceRole_FullMethodName   = "/bytebase.v1.InstanceRoleService/CreateInstanceRole"
-	InstanceRoleService_UpdateInstanceRole_FullMethodName   = "/bytebase.v1.InstanceRoleService/UpdateInstanceRole"
-	InstanceRoleService_DeleteInstanceRole_FullMethodName   = "/bytebase.v1.InstanceRoleService/DeleteInstanceRole"
-	InstanceRoleService_UndeleteInstanceRole_FullMethodName = "/bytebase.v1.InstanceRoleService/UndeleteInstanceRole"
+	InstanceRoleService_GetInstanceRole_FullMethodName   = "/bytebase.v1.InstanceRoleService/GetInstanceRole"
+	InstanceRoleService_ListInstanceRoles_FullMethodName = "/bytebase.v1.InstanceRoleService/ListInstanceRoles"
 )
 
 // InstanceRoleServiceClient is the client API for InstanceRoleService service.
@@ -34,10 +29,6 @@ const (
 type InstanceRoleServiceClient interface {
 	GetInstanceRole(ctx context.Context, in *GetInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
 	ListInstanceRoles(ctx context.Context, in *ListInstanceRolesRequest, opts ...grpc.CallOption) (*ListInstanceRolesResponse, error)
-	CreateInstanceRole(ctx context.Context, in *CreateInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
-	UpdateInstanceRole(ctx context.Context, in *UpdateInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
-	DeleteInstanceRole(ctx context.Context, in *DeleteInstanceRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	UndeleteInstanceRole(ctx context.Context, in *UndeleteInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
 }
 
 type instanceRoleServiceClient struct {
@@ -68,56 +59,12 @@ func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, in *L
 	return out, nil
 }
 
-func (c *instanceRoleServiceClient) CreateInstanceRole(ctx context.Context, in *CreateInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InstanceRole)
-	err := c.cc.Invoke(ctx, InstanceRoleService_CreateInstanceRole_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *instanceRoleServiceClient) UpdateInstanceRole(ctx context.Context, in *UpdateInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InstanceRole)
-	err := c.cc.Invoke(ctx, InstanceRoleService_UpdateInstanceRole_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *instanceRoleServiceClient) DeleteInstanceRole(ctx context.Context, in *DeleteInstanceRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, InstanceRoleService_DeleteInstanceRole_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *instanceRoleServiceClient) UndeleteInstanceRole(ctx context.Context, in *UndeleteInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InstanceRole)
-	err := c.cc.Invoke(ctx, InstanceRoleService_UndeleteInstanceRole_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // InstanceRoleServiceServer is the server API for InstanceRoleService service.
 // All implementations must embed UnimplementedInstanceRoleServiceServer
 // for forward compatibility
 type InstanceRoleServiceServer interface {
 	GetInstanceRole(context.Context, *GetInstanceRoleRequest) (*InstanceRole, error)
 	ListInstanceRoles(context.Context, *ListInstanceRolesRequest) (*ListInstanceRolesResponse, error)
-	CreateInstanceRole(context.Context, *CreateInstanceRoleRequest) (*InstanceRole, error)
-	UpdateInstanceRole(context.Context, *UpdateInstanceRoleRequest) (*InstanceRole, error)
-	DeleteInstanceRole(context.Context, *DeleteInstanceRoleRequest) (*emptypb.Empty, error)
-	UndeleteInstanceRole(context.Context, *UndeleteInstanceRoleRequest) (*InstanceRole, error)
 	mustEmbedUnimplementedInstanceRoleServiceServer()
 }
 
@@ -130,18 +77,6 @@ func (UnimplementedInstanceRoleServiceServer) GetInstanceRole(context.Context, *
 }
 func (UnimplementedInstanceRoleServiceServer) ListInstanceRoles(context.Context, *ListInstanceRolesRequest) (*ListInstanceRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstanceRoles not implemented")
-}
-func (UnimplementedInstanceRoleServiceServer) CreateInstanceRole(context.Context, *CreateInstanceRoleRequest) (*InstanceRole, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateInstanceRole not implemented")
-}
-func (UnimplementedInstanceRoleServiceServer) UpdateInstanceRole(context.Context, *UpdateInstanceRoleRequest) (*InstanceRole, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateInstanceRole not implemented")
-}
-func (UnimplementedInstanceRoleServiceServer) DeleteInstanceRole(context.Context, *DeleteInstanceRoleRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstanceRole not implemented")
-}
-func (UnimplementedInstanceRoleServiceServer) UndeleteInstanceRole(context.Context, *UndeleteInstanceRoleRequest) (*InstanceRole, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UndeleteInstanceRole not implemented")
 }
 func (UnimplementedInstanceRoleServiceServer) mustEmbedUnimplementedInstanceRoleServiceServer() {}
 
@@ -192,78 +127,6 @@ func _InstanceRoleService_ListInstanceRoles_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InstanceRoleService_CreateInstanceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateInstanceRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceRoleServiceServer).CreateInstanceRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstanceRoleService_CreateInstanceRole_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceRoleServiceServer).CreateInstanceRole(ctx, req.(*CreateInstanceRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _InstanceRoleService_UpdateInstanceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateInstanceRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceRoleServiceServer).UpdateInstanceRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstanceRoleService_UpdateInstanceRole_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceRoleServiceServer).UpdateInstanceRole(ctx, req.(*UpdateInstanceRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _InstanceRoleService_DeleteInstanceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteInstanceRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceRoleServiceServer).DeleteInstanceRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstanceRoleService_DeleteInstanceRole_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceRoleServiceServer).DeleteInstanceRole(ctx, req.(*DeleteInstanceRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _InstanceRoleService_UndeleteInstanceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UndeleteInstanceRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceRoleServiceServer).UndeleteInstanceRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstanceRoleService_UndeleteInstanceRole_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceRoleServiceServer).UndeleteInstanceRole(ctx, req.(*UndeleteInstanceRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // InstanceRoleService_ServiceDesc is the grpc.ServiceDesc for InstanceRoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -278,22 +141,6 @@ var InstanceRoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListInstanceRoles",
 			Handler:    _InstanceRoleService_ListInstanceRoles_Handler,
-		},
-		{
-			MethodName: "CreateInstanceRole",
-			Handler:    _InstanceRoleService_CreateInstanceRole_Handler,
-		},
-		{
-			MethodName: "UpdateInstanceRole",
-			Handler:    _InstanceRoleService_UpdateInstanceRole_Handler,
-		},
-		{
-			MethodName: "DeleteInstanceRole",
-			Handler:    _InstanceRoleService_DeleteInstanceRole_Handler,
-		},
-		{
-			MethodName: "UndeleteInstanceRole",
-			Handler:    _InstanceRoleService_UndeleteInstanceRole_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
