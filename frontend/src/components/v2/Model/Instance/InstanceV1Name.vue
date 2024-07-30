@@ -1,9 +1,12 @@
 <template>
   <component
-    :is="link ? 'router-link' : tag"
+    :is="showLink ? 'router-link' : tag"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
-    :class="[link && !plain && 'normal-link', link && 'hover:underline']"
+    :class="[
+      showLink && !plain && 'normal-link',
+      showLink && 'hover:underline',
+    ]"
   >
     <InstanceV1EngineIcon
       v-if="icon && iconPosition === 'prefix'"
@@ -26,11 +29,12 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
+import { useCurrentUserV1 } from "@/store";
 import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
-import { instanceV1Name } from "@/utils";
+import { hasWorkspacePermissionV2, instanceV1Name } from "@/utils";
 import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 
 const props = withDefaults(
@@ -55,6 +59,8 @@ const props = withDefaults(
   }
 );
 
+const currentUser = useCurrentUserV1();
+
 const bindings = computed(() => {
   if (props.link) {
     return {
@@ -68,4 +74,11 @@ const bindings = computed(() => {
   }
   return {};
 });
+
+// Only show the link if the user has permission to view the instance.
+const showLink = computed(
+  () =>
+    props.link &&
+    hasWorkspacePermissionV2(currentUser.value, "bb.instances.get")
+);
 </script>
