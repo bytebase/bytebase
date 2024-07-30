@@ -87,7 +87,7 @@ type Provider interface {
 	// GetBranch gets the given branch in the repository.
 	GetBranch(ctx context.Context, repositoryID, branchName string) (*BranchInfo, error)
 
-	// CreatePullRequest creates the pull request in the repository.
+	// ListPullRequestFile lists changed files in a pull request.
 	ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
 
 	// CreatePullRequestComment creates a pull request comment.
