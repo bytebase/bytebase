@@ -712,8 +712,6 @@ export interface InstanceResource {
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
-  state: State;
-  uid: string;
   roles: InstanceRole[];
 }
 
@@ -3232,8 +3230,6 @@ function createBaseInstanceResource(): InstanceResource {
     activation: false,
     name: "",
     environment: "",
-    state: State.STATE_UNSPECIFIED,
-    uid: "",
     roles: [],
   };
 }
@@ -3260,12 +3256,6 @@ export const InstanceResource = {
     }
     if (message.environment !== "") {
       writer.uint32(58).string(message.environment);
-    }
-    if (message.state !== State.STATE_UNSPECIFIED) {
-      writer.uint32(64).int32(stateToNumber(message.state));
-    }
-    if (message.uid !== "") {
-      writer.uint32(74).string(message.uid);
     }
     for (const v of message.roles) {
       InstanceRole.encode(v!, writer.uint32(82).fork()).ldelim();
@@ -3329,20 +3319,6 @@ export const InstanceResource = {
 
           message.environment = reader.string();
           continue;
-        case 8:
-          if (tag !== 64) {
-            break;
-          }
-
-          message.state = stateFromJSON(reader.int32());
-          continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.uid = reader.string();
-          continue;
         case 10:
           if (tag !== 82) {
             break;
@@ -3370,8 +3346,6 @@ export const InstanceResource = {
       activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
     };
   },
@@ -3399,12 +3373,6 @@ export const InstanceResource = {
     if (message.environment !== "") {
       obj.environment = message.environment;
     }
-    if (message.state !== State.STATE_UNSPECIFIED) {
-      obj.state = stateToJSON(message.state);
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
     if (message.roles?.length) {
       obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
     }
@@ -3423,8 +3391,6 @@ export const InstanceResource = {
     message.activation = object.activation ?? false;
     message.name = object.name ?? "";
     message.environment = object.environment ?? "";
-    message.state = object.state ?? State.STATE_UNSPECIFIED;
-    message.uid = object.uid ?? "";
     message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     return message;
   },
