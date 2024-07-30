@@ -282,7 +282,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, s.profile)
-	contextProvider := apiv1.NewContextProvider(s.store)
 	auditProvider := apiv1.NewAuditInterceptor(s.store)
 	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.iamManager, s.profile)
 	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, s.metricReporter)
@@ -303,7 +302,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		grpc.ChainUnaryInterceptor(
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
-			contextProvider.UnaryInterceptor,
 			aclProvider.ACLInterceptor,
 			auditProvider.AuditInterceptor,
 			recoveryUnaryInterceptor,
@@ -311,7 +309,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		grpc.ChainStreamInterceptor(
 			debugProvider.DebugStreamInterceptor,
 			authProvider.AuthenticationStreamInterceptor,
-			contextProvider.StreamInterceptor,
 			aclProvider.ACLStreamInterceptor,
 			auditProvider.AuditStreamInterceptor,
 			recoveryStreamInterceptor,
@@ -339,13 +336,13 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	planService, rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
 	s.planService, s.rolloutService, s.issueService = planService, rolloutService, issueService
 	// GitOps webhook server.
-	gitOpsServer := gitops.NewService(s.store, s.dbFactory, s.stateCfg, s.licenseService, planService, rolloutService, issueService, s.sheetManager)
+	gitOpsServer := gitops.NewService(s.store, s.stateCfg, s.licenseService, planService, rolloutService, issueService, sqlService, s.sheetManager)
 
 	// Configure echo server routes.
 	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, mux, profile)

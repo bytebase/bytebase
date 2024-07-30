@@ -500,11 +500,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchSyncInstanceRequest"><span class="badge">M</span>BatchSyncInstanceRequest</a>
+                  <a href="#bytebase.v1.BatchSyncInstancesRequest"><span class="badge">M</span>BatchSyncInstancesRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchSyncInstanceResponse"><span class="badge">M</span>BatchSyncInstanceResponse</a>
+                  <a href="#bytebase.v1.BatchSyncInstancesResponse"><span class="badge">M</span>BatchSyncInstancesResponse</a>
                 </li>
               
                 <li>
@@ -1526,6 +1526,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceQueryPolicy"><span class="badge">M</span>DataSourceQueryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DeletePolicyRequest"><span class="badge">M</span>DeletePolicyRequest</a>
                 </li>
               
@@ -1601,6 +1605,10 @@
                   <a href="#bytebase.v1.UpdatePolicyRequest"><span class="badge">M</span>UpdatePolicyRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceQueryPolicy.Restriction"><span class="badge">E</span>DataSourceQueryPolicy.Restriction</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.MaskingExceptionPolicy.MaskingException.Action"><span class="badge">E</span>MaskingExceptionPolicy.MaskingException.Action</a>
@@ -3142,13 +3150,6 @@
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>deploy_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>deploy_id is the identifier for the started bytebase service deployment. </p></td>
                 </tr>
               
             </tbody>
@@ -5634,7 +5635,7 @@ Could be empty. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to add a data source to.
@@ -5663,7 +5664,7 @@ Only READ_ONLY data source can be added. </p></td>
 
         
       
-        <h3 id="bytebase.v1.BatchSyncInstanceRequest">BatchSyncInstanceRequest</h3>
+        <h3 id="bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</h3>
         <p></p>
 
         
@@ -5688,7 +5689,7 @@ A maximum of 1000 instances can be synced in a batch. </p></td>
 
         
       
-        <h3 id="bytebase.v1.BatchSyncInstanceResponse">BatchSyncInstanceResponse</h3>
+        <h3 id="bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</h3>
         <p></p>
 
         
@@ -6479,7 +6480,8 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent parameter&#39;s value depends on the target resource for the request.
+                  <td><p>Deprecated.
+The parent parameter&#39;s value depends on the target resource for the request.
 - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to.
 - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. </p></td>
                 </tr>
@@ -6562,7 +6564,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to remove a data source from.
@@ -6759,7 +6761,7 @@ Format: instances/{instance} </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to update a data source.
@@ -7091,9 +7093,9 @@ Format: instances/{instance} </p></td>
               </tr>
             
               <tr>
-                <td>BatchSyncInstance</td>
-                <td><a href="#bytebase.v1.BatchSyncInstanceRequest">BatchSyncInstanceRequest</a></td>
-                <td><a href="#bytebase.v1.BatchSyncInstanceResponse">BatchSyncInstanceResponse</a></td>
+                <td>BatchSyncInstances</td>
+                <td><a href="#bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</a></td>
+                <td><a href="#bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -7240,7 +7242,7 @@ Format: instances/{instance} </p></td>
               
               
               <tr>
-                <td>BatchSyncInstance</td>
+                <td>BatchSyncInstances</td>
                 <td>POST</td>
                 <td>/v1/instances:batchSync</td>
                 <td>*</td>
@@ -7252,7 +7254,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>AddDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:addDataSource</td>
+                <td>/v1/{name=instances/*}:addDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7262,7 +7264,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>RemoveDataSource</td>
                 <td>POST</td>
-                <td>/v1/{instance=instances/*}:removeDataSource</td>
+                <td>/v1/{name=instances/*}:removeDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -7272,7 +7274,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>UpdateDataSource</td>
                 <td>PATCH</td>
-                <td>/v1/{instance=instances/*}:updateDataSource</td>
+                <td>/v1/{name=instances/*}:updateDataSource</td>
                 <td>*</td>
               </tr>
               
@@ -14651,7 +14653,7 @@ The role name is the unique name for the role. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the role.
-Format: instances/{instance}/roles/{role name}
+Format: instances/{instance}/roles/{role}
 The role name is the unique name for the role. </p></td>
                 </tr>
               
@@ -15807,18 +15809,17 @@ Keys are the following:
                 </tr>
               
                 <tr>
-                  <td>from_assignee</td>
+                  <td>from_labels</td>
                   <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>TODO(d): deprecate from_assignee and to_assignee.
-Format: users/{email} </p></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>to_assignee</td>
+                  <td>to_labels</td>
                   <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Format: users/{email} </p></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -16998,6 +16999,30 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
 
         
       
+        <h3 id="bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>admin_data_source_restriction</td>
+                  <td><a href="#bytebase.v1.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DeletePolicyRequest">DeletePolicyRequest</h3>
         <p></p>
 
@@ -17485,6 +17510,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>data_source_query_policy</td>
+                  <td><a href="#bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -17762,6 +17794,35 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
+        <h3 id="bytebase.v1.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RESTRICTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FALLBACK</td>
+                <td>1</td>
+                <td><p>Allow to query admin data sources when there is no read-only data source.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW</td>
+                <td>2</td>
+                <td><p>Disallow to query admin data sources.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</h3>
         <p></p>
         <table class="enum-table">
@@ -17897,6 +17958,12 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>TAG</td>
                 <td>13</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA_SOURCE_QUERY</td>
+                <td>14</td>
                 <td><p></p></td>
               </tr>
             
@@ -18227,7 +18294,8 @@ Format: projects/{project}/plans/{plan} </p></td>
                   <td>plan_check_runs</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The planCheckRuns to cancel.
+                  <td><p>TODO(d): update this API.
+The planCheckRuns to cancel.
 Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} </p></td>
                 </tr>
               
@@ -21552,7 +21620,7 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to delete.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
             </tbody>
@@ -21577,7 +21645,7 @@ Format: reviewConfigs/{uid} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
             </tbody>
@@ -21671,7 +21739,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the sql review to retrieve.
-Format: reviewConfigs/{uid} </p></td>
+Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
                 <tr>
@@ -21745,7 +21813,7 @@ Format: {resurce}/{resource id}, for example, environments/test. </p></td>
                   <td>review_config</td>
                   <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
                   <td></td>
-                  <td><p>The sql review toupdate.
+                  <td><p>The sql review to update.
 
 The name field is used to identify the sql review to update. </p></td>
                 </tr>
@@ -22807,7 +22875,8 @@ Format: projects/{project}/rollouts/{rollout} </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+TODO(d): check the resource_reference. </p></td>
                 </tr>
               
             </tbody>
@@ -28835,13 +28904,6 @@ to retrieve the next page of history. </p></td>
                 <td>Execute</td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*/databases/*}:execute</td>
-                <td>*</td>
-              </tr>
-              
-              <tr>
-                <td>Execute</td>
-                <td>POST</td>
-                <td>/v1/{name=instances/*}:execute</td>
                 <td>*</td>
               </tr>
               

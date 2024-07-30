@@ -46,9 +46,8 @@ type TableReference struct {
 type statementInfo struct {
 	offset    int
 	statement string
-	tree      antlr.Tree
+	tree      antlr.ParserRuleContext
 	table     *TableReference
-	line      int
 }
 
 func TransformDMLToSelect(_ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
@@ -104,9 +103,18 @@ func generateSQL(statementInfoList []statementInfo, targetDatabase string, table
 			return nil, errors.Wrap(err, "failed to write buffer")
 		}
 		result = append(result, base.BackupStatement{
-			Statement:    buf.String(),
-			TableName:    targetTable,
-			OriginalLine: statementInfo.line,
+			Statement:       buf.String(),
+			SourceSchema:    table.Schema,
+			SourceTableName: table.Table,
+			TargetTableName: targetTable,
+			StartPosition: &storepb.Position{
+				Line:   int32(statementInfo.tree.GetStart().GetLine()),
+				Column: int32(statementInfo.tree.GetStart().GetColumn()),
+			},
+			EndPosition: &storepb.Position{
+				Line:   int32(statementInfo.tree.GetStop().GetLine()),
+				Column: int32(statementInfo.tree.GetStop().GetColumn()),
+			},
 		})
 	}
 	return result, nil
@@ -326,7 +334,6 @@ func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
-			line:      ctx.GetStart().GetLine(),
 		})
 	}
 }
@@ -348,7 +355,6 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
-			line:      ctx.GetStart().GetLine(),
 		})
 	}
 }

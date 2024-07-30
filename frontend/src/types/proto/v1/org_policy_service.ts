@@ -27,6 +27,7 @@ export enum PolicyType {
   MASKING_EXCEPTION = "MASKING_EXCEPTION",
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW",
   TAG = "TAG",
+  DATA_SOURCE_QUERY = "DATA_SOURCE_QUERY",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -59,6 +60,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 13:
     case "TAG":
       return PolicyType.TAG;
+    case 14:
+    case "DATA_SOURCE_QUERY":
+      return PolicyType.DATA_SOURCE_QUERY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -86,6 +90,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW";
     case PolicyType.TAG:
       return "TAG";
+    case PolicyType.DATA_SOURCE_QUERY:
+      return "DATA_SOURCE_QUERY";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -112,6 +118,8 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 12;
     case PolicyType.TAG:
       return 13;
+    case PolicyType.DATA_SOURCE_QUERY:
+      return 14;
     case PolicyType.UNRECOGNIZED:
     default:
       return -1;
@@ -375,6 +383,7 @@ export interface Policy {
   maskingExceptionPolicy?: MaskingExceptionPolicy | undefined;
   restrictIssueCreationForSqlReviewPolicy?: RestrictIssueCreationForSQLReviewPolicy | undefined;
   tagPolicy?: TagPolicy | undefined;
+  dataSourceQueryPolicy?: DataSourceQueryPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -528,6 +537,65 @@ export interface TagPolicy {
 export interface TagPolicy_TagsEntry {
   key: string;
   value: string;
+}
+
+export interface DataSourceQueryPolicy {
+  adminDataSourceRestriction: DataSourceQueryPolicy_Restriction;
+}
+
+export enum DataSourceQueryPolicy_Restriction {
+  RESTRICTION_UNSPECIFIED = "RESTRICTION_UNSPECIFIED",
+  /** FALLBACK - Allow to query admin data sources when there is no read-only data source. */
+  FALLBACK = "FALLBACK",
+  /** DISALLOW - Disallow to query admin data sources. */
+  DISALLOW = "DISALLOW",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function dataSourceQueryPolicy_RestrictionFromJSON(object: any): DataSourceQueryPolicy_Restriction {
+  switch (object) {
+    case 0:
+    case "RESTRICTION_UNSPECIFIED":
+      return DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED;
+    case 1:
+    case "FALLBACK":
+      return DataSourceQueryPolicy_Restriction.FALLBACK;
+    case 2:
+    case "DISALLOW":
+      return DataSourceQueryPolicy_Restriction.DISALLOW;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceQueryPolicy_Restriction.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceQueryPolicy_RestrictionToJSON(object: DataSourceQueryPolicy_Restriction): string {
+  switch (object) {
+    case DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED:
+      return "RESTRICTION_UNSPECIFIED";
+    case DataSourceQueryPolicy_Restriction.FALLBACK:
+      return "FALLBACK";
+    case DataSourceQueryPolicy_Restriction.DISALLOW:
+      return "DISALLOW";
+    case DataSourceQueryPolicy_Restriction.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function dataSourceQueryPolicy_RestrictionToNumber(object: DataSourceQueryPolicy_Restriction): number {
+  switch (object) {
+    case DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED:
+      return 0;
+    case DataSourceQueryPolicy_Restriction.FALLBACK:
+      return 1;
+    case DataSourceQueryPolicy_Restriction.DISALLOW:
+      return 2;
+    case DataSourceQueryPolicy_Restriction.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -1033,6 +1101,7 @@ function createBasePolicy(): Policy {
     maskingExceptionPolicy: undefined,
     restrictIssueCreationForSqlReviewPolicy: undefined,
     tagPolicy: undefined,
+    dataSourceQueryPolicy: undefined,
     enforce: false,
     resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
     resourceUid: "",
@@ -1079,6 +1148,9 @@ export const Policy = {
     }
     if (message.tagPolicy !== undefined) {
       TagPolicy.encode(message.tagPolicy, writer.uint32(170).fork()).ldelim();
+    }
+    if (message.dataSourceQueryPolicy !== undefined) {
+      DataSourceQueryPolicy.encode(message.dataSourceQueryPolicy, writer.uint32(178).fork()).ldelim();
     }
     if (message.enforce === true) {
       writer.uint32(104).bool(message.enforce);
@@ -1186,6 +1258,13 @@ export const Policy = {
 
           message.tagPolicy = TagPolicy.decode(reader, reader.uint32());
           continue;
+        case 22:
+          if (tag !== 178) {
+            break;
+          }
+
+          message.dataSourceQueryPolicy = DataSourceQueryPolicy.decode(reader, reader.uint32());
+          continue;
         case 13:
           if (tag !== 104) {
             break;
@@ -1238,6 +1317,9 @@ export const Policy = {
         ? RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy)
         : undefined,
       tagPolicy: isSet(object.tagPolicy) ? TagPolicy.fromJSON(object.tagPolicy) : undefined,
+      dataSourceQueryPolicy: isSet(object.dataSourceQueryPolicy)
+        ? DataSourceQueryPolicy.fromJSON(object.dataSourceQueryPolicy)
+        : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType)
         ? policyResourceTypeFromJSON(object.resourceType)
@@ -1285,6 +1367,9 @@ export const Policy = {
     }
     if (message.tagPolicy !== undefined) {
       obj.tagPolicy = TagPolicy.toJSON(message.tagPolicy);
+    }
+    if (message.dataSourceQueryPolicy !== undefined) {
+      obj.dataSourceQueryPolicy = DataSourceQueryPolicy.toJSON(message.dataSourceQueryPolicy);
     }
     if (message.enforce === true) {
       obj.enforce = message.enforce;
@@ -1335,6 +1420,10 @@ export const Policy = {
     message.tagPolicy = (object.tagPolicy !== undefined && object.tagPolicy !== null)
       ? TagPolicy.fromPartial(object.tagPolicy)
       : undefined;
+    message.dataSourceQueryPolicy =
+      (object.dataSourceQueryPolicy !== undefined && object.dataSourceQueryPolicy !== null)
+        ? DataSourceQueryPolicy.fromPartial(object.dataSourceQueryPolicy)
+        : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
     message.resourceUid = object.resourceUid ?? "";
@@ -2437,6 +2526,68 @@ export const TagPolicy_TagsEntry = {
   },
 };
 
+function createBaseDataSourceQueryPolicy(): DataSourceQueryPolicy {
+  return { adminDataSourceRestriction: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED };
+}
+
+export const DataSourceQueryPolicy = {
+  encode(message: DataSourceQueryPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED) {
+      writer.uint32(8).int32(dataSourceQueryPolicy_RestrictionToNumber(message.adminDataSourceRestriction));
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataSourceQueryPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceQueryPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.adminDataSourceRestriction = dataSourceQueryPolicy_RestrictionFromJSON(reader.int32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceQueryPolicy {
+    return {
+      adminDataSourceRestriction: isSet(object.adminDataSourceRestriction)
+        ? dataSourceQueryPolicy_RestrictionFromJSON(object.adminDataSourceRestriction)
+        : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+    };
+  },
+
+  toJSON(message: DataSourceQueryPolicy): unknown {
+    const obj: any = {};
+    if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED) {
+      obj.adminDataSourceRestriction = dataSourceQueryPolicy_RestrictionToJSON(message.adminDataSourceRestriction);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSourceQueryPolicy>): DataSourceQueryPolicy {
+    return DataSourceQueryPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSourceQueryPolicy>): DataSourceQueryPolicy {
+    const message = createBaseDataSourceQueryPolicy();
+    message.adminDataSourceRestriction = object.adminDataSourceRestriction ??
+      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED;
+    return message;
+  },
+};
+
 export type OrgPolicyServiceDefinition = typeof OrgPolicyServiceDefinition;
 export const OrgPolicyServiceDefinition = {
   name: "OrgPolicyService",
@@ -2452,6 +2603,7 @@ export const OrgPolicyServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           800010: [new Uint8Array([15, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               185,
@@ -2656,6 +2808,7 @@ export const OrgPolicyServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([0])],
           800010: [new Uint8Array([16, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               176,
@@ -2853,6 +3006,7 @@ export const OrgPolicyServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               216,
@@ -3092,6 +3246,7 @@ export const OrgPolicyServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               132,
@@ -3373,6 +3528,7 @@ export const OrgPolicyServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 100, 101, 108, 101, 116, 101]),
           ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               185,

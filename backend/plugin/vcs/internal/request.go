@@ -15,6 +15,16 @@ func Post(ctx context.Context, url string, authorization string, body []byte) (c
 	return request(ctx, http.MethodPost, url, authorization, nil, bytes.NewReader(body))
 }
 
+// Patch makes a HTTP PATCH request to the given URL.
+func Patch(ctx context.Context, url string, authorization string, body []byte) (code int, respBody string, err error) {
+	return request(ctx, http.MethodPatch, url, authorization, nil, bytes.NewReader(body))
+}
+
+// Put makes a HTTP PUT request to the given URL.
+func Put(ctx context.Context, url string, authorization string, body []byte) (code int, respBody string, err error) {
+	return request(ctx, http.MethodPut, url, authorization, nil, bytes.NewReader(body))
+}
+
 // Get makes a HTTP GET request to the given URL.
 func Get(ctx context.Context, url string, authorization string) (code int, respBody string, err error) {
 	return request(ctx, http.MethodGet, url, authorization, nil, bytes.NewReader(nil))

@@ -18,6 +18,7 @@ service RiskService {
     option (google.api.http) = {get: "/v1/risks"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.risks.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc CreateRisk(CreateRiskRequest) returns (Risk) {
@@ -27,6 +28,7 @@ service RiskService {
     };
     option (google.api.method_signature) = "risk";
     option (bytebase.v1.permission) = "bb.risks.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
@@ -36,11 +38,13 @@ service RiskService {
     };
     option (google.api.method_signature) = "risk,update_mask";
     option (bytebase.v1.permission) = "bb.risks.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DeleteRisk(DeleteRiskRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=risks/*}"};
     option (bytebase.v1.permission) = "bb.risks.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

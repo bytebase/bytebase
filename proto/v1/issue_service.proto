@@ -524,17 +524,17 @@ message IssueComment {
   }
 
   message IssueUpdate {
+    reserved 7, 8;
+
     optional string from_title = 1;
     optional string to_title = 2;
     optional string from_description = 3;
     optional string to_description = 4;
     optional IssueStatus from_status = 5;
     optional IssueStatus to_status = 6;
-    // TODO(d): deprecate from_assignee and to_assignee.
-    // Format: users/{email}
-    optional string from_assignee = 7;
-    // Format: users/{email}
-    optional string to_assignee = 8;
+
+    repeated string from_labels = 9;
+    repeated string to_labels = 10;
   }
 
   message StageEnd {

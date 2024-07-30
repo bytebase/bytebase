@@ -6,10 +6,12 @@ import (
 	"reflect"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/pkg/errors"
 
@@ -37,7 +39,7 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 	}
 }
 
-func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, rerr error) error {
+func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -54,19 +56,21 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 
 	st, _ := status.FromError(rerr)
 
-	projectIDs, ok := common.GetProjectIDsFromContext(ctx)
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return errors.Errorf("failed to get projects ids from context")
+		return status.Errorf(codes.Internal, "auth context not found")
 	}
+
 	var parents []string
-	if len(projectIDs) == 0 {
+	if authContext.HasWorkspaceResource() {
 		workspaceID, err := storage.GetWorkspaceID(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get workspace id")
 		}
 		parents = append(parents, common.FormatWorkspace(workspaceID))
 	} else {
-		for _, projectID := range projectIDs {
+		for _, projectID := range authContext.GetProjectResources() {
 			parents = append(parents, common.FormatProject(projectID))
 		}
 	}
@@ -74,14 +78,15 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, parent := range parents {
 		p := &storepb.AuditLog{
-			Parent:   parent,
-			Method:   method,
-			Resource: getRequestResource(request),
-			Severity: storepb.AuditLog_INFO,
-			User:     user,
-			Request:  requestString,
-			Response: responseString,
-			Status:   st.Proto(),
+			Parent:      parent,
+			Method:      method,
+			Resource:    getRequestResource(request),
+			Severity:    storepb.AuditLog_INFO,
+			User:        user,
+			Request:     requestString,
+			Response:    responseString,
+			Status:      st.Proto(),
+			ServiceData: serviceData,
 		}
 		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
 			return errors.Wrapf(err, "failed to create audit log")
@@ -92,9 +97,15 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 }
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	var serviceData *anypb.Any
+	ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
+		serviceData = a
+	})
 	response, rerr := handler(ctx, request)
 	if isAuditMethod(serverInfo.FullMethod) {
-		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, rerr); err != nil {
+		if err := func() error {
+			return createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr)
+		}(); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
@@ -129,7 +140,7 @@ func (s *AuditStream) SendMsg(resp any) error {
 	}
 	// audit log.
 	if s.needAudit && s.curRequest != nil {
-		if auditErr := createAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil); auditErr != nil {
+		if auditErr := createAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil, nil); auditErr != nil {
 			return auditErr
 		}
 	}
@@ -153,7 +164,7 @@ func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream
 
 	err := handler(srv, auditStream)
 	if err != nil {
-		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, err)
+		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, nil, err)
 	}
 
 	return nil
@@ -231,6 +242,14 @@ func getRequestString(request any) (string, error) {
 			return r
 		case *v1pb.DeleteRiskRequest:
 			return r
+		case *v1pb.CreateEnvironmentRequest:
+			return r
+		case *v1pb.DeleteEnvironmentRequest:
+			return r
+		case *v1pb.UndeleteInstanceRequest:
+			return r
+		case *v1pb.UpdateEnvironmentRequest:
+			return r
 		case *v1pb.UpdateSettingRequest:
 			return r
 		default:
@@ -272,6 +291,8 @@ func getResponseString(response any) (string, error) {
 		case *v1pb.Issue:
 			return r
 		case *v1pb.Risk:
+			return r
+		case *v1pb.Environment:
 			return r
 		case *v1pb.Setting:
 			return r
@@ -404,14 +425,18 @@ func isAuditMethod(method string) bool {
 		v1pb.AuthService_Login_FullMethodName,
 		v1pb.AuthService_CreateUser_FullMethodName,
 		v1pb.AuthService_UpdateUser_FullMethodName,
+		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
-		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,
 		v1pb.RiskService_DeleteRisk_FullMethodName,
 		v1pb.RiskService_UpdateRisk_FullMethodName,
+		v1pb.EnvironmentService_CreateEnvironment_FullMethodName,
+		v1pb.EnvironmentService_UpdateEnvironment_FullMethodName,
+		v1pb.EnvironmentService_DeleteEnvironment_FullMethodName,
+		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
 		v1pb.SettingService_UpdateSetting_FullMethodName:
 		return true
 	default:

@@ -71,7 +71,7 @@
             :allow-admin="false"
             :factor-list="FactorList"
             :factor-support-dropdown="factorSupportDropdown"
-            :factor-options-map="DatabaseGroupFactorOptionsMap()"
+            :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
           />
         </div>
         <div class="col-span-2">

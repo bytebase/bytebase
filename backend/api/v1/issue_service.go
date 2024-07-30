@@ -1342,6 +1342,18 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				}
 				patch.PayloadUpsert.Labels = request.Issue.Labels
 			}
+
+			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_IssueUpdate_{
+						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+							FromLabels: issue.Payload.Labels,
+							ToLabels:   request.Issue.Labels,
+						},
+					},
+				},
+			})
 		}
 	}
 

@@ -59,10 +59,8 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const { isCreating, issue, isInitializing, reInitialize } = useInitializeIssue(
-  toRef(props, "issueSlug"),
-  toRef(props, "projectId")
-);
+const { isCreating, issue, isInitializing, reInitialize, allowEditIssue } =
+  useInitializeIssue(toRef(props, "issueSlug"), toRef(props, "projectId"));
 const ready = computed(() => {
   return !isInitializing.value && !!issue.value;
 });
@@ -80,6 +78,7 @@ provideIssueContext(
     issue,
     ready,
     reInitialize,
+    allowEditIssue,
     ...issueBaseContext,
   },
   true /* root */

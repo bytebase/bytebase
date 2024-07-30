@@ -5,10 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -397,6 +401,122 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 			require.Equal(t, tc.wantCfg, cfg)
+		}
+	}
+}
+
+func TestFindIamPolicyDeltas(t *testing.T) {
+	tests := []struct {
+		oldPolicy    *storepb.IamPolicy
+		newIamPolicy *storepb.IamPolicy
+		want         []*v1pb.BindingDelta
+	}{
+		// test with redundant roles.
+		{
+			oldPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{},
+					},
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{},
+					},
+				},
+			},
+			newIamPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{},
+					},
+				},
+			},
+			want: nil,
+		},
+		// simply test remove and add.
+		{
+			oldPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{
+							Expression: "time > 500",
+						},
+					},
+				},
+			},
+			newIamPolicy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role: "roles/projectQuerier",
+						Members: []string{
+							"usr103",
+						},
+						Condition: &expr.Expr{
+							Expression: "time > 1000",
+						},
+					},
+					{
+						Role: "roles/projectOwner",
+						Members: []string{
+							"usr101",
+							"usr102",
+						},
+						Condition: &expr.Expr{},
+					},
+				},
+			},
+			want: []*v1pb.BindingDelta{
+				{
+					Action: v1pb.BindingDelta_ADD,
+					Member: "usr103",
+					Role:   "roles/projectQuerier",
+					Condition: &expr.Expr{
+						Expression: "time > 1000",
+					},
+				},
+				{
+					Action:    v1pb.BindingDelta_ADD,
+					Member:    "usr101",
+					Role:      "roles/projectOwner",
+					Condition: &expr.Expr{},
+				},
+				{
+					Action:    v1pb.BindingDelta_ADD,
+					Member:    "usr102",
+					Role:      "roles/projectOwner",
+					Condition: &expr.Expr{},
+				},
+				{
+					Action: v1pb.BindingDelta_REMOVE,
+					Member: "usr103",
+					Role:   "roles/projectQuerier",
+					Condition: &expr.Expr{
+						Expression: "time > 500",
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		deltas := findIamPolicyDeltas(test.oldPolicy, test.newIamPolicy)
+		if !cmp.Equal(test.want, deltas, cmpopts.IgnoreUnexported(v1pb.BindingDelta{}, expr.Expr{})) {
+			t.Fatalf("%v != %v", test.want, deltas)
 		}
 	}
 }

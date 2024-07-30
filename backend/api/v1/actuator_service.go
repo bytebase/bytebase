@@ -151,7 +151,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		Lsp:                s.profile.Lsp,
 		PreUpdateBackup:    s.profile.PreUpdateBackup,
 		UnlicensedFeatures: unlicensedFeaturesString,
-		DeployId:           s.profile.DeployID,
 	}
 
 	return &serverInfo, nil

@@ -185,7 +185,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 
 	statement := request.Statement
 	// Run SQL review.
-	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
+	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	// Run SQL review.
-	if _, _, err = s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */); err != nil {
+	if _, _, err = s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */); err != nil {
 		return nil, err
 	}
 
@@ -709,7 +709,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Run SQL review.
-	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
+	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}
@@ -1178,7 +1178,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 			return nil, err
 		}
 	}
-	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, instance, database, overideMetadata)
+	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, request.ChangeType, instance, database, overideMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -1188,10 +1188,10 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 	}, nil
 }
 
-// sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
+// SQLReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
-func (s *SQLService) sqlReviewCheck(
+func (s *SQLService) SQLReviewCheck(
 	ctx context.Context,
 	statement string,
 	changeType v1pb.CheckRequest_ChangeType,
@@ -1199,39 +1199,27 @@ func (s *SQLService) sqlReviewCheck(
 	database *store.DatabaseMessage,
 	overrideMetadata *storepb.DatabaseSchemaMetadata,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !IsSQLReviewSupported(instance.Engine) || database == nil {
+	if !isSQLReviewSupported(instance.Engine) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
 	dbMetadata := overrideMetadata
 	if dbMetadata == nil {
-		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		metadata, err := getDatabaseMetadata(ctx, s.store, s.schemaSyncer, database)
 		if err != nil {
-			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if dbSchema == nil {
-			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-				return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to sync database schema: %v", err)
-			}
-			dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
-			if err != nil {
-				return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
-			}
-			if dbSchema == nil {
-				return storepb.Advice_ERROR, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
-			}
-		}
-		dbMetadata = dbSchema.GetMetadata()
+		dbMetadata = metadata
 	}
 
 	catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
 	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
 	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
@@ -1248,35 +1236,46 @@ func (s *SQLService) sqlReviewCheck(
 		CurrentDatabase: database.DatabaseName,
 	}
 
-	adviceLevel, adviceList, err := s.sqlCheck(
+	return s.sqlCheck(
 		ctx,
 		statement,
 		database,
 		context,
 	)
-	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "Failed to check SQL review policy: %v", err)
-	}
-
-	return adviceLevel, convertAdviceList(adviceList), nil
 }
 
-func convertAdviceList(list []*storepb.Advice) []*v1pb.Advice {
-	var result []*v1pb.Advice
-	for _, advice := range list {
-		result = append(result, &v1pb.Advice{
-			Status:        convertAdviceStatus(advice.Status),
-			Code:          int32(advice.Code),
-			Title:         advice.Title,
-			Content:       advice.Content,
-			Line:          int32(advice.GetStartPosition().GetLine()),
-			Column:        int32(advice.GetStartPosition().GetColumn()),
-			Detail:        advice.Detail,
-			StartPosition: convertToPosition(advice.StartPosition),
-			EndPosition:   convertToPosition(advice.EndPosition),
-		})
+func getDatabaseMetadata(ctx context.Context, stores *store.Store, schemaSyncer *schemasync.Syncer, database *store.DatabaseMessage) (*storepb.DatabaseSchemaMetadata, error) {
+	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 	}
-	return result
+	if dbSchema == nil {
+		if err := schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+			return nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
+		}
+		dbSchema, err = stores.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+		}
+		if dbSchema == nil {
+			return nil, errors.Wrapf(err, "cannot found schema for database %v", database.UID)
+		}
+	}
+	return dbSchema.GetMetadata(), nil
+}
+
+func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
+	return &v1pb.Advice{
+		Status:        convertAdviceStatus(advice.Status),
+		Code:          int32(advice.Code),
+		Title:         advice.Title,
+		Content:       advice.Content,
+		Line:          int32(advice.GetStartPosition().GetLine()),
+		Column:        int32(advice.GetStartPosition().GetColumn()),
+		Detail:        advice.Detail,
+		StartPosition: convertToPosition(advice.StartPosition),
+		EndPosition:   convertToPosition(advice.EndPosition),
+	}
 }
 
 func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
@@ -1297,19 +1296,19 @@ func (s *SQLService) sqlCheck(
 	statement string,
 	database *store.DatabaseMessage,
 	context advisor.SQLReviewCheckContext,
-) (storepb.Advice_Status, []*storepb.Advice, error) {
-	var adviceList []*storepb.Advice
+) (storepb.Advice_Status, []*v1pb.Advice, error) {
+	var adviceList []*v1pb.Advice
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return storepb.Advice_SUCCESS, nil, nil
 		}
-		return storepb.Advice_ERROR, nil, err
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
 	}
 
 	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
 	if err != nil {
-		return storepb.Advice_ERROR, nil, err
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to exec SQL review with error: %v", err)
 	}
 
 	adviceLevel := storepb.Advice_SUCCESS
@@ -1321,11 +1320,11 @@ func (s *SQLService) sqlCheck(
 			}
 		case storepb.Advice_ERROR:
 			adviceLevel = storepb.Advice_ERROR
-		case storepb.Advice_SUCCESS:
+		case storepb.Advice_SUCCESS, storepb.Advice_STATUS_UNSPECIFIED:
 			continue
 		}
 
-		adviceList = append(adviceList, advice)
+		adviceList = append(adviceList, convertToV1Advice(advice))
 	}
 
 	return adviceLevel, adviceList, nil

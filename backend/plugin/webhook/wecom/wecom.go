@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -70,8 +71,9 @@ func getMessageCard(context webhook.Context) *WebhookMarkdown {
 
 func (r *Receiver) Post(context webhook.Context) error {
 	if context.DirectMessage && len(context.MentionUsers) > 0 {
-		r.sendDirectMessage(context)
-		return nil
+		if r.sendDirectMessage(context) {
+			return nil
+		}
 	}
 	return r.sendMessage(context)
 }
@@ -122,10 +124,12 @@ func (*Receiver) sendMessage(context webhook.Context) error {
 	return nil
 }
 
-func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) {
+// sendDirectMessage sends direct message to users.
+// returns `true` if successfully sends messages to all users.
+func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 	wecom := webhookCtx.IMSetting.GetWecom()
 	if wecom == nil {
-		return
+		return false
 	}
 	p, err := newProvider(wecom.GetCorpId(), wecom.GetAgentId(), wecom.GetSecret())
 	if err != nil {
@@ -135,35 +139,35 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) {
 	ctx := context.Background()
 
 	sent := map[string]bool{}
+	notFound := map[string]bool{}
 
-	if err := common.Retry(ctx, func() error {
+	fn := func() error {
 		var errs error
 		var users, userEmails []string
 
 		for _, u := range webhookCtx.MentionUsers {
-			if sent[u.Email] {
+			if sent[u.Email] || notFound[u.Email] {
 				continue
 			}
 
-			err := func() error {
-				userID, err := p.getUserIDByEmail(ctx, u.Email)
-				if err != nil {
-					if strings.Contains(err.Error(), "errcode 46004") {
-						return nil
-					}
-					return errors.Wrapf(err, "failed to get user id by email %v", u.Email)
+			userID, err := p.getUserIDByEmail(ctx, u.Email)
+			if err != nil {
+				// errcode 46004 means user not found.
+				// we consider the error to be permanent and won't retry
+				// for the email.
+				if strings.Contains(err.Error(), "errcode 46004") {
+					notFound[u.Email] = true
 				}
-				users = append(users, userID)
-				userEmails = append(userEmails, u.Email)
-
-				return nil
-			}()
-
-			multierr.AppendInto(&errs, err)
+				err = errors.Wrapf(err, "failed to get user id by email %v", u.Email)
+				multierr.AppendInto(&errs, err)
+				continue
+			}
+			users = append(users, userID)
+			userEmails = append(userEmails, u.Email)
 		}
 		if len(users) == 0 {
-			slog.Debug("wecom dm: get 0 user id", log.BBError(errs))
-			return nil
+			err := errors.Errorf("wecom dm: got 0 user id, errs: %v", errs)
+			return backoff.Permanent(err)
 		}
 
 		if err := p.sendMessage(ctx, users, getMessageCard(webhookCtx)); err != nil {
@@ -176,7 +180,11 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) {
 		}
 
 		return errs
-	}); err != nil {
+	}
+
+	if err := common.Retry(ctx, fn); err != nil {
 		slog.Warn("failed to send direct message to wecom users", log.BBError(err))
 	}
+
+	return len(sent) == len(webhookCtx.MentionUsers)
 }

@@ -17,6 +17,11 @@ const (
 	PermissionVCSProvidersListProjects   Permission = "bb.vcsProviders.listProjects"
 	PermissionVCSProvidersSearchProjects Permission = "bb.vcsProviders.searchProjects"
 	PermissionVCSProvidersUpdate         Permission = "bb.vcsProviders.update"
+	PermissionReviewConfigsCreate        Permission = "bb.reviewConfigs.create"
+	PermissionReviewConfigsDelete        Permission = "bb.reviewConfigs.delete"
+	PermissionReviewConfigsGet           Permission = "bb.reviewConfigs.get"
+	PermissionReviewConfigsList          Permission = "bb.reviewConfigs.list"
+	PermissionReviewConfigsUpdate        Permission = "bb.reviewConfigs.update"
 	PermissionIdentityProvidersCreate    Permission = "bb.identityProviders.create"
 	PermissionIdentityProvidersDelete    Permission = "bb.identityProviders.delete"
 	PermissionIdentityProvidersGet       Permission = "bb.identityProviders.get"
@@ -84,6 +89,7 @@ const (
 	PermissionDatabasesGetSchema    Permission = "bb.databases.getSchema"
 	PermissionDatabasesList         Permission = "bb.databases.list"
 	PermissionDatabasesQuery        Permission = "bb.databases.query"
+	PermissionDatabasesExecute      Permission = "bb.databases.execute"
 	PermissionDatabasesSync         Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate       Permission = "bb.databases.update"
 	PermissionIssueCommentsCreate   Permission = "bb.issueComments.create"
@@ -98,6 +104,9 @@ const (
 	PermissionPlansGet              Permission = "bb.plans.get"
 	PermissionPlansList             Permission = "bb.plans.list"
 	PermissionPlansUpdate           Permission = "bb.plans.update"
+	PermissionSheetsCreate          Permission = "bb.sheets.create"
+	PermissionSheetsUpdate          Permission = "bb.sheets.update"
+	PermissionSheetsGet             Permission = "bb.sheets.get"
 	PermissionProjectsGet           Permission = "bb.projects.get"
 	PermissionProjectsGetIAMPolicy  Permission = "bb.projects.getIamPolicy"
 	PermissionProjectsSetIAMPolicy  Permission = "bb.projects.setIamPolicy"
@@ -123,6 +132,11 @@ var allWorkspacePermissions = []Permission{
 	PermissionVCSProvidersListProjects,
 	PermissionVCSProvidersSearchProjects,
 	PermissionVCSProvidersUpdate,
+	PermissionReviewConfigsCreate,
+	PermissionReviewConfigsDelete,
+	PermissionReviewConfigsGet,
+	PermissionReviewConfigsList,
+	PermissionReviewConfigsUpdate,
 	PermissionIdentityProvidersCreate,
 	PermissionIdentityProvidersDelete,
 	PermissionIdentityProvidersGet,
@@ -190,6 +204,7 @@ var allProjectPermissions = []Permission{
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
 	PermissionDatabasesQuery,
+	PermissionDatabasesExecute,
 	PermissionDatabasesSync,
 	PermissionDatabasesUpdate,
 	PermissionIssueCommentsCreate,
@@ -204,6 +219,9 @@ var allProjectPermissions = []Permission{
 	PermissionPlansGet,
 	PermissionPlansList,
 	PermissionPlansUpdate,
+	PermissionSheetsCreate,
+	PermissionSheetsUpdate,
+	PermissionSheetsGet,
 	PermissionProjectsGet,
 	PermissionProjectsGetIAMPolicy,
 	PermissionProjectsSetIAMPolicy,

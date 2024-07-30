@@ -942,6 +942,7 @@
       "created-issue": "incidencia creado",
       "commented": "comentado",
       "changed-description": "cambio de descripción",
+      "changed-labels": "etiquetas cambiadas",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "unset-from": "eliminación de {name} de \"{oldValue}\"",
       "set-to": "asignación de {name} a \"{newValue}\"",
@@ -2927,7 +2928,8 @@
       "method": "Método",
       "request": "Pedido",
       "response": "Respuesta",
-      "status": "Estatus"
+      "status": "Estatus",
+      "service-data": "Datos del Servicio"
     },
     "type": {
       "workspace": {
