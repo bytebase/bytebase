@@ -62,12 +62,13 @@ roles:
       - bb.instances.sync
       - bb.instances.undelete
       - bb.instances.update
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
+      - bb.issueComments.list
+      - bb.issueComments.create
+      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
@@ -174,12 +175,13 @@ roles:
       - bb.instances.sync
       - bb.instances.undelete
       - bb.instances.update
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
+      - bb.issueComments.list
+      - bb.issueComments.create
+      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
@@ -268,12 +270,13 @@ roles:
       - bb.databases.execute
       - bb.databases.sync
       - bb.databases.update
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
+      - bb.issueComments.list
+      - bb.issueComments.create
+      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
@@ -308,10 +311,12 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.sync
-      - bb.issueComments.create
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
+      - bb.issueComments.list
+      - bb.issueComments.create
+      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
@@ -352,6 +357,9 @@ roles:
       - bb.databases.list
       - bb.issues.get
       - bb.issues.list
+      - bb.issueComments.list
+      - bb.issueComments.create
+      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.get
@@ -366,5 +374,8 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.issues.create
+      - bb.issueComments.list
+      - bb.issueComments.create
+      - bb.issueComments.update
       - bb.projects.get
       - bb.projects.getIamPolicy
