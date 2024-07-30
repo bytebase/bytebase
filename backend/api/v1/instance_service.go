@@ -1049,7 +1049,19 @@ func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) 
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 		Activation:    instance.Activation,
 		Options:       convertToInstanceOptions(instance.Options),
+		Roles:         convertToInstanceRoles(instance.Metadata.Roles),
 	}, nil
+}
+
+func convertToInstanceRoles(roles []*storepb.InstanceRole) []*v1pb.InstanceRole {
+	var v1Roles []*v1pb.InstanceRole
+	for _, role := range roles {
+		v1Roles = append(v1Roles, &v1pb.InstanceRole{
+			RoleName:  role.Name,
+			Attribute: role.Attribute,
+		})
+	}
+	return v1Roles
 }
 
 func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
@@ -1080,13 +1092,14 @@ func convertToInstanceResource(instanceMessage *store.InstanceMessage) (*v1pb.In
 		return nil, err
 	}
 	return &v1pb.InstanceResource{
+		Name:          instance.Name,
 		Title:         instance.Title,
 		Engine:        instance.Engine,
 		EngineVersion: instance.EngineVersion,
 		DataSources:   instance.DataSources,
 		Activation:    instance.Activation,
-		Name:          instance.Name,
 		Environment:   instance.Environment,
+		Roles:         instance.Roles,
 	}, nil
 }
 

@@ -4,7 +4,7 @@ import {
   useDatabaseV1Store,
   useDBGroupStore,
   useEnvironmentV1Store,
-  useInstanceV1Store,
+  useInstanceResourceByName,
 } from "@/store";
 import {
   type ComposedProject,
@@ -22,11 +22,12 @@ export const databaseForSpec = (
   issue: ComposedIssue,
   spec: Plan_Spec
 ): ComposedDatabase => {
+  const environmentStore = useEnvironmentV1Store();
   const { createDatabaseConfig, changeDatabaseConfig, exportDataConfig } = spec;
   if (createDatabaseConfig !== undefined) {
     const instanceName = createDatabaseConfig.target;
     const databaseName = createDatabaseConfig.database;
-    const instance = useInstanceV1Store().getInstanceByName(instanceName);
+    const instance = useInstanceResourceByName(instanceName);
     return {
       ...unknownDatabase(),
       name: `${instanceName}/databases/${databaseName}`,
@@ -36,7 +37,9 @@ export const databaseForSpec = (
       project: issue.project,
       projectEntity: issue.projectEntity,
       effectiveEnvironment: instance.environment,
-      effectiveEnvironmentEntity: instance.environmentEntity,
+      effectiveEnvironmentEntity: environmentStore.getEnvironmentByName(
+        instance.environment
+      ),
       instanceResource: instance,
     };
   } else if (

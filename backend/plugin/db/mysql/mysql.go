@@ -380,7 +380,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			indexes := []int32{originalIndex[i]}
 			opts.LogCommandExecute(indexes)
 
-			sqlResult, err := exer.ExecContext(ctx, command.Text, nil)
+			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
+			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
 			if err != nil {
 				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 					slog.Info("cancel connection", slog.String("connectionID", connectionID))
@@ -496,7 +497,8 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, d.dbType, conn, statement)
+	sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
+	result, err := util.Query(ctx, d.dbType, conn, sqlWithBytebaseAppComment)
 	if err != nil {
 		return nil, err
 	}

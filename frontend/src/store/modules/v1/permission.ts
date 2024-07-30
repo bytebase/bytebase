@@ -5,8 +5,8 @@ import {
   PRESET_WORKSPACE_ROLES,
   type ComposedProject,
   type ProjectPermission,
-  type WorkspacePermission,
   type ComposedUser,
+  type Permission,
 } from "@/types";
 import { roleListInIAM } from "@/utils";
 import { useRoleStore } from "../role";
@@ -17,13 +17,13 @@ export const usePermissionStore = defineStore("permission", () => {
     new Map<string, Set<ProjectPermission>>()
   );
   const workspaceLevelPermissionsMapByUserName = shallowReactive(
-    new Map<string, Set<WorkspacePermission | ProjectPermission>>()
+    new Map<string, Set<Permission>>()
   );
   const roleStore = useRoleStore();
 
   const workspaceLevelPermissionsByUser = (
     user: ComposedUser
-  ): Set<WorkspacePermission | ProjectPermission> => {
+  ): Set<Permission> => {
     const cached = workspaceLevelPermissionsMapByUserName.get(user.name);
     if (cached) {
       return cached;
@@ -32,13 +32,7 @@ export const usePermissionStore = defineStore("permission", () => {
     const permissions = new Set(
       user.roles
         .map((role) => roleStore.getRoleByName(role))
-        .flatMap(
-          (role) =>
-            (role ? role.permissions : []) as (
-              | WorkspacePermission
-              | ProjectPermission
-            )[]
-        )
+        .flatMap((role) => (role ? role.permissions : []) as Permission[])
     );
     workspaceLevelPermissionsMapByUserName.set(user.name, permissions);
     return permissions;
@@ -72,7 +66,7 @@ export const usePermissionStore = defineStore("permission", () => {
   const permissionsInProjectV1 = (
     project: ComposedProject,
     user: ComposedUser
-  ) => {
+  ): Set<Permission> => {
     const key = `${user.name}@@${project.name}`;
     const cached = projectPermissionsCache.get(key);
     if (cached) {

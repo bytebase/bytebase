@@ -36,7 +36,7 @@
 import { reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
-import { useDatabaseV1Store, useFilterStore } from "@/store";
+import { useFilterStore } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams } from "@/utils";
@@ -52,7 +52,7 @@ import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchSco
 import { DatabaseOperations, DatabaseLabelFilter } from "./v2";
 
 interface LocalState {
-  selectedDatabaseIds: Set<string>;
+  selectedDatabaseNames: Set<string>;
   selectedLabels: { key: string; value: string }[];
   params: SearchParams;
 }
@@ -64,10 +64,9 @@ const props = defineProps<{
 
 const router = useRouter();
 const { filter } = useFilterStore();
-const databaseV1Store = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
-  selectedDatabaseIds: new Set(),
+  selectedDatabaseNames: new Set(),
   selectedLabels: [],
   params: {
     query: "",
@@ -133,18 +132,14 @@ const filteredDatabaseList = computed(() => {
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
   return filteredDatabaseList.value.filter((db) =>
-    state.selectedDatabaseIds.has(db.uid)
+    state.selectedDatabaseNames.has(db.name)
   );
 });
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>
 ): void => {
-  state.selectedDatabaseIds = new Set(
-    Array.from(selectedDatabaseNameList).map(
-      (name) => databaseV1Store.getDatabaseByName(name)?.uid
-    )
-  );
+  state.selectedDatabaseNames = selectedDatabaseNameList;
 };
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {

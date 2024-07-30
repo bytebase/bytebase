@@ -69,17 +69,17 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer) error {
 	var args []string
-	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
+	var host, port string
 	if driver.sshClient == nil {
-		args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
-		args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+		host = driver.config.Host
+		port = driver.config.Port
 	} else {
 		localPort := <-util.PortFIFO
 		defer func() {
 			util.PortFIFO <- localPort
 		}()
-		args = append(args, fmt.Sprintf("--host=%s", "localhost"))
-		args = append(args, fmt.Sprintf("--port=%d", localPort))
+		host = "localhost"
+		port = fmt.Sprintf("%d", localPort)
 		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", localPort))
 		if err != nil {
 			return err
@@ -88,6 +88,21 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		databaseAddress := fmt.Sprintf("%s:%s", driver.config.Host, driver.config.Port)
 		go util.ProxyConnection(driver.sshClient, listener, databaseAddress)
 	}
+
+	password := driver.config.Password
+	if driver.config.AuthenticationType == storepb.DataSourceOptions_AWS_RDS_IAM {
+		rdsPassword, err := getRDSConnectionPassword(ctx, driver.config)
+		if err != nil {
+			return err
+		}
+		password = rdsPassword
+	}
+
+	if password == "" {
+		args = append(args, "--no-password")
+	}
+	connectionString := buildPostgreSQLKeywordValueConnectionString(host, port, driver.config.Username, password, database)
+	args = append(args, connectionString)
 	args = append(args, "--schema-only")
 	args = append(args, "--inserts")
 	args = append(args, "--use-set-session-authorization")
@@ -95,7 +110,6 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, "--no-owner")
 	// Avoid pg_dump v15 generate REVOKE/GRANT statement.
 	args = append(args, "--no-privileges")
-	args = append(args, database)
 
 	if err := driver.execPgDump(ctx, args, out); err != nil {
 		return errors.Wrapf(err, "failed to exec pg_dump")
@@ -115,24 +129,8 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 	atLeast10_0_0 := semVersion.GE(semver.MustParse("10.0.0"))
 
 	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
-	password := driver.config.Password
-	if driver.config.AuthenticationType == storepb.DataSourceOptions_AWS_RDS_IAM {
-		rdsPassword, err := getRDSConnectionPassword(ctx, driver.config)
-		if err != nil {
-			return err
-		}
-		password = rdsPassword
-	}
-
-	if password == "" {
-		args = append(args, "--no-password")
-	}
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 
-	// Unlike MySQL, PostgreSQL does not support specifying password in commands, we can do this by means of environment variables.
-	if password != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", password))
-	}
 	sslMode := getSSLMode(driver.config.TLSConfig, driver.config.SSHConfig)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 
@@ -282,4 +280,28 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 		return errors.Wrapf(err, "error message: %s", allMsg)
 	}
 	return nil
+}
+
+// Learn more: https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-KEYWORD-VALUE
+func buildPostgreSQLKeywordValueConnectionString(host, port, username, password, database string) string {
+	pairs := make(map[string]string)
+	pairs["user"] = escapeConnectionStringValue(username)
+	pairs["password"] = escapeConnectionStringValue(password)
+	pairs["host"] = escapeConnectionStringValue(host)
+	pairs["port"] = escapeConnectionStringValue(port)
+	pairs["dbname"] = escapeConnectionStringValue(database)
+	pairs["application_name"] = escapeConnectionStringValue("bytebase dump")
+
+	var items []string
+	for key, value := range pairs {
+		items = append(items, fmt.Sprintf("%s=%s", key, value))
+	}
+	return strings.Join(items, " ")
+}
+
+// Single quotes and backslashes within a value must be escaped with a backslash, i.e., \' and \\.
+func escapeConnectionStringValue(value string) string {
+	newValue := strings.ReplaceAll(value, `\`, `\\`)
+	newValue = strings.ReplaceAll(newValue, `'`, `\'`)
+	return fmt.Sprintf(`'%s'`, newValue)
 }
