@@ -756,8 +756,8 @@ var (
 		"citus":          true,
 		"citus_internal": true,
 		// citus columnar extension
-		"columnar":         true,
-		"columar_internal": true,
+		"columnar":          true,
+		"columnar_internal": true,
 		// pg_cron extension
 		"cron": true,
 		// pg_partman extension
