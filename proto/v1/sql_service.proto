@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -24,20 +25,17 @@ service SQLService {
         body: "*"
       }
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.databases.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:execute"
       body: "*"
-
-      additional_bindings: {
-        post: "/v1/{name=instances/*}:execute"
-        body: "*"
-      }
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.databases.execute";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
@@ -65,7 +63,8 @@ service SQLService {
         body: "*"
       }
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.databases.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
@@ -121,7 +120,10 @@ service SQLService {
 message ExecuteRequest {
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   // The SQL statement to execute.
   string statement = 2;
@@ -166,7 +168,10 @@ message AdminExecuteResponse {
 message QueryRequest {
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   string connection_database = 2 [deprecated = true];
 
@@ -287,7 +292,10 @@ message ExportRequest {
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
   // Format: projects/{project}/issues/{issue} for data export issue.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   string connection_database = 2 [deprecated = true];
 

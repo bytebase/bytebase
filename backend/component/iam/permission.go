@@ -89,6 +89,7 @@ const (
 	PermissionDatabasesGetSchema    Permission = "bb.databases.getSchema"
 	PermissionDatabasesList         Permission = "bb.databases.list"
 	PermissionDatabasesQuery        Permission = "bb.databases.query"
+	PermissionDatabasesExecute      Permission = "bb.databases.execute"
 	PermissionDatabasesSync         Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate       Permission = "bb.databases.update"
 	PermissionIssueCommentsCreate   Permission = "bb.issueComments.create"
@@ -203,6 +204,7 @@ var allProjectPermissions = []Permission{
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
 	PermissionDatabasesQuery,
+	PermissionDatabasesExecute,
 	PermissionDatabasesSync,
 	PermissionDatabasesUpdate,
 	PermissionIssueCommentsCreate,

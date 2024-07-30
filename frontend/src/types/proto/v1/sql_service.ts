@@ -3291,7 +3291,8 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800010: [new Uint8Array([16, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               80,
@@ -3388,43 +3389,22 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
-          578365826: [
+          800010: [
             new Uint8Array([
-              84,
-              58,
-              1,
-              42,
-              90,
-              35,
-              58,
-              1,
-              42,
-              34,
-              30,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
+              20,
+              98,
+              98,
+              46,
+              100,
               97,
-              109,
-              101,
-              61,
-              105,
-              110,
-              115,
               116,
               97,
-              110,
-              99,
+              98,
+              97,
+              115,
               101,
               115,
-              47,
-              42,
-              125,
-              58,
+              46,
               101,
               120,
               101,
@@ -3432,6 +3412,15 @@ export const SQLServiceDefinition = {
               117,
               116,
               101,
+            ]),
+          ],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              47,
+              58,
+              1,
+              42,
               34,
               42,
               47,
@@ -3578,7 +3567,8 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800010: [new Uint8Array([16, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               126,

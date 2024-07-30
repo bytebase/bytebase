@@ -50,9 +50,8 @@ type TableReference struct {
 type statementInfo struct {
 	offset    int
 	statement string
-	tree      antlr.Tree
+	tree      antlr.ParserRuleContext
 	table     *TableReference
-	line      int
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
@@ -118,9 +117,17 @@ func generateSQL(statementInfoList []statementInfo, databaseName string, tablePr
 			return nil, errors.Wrap(err, "failed to write semicolon")
 		}
 		result = append(result, base.BackupStatement{
-			Statement:    buf.String(),
-			TableName:    targetTable,
-			OriginalLine: statementInfo.line,
+			Statement:       buf.String(),
+			SourceTableName: table.Table,
+			TargetTableName: targetTable,
+			StartPosition: &store.Position{
+				Line:   int32(statementInfo.tree.GetStart().GetLine()),
+				Column: int32(statementInfo.tree.GetStart().GetColumn()),
+			},
+			EndPosition: &store.Position{
+				Line:   int32(statementInfo.tree.GetStop().GetLine()),
+				Column: int32(statementInfo.tree.GetStop().GetColumn()),
+			},
 		})
 	}
 	return result, nil
@@ -279,7 +286,6 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 				Alias:         alias,
 				StatementType: StatementTypeDelete,
 			},
-			line: ctx.GetStart().GetLine(),
 		})
 		return
 	}
@@ -312,7 +318,6 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 				statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 				tree:      ctx,
 				table:     singleTable,
-				line:      ctx.GetStart().GetLine(),
 			})
 		}
 	}
@@ -360,7 +365,6 @@ func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatemen
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     singleTable,
-			line:      ctx.GetStart().GetLine(),
 		})
 	}
 }

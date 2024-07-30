@@ -128,8 +128,9 @@ func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName st
 			return nil, errors.Wrap(err, "failed to write semicolon")
 		}
 		result = append(result, base.BackupStatement{
-			Statement: buf.String(),
-			TableName: targetTable,
+			Statement:       buf.String(),
+			SourceTableName: tableName,
+			TargetTableName: targetTable,
 		})
 	}
 	return result, nil

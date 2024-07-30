@@ -42,9 +42,8 @@ func (t *TableReference) String() string {
 type statementInfo struct {
 	offset    int
 	statement string
-	tree      antlr.Tree
+	tree      antlr.ParserRuleContext
 	table     *TableReference
-	line      int
 }
 
 func init() {
@@ -94,9 +93,18 @@ func generateSQL(statementInfoList []statementInfo, targetSchema string, tablePr
 		}
 
 		result = append(result, base.BackupStatement{
-			Statement:    buf.String(),
-			TableName:    targetTable,
-			OriginalLine: info.line,
+			Statement:       buf.String(),
+			SourceSchema:    table.Schema,
+			SourceTableName: table.Table,
+			TargetTableName: targetTable,
+			StartPosition: &storebp.Position{
+				Line:   int32(info.tree.GetStart().GetLine()),
+				Column: int32(info.tree.GetStart().GetColumn()),
+			},
+			EndPosition: &storebp.Position{
+				Line:   int32(info.tree.GetStop().GetLine()),
+				Column: int32(info.tree.GetStop().GetColumn()),
+			},
 		})
 	}
 
@@ -213,7 +221,6 @@ func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
-			line:      ctx.GetStart().GetLine(),
 		})
 	}
 }
@@ -230,7 +237,6 @@ func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			table:     table,
-			line:      ctx.GetStart().GetLine(),
 		})
 	}
 }

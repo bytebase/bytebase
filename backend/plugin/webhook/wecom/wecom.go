@@ -141,7 +141,7 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 	sent := map[string]bool{}
 	notFound := map[string]bool{}
 
-	if err := common.Retry(ctx, func() error {
+	fn := func() error {
 		var errs error
 		var users, userEmails []string
 
@@ -160,6 +160,7 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 				}
 				err = errors.Wrapf(err, "failed to get user id by email %v", u.Email)
 				multierr.AppendInto(&errs, err)
+				continue
 			}
 			users = append(users, userID)
 			userEmails = append(userEmails, u.Email)
@@ -179,7 +180,9 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 		}
 
 		return errs
-	}); err != nil {
+	}
+
+	if err := common.Retry(ctx, fn); err != nil {
 		slog.Warn("failed to send direct message to wecom users", log.BBError(err))
 	}
 
