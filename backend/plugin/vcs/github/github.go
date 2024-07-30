@@ -3,6 +3,8 @@ package github
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -269,6 +271,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 		page++
 	}
 
+	prURL := fmt.Sprintf("%s/%s/pull/%s", p.instanceURL, repositoryID, pullRequestID)
 	var res []*vcs.PullRequestFile
 	for _, file := range allPRFiles {
 		u, err := url.Parse(file.ContentsURL)
@@ -295,10 +298,19 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 			continue
 		}
 
+		// Get web url for changed file in the PR.
+		// https://github.com/orgs/community/discussions/55764
+		var fileHash string
+		hash := sha256.New()
+		if _, err := hash.Write([]byte(file.FileName)); err == nil {
+			fileHash = hex.EncodeToString(hash.Sum(nil))
+		}
+
 		res = append(res, &vcs.PullRequestFile{
 			Path:         file.FileName,
 			LastCommitID: refs[0],
 			IsDeleted:    file.Status == "removed",
+			WebURL:       fmt.Sprintf("%s/files#diff-%s", prURL, fileHash),
 		})
 	}
 

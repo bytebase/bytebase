@@ -178,10 +178,11 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			comment = getPullRequestComment(setting.ExternalUrl, issue.Name)
 			commentPrefix = commentPrefixBytebaseBot
 		case webhookActionSQLReview:
-			comment, err = s.sqlReviewWithPRInfo(childCtx, project, vcsConnector, prInfo)
+			comment, err = s.sqlReviewWithPRInfo(childCtx, project, vcsConnector, vcsProvider.Type, prInfo)
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to exec sql review for pull request %s, error %v", prInfo.url, err))
 			}
+			comment = fmt.Sprintf("%s\n\n---\n\nClick [here](%s) to check the SQL review config", comment, fmt.Sprintf("%s/sql-review", setting.ExternalUrl))
 			commentPrefix = commentPrefixSQLReview
 		default:
 		}
@@ -220,7 +221,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (string, error) {
+func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage, vcsType storepb.VCSType, prInfo *pullRequestInfo) (string, error) {
 	instance, database, err := s.getDatabaseSample(ctx, project, vcsConnector)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get database sample")
@@ -254,7 +255,7 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 			} else if advice.Status == v1pb.Advice_WARNING {
 				warnCount++
 			}
-			message := fmt.Sprintf("- **[%s]** %s (line: %d)", advice.Status.String(), advice.Title, advice.Line)
+			message := fmt.Sprintf("- **[%s]** %s ([line%d](%s))", advice.Status.String(), advice.Title, advice.Line, getFileWebURLInPR(change.webURL, advice.Line, vcsType))
 			adviceMessage = append(adviceMessage, message)
 		}
 
@@ -262,7 +263,7 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 			if len(content) > 0 {
 				content = append(content, "\n")
 			}
-			content = append(content, fmt.Sprintf("SQL review for %s\n", change.path))
+			content = append(content, fmt.Sprintf("SQL review for [%s](%s)\n", change.path, change.webURL))
 			// We have to use at least 2 \n for Bitbucket.
 			// The API docs for Bitbucket sucks.
 			// https://community.atlassian.com/t5/Bitbucket-questions/How-to-post-html-comments-on-pull-request-via-2-0-api/qaq-p/1066809
