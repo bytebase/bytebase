@@ -55,7 +55,7 @@
               </div>
             </div>
           </template>
-          <template #item="{ item: instance }: { item: ComposedInstance }">
+          <template #item="{ item: instance }: { item: InstanceResource }">
             <div
               v-if="canManageSubscription"
               class="bb-grid-cell"
@@ -85,7 +85,9 @@
             </div>
             <div class="bb-grid-cell">
               <EnvironmentV1Name
-                :environment="instance.environmentEntity"
+                :environment="
+                  environmentStore.getEnvironmentByName(instance.environment)
+                "
                 :link="false"
               />
             </div>
@@ -140,8 +142,8 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
   useInstanceResourceList,
+  useEnvironmentV1Store,
 } from "@/store";
-import type { ComposedInstance } from "@/types";
 import {
   Instance,
   type InstanceResource,
@@ -175,6 +177,7 @@ const state = reactive<LocalState>({
   selectedInstance: new Set(),
   processing: false,
 });
+const environmentStore = useEnvironmentV1Store();
 const instanceV1Store = useInstanceV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
@@ -235,7 +238,7 @@ const assignedLicenseCount = computed((): string => {
   return `${state.selectedInstance.size}`;
 });
 
-const isInstanceSelected = (instance: ComposedInstance): boolean => {
+const isInstanceSelected = (instance: InstanceResource): boolean => {
   return state.selectedInstance.has(instance.name);
 };
 
