@@ -1,4 +1,4 @@
-import type { WorkspacePermission, ProjectPermission } from "./iam/permission";
+import type { Permission } from "./iam/permission";
 
 export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.create"
@@ -27,30 +27,31 @@ export type QuickActionType =
   | IssueQuickActionType;
 
 // Permission check for workspace level quick actions.
-export const QuickActionPermissionMap: Map<
-  QuickActionType,
-  WorkspacePermission[]
-> = new Map([
-  ["quickaction.bb.environment.create", ["bb.environments.create"]],
-  [
-    "quickaction.bb.environment.reorder",
-    ["bb.environments.list", "bb.environments.update"],
-  ],
-  ["quickaction.bb.project.create", ["bb.projects.create"]],
-  ["quickaction.bb.instance.create", ["bb.instances.create"]],
-  ["quickaction.bb.database.create", []],
-  ["quickaction.bb.database.request", []],
-  ["quickaction.bb.database.schema.update", []],
-  ["quickaction.bb.database.data.update", []],
-]);
+export const QuickActionPermissionMap: Map<QuickActionType, Permission[]> =
+  new Map([
+    ["quickaction.bb.environment.create", ["bb.environments.create"]],
+    [
+      "quickaction.bb.environment.reorder",
+      ["bb.environments.list", "bb.environments.update"],
+    ],
+    ["quickaction.bb.project.create", ["bb.projects.create"]],
+    ["quickaction.bb.instance.create", ["bb.instances.create"]],
+    [
+      "quickaction.bb.database.create",
+      ["bb.instances.list", "bb.issues.create"],
+    ],
+    ["quickaction.bb.database.request", []],
+    ["quickaction.bb.database.schema.update", []],
+    ["quickaction.bb.database.data.update", []],
+  ]);
 
 // Permission check for project level quick actions.
 export const QuickActionProjectPermissionMap: Map<
   QuickActionType,
-  ProjectPermission[]
+  Permission[]
 > = new Map([
   ["quickaction.bb.project.database.transfer", ["bb.projects.update"]],
-  ["quickaction.bb.database.create", ["bb.issues.create"]],
+  ["quickaction.bb.database.create", ["bb.instances.list", "bb.issues.create"]],
   ["quickaction.bb.database.request", []],
   ["quickaction.bb.database.schema.update", ["bb.issues.create"]],
   ["quickaction.bb.database.data.update", ["bb.issues.create"]],

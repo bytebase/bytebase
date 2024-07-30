@@ -319,9 +319,6 @@ const updateEditState = (instance: Instance) => {
     dataSourceEditState.value.editingDataSourceId =
       updatedEditState.editingDataSourceId;
   }
-
-  // Backend will sync the schema when connection info changed, so we need to fetch the synced schema here.
-  instanceV1Store.fetchInstanceRoleListByName(instance.name);
 };
 
 const doUpdate = async () => {
