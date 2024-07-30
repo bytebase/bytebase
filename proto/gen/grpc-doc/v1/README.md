@@ -87,6 +87,14 @@
   
     - [AuthService](#bytebase-v1-AuthService)
   
+- [v1/instance_role_service.proto](#v1_instance_role_service-proto)
+    - [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest)
+    - [InstanceRole](#bytebase-v1-InstanceRole)
+    - [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest)
+    - [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse)
+  
+    - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
+  
 - [v1/instance_service.proto](#v1_instance_service-proto)
     - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
     - [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest)
@@ -295,18 +303,6 @@
     - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
   
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
-  
-- [v1/instance_role_service.proto](#v1_instance_role_service-proto)
-    - [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest)
-    - [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest)
-    - [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest)
-    - [InstanceRole](#bytebase-v1-InstanceRole)
-    - [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest)
-    - [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse)
-    - [UndeleteInstanceRoleRequest](#bytebase-v1-UndeleteInstanceRoleRequest)
-    - [UpdateInstanceRoleRequest](#bytebase-v1-UpdateInstanceRoleRequest)
-  
-    - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
   
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
@@ -1787,6 +1783,104 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
+<a name="v1_instance_role_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/instance_role_service.proto
+
+
+
+<a name="bytebase-v1-GetInstanceRoleRequest"></a>
+
+### GetInstanceRoleRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the role to retrieve. Format: instances/{instance}/roles/{role name} The role name is the unique name for the role. |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceRole"></a>
+
+### InstanceRole
+InstanceRole is the API message for instance role.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role} The role name is the unique name for the role. |
+| role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
+| password | [string](#string) | optional | The role password. |
+| connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
+| valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
+| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstanceRolesRequest"></a>
+
+### ListInstanceRolesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} |
+| page_size | [int32](#int32) |  | The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 50 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
+| refresh | [bool](#bool) |  | Refresh will refresh and return the latest data. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstanceRolesResponse"></a>
+
+### ListInstanceRolesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | The roles from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-InstanceRoleService"></a>
+
+### InstanceRoleService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetInstanceRole | [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
+| ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) |  |
+
+ 
+
+
+
 <a name="v1_instance_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2009,6 +2103,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | activation | [bool](#bool) |  |  |
 | options | [InstanceOptions](#bytebase-v1-InstanceOptions) |  |  |
+| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated |  |
 
 
 
@@ -2048,6 +2143,7 @@ InstanceOptions is the option for instances.
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | state | [State](#bytebase-v1-State) |  |  |
 | uid | [string](#string) |  |  |
+| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated |  |
 
 
 
@@ -5042,172 +5138,6 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteIdentityProvider | [UndeleteIdentityProviderRequest](#bytebase-v1-UndeleteIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
 | TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) |  |
-
- 
-
-
-
-<a name="v1_instance_role_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/instance_role_service.proto
-
-
-
-<a name="bytebase-v1-CreateInstanceRoleRequest"></a>
-
-### CreateInstanceRoleRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this role will be created. Format: instances/{instance} |
-| role | [InstanceRole](#bytebase-v1-InstanceRole) |  | The role to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteInstanceRoleRequest"></a>
-
-### DeleteInstanceRoleRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role to delete. Format: instances/{instance}/roles/{role name} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetInstanceRoleRequest"></a>
-
-### GetInstanceRoleRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role to retrieve. Format: instances/{instance}/roles/{role name} The role name is the unique name for the role. |
-
-
-
-
-
-
-<a name="bytebase-v1-InstanceRole"></a>
-
-### InstanceRole
-InstanceRole is the API message for instance role.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role} The role name is the unique name for the role. |
-| role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
-| password | [string](#string) | optional | The role password. |
-| connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
-| valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
-| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstanceRolesRequest"></a>
-
-### ListInstanceRolesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} |
-| page_size | [int32](#int32) |  | The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 50 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
-| refresh | [bool](#bool) |  | Refresh will refresh and return the latest data. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstanceRolesResponse"></a>
-
-### ListInstanceRolesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | The roles from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteInstanceRoleRequest"></a>
-
-### UndeleteInstanceRoleRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted role. Format: instances/{instance}/roles/{role name} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateInstanceRoleRequest"></a>
-
-### UpdateInstanceRoleRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [InstanceRole](#bytebase-v1-InstanceRole) |  | The role to update.
-
-The role&#39;s `name` and `instance` field is used to identify the role to update. Format: instances/{instance}/roles/{role name} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-InstanceRoleService"></a>
-
-### InstanceRoleService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetInstanceRole | [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-| ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) |  |
-| CreateInstanceRole | [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-| UpdateInstanceRole | [UpdateInstanceRoleRequest](#bytebase-v1-UpdateInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-| DeleteInstanceRole | [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteInstanceRole | [UndeleteInstanceRoleRequest](#bytebase-v1-UndeleteInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
 
  
 
