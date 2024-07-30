@@ -308,5 +308,5 @@ func TrimStatement(statement string) string {
 }
 
 func MySQLPrependBytebaseAppComment(statement string) string {
-	return fmt.Sprintf("/*App=Bytebase*/ %s", statement)
+	return fmt.Sprintf("/*app=bytebase*/ %s", statement)
 }
