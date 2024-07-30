@@ -10496,6 +10496,16 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
+                state:
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
+                    format: enum
+                uid:
+                    readOnly: true
+                    type: string
         InstanceRole:
             type: object
             properties:

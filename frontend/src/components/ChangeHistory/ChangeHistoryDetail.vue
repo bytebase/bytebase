@@ -295,7 +295,6 @@ import {
   useDatabaseV1Store,
   useUserStore,
   useCurrentUserV1,
-  useInstanceV1Store,
   useSettingV1Store,
 } from "@/store";
 import type { AffectedTable } from "@/types/changeHistory";
@@ -339,14 +338,9 @@ const state = reactive<LocalState>({
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const instanceStore = useInstanceV1Store();
 const settingStore = useSettingV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
-
-const v1Instance = computed(() => {
-  return instanceStore.getInstanceByName(props.instance);
-});
 
 // eslint-disable-next-line vue/no-dupe-keys
 const database = computed(() => {
@@ -383,7 +377,7 @@ const affectedTables = computed(() => {
 });
 
 const showSchemaSnapshot = computed(() => {
-  return v1Instance.value.engine !== Engine.RISINGWAVE;
+  return database.value.instanceResource.engine !== Engine.RISINGWAVE;
 });
 
 watch(

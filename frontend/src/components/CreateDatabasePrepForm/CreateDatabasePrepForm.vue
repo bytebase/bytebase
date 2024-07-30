@@ -63,10 +63,6 @@
 
     <div class="w-full">
       <div class="flex flex-row items-center space-x-1">
-        <InstanceV1EngineIcon
-          v-if="state.instanceName"
-          :instance="selectedInstance"
-        />
         <label for="instance" class="textlabel">
           {{ $t("common.instance") }} <span class="text-red-600">*</span>
         </label>
@@ -172,15 +168,14 @@ import {
   ProjectSelect,
   EnvironmentSelect,
   InstanceSelect,
-  InstanceV1EngineIcon,
 } from "@/components/v2";
 import {
   experimentalCreateIssueByPlan,
   useCurrentUserV1,
+  useInstanceResourceByName,
   useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedInstance } from "@/types";
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
@@ -277,9 +272,9 @@ const allowEditInstance = computed(() => {
   return !props.instanceName;
 });
 
-const selectedInstance = computed((): ComposedInstance => {
-  return instanceV1Store.getInstanceByName(state.instanceName ?? "");
-});
+const selectedInstance = computed(() =>
+  useInstanceResourceByName(state.instanceName ?? "")
+);
 
 const showCollationAndCharacterSet = computed((): boolean => {
   const instance = selectedInstance.value;
