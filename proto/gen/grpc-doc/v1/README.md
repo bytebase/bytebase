@@ -3232,8 +3232,8 @@ ListSlowQueriesRequest is the request of listing slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| filter | [string](#string) |  | The filter of the slow query log. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by project and start_time in SlowQueryDetails for now. For example: Search the slow query log of the specific project: - the specific project: project = &#34;projects/{project}&#34; Search the slow query log that start_time after 2022-01-01T12:00:00.000Z: - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34; - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339). - Currently we only support filtering down to date granularity. |
+| parent | [string](#string) |  | Format: projects/{project} |
+| filter | [string](#string) |  | The filter of the slow query log. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by database and start_time in SlowQueryDetails for now. For example: Search the slow query log of the specific database: - the specific database: database = &#34;instances/{instance}/databases/{database}&#34; Search the slow query log that start_time after 2022-01-01T12:00:00.000Z: - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34; - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339). - Currently we only support filtering down to date granularity. |
 | order_by | [string](#string) |  | The order by of the slow query log. Support order by count, latest_log_time, average_query_time, maximum_query_time, average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now. For example: - order by count: order_by = &#34;count&#34; - order by latest_log_time desc: order_by = &#34;latest_log_time desc&#34; Default: order by average_query_time desc. |
 
 

@@ -18,7 +18,7 @@ import type { ComposedDatabase } from "@/types";
 import type { SearchScope } from "@/utils";
 import {
   extractEnvironmentResourceName,
-  extractInstanceResourceName,
+  extractProjectResourceName,
 } from "@/utils";
 
 const props = defineProps<{
@@ -27,15 +27,15 @@ const props = defineProps<{
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
+  {
+      id: "project",
+      value: extractProjectResourceName(props.database.project),
+    },
     {
       id: "environment",
       value: extractEnvironmentResourceName(
         props.database.effectiveEnvironment
       ),
-    },
-    {
-      id: "instance",
-      value: extractInstanceResourceName(props.database.instance),
     },
     {
       id: "database",
