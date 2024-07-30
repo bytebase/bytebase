@@ -61,7 +61,6 @@ import {
   extractProjectResourceName,
   getSheetStatement,
   hasProjectPermissionV2,
-  idFromSlug,
   isDatabaseV1Queryable,
   isWorksheetReadableV1,
   projectNameFromSheetSlug,
@@ -311,55 +310,6 @@ const prepareSheet = async () => {
   return true;
 };
 
-const prepareConnectionSlugLegacy = async () => {
-  const connectionSlug = (route.params.connectionSlug as string) || "";
-  const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
-  const instanceId = Number(idFromSlug(instanceSlug));
-  const databaseId = Number(idFromSlug(databaseSlug));
-
-  if (Number.isNaN(instanceId) && Number.isNaN(databaseId)) {
-    return false;
-  }
-  if (instanceId === 0 || databaseId === 0) {
-    return false;
-  }
-
-  if (Number.isNaN(databaseId)) {
-    // connected to instance
-    const instance = await useInstanceV1Store().getOrFetchInstanceByName(
-      `instances/${instanceId}`
-    );
-    if (isValidInstanceName(instance.name)) {
-      connect({
-        instance: instance.name,
-        database: "",
-      });
-      return true;
-    }
-  } else {
-    const database = await useDatabaseV1Store().getOrFetchDatabaseByUID(
-      String(databaseId)
-    );
-    if (database.uid !== String(UNKNOWN_ID)) {
-      if (!isDatabaseV1Queryable(database, me.value)) {
-        router.push({
-          name: "error.403",
-        });
-      }
-
-      // connected to db
-      await maybeSwitchProject(database.project);
-      connect({
-        instance: database.instance,
-        database: database.name,
-        schema: filter.schema,
-        table: filter.table,
-      });
-      return true;
-    }
-  }
-  return false;
-};
 const prepareConnectionParams = async () => {
   if (
     ![SQL_EDITOR_INSTANCE_MODULE, SQL_EDITOR_DATABASE_MODULE].includes(
@@ -425,9 +375,6 @@ const initializeConnectionFromQuery = async () => {
     return;
   }
 
-  if (await prepareConnectionSlugLegacy()) {
-    return true;
-  }
   if (await prepareConnectionParams()) {
     return;
   }
