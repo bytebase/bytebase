@@ -20,9 +20,7 @@ const instance = computed(() =>
 );
 
 const prepareInstanceContext = async function () {
-  const ins = await prepareInstance();
-
-  await instanceStore.fetchInstanceRoleListByName(ins.name);
+  await prepareInstance();
 };
 
 const prepareInstance = async () => {
