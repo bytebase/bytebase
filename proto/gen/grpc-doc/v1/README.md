@@ -2039,15 +2039,15 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | engine_version | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | activation | [bool](#bool) |  |  |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| state | [State](#bytebase-v1-State) |  |  |
+| uid | [string](#string) |  |  |
 
 
 

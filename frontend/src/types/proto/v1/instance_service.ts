@@ -695,20 +695,23 @@ export interface DataSource_Address {
 }
 
 export interface InstanceResource {
-  name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
-  state: State;
   title: string;
   engine: Engine;
   engineVersion: string;
   dataSources: DataSource[];
   activation: boolean;
   /**
+   * The name of the instance.
+   * Format: instances/{instance}
+   */
+  name: string;
+  /**
    * The environment resource.
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
+  state: State;
+  uid: string;
 }
 
 export interface SASLConfig {
@@ -3203,46 +3206,46 @@ export const DataSource_Address = {
 
 function createBaseInstanceResource(): InstanceResource {
   return {
-    name: "",
-    uid: "",
-    state: State.STATE_UNSPECIFIED,
     title: "",
     engine: Engine.ENGINE_UNSPECIFIED,
     engineVersion: "",
     dataSources: [],
     activation: false,
+    name: "",
     environment: "",
+    state: State.STATE_UNSPECIFIED,
+    uid: "",
   };
 }
 
 export const InstanceResource = {
   encode(message: InstanceResource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
-    }
-    if (message.state !== State.STATE_UNSPECIFIED) {
-      writer.uint32(24).int32(stateToNumber(message.state));
-    }
     if (message.title !== "") {
-      writer.uint32(34).string(message.title);
+      writer.uint32(10).string(message.title);
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
-      writer.uint32(40).int32(engineToNumber(message.engine));
+      writer.uint32(16).int32(engineToNumber(message.engine));
     }
     if (message.engineVersion !== "") {
-      writer.uint32(50).string(message.engineVersion);
+      writer.uint32(26).string(message.engineVersion);
     }
     for (const v of message.dataSources) {
-      DataSource.encode(v!, writer.uint32(58).fork()).ldelim();
+      DataSource.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     if (message.activation === true) {
-      writer.uint32(64).bool(message.activation);
+      writer.uint32(40).bool(message.activation);
+    }
+    if (message.name !== "") {
+      writer.uint32(50).string(message.name);
     }
     if (message.environment !== "") {
-      writer.uint32(74).string(message.environment);
+      writer.uint32(58).string(message.environment);
+    }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(64).int32(stateToNumber(message.state));
+    }
+    if (message.uid !== "") {
+      writer.uint32(74).string(message.uid);
     }
     return writer;
   },
@@ -3259,63 +3262,63 @@ export const InstanceResource = {
             break;
           }
 
-          message.name = reader.string();
+          message.title = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
             break;
           }
 
-          message.uid = reader.string();
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
             break;
           }
 
-          message.state = stateFromJSON(reader.int32());
+          message.engineVersion = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.title = reader.string();
+          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 40) {
             break;
           }
 
-          message.engine = engineFromJSON(reader.int32());
+          message.activation = reader.bool();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.engineVersion = reader.string();
+          message.name = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
+          message.environment = reader.string();
           continue;
         case 8:
           if (tag !== 64) {
             break;
           }
 
-          message.activation = reader.bool();
+          message.state = stateFromJSON(reader.int32());
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.environment = reader.string();
+          message.uid = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3328,9 +3331,6 @@ export const InstanceResource = {
 
   fromJSON(object: any): InstanceResource {
     return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       engineVersion: isSet(object.engineVersion) ? globalThis.String(object.engineVersion) : "",
@@ -3338,21 +3338,15 @@ export const InstanceResource = {
         ? object.dataSources.map((e: any) => DataSource.fromJSON(e))
         : [],
       activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
+      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
     };
   },
 
   toJSON(message: InstanceResource): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    if (message.state !== State.STATE_UNSPECIFIED) {
-      obj.state = stateToJSON(message.state);
-    }
     if (message.title !== "") {
       obj.title = message.title;
     }
@@ -3368,8 +3362,17 @@ export const InstanceResource = {
     if (message.activation === true) {
       obj.activation = message.activation;
     }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     if (message.environment !== "") {
       obj.environment = message.environment;
+    }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
     }
     return obj;
   },
@@ -3379,15 +3382,15 @@ export const InstanceResource = {
   },
   fromPartial(object: DeepPartial<InstanceResource>): InstanceResource {
     const message = createBaseInstanceResource();
-    message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
-    message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.engineVersion = object.engineVersion ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.activation = object.activation ?? false;
+    message.name = object.name ?? "";
     message.environment = object.environment ?? "";
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
+    message.uid = object.uid ?? "";
     return message;
   },
 };

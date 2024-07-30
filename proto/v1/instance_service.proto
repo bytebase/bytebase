@@ -510,27 +510,27 @@ enum DataSourceType {
 }
 
 message InstanceResource {
-  string name = 1;
+  string title = 1;
 
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  Engine engine = 2;
 
-  State state = 3;
+  string engine_version = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string title = 4;
+  repeated DataSource data_sources = 4;
 
-  Engine engine = 5;
+  bool activation = 5;
 
-  string engine_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // TODO(steven): retire this field later.
-  repeated DataSource data_sources = 7;
-
-  bool activation = 8;
+  // The name of the instance.
+  // Format: instances/{instance}
+  string name = 6;
 
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
-  string environment = 9;
+  string environment = 7;
+
+  State state = 8;
+
+  string uid = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message SASLConfig {
