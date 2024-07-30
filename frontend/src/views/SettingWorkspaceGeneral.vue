@@ -6,6 +6,7 @@
     <AIAugmentationSetting :allow-edit="allowEdit" />
     <AnnouncementSetting :allow-edit="allowEdit" />
     <DatabaseChangeModeSetting :allow-edit="allowEdit" />
+    <WorkspaceModeSetting v-if="isDev" :allow-edit="allowEdit" />
   </div>
 </template>
 
@@ -20,6 +21,7 @@ import {
   AIAugmentationSetting,
   AnnouncementSetting,
   DatabaseChangeModeSetting,
+  WorkspaceModeSetting,
 } from "@/components/GeneralSetting";
 import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
