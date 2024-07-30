@@ -99,7 +99,6 @@ const props = withDefaults(
     supportOptionIdList: () => [
       "environment",
       "project",
-      "instance",
       "database",
     ],
     readonlySearchScopes: () => [],

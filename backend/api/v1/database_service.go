@@ -42,7 +42,7 @@ import (
 
 const (
 	filterKeyEnvironment = "environment"
-	filterKeyProject     = "project"
+	filterKeyDatabase    = "database"
 	filterKeyStartTime   = "start_time"
 
 	// Support order by count, latest_log_time, average_query_time, maximum_query_time,
@@ -1549,24 +1549,13 @@ type totalValue struct {
 
 // ListSlowQueries lists the slow queries.
 func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.ListSlowQueriesRequest) (*v1pb.ListSlowQueriesResponse, error) {
-	findDatabase := &store.FindDatabaseMessage{}
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
+	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if instanceID != "-" {
-		findDatabase.InstanceID = &instanceID
-	}
-	if databaseName != "-" {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		if instance == nil {
-			return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-		}
-		findDatabase.DatabaseName = &databaseName
-		findDatabase.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
+
+	findDatabase := &store.FindDatabaseMessage{
+		ProjectID: &projectID,
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -1584,13 +1573,21 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				return nil, status.Errorf(codes.InvalidArgument, "invalid environment filter %q", expr.value)
 			}
 			findDatabase.EffectiveEnvironmentID = &match[1]
-		case filterKeyProject:
-			reg := regexp.MustCompile(`^projects/(.+)`)
-			match := reg.FindStringSubmatch(expr.value)
-			if len(match) != 2 {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid project filter %q", expr.value)
+		case filterKeyDatabase:
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(expr.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			findDatabase.ProjectID = &match[1]
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			if instance == nil {
+				return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+			}
+			findDatabase.InstanceID = &instanceID
+			findDatabase.DatabaseName = &databaseName
+			findDatabase.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 		case filterKeyStartTime:
 			switch expr.operator {
 			case comparatorTypeGreater:
