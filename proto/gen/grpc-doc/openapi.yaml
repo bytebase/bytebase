@@ -2860,36 +2860,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - InstanceRoleService
-            operationId: InstanceRoleService_CreateInstanceRole
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/InstanceRole'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InstanceRole'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/roles/{role}:
         get:
             tags:
@@ -2908,112 +2878,6 @@ paths:
                   required: true
                   schema:
                     type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InstanceRole'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - InstanceRoleService
-            operationId: InstanceRoleService_DeleteInstanceRole
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: role
-                  in: path
-                  description: The role id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - InstanceRoleService
-            operationId: InstanceRoleService_UpdateInstanceRole
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: role
-                  in: path
-                  description: The role id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to update.
-                  schema:
-                    type: string
-                    format: field-mask
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/InstanceRole'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InstanceRole'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/roles/{role}:undelete:
-        post:
-            tags:
-                - InstanceRoleService
-            operationId: InstanceRoleService_UndeleteInstanceRole
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: role
-                  in: path
-                  description: The role id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UndeleteInstanceRoleRequest'
-                required: true
             responses:
                 "200":
                     description: OK
@@ -10429,6 +10293,11 @@ components:
                     type: boolean
                 options:
                     $ref: '#/components/schemas/InstanceOptions'
+                roles:
+                    readOnly: true
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/InstanceRole'
         InstanceOptions:
             type: object
             properties:
@@ -10506,22 +10375,17 @@ components:
                 uid:
                     readOnly: true
                     type: string
+                roles:
+                    readOnly: true
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/InstanceRole'
         InstanceRole:
             type: object
             properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the role.
-                         Format: instances/{instance}/roles/{role}
-                         The role name is the unique name for the role.
                 roleName:
                     type: string
                     description: The role name. It's unique within the instance.
-                password:
-                    writeOnly: true
-                    type: string
-                    description: The role password.
                 connectionLimit:
                     type: integer
                     description: The connection count limit for this role.
@@ -14038,16 +13902,6 @@ components:
                     description: |-
                         The name of the deleted instance.
                          Format: instances/{instance}
-        UndeleteInstanceRoleRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the deleted role.
-                         Format: instances/{instance}/roles/{role name}
         UndeleteProjectRequest:
             required:
                 - name

@@ -492,6 +492,37 @@
         
           
           <li>
+            <a href="#v1%2finstance_role_service.proto">v1/instance_role_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.GetInstanceRoleRequest"><span class="badge">M</span>GetInstanceRoleRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.InstanceRole"><span class="badge">M</span>InstanceRole</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListInstanceRolesRequest"><span class="badge">M</span>ListInstanceRolesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListInstanceRolesResponse"><span class="badge">M</span>ListInstanceRolesResponse</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.InstanceRoleService"><span class="badge">S</span>InstanceRoleService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2finstance_service.proto">v1/instance_service.proto</a>
             <ul>
               
@@ -1289,53 +1320,6 @@
               
                 <li>
                   <a href="#bytebase.v1.IdentityProviderService"><span class="badge">S</span>IdentityProviderService</a>
-                </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#v1%2finstance_role_service.proto">v1/instance_role_service.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.CreateInstanceRoleRequest"><span class="badge">M</span>CreateInstanceRoleRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteInstanceRoleRequest"><span class="badge">M</span>DeleteInstanceRoleRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetInstanceRoleRequest"><span class="badge">M</span>GetInstanceRoleRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.InstanceRole"><span class="badge">M</span>InstanceRole</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListInstanceRolesRequest"><span class="badge">M</span>ListInstanceRolesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListInstanceRolesResponse"><span class="badge">M</span>ListInstanceRolesResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UndeleteInstanceRoleRequest"><span class="badge">M</span>UndeleteInstanceRoleRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UpdateInstanceRoleRequest"><span class="badge">M</span>UpdateInstanceRoleRequest</a>
-                </li>
-              
-              
-              
-              
-                <li>
-                  <a href="#bytebase.v1.InstanceRoleService"><span class="badge">S</span>InstanceRoleService</a>
                 </li>
               
             </ul>
@@ -5619,6 +5603,258 @@ Could be empty. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/instance_role_service.proto">v1/instance_role_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the role to retrieve.
+Format: instances/{instance}/roles/{role name}
+The role name is the unique name for the role. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.InstanceRole">InstanceRole</h3>
+        <p>InstanceRole is the API message for instance role.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the role.
+Format: instances/{instance}/roles/{role}
+The role name is the unique name for the role. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>role_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The role name. It&#39;s unique within the instance. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The role password. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>connection_limit</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>The connection count limit for this role. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>valid_until</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The expiration for the role&#39;s password. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attribute</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The role attribute.
+For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListInstanceRolesRequest">ListInstanceRolesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent, which owns this collection of roles.
+Format: instances/{instance} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of roles to return. The service may return fewer than
+this value.
+If unspecified, at most 50 roles will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListRoles` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRoles` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>refresh</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Refresh will refresh and return the latest data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListInstanceRolesResponse">ListInstanceRolesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>roles</td>
+                  <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
+                  <td>repeated</td>
+                  <td><p>The roles from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.InstanceRoleService">InstanceRoleService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetInstanceRole</td>
+                <td><a href="#bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</a></td>
+                <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListInstanceRoles</td>
+                <td><a href="#bytebase.v1.ListInstanceRolesRequest">ListInstanceRolesRequest</a></td>
+                <td><a href="#bytebase.v1.ListInstanceRolesResponse">ListInstanceRolesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetInstanceRole</td>
+                <td>GET</td>
+                <td>/v1/{name=instances/*/roles/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListInstanceRoles</td>
+                <td>GET</td>
+                <td>/v1/{parent=instances/*}/roles</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/instance_service.proto">v1/instance_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -6293,6 +6529,13 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>roles</td>
+                  <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6404,6 +6647,13 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>uid</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>roles</td>
+                  <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -14553,442 +14803,6 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 <td>TestIdentityProvider</td>
                 <td>POST</td>
                 <td>/v1/idps/*:test</td>
-                <td>*</td>
-              </tr>
-              
-            
-            </tbody>
-          </table>
-          
-        
-    
-      
-      <div class="file-heading">
-        <h2 id="v1/instance_role_service.proto">v1/instance_role_service.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.CreateInstanceRoleRequest">CreateInstanceRoleRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource where this role will be created.
-Format: instances/{instance} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                  <td></td>
-                  <td><p>The role to create. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteInstanceRoleRequest">DeleteInstanceRoleRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the role to delete.
-Format: instances/{instance}/roles/{role name} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the role to retrieve.
-Format: instances/{instance}/roles/{role name}
-The role name is the unique name for the role. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.InstanceRole">InstanceRole</h3>
-        <p>InstanceRole is the API message for instance role.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the role.
-Format: instances/{instance}/roles/{role}
-The role name is the unique name for the role. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>role_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The role name. It&#39;s unique within the instance. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The role password. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>connection_limit</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td>optional</td>
-                  <td><p>The connection count limit for this role. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>valid_until</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The expiration for the role&#39;s password. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>attribute</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The role attribute.
-For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
-For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListInstanceRolesRequest">ListInstanceRolesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent, which owns this collection of roles.
-Format: instances/{instance} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of roles to return. The service may return fewer than
-this value.
-If unspecified, at most 50 roles will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListRoles` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListRoles` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>refresh</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Refresh will refresh and return the latest data. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListInstanceRolesResponse">ListInstanceRolesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>roles</td>
-                  <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                  <td>repeated</td>
-                  <td><p>The roles from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UndeleteInstanceRoleRequest">UndeleteInstanceRoleRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the deleted role.
-Format: instances/{instance}/roles/{role name} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateInstanceRoleRequest">UpdateInstanceRoleRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                  <td></td>
-                  <td><p>The role to update.
-
-The role&#39;s `name` and `instance` field is used to identify the role to update.
-Format: instances/{instance}/roles/{role name} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-        <h3 id="bytebase.v1.InstanceRoleService">InstanceRoleService</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>GetInstanceRole</td>
-                <td><a href="#bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</a></td>
-                <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ListInstanceRoles</td>
-                <td><a href="#bytebase.v1.ListInstanceRolesRequest">ListInstanceRolesRequest</a></td>
-                <td><a href="#bytebase.v1.ListInstanceRolesResponse">ListInstanceRolesResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CreateInstanceRole</td>
-                <td><a href="#bytebase.v1.CreateInstanceRoleRequest">CreateInstanceRoleRequest</a></td>
-                <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateInstanceRole</td>
-                <td><a href="#bytebase.v1.UpdateInstanceRoleRequest">UpdateInstanceRoleRequest</a></td>
-                <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteInstanceRole</td>
-                <td><a href="#bytebase.v1.DeleteInstanceRoleRequest">DeleteInstanceRoleRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UndeleteInstanceRole</td>
-                <td><a href="#bytebase.v1.UndeleteInstanceRoleRequest">UndeleteInstanceRoleRequest</a></td>
-                <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-
-        
-          
-          
-          <h4>Methods with HTTP bindings</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>Method Name</td>
-                <td>Method</td>
-                <td>Pattern</td>
-                <td>Body</td>
-              </tr>
-            </thead>
-            <tbody>
-            
-              
-              
-              <tr>
-                <td>GetInstanceRole</td>
-                <td>GET</td>
-                <td>/v1/{name=instances/*/roles/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListInstanceRoles</td>
-                <td>GET</td>
-                <td>/v1/{parent=instances/*}/roles</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateInstanceRole</td>
-                <td>POST</td>
-                <td>/v1/{parent=instances/*}/roles</td>
-                <td>role</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateInstanceRole</td>
-                <td>PATCH</td>
-                <td>/v1/{role.name=instances/*/roles/*}</td>
-                <td>role</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteInstanceRole</td>
-                <td>DELETE</td>
-                <td>/v1/{name=instances/*/roles/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UndeleteInstanceRole</td>
-                <td>POST</td>
-                <td>/v1/{name=instances/*/roles/*}:undelete</td>
                 <td>*</td>
               </tr>
               

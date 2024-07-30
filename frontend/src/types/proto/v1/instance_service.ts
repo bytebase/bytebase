@@ -14,6 +14,7 @@ import {
   stateToJSON,
   stateToNumber,
 } from "./common";
+import { InstanceRole } from "./instance_role_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -293,6 +294,7 @@ export interface Instance {
   environment: string;
   activation: boolean;
   options: InstanceOptions | undefined;
+  roles: InstanceRole[];
 }
 
 export interface DataSourceExternalSecret {
@@ -712,6 +714,7 @@ export interface InstanceResource {
   environment: string;
   state: State;
   uid: string;
+  roles: InstanceRole[];
 }
 
 export interface SASLConfig {
@@ -2021,6 +2024,7 @@ function createBaseInstance(): Instance {
     environment: "",
     activation: false,
     options: undefined,
+    roles: [],
   };
 }
 
@@ -2058,6 +2062,9 @@ export const Instance = {
     }
     if (message.options !== undefined) {
       InstanceOptions.encode(message.options, writer.uint32(90).fork()).ldelim();
+    }
+    for (const v of message.roles) {
+      InstanceRole.encode(v!, writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -2146,6 +2153,13 @@ export const Instance = {
 
           message.options = InstanceOptions.decode(reader, reader.uint32());
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.roles.push(InstanceRole.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2170,6 +2184,7 @@ export const Instance = {
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
       activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
       options: isSet(object.options) ? InstanceOptions.fromJSON(object.options) : undefined,
+      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
     };
   },
 
@@ -2208,6 +2223,9 @@ export const Instance = {
     if (message.options !== undefined) {
       obj.options = InstanceOptions.toJSON(message.options);
     }
+    if (message.roles?.length) {
+      obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
+    }
     return obj;
   },
 
@@ -2229,6 +2247,7 @@ export const Instance = {
     message.options = (object.options !== undefined && object.options !== null)
       ? InstanceOptions.fromPartial(object.options)
       : undefined;
+    message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     return message;
   },
 };
@@ -3215,6 +3234,7 @@ function createBaseInstanceResource(): InstanceResource {
     environment: "",
     state: State.STATE_UNSPECIFIED,
     uid: "",
+    roles: [],
   };
 }
 
@@ -3246,6 +3266,9 @@ export const InstanceResource = {
     }
     if (message.uid !== "") {
       writer.uint32(74).string(message.uid);
+    }
+    for (const v of message.roles) {
+      InstanceRole.encode(v!, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -3320,6 +3343,13 @@ export const InstanceResource = {
 
           message.uid = reader.string();
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.roles.push(InstanceRole.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3342,6 +3372,7 @@ export const InstanceResource = {
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
+      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
     };
   },
 
@@ -3374,6 +3405,9 @@ export const InstanceResource = {
     if (message.uid !== "") {
       obj.uid = message.uid;
     }
+    if (message.roles?.length) {
+      obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
+    }
     return obj;
   },
 
@@ -3391,6 +3425,7 @@ export const InstanceResource = {
     message.environment = object.environment ?? "";
     message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.uid = object.uid ?? "";
+    message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     return message;
   },
 };
