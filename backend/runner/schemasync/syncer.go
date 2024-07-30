@@ -260,6 +260,9 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
 
+	if instanceMeta.Metadata == nil {
+		instanceMeta.Metadata = &storepb.InstanceMetadata{}
+	}
 	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
