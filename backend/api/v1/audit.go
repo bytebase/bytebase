@@ -212,20 +212,10 @@ func getRequestString(request any) (string, error) {
 			return nil
 		}
 		switch r := request.(type) {
-		case *v1pb.QueryRequest:
-			return r
-		case *v1pb.AdminExecuteRequest:
-			return r
 		case *v1pb.ExportRequest:
 			//nolint:revive
 			r = proto.Clone(r).(*v1pb.ExportRequest)
 			r.Password = ""
-			return r
-		case *v1pb.UpdateDatabaseRequest:
-			return r
-		case *v1pb.BatchUpdateDatabasesRequest:
-			return r
-		case *v1pb.SetIamPolicyRequest:
 			return r
 		case *v1pb.CreateUserRequest:
 			return redactCreateUserRequest(r)
@@ -236,23 +226,10 @@ func getRequestString(request any) (string, error) {
 				return redactLoginRequest(r)
 			}
 			return nil
-		case *v1pb.CreateRiskRequest:
-			return r
-		case *v1pb.UpdateRiskRequest:
-			return r
-		case *v1pb.DeleteRiskRequest:
-			return r
-		case *v1pb.CreateEnvironmentRequest:
-			return r
-		case *v1pb.DeleteEnvironmentRequest:
-			return r
-		case *v1pb.UndeleteInstanceRequest:
-			return r
-		case *v1pb.UpdateEnvironmentRequest:
-			return r
-		case *v1pb.UpdateSettingRequest:
-			return r
 		default:
+			if p, ok := r.(protoreflect.ProtoMessage); ok {
+				return p
+			}
 			return nil
 		}
 	}()
@@ -280,23 +257,12 @@ func getResponseString(response any) (string, error) {
 			return nil
 		case *v1pb.LoginResponse:
 			return nil
-		case *v1pb.Database:
-			return r
-		case *v1pb.BatchUpdateDatabasesResponse:
-			return r
-		case *v1pb.IamPolicy:
-			return r
 		case *v1pb.User:
 			return redactUser(r)
-		case *v1pb.Issue:
-			return r
-		case *v1pb.Risk:
-			return r
-		case *v1pb.Environment:
-			return r
-		case *v1pb.Setting:
-			return r
 		default:
+			if p, ok := r.(protoreflect.ProtoMessage); ok {
+				return p
+			}
 			return nil
 		}
 	}()

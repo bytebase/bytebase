@@ -23,7 +23,6 @@ import {
 } from "@/router/auth";
 import {
   useEnvironmentV1Store,
-  useInstanceV1Store,
   usePolicyV1Store,
   useProjectV1Store,
   useRoleStore,
@@ -45,14 +44,6 @@ const isSwitchingProject = ref(false);
 const policyStore = usePolicyV1Store();
 const databaseStore = useDatabaseV1Store();
 
-const fetchInstances = async (optionalProject: string) => {
-  const parent = optionalProject ? `${projectNamePrefix}${optionalProject}` : undefined;
-  await useInstanceV1Store().fetchInstanceList(
-    /* !showDeleted */ false,
-    parent
-  );
-};
-
 const fetchDatabases = async (optionalProject: string) => {
   const filters = [`instance = "instances/-"`];
   // If `projectId` is provided in the route, filter the database list by the project.
@@ -64,12 +55,12 @@ const fetchDatabases = async (optionalProject: string) => {
   });
 };
 
-const instanceAndDatabaseInitialized = new Set<string /* project */>();
+const databaseInitialized = new Set<string /* project */>();
 const fetchInstancesAndDatabases = async (optionalProject: string) => {
-  if (instanceAndDatabaseInitialized.has(optionalProject || "")) return;
+  if (databaseInitialized.has(optionalProject || "")) return;
   try {
-    await Promise.all([fetchInstances(optionalProject), fetchDatabases(optionalProject)]);
-    instanceAndDatabaseInitialized.add(optionalProject || "");
+    await Promise.all([fetchDatabases(optionalProject)]);
+    databaseInitialized.add(optionalProject || "");
   } catch {
     // nothing
   }
@@ -107,7 +98,7 @@ onMounted(async () => {
       to.name === AUTH_MFA_MODULE ||
       to.name === AUTH_PASSWORD_FORGOT_MODULE
     ) {
-      instanceAndDatabaseInitialized.clear();
+      databaseInitialized.clear();
       next();
       return;
     }

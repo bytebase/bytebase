@@ -1,7 +1,8 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import type { Environment } from "../proto/v1/environment_service";
-import type { ComposedDatabase, ComposedInstance } from "../v1";
+import type { InstanceResource } from "../proto/v1/instance_service";
+import type { ComposedDatabase } from "../v1";
 
 export type SQLEditorTreeFactor =
   | "instance"
@@ -26,7 +27,7 @@ export type LabelTarget = {
 
 export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
   T extends "instance"
-    ? ComposedInstance
+    ? InstanceResource
     : T extends "environment"
       ? Environment
       : T extends "database"
@@ -107,7 +108,7 @@ export const isConnectableSQLEditorTreeNode = (
 export const instanceOfSQLEditorTreeNode = (node: SQLEditorTreeNode) => {
   const { type, target } = node.meta;
   if (type === "instance") {
-    return target as ComposedInstance;
+    return target as InstanceResource;
   }
   if (type === "database") {
     return (target as ComposedDatabase).instanceResource;

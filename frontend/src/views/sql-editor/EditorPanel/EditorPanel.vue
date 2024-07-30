@@ -40,7 +40,7 @@ import { defineAsyncComponent, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import { useInstanceV1Store, useSQLEditorTabStore } from "@/store";
+import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
 import {
   EditorAction,
@@ -73,13 +73,13 @@ const handleApplyStatement = async (
   }
   tab.value.statement = statement;
   if (run) {
-    const instance = useInstanceV1Store().getInstanceByName(
-      connection.instance
+    const database = useDatabaseV1Store().getDatabaseByName(
+      connection.database
     );
     handleExecute({
       connection,
       statement,
-      engine: instance.engine,
+      engine: database.instanceResource.engine,
       explain: false,
     });
   }

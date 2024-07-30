@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
@@ -49,6 +49,12 @@ const requiredPermissions = computed(() => {
 const hasPermission = computed(() => {
   return requiredPermissions.value.every((permission) =>
     hasWorkspacePermissionV2(currentUser.value, permission)
+  );
+});
+
+onMounted(() => {
+  instanceStore.getOrFetchInstanceByName(
+    `${instanceNamePrefix}${props.instanceId}`
   );
 });
 

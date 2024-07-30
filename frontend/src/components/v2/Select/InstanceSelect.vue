@@ -20,21 +20,22 @@ import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useInstanceV1List } from "@/store";
-import type { ComposedInstance } from "@/types";
+import { useInstanceResourceList } from "@/store";
 import {
   UNKNOWN_INSTANCE_NAME,
   isValidEnvironmentName,
   unknownInstance,
+  type ComposedInstance,
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import { State } from "@/types/proto/v1/common";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 
 interface InstanceSelectOption extends SelectOption {
   value: string;
-  instance: ComposedInstance;
+  instance: ComposedInstance | InstanceResource;
 }
 
 const props = withDefaults(
@@ -45,7 +46,10 @@ const props = withDefaults(
     includeAll?: boolean;
     includeArchived?: boolean;
     autoReset?: boolean;
-    filter?: (instance: ComposedInstance, index: number) => boolean;
+    filter?: (
+      instance: ComposedInstance | InstanceResource,
+      index: number
+    ) => boolean;
   }>(),
   {
     instanceName: undefined,
@@ -63,14 +67,12 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { instanceList: allInstanceList, ready } = useInstanceV1List(
-  true /* showDeleted */
-);
+const instanceList = useInstanceResourceList();
 
 const rawInstanceList = computed(() => {
-  let list = [...allInstanceList.value];
+  let list = [...instanceList.value];
   if (isValidEnvironmentName(props.environmentName)) {
-    list = allInstanceList.value.filter(
+    list = instanceList.value.filter(
       (instance) => instance.environment === props.environmentName
     );
   }
@@ -145,7 +147,6 @@ const filterByTitle = (pattern: string, option: SelectOption) => {
 const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
-    ready.value &&
     props.instanceName &&
     !combinedInstanceList.value.find((item) => item.name === props.instanceName)
   ) {

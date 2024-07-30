@@ -385,8 +385,10 @@ type Comment struct {
 }
 
 type PullRequestThread struct {
+	ID       int64      `json:"id"`
 	Comments []*Comment `json:"comments"`
-	Status   string     `json:"status"`
+	// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-threads/list?view=azure-devops-rest-7.1&tabs=HTTP#commentthreadstatus
+	Status string `json:"status"`
 }
 
 // CreatePullRequestComment creates a pull request comment.
@@ -428,14 +430,77 @@ func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, p
 }
 
 // ListPullRequestComments lists comments in a pull request.
-// TODO(ed): implement.
-func (*Provider) ListPullRequestComments(_ context.Context, _, _ string) ([]*vcs.PullRequestComment, error) {
-	return nil, nil
+//
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-threads/list?view=azure-devops-rest-7.1&tabs=HTTP
+func (p *Provider) ListPullRequestComments(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestComment, error) {
+	apiURL, err := p.getRepositoryAPIURL(repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("%s/pullRequests/%s/threads?%s", apiURL, pullRequestID, values.Encode())
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+	if code != http.StatusOK {
+		return nil, errors.Errorf("failed to list thread, code: %v, body: %s", code, string(body))
+	}
+
+	var threads []PullRequestThread
+	if err := json.Unmarshal([]byte(body), &threads); err != nil {
+		return nil, err
+	}
+
+	var res []*vcs.PullRequestComment
+	for _, thread := range threads {
+		if len(thread.Comments) != 1 {
+			continue
+		}
+		res = append(res, &vcs.PullRequestComment{
+			ID:      fmt.Sprintf("%d", thread.ID),
+			Content: thread.Comments[0].Content,
+		})
+	}
+	return res, nil
 }
 
 // UpdatePullRequestComment updates a comment in a pull request.
-// TODO(ed): implement.
-func (*Provider) UpdatePullRequestComment(_ context.Context, _, _ string, _ *vcs.PullRequestComment) error {
+//
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-threads/update?view=azure-devops-rest-7.1
+func (p *Provider) UpdatePullRequestComment(ctx context.Context, repositoryID, pullRequestID string, comment *vcs.PullRequestComment) error {
+	thread := &PullRequestThread{
+		Status: "active",
+		Comments: []*Comment{
+			{
+				Content:     comment.Content,
+				CommentType: "text",
+			},
+		},
+	}
+	commentCreatePayload, err := json.Marshal(thread)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal request body for creating pull request comment")
+	}
+
+	apiURL, err := p.getRepositoryAPIURL(repositoryID)
+	if err != nil {
+		return err
+	}
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("%s/pullRequests/%s/threads/%s?%s", apiURL, pullRequestID, comment.ID, values.Encode())
+	code, body, err := internal.Patch(ctx, url, p.getAuthorization(), commentCreatePayload)
+	if err != nil {
+		return errors.Wrapf(err, "PATCH %s", url)
+	}
+	if code != http.StatusOK {
+		return errors.Errorf("failed to update thread, code: %v, body: %s", code, string(body))
+	}
+
 	return nil
 }
 

@@ -527,6 +527,10 @@ message InstanceResource {
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
   string environment = 7;
+
+  State state = 8;
+
+  string uid = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message SASLConfig {

@@ -109,8 +109,8 @@ func getPullRequestID(url string) string {
 }
 
 const (
-	commentPrefixBytebaseBot = "[Bytebase Bot]"
-	commentPrefixSQLReview   = "[Bytebase SQL Review]"
+	commentPrefixBytebaseBot = "**[Bytebase Bot]**"
+	commentPrefixSQLReview   = "**[Bytebase SQL Review]**"
 )
 
 func getPullRequestComment(externalURL, issue string) string {

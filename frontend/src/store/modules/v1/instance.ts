@@ -1,19 +1,16 @@
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
-import { useCurrentUserV1 } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedInstance, MaybeRef } from "@/types";
 import { unknownEnvironment, unknownInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
-import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import { extractInstanceResourceName } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useEnvironmentV1Store } from "./environment";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
-  const currentUser = useCurrentUserV1();
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
   const instanceRoleListMapByName = reactive(new Map<string, InstanceRole[]>());
 
@@ -52,26 +49,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     return composedInstances;
   };
-  const listInstances = async (showDeleted = false) => {
-    const { instances } = await instanceServiceClient.listInstances({ showDeleted });
-    const composed = await upsertInstances(instances);
-    return composed;
-  };
-  // Deprecated.
-  const fetchInstanceList = async (showDeleted = false, parent?: string) => {
-    const request = hasWorkspacePermissionV2(
-      currentUser.value,
-      "bb.instances.list"
-    )
-      ? instanceServiceClient.listInstances
-      : instanceServiceClient.searchInstances;
-    const { instances } = await request({ showDeleted, parent });
-    const composed = await upsertInstances(instances);
-    return composed;
-  };
-  const fetchProjectInstanceList = async (project: string) => {
-    const { instances } = await instanceServiceClient.searchInstances({
-      parent: `${projectNamePrefix}${project}`,
+  const listInstances = async (showDeleted = false, parent?: string) => {
+    const { instances } = await instanceServiceClient.listInstances({
+      showDeleted,
+      parent,
     });
     const composed = await upsertInstances(instances);
     return composed;
@@ -212,8 +193,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     syncInstance,
     batchSyncInstances,
     listInstances,
-    fetchInstanceList,
-    fetchProjectInstanceList,
     getInstanceByName,
     getOrFetchInstanceByName,
     fetchInstanceRoleByName,
@@ -239,7 +218,7 @@ export const useInstanceV1List = (
     }
 
     ready.value = false;
-    store.fetchInstanceList(unref(showDeleted), unref(parent)).then(() => {
+    store.listInstances(unref(showDeleted), unref(parent)).then(() => {
       ready.value = true;
     });
   });

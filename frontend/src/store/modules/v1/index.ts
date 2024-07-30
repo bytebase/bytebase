@@ -27,3 +27,4 @@ export * from "./auditLog";
 export * from "./userGroup";
 export * from "./permission";
 export * from "./workspace";
+export * from "./instanceResource";
