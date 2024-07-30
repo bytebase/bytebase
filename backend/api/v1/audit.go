@@ -194,13 +194,21 @@ func getRequestResource(request any) string {
 	case *v1pb.LoginRequest:
 		return r.GetEmail()
 	case *v1pb.CreateRiskRequest:
-		if r.Risk != nil {
-			return r.Risk.Name
-		}
+		return r.GetRisk().GetName()
+	case *v1pb.DeleteRiskRequest:
+		return r.Name
+	case *v1pb.UpdateRiskRequest:
+		return r.GetRisk().GetName()
+	case *v1pb.CreateEnvironmentRequest:
+		return r.GetEnvironment().GetName()
+	case *v1pb.UpdateEnvironmentRequest:
+		return r.GetEnvironment().GetName()
+	case *v1pb.DeleteEnvironmentRequest:
+		return r.Name
+	case *v1pb.UndeleteEnvironmentRequest:
+		return r.Name
 	case *v1pb.UpdateSettingRequest:
-		if r.Setting != nil {
-			return r.Setting.Name
-		}
+		return r.GetSetting().GetName()
 	default:
 	}
 	return ""
