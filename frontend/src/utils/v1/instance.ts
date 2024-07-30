@@ -157,7 +157,7 @@ export const instanceV1HasCreateDatabase = (
 };
 
 export const instanceV1HasStructuredQueryResult = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   if (engine === Engine.REDIS) return false;
