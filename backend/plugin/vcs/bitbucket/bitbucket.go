@@ -303,12 +303,14 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 		return fields[0]
 	}
 
+	prURL := fmt.Sprintf("%s/%s/pull-requests/%s", p.instanceURL, repositoryID, pullRequestID)
 	var files []*vcs.PullRequestFile
 	for _, d := range bbcDiffs {
 		file := &vcs.PullRequestFile{
 			Path:         d.New.Path,
 			LastCommitID: extractCommitIDFromLinkSelf(d.New.Links.Self.Href),
 			IsDeleted:    d.Status == "removed",
+			WebURL:       fmt.Sprintf("%s/diff#L%s", prURL, d.New.Path),
 		}
 		files = append(files, file)
 	}

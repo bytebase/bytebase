@@ -60,6 +60,8 @@ type PullRequestFile struct {
 	Path         string
 	LastCommitID string
 	IsDeleted    bool
+	// WebURL is the changed file web url in the pull request.
+	WebURL string
 }
 
 // BranchInfo is the API message for repository branch.
