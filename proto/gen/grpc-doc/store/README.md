@@ -253,6 +253,7 @@
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
+    - [AppMode](#bytebase-store-AppMode)
     - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
     - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
@@ -3933,6 +3934,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode) |  | The workspace database change mode. |
+| app_mode | [AppMode](#bytebase-store-AppMode) |  | The workspace app mode, either Console or SQL Editor |
 
 
 
@@ -3952,6 +3954,19 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ALERT_LEVEL_INFO | 1 |  |
 | ALERT_LEVEL_WARNING | 2 |  |
 | ALERT_LEVEL_CRITICAL | 3 |  |
+
+
+
+<a name="bytebase-store-AppMode"></a>
+
+### AppMode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APP_MODE_UNSPECIFIED | 0 |  |
+| APP_MODE_CONSOLE | 1 | In console mode, app will navigate to console after login. All features are accessible in this mode. Default to this mode. |
+| APP_MODE_EDITOR | 2 | In EDITOR mode, app will navigate to SQL Editor after login. Some features are hidden in this mode. |
 
 
 
