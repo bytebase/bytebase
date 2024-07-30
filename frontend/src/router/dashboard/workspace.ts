@@ -8,7 +8,6 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_HOME_MODULE,
   WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
   WORKSPACE_ROUTE_USER_PROFILE,
@@ -353,16 +352,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSchemaTemplate.vue"),
-        props: true,
-      },
-      {
-        path: "slow-query",
-        name: WORKSPACE_ROUTE_SLOW_QUERY,
-        meta: {
-          title: () => startCase(t("slow-query.self")),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceSlowQuery.vue"),
         props: true,
       },
       {
