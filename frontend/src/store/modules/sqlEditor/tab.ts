@@ -20,7 +20,11 @@ import {
   useDynamicLocalStorage,
 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
+import {
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useInstanceResourceByName,
+} from "../v1";
 import { useSQLEditorStore } from "./editor";
 import { useWebTerminalStore } from "./webTerminal";
 
@@ -83,7 +87,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     Record<string, string[]>
   >(tabIdListKey, {});
 
-  const currentTabIdKey = computed(() => `${keyNamespace.value}.current-tab-id`);
+  const currentTabIdKey = computed(
+    () => `${keyNamespace.value}.current-tab-id`
+  );
   const currentTabIdMapByProject = useDynamicLocalStorage<
     Record<string, string | undefined>
   >(currentTabIdKey, {});
@@ -346,7 +352,7 @@ export const useSQLEditorConnectionDetail = (
   connection: MaybeRef<SQLEditorConnection>
 ) => {
   const instance = computed(() => {
-    return useInstanceV1Store().getInstanceByName(unref(connection).instance);
+    return useInstanceResourceByName(unref(connection).instance);
   });
 
   const database = computed(() => {
@@ -358,7 +364,9 @@ export const useSQLEditorConnectionDetail = (
       return database.value.effectiveEnvironmentEntity;
     }
 
-    return instance.value.environmentEntity;
+    return useEnvironmentV1Store().getEnvironmentByName(
+      instance.value.environment
+    );
   });
 
   return { connection, instance, database, environment };

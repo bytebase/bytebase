@@ -59,6 +59,7 @@ import {
   isValidInstanceName,
   isValidProjectName,
 } from "@/types";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import type { Project } from "@/types/proto/v1/project_service";
 import type { TransferSource } from "./utils";
 
@@ -110,7 +111,7 @@ const changeInstanceFilter = (name: string | undefined) => {
   emit("select-instance", useInstanceV1Store().getInstanceByName(name));
 };
 
-const filterInstance = (instance: ComposedInstance) => {
+const filterInstance = (instance: InstanceResource) => {
   if (instance.name === UNKNOWN_INSTANCE_NAME) return true; // "ALL" can be displayed.
   return nonEmptyInstanceNameSet.value.has(instance.name);
 };

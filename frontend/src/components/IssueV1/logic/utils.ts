@@ -6,7 +6,7 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useInstanceV1Store,
+  useInstanceResourceByName,
 } from "@/store";
 import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
 import { unknownDatabase, UNKNOWN_ID, unknownEnvironment } from "@/types";
@@ -78,7 +78,8 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       return maybeExistedDatabase;
     }
 
-    const instance = useInstanceV1Store().getInstanceByName(instanceName);
+    const environmentStore = useEnvironmentV1Store();
+    const instance = useInstanceResourceByName(instanceName);
     return {
       ...unknownDatabase(),
       name,
@@ -88,7 +89,9 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       project: project.name,
       projectEntity: project,
       effectiveEnvironment: instance.environment,
-      effectiveEnvironmentEntity: instance.environmentEntity,
+      effectiveEnvironmentEntity: environmentStore.getEnvironmentByName(
+        instance.environment
+      ),
       instanceResource: instance,
     };
   };

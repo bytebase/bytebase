@@ -103,6 +103,7 @@ const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const environmentList = useEnvironmentV1List();
+// Users are workspace admins in Bytebase Editor. So we don't need to check permission here.
 const { instanceList: rawInstanceV1List, ready } = useInstanceV1List(
   /* showDeleted */ false,
   /* forceUpdate */ true

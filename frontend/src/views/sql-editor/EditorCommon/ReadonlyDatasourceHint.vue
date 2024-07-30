@@ -30,14 +30,16 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, useSQLEditorTabStore } from "@/store";
-import type { ComposedInstance } from "@/types";
 import { isValidInstanceName } from "@/types";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import {
+  DataSourceType,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";
 
 const props = defineProps<{
-  instance: ComposedInstance;
+  instance: InstanceResource;
 }>();
 
 const tabStore = useSQLEditorTabStore();

@@ -40,9 +40,8 @@ watch(
   () => props.instanceName,
   async (instanceName) => {
     if (instanceName) {
-      const instance = instanceV1Store.getInstanceByName(instanceName);
       instanceRoleList.value =
-        await instanceV1Store.fetchInstanceRoleListByName(instance.name);
+        await instanceV1Store.fetchInstanceRoleListByName(instanceName);
       emit("update:instance-role", undefined);
     }
   },
