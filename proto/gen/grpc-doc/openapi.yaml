@@ -2244,64 +2244,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/databases/{database}/slowQueries:
-        get:
-            tags:
-                - DatabaseService
-            operationId: DatabaseService_ListSlowQueries
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: |-
-                    The filter of the slow query log.
-                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                     Support filter by project and start_time in SlowQueryDetails for now.
-                     For example:
-                     Search the slow query log of the specific project:
-                       - the specific project: project = "projects/{project}"
-                     Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
-                       - start_time > "2022-01-01T12:00:00.000Z"
-                       - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
-                       - Currently we only support filtering down to date granularity.
-                  schema:
-                    type: string
-                - name: orderBy
-                  in: query
-                  description: |-
-                    The order by of the slow query log.
-                     Support order by count, latest_log_time, average_query_time, maximum_query_time,
-                     average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
-                     For example:
-                      - order by count: order_by = "count"
-                      - order by latest_log_time desc: order_by = "latest_log_time desc"
-                     Default: order by average_query_time desc.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListSlowQueriesResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}:adviseIndex:
         post:
             tags:
@@ -6111,6 +6053,58 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Sheet'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/slowQueries:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_ListSlowQueries
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    The filter of the slow query log.
+                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+                     Support filter by database and start_time in SlowQueryDetails for now.
+                     For example:
+                     Search the slow query log of the specific database:
+                       - the specific database: database = "instances/{instance}/databases/{database}"
+                     Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
+                       - start_time > "2022-01-01T12:00:00.000Z"
+                       - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
+                       - Currently we only support filtering down to date granularity.
+                  schema:
+                    type: string
+                - name: orderBy
+                  in: query
+                  description: |-
+                    The order by of the slow query log.
+                     Support order by count, latest_log_time, average_query_time, maximum_query_time,
+                     average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
+                     For example:
+                      - order by count: order_by = "count"
+                      - order by latest_log_time desc: order_by = "latest_log_time desc"
+                     Default: order by average_query_time desc.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListSlowQueriesResponse'
                 default:
                     description: Default error response
                     content:
