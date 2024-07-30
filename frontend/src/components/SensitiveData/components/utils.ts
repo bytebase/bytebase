@@ -3,8 +3,8 @@ import type { SelectOption } from "naive-ui";
 import type { Factor, Operator } from "@/plugins/cel";
 import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import {
+  useInstanceResourceList,
   useEnvironmentV1Store,
-  useInstanceV1List,
   useProjectV1List,
   useSettingV1Store,
 } from "@/store";
@@ -47,7 +47,7 @@ export const getEnvironmentIdOptions = () => {
 };
 
 export const getInstanceIdOptions = () => {
-  const { instanceList } = useInstanceV1List(false);
+  const instanceList = useInstanceResourceList();
   return instanceList.value.map<SelectOption>((ins) => {
     const instanceId = extractInstanceResourceName(ins.name);
     return {
@@ -81,7 +81,11 @@ export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
   ["project_id", uniq([...EqualityOperatorList, ...CollectionOperatorList])],
 ]);
 
-export type MaskingType = "full-mask" | "range-mask" | "md5-mask" | "inner-outer-mask";
+export type MaskingType =
+  | "full-mask"
+  | "range-mask"
+  | "md5-mask"
+  | "inner-outer-mask";
 
 export const getMaskingType = (
   algorithm: MaskingAlgorithmSetting_Algorithm
@@ -95,7 +99,7 @@ export const getMaskingType = (
       } else if (algorithm.rangeMask) {
         return "range-mask";
       } else if (algorithm.innerOuterMask) {
-        return "inner-outer-mask"
+        return "inner-outer-mask";
       }
       break;
     default:

@@ -67,13 +67,13 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useInstanceV1Store,
   useIsLoggedIn,
   useSQLEditorTabStore,
   resolveOpeningDatabaseListFromSQLEditorTabList,
   useSQLEditorTreeStore,
   idForSQLEditorTreeNodeTarget,
   useConnectionOfCurrentSQLEditorTab,
+  useInstanceResourceByName,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -102,7 +102,6 @@ import { setConnection, useDropdown } from "./actions";
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
-const instanceStore = useInstanceV1Store();
 const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
 
@@ -147,7 +146,7 @@ const selectedKeys = computed(() => {
     if (!node) return [];
     return [node.key];
   } else if (connection.instance) {
-    const instance = instanceStore.getInstanceByName(connection.instance);
+    const instance = useInstanceResourceByName(connection.instance);
     const nodes = treeStore.nodesByTarget("instance", instance);
     return nodes.map((node) => node.key);
   }

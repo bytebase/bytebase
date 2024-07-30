@@ -85,7 +85,6 @@ const router = useRouter();
 const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
-const instanceStore = useInstanceV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
@@ -157,18 +156,6 @@ const handleProjectSwitched = async () => {
   tabStore.maybeInitProject(project);
 };
 
-const prepareInstances = async () => {
-  const { project } = editorStore;
-  if (project) {
-    await instanceStore.fetchProjectInstanceList(
-      extractProjectResourceName(project)
-    );
-  } else {
-    // TODO(d): do we still have non-project cases?
-    await instanceStore.listInstances();
-  }
-};
-
 const prepareDatabases = async () => {
   // It will also be called when user logout
   if (me.value.name === UNKNOWN_USER_NAME) {
@@ -176,15 +163,11 @@ const prepareDatabases = async () => {
   }
   const { project } = editorStore;
   // `databaseList` is the database list in the project.
-  const databaseList = (
-    await databaseStore.listDatabases(project)
-  ).filter((db) => db.syncState === State.ACTIVE);
+  const databaseList = (await databaseStore.listDatabases(project)).filter(
+    (db) => db.syncState === State.ACTIVE
+  );
 
   editorStore.databaseList = databaseList;
-};
-
-const prepareInstancesAndDatabases = async () => {
-  await Promise.all([prepareInstances(), prepareDatabases()]);
 };
 
 const connect = (connection: SQLEditorConnection) => {
@@ -544,8 +527,7 @@ const syncURLWithConnection = () => {
         }
       }
       if (instanceName) {
-        const instance = instanceStore.getInstanceByName(instanceName);
-        if (isValidInstanceName(instance.name)) {
+        if (isValidInstanceName(instanceName)) {
           if (table) {
             query.table = table;
             query.schema = schema ?? "";
@@ -554,7 +536,7 @@ const syncURLWithConnection = () => {
             name: SQL_EDITOR_INSTANCE_MODULE,
             params: {
               project: extractProjectResourceName(editorStore.project),
-              instance: extractInstanceResourceName(instance.name),
+              instance: extractInstanceResourceName(instanceName),
             },
             query,
           });
@@ -603,7 +585,7 @@ onMounted(async () => {
     initializeProjects(),
     groupStore.fetchGroupList(),
   ]);
-  await prepareInstancesAndDatabases();
+  await prepareDatabases();
   tabStore.maybeInitProject(editorStore.project);
   editorStore.projectContextReady = true;
   nextTick(() => {
@@ -618,7 +600,7 @@ onMounted(async () => {
     async () => {
       editorStore.projectContextReady = false;
       await handleProjectSwitched();
-      await prepareInstancesAndDatabases();
+      await prepareDatabases();
       tabStore.maybeInitProject(editorStore.project);
       editorStore.projectContextReady = true;
       nextTick(() => {
