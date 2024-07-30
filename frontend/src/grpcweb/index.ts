@@ -16,7 +16,6 @@ import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
-import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
@@ -89,11 +88,6 @@ export const environmentServiceClient = clientFactory.create(
 
 export const instanceServiceClient = clientFactory.create(
   InstanceServiceDefinition,
-  channel
-);
-
-export const instanceRoleServiceClient = clientFactory.create(
-  InstanceRoleServiceDefinition,
   channel
 );
 

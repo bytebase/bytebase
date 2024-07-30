@@ -25,7 +25,6 @@ import {
   UNKNOWN_INSTANCE_NAME,
   isValidEnvironmentName,
   unknownInstance,
-  type ComposedInstance,
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
@@ -34,7 +33,7 @@ import { InstanceV1EngineIcon } from "../Model/Instance";
 
 interface InstanceSelectOption extends SelectOption {
   value: string;
-  instance: ComposedInstance | InstanceResource;
+  instance: InstanceResource;
 }
 
 const props = withDefaults(
@@ -44,10 +43,7 @@ const props = withDefaults(
     allowedEngineList?: readonly Engine[];
     includeAll?: boolean;
     autoReset?: boolean;
-    filter?: (
-      instance: ComposedInstance | InstanceResource,
-      index: number
-    ) => boolean;
+    filter?: (instance: InstanceResource, index: number) => boolean;
   }>(),
   {
     instanceName: undefined,
