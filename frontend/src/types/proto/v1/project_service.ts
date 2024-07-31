@@ -4002,6 +4002,7 @@ export const ProjectServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
