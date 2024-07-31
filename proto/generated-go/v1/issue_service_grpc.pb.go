@@ -47,8 +47,14 @@ type IssueServiceClient interface {
 	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	BatchUpdateIssuesStatus(ctx context.Context, in *BatchUpdateIssuesStatusRequest, opts ...grpc.CallOption) (*BatchUpdateIssuesStatusResponse, error)
+	// ApproveIssue approves the issue.
+	// The access is based on approval flow.
 	ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	// RejectIssue rejects the issue.
+	// The access is based on approval flow.
 	RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	// RequestIssue requests the issue.
+	// The access is based on approval flow.
 	RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 }
 
@@ -194,8 +200,14 @@ type IssueServiceServer interface {
 	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
 	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error)
 	BatchUpdateIssuesStatus(context.Context, *BatchUpdateIssuesStatusRequest) (*BatchUpdateIssuesStatusResponse, error)
+	// ApproveIssue approves the issue.
+	// The access is based on approval flow.
 	ApproveIssue(context.Context, *ApproveIssueRequest) (*Issue, error)
+	// RejectIssue rejects the issue.
+	// The access is based on approval flow.
 	RejectIssue(context.Context, *RejectIssueRequest) (*Issue, error)
+	// RequestIssue requests the issue.
+	// The access is based on approval flow.
 	RequestIssue(context.Context, *RequestIssueRequest) (*Issue, error)
 	mustEmbedUnimplementedIssueServiceServer()
 }
