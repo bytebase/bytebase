@@ -35,6 +35,8 @@ export type AppFeatures = {
   "bb.feature.sql-editor.hide-bytebase-logo": boolean;
   "bb.feature.sql-editor.hide-profile": boolean;
   "bb.feature.sql-editor.hide-readonly-datasource-hint": boolean;
+  "bb.feature.sql-editor.hide-projects": boolean;
+  "bb.feature.sql-editor.hide-environments": boolean;
 };
 
 export type AppProfile = {
@@ -80,5 +82,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.sql-editor.hide-bytebase-logo": false,
     "bb.feature.sql-editor.hide-profile": false,
     "bb.feature.sql-editor.hide-readonly-datasource-hint": false,
+    "bb.feature.sql-editor.hide-projects": false,
+    "bb.feature.sql-editor.hide-environments": false,
   },
 });
