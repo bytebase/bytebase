@@ -197,7 +197,9 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		}
 	}
 
-	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &instanceCreate.ResourceID)
+	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &FindDataSourceMessage{
+		InstanceID: &instanceCreate.ResourceID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +348,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 	}
 	instance.Deleted = convertRowStatusToDeleted(rowStatus)
-	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &patch.ResourceID)
+	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &FindDataSourceMessage{
+		InstanceID: &patch.ResourceID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -459,9 +463,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	// Use a single query to list all data sources if there are more than one instance to look at.
-	var dataSourceFind *string
+	dataSourceFind := &FindDataSourceMessage{}
 	if len(instanceMessages) == 1 {
-		dataSourceFind = &instanceMessages[0].ResourceID
+		dataSourceFind.InstanceID = &instanceMessages[0].ResourceID
 	}
 	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, dataSourceFind)
 	if err != nil {

@@ -49,7 +49,6 @@ export const overrideAppProfile = () => {
         "--color-accent-hover": "#00554f",
         "--color-accent-disabled": "#b8c3c3",
       },
-      "bb.feature.sql-editor.custom-query-datasource": true,
       "bb.feature.sql-editor.disallow-export-query-data": true,
     });
     if (actuatorStore.appProfile.embedded) {

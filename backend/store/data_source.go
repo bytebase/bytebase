@@ -61,6 +61,14 @@ type DataSourceMessage struct {
 	MasterObfuscatedPassword string
 }
 
+// FindDataSourceMessage is the message for finding a database.
+type FindDataSourceMessage struct {
+	ID         *string
+	Name       *string
+	InstanceID *string
+	Type       *api.DataSourceType
+}
+
 // Copy returns a copy of the data source message.
 func (m *DataSourceMessage) Copy() *DataSourceMessage {
 	deepCopyAdditionalAddresses := slices.Clone[[]*storepb.DataSourceOptions_Address](m.AdditionalAddresses)
@@ -150,10 +158,19 @@ type UpdateDataSourceMessage struct {
 	MasterObfuscatedPassword *string
 }
 
-func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID *string) (map[string][]*DataSourceMessage, error) {
+func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if instanceID != nil {
-		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *instanceID)
+	if find.ID != nil {
+		where, args = append(where, fmt.Sprintf("data_source.id = $%d", len(args)+1)), append(args, *find.ID)
+	}
+	if find.Name != nil {
+		where, args = append(where, fmt.Sprintf("data_source.name = $%d", len(args)+1)), append(args, *find.Name)
+	}
+	if find.InstanceID != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *find.InstanceID)
+	}
+	if find.Type != nil {
+		where, args = append(where, fmt.Sprintf("data_source.type = $%d", len(args)+1)), append(args, *find.Type)
 	}
 
 	instanceDataSourcesMap := make(map[string][]*DataSourceMessage)
@@ -237,6 +254,53 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID *string) 
 	}
 
 	return instanceDataSourcesMap, nil
+}
+
+func (s *Store) ListDataSourcesV2(ctx context.Context, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	dataSources, err := s.listDataSourceV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataSources, nil
+}
+
+func (s *Store) GetDataSource(ctx context.Context, find *FindDataSourceMessage) (*DataSourceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	dataSources, err := s.listDataSourceV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(dataSources) == 0 {
+		return nil, nil
+	}
+	if len(dataSources) > 1 {
+		return nil, errors.Errorf("found %d data sources, but expected 1", len(dataSources))
+	}
+
+	for _, dataSources := range dataSources {
+		if len(dataSources) == 0 {
+			return nil, nil
+		}
+		if len(dataSources) > 1 {
+			return nil, errors.Errorf("found %d data sources, but expected 1", len(dataSources))
+		}
+		return dataSources[0], nil
+	}
+
+	return nil, nil
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.

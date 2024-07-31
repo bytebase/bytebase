@@ -148,9 +148,6 @@ const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 const disallowShareWorksheet = useAppFeature(
   "bb.feature.sql-editor.disallow-share-worksheet"
 );
-const hasCustomQueryDatasourceFeature = useAppFeature(
-  "bb.feature.sql-editor.custom-query-datasource"
-);
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
@@ -193,7 +190,6 @@ const allowSave = computed(() => {
   if (!showSheetsFeature.value) {
     return false;
   }
-
   if (isEmptyStatement.value) {
     return false;
   }
@@ -243,11 +239,7 @@ const showQueryContextSettingPopover = computed(() => {
   if (!tab) {
     return false;
   }
-  return (
-    Boolean(instance.value) &&
-    tab.mode !== "ADMIN" &&
-    hasCustomQueryDatasourceFeature.value
-  );
+  return instance.value && tab.mode !== "ADMIN";
 });
 
 const showQueryModeSelect = computed(() => {

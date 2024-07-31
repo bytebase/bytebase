@@ -1550,7 +1550,12 @@
     "production-environment": "本番環境",
     "access-control": {
       "title": "アクセス制御",
-      "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限 (管理者/DBA はコピー可能)"
+      "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限 (管理者/DBA はコピー可能)",
+      "restrict-admin-data-sources": {
+        "self": "管理者データソースを制限する",
+        "disallow": "管理データソースからのデータのクエリを禁止する",
+        "fallback": "読み取り専用データソースが利用できない場合は、管理データソースにフォールバックします。"
+      }
     }
   },
   "quick-start": {
@@ -2416,6 +2421,10 @@
         "description": "オートコンプリートが制限されているか、無効になっている可能性があります。",
         "disconnected": "WebSocketが切断されました"
       }
+    },
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。",
+      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "読み取り専用データ ソースが使用可能な場合、管理データ ソースはクエリを実行できません。"
     }
   },
   "schema-editor": {

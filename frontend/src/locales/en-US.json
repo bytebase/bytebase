@@ -1550,7 +1550,12 @@
     "production-environment": "Production environment",
     "access-control": {
       "title": "Access control",
-      "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)"
+      "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)",
+      "restrict-admin-data-sources": {
+        "self": "Restrict admin data sources",
+        "disallow": "Disallow to query data from admin data source",
+        "fallback": "Fallback to admin data source if no read-only data source is available"
+      }
     }
   },
   "quick-start": {
@@ -2416,6 +2421,10 @@
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected"
       }
+    },
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query.",
+      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "Admin data source is disallowed to query when read-only data source is available."
     }
   },
   "schema-editor": {
