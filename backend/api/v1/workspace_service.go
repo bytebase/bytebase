@@ -40,11 +40,6 @@ func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *v1pb.GetIamPolic
 }
 
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	userUID, err := s.checkUserIsAdmin(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace iam policy with error: %v", err.Error())
@@ -67,9 +62,13 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 		return nil, status.Errorf(codes.Internal, "failed to marshal iam policy with error: %v", err.Error())
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	payloadStr := string(payloadBytes)
 	patch := &store.UpdatePolicyMessage{
-		UpdaterID:    userUID,
+		UpdaterID:    principalID,
 		ResourceType: api.PolicyResourceTypeWorkspace,
 		Type:         api.PolicyTypeIAM,
 		Payload:      &payloadStr,
@@ -96,19 +95,4 @@ func containsActiveEndUser(users []*store.UserMessage) bool {
 		}
 	}
 	return false
-}
-
-func (s *WorkspaceService) checkUserIsAdmin(ctx context.Context) (int, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return 0, status.Errorf(codes.Internal, "failed to get user")
-	}
-	isAdmin, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin)
-	if err != nil {
-		return 0, status.Errorf(codes.Internal, "failed to get check admin role")
-	}
-	if !isAdmin {
-		return 0, status.Errorf(codes.PermissionDenied, "only admin can set workspace iam policy")
-	}
-	return user.ID, nil
 }
