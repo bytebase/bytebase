@@ -64,22 +64,6 @@ export default defineComponent({
         immediate: true,
       }
     );
-    // watch(
-    //   setting,
-    //   () => {
-
-    //     actuatorStore.appProfile.mode =
-    //       setting.value?.value?.workspaceProfileSettingValue
-    //         ?.databaseChangeMode === DatabaseChangeMode.EDITOR
-    //         ? "EDITOR"
-    //         : "CONSOLE";
-
-    //
-    //   },
-    //   {
-    //     immediate: true,
-    //   }
-    // );
   },
   render() {
     return null;
