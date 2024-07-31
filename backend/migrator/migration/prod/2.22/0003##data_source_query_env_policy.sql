@@ -8,7 +8,7 @@ SELECT
   e.id, 
   false
 FROM 
-    environment e
+  environment e
 WHERE 
   NOT EXISTS (
     SELECT 1 
