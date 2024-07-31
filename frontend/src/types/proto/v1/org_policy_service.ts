@@ -3007,6 +3007,7 @@ export const OrgPolicyServiceDefinition = {
             new Uint8Array([18, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               216,
@@ -3247,6 +3248,7 @@ export const OrgPolicyServiceDefinition = {
             new Uint8Array([18, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               132,
@@ -3529,6 +3531,7 @@ export const OrgPolicyServiceDefinition = {
             new Uint8Array([18, 98, 98, 46, 112, 111, 108, 105, 99, 105, 101, 115, 46, 100, 101, 108, 101, 116, 101]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               185,
