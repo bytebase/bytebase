@@ -39,6 +39,7 @@ type SQLServiceClient interface {
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (*ExecuteResponse, error)
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (SQLService_AdminExecuteClient, error)
+	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	DifferPreview(ctx context.Context, in *DifferPreviewRequest, opts ...grpc.CallOption) (*DifferPreviewResponse, error)
@@ -197,6 +198,7 @@ type SQLServiceServer interface {
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	Execute(context.Context, *ExecuteRequest) (*ExecuteResponse, error)
 	AdminExecute(SQLService_AdminExecuteServer) error
+	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error)

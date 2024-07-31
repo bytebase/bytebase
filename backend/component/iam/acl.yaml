@@ -23,6 +23,7 @@ roles:
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
       - bb.databases.adviseIndex
+      - bb.databases.check
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
@@ -138,6 +139,7 @@ roles:
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
       - bb.databases.adviseIndex
+      - bb.databases.check
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
@@ -266,6 +268,7 @@ roles:
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
       - bb.databases.adviseIndex
+      - bb.databases.check
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
@@ -311,6 +314,7 @@ roles:
       - bb.changelists.create
       - bb.changelists.get
       - bb.changelists.list
+      - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
@@ -356,6 +360,7 @@ roles:
     permissions:
       - bb.branches.get
       - bb.changeHistories.get
+      - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list

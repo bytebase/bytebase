@@ -22,6 +22,7 @@ permissions:
     - bb.databaseSecrets.list
     - bb.databaseSecrets.update
     - bb.databases.adviseIndex
+    - bb.databases.check
     - bb.databases.export
     - bb.databases.get
     - bb.databases.getSchema

@@ -10,6 +10,7 @@ paths:
         get:
             tags:
                 - ProjectService
+            description: Deprecated.
             operationId: ProjectService_BatchGetIamPolicy
             parameters:
                 - name: '*'
@@ -6568,6 +6569,7 @@ paths:
         get:
             tags:
                 - SQLService
+            description: SearchQueryHistories searches query histories for the caller.
             operationId: SQLService_SearchQueryHistories
             parameters:
                 - name: pageSize
@@ -9042,16 +9044,16 @@ components:
             description: CheckConstraintMetadata is the metadata for check constraints.
         CheckRequest:
             required:
-                - database
+                - name
             type: object
             properties:
-                statement:
-                    type: string
-                database:
+                name:
                     type: string
                     description: |-
                         The database name to check against.
-                         Format: instances/{instance}/databases/{databaseName}
+                         Format: instances/{instance}/databases/{database}
+                statement:
+                    type: string
                 metadata:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseMetadata'
