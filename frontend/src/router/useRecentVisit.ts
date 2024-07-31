@@ -53,7 +53,9 @@ export function useRecentVisit() {
       }
       if (
         currentRoute.path.startsWith("/auth") ||
-        currentRoute.path.startsWith("/sql-editor")
+        currentRoute.path.startsWith("/sql-editor") ||
+        currentRoute.path.startsWith("/403") ||
+        currentRoute.path.startsWith("/404")
       ) {
         // ignore auth related pages
         // kbar is invisible on these pages
