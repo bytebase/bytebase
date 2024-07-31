@@ -208,6 +208,28 @@ func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, d
 		}
 		port = dsPort
 	}
+	if dataSource.UseSSL {
+		ca, err := common.Unobfuscate(dataSource.ObfuscatedSslCa, secret)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get ssl ca")
+		}
+
+		cert, err := common.Unobfuscate(dataSource.ObfuscatedSslCert, secret)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get ssl cert")
+		}
+
+		key, err := common.Unobfuscate(dataSource.ObfuscatedSslKey, secret)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get ssl key")
+		}
+
+		migrationContext.UseTLS = true
+		migrationContext.TLSCACertificate = ca
+		migrationContext.TLSCertificate = cert
+		migrationContext.TLSKey = key
+		migrationContext.TLSAllowInsecure = true
+	}
 	migrationContext.InspectorConnectionConfig.Key.Port = port
 	migrationContext.CliUser = dataSource.Username
 	migrationContext.CliPassword = password
