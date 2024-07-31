@@ -1651,38 +1651,10 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		return nil, status.Errorf(codes.Internal, "failed to find database list %q", err.Error())
 	}
 
-	var canAccessDBs []*store.DatabaseMessage
-
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
-	}
-
-	switch role {
-	case api.WorkspaceAdmin, api.WorkspaceDBA:
-		canAccessDBs = databases
-	case api.WorkspaceMember:
-		for _, database := range databases {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSlowQueriesList, user, database.ProjectID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check permission, err: %v", err.Error())
-			}
-			if ok {
-				canAccessDBs = append(canAccessDBs, database)
-			}
-		}
-	default:
-		return nil, status.Errorf(codes.PermissionDenied, "unknown role %q", role)
-	}
-
 	result := &v1pb.ListSlowQueriesResponse{}
 	instanceMap := make(map[string]*totalValue)
 
-	for _, database := range canAccessDBs {
+	for _, database := range databases {
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			ResourceID: &database.InstanceID,
 		})

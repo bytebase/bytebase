@@ -7457,7 +7457,7 @@ paths:
         patch:
             tags:
                 - AuthService
-            description: Only the user itself and the user with bb.users.create permission on the workspace can update the user.
+            description: Only the user itself and the user with bb.users.update permission on the workspace can update the user.
             operationId: AuthService_UpdateUser
             parameters:
                 - name: user

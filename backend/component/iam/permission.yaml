@@ -103,6 +103,10 @@ permissions:
     - bb.userGroups.delete
     - bb.userGroups.list
     - bb.userGroups.get
+    - bb.users.create
+    - bb.users.update
+    - bb.users.delete
+    - bb.users.undelete
     - bb.settings.get
     - bb.settings.list
     - bb.settings.set
