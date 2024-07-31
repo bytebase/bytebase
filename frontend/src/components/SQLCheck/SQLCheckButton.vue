@@ -177,7 +177,7 @@ const runCheckInternal = async (
   const { database, changeType } = props;
   const result = await sqlServiceClient.check({
     statement,
-    database: database.name,
+    name: database.name,
     metadata: databaseMetadata,
     changeType,
   });

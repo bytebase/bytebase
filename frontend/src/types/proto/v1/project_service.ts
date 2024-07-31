@@ -3880,6 +3880,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Deprecated. */
     batchGetIamPolicy: {
       name: "BatchGetIamPolicy",
       requestType: BatchGetIamPolicyRequest,
