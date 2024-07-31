@@ -2425,7 +2425,8 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador.",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "No se permite realizar consultas a la fuente de datos del administrador cuando la fuente de datos de solo lectura está disponible."
-    }
+    },
+    "manage-connections": "Gestionar las conexiones"
   },
   "schema-editor": {
     "self": "Editor de esquema",
