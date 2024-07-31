@@ -1021,6 +1021,7 @@ export const WorksheetServiceDefinition = {
   name: "WorksheetService",
   fullName: "bytebase.v1.WorksheetService",
   methods: {
+    /** Create a personal worksheet used in SQL Editor. */
     createWorksheet: {
       name: "CreateWorksheet",
       requestType: CreateWorksheetRequest,
@@ -1066,6 +1067,13 @@ export const WorksheetServiceDefinition = {
         },
       },
     },
+    /**
+     * Get a worksheet by name.
+     * The users can access this method if,
+     * - they are the creator of the worksheet;
+     * - they have bb.worksheets.get permission on the workspace;
+     * - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+     */
     getWorksheet: {
       name: "GetWorksheet",
       requestType: GetWorksheetRequest,
@@ -1109,6 +1117,11 @@ export const WorksheetServiceDefinition = {
         },
       },
     },
+    /**
+     * Search for worksheets.
+     * This is used for finding my worksheets or worksheets shared by other people.
+     * The sheet accessibility is the same as GetWorksheet().
+     */
     searchWorksheets: {
       name: "SearchWorksheets",
       requestType: SearchWorksheetsRequest,
@@ -1149,6 +1162,13 @@ export const WorksheetServiceDefinition = {
         },
       },
     },
+    /**
+     * Update a worksheet.
+     * The users can access this method if,
+     * - they are the creator of the worksheet;
+     * - they have bb.worksheets.manage permission on the workspace;
+     * - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+     */
     updateWorksheet: {
       name: "UpdateWorksheet",
       requestType: UpdateWorksheetRequest,
@@ -1238,6 +1258,10 @@ export const WorksheetServiceDefinition = {
         },
       },
     },
+    /**
+     * Update the organizer of a worksheet.
+     * The access is the same as UpdateWorksheet method.
+     */
     updateWorksheetOrganizer: {
       name: "UpdateWorksheetOrganizer",
       requestType: UpdateWorksheetOrganizerRequest,
@@ -1342,6 +1366,10 @@ export const WorksheetServiceDefinition = {
         },
       },
     },
+    /**
+     * Delete a worksheet.
+     * The access is the same as UpdateWorksheet method.
+     */
     deleteWorksheet: {
       name: "DeleteWorksheet",
       requestType: DeleteWorksheetRequest,
