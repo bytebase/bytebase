@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -110,7 +109,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 
 	requireAudit, err := isAuditMethod(serverInfo.FullMethod)
 	if err != nil {
-		slog.Warn("audit interceptor: failed", log.BBError(err))
+		slog.Warn("audit interceptor: failed to check isAuditMethod", log.BBError(err))
 		return response, rerr
 	}
 
@@ -438,7 +437,7 @@ func isAuditMethod(fullMethod string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	requireAudit, ok := proto.GetExtension(md, v1.E_Audit).(bool)
+	requireAudit, ok := proto.GetExtension(md, v1pb.E_Audit).(bool)
 	if !ok {
 		return false, errors.Errorf("invalid audit extension, full method name %q", fullMethod)
 	}
