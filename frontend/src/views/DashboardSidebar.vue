@@ -32,7 +32,6 @@ import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
 import { useProjectActions } from "@/components/KBar/useProjectActions";
 import workspaceRoutes from "@/router/dashboard/workspace";
 import {
-  WORKSPACE_HOME_MODULE,
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
@@ -81,10 +80,8 @@ const getItemClass = (item: SidebarItem): string[] => {
     return classes;
   }
   if (
-    (item.name === WORKSPACE_ROUTE_MEMBERS &&
-      current?.toString() === WORKSPACE_ROUTE_USER_PROFILE) ||
-    (item.name === WORKSPACE_ROUTE_MY_ISSUES &&
-      current?.toString() === WORKSPACE_HOME_MODULE)
+    item.name === WORKSPACE_ROUTE_MEMBERS &&
+    current?.toString() === WORKSPACE_ROUTE_USER_PROFILE
   ) {
     classes.push("router-link-active", "bg-link-hover");
     return classes;

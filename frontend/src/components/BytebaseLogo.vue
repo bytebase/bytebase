@@ -4,7 +4,9 @@
   >
     <component
       :is="component"
-      to="/"
+      :to="{
+        name: WORKSPACE_ROUTE_MY_ISSUES,
+      }"
       class="w-full select-none flex flex-row justify-center items-center"
       active-class=""
       exact-active-class=""
@@ -27,6 +29,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 
 withDefaults(
