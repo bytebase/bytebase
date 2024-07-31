@@ -1,8 +1,8 @@
 import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
-import { defineStore, storeToRefs } from "pinia";
-import { computed, watchEffect } from "vue";
+import { defineStore } from "pinia";
+import { computed } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
@@ -15,7 +15,6 @@ import {
 import type {
   ActuatorInfo,
   ResourcePackage,
-  DebugLog,
 } from "@/types/proto/v1/actuator_service";
 import { semverCompare } from "@/utils";
 
@@ -28,7 +27,6 @@ interface ActuatorState {
   serverInfo?: ActuatorInfo;
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
-  debugLogList: DebugLog[];
   appProfile: AppProfile;
 }
 
@@ -40,7 +38,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       ignoreRemindModalTillNextRelease: false,
       nextCheckTs: 0,
     }),
-    debugLogList: [],
     appProfile: defaultAppProfile(),
   }),
   getters: {
