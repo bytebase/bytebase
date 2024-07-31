@@ -60,6 +60,7 @@ service DatabaseService {
     option (google.api.method_signature) = "database,update_mask";
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
@@ -69,6 +70,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc SyncDatabase(SyncDatabaseRequest) returns (SyncDatabaseResponse) {

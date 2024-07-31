@@ -365,10 +365,16 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	case v1pb.AuthMethod_CUSTOM:
 		authMethod = common.AuthMethodCustom
 	}
+	auditAny := proto.GetExtension(md, v1pb.E_Audit)
+	audit, ok := auditAny.(bool)
+	if !ok {
+		return nil, errs.Errorf("invalid audit extension, full method name %q", fullMethod)
+	}
 
 	return &common.AuthContext{
 		AllowWithoutCredential: allowWithoutCredential,
 		Permission:             permission,
 		AuthMethod:             authMethod,
+		Audit:                  audit,
 	}, nil
 }

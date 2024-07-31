@@ -27,6 +27,7 @@ service SQLService {
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
@@ -65,6 +66,7 @@ service SQLService {
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {

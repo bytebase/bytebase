@@ -9,6 +9,7 @@
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
+    - [File-level Extensions](#v1_annotation-proto-extensions)
   
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
@@ -748,6 +749,7 @@
 | Extension | Type | Base | Number | Description |
 | --------- | ---- | ---- | ------ | ----------- |
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 |  |
+| audit | bool | .google.protobuf.MethodOptions | 100003 |  |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 |  |
 | permission | string | .google.protobuf.MethodOptions | 100001 |  |
 
