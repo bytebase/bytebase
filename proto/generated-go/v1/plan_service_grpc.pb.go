@@ -35,8 +35,11 @@ const (
 type PlanServiceClient interface {
 	GetPlan(ctx context.Context, in *GetPlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
+	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
 	SearchPlans(ctx context.Context, in *SearchPlansRequest, opts ...grpc.CallOption) (*SearchPlansResponse, error)
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
+	// UpdatePlan updates the plan.
+	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
 	RunPlanChecks(ctx context.Context, in *RunPlanChecksRequest, opts ...grpc.CallOption) (*RunPlanChecksResponse, error)
@@ -137,8 +140,11 @@ func (c *planServiceClient) BatchCancelPlanCheckRuns(ctx context.Context, in *Ba
 type PlanServiceServer interface {
 	GetPlan(context.Context, *GetPlanRequest) (*Plan, error)
 	ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
+	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
 	SearchPlans(context.Context, *SearchPlansRequest) (*SearchPlansResponse, error)
 	CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error)
+	// UpdatePlan updates the plan.
+	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
 	UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error)
 	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
 	RunPlanChecks(context.Context, *RunPlanChecksRequest) (*RunPlanChecksResponse, error)
