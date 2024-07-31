@@ -1,7 +1,7 @@
 import { useLocalStorage, useDebounce } from "@vueuse/core";
 import { computed, ref, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
-import { WORKSPACE_HOME_MODULE } from "./dashboard/workspaceRoutes";
+import { WORKSPACE_ROOT_MODULE } from "./dashboard/workspaceRoutes";
 
 type RecentVisit = {
   title: string;
@@ -47,7 +47,7 @@ export function useRecentVisit() {
     useDebounce(currentRoute, 50),
     async (currentRoute) => {
       if (!currentRoute) return;
-      if (currentRoute.name === WORKSPACE_HOME_MODULE) {
+      if (currentRoute.name === WORKSPACE_ROOT_MODULE) {
         // ignore app root path
         return;
       }

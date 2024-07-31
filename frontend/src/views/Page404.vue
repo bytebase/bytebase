@@ -21,11 +21,11 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { useRouter } from "vue-router";
-import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 
 const router = useRouter();
 
 const goHome = () => {
-  router.push({ name: WORKSPACE_HOME_MODULE });
+  router.push({ name: WORKSPACE_ROOT_MODULE });
 };
 </script>

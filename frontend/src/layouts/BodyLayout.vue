@@ -255,7 +255,7 @@ import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
-import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
@@ -294,7 +294,7 @@ const mainContainerRef = ref<HTMLDivElement>();
 const { width: windowWidth } = useWindowSize();
 
 const isRootPath = computed(() => {
-  return router.currentRoute.value.name === WORKSPACE_HOME_MODULE;
+  return router.currentRoute.value.name === WORKSPACE_ROOT_MODULE;
 });
 
 const sidebarView = computed(() => {
