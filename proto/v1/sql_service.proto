@@ -42,7 +42,7 @@ service SQLService {
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
     option (bytebase.v1.permission) = "bb.instances.adminExecute";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
@@ -74,7 +74,7 @@ service SQLService {
       post: "/v1/sql/differPreview"
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc Check(CheckRequest) returns (CheckResponse) {
@@ -91,7 +91,6 @@ service SQLService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
-    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
@@ -99,7 +98,7 @@ service SQLService {
       post: "/v1/sql/pretty"
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
@@ -107,9 +106,10 @@ service SQLService {
       post: "/v1/schemaDesign:stringifyMetadata"
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Deprecated.
   rpc GenerateRestoreSQL(GenerateRestoreSQLRequest) returns (GenerateRestoreSQLResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:generateRestoreSQL"
@@ -148,7 +148,10 @@ message ExecuteResponse {
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
 
   string connection_database = 2 [deprecated = true];
 

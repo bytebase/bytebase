@@ -14,6 +14,25 @@
     </div>
 
     <div class="w-full">
+      <div class="flex flex-row items-center space-x-1">
+        <label for="instance" class="textlabel">
+          {{ $t("common.instance") }} <span class="text-red-600">*</span>
+        </label>
+      </div>
+      <div class="flex flex-row space-x-2 items-center">
+        <InstanceSelect
+          class="mt-1"
+          name="instance"
+          required
+          :disabled="!allowEditInstance"
+          :instance-name="state.instanceName"
+          :filter="instanceV1HasCreateDatabase"
+          @update:instance-name="selectInstance"
+        />
+      </div>
+    </div>
+
+    <div class="w-full">
       <label for="name" class="textlabel">
         {{ $t("create-db.new-database-name") }}
         <span class="text-red-600">*</span>
@@ -62,25 +81,6 @@
     </div>
 
     <div class="w-full">
-      <div class="flex flex-row items-center space-x-1">
-        <label for="instance" class="textlabel">
-          {{ $t("common.instance") }} <span class="text-red-600">*</span>
-        </label>
-      </div>
-      <div class="flex flex-row space-x-2 items-center">
-        <InstanceSelect
-          class="mt-1"
-          name="instance"
-          required
-          :disabled="!allowEditInstance"
-          :instance-name="state.instanceName"
-          :filter="instanceV1HasCreateDatabase"
-          @update:instance-name="selectInstance"
-        />
-      </div>
-    </div>
-
-    <div class="w-full">
       <label for="environment" class="textlabel">
         {{ $t("common.environment") }}
       </label>
@@ -92,7 +92,7 @@
       />
     </div>
 
-    <div v-if="requireDatabaseOwnerName" class="w-full">
+    <div v-if="requireDatabaseOwnerName && state.instanceName" class="w-full">
       <label for="name" class="textlabel">
         {{ $t("create-db.database-owner-name") }}
         <span class="text-red-600">*</span>
@@ -101,7 +101,7 @@
         class="mt-1"
         name="instance-user"
         :instance-name="state.instanceName"
-        :role="state.instanceRole"
+        :role="state.instanceRole?.name"
         :filter="filterInstanceRole"
         @update:instance-role="selectInstanceRole"
       />
@@ -173,7 +173,7 @@ import {
   experimentalCreateIssueByPlan,
   useCurrentUserV1,
   useInstanceResourceByName,
-  useInstanceV1Store,
+  useInstanceV1List,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -200,7 +200,7 @@ interface LocalState {
   projectName?: string;
   environmentName?: string;
   instanceName?: string;
-  instanceRole?: string;
+  instanceRole?: InstanceRole;
   labels: Record<string, string>;
   databaseName: string;
   tableName: string;
@@ -221,11 +221,14 @@ const emit = defineEmits<{
   (event: "dismiss"): void;
 }>();
 
-const instanceV1Store = useInstanceV1Store();
 const router = useRouter();
-
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
+// Prepare available instances.
+useInstanceV1List(
+  false, // showDeleted
+  true // forceUpdate
+);
 
 const state = reactive<LocalState>({
   databaseName: "",
@@ -306,8 +309,8 @@ const selectInstance = (instanceName: string | undefined) => {
   state.environmentName = selectedInstance.value.environment;
 };
 
-const selectInstanceRole = (name?: string) => {
-  state.instanceRole = name;
+const selectInstanceRole = (role?: InstanceRole) => {
+  state.instanceRole = role;
 };
 
 const filterInstanceRole = (user: InstanceRole) => {
@@ -334,10 +337,7 @@ const createV1 = async () => {
 
   let owner = "";
   if (requireDatabaseOwnerName.value && state.instanceRole) {
-    const instanceUser = await instanceV1Store.fetchInstanceRoleByName(
-      state.instanceRole
-    );
-    owner = instanceUser.roleName;
+    owner = state.instanceRole.roleName;
   }
 
   const specs: Plan_Spec[] = [];

@@ -1,7 +1,7 @@
 <template>
   <SlowQueryPanel
     :readonly-search-scopes="readonlyScopes"
-    :support-option-id-list="['environment', 'instance', 'database']"
+    :support-option-id-list="['environment', 'database']"
     :show-project-column="false"
   />
 </template>

@@ -165,7 +165,7 @@ export const instanceV1HasStructuredQueryResult = (
 };
 
 export const instanceV1HasSSL = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
@@ -187,7 +187,7 @@ export const instanceV1HasSSL = (
 };
 
 export const instanceV1HasSSH = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
@@ -201,7 +201,7 @@ export const instanceV1HasSSH = (
 };
 
 export const instanceV1HasCollationAndCharacterSet = (
-  instanceOrEngine: Instance | Engine | InstanceResource
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
 
@@ -233,7 +233,7 @@ export const instanceV1AllowsCrossDatabaseQuery = (
 };
 
 export const instanceV1AllowsReorderColumns = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
@@ -247,7 +247,7 @@ export const instanceV1SupportsConciseSchema = (
 };
 
 export const instanceV1SupportsTablePartition = (
-  instanceOrEngine: Instance | Engine
+  instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
@@ -312,14 +312,4 @@ export const engineNameV1 = (type: Engine): string => {
       return "Databricks";
   }
   return "";
-};
-
-export const formatEngineV1 = (instance: Instance): string => {
-  switch (instance.engine) {
-    case Engine.POSTGRES:
-      return "PostgreSQL";
-    // Use MySQL as default engine.
-    default:
-      return "MySQL";
-  }
 };

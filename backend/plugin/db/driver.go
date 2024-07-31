@@ -35,8 +35,7 @@ type User struct {
 
 // InstanceMetadata is the metadata for an instance.
 type InstanceMetadata struct {
-	Version       string
-	InstanceRoles []*storepb.InstanceRoleMetadata
+	Version string
 	// Simplified database metadata.
 	Databases []*storepb.DatabaseSchemaMetadata
 	Metadata  *storepb.InstanceMetadata
@@ -299,18 +298,6 @@ type Driver interface {
 	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error)
 	// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
 	CheckSlowQueryLogEnabled(ctx context.Context) error
-
-	// Role
-	// CreateRole creates the role.
-	CreateRole(ctx context.Context, upsert *DatabaseRoleUpsertMessage) (*DatabaseRoleMessage, error)
-	// UpdateRole updates the role.
-	UpdateRole(ctx context.Context, roleName string, upsert *DatabaseRoleUpsertMessage) (*DatabaseRoleMessage, error)
-	// FindRole finds the role by name.
-	FindRole(ctx context.Context, roleName string) (*DatabaseRoleMessage, error)
-	// ListRole lists the role.
-	ListRole(ctx context.Context) ([]*DatabaseRoleMessage, error)
-	// DeleteRole deletes the role by name.
-	DeleteRole(ctx context.Context, roleName string) error
 
 	// Dump dumps the schema of database.
 	Dump(ctx context.Context, out io.Writer) (string, error)

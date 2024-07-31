@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 
 	"github.com/pkg/errors"
@@ -43,7 +42,7 @@ func (*Driver) DeleteRole(_ context.Context, _ string) error {
 }
 
 // getUserList returns the list of users.
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
+func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	database := driver.client.Database(bytebaseDefaultDatabase)
 	command := bson.D{{
 		Key: "usersInfo",
@@ -60,16 +59,10 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		}
 		return nil, errors.Wrap(err, "cannot run usersInfo command")
 	}
-	var instanceRoles []*storepb.InstanceRoleMetadata
+	var instanceRoles []*storepb.InstanceRole
 	for _, user := range commandResult.Users {
-		bs, err := json.Marshal(user)
-		if err != nil {
-			return nil, errors.Wrap(err, "cannot marshal user")
-		}
-
-		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
-			Name:  user.ID,
-			Grant: string(bs),
+		instanceRoles = append(instanceRoles, &storepb.InstanceRole{
+			Name: user.ID,
 		})
 	}
 	return instanceRoles, nil

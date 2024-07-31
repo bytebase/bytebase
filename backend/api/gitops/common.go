@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -39,6 +40,7 @@ type fileChange struct {
 	changeType  v1pb.Plan_ChangeDatabaseConfig_Type
 	description string
 	content     string
+	webURL      string
 }
 
 func getChangesByFileList(files []*vcs.PullRequestFile, rootDir string) []*fileChange {
@@ -60,6 +62,7 @@ func getChangesByFileList(files []*vcs.PullRequestFile, rootDir string) []*fileC
 		}
 		if change != nil {
 			change.path = v.Path
+			change.webURL = v.WebURL
 			changes = append(changes, change)
 		}
 	}
@@ -124,4 +127,17 @@ func convertFileContentToUTF8String(content string) string {
 		convertedContent = strings.ToValidUTF8(content, "")
 	}
 	return convertedContent
+}
+
+func getFileWebURLInPR(webURL string, line int32, vcsType storepb.VCSType) string {
+	switch vcsType {
+	case storepb.VCSType_GITHUB:
+		return fmt.Sprintf("%sR%d", webURL, line)
+	case storepb.VCSType_GITLAB:
+		return fmt.Sprintf("%s_0_%d", webURL, line)
+	case storepb.VCSType_BITBUCKET:
+		return fmt.Sprintf("%sT%d", webURL, line)
+	default:
+		return webURL
+	}
 }

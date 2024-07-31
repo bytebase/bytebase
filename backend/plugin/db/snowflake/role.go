@@ -4,39 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// CreateRole creates the role.
-func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("create role for Snowflake is not implemented yet")
-}
-
-// UpdateRole updates the role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("update role for Snowflake is not implemented yet")
-}
-
-// FindRole finds the role by name.
-func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("find role for Snowflake is not implemented yet")
-}
-
-// ListRole lists the role.
-func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("list role for Snowflake is not implemented yet")
-}
-
-// DeleteRole deletes the role by name.
-func (*Driver) DeleteRole(_ context.Context, _ string) error {
-	return errors.Errorf("delete role for Snowflake is not implemented yet")
-}
-
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
+func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	grantQuery := `
 		SELECT
 			GRANTEE_NAME,
@@ -73,7 +45,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		WHERE DELETED_ON IS NULL
 		ORDER BY name ASC
 	`
-	var instanceRoles []*storepb.InstanceRoleMetadata
+	var instanceRoles []*storepb.InstanceRole
 	rows, err := driver.db.QueryContext(ctx, userQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, userQuery)
@@ -87,9 +59,10 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 			return nil, err
 		}
 
-		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
-			Name:  name,
-			Grant: strings.Join(grants[name], ", "),
+		attribute := strings.Join(grants[name], ", ")
+		instanceRoles = append(instanceRoles, &storepb.InstanceRole{
+			Name:      name,
+			Attribute: &attribute,
 		})
 	}
 	if err := rows.Err(); err != nil {

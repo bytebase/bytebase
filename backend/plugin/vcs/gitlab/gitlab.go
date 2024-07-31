@@ -3,6 +3,8 @@ package gitlab
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -242,6 +244,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath s
 type MergeRequestChange struct {
 	SHA     string             `json:"sha"`
 	Changes []MergeRequestFile `json:"changes"`
+	WebURL  string             `json:"web_url"`
 }
 
 // MergeRequestFile is the API message for files in GitLab merge request.
@@ -279,10 +282,19 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 
 	var res []*vcs.PullRequestFile
 	for _, file := range pr.Changes {
+		// Get web url for changed file in the PR.
+		// https://web.archive.org/web/20200922103150/https://github.community/t/getting-the-anchor-to-files-diffs-in-a-pull-request/14235
+		var fileHash string
+		hash := sha1.New()
+		if _, err := hash.Write([]byte(file.NewPath)); err == nil {
+			fileHash = hex.EncodeToString(hash.Sum(nil))
+		}
+
 		res = append(res, &vcs.PullRequestFile{
 			Path:         file.NewPath,
 			LastCommitID: pr.SHA,
 			IsDeleted:    file.DeletedFile,
+			WebURL:       fmt.Sprintf("%s/diffs#%s", pr.WebURL, fileHash),
 		})
 	}
 

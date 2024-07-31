@@ -3509,7 +3509,7 @@ export const SQLServiceDefinition = {
               101,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([18, 18, 16, 47, 118, 49, 58, 97, 100, 109, 105, 110, 69, 120, 101, 99, 117, 116, 101]),
           ],
@@ -3713,7 +3713,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               26,
@@ -3772,7 +3772,6 @@ export const SQLServiceDefinition = {
       options: {
         _unknownFields: {
           800000: [new Uint8Array([1])],
-          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               31,
@@ -3820,7 +3819,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 115, 113, 108, 47, 112, 114, 101, 116, 116, 121]),
           ],
@@ -3835,7 +3834,7 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800000: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               39,
@@ -3883,6 +3882,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** Deprecated. */
     generateRestoreSQL: {
       name: "GenerateRestoreSQL",
       requestType: GenerateRestoreSQLRequest,

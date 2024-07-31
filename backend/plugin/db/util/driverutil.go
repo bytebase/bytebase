@@ -4,6 +4,7 @@ package util
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -65,8 +66,12 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		startTime := time.Now()
+		runningStatement := singleSQL.Text
+		if engineType == storepb.Engine_MYSQL {
+			runningStatement = MySQLPrependBytebaseAppComment(singleSQL.Text)
+		}
 		if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
-			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
+			sqlResult, err := conn.ExecContext(ctx, runningStatement)
 			if err != nil {
 				return nil, err
 			}
@@ -300,4 +305,8 @@ func mssqlMakeScanDestByTypeName(tn string) (dest any, wantByte bool) {
 // TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
 func TrimStatement(statement string) string {
 	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+}
+
+func MySQLPrependBytebaseAppComment(statement string) string {
+	return fmt.Sprintf("/*app=bytebase*/ %s", statement)
 }
