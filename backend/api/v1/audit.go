@@ -101,14 +101,21 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 	ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
 		serviceData = a
 	})
+
 	response, rerr := handler(ctx, request)
-	if isAuditMethod(serverInfo.FullMethod) {
-		if err := func() error {
-			return createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr)
-		}(); err != nil {
+
+	authCtx, ok := common.GetAuthContextFromContext(ctx)
+	if !ok {
+		slog.Warn("audit interceptor: failed to get auth context")
+		return response, rerr
+	}
+
+	if authCtx.Audit {
+		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
+
 	return response, rerr
 }
 
@@ -391,31 +398,6 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 		})
 	}
 	return n
-}
-
-func isAuditMethod(method string) bool {
-	switch method {
-	case
-		v1pb.AuthService_Login_FullMethodName,
-		v1pb.AuthService_CreateUser_FullMethodName,
-		v1pb.AuthService_UpdateUser_FullMethodName,
-		v1pb.ProjectService_SetIamPolicy_FullMethodName,
-		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
-		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
-		v1pb.SQLService_Export_FullMethodName,
-		v1pb.SQLService_Query_FullMethodName,
-		v1pb.RiskService_CreateRisk_FullMethodName,
-		v1pb.RiskService_DeleteRisk_FullMethodName,
-		v1pb.RiskService_UpdateRisk_FullMethodName,
-		v1pb.EnvironmentService_CreateEnvironment_FullMethodName,
-		v1pb.EnvironmentService_UpdateEnvironment_FullMethodName,
-		v1pb.EnvironmentService_DeleteEnvironment_FullMethodName,
-		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
-		v1pb.SettingService_UpdateSetting_FullMethodName:
-		return true
-	default:
-	}
-	return false
 }
 
 func isStreamAuditMethod(method string) bool {

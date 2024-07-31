@@ -47,10 +47,16 @@ type Resource struct {
 }
 
 type AuthContext struct {
+	Audit                  bool
 	AllowWithoutCredential bool
 	Permission             string
 	AuthMethod             AuthMethod
 	Resources              []*Resource
+}
+
+func GetAuthContextFromContext(ctx context.Context) (*AuthContext, bool) {
+	authCtx, ok := ctx.Value(AuthContextKey).(*AuthContext)
+	return authCtx, ok
 }
 
 func (c *AuthContext) HasWorkspaceResource() bool {

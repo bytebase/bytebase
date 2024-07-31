@@ -34,6 +34,7 @@ service AuthService {
     option (google.api.method_signature) = "user";
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdateUser(UpdateUserRequest) returns (User) {
@@ -43,6 +44,7 @@ service AuthService {
     };
     option (google.api.method_signature) = "user,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
@@ -65,6 +67,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
