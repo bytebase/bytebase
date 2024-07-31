@@ -104,13 +104,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 
 	response, rerr := handler(ctx, request)
 
-	authCtx, ok := common.GetAuthContextFromContext(ctx)
-	if !ok {
-		slog.Warn("audit interceptor: failed to get auth context")
-		return response, rerr
-	}
-
-	if authCtx.Audit {
+	if needAudit(ctx) {
 		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
@@ -163,7 +157,7 @@ func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream
 
 	auditStream := &auditStream{
 		ServerStream: overrideStream,
-		needAudit:    isStreamAuditMethod(info.FullMethod),
+		needAudit:    needAudit(overrideStream.childCtx),
 		ctx:          overrideStream.childCtx,
 		method:       info.FullMethod,
 		storage:      in.store,
@@ -183,6 +177,8 @@ func getRequestResource(request any) string {
 	}
 	switch r := request.(type) {
 	case *v1pb.QueryRequest:
+		return r.Name
+	case *v1pb.ExecuteRequest:
 		return r.Name
 	case *v1pb.AdminExecuteRequest:
 		return r.Name
@@ -230,7 +226,7 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.ExportRequest:
 			//nolint:revive
 			r = proto.Clone(r).(*v1pb.ExportRequest)
-			r.Password = ""
+			r.Password = maskedString
 			return r
 		case *v1pb.CreateUserRequest:
 			return redactCreateUserRequest(r)
@@ -400,11 +396,11 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 	return n
 }
 
-func isStreamAuditMethod(method string) bool {
-	switch method {
-	case v1pb.SQLService_AdminExecute_FullMethodName:
-		return true
-	default:
+func needAudit(ctx context.Context) bool {
+	authCtx, ok := common.GetAuthContextFromContext(ctx)
+	if !ok {
+		slog.Warn("audit interceptor: failed to get auth context")
 		return false
 	}
+	return authCtx.Audit
 }
