@@ -531,14 +531,26 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 							}
 							args["affected_rows"] = report.AffectedRows
 							args["table_rows"] = tableRows
+
+							var tableNames []string
+							for _, db := range report.GetChangedResources().GetDatabases() {
+								for _, schema := range db.GetSchemas() {
+									for _, table := range schema.GetTables() {
+										tableNames = append(tableNames, table.Name)
+									}
+								}
+							}
 							for _, statementType := range report.StatementTypes {
 								args["sql_type"] = statementType
-								out, _, err := prg.Eval(args)
-								if err != nil {
-									return 0, err
-								}
-								if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-									return risk.Level, nil
+								for _, tableName := range tableNames {
+									args["table_name"] = tableName
+									out, _, err := prg.Eval(args)
+									if err != nil {
+										return 0, err
+									}
+									if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
+										return risk.Level, nil
+									}
 								}
 							}
 						}
