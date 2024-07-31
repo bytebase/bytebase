@@ -362,21 +362,42 @@ func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName strin
 	}, nil
 }
 
-// ListPullRequestFile lists the changed files by last merge commit id.
-func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, lastMergeCommitID string) ([]*vcs.PullRequestFile, error) {
+// ListPullRequestFileInCommit lists the changed files by last merge commit id.
+func (p *Provider) ListPullRequestFileInCommit(ctx context.Context, repositoryID, lastMergeCommitID string, pullRequestID int) ([]*vcs.PullRequestFile, error) {
+	organizationName, projectName, repoID, err := getAzureRepositoryIDs(repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	var prURL string
+	if pullRequestID != 0 {
+		prURL = fmt.Sprintf("%s/%s/%s/_git/%s/pullrequest/%d", p.instanceURL, organizationName, projectName, repoID, pullRequestID)
+	}
 	changeResponse, err := p.getChangesByCommit(ctx, repositoryID, lastMergeCommitID)
 	if err != nil {
 		return nil, err
 	}
 	files := []*vcs.PullRequestFile{}
 	for _, change := range changeResponse.Changes {
+		var webURL string
+		if prURL != "" {
+			// Web URL for file in PR:
+			// {PR web URL}?_a=files&path={file path}
+			webURL = fmt.Sprintf("%s?_a=files&path=%s", webURL, url.QueryEscape(change.Item.Path))
+		}
 		files = append(files, &vcs.PullRequestFile{
 			Path:         change.Item.Path,
 			LastCommitID: change.Item.CommitID,
 			IsDeleted:    change.ChangeType == "delete",
+			WebURL:       webURL,
 		})
 	}
 	return files, nil
+}
+
+// ListPullRequestFile lists the changed files by last merge commit id.
+func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, lastMergeCommitID string) ([]*vcs.PullRequestFile, error) {
+	return p.ListPullRequestFileInCommit(ctx, repositoryID, lastMergeCommitID, 0)
 }
 
 type Comment struct {
@@ -449,13 +470,15 @@ func (p *Provider) ListPullRequestComments(ctx context.Context, repositoryID, pu
 		return nil, errors.Errorf("failed to list thread, code: %v, body: %s", code, string(body))
 	}
 
-	var threads []PullRequestThread
-	if err := json.Unmarshal([]byte(body), &threads); err != nil {
+	var resp struct {
+		Value []*PullRequestThread `json:"value"`
+	}
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil, err
 	}
 
 	var res []*vcs.PullRequestComment
-	for _, thread := range threads {
+	for _, thread := range resp.Value {
 		if len(thread.Comments) != 1 {
 			continue
 		}
@@ -561,13 +584,21 @@ func (p *Provider) DeleteWebhook(ctx context.Context, _, webhookID string) error
 	return nil
 }
 
-func (p *Provider) getRepositoryAPIURL(repositoryID string) (string, error) {
+func getAzureRepositoryIDs(repositoryID string) (string, string, string, error) {
 	// By design, we encode the repository ID as <organization>/<projectID>/<repositoryID> for Azure DevOps.
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
-		return "", errors.Errorf("invalid repository ID %q", repositoryID)
+		return "", "", "", errors.Errorf("invalid repository ID %q", repositoryID)
 	}
 	organizationName, projectName, repositoryID := parts[0], parts[1], parts[2]
+	return organizationName, projectName, repositoryID, nil
+}
+
+func (p *Provider) getRepositoryAPIURL(repositoryID string) (string, error) {
+	organizationName, projectName, repositoryID, err := getAzureRepositoryIDs(repositoryID)
+	if err != nil {
+		return "", err
+	}
 
 	return fmt.Sprintf("%s/%s/%s/_apis/git/repositories/%s", p.APIURL(p.instanceURL), url.PathEscape(organizationName), url.PathEscape(projectName), url.PathEscape(repositoryID)), nil
 }

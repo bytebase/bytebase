@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -120,10 +121,10 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		case storepb.VCSType_BITBUCKET:
 			eventType := c.Request().Header.Get("X-Event-Key")
 			var action webhookAction
-			switch eventType {
-			case "pullrequest:created", "pullrequest:updated":
+			switch bitbucket.PullRequestEventType(eventType) {
+			case bitbucket.PullRequestEventCreated, bitbucket.PullRequestEventUpdated:
 				action = webhookActionSQLReview
-			case "pullrequest:fulfilled":
+			case bitbucket.PullRequestEventFulfilled:
 				action = webhookActionCreateIssue
 			default:
 				return c.String(http.StatusOK, fmt.Sprintf(`skip webhook event "%v"`, eventType))
@@ -135,7 +136,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 			prInfo.action = action
 		case storepb.VCSType_AZURE_DEVOPS:
-			// TODO(ed): support pr update/create event.
 			secretToken := c.Request().Header.Get("X-Azure-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
@@ -366,7 +366,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		Response: "",
 		Status:   nil,
 	}); err != nil {
-		slog.Warn("failed to create audit log after creating issue from push event", "issueUID", issueUID)
+		slog.Error("failed to create audit log after creating issue from push event", slog.Int("issue", issueUID), log.BBError(err))
 	}
 
 	return issue, nil
