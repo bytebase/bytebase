@@ -1,3 +1,40 @@
+- description: Test for builtin functions
+  statement: SELECT NEWID() as uuid;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            }
+          ],
+          "views":  [
+            {
+              "name":  "MyView1",
+              "definition":  "SELECT * FROM MyTable1"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: uuid
+          sourcecolumns: []
+    sourcecolumns: []
 - description: Test for view
   statement: SELECT * FROM MyView1;
   connectedDatabase: db

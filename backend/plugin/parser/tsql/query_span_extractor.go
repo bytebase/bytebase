@@ -3319,8 +3319,25 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the hierarchyid_method is sensitive")
 		}
 		return querySpanResult, nil
+	default:
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
+		for _, child := range ctx.GetChildren() {
+			switch c := child.(type) {
+			case antlr.TerminalNode:
+				continue
+			case antlr.RuleNode:
+				querySpanResult, err := q.getQuerySpanResultFromExpr(c.GetRuleContext())
+				if err != nil {
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expr %s is sensitive", c.GetText())
+				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			}
+		}
+		return anchor, nil
 	}
-	panic("never reach here")
 }
 
 // unionTableSources union two or more table sources, return the original one if there is only one table source.
