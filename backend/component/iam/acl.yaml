@@ -247,6 +247,7 @@ roles:
       - bb.policies.list
       - bb.risks.list
       - bb.roles.list
+      - bb.settings.get
       - bb.settings.list
       - bb.userGroups.get
       - bb.userGroups.list
