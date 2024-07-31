@@ -85,16 +85,6 @@ func (s *PlanService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequ
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
-	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansList)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
-	}
-
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
 	if err != nil {
 		return nil, err
@@ -102,14 +92,10 @@ func (s *PlanService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequ
 	limitPlusOne := limit + 1
 
 	find := &store.FindPlanMessage{
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
-		ProjectIDs: projectIDs,
+		Limit:     &limitPlusOne,
+		Offset:    &offset,
+		ProjectID: &projectID,
 	}
-	if projectID != "-" {
-		find.ProjectID = &projectID
-	}
-
 	plans, err := s.store.ListPlans(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
