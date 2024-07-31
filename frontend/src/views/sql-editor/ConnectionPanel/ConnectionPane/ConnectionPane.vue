@@ -4,7 +4,10 @@
       <SearchBox v-model:searchPattern="searchPattern" class="flex-1" />
       <GroupingBar class="shrink-0" />
     </div>
-    <div class="flex items-center space-x-2 px-2 py-2">
+    <div
+      v-if="hasMissingQueryDatabases"
+      class="flex items-center space-x-2 px-2 py-2"
+    >
       <NCheckbox v-model:checked="showMissingQueryDatabases">
         <span class="textinfolabel text-sm">
           {{ $t("sql-editor.show-databases-without-query-permission") }}
@@ -152,7 +155,8 @@ const selectedKeys = computed(() => {
   }
   return [];
 });
-const { expandedKeys, showMissingQueryDatabases } = storeToRefs(treeStore);
+const { expandedKeys, hasMissingQueryDatabases, showMissingQueryDatabases } =
+  storeToRefs(treeStore);
 const upsertExpandedKeys = (key: string) => {
   if (expandedKeys.value.includes(key)) {
     return;
