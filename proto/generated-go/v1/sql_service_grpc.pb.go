@@ -46,6 +46,7 @@ type SQLServiceClient interface {
 	ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error)
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error)
+	// Deprecated.
 	GenerateRestoreSQL(ctx context.Context, in *GenerateRestoreSQLRequest, opts ...grpc.CallOption) (*GenerateRestoreSQLResponse, error)
 }
 
@@ -203,6 +204,7 @@ type SQLServiceServer interface {
 	ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error)
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error)
+	// Deprecated.
 	GenerateRestoreSQL(context.Context, *GenerateRestoreSQLRequest) (*GenerateRestoreSQLResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
