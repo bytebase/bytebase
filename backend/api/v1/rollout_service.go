@@ -1123,12 +1123,13 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		return issue.Creator.ID == user.ID, nil
 	}
 
-	// The workspace owner and DBA roles can always run tasks.
-	containsRole, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin, api.WorkspaceDBA)
+	// Users with bb.taskRuns.create can always create task runs.
+	// The roles should be set on the workspace level, workspace Admin and DBA.
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check workspace role")
 	}
-	if containsRole {
+	if ok {
 		return true, nil
 	}
 

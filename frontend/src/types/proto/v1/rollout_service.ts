@@ -5469,6 +5469,12 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /**
+     * BatchRunTasks creates task runs for the specified tasks.
+     * DataExport issue only allows the creator to run the task.
+     * Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
+     * Follow role-based rollout policy for the environment.
+     */
     batchRunTasks: {
       name: "BatchRunTasks",
       requestType: BatchRunTasksRequest,
@@ -5550,6 +5556,10 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /**
+     * BatchSkipTasks skips the specified tasks.
+     * The access is the same as BatchRunTasks().
+     */
     batchSkipTasks: {
       name: "BatchSkipTasks",
       requestType: BatchSkipTasksRequest,
@@ -5632,6 +5642,10 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /**
+     * BatchSkipTasks cancels the specified task runs in batch.
+     * The access is the same as BatchRunTasks().
+     */
     batchCancelTaskRuns: {
       name: "BatchCancelTaskRuns",
       requestType: BatchCancelTaskRunsRequest,
