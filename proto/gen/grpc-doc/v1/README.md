@@ -13,12 +13,9 @@
   
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
-    - [DebugLog](#bytebase-v1-DebugLog)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
-    - [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest)
-    - [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
@@ -800,25 +797,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
-<a name="bytebase-v1-DebugLog"></a>
-
-### DebugLog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| record_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| request_path | [string](#string) |  |  |
-| user | [string](#string) |  |  |
-| error | [string](#string) |  |  |
-| stack_trace | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-DeleteCacheRequest"></a>
 
 ### DeleteCacheRequest
@@ -843,40 +821,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 ### GetResourcePackageRequest
 The request message for getting the theme resource.
-
-
-
-
-
-
-<a name="bytebase-v1-ListDebugLogRequest"></a>
-
-### ListDebugLogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 50 logs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListDebugLog` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListDebugLog` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListDebugLogResponse"></a>
-
-### ListDebugLogResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| logs | [DebugLog](#bytebase-v1-DebugLog) | repeated | The logs from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -930,7 +874,6 @@ The theme resources.
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
 | UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| ListDebugLog | [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest) | [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse) |  |
 | GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) |  |
 
  

@@ -20,7 +20,6 @@ import workspaceSettingRoutes, {
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-  SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
   SETTING_ROUTE_WORKSPACE,
 } from "@/router/dashboard/workspaceSetting";
@@ -96,11 +95,6 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.subscription"),
           name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.debug-log"),
-          name: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
           type: "route",
         },
       ],

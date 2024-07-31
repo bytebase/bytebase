@@ -462,7 +462,6 @@
       "gitops": "GitOps",
       "subscription": "Suscripción",
       "labels": "Etiquetas",
-      "debug-log": "Registro de Depuración",
       "sensitive-data": "Enmascaramiento de Datos",
       "access-control": "Control de Acceso a Datos",
       "audit-log": "Registro de auditoría",
@@ -2885,30 +2884,6 @@
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",
     "other-engines": "Otros motores"
-  },
-  "debug-log": {
-    "title": "Registro de depuración",
-    "no-logs": "No hay registros de depuración",
-    "count-of-logs": "Se recuperaron los últimos {count} registro(s) del servidor.",
-    "debug-log-detail": "Detalles del registro de depuración",
-    "enabled": "El modo de depuración está habilitado.",
-    "open-debug-mode": "Habilitar depuración",
-    "table": {
-      "record-ts": "Hora",
-      "method": "Método",
-      "request-path": "Ruta de solicitud",
-      "error": "Error",
-      "stack-trace": "Rastreo de pila",
-      "empty": "<Vacío>",
-      "operation": {
-        "operation": "Operación",
-        "view-details": "Ver detalles",
-        "copy": "Copiar",
-        "copy-all": "Copiar todo",
-        "copied": "¡Copiado!",
-        "export": "Exportar"
-      }
-    }
   },
   "audit-log": {
     "no-logs": "Sin registros de auditoría",
