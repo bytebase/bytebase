@@ -310,7 +310,11 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 			Path:         d.New.Path,
 			LastCommitID: extractCommitIDFromLinkSelf(d.New.Links.Self.Href),
 			IsDeleted:    d.Status == "removed",
-			WebURL:       fmt.Sprintf("%s/diff#L%s", prURL, d.New.Path),
+			// Web URL for file in PR:
+			// {PR web URL}/diff#chg-{file path}
+			// Web URL for file with a specific line in PR:
+			// {PR web URL}/diff#L{file path}T{line}
+			WebURL: fmt.Sprintf("%s/diff#L%s", prURL, d.New.Path),
 		}
 		files = append(files, file)
 	}

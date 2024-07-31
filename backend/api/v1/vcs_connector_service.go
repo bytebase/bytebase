@@ -358,15 +358,19 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 	}
 
 	// Delete the webhook, and fail-open.
-	if err = vcs.Get(
+	webhookIDs := strings.Split(vcsConnector.Payload.ExternalWebhookId, ",")
+	vcsPlugin := vcs.Get(
 		vcsProvider.Type,
 		vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
-	).DeleteWebhook(
-		ctx,
-		vcsConnector.Payload.ExternalId,
-		vcsConnector.Payload.ExternalWebhookId,
-	); err != nil {
-		slog.Error("failed to delete webhook for VCS connector", slog.String("project", projectID), slog.String("VCS connector", vcsConnector.ResourceID), log.BBError(err))
+	)
+	for _, webhookID := range webhookIDs {
+		if err = vcsPlugin.DeleteWebhook(
+			ctx,
+			vcsConnector.Payload.ExternalId,
+			webhookID,
+		); err != nil {
+			slog.Error("failed to delete webhook for VCS connector", slog.String("project", projectID), slog.String("VCS connector", vcsConnector.ResourceID), log.BBError(err))
+		}
 	}
 
 	return &emptypb.Empty{}, nil
@@ -421,8 +425,7 @@ func checkBranchExistence(ctx context.Context, vcsProvider *store.VCSProviderMes
 
 func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage, webhookEndpointID, webhookSecretToken, externalRepoID, bytebaseEndpointURL string) (string, error) {
 	// Create a new webhook and retrieve the created webhook ID
-	var webhookCreatePayload []byte
-	var err error
+	var webhookCreatePayloads [][]byte
 	switch vcsProvider.Type {
 	case storepb.VCSType_GITLAB:
 		// https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html#push-events
@@ -433,10 +436,11 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 			NoteEvents:            true,
 			EnableSSLVerification: false,
 		}
-		webhookCreatePayload, err = json.Marshal(webhookCreate)
+		createPayload, err := json.Marshal(webhookCreate)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
+		webhookCreatePayloads = append(webhookCreatePayloads, createPayload)
 	case storepb.VCSType_GITHUB:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
@@ -448,22 +452,29 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 			// https://docs.github.com/en/webhooks/webhook-events-and-payloads
 			Events: []string{"pull_request", "pull_request_review_comment"},
 		}
-		webhookCreatePayload, err = json.Marshal(webhookPost)
+		createPayload, err := json.Marshal(webhookPost)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
+		webhookCreatePayloads = append(webhookCreatePayloads, createPayload)
 	case storepb.VCSType_BITBUCKET:
 		webhookPost := bitbucket.WebhookCreateOrUpdate{
 			Description: "Bytebase GitOps",
 			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			Active:      true,
 			// https://support.atlassian.com/bitbucket-cloud/docs/event-payloads
-			Events: []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
+			Events: []string{
+				string(bitbucket.PullRequestEventCreated),
+				string(bitbucket.PullRequestEventUpdated),
+				string(bitbucket.PullRequestEventFulfilled),
+				"pullrequest:comment_created",
+			},
 		}
-		webhookCreatePayload, err = json.Marshal(webhookPost)
+		createPayload, err := json.Marshal(webhookPost)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
+		webhookCreatePayloads = append(webhookCreatePayloads, createPayload)
 	case storepb.VCSType_AZURE_DEVOPS:
 		part := strings.Split(externalRepoID, "/")
 		if len(part) != 3 {
@@ -472,39 +483,55 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 		projectID, repositoryID := part[1], part[2]
 
 		// https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops
-		// TODO(ed): Azure doesn't support multiply events in a single webhook, but we need:
+		// Azure doesn't support multiply events in a single webhook, but we need:
 		// - git.pullrequest.merged: A merge commit was created on a pull request.
 		// - git.pullrequest.created: A pull request is created in a Git repository.
 		// - git.pullrequest.updated: A pull request is updated; status, review list, reviewer vote changed, or the source branch is updated with a push.
-		webhookPost := azure.WebhookCreateOrUpdate{
-			ConsumerActionID: "httpRequest",
-			ConsumerID:       "webHooks",
-			ConsumerInputs: azure.WebhookCreateConsumerInputs{
-				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
-				AcceptUntrustedCerts: true,
-				HTTPHeaders:          fmt.Sprintf("X-Azure-Token: %s", webhookSecretToken),
-			},
-			EventType:   "git.pullrequest.merged",
-			PublisherID: "tfs",
-			PublisherInputs: azure.WebhookCreatePublisherInputs{
-				Repository:  repositoryID,
-				Branch:      "", /* Any branches */
-				MergeResult: azure.WebhookMergeResultSucceeded,
-				ProjectID:   projectID,
-			},
+		events := []azure.PullRequestEventType{
+			azure.PullRequestEventCreated,
+			azure.PullRequestEventUpdated,
+			azure.PullRequestEventMerged,
 		}
-		webhookCreatePayload, err = json.Marshal(webhookPost)
+		for _, event := range events {
+			publisherInputs := azure.WebhookCreatePublisherInputs{
+				Repository: repositoryID,
+				Branch:     "", /* Any branches */
+				ProjectID:  projectID,
+			}
+			if event == azure.PullRequestEventMerged {
+				publisherInputs.MergeResult = azure.WebhookMergeResultSucceeded
+			}
+			webhookPost := azure.WebhookCreateOrUpdate{
+				ConsumerActionID: "httpRequest",
+				ConsumerID:       "webHooks",
+				ConsumerInputs: azure.WebhookCreateConsumerInputs{
+					URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
+					AcceptUntrustedCerts: true,
+					HTTPHeaders:          fmt.Sprintf("X-Azure-Token: %s", webhookSecretToken),
+				},
+				EventType:       string(event),
+				PublisherID:     "tfs",
+				PublisherInputs: publisherInputs,
+			}
+			createPayload, err := json.Marshal(webhookPost)
+			if err != nil {
+				return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+			}
+			webhookCreatePayloads = append(webhookCreatePayloads, createPayload)
+		}
+	}
+
+	var webhookIDs []string
+	for _, webhookCreatePayload := range webhookCreatePayloads {
+		webhookID, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).CreateWebhook(
+			ctx,
+			externalRepoID,
+			webhookCreatePayload,
+		)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+			return "", errors.Wrap(err, "failed to create webhook")
 		}
+		webhookIDs = append(webhookIDs, webhookID)
 	}
-	webhookID, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).CreateWebhook(
-		ctx,
-		externalRepoID,
-		webhookCreatePayload,
-	)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create webhook")
-	}
-	return webhookID, nil
+	return strings.Join(webhookIDs, ","), nil
 }
