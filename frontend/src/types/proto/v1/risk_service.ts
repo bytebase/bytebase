@@ -684,6 +684,7 @@ export const RiskServiceDefinition = {
           8410: [new Uint8Array([4, 114, 105, 115, 107])],
           800010: [new Uint8Array([15, 98, 98, 46, 114, 105, 115, 107, 115, 46, 99, 114, 101, 97, 116, 101])],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [new Uint8Array([17, 58, 4, 114, 105, 115, 107, 34, 9, 47, 118, 49, 47, 114, 105, 115, 107, 115])],
         },
       },
@@ -699,6 +700,7 @@ export const RiskServiceDefinition = {
           8410: [new Uint8Array([16, 114, 105, 115, 107, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
           800010: [new Uint8Array([15, 98, 98, 46, 114, 105, 115, 107, 115, 46, 117, 112, 100, 97, 116, 101])],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               31,
@@ -748,6 +750,7 @@ export const RiskServiceDefinition = {
         _unknownFields: {
           800010: [new Uint8Array([15, 98, 98, 46, 114, 105, 115, 107, 115, 46, 100, 101, 108, 101, 116, 101])],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               20,

@@ -40,6 +40,7 @@ service SettingService {
     };
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

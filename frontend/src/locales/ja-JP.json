@@ -462,7 +462,6 @@
       "gitops": "GitOps",
       "subscription": "サブスクリプション",
       "labels": "ラベル",
-      "debug-log": "デバッグログ",
       "sensitive-data": "データの非感作化",
       "access-control": "データアクセス制御",
       "audit-log": "監査ログ",
@@ -2885,30 +2884,6 @@
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",
     "other-engines": "他の種類のデータベース"
-  },
-  "debug-log": {
-    "title": "デバッグログ",
-    "no-logs": "デバッグログはまだありません",
-    "count-of-logs": "サーバーから取得した最新の {count} ログ。",
-    "debug-log-detail": "ログの詳細",
-    "enabled": "デバッグモードがオンになっています",
-    "open-debug-mode": "デバッグモードをオンにする",
-    "table": {
-      "record-ts": "時間",
-      "method": "方法",
-      "request-path": "リクエストパス",
-      "error": "間違った情報",
-      "stack-trace": "コールスタック",
-      "empty": "<なし>",
-      "operation": {
-        "operation": "操作する",
-        "view-details": "詳細を確認する",
-        "copy": "コピー",
-        "copy-all": "すべてコピーする",
-        "copied": "コピーされました",
-        "export": "輸出"
-      }
-    }
   },
   "audit-log": {
     "no-logs": "監査ログはまだありません",

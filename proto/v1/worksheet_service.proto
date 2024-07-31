@@ -13,6 +13,7 @@ import "v1/annotation.proto";
 option go_package = "generated-go/v1";
 
 service WorksheetService {
+  // Create a personal worksheet used in SQL Editor.
   rpc CreateWorksheet(CreateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
       post: "/v1/worksheets"
@@ -22,17 +23,30 @@ service WorksheetService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Get a worksheet by name.
+  // The users can access this method if,
+  // - they are the creator of the worksheet;
+  // - they have bb.worksheets.get permission on the workspace;
+  // - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
   rpc GetWorksheet(GetWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {get: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Search for worksheets.
+  // This is used for finding my worksheets or worksheets shared by other people.
+  // The sheet accessibility is the same as GetWorksheet().
   rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
     option (google.api.http) = {get: "/v1/worksheets:search"};
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Update a worksheet.
+  // The users can access this method if,
+  // - they are the creator of the worksheet;
+  // - they have bb.worksheets.manage permission on the workspace;
+  // - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
   rpc UpdateWorksheet(UpdateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
       patch: "/v1/{worksheet.name=worksheets/*}"
@@ -42,6 +56,8 @@ service WorksheetService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Update the organizer of a worksheet.
+  // The access is the same as UpdateWorksheet method.
   rpc UpdateWorksheetOrganizer(UpdateWorksheetOrganizerRequest) returns (WorksheetOrganizer) {
     option (google.api.http) = {
       patch: "/v1/{organizer.worksheet=worksheets/*}/organizer"
@@ -51,6 +67,8 @@ service WorksheetService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Delete a worksheet.
+  // The access is the same as UpdateWorksheet method.
   rpc DeleteWorksheet(DeleteWorksheetRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";

@@ -938,6 +938,7 @@ export const EnvironmentServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               31,
@@ -1041,6 +1042,7 @@ export const EnvironmentServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               52,
@@ -1138,6 +1140,7 @@ export const EnvironmentServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               27,
@@ -1211,6 +1214,7 @@ export const EnvironmentServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               39,

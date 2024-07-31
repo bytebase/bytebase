@@ -1502,6 +1502,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 				if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 					IssueUID: issue.UID,
 					Payload: &storepb.IssueCommentPayload{
+						Comment: request.Reason,
 						Event: &storepb.IssueCommentPayload_IssueUpdate_{
 							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
 								FromStatus: convertToIssueCommentPayloadIssueUpdateIssueStatus(&fromStatus),

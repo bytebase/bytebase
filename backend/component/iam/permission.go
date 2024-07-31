@@ -60,6 +60,8 @@ const (
 	PermissionSettingsGet                Permission = "bb.settings.get"
 	PermissionSettingsList               Permission = "bb.settings.list"
 	PermissionSettingsSet                Permission = "bb.settings.set"
+	PermissionWorksheetsGet              Permission = "bb.worksheets.get"
+	PermissionWorksheetsManage           Permission = "bb.worksheets.manage"
 
 	// Project-level permissions.
 	PermissionAuditLogsGet          Permission = "bb.auditLogs.get"
@@ -84,6 +86,7 @@ const (
 	PermissionDatabaseSecretsList   Permission = "bb.databaseSecrets.list"
 	PermissionDatabaseSecretsUpdate Permission = "bb.databaseSecrets.update"
 	PermissionDatabasesAdviseIndex  Permission = "bb.databases.adviseIndex"
+	PermissionDatabasesCheck        Permission = "bb.databases.check"
 	PermissionDatabasesExport       Permission = "bb.databases.export"
 	PermissionDatabasesGet          Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema    Permission = "bb.databases.getSchema"
@@ -176,6 +179,8 @@ var allWorkspacePermissions = []Permission{
 	PermissionSettingsGet,
 	PermissionSettingsList,
 	PermissionSettingsSet,
+	PermissionWorksheetsManage,
+	PermissionWorksheetsGet,
 }
 var allProjectPermissions = []Permission{
 	PermissionAuditLogsGet,
@@ -200,6 +205,7 @@ var allProjectPermissions = []Permission{
 	PermissionDatabaseSecretsList,
 	PermissionDatabaseSecretsUpdate,
 	PermissionDatabasesAdviseIndex,
+	PermissionDatabasesCheck,
 	PermissionDatabasesExport,
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,

@@ -196,6 +196,10 @@
                   <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
                 </li>
               
+                <li>
+                  <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
+                </li>
+              
               
             </ul>
           </li>
@@ -210,10 +214,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DebugLog"><span class="badge">M</span>DebugLog</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.DeleteCacheRequest"><span class="badge">M</span>DeleteCacheRequest</a>
                 </li>
               
@@ -223,14 +223,6 @@
               
                 <li>
                   <a href="#bytebase.v1.GetResourcePackageRequest"><span class="badge">M</span>GetResourcePackageRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListDebugLogRequest"><span class="badge">M</span>ListDebugLogRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListDebugLogResponse"><span class="badge">M</span>ListDebugLogResponse</a>
                 </li>
               
                 <li>
@@ -2965,6 +2957,14 @@
               </tr>
             
               <tr>
+                <td>audit</td>
+                <td><a href="#bool">bool</a></td>
+                <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
+                <td>100003</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>auth_method</td>
                 <td><a href="#bytebase.v1.AuthMethod">AuthMethod</a></td>
                 <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
@@ -3143,58 +3143,6 @@
 
         
       
-        <h3 id="bytebase.v1.DebugLog">DebugLog</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>record_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>request_path</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>user</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>stack_trace</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.DeleteCacheRequest">DeleteCacheRequest</h3>
         <p></p>
 
@@ -3213,76 +3161,6 @@
         <p>The request message for getting the theme resource.</p>
 
         
-
-        
-      
-        <h3 id="bytebase.v1.ListDebugLogRequest">ListDebugLogRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of logs to return. The service may return fewer than
-this value.
-If unspecified, at most 50 logs will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListDebugLog` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListDebugLog` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListDebugLogResponse">ListDebugLogResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>logs</td>
-                  <td><a href="#bytebase.v1.DebugLog">DebugLog</a></td>
-                  <td>repeated</td>
-                  <td><p>The logs from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
 
         
       
@@ -3377,13 +3255,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
               </tr>
             
               <tr>
-                <td>ListDebugLog</td>
-                <td><a href="#bytebase.v1.ListDebugLogRequest">ListDebugLogRequest</a></td>
-                <td><a href="#bytebase.v1.ListDebugLogResponse">ListDebugLogResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>GetResourcePackage</td>
                 <td><a href="#bytebase.v1.GetResourcePackageRequest">GetResourcePackageRequest</a></td>
                 <td><a href="#bytebase.v1.ResourcePackage">ResourcePackage</a></td>
@@ -3434,16 +3305,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <td>DeleteCache</td>
                 <td>DELETE</td>
                 <td>/v1/actuator/cache</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListDebugLog</td>
-                <td>GET</td>
-                <td>/v1/actuator/debug</td>
                 <td></td>
               </tr>
               
@@ -21118,7 +20979,7 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td>BatchGetIamPolicy</td>
                 <td><a href="#bytebase.v1.BatchGetIamPolicyRequest">BatchGetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetIamPolicyResponse">BatchGetIamPolicyResponse</a></td>
-                <td><p></p></td>
+                <td><p>Deprecated.</p></td>
               </tr>
             
               <tr>
@@ -27442,18 +27303,18 @@ To supersede `line` and `column` above. </p></td>
             <tbody>
               
                 <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database name to check against.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
                   <td>statement</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database name to check against.
-Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
@@ -28624,7 +28485,7 @@ to retrieve the next page of history. </p></td>
                 <td>SearchQueryHistories</td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</a></td>
-                <td><p></p></td>
+                <td><p>SearchQueryHistories searches query histories for the caller.</p></td>
               </tr>
             
               <tr>
@@ -30683,42 +30544,54 @@ Format: worksheets/{worksheet} </p></td>
                 <td>CreateWorksheet</td>
                 <td><a href="#bytebase.v1.CreateWorksheetRequest">CreateWorksheetRequest</a></td>
                 <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p></p></td>
+                <td><p>Create a personal worksheet used in SQL Editor.</p></td>
               </tr>
             
               <tr>
                 <td>GetWorksheet</td>
                 <td><a href="#bytebase.v1.GetWorksheetRequest">GetWorksheetRequest</a></td>
                 <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p></p></td>
+                <td><p>Get a worksheet by name.
+The users can access this method if,
+- they are the creator of the worksheet;
+- they have bb.worksheets.get permission on the workspace;
+- the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.</p></td>
               </tr>
             
               <tr>
                 <td>SearchWorksheets</td>
                 <td><a href="#bytebase.v1.SearchWorksheetsRequest">SearchWorksheetsRequest</a></td>
                 <td><a href="#bytebase.v1.SearchWorksheetsResponse">SearchWorksheetsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Search for worksheets.
+This is used for finding my worksheets or worksheets shared by other people.
+The sheet accessibility is the same as GetWorksheet().</p></td>
               </tr>
             
               <tr>
                 <td>UpdateWorksheet</td>
                 <td><a href="#bytebase.v1.UpdateWorksheetRequest">UpdateWorksheetRequest</a></td>
                 <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p></p></td>
+                <td><p>Update a worksheet.
+The users can access this method if,
+- they are the creator of the worksheet;
+- they have bb.worksheets.manage permission on the workspace;
+- the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.</p></td>
               </tr>
             
               <tr>
                 <td>UpdateWorksheetOrganizer</td>
                 <td><a href="#bytebase.v1.UpdateWorksheetOrganizerRequest">UpdateWorksheetOrganizerRequest</a></td>
                 <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
-                <td><p></p></td>
+                <td><p>Update the organizer of a worksheet.
+The access is the same as UpdateWorksheet method.</p></td>
               </tr>
             
               <tr>
                 <td>DeleteWorksheet</td>
                 <td><a href="#bytebase.v1.DeleteWorksheetRequest">DeleteWorksheetRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Delete a worksheet.
+The access is the same as UpdateWorksheet method.</p></td>
               </tr>
             
           </tbody>

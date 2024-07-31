@@ -10,6 +10,7 @@ paths:
         get:
             tags:
                 - ProjectService
+            description: Deprecated.
             operationId: ProjectService_BatchGetIamPolicy
             parameters:
                 - name: '*'
@@ -46,45 +47,6 @@ paths:
                 "200":
                     description: OK
                     content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/actuator/debug:
-        get:
-            tags:
-                - ActuatorService
-            operationId: ActuatorService_ListDebugLog
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    The maximum number of logs to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 logs will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    A page token, received from a previous `ListDebugLog` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListDebugLog` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListDebugLogResponse'
                 default:
                     description: Default error response
                     content:
@@ -6607,6 +6569,7 @@ paths:
         get:
             tags:
                 - SQLService
+            description: SearchQueryHistories searches query histories for the caller.
             operationId: SQLService_SearchQueryHistories
             parameters:
                 - name: pageSize
@@ -7749,6 +7712,7 @@ paths:
         post:
             tags:
                 - WorksheetService
+            description: Create a personal worksheet used in SQL Editor.
             operationId: WorksheetService_CreateWorksheet
             requestBody:
                 content:
@@ -7773,6 +7737,12 @@ paths:
         get:
             tags:
                 - WorksheetService
+            description: |-
+                Get a worksheet by name.
+                 The users can access this method if,
+                 - they are the creator of the worksheet;
+                 - they have bb.worksheets.get permission on the workspace;
+                 - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
             operationId: WorksheetService_GetWorksheet
             parameters:
                 - name: worksheet
@@ -7797,6 +7767,9 @@ paths:
         delete:
             tags:
                 - WorksheetService
+            description: |-
+                Delete a worksheet.
+                 The access is the same as UpdateWorksheet method.
             operationId: WorksheetService_DeleteWorksheet
             parameters:
                 - name: worksheet
@@ -7818,6 +7791,12 @@ paths:
         patch:
             tags:
                 - WorksheetService
+            description: |-
+                Update a worksheet.
+                 The users can access this method if,
+                 - they are the creator of the worksheet;
+                 - they have bb.worksheets.manage permission on the workspace;
+                 - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
             operationId: WorksheetService_UpdateWorksheet
             parameters:
                 - name: worksheet
@@ -7863,6 +7842,9 @@ paths:
         patch:
             tags:
                 - WorksheetService
+            description: |-
+                Update the organizer of a worksheet.
+                 The access is the same as UpdateWorksheet method.
             operationId: WorksheetService_UpdateWorksheetOrganizer
             parameters:
                 - name: worksheet
@@ -7904,6 +7886,10 @@ paths:
         get:
             tags:
                 - WorksheetService
+            description: |-
+                Search for worksheets.
+                 This is used for finding my worksheets or worksheets shared by other people.
+                 The sheet accessibility is the same as GetWorksheet().
             operationId: WorksheetService_SearchWorksheets
             parameters:
                 - name: filter
@@ -9058,16 +9044,16 @@ components:
             description: CheckConstraintMetadata is the metadata for check constraints.
         CheckRequest:
             required:
-                - database
+                - name
             type: object
             properties:
-                statement:
-                    type: string
-                database:
+                name:
                     type: string
                     description: |-
                         The database name to check against.
-                         Format: instances/{instance}/databases/{databaseName}
+                         Format: instances/{instance}/databases/{database}
+                statement:
+                    type: string
                 metadata:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseMetadata'
@@ -9542,20 +9528,6 @@ components:
                     type: string
                     description: The schema dump from database.
             description: DatabaseSchema is the metadata for databases.
-        DebugLog:
-            type: object
-            properties:
-                recordTime:
-                    type: string
-                    format: date-time
-                requestPath:
-                    type: string
-                user:
-                    type: string
-                error:
-                    type: string
-                stackTrace:
-                    type: string
         DeploymentConfig:
             type: object
             properties:
@@ -10828,19 +10800,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Database'
                     description: The databases from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
-        ListDebugLogResponse:
-            type: object
-            properties:
-                logs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/DebugLog'
-                    description: The logs from the specified request.
                 nextPageToken:
                     type: string
                     description: |-

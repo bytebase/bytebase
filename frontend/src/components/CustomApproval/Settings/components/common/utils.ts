@@ -60,6 +60,7 @@ const StringFactorList = [
   "database_name",
   "db_engine",
   "sql_type",
+  "table_name",
 ] as const;
 
 const FactorList = {
@@ -84,6 +85,7 @@ const FactorList = {
   CreateDatabase: without(
     [...StringFactorList],
     "sql_type",
+    "table_name",
     "expiration_days",
     "export_rows"
   ),
@@ -95,6 +97,7 @@ const FactorList = {
       "table_rows",
       "source",
       "sql_type",
+      "table_name",
       "expiration_days",
       "export_rows"
     )
@@ -107,6 +110,7 @@ const FactorList = {
       "affected_rows",
       "table_rows",
       "sql_type",
+      "table_name",
       "export_rows"
     )
   ),
@@ -117,7 +121,8 @@ const FactorList = {
       "source",
       "affected_rows",
       "table_rows",
-      "sql_type"
+      "sql_type",
+      "table_name",
     )
   ),
 };

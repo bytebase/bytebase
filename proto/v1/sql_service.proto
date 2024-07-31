@@ -27,6 +27,7 @@ service SQLService {
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
@@ -44,6 +45,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // SearchQueryHistories searches query histories for the caller.
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {get: "/v1/queryHistories:search"};
     option (bytebase.v1.auth_method) = CUSTOM;
@@ -65,6 +67,7 @@ service SQLService {
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
@@ -80,7 +83,8 @@ service SQLService {
       post: "/v1/sql/check"
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.databases.check";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
@@ -356,11 +360,14 @@ message PrettyResponse {
 }
 
 message CheckRequest {
-  string statement = 1;
-
   // The database name to check against.
-  // Format: instances/{instance}/databases/{databaseName}
-  string database = 2 [(google.api.field_behavior) = REQUIRED];
+  // Format: instances/{instance}/databases/{database}
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  string statement = 1;
 
   // The database metadata to check against. It can be used to check against an uncommitted metadata.
   // If not provided, the database metadata will be fetched from the database.

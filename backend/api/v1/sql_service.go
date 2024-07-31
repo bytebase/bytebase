@@ -1145,7 +1145,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
 	}
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1168,7 +1168,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, status.Errorf(codes.Internal, "failed to get database, error: %v", err)
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Database)
+		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Name)
 	}
 
 	var overideMetadata *storepb.DatabaseSchemaMetadata

@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -127,11 +126,11 @@ func (s *WorksheetService) GetWorksheet(ctx context.Context, request *v1pb.GetWo
 		return nil, err
 	}
 
-	canAccess, err := s.canReadWorksheet(ctx, worksheet)
+	ok, err := s.canReadWorksheet(ctx, worksheet)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
-	if !canAccess {
+	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot access worksheet %s", worksheet.Title)
 	}
 
@@ -219,11 +218,11 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 
 	var v1pbWorksheets []*v1pb.Worksheet
 	for _, worksheet := range worksheetList {
-		canAccess, err := s.canReadWorksheet(ctx, worksheet)
+		ok, err := s.canReadWorksheet(ctx, worksheet)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 		}
-		if !canAccess {
+		if !ok {
 			slog.Warn("cannot access worksheet", slog.String("name", worksheet.Title))
 			continue
 		}
@@ -276,11 +275,11 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 	if worksheet == nil {
 		return nil, status.Errorf(codes.NotFound, "worksheet %q not found", request.Worksheet.Name)
 	}
-	canAccess, err := s.canWriteWorksheet(ctx, worksheet)
+	ok, err = s.canWriteWorksheet(ctx, worksheet)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
-	if !canAccess {
+	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot write worksheet %s", worksheet.Title)
 	}
 
@@ -363,11 +362,11 @@ func (s *WorksheetService) DeleteWorksheet(ctx context.Context, request *v1pb.De
 	if worksheet == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("worksheet with id %d not found", worksheetUID))
 	}
-	canAccess, err := s.canWriteWorksheet(ctx, worksheet)
+	ok, err = s.canWriteWorksheet(ctx, worksheet)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
-	if !canAccess {
+	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot write worksheet %s", worksheet.Title)
 	}
 
@@ -395,11 +394,11 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 		return nil, err
 	}
 
-	canAccess, err := s.canReadWorksheet(ctx, worksheet)
+	ok, err := s.canWriteWorksheet(ctx, worksheet)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
-	if !canAccess {
+	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot access worksheet %s", worksheet.Title)
 	}
 
@@ -445,60 +444,63 @@ func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWo
 }
 
 // canWriteWorksheet check if the principal can write the worksheet.
-// worksheet if writable when:
-// PRIVATE: workspace Owner/DBA and the creator only.
-// PROJECT_WRITE: workspace Owner/DBA and all members in the project.
-// PROJECT_READ: workspace Owner/DBA and project owner.
+// worksheet is writable when the user has bb.worksheets.manage permission on the workspace, or.
+// PRIVATE: the creator.
+// PROJECT_WRITE: all members with bb.projects.get permission in the project.
 func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return false, status.Errorf(codes.Internal, "user not found")
 	}
 
-	// Worksheet creator and workspace Owner/DBA can always write.
+	// Worksheet creator and workspace bb.worksheets.manage can always write.
 	if worksheet.CreatorID == user.ID {
 		return true, nil
 	}
-	if s.checkUserRoles(ctx, user) {
-		return true, nil
-	}
-
-	projectRoles, err := findProjectRoles(ctx, s.store, worksheet.ProjectUID, user)
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsManage, user)
 	if err != nil {
 		return false, err
 	}
-	if len(projectRoles) == 0 {
-		return false, nil
+	if ok {
+		return true, nil
 	}
 
 	switch worksheet.Visibility {
 	case store.PrivateWorkSheet:
 		return false, nil
 	case store.ProjectWriteWorkSheet:
-		return len(projectRoles) > 0, nil
-	case store.ProjectReadWorkSheet:
-		return projectRoles[common.FormatRole(api.ProjectOwner.String())], nil
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+		if err != nil {
+			return false, err
+		}
+		if ok {
+			return true, nil
+		}
 	}
 
 	return false, nil
 }
 
 // canReadWorksheet check if the principal can read the worksheet.
-// worksheet is readable when:
-// PRIVATE: workspace Owner/DBA and the creator only.
-// PROJECT_WRITE: workspace Owner/DBA and all members in the project.
-// PROJECT_READ: workspace Owner/DBA and all members in the project.
+// worksheet is readable when the user has bb.worksheets.get permission on the workspace, or.
+// PRIVATE: the creator only.
+// PROJECT_WRITE: all members with bb.projects.get permission in the project.
+// PROJECT_READ: all members with bb.projects.get permission in the project.
 func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return false, status.Errorf(codes.Internal, "user not found")
 	}
 
-	// Worksheet creator and workspace Owner/DBA can always read.
+	// Worksheet creator and workspace bb.worksheets.get can always read.
 	if worksheet.CreatorID == user.ID {
 		return true, nil
 	}
-	if s.checkUserRoles(ctx, user) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsGet, user)
+	if err != nil {
+		return false, err
+	}
+	if ok {
 		return true, nil
 	}
 
@@ -506,24 +508,16 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	case store.PrivateWorkSheet:
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
-		// For project level visibility, users can read the worksheet as long as they're the project member.
-		projectRoles, err := findProjectRoles(ctx, s.store, worksheet.ProjectUID, user)
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
 		if err != nil {
 			return false, err
 		}
-		return len(projectRoles) > 0, nil
+		if ok {
+			return true, nil
+		}
 	}
 
 	return false, nil
-}
-
-func (s *WorksheetService) checkUserRoles(ctx context.Context, user *store.UserMessage) bool {
-	containsRole, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin, api.WorkspaceDBA)
-	if err != nil {
-		slog.Error("failed to check workspace role", log.BBError(err))
-		return false
-	}
-	return containsRole
 }
 
 func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {

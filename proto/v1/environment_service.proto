@@ -36,6 +36,7 @@ service EnvironmentService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.environments.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (Environment) {
@@ -46,6 +47,7 @@ service EnvironmentService {
     option (google.api.method_signature) = "environment,update_mask";
     option (bytebase.v1.permission) = "bb.environments.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteEnvironment(DeleteEnvironmentRequest) returns (google.protobuf.Empty) {
@@ -53,6 +55,7 @@ service EnvironmentService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.environments.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UndeleteEnvironment(UndeleteEnvironmentRequest) returns (Environment) {
@@ -62,6 +65,7 @@ service EnvironmentService {
     };
     option (bytebase.v1.permission) = "bb.environments.undelete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

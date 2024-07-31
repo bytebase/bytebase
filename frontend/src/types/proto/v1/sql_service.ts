@@ -285,12 +285,12 @@ export interface PrettyResponse {
 }
 
 export interface CheckRequest {
-  statement: string;
   /**
    * The database name to check against.
-   * Format: instances/{instance}/databases/{databaseName}
+   * Format: instances/{instance}/databases/{database}
    */
-  database: string;
+  name: string;
+  statement: string;
   /**
    * The database metadata to check against. It can be used to check against an uncommitted metadata.
    * If not provided, the database metadata will be fetched from the database.
@@ -2338,21 +2338,16 @@ export const PrettyResponse = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return {
-    statement: "",
-    database: "",
-    metadata: undefined,
-    changeType: CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED,
-  };
+  return { name: "", statement: "", metadata: undefined, changeType: CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED };
 }
 
 export const CheckRequest = {
   encode(message: CheckRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
     if (message.statement !== "") {
       writer.uint32(10).string(message.statement);
-    }
-    if (message.database !== "") {
-      writer.uint32(18).string(message.database);
     }
     if (message.metadata !== undefined) {
       DatabaseMetadata.encode(message.metadata, writer.uint32(26).fork()).ldelim();
@@ -2370,19 +2365,19 @@ export const CheckRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
           }
 
           message.statement = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.database = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -2409,8 +2404,8 @@ export const CheckRequest = {
 
   fromJSON(object: any): CheckRequest {
     return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
       metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
       changeType: isSet(object.changeType)
         ? checkRequest_ChangeTypeFromJSON(object.changeType)
@@ -2420,11 +2415,11 @@ export const CheckRequest = {
 
   toJSON(message: CheckRequest): unknown {
     const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     if (message.statement !== "") {
       obj.statement = message.statement;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
     }
     if (message.metadata !== undefined) {
       obj.metadata = DatabaseMetadata.toJSON(message.metadata);
@@ -2440,8 +2435,8 @@ export const CheckRequest = {
   },
   fromPartial(object: DeepPartial<CheckRequest>): CheckRequest {
     const message = createBaseCheckRequest();
+    message.name = object.name ?? "";
     message.statement = object.statement ?? "";
-    message.database = object.database ?? "";
     message.metadata = (object.metadata !== undefined && object.metadata !== null)
       ? DatabaseMetadata.fromPartial(object.metadata)
       : undefined;
@@ -3293,6 +3288,7 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           800010: [new Uint8Array([16, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 103, 101, 116])],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               80,
@@ -3515,6 +3511,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** SearchQueryHistories searches query histories for the caller. */
     searchQueryHistories: {
       name: "SearchQueryHistories",
       requestType: SearchQueryHistoriesRequest,
@@ -3569,6 +3566,7 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           800010: [new Uint8Array([16, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 103, 101, 116])],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               126,
@@ -3754,7 +3752,10 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 99, 104, 101, 99, 107]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([18, 58, 1, 42, 34, 13, 47, 118, 49, 47, 115, 113, 108, 47, 99, 104, 101, 99, 107]),
           ],

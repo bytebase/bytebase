@@ -78,11 +78,11 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Deprecated.
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
     option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = CUSTOM;
-    // TODO(d): secure it.
   }
 
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -92,6 +92,7 @@ service ProjectService {
     };
     option (bytebase.v1.permission) = "bb.projects.setIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
