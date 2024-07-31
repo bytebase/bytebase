@@ -58,7 +58,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.Con
 		return nil, errors.Wrap(err, "failed to get SSL config")
 	}
 	if tlsConfig != nil {
-		// TODO(zp): User use ssh tunnel?
+		// TODO(zp): User uses ssh tunnel?
 		tlsConfig.InsecureSkipVerify = true
 		opts.SetTLSConfig(tlsConfig)
 	}
