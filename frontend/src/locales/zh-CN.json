@@ -723,6 +723,17 @@
           "sql-editor-mode": {
             "self": "SQL 编辑器模式"
           }
+        },
+        "workspace-mode": {
+          "self": "工作空间模式",
+          "console-mode": {
+            "self": "控制台模式",
+            "description": "通过工单管理数据库。开启 Bytebase 的所有强大功能。（默认模式）"
+          },
+          "editor-mode": {
+            "self": "SQL 编辑器模式",
+            "description": "通过 SQL 编辑器访问数据库。仅开启 Bytebase 的核心功能。推荐给新手或个人用户。"
+          }
         }
       }
     },

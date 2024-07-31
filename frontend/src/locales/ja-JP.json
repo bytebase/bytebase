@@ -723,6 +723,17 @@
           "sql-editor-mode": {
             "self": "SQL エディター モード"
           }
+        },
+        "workspace-mode": {
+          "self": "ワークスペースモード",
+          "console-mode": {
+            "self": "コンソールモード",
+            "description": "問題を通じてデータベースを管理します。Bytebase のすべての強力な機能を有効にします。（デフォルトモード）"
+          },
+          "editor-mode": {
+            "self": "SQLエディターモード",
+            "description": "SQL エディターを介してデータベースにアクセスします。 \nBytebase のコア機能のみが有効になります。\n初心者や個人ユーザーにおすすめです。"
+          }
         }
       }
     },

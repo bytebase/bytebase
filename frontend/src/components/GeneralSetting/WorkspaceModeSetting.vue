@@ -8,9 +8,6 @@
       </div>
     </div>
     <div class="flex-1 lg:px-4">
-      <p class="mb-2 textinfolabel">
-        {{ $t("settings.general.workspace.workspace-mode.description.title") }}
-      </p>
       <div>
         <NRadioGroup v-model:value="state.workspaceMode" size="large">
           <NSpace vertical>

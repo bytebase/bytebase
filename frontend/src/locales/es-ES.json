@@ -723,6 +723,17 @@
           "sql-editor-mode": {
             "self": "Modo de edición SQL"
           }
+        },
+        "workspace-mode": {
+          "self": "Modo de espacio de trabajo",
+          "console-mode": {
+            "self": "Modo consola",
+            "description": "Administrar bases de datos vía issues. Habilitando todas las potentes funciones de Bytebase. (Modo por defecto)"
+          },
+          "editor-mode": {
+            "self": "Modo editor SQL",
+            "description": "Acceda a bases de datos a través del Editor SQL. \nSolo están habilitadas las funciones principales de Bytebase. \nRecomendado para principiantes o usuarios individuales."
+          }
         }
       }
     },

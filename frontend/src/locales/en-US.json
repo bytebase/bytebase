@@ -723,6 +723,17 @@
           "sql-editor-mode": {
             "self": "SQL Editor Mode"
           }
+        },
+        "workspace-mode": {
+          "self": "Workspace mode",
+          "console-mode": {
+            "self": "Console mode",
+            "description": "Manage databases via issues. Enabling all powerful features of Bytebase. (Default mode)"
+          },
+          "editor-mode": {
+            "self": "SQL Editor mode",
+            "description": "Access databases via SQL Editor. Only core features of Bytebase are enabled. Recommended for beginners or individual users."
+          }
         }
       }
     },
