@@ -90,5 +90,6 @@ var (
 		PolicyTypeMaskingException:                  {PolicyResourceTypeProject},
 		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace, PolicyResourceTypeProject},
 		PolicyTypeIAM:                               {PolicyResourceTypeWorkspace},
+		PolicyTypeDataSourceQuery:                   {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
 	}
 )
