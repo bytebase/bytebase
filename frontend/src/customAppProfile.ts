@@ -92,6 +92,9 @@ const overrideAppFeatures = (
 
   if (workspaceMode === "EDITOR") {
     actuatorStore.overrideAppFeatures({
+      "bb.feature.hide-quick-start": true,
+      "bb.feature.hide-help": true,
+
       "bb.feature.sql-editor.hide-projects": true,
       "bb.feature.sql-editor.hide-environments": true,
       "bb.feature.sql-editor.disallow-batch-query": true,
